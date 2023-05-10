@@ -1,5 +1,5 @@
 observed:
-  sources:
+  sources: 
     - smalldata/25510317T00_FAKE3_observations.xml
   variable: DISCHARGE
   type: observations
@@ -32,6 +32,7 @@ metrics:
       - mean
       - mean absolute
       - standard deviation
+decimal_format: '#0.000000'
 output_formats:
   - csv
   - pairs

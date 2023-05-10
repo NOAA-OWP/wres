@@ -15,6 +15,7 @@ unit: CMS
 metrics:
   - sample size
   - mean error
+decimal_format: '#0.000000'
 output_formats:
   - csv
   - pairs

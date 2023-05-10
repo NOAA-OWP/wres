@@ -786,6 +786,26 @@ public class DeclarationUtilities
     }
 
     /**
+     * Infers the threshold type from the named context or node name in a declaration string.
+     * @param context the named context
+     * @return the threshold type
+     */
+
+    public static ThresholdType getThresholdType( String context )
+    {
+        if ( context.contains( "classifier" ) )
+        {
+            return ThresholdType.PROBABILITY_CLASSIFIER;
+        }
+        else if ( context.contains( "probability" ) )
+        {
+            return ThresholdType.PROBABILITY;
+        }
+
+        return ThresholdType.VALUE;
+    }
+
+    /**
      * @param builder the builder
      * @return whether a baseline dataset has been declared
      * @throws NullPointerException if the input is null

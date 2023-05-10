@@ -142,6 +142,10 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
             else
             {
                 String nextUriString = nextNode.asText();
+
+                // Replace illegal backslashes (e.g., in Windows paths)
+                nextUriString = nextUriString.replace( "\\", "/" );
+
                 URI uri = URI.create( nextUriString );
                 nextSource = SourceBuilder.builder()
                                           .uri( uri )

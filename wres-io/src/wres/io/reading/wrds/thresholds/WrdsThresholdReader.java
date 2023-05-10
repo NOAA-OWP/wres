@@ -189,23 +189,23 @@ public class WrdsThresholdReader
     {
         Map<WrdsLocation, Set<Threshold>> thresholdMapping;
 
-        //Get the non-null responses for the addresses, extract the thresholds,
-        //and collect them into a map.
+        // Get the non-null responses for the addresses, extract the thresholds,
+        // and collect them into a map.
         thresholdMapping = addresses.parallelStream()
                                     .map( this::getResponse )
                                     .filter( Objects::nonNull )
                                     .map( thresholdResponse -> this.extract( thresholdResponse,
                                                                              thresholdService,
                                                                              unitMapper ) )
-                                    .flatMap( featurePlusSetMap -> featurePlusSetMap.entrySet().stream() )
+                                    .flatMap( map -> map.entrySet()
+                                                        .stream() )
                                     .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
 
         // Filter out locations that only have all data
         thresholdMapping = thresholdMapping
                 .entrySet()
                 .parallelStream()
-                .filter(
-                        entry -> !entry.getValue()
+                .filter( entry -> !entry.getValue()
                                        .stream()
                                        .allMatch( next -> ThresholdOuter.ALL_DATA.getThreshold()
                                                                                  .equals( next ) ) )

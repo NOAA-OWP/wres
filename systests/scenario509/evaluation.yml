@@ -19,7 +19,7 @@ lead_times:
   unit: hours
 time_scale:
   function: mean
-  period: 4
+  period: 3
   unit: hours
 metrics:
   - sample size

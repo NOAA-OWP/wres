@@ -17,7 +17,6 @@ lead_times:
   unit: hours
 lead_time_pools:
   period: 0
-  frequency: 0
   unit: hours
 time_scale:
   function: mean
@@ -29,6 +28,7 @@ probability_thresholds:
 metrics:
   - mean error
   - sample size
+decimal_format: '#0.000000'
 output_formats:
   - csv
   - pairs

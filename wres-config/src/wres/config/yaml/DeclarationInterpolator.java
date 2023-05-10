@@ -1,5 +1,6 @@
 package wres.config.yaml;
 
+import java.io.IOException;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;

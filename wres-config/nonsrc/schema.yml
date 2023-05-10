@@ -176,6 +176,10 @@ definitions:
                   minLength: 1
                   maxLength: 72
             minItems: 1
+          - type: integer
+          - type: string
+            minLength: 1
+            maxLength: 72
       time_shift:
         "$ref": "#/definitions/TimeShift"
       time_scale:
@@ -234,6 +238,15 @@ definitions:
         "$ref": "#/definitions/TimeShift"
       time_scale:
         "$ref": "#/definitions/TimeScale"
+      # Workaround because the networknt validator sometimes sees these 
+      # strings as integers, but both are interpreted properly post-validation.
+      # This property is also defined per source.
+      time_zone_offset:
+        anyOf:        
+          - type: string
+            minLength: 1
+            maxLength: 6
+          - type: integer
       persistence:
         type: integer
         minimum: 0
@@ -523,7 +536,7 @@ definitions:
     oneOf:
       - type: string
         minLength: 1
-      - "$ref": "#/definitions/NamedSpatialMask"    
+      - "$ref": "#/definitions/NamedSpatialMask"
 
   # A geospatial mask based on a WKT shape and optional name.
   NamedSpatialMask:
@@ -537,6 +550,8 @@ definitions:
       wkt:
         type: string
         minLength: 1
+      srid:
+        type: integer
     required:
       - wkt
     title: NamedSpatialMask
@@ -567,9 +582,6 @@ definitions:
       maximum:
         type: string
         format: date-time
-    required:
-      - maximum
-      - minimum
     title: Dates
 
   # The lead time constraints on an evaluation.
@@ -718,6 +730,8 @@ definitions:
         items:
           type: number
         minItems: 1
+      # Single number
+      - type: number
     required:
     title: ValueThresholds
 
@@ -788,6 +802,8 @@ definitions:
           minimum: 0.0
           maximum: 1.0
         minItems: 1
+      # Single number
+      - type: number
     required:
     title: ProbabilityThresholds
 

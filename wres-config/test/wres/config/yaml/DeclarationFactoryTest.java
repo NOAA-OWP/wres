@@ -990,7 +990,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testDeserializeWithThresholds() throws IOException
+    void testDeserializeWithFeaturefulThresholds() throws IOException
     {
         String yaml = """
                 observed:
@@ -1126,6 +1126,51 @@ class DeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeWithFeaturefulThresholdsAndPredictedOrientation() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                features:
+                  - observed: DRRC2
+                    predicted: FOO
+                value_thresholds:
+                  name: MAJOR FLOOD
+                  values:
+                    - { value: 23.0, feature: FOO }
+                  operator: greater
+                  apply_to: predicted
+                  feature_name_from: predicted
+                """;
+
+        EvaluationDeclaration actualEvaluation = DeclarationFactory.from( yaml );
+
+        Threshold vOne = Threshold.newBuilder()
+                                  .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
+                                  .setDataType( Threshold.ThresholdDataType.RIGHT )
+                                  .setOperator( Threshold.ThresholdOperator.GREATER )
+                                  .setName( "MAJOR FLOOD" )
+                                  .build();
+
+        wres.config.yaml.components.Threshold vOneWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( vOne )
+                                                                            .feature( Geometry.newBuilder()
+                                                                                              .setName( "FOO" )
+                                                                                              .build() )
+                                                                            .type( ThresholdType.VALUE )
+                                                                            .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                            .build();
+
+        Set<wres.config.yaml.components.Threshold> expected = Set.of( vOneWrapped );
+
+        Set<wres.config.yaml.components.Threshold> actual = actualEvaluation.valueThresholds();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDeserializeWithMultipleSetsOfValueThresholds() throws IOException
     {
         String yaml = """
@@ -1166,6 +1211,40 @@ class DeclarationFactoryTest
         Set<wres.config.yaml.components.Threshold> valueThresholds = new LinkedHashSet<>();
         valueThresholds.add( vOneWrapped );
         valueThresholds.add( vTwoWrapped );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .valueThresholds( valueThresholds )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithSingletonValueThreshold() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                value_thresholds: 0.1
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        Threshold vOne =
+                DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder()
+                                                              .setLeftThresholdValue( DoubleValue.of( 0.1 ) )
+                                                              .build();
+
+        wres.config.yaml.components.Threshold vOneWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( vOne )
+                                                                            .type( ThresholdType.VALUE )
+                                                                            .build();
+
+        Set<wres.config.yaml.components.Threshold> valueThresholds = Set.of( vOneWrapped );
 
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
                                                                      .left( this.observedDataset )
@@ -2527,7 +2606,7 @@ class DeclarationFactoryTest
     {
         wres.config.xml.generated.FeatureService featureService =
                 new wres.config.xml.generated.FeatureService( URI.create( "https://moo" ),
-                                                          List.of( new FeatureGroup( "small", "ball", false ) ) );
+                                                              List.of( new FeatureGroup( "small", "ball", false ) ) );
         List<wres.config.xml.generated.UnitAlias> aliases =
                 List.of( new wres.config.xml.generated.UnitAlias( "banana", "pear" ) );
         List<NamedFeature> features = List.of( new NamedFeature( "red", "blue", "green" ) );

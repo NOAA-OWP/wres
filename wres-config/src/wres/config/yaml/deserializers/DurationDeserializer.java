@@ -44,22 +44,18 @@ public class DurationDeserializer extends JsonDeserializer<Duration>
         Objects.requireNonNull( mapper );
         Objects.requireNonNull( node );
 
-        long duration = 1;
-        String unitString = "";
-        if ( node.has( durationNodeName ) )
+        Duration duration = null;
+        if ( node.has( durationNodeName ) && node.has( "unit" ) )
         {
             JsonNode periodNode = node.get( durationNodeName );
-            duration = periodNode.asLong();
-        }
-
-        if ( node.has( "unit" ) )
-        {
             JsonNode unitNode = node.get( "unit" );
-            unitString = unitNode.asText();
+            long durationUnit = periodNode.asLong();
+            String unitString = unitNode.asText();
+            ChronoUnit chronoUnit = mapper.readValue( unitString, ChronoUnit.class );
+            duration = Duration.of( durationUnit, chronoUnit );
         }
 
-        ChronoUnit chronoUnit = mapper.readValue( unitString, ChronoUnit.class );
-        return Duration.of( duration, chronoUnit );
+        return duration;
     }
 }
 

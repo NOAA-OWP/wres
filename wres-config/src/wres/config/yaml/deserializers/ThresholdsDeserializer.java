@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.Threshold;
 import wres.config.yaml.components.ThresholdOrientation;
@@ -79,15 +80,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         Set<Threshold> thresholds = new LinkedHashSet<>();
 
         // Determine the declaration context for the thresholds
-        ThresholdType type = ThresholdType.VALUE;
-        if ( "probability_thresholds".equals( nodeName ) )
-        {
-            type = ThresholdType.PROBABILITY;
-        }
-        else if ( "classifier_thresholds".equals( nodeName ) )
-        {
-            type = ThresholdType.PROBABILITY_CLASSIFIER;
-        }
+        ThresholdType type = DeclarationUtilities.getThresholdType( nodeName );
 
         // Thresholds with attributes
         if ( thresholdsNode instanceof ObjectNode )
@@ -96,7 +89,14 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             Set<Threshold> innerThresholds = this.getThresholds( reader, thresholdsNode, type );
             thresholds.addAll( innerThresholds );
         }
-        // Array node, which is either a plain array of thresholds or an array of thresholds with attributes
+        // Implicit array of one
+        else if ( thresholdsNode.isNumber() )
+        {
+            LOGGER.debug( "Encountered a plain array of thresholds for node {}.", nodeName );
+            Set<Threshold> innerThresholds = this.getSingletonThreshold( thresholdsNode, type );
+            thresholds.addAll( innerThresholds );
+        }
+        // Explicit array node, which is either a plain array of thresholds or an array of thresholds with attributes
         else if ( thresholdsNode instanceof ArrayNode arrayNode )
         {
             // An array of embellished thresholds
@@ -122,9 +122,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             {
                 LOGGER.debug( "Encountered a plain array of thresholds for node {}.", nodeName );
                 wres.statistics.generated.Threshold.Builder builder
-                        = wres.statistics.generated.Threshold.newBuilder()
-                                                             .setOperator( ThresholdOperator.GREATER )
-                                                             .setDataType( ThresholdDataType.LEFT );
+                        = DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder();
                 Set<Threshold> innerThresholds = this.getThresholdsFromArray( reader, arrayNode, type, builder );
                 thresholds.addAll( innerThresholds );
             }
@@ -136,46 +134,35 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
     }
 
     /**
-     * Creates a collection of thresholds from an array node.
-     * @param reader the reader
-     * @param thresholdsNode the thresholds node
+     * Creates a singleton threshold from an implicit array.
+     * @param thresholdNode the threshold node
      * @param type the threshold type
-     * @param thresholdBuilder the threshold builder
      * @return the thresholds
-     * @throws IOException if the thresholds could not be mapped
      */
 
-    private Set<Threshold> getThresholdsFromArray( ObjectReader reader,
-                                                   ArrayNode thresholdsNode,
-                                                   ThresholdType type,
-                                                   wres.statistics.generated.Threshold.Builder thresholdBuilder )
-            throws IOException
+    private Set<Threshold> getSingletonThreshold( JsonNode thresholdNode,
+                                                  ThresholdType type )
     {
+        wres.statistics.generated.Threshold.Builder builder
+                = DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder();
+
         // Preserve insertion order
-        Set<Threshold> thresholds = new LinkedHashSet<>();
+        double value = thresholdNode.asDouble();
+        DoubleValue doubleValue = DoubleValue.of( value );
 
-        // Threshold values are validated at schema validation time
-        double[] values = reader.readValue( thresholdsNode, double[].class );
-
-        for ( double nextValue : values )
+        if ( type.isProbability() )
         {
-            DoubleValue doubleValue = DoubleValue.of( nextValue );
-
-            if ( type.isProbability() )
-            {
-                thresholdBuilder.setLeftThresholdProbability( doubleValue );
-            }
-            else
-            {
-                thresholdBuilder.setLeftThresholdValue( doubleValue );
-            }
-
-            wres.statistics.generated.Threshold nextThreshold = thresholdBuilder.build();
-            Threshold nextWrappedThreshold = new Threshold( nextThreshold, type, null, null );
-            thresholds.add( nextWrappedThreshold );
+            builder.setLeftThresholdProbability( doubleValue );
+        }
+        else
+        {
+            builder.setLeftThresholdValue( doubleValue );
         }
 
-        return Collections.unmodifiableSet( thresholds );
+        wres.statistics.generated.Threshold nextThreshold = builder.build();
+        Threshold wrappedThreshold = new Threshold( nextThreshold, type, null, null );
+
+        return Set.of( wrappedThreshold );
     }
 
     /**
@@ -241,6 +228,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             {
                 Set<Threshold> embellishedThresholds = this.getEmbellishedThresholds( reader,
                                                                                       valuesNode,
+                                                                                      thresholdNode,
                                                                                       type,
                                                                                       builder );
                 thresholds.addAll( embellishedThresholds );
@@ -262,7 +250,8 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
     /**
      * Creates a set of thresholds with attributes.
      * @param reader the reader
-     * @param thresholdNode the threshold node
+     * @param valuesNode the threshold node
+     * @param thresholdNode the parent of the value node from which the feature orientation may be obtained
      * @param type the type of thresholds
      * @param builder the threshold builder
      * @return the thresholds
@@ -270,12 +259,13 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
      */
 
     private Set<Threshold> getEmbellishedThresholds( ObjectReader reader,
+                                                     JsonNode valuesNode,
                                                      JsonNode thresholdNode,
                                                      ThresholdType type,
                                                      wres.statistics.generated.Threshold.Builder builder )
             throws IOException
     {
-        int thresholdCount = thresholdNode.size();
+        int thresholdCount = valuesNode.size();
 
         // Preserve insertion order
         Set<Threshold> thresholds = new LinkedHashSet<>();
@@ -289,7 +279,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             builder.clearRightThresholdValue();
             builder.clearRightThresholdProbability();
 
-            JsonNode nextNode = thresholdNode.get( i );
+            JsonNode nextNode = valuesNode.get( i );
 
             // Threshold value
             if ( nextNode.has( VALUE ) )
@@ -330,6 +320,49 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             Threshold nextThreshold =
                     new Threshold( builder.build(), type, feature, featureNameFrom );
             thresholds.add( nextThreshold );
+        }
+
+        return Collections.unmodifiableSet( thresholds );
+    }
+
+    /**
+     * Creates a collection of thresholds from an array node.
+     * @param reader the reader
+     * @param thresholdsNode the thresholds node
+     * @param type the threshold type
+     * @param thresholdBuilder the threshold builder
+     * @return the thresholds
+     * @throws IOException if the thresholds could not be mapped
+     */
+
+    private Set<Threshold> getThresholdsFromArray( ObjectReader reader,
+                                                   ArrayNode thresholdsNode,
+                                                   ThresholdType type,
+                                                   wres.statistics.generated.Threshold.Builder thresholdBuilder )
+            throws IOException
+    {
+        // Preserve insertion order
+        Set<Threshold> thresholds = new LinkedHashSet<>();
+
+        // Threshold values are validated at schema validation time
+        double[] values = reader.readValue( thresholdsNode, double[].class );
+
+        for ( double nextValue : values )
+        {
+            DoubleValue doubleValue = DoubleValue.of( nextValue );
+
+            if ( type.isProbability() )
+            {
+                thresholdBuilder.setLeftThresholdProbability( doubleValue );
+            }
+            else
+            {
+                thresholdBuilder.setLeftThresholdValue( doubleValue );
+            }
+
+            wres.statistics.generated.Threshold nextThreshold = thresholdBuilder.build();
+            Threshold nextWrappedThreshold = new Threshold( nextThreshold, type, null, null );
+            thresholds.add( nextWrappedThreshold );
         }
 
         return Collections.unmodifiableSet( thresholds );

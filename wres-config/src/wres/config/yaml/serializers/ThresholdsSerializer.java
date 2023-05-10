@@ -20,6 +20,7 @@ import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.Threshold;
 import wres.config.yaml.components.ThresholdOrientation;
+import wres.config.yaml.components.ThresholdType;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.Threshold.ThresholdDataType;
 import wres.statistics.generated.Threshold.ThresholdOperator;
@@ -46,6 +47,8 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
         String context = writer.getOutputContext()
                                .getCurrentName();
 
+        ThresholdType type = DeclarationUtilities.getThresholdType( context );
+
         if ( !thresholds.isEmpty() )
         {
             LOGGER.debug( "Discovered a collection of thresholds with {} members.", thresholds.size() );
@@ -53,13 +56,13 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
             // Write a simple array
             if ( this.hasDefaultMetadata( thresholds ) )
             {
-                double[] values = this.getThresholdValues( context, thresholds );
+                double[] values = this.getThresholdValues( type, thresholds );
                 writer.writeObject( values );
             }
             // Write the thresholds with their full metadata
             else
             {
-                this.groupAndWriteThresholdsWithFullMetadata( thresholds, context, writer );
+                this.groupAndWriteThresholdsWithFullMetadata( thresholds, type, writer );
             }
         }
     }
@@ -73,13 +76,13 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
     /**
      * Groups the thresholds by common name and writes the thresholds with complete metadata.
      * @param thresholds the thresholds
-     * @param context the context
+     * @param type the threshold type
      * @param writer the writer
      * @throws IOException if the threshold could not be written for any reason
      */
 
     private void groupAndWriteThresholdsWithFullMetadata( Set<Threshold> thresholds,
-                                                          String context,
+                                                          ThresholdType type,
                                                           JsonGenerator writer ) throws IOException
     {
 
@@ -97,27 +100,27 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
             writer.writeStartArray();
             for ( Set<Threshold> nextThresholds : grouped.values() )
             {
-                this.writeThresholdsWithFullMetadata( nextThresholds, context, writer );
+                this.writeThresholdsWithFullMetadata( nextThresholds, type, writer );
             }
             writer.writeEndArray();
         }
         // Write the single set to an object
         else
         {
-            this.writeThresholdsWithFullMetadata( thresholds, context, writer );
+            this.writeThresholdsWithFullMetadata( thresholds, type, writer );
         }
     }
 
     /**
      * Writes the thresholds with complete metadata.
      * @param thresholds the thresholds
-     * @param context the context
+     * @param type the threshold type
      * @param writer the writer
      * @throws IOException if the threshold could not be written for any reason
      */
 
     private void writeThresholdsWithFullMetadata( Set<Threshold> thresholds,
-                                                  String context,
+                                                  ThresholdType type,
                                                   JsonGenerator writer ) throws IOException
     {
         writer.writeStartObject();
@@ -125,6 +128,7 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
         // For the basic metadata
         Threshold first = thresholds.iterator()
                                     .next();
+
         wres.statistics.generated.Threshold innerThreshold = first.threshold();
 
         if ( !innerThreshold.getName()
@@ -137,55 +141,12 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
         if ( thresholds.stream()
                        .anyMatch( next -> Objects.nonNull( next.feature() ) ) )
         {
-            writer.writeFieldName( "values" );
-
-            // Start the array
-            writer.writeStartArray();
-
-            // Get the featureful thresholds and write those
-            Set<Threshold> featureful = thresholds.stream()
-                                                  .filter( next -> Objects.nonNull( next.feature() ) )
-                                                  .collect( Collectors.toCollection( LinkedHashSet::new ) );
-            // Preserve insertion order
-            Map<Geometry, List<Threshold>> groupedByFeature
-                    = featureful.stream()
-                                .collect( Collectors.groupingBy( Threshold::feature,
-                                                                 LinkedHashMap::new,
-                                                                 Collectors.toList() ) );
-
-            for ( Map.Entry<Geometry, List<Threshold>> nextGroup : groupedByFeature.entrySet() )
-            {
-                Geometry geometry = nextGroup.getKey();
-                List<Threshold> nextThresholds = nextGroup.getValue();
-                double[] values = this.getThresholdValues( context, nextThresholds );
-                for ( double nextValue : values )
-                {
-                    writer.writeStartObject();
-                    writer.writeNumberField( VALUE, nextValue );
-                    writer.writeStringField( "feature", geometry.getName() );
-                    writer.writeEndObject();
-                }
-            }
-
-            // Get the featureless thresholds and write those
-            Set<Threshold> featureless = thresholds.stream()
-                                                   .filter( next -> Objects.isNull( next.feature() ) )
-                                                   .collect( Collectors.toCollection( LinkedHashSet::new ) );
-            double[] values = this.getThresholdValues( context, featureless );
-            for ( double nextValue : values )
-            {
-                writer.writeStartObject();
-                writer.writeNumberField( VALUE, nextValue );
-                writer.writeEndObject();
-            }
-
-            // End the array
-            writer.writeEndArray();
+            this.writeFeaturefulThresholdValues( thresholds, type, writer );
         }
         // One set of thresholds, print a simple array
         else
         {
-            double[] values = this.getThresholdValues( context, thresholds );
+            double[] values = this.getThresholdValues( type, thresholds );
             writer.writeObjectField( "values", values );
         }
 
@@ -204,8 +165,9 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
             writer.writeObjectField( "apply_to", orientation );
         }
 
-        if ( !innerThreshold.getThresholdValueUnits()
-                            .isBlank() )
+        if ( type == ThresholdType.VALUE
+             && !innerThreshold.getThresholdValueUnits()
+                               .isBlank() )
         {
             writer.writeStringField( "unit", innerThreshold.getThresholdValueUnits() );
         }
@@ -221,15 +183,73 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
     }
 
     /**
-     * @param context the context
+     * Writes the threshold values when one or more are featureful.
+     * @param thresholds the featureful thresholds
+     * @param type the threshold type
+     * @param writer the writer
+     * @throws IOException if the writing fails for any reason
+     */
+
+    private void writeFeaturefulThresholdValues( Set<Threshold> thresholds,
+                                                 ThresholdType type,
+                                                 JsonGenerator writer ) throws IOException
+    {
+        writer.writeFieldName( "values" );
+
+        // Start the array
+        writer.writeStartArray();
+
+        // Get the featureful thresholds and write those
+        Set<Threshold> featureful = thresholds.stream()
+                                              .filter( next -> Objects.nonNull( next.feature() ) )
+                                              .collect( Collectors.toCollection( LinkedHashSet::new ) );
+        // Preserve insertion order
+        Map<Geometry, List<Threshold>> groupedByFeature
+                = featureful.stream()
+                            .collect( Collectors.groupingBy( Threshold::feature,
+                                                             LinkedHashMap::new,
+                                                             Collectors.toList() ) );
+
+        for ( Map.Entry<Geometry, List<Threshold>> nextGroup : groupedByFeature.entrySet() )
+        {
+            Geometry geometry = nextGroup.getKey();
+            List<Threshold> nextThresholds = nextGroup.getValue();
+            double[] values = this.getThresholdValues( type, nextThresholds );
+            for ( double nextValue : values )
+            {
+                writer.writeStartObject();
+                writer.writeNumberField( VALUE, nextValue );
+                writer.writeStringField( "feature", geometry.getName() );
+                writer.writeEndObject();
+            }
+        }
+
+        // Get the featureless thresholds and write those
+        Set<Threshold> featureless = thresholds.stream()
+                                               .filter( next -> Objects.isNull( next.feature() ) )
+                                               .collect( Collectors.toCollection( LinkedHashSet::new ) );
+        double[] values = this.getThresholdValues( type, featureless );
+        for ( double nextValue : values )
+        {
+            writer.writeStartObject();
+            writer.writeNumberField( VALUE, nextValue );
+            writer.writeEndObject();
+        }
+
+        // End the array
+        writer.writeEndArray();
+    }
+
+    /**
+     * @param type the threshold type
      * @param thresholds the thresholds
      * @return the threshold values
      */
 
-    private double[] getThresholdValues( String context, Collection<Threshold> thresholds )
+    private double[] getThresholdValues( ThresholdType type, Collection<Threshold> thresholds )
     {
         double[] values;
-        if ( context.startsWith( VALUE ) )
+        if ( type == ThresholdType.VALUE )
         {
             values = thresholds.stream()
                                .mapToDouble( next -> next.threshold()

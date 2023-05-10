@@ -9,10 +9,10 @@ predicted:
   sources:
     - uri: data/nwmVector/
       interface: nwm medium range ensemble channel rt conus
-      time_scale:
-        function: mean
-        period: 1
-        unit: seconds
+  time_scale:
+    function: mean
+    period: 1
+    unit: seconds
   variable: streamflow
   type: ensemble forecasts
   label: NWM v2.0 Medium Range Ensemble
@@ -39,6 +39,7 @@ lead_time_pools:
 metrics:
   - mean error
   - sample size
+decimal_format: '#0.000000'
 output_formats:
   - csv
   - pairs

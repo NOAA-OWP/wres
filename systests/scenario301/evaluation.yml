@@ -23,10 +23,11 @@ time_scale:
   function: total
   period: 6
   unit: hours
-value_thresholds: [0.0]
+value_thresholds: 0.0
 metrics:
   - mean error
   - sample size
+decimal_format: '#0.000000'
 output_formats:
   - csv
   - pairs

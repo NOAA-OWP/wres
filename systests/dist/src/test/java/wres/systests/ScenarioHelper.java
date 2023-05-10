@@ -55,7 +55,8 @@ public class ScenarioHelper
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ScenarioHelper.class );
 
-    private static final String USUAL_EVALUATION_FILE_NAME = "project_config.xml";
+    private static final String USUAL_EVALUATION_FILE_NAME = "evaluation.yml";
+    private static final String DEPRECATED_EVALUATION_FILE_NAME = "project_config.xml";
     private static final SystemSettings SYSTEM_SETTINGS = SystemSettings.fromDefaultClasspathXmlFile();
     private static final Database DATABASE;
 
@@ -103,10 +104,10 @@ public class ScenarioHelper
         LOGGER.info( "    wres.logLevel =  " + System.getProperty( "wres.logLevel" ) );
         LOGGER.info( "    wres.password =  " + System.getProperty( "wres.password" ) + " (its recommended to use the .pgpass file to identify the database password)");
         LOGGER.info( "    wres.dataDirectory =  " + System.getProperty( "wres.dataDirectory" ) );
+        LOGGER.info( "    wres.xml =  " + System.getProperty( "wres.xml" ) );
         LOGGER.info( "    user.dir (working directory) =  " + System.getProperty( "user.dir" ) );
         LOGGER.info( "    java.io.tmpdir =  " + System.getProperty( "java.io.tmpdir" ) );
     }
-
 
     /**
      * Single entry point for executing the scenario.  Modify this to call the desired private method below.
@@ -116,8 +117,20 @@ public class ScenarioHelper
     protected static Set<Path> executeScenario( ScenarioInformation scenarioInfo )
     {
         LOGGER.info( "Beginning test execution through JUnit for scenario: " + scenarioInfo.getName() );
+
+        String fileName = ScenarioHelper.USUAL_EVALUATION_FILE_NAME;
+        String deprecated = System.getProperty( "wres.xml" );
+        if( "true".equalsIgnoreCase( deprecated ) )
+        {
+            fileName = ScenarioHelper.DEPRECATED_EVALUATION_FILE_NAME;
+            LOGGER.warn( "Executing system test scenario {} against the old/deprecated evaluation language! The old "
+                         + "declaration is contained in file: {}",
+                         scenarioInfo.getName(),
+                         fileName );
+        }
+
         Path config = scenarioInfo.getScenarioDirectory()
-                                  .resolve( ScenarioHelper.USUAL_EVALUATION_FILE_NAME );
+                                  .resolve( fileName );
         Set<Path> paths = Collections.emptySet();
 
         // Create the broker connections for statistics messaging

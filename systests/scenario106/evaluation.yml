@@ -1,18 +1,18 @@
 observed:
   sources:
-    - uri: data/abrfcExample/LGNN5_QME.xml
-      time_scale:
-        function: mean
-        period: 24
-        unit: hours
+    - data/abrfcExample/LGNN5_QME.xml
+  time_scale:
+    function: mean
+    period: 24
+    unit: hours
   variable: QME
 predicted:
   sources:
-    - uri: data/abrfcExample/LGNN5_hefs_flow_1yr.tgz
-      time_scale:
-        function: mean
-        period: 1
-        unit: seconds
+    - data/abrfcExample/LGNN5_hefs_flow_1yr.tgz
+  time_scale:
+    function: mean
+    period: 1
+    unit: seconds
   variable: QINE
   type: ensemble forecasts
   label: HEFS
@@ -23,7 +23,6 @@ lead_times:
   unit: hours
 lead_time_pools:
   period: 0
-  frequency: 0
   unit: hours
 time_scale:
   function: mean
@@ -35,6 +34,7 @@ probability_thresholds:
 metrics:
   - mean error
   - sample size
+decimal_format: '#0.000000'
 output_formats:
   - csv
   - pairs

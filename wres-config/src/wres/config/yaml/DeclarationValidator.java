@@ -218,7 +218,7 @@ public class DeclarationValidator
 
             throw new DeclarationException( "Encountered "
                                             + errorEvents.size()
-                                            + " errors in the declared evaluation, which must be fixed:"
+                                            + " error(s) in the declared evaluation, which must be fixed:"
                                             + System.lineSeparator() +
                                             message );
         }
@@ -481,7 +481,8 @@ public class DeclarationValidator
                                  .stream()
                                  .map( Metric::parameters )
                                  .filter( Objects::nonNull )
-                                 .anyMatch( next -> Objects.nonNull( next.probabilityThresholds() ) );
+                                 .anyMatch( next -> !next.probabilityThresholds()
+                                                         .isEmpty() );
         }
         else if ( thresholdType == ThresholdType.PROBABILITY_CLASSIFIER )
         {
@@ -494,7 +495,8 @@ public class DeclarationValidator
                                  .stream()
                                  .map( Metric::parameters )
                                  .filter( Objects::nonNull )
-                                 .anyMatch( next -> Objects.nonNull( next.classifierThresholds() ) );
+                                 .anyMatch( next -> !next.classifierThresholds()
+                                                         .isEmpty() );
         }
         else if ( thresholdType == ThresholdType.VALUE )
         {
@@ -503,11 +505,14 @@ public class DeclarationValidator
                    || declaration.thresholdSets()
                                  .stream()
                                  .anyMatch( next -> next.type() == ThresholdType.VALUE )
+                   // Currently supported services only return value thresholds
+                   || Objects.nonNull( declaration.thresholdService() )
                    || declaration.metrics()
                                  .stream()
                                  .map( Metric::parameters )
                                  .filter( Objects::nonNull )
-                                 .anyMatch( next -> Objects.nonNull( next.valueThresholds() ) );
+                                 .anyMatch( next -> !next.valueThresholds()
+                                                         .isEmpty() );
         }
         else
         {
@@ -940,17 +945,17 @@ public class DeclarationValidator
         if ( Objects.nonNull( leadTimes )
              && Objects.nonNull( leadTimes.minimum() )
              && Objects.nonNull( leadTimes.maximum() )
-             && leadTimes.maximum().compareTo( declaration.leadTimes()
-                                                          .minimum() ) <= 0 )
+             && leadTimes.maximum()
+                         .compareTo( declaration.leadTimes()
+                                                .minimum() ) < 0 )
         {
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.ERROR )
                                            .setEventMessage( "The 'lead_times' interval is invalid because the "
-                                                             + "'minimum' value is greater than or equal to the "
-                                                             + "'maximum' value. Please adjust the 'minimum' to occur "
-                                                             + "before the 'maximum' and try "
-                                                             + AGAIN )
+                                                             + "'minimum' value is greater than the 'maximum' value. "
+                                                             + "Please adjust the 'minimum' to occur before the "
+                                                             + "'maximum', or at the same time, and try again. " )
                                            .build();
             events.add( event );
         }
@@ -2026,10 +2031,13 @@ public class DeclarationValidator
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.ERROR )
                                            .setEventMessage( "The 'analysis_durations' interval is invalid because the "
-                                                             + "'maximum' value is less than the 'minimum_exclusive' "
-                                                             + "value. Please adjust the analysis durations to form a "
-                                                             + "valid time interval and try "
-                                                             + AGAIN )
+                                                             + "'maximum' value of '"
+                                                             + analysisDurations.maximum()
+                                                             + "' is less than the 'minimum_exclusive' "
+                                                             + "value of '"
+                                                             + analysisDurations.minimumExclusive()
+                                                             + "'. Please adjust the analysis durations to form a "
+                                                             + "valid time interval and try again." )
                                            .build();
             events.add( event );
         }
@@ -2132,7 +2140,7 @@ public class DeclarationValidator
                                                                                   .getNanos() );
 
             // No downscaling
-            if ( evaluationDuration.compareTo( sourceDuration ) <= 0 )
+            if ( evaluationDuration.compareTo( sourceDuration ) < 0 )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
@@ -2141,7 +2149,8 @@ public class DeclarationValidator
                                                                  + orientation
                                                                  + " dataset is smaller than the evaluation "
                                                                  + "'time_scale', which is not allowed. Please "
-                                                                 + "increase the evaluation 'time_scale' and try again." )
+                                                                 + "increase the evaluation 'time_scale' and try "
+                                                                 + AGAIN )
                                                .build();
                 events.add( event );
             }
@@ -2179,10 +2188,7 @@ public class DeclarationValidator
                                                     timeScale.getPeriod()
                                                              .getNanos() );
 
-            if ( duration.compareTo( INSTANTANEOUS_DURATION ) <= 0 )
-            {
-                return true;
-            }
+            return duration.compareTo( INSTANTANEOUS_DURATION ) <= 0;
         }
 
         return timeScale.getStartDay() == timeScale.getEndDay()

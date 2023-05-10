@@ -1,12 +1,12 @@
 observed:
-  sources:
+  sources: 
     - data/CKLN6_STG.xml
   variable:
     name: STG
     label: STAGE
   type: observations
 predicted:
-  sources:
+  sources: 
     - data/CKLN6_HEFS_STG_forecasts.tgz
   variable:
     name: SSTG
@@ -30,13 +30,14 @@ time_scale:
   unit: hours
 classifier_thresholds: [0.1, 0.3, 0.5, 0.7, 0.9]
 threshold_service:
-  uri: file:/thresholds/scenario802/thresholds.json
+  uri: thresholds/scenario802/thresholds.json
   parameter: stage
   provider: NWS-NRLDB
   missing_value: -999.0
   feature_name_from: observed
 metrics:
   - contingency table
+decimal_format: '#0.000000'
 output_formats:
   - csv
   - pairs

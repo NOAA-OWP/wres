@@ -1,11 +1,11 @@
 observed:
   sources:
-    - uri: data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard
-      time_zone_offset: '-0600'
-      time_scale:
-        function: mean
-        period: 1
-        unit: seconds
+    - data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard
+  time_zone_offset: '-0600'
+  time_scale:
+    function: mean
+    period: 1
+    unit: seconds
   variable: QINE
   label: Observations
 predicted:
@@ -15,12 +15,12 @@ predicted:
   label: Operational Single-Valued Forecasts
 baseline:
   sources:
-    - uri: data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard
-      time_zone_offset: '-0600'
-      time_scale:
-        function: mean
-        period: 1
-        unit: seconds
+    - data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard
+  time_zone_offset: '-0600'
+  time_scale:
+    function: mean
+    period: 1
+    unit: seconds
   variable: QINE
   type: observations
   persistence: 1
@@ -48,6 +48,7 @@ metrics:
   - mean square error skill score
   - mean error
   - sample size
+decimal_format: '#0.000000'
 output_formats:
   - csv
   - pairs

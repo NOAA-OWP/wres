@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.config.MetricConstants;
@@ -42,6 +43,7 @@ import wres.config.yaml.components.ThresholdService;
 import wres.config.yaml.components.ThresholdServiceBuilder;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimePools;
+import wres.config.yaml.components.TimeScaleBuilder;
 import wres.config.yaml.components.TimeScaleLenience;
 import wres.config.yaml.components.UnitAlias;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
@@ -1071,6 +1073,105 @@ class DeclarationValidatorTest
                                                                         + "'baseline' dataset, which is not allowed",
                                                                         StatusLevel.ERROR ) )
         );
+    }
+
+    @Test
+    void testNoValidationErrorAboutClassifierThresholdsWhenMetricParametersAreSupplied()
+    {
+        Metric first =
+                MetricBuilder.builder()
+                             .name( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE )
+                             .parameters( MetricParametersBuilder.builder()
+                                                                 .ensembleAverageType( Pool.EnsembleAverageType.MEAN )
+                                                                 .build() )
+                             .build();
+
+        Set<Metric> metrics = Set.of( first );
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .metrics( metrics )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertFalse( DeclarationValidatorTest.contains( events,
+                                                        "declaration contains one or more "
+                                                        + "'classifier_thresholds'",
+                                                        StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testInstantaneousTimeScaleForLeftSourceProducesNoErrors()
+    {
+        Dataset left = DatasetBuilder.builder( this.defaultDataset )
+                                     .timeScale( TimeScaleBuilder.TimeScale( TimeScale.newBuilder()
+                                                                                      .setPeriod( Duration.newBuilder()
+                                                                                                          .setSeconds( 1 ) )
+                                                                                      .build() ) )
+                                     .build();
+
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( left )
+                                            .right( this.defaultDataset )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertFalse( DeclarationValidatorTest.contains( events,
+                                                        "cannot be instantaneous",
+                                                        StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testNonInstantaneousEvaluationTimeScaleProducesNoErrors()
+    {
+        wres.config.yaml.components.TimeScale timeScale =
+                TimeScaleBuilder.TimeScale( TimeScale.newBuilder()
+                                                     .setPeriod( Duration.newBuilder()
+                                                                         .setSeconds( 24 * 60 * 60 ) )
+                                                     .build() );
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .timeScale( timeScale )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertFalse( DeclarationValidatorTest.contains( events,
+                                                        "cannot be instantaneous",
+                                                        StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testThresholdServiceAllowsForValidationWithoutErrorWhenMetricsRequireValueThresholds()
+    {
+        Metric first =
+                MetricBuilder.builder()
+                             .name( MetricConstants.PROBABILITY_OF_DETECTION )
+                             .build();
+
+        Set<Metric> metrics = Set.of( first );
+        ThresholdService service = ThresholdServiceBuilder.builder()
+                                                          .uri( URI.create( "http://foo.bar" ) )
+                                                          .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .thresholdService( service )
+                                            .metrics( metrics )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertFalse( DeclarationValidatorTest.contains( events,
+                                                        "'value_thresholds' but none were found",
+                                                        StatusLevel.ERROR ) );
     }
 
     /**
