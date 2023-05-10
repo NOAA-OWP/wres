@@ -7,6 +7,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Set;
 
+import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,8 +40,10 @@ import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.SpatialMask;
+import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdService;
 import wres.config.yaml.components.ThresholdServiceBuilder;
+import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimePools;
 import wres.config.yaml.components.TimeScaleBuilder;
@@ -51,6 +54,7 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLe
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.GeometryTuple;
 
@@ -1172,6 +1176,126 @@ class DeclarationValidatorTest
         assertFalse( DeclarationValidatorTest.contains( events,
                                                         "'value_thresholds' but none were found",
                                                         StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testFeaturefulThresholdsNotCorrelatedWithFeaturesToEvaluateProducesErrors()
+    {
+        Geometry featureFoo = Geometry.newBuilder()
+                                      .setName( "foo" )
+                                      .build();
+        Geometry featureBar = Geometry.newBuilder()
+                                      .setName( "bar" )
+                                      .build();
+        Geometry featureBaz = Geometry.newBuilder()
+                                      .setName( "baz" )
+                                      .build();
+
+        GeometryTuple tupleFooBaz = GeometryTuple.newBuilder()
+                                                 .setLeft( featureFoo )
+                                                 .setRight( featureBaz )
+                                                 .build();
+        GeometryTuple tupleFooBar = GeometryTuple.newBuilder()
+                                                 .setLeft( featureFoo )
+                                                 .setRight( featureBar )
+                                                 .build();
+        GeometryTuple tupleBarBaz = GeometryTuple.newBuilder()
+                                                 .setLeft( featureBar )
+                                                 .setRight( featureBaz )
+                                                 .build();
+
+        Set<GeometryTuple> features = Set.of( tupleFooBaz, tupleFooBar, tupleBarBaz );
+
+        Threshold one = Threshold.newBuilder()
+                                 .setLeftThresholdValue( DoubleValue.of( 1.0 ) )
+                                 .build();
+        wres.config.yaml.components.Threshold wrappedOne = ThresholdBuilder.builder()
+                                                                           .threshold( one )
+                                                                           .feature( featureFoo )
+                                                                           .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                           .type( ThresholdType.VALUE )
+                                                                           .build();
+        Threshold two = Threshold.newBuilder()
+                                 .setLeftThresholdValue( DoubleValue.of( 2.0 ) )
+                                 .build();
+        wres.config.yaml.components.Threshold wrappedTwo = ThresholdBuilder.builder()
+                                                                           .threshold( two )
+                                                                           .feature( featureBaz )
+                                                                           .featureNameFrom( DatasetOrientation.LEFT )
+                                                                           .type( ThresholdType.VALUE )
+                                                                           .build();
+        Threshold three = Threshold.newBuilder()
+                                   .setLeftThresholdValue( DoubleValue.of( 2.0 ) )
+                                   .build();
+        wres.config.yaml.components.Threshold wrappedThree = ThresholdBuilder.builder()
+                                                                             .threshold( three )
+                                                                             .feature( featureBar )
+                                                                             .featureNameFrom( DatasetOrientation.LEFT )
+                                                                             .type( ThresholdType.VALUE )
+                                                                             .build();
+
+        Threshold four = Threshold.newBuilder()
+                                  .setLeftThresholdValue( DoubleValue.of( 2.0 ) )
+                                  .build();
+        Geometry featureQux = Geometry.newBuilder()
+                                      .setName( "qux" )
+                                      .build();
+        wres.config.yaml.components.Threshold wrappedFour = ThresholdBuilder.builder()
+                                                                            .threshold( four )
+                                                                            .feature( featureQux )
+                                                                            .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                            .type( ThresholdType.VALUE )
+                                                                            .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .features( new Features( features ) )
+                                            .valueThresholds( Set.of( wrappedOne,
+                                                                      wrappedTwo,
+                                                                      wrappedThree,
+                                                                      wrappedFour ) )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "The missing features are: [baz]",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "The missing features are: [qux, foo]",
+                                                                        StatusLevel.ERROR ) )
+        );
+    }
+
+    @Test
+    void testFeaturefulThresholdsAndNoFeaturesProducesWarning()
+    {
+        Geometry featureFoo = Geometry.newBuilder()
+                                      .setName( "foo" )
+                                      .build();
+        Threshold one = Threshold.newBuilder()
+                                 .setLeftThresholdValue( DoubleValue.of( 1.0 ) )
+                                 .build();
+        wres.config.yaml.components.Threshold wrappedOne = ThresholdBuilder.builder()
+                                                                           .threshold( one )
+                                                                           .feature( featureFoo )
+                                                                           .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                           .type( ThresholdType.VALUE )
+                                                                           .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .valueThresholds( Set.of( wrappedOne ) )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "the featureful thresholds cannot be "
+                                                       + "validated until then",
+                                                       StatusLevel.WARN ) );
     }
 
     /**
