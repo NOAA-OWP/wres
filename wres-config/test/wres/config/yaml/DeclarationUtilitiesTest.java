@@ -2004,7 +2004,8 @@ class DeclarationUtilitiesTest
                                          .build();
         wres.config.yaml.components.Threshold wrapped = ThresholdBuilder.builder()
                                                                         .threshold( probability )
-                                                                        .type( ThresholdType.PROBABILITY ).build();
+                                                                        .type( ThresholdType.PROBABILITY )
+                                                                        .build();
         EvaluationDeclaration topLevelEvaluation =
                 EvaluationDeclarationBuilder.builder()
                                             .probabilityThresholds( Set.of( wrapped ) )
@@ -2101,5 +2102,49 @@ class DeclarationUtilitiesTest
                                        DeclarationUtilities.getReferenceTimeType( DataType.ENSEMBLE_FORECASTS ) ),
                    () -> assertEquals( ReferenceTime.ReferenceTimeType.T0,
                                        DeclarationUtilities.getReferenceTimeType( DataType.SINGLE_VALUED_FORECASTS ) ) );
+    }
+
+    @Test
+    void testGetThresholds()
+    {
+        Threshold one = Threshold.newBuilder()
+                                 .setLeftThresholdValue( DoubleValue.of( 1.0 ) )
+                                 .build();
+        wres.config.yaml.components.Threshold wrappedOne = ThresholdBuilder.builder()
+                                                                           .threshold( one )
+                                                                           .type( ThresholdType.VALUE )
+                                                                           .build();
+        Threshold two = Threshold.newBuilder()
+                                 .setLeftThresholdValue( DoubleValue.of( 2.0 ) )
+                                 .build();
+        wres.config.yaml.components.Threshold wrappedTwo = ThresholdBuilder.builder()
+                                                                           .threshold( two )
+                                                                           .type( ThresholdType.VALUE )
+                                                                           .build();
+        Threshold three = Threshold.newBuilder()
+                                   .setLeftThresholdValue( DoubleValue.of( 3.0 ) )
+                                   .build();
+        wres.config.yaml.components.Threshold wrappedThree = ThresholdBuilder.builder()
+                                                                             .threshold( three )
+                                                                             .type( ThresholdType.VALUE )
+                                                                             .build();
+
+        Metric metric = MetricBuilder.builder()
+                                     .parameters( MetricParametersBuilder.builder()
+                                                                         .valueThresholds( Set.of( wrappedThree ) )
+                                                                         .build() )
+                                     .build();
+
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .valueThresholds( Set.of( wrappedOne ) )
+                                            .thresholdSets( Set.of( wrappedTwo ) )
+                                            .metrics( Set.of( metric ) )
+                                            .build();
+
+        Set<wres.config.yaml.components.Threshold> actual = DeclarationUtilities.getThresholds( evaluation );
+        Set<wres.config.yaml.components.Threshold> expected = Set.of( wrappedOne, wrappedTwo, wrappedThree );
+
+        assertEquals( expected, actual );
     }
 }

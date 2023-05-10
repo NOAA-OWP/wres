@@ -255,7 +255,8 @@ public class DeclarationUtilities
     }
 
     /**
-     * Returns the features from all contexts in the declaration.
+     * Returns the features from all contexts in the declaration that declare features explicitly. Does not consider
+     * features that are declared implicitly, such as those associated with featureful thresholds.
      * @param declaration the declaration
      * @return the features from all contexts
      * @throws NullPointerException if the input is null
@@ -285,6 +286,46 @@ public class DeclarationUtilities
         }
 
         return Collections.unmodifiableSet( tuples );
+    }
+
+    /**
+     * Returns the thresholds from all contexts in the declaration.
+     * @param declaration the declaration
+     * @return the features from all contexts
+     * @throws NullPointerException if the input is null
+     */
+
+    public static Set<Threshold> getThresholds( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration );
+
+        Set<Threshold> thresholds = new HashSet<>();
+
+        thresholds.addAll( declaration.valueThresholds() );
+        thresholds.addAll( declaration.probabilityThresholds() );
+        thresholds.addAll( declaration.classifierThresholds() );
+        thresholds.addAll( declaration.thresholdSets() );
+        // Map from metric parameters to thresholds
+        Function<MetricParameters, Set<Threshold>> parMapper = parameters ->
+        {
+            Set<Threshold> metricThresholds = new HashSet<>();
+            metricThresholds.addAll( parameters.classifierThresholds() );
+            metricThresholds.addAll( parameters.valueThresholds() );
+            metricThresholds.addAll( parameters.probabilityThresholds() );
+            return metricThresholds;
+        };
+
+        Set<Threshold> byMetric = declaration.metrics()
+                                             .stream()
+                                             .map( Metric::parameters )
+                                             .filter( Objects::nonNull )
+                                             .map( parMapper )
+                                             .flatMap( Set::stream )
+                                             .collect( Collectors.toSet() );
+
+        thresholds.addAll( byMetric );
+
+        return Collections.unmodifiableSet( thresholds );
     }
 
     /**

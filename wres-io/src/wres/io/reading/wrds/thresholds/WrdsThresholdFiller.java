@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -155,6 +156,9 @@ public class WrdsThresholdFiller
                                                                               featureAuthority );
 
         LOGGER.trace( "Read the following thresholds from WRDS: {}.", thresholds );
+
+        // Validate the thresholds against the features
+        WrdsThresholdFiller.validate( featureNames, thresholds, featureAuthority );
 
         // Adjust the declaration and return it
         return WrdsThresholdFiller.getAdjustedDeclaration( evaluation,
@@ -377,13 +381,13 @@ public class WrdsThresholdFiller
     }
 
     /**
-     * Acquires the feature for the specified  data orientation.
+     * Acquires the feature for the specified data orientation.
      * @param featureTuple the feature tuple
      * @param orientation the data orientation
      * @return the feature
      */
 
-    public static Geometry getFeatureFor( GeometryTuple featureTuple, DatasetOrientation orientation )
+    private static Geometry getFeatureFor( GeometryTuple featureTuple, DatasetOrientation orientation )
     {
         return switch ( orientation )
                 {
@@ -391,6 +395,90 @@ public class WrdsThresholdFiller
                     case RIGHT -> featureTuple.getRight();
                     case BASELINE -> featureTuple.getBaseline();
                 };
+    }
+
+    /**
+     * Validates the thresholds against features
+     * @param featureNames the feature names
+     * @param thresholds the thresholds
+     * @param featureAuthority the feature authority
+     */
+
+    private static void validate( Map<String, String> featureNames,
+                                  Map<WrdsLocation, Set<Threshold>> thresholds,
+                                  FeatureAuthority featureAuthority )
+    {
+        // No external thresholds declared
+        if ( thresholds.isEmpty() )
+        {
+            LOGGER.debug( "No external thresholds to validate." );
+
+            return;
+        }
+
+        LOGGER.debug( "Attempting to reconcile the {} features to evaluate with the {} features for which external "
+                      + "thresholds are available.",
+                      featureNames.size(),
+                      thresholds.size() );
+
+        // Identify the features that have thresholds
+        Set<WrdsLocation> thresholdFeatures = thresholds.keySet();
+        Set<String> thresholdFeatureNames =
+                thresholdFeatures.stream()
+                                 .map( n -> WrdsLocation.getNameForAuthority( featureAuthority, n ) )
+                                 .collect( Collectors.toSet() );
+        Set<String> featureNamesWithThresholds = new TreeSet<>( featureNames.keySet() );
+        featureNamesWithThresholds.retainAll( thresholdFeatureNames );
+        Set<String> featureNamesWithoutThresholds = new TreeSet<>( featureNames.keySet() );
+        featureNamesWithoutThresholds.removeAll( thresholdFeatureNames );
+
+        Set<String> thresholdNamesWithoutFeatures = new TreeSet<>( thresholdFeatureNames );
+        thresholdNamesWithoutFeatures.removeAll( featureNames.keySet() );
+
+        if ( ( !featureNamesWithoutThresholds.isEmpty() || !thresholdNamesWithoutFeatures.isEmpty() )
+             && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}",
+                         "While attempting to reconcile the features to ",
+                         "evaluate with the features for which thresholds ",
+                         "are available, found ",
+                         featureNames.size(),
+                         " features to evaluate and ",
+                         featureNamesWithThresholds.size(),
+                         " features for which thresholds were found, but ",
+                         featureNamesWithoutThresholds.size(),
+                         " features for which thresholds could not be ",
+                         "reconciled with features to evaluate. Features without ",
+                         "thresholds will be skipped. If the number of features ",
+                         "without thresholds is larger than expected, ensure that ",
+                         "the source of feature names (featureNameFrom) is properly ",
+                         "declared for the external thresholds. The ",
+                         "declared features without thresholds are: ",
+                         featureNamesWithoutThresholds,
+                         ". The feature names associated with thresholds for which no features were declared are: ",
+                         thresholdNamesWithoutFeatures );
+        }
+
+        if ( featureNamesWithoutThresholds.size() == featureNames.size() )
+        {
+            throw new ThresholdReadingException( "Failed to discover any features for which thresholds were "
+                                                 + "available from the external sources declared. Add some thresholds "
+                                                 + "for one or more of the declared features, declare some features "
+                                                 + "for which thresholds are available or remove the declaration of "
+                                                 + "thresholds altogether. The names of features encountered without "
+                                                 + "thresholds are: "
+                                                 + thresholdNamesWithoutFeatures
+                                                 + ". Thresholds were not discovered for any of the following declared "
+                                                 + "features: "
+                                                 + featureNamesWithoutThresholds
+                                                 + "." );
+        }
+
+        LOGGER.info( "Discovered {} features to evaluate for which external thresholds were available and {} "
+                     + "features with external thresholds that could not be evaluated (e.g., because there was "
+                     + "no data for these features).",
+                     featureNamesWithThresholds.size(),
+                     thresholdNamesWithoutFeatures.size() );
     }
 
     /**

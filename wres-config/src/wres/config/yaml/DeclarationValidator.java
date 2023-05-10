@@ -36,6 +36,7 @@ import wres.config.yaml.components.Season;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.SpatialMask;
+import wres.config.yaml.components.Threshold;
 import wres.config.yaml.components.ThresholdService;
 import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimeInterval;
@@ -258,7 +259,7 @@ public class DeclarationValidator
         // Check that the spatial mask is valid
         List<EvaluationStatusEvent> mask = DeclarationValidator.spatialMaskIsValid( declaration );
         events.addAll( mask );
-        // Check that the feature declaration is valid
+        // Check that the feature declaration is valid in all contexts
         List<EvaluationStatusEvent> features = DeclarationValidator.featuresAreValid( declaration );
         events.addAll( features );
         // Check that the metrics declaration is valid
@@ -470,49 +471,23 @@ public class DeclarationValidator
 
     private static boolean hasThresholdsOfThisType( ThresholdType thresholdType, EvaluationDeclaration declaration )
     {
+        Set<Threshold> thresholds = DeclarationUtilities.getThresholds( declaration );
+
         if ( thresholdType == ThresholdType.PROBABILITY )
         {
-            return !declaration.probabilityThresholds()
-                               .isEmpty()
-                   || declaration.thresholdSets()
-                                 .stream()
-                                 .anyMatch( next -> next.type() == ThresholdType.PROBABILITY )
-                   || declaration.metrics()
-                                 .stream()
-                                 .map( Metric::parameters )
-                                 .filter( Objects::nonNull )
-                                 .anyMatch( next -> !next.probabilityThresholds()
-                                                         .isEmpty() );
+            return thresholds.stream()
+                             .anyMatch( n -> n.type() == ThresholdType.PROBABILITY );
         }
         else if ( thresholdType == ThresholdType.PROBABILITY_CLASSIFIER )
         {
-            return !declaration.classifierThresholds()
-                               .isEmpty()
-                   || declaration.thresholdSets()
-                                 .stream()
-                                 .anyMatch( next -> next.type() == ThresholdType.PROBABILITY_CLASSIFIER )
-                   || declaration.metrics()
-                                 .stream()
-                                 .map( Metric::parameters )
-                                 .filter( Objects::nonNull )
-                                 .anyMatch( next -> !next.classifierThresholds()
-                                                         .isEmpty() );
+            return thresholds.stream()
+                             .anyMatch( n -> n.type() == ThresholdType.PROBABILITY_CLASSIFIER );
         }
         else if ( thresholdType == ThresholdType.VALUE )
         {
-            return !declaration.valueThresholds()
-                               .isEmpty()
-                   || declaration.thresholdSets()
-                                 .stream()
-                                 .anyMatch( next -> next.type() == ThresholdType.VALUE )
-                   // Currently supported services only return value thresholds
-                   || Objects.nonNull( declaration.thresholdService() )
-                   || declaration.metrics()
-                                 .stream()
-                                 .map( Metric::parameters )
-                                 .filter( Objects::nonNull )
-                                 .anyMatch( next -> !next.valueThresholds()
-                                                         .isEmpty() );
+            return Objects.nonNull( declaration.thresholdService() )
+                   || thresholds.stream()
+                                .anyMatch( n -> n.type() == ThresholdType.VALUE );
         }
         else
         {
@@ -1085,8 +1060,13 @@ public class DeclarationValidator
                 DeclarationValidator.checkBaselinePresentWhenFeaturesIncludeBaseline( declaration );
         events.addAll( baseline );
         // Check that a features service is present when resolving sparse features with different authorities
-        List<EvaluationStatusEvent> featureService = checkFeatureServicePresentIfRequired( declaration );
+        List<EvaluationStatusEvent> featureService =
+                DeclarationValidator.checkFeatureServicePresentIfRequired( declaration );
         events.addAll( featureService );
+        // Check that any featureful thresholds correlate with declared features
+        List<EvaluationStatusEvent> thresholds =
+                DeclarationValidator.validateFeaturefulThresholds( declaration );
+        events.addAll( thresholds );
 
         return Collections.unmodifiableList( events );
     }
@@ -1825,6 +1805,119 @@ public class DeclarationValidator
                                        .build();
 
         return List.of( event );
+    }
+
+    /**
+     * Checks that featureful thresholds are correlated with declared features.
+     * @param declaration the declaration
+     * @return any validation events encountered
+     */
+
+    private static List<EvaluationStatusEvent> validateFeaturefulThresholds( EvaluationDeclaration declaration )
+    {
+        Set<GeometryTuple> features = DeclarationUtilities.getFeatures( declaration );
+        Set<Threshold> thresholds = DeclarationUtilities.getThresholds( declaration );
+
+        // Are there featureful thresholds?
+        Set<Threshold> featureful = thresholds.stream()
+                                              .filter( n -> Objects.nonNull( n.feature() ) )
+                                              .collect( Collectors.toSet() );
+        if ( featureful.isEmpty() )
+        {
+            LOGGER.debug( "No featureful thresholds were available to validate." );
+            return List.of();
+        }
+
+        // Must be lenient if there are no features, because they can be obtained on ingest
+        if ( features.isEmpty() )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( "The evaluation declared "
+                                                             + featureful.size()
+                                                             + "thresholds with explicit features, but no "
+                                                             + "features to evaluate. An attempt will be made to "
+                                                             + "identify features from relevant data sources or "
+                                                             + "services, but the featureful thresholds cannot be "
+                                                             + "validated until then." )
+                                           .build();
+            return List.of( event );
+        }
+
+        List<EvaluationStatusEvent> leftEvents =
+                DeclarationValidator.validateFeaturefulThresholds( featureful,
+                                                                   features,
+                                                                   DatasetOrientation.LEFT );
+        List<EvaluationStatusEvent> events = new ArrayList<>( leftEvents );
+        List<EvaluationStatusEvent> rightEvents =
+                DeclarationValidator.validateFeaturefulThresholds( featureful,
+                                                                   features,
+                                                                   DatasetOrientation.RIGHT );
+        events.addAll( rightEvents );
+
+        if ( DeclarationUtilities.hasBaseline( declaration ) )
+        {
+            List<EvaluationStatusEvent> baselineEvents =
+                    DeclarationValidator.validateFeaturefulThresholds( featureful,
+                                                                       features,
+                                                                       DatasetOrientation.BASELINE );
+            events.addAll( baselineEvents );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the featureful thresholds for the supplied orientation can be correlated with features.
+     * @param thresholds the thresholds to correlate
+     * @param features the features to correlate
+     * @param orientation the orientation of the feature names
+     * @return any validation events encountered
+     */
+
+    private static List<EvaluationStatusEvent> validateFeaturefulThresholds( Set<Threshold> thresholds,
+                                                                             Set<GeometryTuple> features,
+                                                                             DatasetOrientation orientation )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Explicit features and featureful thresholds. Every featureful threshold must be correlated with a feature
+        Set<String> thresholdsWithNames = thresholds.stream()
+                                                    .filter( n -> n.featureNameFrom() == orientation )
+                                                    .map( Threshold::feature )
+                                                    .map( wres.statistics.generated.Geometry::getName )
+                                                    .collect( Collectors.toSet() );
+
+        Set<String> names = DeclarationUtilities.getFeatureNamesFor( features, orientation );
+
+        // Any threshold feature names without corresponding feature names?
+        thresholdsWithNames.removeAll( names );
+
+        if ( !thresholdsWithNames.isEmpty() )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "The evaluation declared "
+                                                             + thresholdsWithNames.size()
+                                                             + " thresholds with features whose "
+                                                             + "'feature_name_from' is '"
+                                                             + orientation
+                                                             + "', but "
+                                                             + thresholdsWithNames.size()
+                                                             + " of the features associated with these thresholds "
+                                                             + "had no corresponding feature to evaluate. Please "
+                                                             + "remove the thresholds for these features, add the "
+                                                             + "corresponding features or fix the threshold "
+                                                             + "declaration. The missing features are: "
+                                                             + thresholdsWithNames
+                                                             + "." )
+                                           .build();
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
     }
 
     /**

@@ -618,6 +618,79 @@ class DeclarationInterpolatorTest
     }
 
     @Test
+    void testInterpolationOfFeaturesFromFeaturefulThresholds()
+    {
+        Geometry featureFoo = Geometry.newBuilder()
+                                      .setName( "foo" )
+                                      .build();
+        Geometry featureBar = Geometry.newBuilder()
+                                      .setName( "bar" )
+                                      .build();
+        Geometry featureBaz = Geometry.newBuilder()
+                                      .setName( "baz" )
+                                      .build();
+
+        Threshold one = Threshold.newBuilder()
+                                 .setLeftThresholdValue( DoubleValue.of( 1.0 ) )
+                                 .build();
+        wres.config.yaml.components.Threshold wrappedOne = ThresholdBuilder.builder()
+                                                                           .threshold( one )
+                                                                           .feature( featureFoo )
+                                                                           .featureNameFrom( DatasetOrientation.RIGHT )
+                                                                           .type( ThresholdType.VALUE )
+                                                                           .build();
+        Threshold two = Threshold.newBuilder()
+                                 .setLeftThresholdValue( DoubleValue.of( 2.0 ) )
+                                 .build();
+        wres.config.yaml.components.Threshold wrappedTwo = ThresholdBuilder.builder()
+                                                                           .threshold( two )
+                                                                           .feature( featureBaz )
+                                                                           .featureNameFrom( DatasetOrientation.LEFT )
+                                                                           .type( ThresholdType.VALUE )
+                                                                           .build();
+        Threshold three = Threshold.newBuilder()
+                                   .setLeftThresholdValue( DoubleValue.of( 2.0 ) )
+                                   .build();
+        wres.config.yaml.components.Threshold wrappedThree = ThresholdBuilder.builder()
+                                                                             .threshold( three )
+                                                                             .feature( featureBar )
+                                                                             .featureNameFrom( DatasetOrientation.LEFT )
+                                                                             .type( ThresholdType.VALUE )
+                                                                             .build();
+
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .valueThresholds( Set.of( wrappedOne,
+                                                                      wrappedTwo,
+                                                                      wrappedThree ) )
+                                            .build();
+
+        EvaluationDeclaration actualEvaluation = DeclarationInterpolator.interpolate( declaration, false );
+
+        Set<GeometryTuple> actual = actualEvaluation.features()
+                                                    .geometries();
+
+        GeometryTuple featureFooFoo = GeometryTuple.newBuilder()
+                                                   .setLeft( featureFoo )
+                                                   .setRight( featureFoo )
+                                                   .build();
+        GeometryTuple featureBarBar = GeometryTuple.newBuilder()
+                                                   .setLeft( featureBar )
+                                                   .setRight( featureBar )
+                                                   .build();
+        GeometryTuple featureBazBaz = GeometryTuple.newBuilder()
+                                                   .setLeft( featureBaz )
+                                                   .setRight( featureBaz )
+                                                   .build();
+
+        Set<GeometryTuple> expected = Set.of( featureFooFoo, featureBarBar, featureBazBaz );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testInterpolateTimeZoneOffsets()
     {
         Dataset left = DatasetBuilder.builder( this.observedDataset )
