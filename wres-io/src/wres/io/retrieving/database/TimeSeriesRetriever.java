@@ -699,7 +699,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         // Consistent with any declaration? If not, this is exceptional: #92404
         if ( Objects.nonNull( this.getDeclaredExistingTimeScale() )
-             && !this.getDeclaredExistingTimeScale().equalsOrInstantaneous( returnMe ) )
+             && !this.getDeclaredExistingTimeScale()
+                     .equalsOrInstantaneous( returnMe ) )
         {
             throw new DataAccessException( "The time scale information associated with a "
                                            + this.getDatasetOrientation()
@@ -1088,7 +1089,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     {
         // Add the clause
         if ( Objects.nonNull( lowerLead ) && Objects.nonNull( upperLead )
-             && Long.compare( lowerLead, upperLead ) == 0 )
+             && ( long ) lowerLead == upperLead )
         {
             this.addWhereOrAndClause( script, tabsIn, this.getLeadDurationColumnName() + " = ?", upperLead );
         }

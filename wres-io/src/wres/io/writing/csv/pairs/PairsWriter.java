@@ -51,16 +51,16 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  * <p>The {@link Path} is supplied on construction and no guarantee is made that anything is created at that 
  * {@link Path}. If nothing is created, then {@link #get()} will return the {@link Collections#emptySet()}.
  * 
- * <p>TODO: Add some additional qualification to the pairs, such as the left and right feature names (separately). However,
- * pairs are modeled as time-series of pairs, not pairs of time-series, so the time-series metadata only accommodates a
- * {@link Feature}, not a {@link FeatureTuple}. Currently, the time-series metadata contains the {@link Feature} 
- * associated with the evaluation subject or right-hand data only. There are various possible fixes. Ultimately, the 
- * thing abstracted by a time-series event has some metadata, so the most flexible approach would be to improve the 
- * modeling of that thing, i.e., of the pair, by adding a {@link FeatureTuple} to it. An alternative approach would be 
- * to model a {@code TimeSeriesOfPairs<L,R> extends TimeSeries<Pair<L,R>>} that composes the time-series of pairs, plus 
- * both sides of time-series metadata. However, this class would then need to consume a {@code PoolOfPairs<L, R>} that 
- * composed the {@code TimeSeriesOfPairs<L,R>}. Another alternative would be to replace the {@link Feature} within 
- * the {@link TimeSeriesMetadata} with a {@link FeatureTuple}.
+ * <p>TODO: Add some additional qualification to the pairs, such as the left and right feature names (separately).
+ * However, pairs are modeled as time-series of pairs, not pairs of time-series, so the time-series metadata only
+ * accommodates a {@link Feature}, not a {@link FeatureTuple}. Currently, the time-series metadata contains the
+ * {@link Feature} associated with the evaluation subject or right-hand data only. There are various possible fixes.
+ * Ultimately, the thing abstracted by a time-series event has some metadata, so the most flexible approach would be to
+ * improve the modeling of that thing, i.e., of the pair, by adding a {@link FeatureTuple} to it. An alternative
+ * approach would be to model a {@code TimeSeriesOfPairs<L,R> extends TimeSeries<Pair<L,R>>} that composes the
+ * time-series of pairs, plus both sides of time-series metadata. However, this class would then need to consume a
+ * {@code PoolOfPairs<L, R>} that composed the {@code TimeSeriesOfPairs<L,R>}. Another alternative would be to replace
+ * the {@link Feature} within the {@link TimeSeriesMetadata} with a {@link FeatureTuple}.
  * 
  * @param <L> the type of left data in the pairing
  * @param <R> the type of right data in the pairing
@@ -476,7 +476,7 @@ public abstract class PairsWriter<L, R>
     }
 
     /**
-     * Returns a shared instance of a {@link BufferedWriter}.
+     * Returns a shared instance of a {@link BufferedWriter}. Close with the overall writer by calling {@link #close()}.
      * @return a writer
      * @throws IOException if the writer cannot be constructed
      */
@@ -485,9 +485,10 @@ public abstract class PairsWriter<L, R>
     {
         if ( Objects.isNull( this.writer ) )
         {
-            this.getWriteLock().lock();
+            this.getWriteLock()
+                .lock();
 
-            try
+            try  // NOSONAR
             {
                 if ( this.getGzip() )
                 {
@@ -506,7 +507,8 @@ public abstract class PairsWriter<L, R>
             }
             finally
             {
-                this.getWriteLock().unlock();
+                this.getWriteLock()
+                    .unlock();
             }
         }
 

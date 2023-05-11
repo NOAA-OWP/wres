@@ -1459,7 +1459,8 @@ public final class TimeSeriesSlicer
 
     /**
      * Adjusts the earliest lead duration of the time window to account for the period associated with the desired time 
-     * scale in order to capture sufficient data for rescaling.
+     * scale in order to capture sufficient data for rescaling. If the time scale is instantaneous, no adjustment is
+     * made.
      * 
      * @param timeWindow the time window to adjust, required
      * @param desiredTimeScale the desired time scale, lenient if null (returns the input time window)
@@ -1469,6 +1470,13 @@ public final class TimeSeriesSlicer
     public static TimeWindowOuter adjustByTimeScalePeriod( TimeWindowOuter timeWindow, TimeScaleOuter desiredTimeScale )
     {
         Objects.requireNonNull( timeWindow );
+
+        if( Objects.nonNull( desiredTimeScale ) && desiredTimeScale.isInstantaneous() )
+        {
+            LOGGER.debug( "Not adjusting the time window of {} with the time scale because the time scale is "
+                          + "instantaneous.", timeWindow );
+            return timeWindow;
+        }
 
         TimeWindowOuter adjustedWindow = timeWindow;
         if ( !timeWindow.getEarliestLeadDuration().equals( TimeWindowOuter.DURATION_MIN )
