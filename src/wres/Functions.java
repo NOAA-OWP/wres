@@ -397,7 +397,7 @@ final class Functions
 
             try
             {
-                declaration = MultiDeclarationFactory.from( projectPath, FileSystems.getDefault(), true );
+                declaration = MultiDeclarationFactory.from( projectPath, FileSystems.getDefault(), true, true );
             }
             catch ( IOException ioe )
             {
@@ -483,6 +483,7 @@ final class Functions
                 // Unmarshal the configuration
                 MultiDeclarationFactory.from( pathOrDeclaration,
                                               FileSystems.getDefault(),
+                                              true,
                                               true );
 
                 LOGGER.info( "The supplied declaration is valid: '{}'.", pathOrDeclaration );

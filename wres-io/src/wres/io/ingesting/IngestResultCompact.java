@@ -136,12 +136,6 @@ class IngestResultCompact implements IngestResult
     }
 
     @Override
-    public boolean wasFoundAlready()
-    {
-        return this.foundAlready;
-    }
-
-    @Override
     public boolean requiresRetry()
     {
         return false;

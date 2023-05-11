@@ -49,12 +49,6 @@ public class IngestResultInMemory implements IngestResult
     }
 
     @Override
-    public boolean wasFoundAlready()
-    {
-        return true;
-    }
-
-    @Override
     public boolean requiresRetry()
     {
         return false;

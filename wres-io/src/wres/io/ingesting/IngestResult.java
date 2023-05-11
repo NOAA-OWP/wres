@@ -1,7 +1,6 @@
 package wres.io.ingesting;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import wres.config.yaml.components.DatasetOrientation;
 import wres.io.reading.DataSource;
@@ -30,12 +29,6 @@ public interface IngestResult
     DatasetOrientation getDatasetOrientation();
 
     /**
-     * Whether the data source existed already.
-     * @return True when the data source was already in existence.
-     */
-    boolean wasFoundAlready();
-
-    /**
      * Whether this data requires another try at ingest.
      * @return true when ingest needs to be retried.
      */
@@ -59,52 +52,6 @@ public interface IngestResult
      * @return Count of baseline dataset associations.
      */
     short getBaselineCount();
-
-
-    private static IngestResult of( DataSource dataSource,
-                                    long surrogateKey,
-                                    boolean foundAlready,
-                                    boolean requiresRetry )
-    {
-        if ( requiresRetry && !foundAlready )
-        {
-            throw new IllegalArgumentException( "If requiring retry, it must have been found already!" );
-        }
-
-        if ( requiresRetry )
-        {
-            return new IngestResultNeedingRetry( dataSource,
-                                                 surrogateKey );
-        }
-        else
-        {
-            return new IngestResultCompact( dataSource,
-                                            surrogateKey,
-                                            foundAlready );
-        }
-    }
-
-
-
-    /**
-     * Get an IngestResult using the configuration elements, for convenience
-     * @param dataSource the data source information
-     * @param surrogateKey The surrogate key of the source data.
-     * @param foundAlready true if found in the backing store, false otherwise
-     * @param requiresRetry true if this requires retry, false otherwise
-     * @return the IngestResult
-     */
-    private static IngestResult from( DataSource dataSource,
-                                      long surrogateKey,
-                                      boolean foundAlready,
-                                      boolean requiresRetry )
-    {
-        return IngestResult.of( dataSource,
-                                surrogateKey,
-                                foundAlready,
-                                requiresRetry );
-    }
-
 
     /**
      * List with a single IngestResult from the given config, hash, foundAlready
@@ -130,37 +77,34 @@ public interface IngestResult
     }
 
     /**
-     * Wrap a single item list of "already-found-in-backing-store" ingest result in
-     * a Future for easy consumption by the ingest classes.
+     * Get an IngestResult using the configuration elements, for convenience
      * @param dataSource the data source information
      * @param surrogateKey The surrogate key of the source data.
+     * @param foundAlready true if found in the backing store, false otherwise
      * @param requiresRetry true if this requires retry, false otherwise
-     * @return an immediately-returning Future
+     * @return the IngestResult
      */
-
-    static CompletableFuture<List<IngestResult>> fakeFutureSingleItemListFrom( DataSource dataSource,
-                                                                               long surrogateKey,
-                                                                               boolean requiresRetry )
+    private static IngestResult from( DataSource dataSource,
+                                      long surrogateKey,
+                                      boolean foundAlready,
+                                      boolean requiresRetry )
     {
-        return IngestResult.fakeFuturefrom( dataSource,
+        if ( requiresRetry && !foundAlready )
+        {
+            throw new IllegalArgumentException( "If requiring retry, it must have been found already!" );
+        }
+
+        if ( requiresRetry )
+        {
+            return new IngestResultNeedingRetry( dataSource,
+                                                 surrogateKey );
+        }
+        else
+        {
+            return new IngestResultCompact( dataSource,
                                             surrogateKey,
-                                            requiresRetry );
+                                            foundAlready );
+        }
     }
 
-
-    /**
-     * For convenience of those clients needing an immediately-returning Future
-     * this encapsulates an "already-found" IngestResult in a Future List.
-     */
-
-    private static CompletableFuture<List<IngestResult>> fakeFuturefrom( DataSource dataSource,
-                                                                         long surrogateKey,
-                                                                         boolean requiresRetry )
-    {
-        IngestResult results = IngestResult.from( dataSource,
-                                                  surrogateKey,
-                                                  true,
-                                                  requiresRetry );
-        return CompletableFuture.completedFuture( List.of( results ) );
-    }
 }

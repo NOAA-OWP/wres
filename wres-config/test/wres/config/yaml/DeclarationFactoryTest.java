@@ -1453,7 +1453,7 @@ class DeclarationFactoryTest
 
             Files.writeString( path, yaml );
 
-            EvaluationDeclaration actual = DeclarationFactory.from( pathString, fileSystem, false );
+            EvaluationDeclaration actual = DeclarationFactory.from( pathString, fileSystem, false, false );
 
             EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
                                                                          .left( this.observedDataset )

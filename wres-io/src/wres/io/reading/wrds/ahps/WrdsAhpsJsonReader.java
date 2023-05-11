@@ -344,7 +344,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
             datetimes.put( ReferenceTimeType.ISSUED_TIME, issuedDateTime );
         }
 
-        // Get the time scale information, if available
+        // Get the time-scale information, if available
         TimeScaleOuter timeScale = TimeScaleFromParameterCodes.getTimeScale( forecast.getParameterCodes(), uri );
         String measurementUnit = members[0].getUnits();
         if ( Objects.isNull( measurementUnit ) && Objects.nonNull( forecast.getUnits() ) )

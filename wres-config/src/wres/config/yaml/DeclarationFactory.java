@@ -284,7 +284,8 @@ public class DeclarationFactory
      * @see #from(String)
      * @param yamlOrPath the YAML string or a path to a readable file that contains a YAML string
      * @param fileSystem a file system to use when reading a path, optional
-     * @param interpolateAndValidate is true to interpolate any missing declaration and then validate the declaration
+     * @param interpolate is true to interpolate any missing declaration
+     * @param validate is true to validate the declaration
      * @return an evaluation declaration
      * @throws IllegalStateException if the project declaration schema could not be found on the classpath
      * @throws IOException if the schema could not be read
@@ -296,7 +297,8 @@ public class DeclarationFactory
 
     public static EvaluationDeclaration from( String yamlOrPath,
                                               FileSystem fileSystem,
-                                              boolean interpolateAndValidate ) throws IOException
+                                              boolean interpolate,
+                                              boolean validate ) throws IOException
     {
         Objects.requireNonNull( yamlOrPath );
 
@@ -348,11 +350,13 @@ public class DeclarationFactory
         }
 
         // Interpolate and validate?
-        if ( interpolateAndValidate )
+        // Interpolate any missing declaration first because this simplifies validation when both are requested
+        if ( interpolate )
         {
-            // Interpolate any missing declaration first because this simplifies validation
             declaration = DeclarationInterpolator.interpolate( declaration, true );
-            // Validate
+        }
+        if ( validate )
+        {
             DeclarationValidator.validate( declaration, true );
         }
 

@@ -116,7 +116,7 @@ public class ProjectService
                                                  brokerConnections );
 
             EvaluationDeclaration declaration =
-                    MultiDeclarationFactory.from( rawDeclaration, FileSystems.getDefault(), true );
+                    MultiDeclarationFactory.from( rawDeclaration, FileSystems.getDefault(), true, true );
 
             // Guarantee a positive number. Using Math.abs would open up failure
             // in edge cases. A while loop seems complex. Thanks to Ted Hopp
