@@ -259,6 +259,7 @@ public class WresJobInput
             // Parse the declaration
             EvaluationDeclaration oldDeclaration = MultiDeclarationFactory.from( declaration,
                                                                                  FileSystems.getDefault(),
+                                                                                 false,
                                                                                  false );
 
             // Add the data sources

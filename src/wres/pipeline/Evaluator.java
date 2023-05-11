@@ -102,6 +102,7 @@ public class Evaluator
         {
             declaration = MultiDeclarationFactory.from( declarationOrPath,
                                                         FileSystems.getDefault(),
+                                                        true,
                                                         true );
         }
         catch ( IOException e )

@@ -92,7 +92,7 @@ class MultiDeclarationFactoryTest
                     </outputs>
                 </project>""";
 
-        EvaluationDeclaration actual = MultiDeclarationFactory.from( oldLanguageString, null, false );
+        EvaluationDeclaration actual = MultiDeclarationFactory.from( oldLanguageString, null, false, false );
 
         Metric metric = MetricBuilder.builder()
                                      .name( MetricConstants.SAMPLE_SIZE )
@@ -130,7 +130,7 @@ class MultiDeclarationFactoryTest
                     - another_file.csv
                   type: ensemble forecasts""";
 
-        EvaluationDeclaration actual = MultiDeclarationFactory.from( yaml, null, false );
+        EvaluationDeclaration actual = MultiDeclarationFactory.from( yaml, null, false, false );
 
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
                                                                      .left( this.observedDataset )
@@ -162,7 +162,7 @@ class MultiDeclarationFactoryTest
 
             Files.writeString( path, yaml );
 
-            EvaluationDeclaration actual = MultiDeclarationFactory.from( pathString, fileSystem, false );
+            EvaluationDeclaration actual = MultiDeclarationFactory.from( pathString, fileSystem, false, false );
 
             EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
                                                                          .left( this.observedDataset )

@@ -61,7 +61,8 @@ public class MultiDeclarationFactory
      *
      * @param declarationOrPath the string containing declaration or a path
      * @param fileSystem a file system to use when reading a path, optional
-     * @param interpolateAndValidate is true to validate the declaration and interpolate missing declaration
+     * @param interpolate is true to interpolate any missing declaration from the other declaration supplied
+     * @param validate is true to validate the declaration
      * @return an evaluation declaration
      * @throws IllegalStateException if the project declaration schema could not be found on the classpath
      * @throws IOException if the schema could not be read
@@ -72,7 +73,8 @@ public class MultiDeclarationFactory
 
     public static EvaluationDeclaration from( String declarationOrPath,
                                               FileSystem fileSystem,
-                                              boolean interpolateAndValidate ) throws IOException
+                                              boolean interpolate,
+                                              boolean validate ) throws IOException
     {
         Objects.requireNonNull( declarationOrPath );
 
@@ -123,17 +125,18 @@ public class MultiDeclarationFactory
         if ( "application".equals( detectedMediaType.getType() )
              && "xml".equals( detectedMediaType.getSubtype() ) )
         {
-            return MultiDeclarationFactory.fromOld( declarationString, interpolateAndValidate, origin );
+            return MultiDeclarationFactory.fromOld( declarationString, interpolate, validate, origin );
         }
 
         // Must be the new language, else invalid
-        return DeclarationFactory.from( declarationString, fileSystem, interpolateAndValidate );
+        return DeclarationFactory.from( declarationString, fileSystem, interpolate, validate );
     }
 
     /**
      * Returns a declaration POJO from a string formatted in the old (XML) declaration language.
      * @param declarationString the declaration string
-     * @param interpolateAndValidate is true to validate the declaration and interpolate missing declaration
+     * @param interpolate is true to interpolate any missing declaration from the other declaration supplied
+     * @param validate is true to validate the declaration
      * @param origin the origin of the declaration
      * @return an evaluation declaration
      * @throws IOException if the declaration string could not be (de)serialized
@@ -141,7 +144,8 @@ public class MultiDeclarationFactory
      */
 
     private static EvaluationDeclaration fromOld( String declarationString,
-                                                  boolean interpolateAndValidate,
+                                                  boolean interpolate,
+                                                  boolean validate,
                                                   String origin )
             throws IOException
     {
@@ -159,7 +163,7 @@ public class MultiDeclarationFactory
         ProjectConfigPlus project = ProjectConfigPlus.from( declarationString, origin );
 
         // Validate the project against its own schema, if required
-        if ( interpolateAndValidate )
+        if ( validate )
         {
             if ( Validation.isProjectValid( DATA_DIRECTORY, project ) )
             {
@@ -189,7 +193,7 @@ public class MultiDeclarationFactory
         }
 
         // Finally, interpolate any missing declaration for internal use
-        if( interpolateAndValidate )
+        if( interpolate )
         {
             migrated = DeclarationInterpolator.interpolate( migrated, true );
         }
