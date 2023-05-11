@@ -28,8 +28,8 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
     /**
      * Build an instance of a writer.
      * 
-     * @param pathToPairs the path to write
-     * @param timeResolution the time resolution at which to write datetime and duration information
+     * @param pathToPairs the path to write, required
+     * @param timeResolution the time resolution at which to write datetime and duration information, required
      * @return the writer
      * @throws NullPointerException if either input is null
      */
@@ -42,11 +42,11 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
     /**
      * Build an instance of a writer.
      * 
-     * @param pathToPairs the path to write
-     * @param timeResolution the time resolution at which to write datetime and duration information
-     * @param decimalFormatter the optional formatter for writing decimal values
+     * @param pathToPairs the path to write, required
+     * @param timeResolution the time resolution at which to write datetime and duration information, required
+     * @param decimalFormatter the optional formatter for writing decimal values, optional
      * @return the writer
-     * @throws NullPointerException if the pathToPairs is null or the timeResolution is null
+     * @throws NullPointerException if any of the required inputs is null
      */
 
     public static EnsemblePairsWriter of( Path pathToPairs, ChronoUnit timeResolution, DecimalFormat decimalFormatter )
@@ -57,15 +57,18 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
     /**
      * Build an instance of a writer.
      *
-     * @param pathToPairs the path to write
-     * @param timeResolution the time resolution at which to write datetime and duration information
-     * @param decimalFormatter the optional formatter for writing decimal values
+     * @param pathToPairs the path to write, required
+     * @param timeResolution the time resolution at which to write datetime and duration information, required
+     * @param decimalFormatter the optional formatter for writing decimal values, optional
      * @param gzip boolean to determine if output should be gzip
      * @return the writer
-     * @throws NullPointerException if either input is null
+     * @throws NullPointerException if any of the required inputs is null
      */
 
-    public static EnsemblePairsWriter of( Path pathToPairs, ChronoUnit timeResolution, DecimalFormat decimalFormatter, boolean gzip )
+    public static EnsemblePairsWriter of( Path pathToPairs,
+                                          ChronoUnit timeResolution,
+                                          DecimalFormat decimalFormatter,
+                                          boolean gzip )
     {
         return new EnsemblePairsWriter( pathToPairs, timeResolution, decimalFormatter, gzip );
     }

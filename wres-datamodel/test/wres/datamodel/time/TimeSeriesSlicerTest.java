@@ -1,8 +1,8 @@
 package wres.datamodel.time;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
@@ -22,8 +22,8 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import wres.datamodel.Climatology;
 import wres.datamodel.Ensemble;
@@ -45,10 +45,10 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Tests the {@link TimeSeriesSlicer}.
- * 
+ *
  * @author James Brown
  */
-public final class TimeSeriesSlicerTest
+final class TimeSeriesSlicerTest
 {
     private static final String CFS = "CFS";
     private static final String STREAMFLOW = "STREAMFLOW";
@@ -77,7 +77,7 @@ public final class TimeSeriesSlicerTest
     private static final String UNIT = "kg/h";
 
     @Test
-    public void testFilterByReferenceTime()
+    void testFilterByReferenceTime()
     {
         //Build three time-series each with its own basis time
         SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
@@ -98,14 +98,14 @@ public final class TimeSeriesSlicerTest
         TimeSeriesMetadata metadataOne = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                         T1985_01_01T00_00_00Z ),
                                                                 TimeScaleOuter
-                                                                              .of( Duration.ofHours( 1 ) ),
+                                                                        .of( Duration.ofHours( 1 ) ),
                                                                 STREAMFLOW,
                                                                 DRRC2,
                                                                 CFS );
 
         TimeSeriesMetadata metadataOneNoRefTimes = TimeSeriesMetadata.of( Map.of(),
                                                                           TimeScaleOuter
-                                                                                        .of( Duration.ofHours( 1 ) ),
+                                                                                  .of( Duration.ofHours( 1 ) ),
                                                                           STREAMFLOW,
                                                                           DRRC2,
                                                                           CFS );
@@ -113,7 +113,7 @@ public final class TimeSeriesSlicerTest
         TimeSeriesMetadata metadataTwo = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                         secondBasisTime ),
                                                                 TimeScaleOuter
-                                                                              .of( Duration.ofHours( 1 ) ),
+                                                                        .of( Duration.ofHours( 1 ) ),
                                                                 STREAMFLOW,
                                                                 DRRC2,
                                                                 CFS );
@@ -121,14 +121,14 @@ public final class TimeSeriesSlicerTest
         TimeSeriesMetadata metadataThree = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                           T1985_01_03T00_00_00Z ),
                                                                   TimeScaleOuter
-                                                                                .of( Duration.ofHours( 1 ) ),
+                                                                          .of( Duration.ofHours( 1 ) ),
                                                                   STREAMFLOW,
                                                                   DRRC2,
                                                                   CFS );
 
         TimeSeriesMetadata metadataThreeNoRefTimes = TimeSeriesMetadata.of( Map.of(),
                                                                             TimeScaleOuter
-                                                                                          .of( Duration.ofHours( 1 ) ),
+                                                                                    .of( Duration.ofHours( 1 ) ),
                                                                             STREAMFLOW,
                                                                             DRRC2,
                                                                             CFS );
@@ -140,40 +140,43 @@ public final class TimeSeriesSlicerTest
         //Iterate and test
         TimeSeries<Pair<Double, Double>> filteredOne =
                 TimeSeriesSlicer.filter( one,
-                                         TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( secondBasisTime,
-                                                                                                           secondBasisTime,
-                                                                                                           TimeWindowOuter.DURATION_MIN,
-                                                                                                           TimeWindowOuter.DURATION_MAX ) ) );
+                                         TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow(
+                                                 secondBasisTime,
+                                                 secondBasisTime,
+                                                 TimeWindowOuter.DURATION_MIN,
+                                                 TimeWindowOuter.DURATION_MAX ) ) );
 
         assertEquals( TimeSeries.of( metadataOneNoRefTimes ), filteredOne );
 
         TimeSeries<Pair<Double, Double>> filteredTwo =
                 TimeSeriesSlicer.filter( two,
-                                         TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( secondBasisTime,
-                                                                                                           secondBasisTime,
-                                                                                                           TimeWindowOuter.DURATION_MIN,
-                                                                                                           TimeWindowOuter.DURATION_MAX ) ) );
+                                         TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow(
+                                                 secondBasisTime,
+                                                 secondBasisTime,
+                                                 TimeWindowOuter.DURATION_MIN,
+                                                 TimeWindowOuter.DURATION_MAX ) ) );
 
         assertEquals( two, filteredTwo );
 
         TimeSeries<Pair<Double, Double>> filteredThree =
                 TimeSeriesSlicer.filter( three,
-                                         TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( secondBasisTime,
-                                                                                                           secondBasisTime,
-                                                                                                           TimeWindowOuter.DURATION_MIN,
-                                                                                                           TimeWindowOuter.DURATION_MAX ) ) );
+                                         TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow(
+                                                 secondBasisTime,
+                                                 secondBasisTime,
+                                                 TimeWindowOuter.DURATION_MIN,
+                                                 TimeWindowOuter.DURATION_MAX ) ) );
 
         assertEquals( TimeSeries.of( metadataThreeNoRefTimes ), filteredThree );
 
         //Check exceptional cases
         assertThrows( NullPointerException.class,
-                      () -> TimeSeriesSlicer.filter( null, (TimeWindowOuter) null ) );
+                      () -> TimeSeriesSlicer.filter( null, ( TimeWindowOuter ) null ) );
         assertThrows( NullPointerException.class,
-                      () -> TimeSeriesSlicer.filter( one, (TimeWindowOuter) null ) );
+                      () -> TimeSeriesSlicer.filter( one, ( TimeWindowOuter ) null ) );
     }
 
     @Test
-    public void testFilterByValidTime()
+    void testFilterByValidTime()
     {
 
         // Create the series to filter
@@ -200,7 +203,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testFilterByDuration()
+    void testFilterByDuration()
     {
         //Build a time-series with three basis times 
         SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
@@ -244,7 +247,8 @@ public final class TimeSeriesSlicerTest
 
         for ( Duration duration : durations )
         {
-            TimeWindowOuter window = TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( duration, duration ) );
+            TimeWindowOuter window =
+                    TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( duration, duration ) );
             TimeSeries<Pair<Double, Double>> events =
                     TimeSeriesSlicer.filter( ts.get().get( 0 ), window );
             for ( Event<Pair<Double, Double>> nextPair : events.getEvents() )
@@ -268,8 +272,10 @@ public final class TimeSeriesSlicerTest
 
         TimeSeries<Pair<Double, Double>> next = durationCheck.get().get( 0 );
         next = TimeSeriesSlicer.filter( next,
-                                        TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours( 51 ),
-                                                                                                          Duration.ofHours( 51 ) ) ) );
+                                        TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofHours(
+                                                                                                                  51 ),
+                                                                                                          Duration.ofHours(
+                                                                                                                  51 ) ) ) );
 
         Duration actualDuration = Duration.between( next.getReferenceTimes().values().iterator().next(),
                                                     next.getEvents().first().getTime() );
@@ -278,7 +284,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testFilterByEvent()
+    void testFilterByEvent()
     {
 
         // Create the series to filter
@@ -305,7 +311,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testGroupEventsByIntervalProducesThreeGroupsEachWithTwoEvents()
+    void testGroupEventsByIntervalProducesThreeGroupsEachWithTwoEvents()
     {
         // Create the events
         SortedSet<Event<Double>> events = new TreeSet<>();
@@ -362,7 +368,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testGroupEventsByOverlappingIntervalProducesTwoGroupsEachWithFourEvents()
+    void testGroupEventsByOverlappingIntervalProducesTwoGroupsEachWithFourEvents()
     {
         // Create the events
         SortedSet<Event<Double>> events = new TreeSet<>();
@@ -416,23 +422,23 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testDecomposeWithoutLabelsProducesFourTraces()
+    void testDecomposeWithoutLabelsProducesFourTraces()
     {
         // Create an ensemble time-series with four members
         Instant baseInstant = T2086_05_01T00_00_00Z;
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( baseInstant );
         TimeSeries<Ensemble> ensemble =
                 new TimeSeries.Builder<Ensemble>()
-                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ),
-                                                                       Ensemble.of( 1, 2, 3, 4 ) ) )
-                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ),
-                                                                       Ensemble.of( 5, 6, 7, 8 ) ) )
-                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ),
-                                                                       Ensemble.of( 9, 10, 11, 12 ) ) )
-                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ),
-                                                                       Ensemble.of( 13, 14, 15, 16 ) ) )
-                                                  .setMetadata( metadata )
-                                                  .build();
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ),
+                                             Ensemble.of( 1, 2, 3, 4 ) ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ),
+                                             Ensemble.of( 5, 6, 7, 8 ) ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ),
+                                             Ensemble.of( 9, 10, 11, 12 ) ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ),
+                                             Ensemble.of( 13, 14, 15, 16 ) ) )
+                        .setMetadata( metadata )
+                        .build();
 
         List<TimeSeries<Double>> actual = TimeSeriesSlicer.decompose( ensemble );
 
@@ -440,45 +446,45 @@ public final class TimeSeriesSlicerTest
 
         TimeSeries<Double> one =
                 new TimeSeries.Builder<Double>()
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 1.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 5.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 9.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 13.0 ) )
-                                                .setMetadata( metadata )
-                                                .build();
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 1.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 5.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 9.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 13.0 ) )
+                        .setMetadata( metadata )
+                        .build();
 
         expected.add( one );
 
         TimeSeries<Double> two =
                 new TimeSeries.Builder<Double>()
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 2.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 6.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 10.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 14.0 ) )
-                                                .setMetadata( metadata )
-                                                .build();
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 2.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 6.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 10.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 14.0 ) )
+                        .setMetadata( metadata )
+                        .build();
 
         expected.add( two );
 
         TimeSeries<Double> three =
                 new TimeSeries.Builder<Double>()
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 3.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 7.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 11.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 15.0 ) )
-                                                .setMetadata( metadata )
-                                                .build();
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 3.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 7.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 11.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 15.0 ) )
+                        .setMetadata( metadata )
+                        .build();
 
         expected.add( three );
 
         TimeSeries<Double> four =
                 new TimeSeries.Builder<Double>()
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 4.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 8.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 12.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 16.0 ) )
-                                                .setMetadata( metadata )
-                                                .build();
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 4.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 8.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 12.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 16.0 ) )
+                        .setMetadata( metadata )
+                        .build();
 
         expected.add( four );
 
@@ -486,7 +492,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testDecomposeWithLabelsProducesFourTraces()
+    void testDecomposeWithLabelsProducesFourTraces()
     {
         // Create an ensemble time-series with four members
         Instant baseInstant = T2086_05_01T00_00_00Z;
@@ -495,20 +501,20 @@ public final class TimeSeriesSlicerTest
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( baseInstant );
         TimeSeries<Ensemble> ensemble =
                 new TimeSeries.Builder<Ensemble>()
-                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ),
-                                                                       Ensemble.of( new double[] { 1, 2, 3, 4 },
-                                                                                    labels ) ) )
-                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ),
-                                                                       Ensemble.of( new double[] { 5, 6, 7, 8 },
-                                                                                    labels ) ) )
-                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ),
-                                                                       Ensemble.of( new double[] { 9, 10, 11, 12 },
-                                                                                    labels ) ) )
-                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ),
-                                                                       Ensemble.of( new double[] { 13, 14, 15, 16 },
-                                                                                    labels ) ) )
-                                                  .setMetadata( metadata )
-                                                  .build();
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ),
+                                             Ensemble.of( new double[] { 1, 2, 3, 4 },
+                                                          labels ) ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ),
+                                             Ensemble.of( new double[] { 5, 6, 7, 8 },
+                                                          labels ) ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ),
+                                             Ensemble.of( new double[] { 9, 10, 11, 12 },
+                                                          labels ) ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ),
+                                             Ensemble.of( new double[] { 13, 14, 15, 16 },
+                                                          labels ) ) )
+                        .setMetadata( metadata )
+                        .build();
 
         List<TimeSeries<Double>> actual = TimeSeriesSlicer.decompose( ensemble );
 
@@ -516,45 +522,45 @@ public final class TimeSeriesSlicerTest
 
         TimeSeries<Double> one =
                 new TimeSeries.Builder<Double>()
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 1.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 5.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 9.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 13.0 ) )
-                                                .setMetadata( metadata )
-                                                .build();
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 1.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 5.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 9.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 13.0 ) )
+                        .setMetadata( metadata )
+                        .build();
 
         expected.add( one );
 
         TimeSeries<Double> two =
                 new TimeSeries.Builder<Double>()
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 2.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 6.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 10.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 14.0 ) )
-                                                .setMetadata( metadata )
-                                                .build();
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 2.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 6.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 10.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 14.0 ) )
+                        .setMetadata( metadata )
+                        .build();
 
         expected.add( two );
 
         TimeSeries<Double> three =
                 new TimeSeries.Builder<Double>()
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 3.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 7.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 11.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 15.0 ) )
-                                                .setMetadata( metadata )
-                                                .build();
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 3.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 7.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 11.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 15.0 ) )
+                        .setMetadata( metadata )
+                        .build();
 
         expected.add( three );
 
         TimeSeries<Double> four =
                 new TimeSeries.Builder<Double>()
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 4.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 8.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 12.0 ) )
-                                                .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 16.0 ) )
-                                                .setMetadata( metadata )
-                                                .build();
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ), 4.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ), 8.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ), 12.0 ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ), 16.0 ) )
+                        .setMetadata( metadata )
+                        .build();
 
         expected.add( four );
 
@@ -562,7 +568,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testDecomposeAndThenComposeWithoutLabelsProducesTheSameSeries()
+    void testDecomposeAndThenComposeWithoutLabelsProducesTheSameSeries()
     {
         // Create an ensemble time-series with four members
         Instant baseInstant = T2086_05_01T00_00_00Z;
@@ -570,16 +576,16 @@ public final class TimeSeriesSlicerTest
                 getBoilerplateMetadataWithT0( baseInstant );
         TimeSeries<Ensemble> expected =
                 new TimeSeries.Builder<Ensemble>()
-                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ),
-                                                                       Ensemble.of( 4, 3, 2, 1 ) ) )
-                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ),
-                                                                       Ensemble.of( 5, 6, 7, 8 ) ) )
-                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ),
-                                                                       Ensemble.of( 12, 11, 10, 9 ) ) )
-                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ),
-                                                                       Ensemble.of( 13, 15, 14, 16 ) ) )
-                                                  .setMetadata( expectedMetadata )
-                                                  .build();
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ),
+                                             Ensemble.of( 4, 3, 2, 1 ) ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ),
+                                             Ensemble.of( 5, 6, 7, 8 ) ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ),
+                                             Ensemble.of( 12, 11, 10, 9 ) ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ),
+                                             Ensemble.of( 13, 15, 14, 16 ) ) )
+                        .setMetadata( expectedMetadata )
+                        .build();
 
         TimeSeries<Ensemble> actual =
                 TimeSeriesSlicer.compose( TimeSeriesSlicer.decompose( expected ), new TreeSet<>() );
@@ -588,7 +594,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testDecomposeAndThenComposeWithLabelsProducesTheSameSeries()
+    void testDecomposeAndThenComposeWithLabelsProducesTheSameSeries()
     {
         // Create an ensemble time-series with four members
         Instant baseInstant = T2086_05_01T00_00_00Z;
@@ -597,20 +603,20 @@ public final class TimeSeriesSlicerTest
         TimeSeriesMetadata metadata = getBoilerplateMetadataWithT0( baseInstant );
         TimeSeries<Ensemble> expected =
                 new TimeSeries.Builder<Ensemble>()
-                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ),
-                                                                       Ensemble.of( new double[] { 1, 2, 3, 4 },
-                                                                                    labels ) ) )
-                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ),
-                                                                       Ensemble.of( new double[] { 5, 6, 7, 8 },
-                                                                                    labels ) ) )
-                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ),
-                                                                       Ensemble.of( new double[] { 9, 10, 11, 12 },
-                                                                                    labels ) ) )
-                                                  .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ),
-                                                                       Ensemble.of( new double[] { 13, 14, 15, 16 },
-                                                                                    labels ) ) )
-                                                  .setMetadata( metadata )
-                                                  .build();
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 1 ) ),
+                                             Ensemble.of( new double[] { 1, 2, 3, 4 },
+                                                          labels ) ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 2 ) ),
+                                             Ensemble.of( new double[] { 5, 6, 7, 8 },
+                                                          labels ) ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 3 ) ),
+                                             Ensemble.of( new double[] { 9, 10, 11, 12 },
+                                                          labels ) ) )
+                        .addEvent( Event.of( baseInstant.plus( Duration.ofHours( 4 ) ),
+                                             Ensemble.of( new double[] { 13, 14, 15, 16 },
+                                                          labels ) ) )
+                        .setMetadata( metadata )
+                        .build();
 
         SortedSet<String> labelSet = Arrays.stream( labels.getLabels() )
                                            .collect( Collectors.toCollection( TreeSet::new ) );
@@ -622,7 +628,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testFilterTimeSeriesOfSingleValuedPairs()
+    void testFilterTimeSeriesOfSingleValuedPairs()
     {
         //Build a time-series with three basis times 
         SortedSet<Event<Pair<Double, Double>>> first = new TreeSet<>();
@@ -659,9 +665,12 @@ public final class TimeSeriesSlicerTest
                                            .build(),
                                  wres.statistics.generated.Pool.newBuilder()
                                                                .setGeometryGroup( GeometryGroup.newBuilder()
-                                                                                               .addGeometryTuples( GeometryTuple.newBuilder()
-                                                                                                                                .setLeft( geometry )
-                                                                                                                                .setRight( geometry ) ) )
+                                                                                               .addGeometryTuples(
+                                                                                                       GeometryTuple.newBuilder()
+                                                                                                                    .setLeft(
+                                                                                                                            geometry )
+                                                                                                                    .setRight(
+                                                                                                                            geometry ) ) )
                                                                .build() );
 
         //Add the time-series
@@ -755,7 +764,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testFilterTimeSeriesByEvent()
+    void testFilterTimeSeriesByEvent()
     {
         //Build a time-series with three basis times 
         SortedSet<Event<Double>> first = new TreeSet<>();
@@ -782,7 +791,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testSnipWithBufferOnLowerBoundAndUpperBound()
+    void testSnipWithBufferOnLowerBoundAndUpperBound()
     {
         // Build a time-series to snip
         SortedSet<Event<Double>> first = new TreeSet<>();
@@ -820,7 +829,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testApplyTimeOffsetToValidTimes()
+    void testApplyTimeOffsetToValidTimes()
     {
         // Build a time-series to adjust
         SortedSet<Event<Double>> first = new TreeSet<>();
@@ -843,7 +852,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testMapEventsByDuration()
+    void testMapEventsByDuration()
     {
         // Build a time-series to adjust
         SortedSet<Event<Double>> first = new TreeSet<>();
@@ -875,18 +884,18 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testGetMidpointBetweenTwoTimes()
+    void testGetMidpointBetweenTwoTimes()
     {
         Instant actual = TimeSeriesSlicer.getMidPointBetweenTimes( Instant.parse( "1985-01-01T00:00:00Z" ),
                                                                    Instant.parse( "1985-01-10T00:00:00Z" ) );
 
         Instant expected = Instant.parse( "1985-01-05T12:00:00Z" );
 
-        assertEquals( "Unexpected error in mid-point of time window.", expected, actual );
+        assertEquals( expected, actual, "Unexpected error in mid-point of time window." );
     }
 
     @Test
-    public void testGetIntervalsFromTimeScaleWithBothMonthDaysPresent()
+    void testGetIntervalsFromTimeScaleWithBothMonthDaysPresent()
     {
         TimeScale timeScale = TimeScale.newBuilder()
                                        .setStartDay( 1 )
@@ -924,7 +933,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testGetIntervalsFromTimeScaleWithBothMonthDaysPresentAndYearEndWrapping()
+    void testGetIntervalsFromTimeScaleWithBothMonthDaysPresentAndYearEndWrapping()
     {
         // Interval that wraps a year end
         TimeScale timeScale = TimeScale.newBuilder()
@@ -959,7 +968,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testGetIntervalFromMonthDays()
+    void testGetIntervalFromMonthDays()
     {
         Function<Instant, Pair<Instant, Instant>> calculator =
                 TimeSeriesSlicer.getIntervalFromMonthDays( MonthDay.of( 10, 1 ),
@@ -984,7 +993,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testGetIntervalFromMonthDaysStartsOnEndMonthDay()
+    void testGetIntervalFromMonthDaysStartsOnEndMonthDay()
     {
         Function<Instant, Pair<Instant, Instant>> calculator =
                 TimeSeriesSlicer.getIntervalFromMonthDays( MonthDay.of( 10, 1 ),
@@ -1000,7 +1009,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testGetIntervalsFromTimeScaleWithStartMonthDayAndPeriodPresent()
+    void testGetIntervalsFromTimeScaleWithStartMonthDayAndPeriodPresent()
     {
         // 90 days from 1 April
         TimeScale timeScale = TimeScale.newBuilder()
@@ -1039,7 +1048,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testGetRegularSequenceOfIntersectingTimesForOneTimeWindow()
+    void testGetRegularSequenceOfIntersectingTimesForOneTimeWindow()
     {
         SortedSet<Event<Double>> leftEvents = new TreeSet<>();
         leftEvents.add( Event.of( Instant.parse( "1988-10-04T18:00:00Z" ), 1.0 ) );
@@ -1063,7 +1072,8 @@ public final class TimeSeriesSlicerTest
 
         TimeSeries<Double> right =
                 new TimeSeries.Builder<Double>().addEvents( rightEvents )
-                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadataWithT0( referenceTime ) )
+                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadataWithT0(
+                                                        referenceTime ) )
                                                 .build();
 
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 6 ) );
@@ -1087,7 +1097,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testGetRegularSequenceOfIntersectingTimesForOneTimeWindowAndFrequencySmallerThanPeriod()
+    void testGetRegularSequenceOfIntersectingTimesForOneTimeWindowAndFrequencySmallerThanPeriod()
     {
         SortedSet<Event<Double>> leftEvents = new TreeSet<>();
         leftEvents.add( Event.of( Instant.parse( "1988-10-04T18:00:00Z" ), 1.0 ) );
@@ -1114,7 +1124,8 @@ public final class TimeSeriesSlicerTest
 
         TimeSeries<Double> right =
                 new TimeSeries.Builder<Double>().addEvents( rightEvents )
-                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadataWithT0( referenceTime ) )
+                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadataWithT0(
+                                                        referenceTime ) )
                                                 .build();
 
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 6 ) );
@@ -1140,7 +1151,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testGetRegularSequenceOfIntersectingTimesForTwoTimeWindows()
+    void testGetRegularSequenceOfIntersectingTimesForTwoTimeWindows()
     {
         Instant referenceTime = Instant.parse( "1988-10-04T12:00:00Z" );
 
@@ -1163,13 +1174,15 @@ public final class TimeSeriesSlicerTest
 
         TimeSeries<Double> right =
                 new TimeSeries.Builder<Double>().addEvents( events )
-                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadataWithT0( referenceTime ) )
+                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadataWithT0(
+                                                        referenceTime ) )
                                                 .build();
 
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofDays( 1 ) );
 
         TimeWindowOuter timeWindow =
-                TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ZERO, Duration.ofDays( 1 ) ) );
+                TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ZERO,
+                                                                                  Duration.ofDays( 1 ) ) );
 
         Duration frequency = Duration.ofDays( 1 );
 
@@ -1185,7 +1198,8 @@ public final class TimeSeriesSlicerTest
         assertEquals( expectedOne, actualOne );
 
         TimeWindowOuter timeWindowTwo =
-                TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofDays( 1 ), Duration.ofDays( 2 ) ) );
+                TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( Duration.ofDays( 1 ),
+                                                                                  Duration.ofDays( 2 ) ) );
 
 
         SortedSet<Instant> actualTwo = TimeSeriesSlicer.getRegularSequenceOfIntersectingTimes( left,
@@ -1200,7 +1214,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testGetRegularSequenceOfIntersectingTimesForOneTimeWindowLargePeriod()
+    void testGetRegularSequenceOfIntersectingTimesForOneTimeWindowLargePeriod()
     {
         // Akin to system test scenario801, but with 6-hourly observations
 
@@ -1311,7 +1325,8 @@ public final class TimeSeriesSlicerTest
 
         TimeSeries<Double> right =
                 new TimeSeries.Builder<Double>().addEvents( rightEvents )
-                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadataWithT0( referenceTime ) )
+                                                .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadataWithT0(
+                                                        referenceTime ) )
                                                 .build();
 
         Duration period = Duration.ofHours( 96 );
@@ -1338,12 +1353,12 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testGetReferenceTimeIsWithinSeason()
+    void testGetReferenceTimeIsWithinSeason()
     {
         TimeSeriesMetadata metadataOne = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                         T1985_01_01T00_00_00Z ),
                                                                 TimeScaleOuter
-                                                                              .of( Duration.ofHours( 1 ) ),
+                                                                        .of( Duration.ofHours( 1 ) ),
                                                                 STREAMFLOW,
                                                                 DRRC2,
                                                                 CFS );
@@ -1366,7 +1381,7 @@ public final class TimeSeriesSlicerTest
     }
 
     @Test
-    public void testGetEnsembleTransformer()
+    void testGetEnsembleTransformer()
     {
         UnaryOperator<Double> multiplyByThree = in -> in * 3.0;
         UnaryOperator<Ensemble> multiplyEnsembleByThree = TimeSeriesSlicer.getEnsembleTransformer( multiplyByThree );
@@ -1376,6 +1391,47 @@ public final class TimeSeriesSlicerTest
         assertEquals( expected, actual );
     }
 
+    @Test
+    void testAdjustByTimeScalePeriodWhenTimeScaleIsInstantaneous()
+    {
+        TimeWindow timeWindow = MessageFactory.getTimeWindow( Duration.ofHours( 1 ),
+                                                              Duration.ofHours( 2 ) );
+        TimeScale timeScale = TimeScale.newBuilder()
+                                       .setPeriod( com.google.protobuf.Duration.newBuilder()
+                                                                               .setSeconds( 1 ) )
+                                       .build();
+        TimeScaleOuter timeScaleOuter = TimeScaleOuter.of( timeScale );
+        TimeWindowOuter timeWindowOuter = TimeWindowOuter.of( timeWindow );
+
+        TimeWindowOuter actual = TimeSeriesSlicer.adjustByTimeScalePeriod( timeWindowOuter, timeScaleOuter );
+        assertEquals( timeWindowOuter, actual );
+    }
+
+    @Test
+    void testAdjustByTimeScalePeriod()
+    {
+        TimeWindow timeWindow = MessageFactory.getTimeWindow( Duration.ofHours( 1 ),
+                                                              Duration.ofHours( 2 ) );
+        TimeScale timeScale = TimeScale.newBuilder()
+                                       .setPeriod( com.google.protobuf.Duration.newBuilder()
+                                                                               .setSeconds( 1800 ) )
+                                       .build();
+        TimeScaleOuter timeScaleOuter = TimeScaleOuter.of( timeScale );
+        TimeWindowOuter timeWindowOuter = TimeWindowOuter.of( timeWindow );
+
+        TimeWindowOuter actual = TimeSeriesSlicer.adjustByTimeScalePeriod( timeWindowOuter, timeScaleOuter );
+        TimeWindow expectedInner = MessageFactory.getTimeWindow( Duration.ofMinutes( 30 ),
+                                                                 Duration.ofHours( 2 ) );
+        TimeWindowOuter expected = TimeWindowOuter.of( expectedInner );
+
+        assertEquals( expected, actual );
+    }
+
+    /**
+     * Gets some boilerplate metadata with a reference time.
+     * @param t0 the reference time
+     * @return the metadata
+     */
     private static TimeSeriesMetadata getBoilerplateMetadataWithT0( Instant t0 )
     {
         return TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, t0 ),
@@ -1385,6 +1441,10 @@ public final class TimeSeriesSlicerTest
                                       UNIT );
     }
 
+    /**
+     * @return some boilerplate metadata
+     */
+
     private static TimeSeriesMetadata getBoilerplateMetadata()
     {
         return TimeSeriesMetadata.of( Map.of(),
@@ -1393,5 +1453,4 @@ public final class TimeSeriesSlicerTest
                                       FEATURE_NAME,
                                       UNIT );
     }
-
 }

@@ -11,8 +11,8 @@ predicted:
   label: Operational Single-Valued Forecasts
 baseline:
   sources:
-    - uri: data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard
-      time_zone_offset: '-0600'
+    - data/singleValuedEx_ABRFC_ARCFUL_OBS/GLOO2X.QINE.19951101.20170905.datacard
+  time_zone_offset: '-0600'
   variable: QINE
   persistence: 1
 features:
