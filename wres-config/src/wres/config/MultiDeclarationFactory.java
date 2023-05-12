@@ -192,7 +192,14 @@ public class MultiDeclarationFactory
                          migratedString );
         }
 
-        // Finally, interpolate any missing declaration for internal use
+        // Validate the migrated declaration. This exposes the declaration to two layers of validation, first against
+        // the old schema and business logic, now against the new schema and business logic
+        if( validate )
+        {
+            DeclarationValidator.validate( migrated, true );
+        }
+
+        // Interpolate any missing declaration for internal use
         if( interpolate )
         {
             migrated = DeclarationInterpolator.interpolate( migrated );

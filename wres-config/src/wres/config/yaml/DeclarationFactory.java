@@ -349,15 +349,16 @@ public class DeclarationFactory
                                             + DeclarationUtilities.getFirstLine( yamlOrPath ), s );
         }
 
-        // Interpolate and validate?
-        // Interpolate any missing declaration first because this simplifies validation when both are requested
-        if ( interpolate )
-        {
-            declaration = DeclarationInterpolator.interpolate( declaration );
-        }
+        // Validate? Do this before interpolation
         if ( validate )
         {
             DeclarationValidator.validate( declaration, true );
+        }
+
+        // Interpolate?
+        if ( interpolate )
+        {
+            declaration = DeclarationInterpolator.interpolate( declaration );
         }
 
         return declaration;
