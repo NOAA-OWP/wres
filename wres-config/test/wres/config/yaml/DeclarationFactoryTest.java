@@ -1772,8 +1772,10 @@ class DeclarationFactoryTest
                 feature_groups:
                   - name: a group
                     features:
-                      - DRRC2
-                      - DOLC2
+                      - observed: DRRC2
+                        predicted: DRRC2
+                      - observed: DOLC2
+                        predicted: DOLC2
                   """;
 
         GeometryTuple first = GeometryTuple.newBuilder()
