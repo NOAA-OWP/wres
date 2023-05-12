@@ -264,7 +264,7 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> events = new ArrayList<>( typesDefined );
         // Data types are consistent with other declaration
         List<EvaluationStatusEvent> typesConsistent = DeclarationValidator.typesAreConsistent( declaration );
-        events.addAll(  typesConsistent );
+        events.addAll( typesConsistent );
         // Ensembles cannot be present on both left and right sides
         List<EvaluationStatusEvent> ensembles = DeclarationValidator.ensembleOnOneSideOnly( declaration );
         events.addAll( ensembles );
@@ -287,7 +287,7 @@ public class DeclarationValidator
      * @throws DeclarationException if validation errors are encountered
      */
 
-    private static void notify( List< EvaluationStatusEvent> events )
+    private static void notify( List<EvaluationStatusEvent> events )
     {
         // Any warnings? Push to log for now, but see #61930 (logging isn't for users)
         if ( LOGGER.isWarnEnabled() )
@@ -1929,6 +1929,9 @@ public class DeclarationValidator
         // Explicit features and featureful thresholds. Every featureful threshold must be correlated with a feature
         Set<String> thresholdsWithNames = thresholds.stream()
                                                     .filter( n -> n.featureNameFrom() == orientation )
+                                                    // Ignore all data, which was added automagically
+                                                    .filter( n -> !DeclarationInterpolator.ALL_DATA_THRESHOLD.threshold()
+                                                                                                             .equals( n.threshold() ) )
                                                     .map( Threshold::feature )
                                                     .map( wres.statistics.generated.Geometry::getName )
                                                     .collect( Collectors.toSet() );

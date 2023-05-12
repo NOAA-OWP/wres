@@ -196,7 +196,7 @@ public class CsvThresholdReader
                 }
                 else
                 {
-                    String nextFeature = line[0].stripLeading();
+                    String nextFeature = line[0].strip();
 
                     Set<Threshold> thresholds =
                             CsvThresholdReader.getAllThresholdsForOneFeatureAndSaveExceptions( dataTypes,
