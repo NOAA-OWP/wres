@@ -212,7 +212,7 @@ class DeclarationInterpolatorTest
                                                                         .right( this.predictedDataset )
                                                                         .build();
 
-        EvaluationDeclaration interpolate = DeclarationInterpolator.interpolate( declaration, false );
+        EvaluationDeclaration interpolate = DeclarationInterpolator.interpolate( declaration );
 
         Formats actual = interpolate.formats();
         Outputs outputs = Outputs.newBuilder()
@@ -235,7 +235,7 @@ class DeclarationInterpolatorTest
                                                                         .metrics( Set.of( metric ) )
                                                                         .build();
 
-        EvaluationDeclaration interpolate = DeclarationInterpolator.interpolate( declaration, false );
+        EvaluationDeclaration interpolate = DeclarationInterpolator.interpolate( declaration );
 
         Formats actual = interpolate.formats();
         Outputs outputs = Outputs.newBuilder()
@@ -257,7 +257,7 @@ class DeclarationInterpolatorTest
                                                                         .right( predictedDataset )
                                                                         .build();
 
-        EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( declaration, false );
+        EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( declaration );
 
         Set<MetricConstants> actualMetrics = actualInterpolated.metrics()
                                                                .stream()
@@ -279,7 +279,7 @@ class DeclarationInterpolatorTest
                                                                         .right( predictedDataset )
                                                                         .build();
 
-        EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( declaration, false );
+        EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( declaration );
 
         Set<MetricConstants> actualMetrics = actualInterpolated.metrics()
                                                                .stream()
@@ -336,7 +336,7 @@ class DeclarationInterpolatorTest
                                                                        .baseline( baseline )
                                                                        .build();
 
-        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( evaluation, false );
+        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( evaluation );
 
         assertAll( () -> assertEquals( FeatureAuthority.USGS_SITE_CODE, actual.left()
                                                                               .featureAuthority() ),
@@ -358,7 +358,7 @@ class DeclarationInterpolatorTest
                                                                             null,
                                                                             false );
 
-        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( evaluation, false );
+        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( evaluation );
 
         Set<GeometryTuple> resultFeatures = actual.features()
                                                   .geometries();
@@ -379,7 +379,7 @@ class DeclarationInterpolatorTest
                                                                             null,
                                                                             false );
 
-        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( expected, false );
+        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( expected );
 
         Set<GeometryTuple> resultFeatures = actual.features()
                                                   .geometries();
@@ -400,7 +400,7 @@ class DeclarationInterpolatorTest
                                                                             null,
                                                                             true );
 
-        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( expected, false );
+        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( expected );
 
         Set<GeometryTuple> resultFeatures = actual.features()
                                                   .geometries();
@@ -421,7 +421,7 @@ class DeclarationInterpolatorTest
                                                                             null,
                                                                             true );
 
-        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( expected, false );
+        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( expected );
 
         Set<GeometryTuple> resultFeatures = actual.features()
                                                   .geometries();
@@ -442,7 +442,7 @@ class DeclarationInterpolatorTest
                                                                             null,
                                                                             true );
 
-        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( expected, false );
+        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( expected );
 
         Set<GeometryTuple> resultFeatures = actual.features()
                                                   .geometries();
@@ -464,7 +464,7 @@ class DeclarationInterpolatorTest
                                                                             null,
                                                                             true );
 
-        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( expected, false );
+        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( expected );
 
         Set<GeometryTuple> resultFeatures = actual.features()
                                                   .geometries();
@@ -493,7 +493,7 @@ class DeclarationInterpolatorTest
                                                                             Set.of( featureGroup ),
                                                                             false );
 
-        EvaluationDeclaration actualEvaluation = DeclarationInterpolator.interpolate( evaluation, false );
+        EvaluationDeclaration actualEvaluation = DeclarationInterpolator.interpolate( evaluation );
 
         Set<GeometryTuple> expectedFeatures = Set.of( FULLY_DECLARED_FEATURE_ALL_NAME_ONE_NO_BASELINE,
                                                       FULLY_DECLARED_FEATURE_ALL_NAME_TWO_NO_BASELINE );
@@ -535,7 +535,7 @@ class DeclarationInterpolatorTest
                                                                             Set.of( featureGroup ),
                                                                             false );
 
-        EvaluationDeclaration actualEvaluation = DeclarationInterpolator.interpolate( evaluation, false );
+        EvaluationDeclaration actualEvaluation = DeclarationInterpolator.interpolate( evaluation );
 
         Set<GeometryTuple> expectedFeatures = Set.of( FULLY_DECLARED_FEATURE_ALL_NAME_ONE_NO_BASELINE,
                                                       FULLY_DECLARED_FEATURE_ALL_NAME_TWO_NO_BASELINE );
@@ -587,7 +587,7 @@ class DeclarationInterpolatorTest
                                                                             Set.of( featureGroup ),
                                                                             false );
 
-        EvaluationDeclaration actualEvaluation = DeclarationInterpolator.interpolate( evaluation, false );
+        EvaluationDeclaration actualEvaluation = DeclarationInterpolator.interpolate( evaluation );
 
         Set<GeometryTuple> expectedFeatures = Set.of( FULLY_DECLARED_FEATURE_ALL_NAME_ONE_NO_BASELINE,
                                                       FULLY_DECLARED_FEATURE_ALL_NAME_TWO_NO_BASELINE );
@@ -667,7 +667,7 @@ class DeclarationInterpolatorTest
                                                                       wrappedThree ) )
                                             .build();
 
-        EvaluationDeclaration actualEvaluation = DeclarationInterpolator.interpolate( declaration, false );
+        EvaluationDeclaration actualEvaluation = DeclarationInterpolator.interpolate( declaration );
 
         Set<GeometryTuple> actual = actualEvaluation.features()
                                                     .geometries();
@@ -714,7 +714,7 @@ class DeclarationInterpolatorTest
                                                                         .right( right )
                                                                         .build();
 
-        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( declaration, false );
+        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( declaration );
 
         Set<ZoneOffset> actualLeft = interpolated.left()
                                                  .sources()
@@ -815,7 +815,7 @@ class DeclarationInterpolatorTest
                                             .ensembleAverageType( Pool.EnsembleAverageType.MEDIAN )
                                             .metrics( metrics )
                                             .build();
-        EvaluationDeclaration actualDeclaration = DeclarationInterpolator.interpolate( declaration, false );
+        EvaluationDeclaration actualDeclaration = DeclarationInterpolator.interpolate( declaration );
         Set<Metric> actual = actualDeclaration.metrics();
 
         Metric firstExpected =
@@ -892,7 +892,7 @@ class DeclarationInterpolatorTest
 
         EvaluationDeclaration declarationToInterpolate = builder.build();
         EvaluationDeclaration actualDeclaration =
-                DeclarationInterpolator.interpolate( declarationToInterpolate, true );
+                DeclarationInterpolator.interpolate( declarationToInterpolate );
 
         wres.config.yaml.components.Threshold expectedOne =
                 ThresholdBuilder.builder( ALL_DATA_THRESHOLD )
@@ -956,7 +956,7 @@ class DeclarationInterpolatorTest
                   """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
-        EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( actual, false );
+        EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( actual );
 
         Set<MetricConstants> actualMetrics = actualInterpolated.metrics()
                                                                .stream()
@@ -986,7 +986,7 @@ class DeclarationInterpolatorTest
                   """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
-        EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( actual, false );
+        EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( actual );
 
         Set<MetricConstants> actualMetrics = actualInterpolated.metrics()
                                                                .stream()
@@ -1035,7 +1035,7 @@ class DeclarationInterpolatorTest
             throws IOException
     {
         EvaluationDeclaration actual = DeclarationFactory.from( declaration );
-        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( actual, false );
+        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( actual, null, null, null, false );
         DataType actualType = interpolated.right()
                                           .type();
         assertEquals( DataType.SINGLE_VALUED_FORECASTS, actualType );
@@ -1078,7 +1078,7 @@ class DeclarationInterpolatorTest
     void testDeserializeAndInterpolatePredictedDatasetAsEnsembleForecast( String declaration ) throws IOException
     {
         EvaluationDeclaration actual = DeclarationFactory.from( declaration );
-        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( actual, false );
+        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( actual, null, null, null, false );
         DataType actualType = interpolated.right()
                                           .type();
         assertEquals( DataType.ENSEMBLE_FORECASTS, actualType );
@@ -1099,7 +1099,7 @@ class DeclarationInterpolatorTest
                   """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
-        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( actual, false );
+        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( actual, null, null, null, false );
         DataType actualType = interpolated.left()
                                           .type();
         assertEquals( DataType.ANALYSES, actualType );
@@ -1126,7 +1126,7 @@ class DeclarationInterpolatorTest
                   """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
-        EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( actual, false );
+        EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( actual );
 
         GeometryTuple first = GeometryTuple.newBuilder()
                                            .setLeft( Geometry.newBuilder()
@@ -1178,7 +1178,7 @@ class DeclarationInterpolatorTest
                   """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
-        EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( actual, false );
+        EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( actual );
 
         assertAll( () -> assertTrue( actualInterpolated.valueThresholds()
                                                        .stream()
@@ -1221,7 +1221,7 @@ class DeclarationInterpolatorTest
                   """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
-        EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( actual, false );
+        EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( actual );
 
         assertAll( () -> assertEquals( Formats.PNG_FORMAT, actualInterpolated.formats()
                                                                              .outputs()
@@ -1252,7 +1252,7 @@ class DeclarationInterpolatorTest
                   """;
 
         EvaluationDeclaration actualDeclaration = DeclarationFactory.from( yaml );
-        EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( actualDeclaration, false );
+        EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( actualDeclaration );
 
         Set<Metric> actual = actualInterpolated.metrics();
 

@@ -278,7 +278,7 @@ public class DeclarationFactory
      * Deserializes a YAML string or path containing a YAML string into a POJO and performs validation against the
      * schema. Optionally performs interpolation of missing declaration, followed by validation of the interpolated
      * declaration. Interpolation is performed with
-     * {@link DeclarationInterpolator#interpolate(EvaluationDeclaration, boolean)} and validation is performed with
+     * {@link DeclarationInterpolator#interpolate(EvaluationDeclaration)} and validation is performed with
      * {@link DeclarationValidator#validate(EvaluationDeclaration, boolean)}, both with notifications on.
      *
      * @see #from(String)
@@ -353,7 +353,7 @@ public class DeclarationFactory
         // Interpolate any missing declaration first because this simplifies validation when both are requested
         if ( interpolate )
         {
-            declaration = DeclarationInterpolator.interpolate( declaration, true );
+            declaration = DeclarationInterpolator.interpolate( declaration );
         }
         if ( validate )
         {
@@ -366,10 +366,11 @@ public class DeclarationFactory
     /**
      * Deserializes a YAML string into a POJO and performs validation against the schema only. Does not "interpolate"
      * any missing declaration options that may be gleaned from other declaration. To perform "interpolation", use
-     * {@link DeclarationInterpolator#interpolate(EvaluationDeclaration, boolean)}. Also, does not perform any
-     * high-level validation of the declaration for mutual consistency and coherence (aka "business logic"). To perform
-     * high-level validation, see the {@link DeclarationValidator}.
+     * {@link DeclarationInterpolator#interpolate(EvaluationDeclaration)}. Also, does not perform any high-level
+     * validation of the declaration for mutual consistency and coherence (aka "business logic"). To perform high-level
+     * validation, see the {@link DeclarationValidator}.
      *
+     * @see DeclarationInterpolator#interpolate(EvaluationDeclaration)
      * @see DeclarationValidator#validate(EvaluationDeclaration, boolean)
      * @see DeclarationValidator#validate(EvaluationDeclaration)
      * @param yaml the yaml string

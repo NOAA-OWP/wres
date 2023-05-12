@@ -53,11 +53,11 @@ import wres.statistics.generated.Pool;
 /**
  * <p>Interpolates missing declaration from the other declaration present. The interpolation of missing declaration may
  * be performed in stages, depending on when it is required and how it is informed. For example, the
- * {@link #interpolate(EvaluationDeclaration, boolean)} performs minimal interpolation that is informed by the
- * declaration alone, such as the interpolation of each time-series data "type" when not declared explicitly and the
- * interpolation of metrics to evaluate when not declared explicitly (which is, in turn, informed by the data "type").
+ * {@link #interpolate(EvaluationDeclaration)} performs minimal interpolation that is informed by the declaration
+ * alone, such as the interpolation of geographic features when the missing information can be obtained without a
+ * service call.
  *
- * <p>Currently, {@link #interpolate(EvaluationDeclaration, boolean)} does not perform any external service calls. For
+ * <p>Currently, {@link #interpolate(EvaluationDeclaration)} does not perform any external service calls. For
  * example, features and thresholds may be declared implicitly using a feature service or a threshold service,
  * respectively. The resulting features and thresholds are not resolved into explicit descriptions of the same options.
  * It is assumed that another module (wres-io) resolves these attributes.
@@ -80,23 +80,32 @@ public class DeclarationInterpolator
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( DeclarationInterpolator.class );
 
+    /** Re-used string. */
+    private static final String THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA =
+            "The data type inferred from the time-series data ";
+
+    /** Re-used string. */
+    private static final String WHICH_IS_INCONSISTENT_PLEASE_FIX_THE = "' which is inconsistent. Please fix the ";
+
+    /** Re-used string. */
+    private static final String DECLARATION_HINT_LOOK_FOR_NEARBY_WARNING = "declaration. Hint: look for nearby warning ";
+
     /**
-     * Interpolates "missing" declaration from the available declaration. Currently, this method does not interpolate
-     * any declaration that requires service calls, such as features that are resolved by a feature service or
-     * thresholds that are resolved by a threshold service. This method can also be viewed as completing or
-     * "densifying" the declaration, based on hints provided by a user.
+     * Performs pre-ingest interpolation of "missing" declaration from the available declaration. Currently, this
+     * method does not interpolate any declaration that requires service calls, such as features that are resolved by a
+     * feature service or thresholds that are resolved by a threshold service. This method can also be viewed as
+     * completing or "densifying" the declaration, based on hints provided by a user. The pre-ingest interpolation
+     * includes all missing declaration that is invariant to the ingested data. For example, the data types are not
+     * included because they are informed by ingest.
      *
+     * @see #interpolate(EvaluationDeclaration, DataType, DataType, DataType, boolean)
      * @param declaration the raw declaration to interpolate
-     * @param notify whether to notify any warnings encountered or assumptions made during interpolation
      * @return the interpolated declaration
      */
-    public static EvaluationDeclaration interpolate( EvaluationDeclaration declaration, boolean notify )
+    public static EvaluationDeclaration interpolate( EvaluationDeclaration declaration )
     {
         EvaluationDeclarationBuilder adjustedDeclarationBuilder = EvaluationDeclarationBuilder.builder( declaration );
 
-        // Disambiguate the "type" of data when it is not declared
-        // Only this interpolation produces warnings, currently
-        List<EvaluationStatusEvent> events = DeclarationInterpolator.interpolateDataTypes( adjustedDeclarationBuilder );
         // Interpolate the time zone offsets for individual sources when supplied for the overall dataset
         DeclarationInterpolator.interpolateTimeZoneOffsets( adjustedDeclarationBuilder );
         // Interpolate the feature authorities
@@ -105,7 +114,7 @@ public class DeclarationInterpolator
         DeclarationInterpolator.interpolateFeaturesWithoutFeatureService( adjustedDeclarationBuilder );
         // Interpolate evaluation metrics when required
         DeclarationInterpolator.interpolateMetrics( adjustedDeclarationBuilder );
-        // interpolate the evaluation-wide decimal format string for each numeric format type
+        // Interpolate the evaluation-wide decimal format string for each numeric format type
         DeclarationInterpolator.interpolateDecimalFormatforNumericFormats( adjustedDeclarationBuilder );
         // Interpolate the metrics to ignore for each graphics format
         DeclarationInterpolator.interpolateMetricsToOmitFromGraphicsFormats( adjustedDeclarationBuilder );
@@ -119,6 +128,40 @@ public class DeclarationInterpolator
         DeclarationInterpolator.interpolateMetricParameters( adjustedDeclarationBuilder );
         // Interpolate output formats where none exist
         DeclarationInterpolator.interpolateOutputFormatsWhenNoneDeclared( adjustedDeclarationBuilder );
+
+        return adjustedDeclarationBuilder.build();
+    }
+
+    /**
+     * Performs post-ingest interpolation of declaration. This includes interpolation of the data types and all
+     * declaration that depends on the data types.
+     *
+     * @param declaration the raw declaration to interpolate
+     * @param leftType the left type inferred from ingest
+     * @param rightType the right type inferred from ingest
+     * @param baselineType the baseline type inferred from ingest
+     * @param notify whether to notify any warnings encountered or assumptions made during interpolation
+     * @return the interpolated declaration
+     */
+    public static EvaluationDeclaration interpolate( EvaluationDeclaration declaration,
+                                                     DataType leftType,
+                                                     DataType rightType,
+                                                     DataType baselineType,
+                                                     boolean notify )
+    {
+        EvaluationDeclarationBuilder adjustedDeclarationBuilder = EvaluationDeclarationBuilder.builder( declaration );
+
+        // Disambiguate the "type" of data when it is not declared
+        List<EvaluationStatusEvent> events = DeclarationInterpolator.interpolateDataTypes( adjustedDeclarationBuilder,
+                                                                                           leftType,
+                                                                                           rightType,
+                                                                                           baselineType );
+        // Interpolate evaluation metrics when required
+        DeclarationInterpolator.interpolateMetrics( adjustedDeclarationBuilder );
+        // Interpolate thresholds for individual metrics, adding an "all data" threshold as needed
+        DeclarationInterpolator.interpolateThresholdsForIndividualMetrics( adjustedDeclarationBuilder );
+        // Interpolate metric parameters
+        DeclarationInterpolator.interpolateMetricParameters( adjustedDeclarationBuilder );
 
         // Notify any warnings? Push to log for now, but see #61930 (logging isn't for users)
         if ( notify && LOGGER.isWarnEnabled() )
@@ -139,6 +182,26 @@ public class DeclarationInterpolator
                              System.lineSeparator(),
                              message );
             }
+        }
+
+        // Errors?
+        List<EvaluationStatus.EvaluationStatusEvent> errorEvents =
+                events.stream()
+                      .filter( a -> a.getStatusLevel()
+                                    == EvaluationStatus.EvaluationStatusEvent.StatusLevel.ERROR )
+                      .toList();
+        if ( !errorEvents.isEmpty() )
+        {
+            StringJoiner message = new StringJoiner( System.lineSeparator() );
+            String spacer = "    - ";
+            errorEvents.forEach( e -> message.add( spacer + e.getEventMessage() ) );
+
+            throw new DeclarationException( "While attempting to reconcile the declared evaluation with the "
+                                            + "time-series data read from sources, encountered "
+                                            + errorEvents.size()
+                                            + " error(s) that must be fixed:"
+                                            + System.lineSeparator() +
+                                            message );
         }
 
         return adjustedDeclarationBuilder.build();
@@ -342,7 +405,8 @@ public class DeclarationInterpolator
      */
     private static void interpolateMetrics( EvaluationDeclarationBuilder builder )
     {
-        DataType rightType = builder.right().type();
+        DataType rightType = builder.right()
+                                    .type();
 
         // No metrics defined and the type is known, so interpolate all valid metrics
         if ( builder.metrics()
@@ -847,11 +911,14 @@ public class DeclarationInterpolator
         Set<Threshold> adjustedThresholds = new LinkedHashSet<>( thresholds.size() );
         for ( Threshold next : thresholds )
         {
-            // Value threshold without a unit string
+            // Value threshold without a unit string...
             if ( next.type() == wres.config.yaml.components.ThresholdType.VALUE
                  && next.threshold()
                         .getThresholdValueUnits()
-                        .isBlank() )
+                        .isBlank()
+                 // ... that is not an "all data" threshold
+                 && !ALL_DATA_THRESHOLD.threshold()
+                                       .equals( next.threshold() ) )
             {
                 wres.statistics.generated.Threshold adjusted = next.threshold()
                                                                    .toBuilder()
@@ -877,18 +944,27 @@ public class DeclarationInterpolator
      * Resolves the type of time-series data to evaluate when required.
      *
      * @param builder the declaration builder to adjust
+     * @param leftType the left type inferred from ingest
+     * @param rightType the right type inferred from ingest
+     * @param baselineType the baseline type inferred from ingest
      * @return any interpolation events encountered
      */
-    private static List<EvaluationStatusEvent> interpolateDataTypes( EvaluationDeclarationBuilder builder )
+    private static List<EvaluationStatusEvent> interpolateDataTypes( EvaluationDeclarationBuilder builder,
+                                                                     DataType leftType,
+                                                                     DataType rightType,
+                                                                     DataType baselineType )
     {
         // Resolve the left or observed data type, if required
-        List<EvaluationStatusEvent> leftTypes = DeclarationInterpolator.resolveObservedDataTypeIfRequired( builder );
+        List<EvaluationStatusEvent> leftTypes = DeclarationInterpolator.interpolateObservedDataType( builder,
+                                                                                                     leftType );
         List<EvaluationStatusEvent> events = new ArrayList<>( leftTypes );
         // Resolve the predicted data type, if required
-        List<EvaluationStatusEvent> rightTypes = DeclarationInterpolator.resolvePredictedDataTypeIfRequired( builder );
+        List<EvaluationStatusEvent> rightTypes = DeclarationInterpolator.interpolatePredictedDataType( builder,
+                                                                                                       rightType );
         events.addAll( rightTypes );
         // Baseline data type has the same as the predicted data type, by default
-        List<EvaluationStatusEvent> baseTypes = DeclarationInterpolator.resolveBaselineDataTypeIfRequired( builder );
+        List<EvaluationStatusEvent> baseTypes = DeclarationInterpolator.interpolateBaselineDataType( builder,
+                                                                                                     baselineType );
         events.addAll( baseTypes );
 
         return Collections.unmodifiableList( events );
@@ -1242,9 +1318,11 @@ public class DeclarationInterpolator
     /**
      * Resolves the observed data type.
      * @param builder the builder
+     * @param dataType the data type inferred from ingest
      * @return any interpolation events encountered
      */
-    private static List<EvaluationStatusEvent> resolveObservedDataTypeIfRequired( EvaluationDeclarationBuilder builder )
+    private static List<EvaluationStatusEvent> interpolateObservedDataType( EvaluationDeclarationBuilder builder,
+                                                                            DataType dataType )
     {
         Dataset observed = builder.left();
 
@@ -1256,13 +1334,12 @@ public class DeclarationInterpolator
             String defaultStartMessage = "Discovered that the 'observed' dataset has no declared data 'type'.";
             String defaultEndMessage = "If this is incorrect, please declare the 'type' explicitly.";
 
+            DataType calculatedDataType;
+
             // Analysis durations present? If so, assume analyses
             if ( DeclarationUtilities.hasAnalysisDurations( builder ) )
             {
-                Dataset newLeft = DatasetBuilder.builder( observed )
-                                                .type( DataType.ANALYSES )
-                                                .build();
-                builder.left( newLeft );
+                calculatedDataType = DataType.ANALYSES;
 
                 // Warn
                 EvaluationStatusEvent event
@@ -1278,10 +1355,7 @@ public class DeclarationInterpolator
             }
             else
             {
-                Dataset newLeft = DatasetBuilder.builder( observed )
-                                                .type( DataType.OBSERVATIONS )
-                                                .build();
-                builder.left( newLeft );
+                calculatedDataType = DataType.OBSERVATIONS;
 
                 // Warn
                 EvaluationStatusEvent event
@@ -1293,6 +1367,33 @@ public class DeclarationInterpolator
                                                .build();
                 events.add( event );
             }
+
+            // Is the calculated type consistent with the declared type?
+            if ( Objects.nonNull( dataType ) && dataType != calculatedDataType )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
+                                               .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
+                                                                 + "for the 'observed' dataset was '"
+                                                                 + dataType
+                                                                 + "', but the data type inferred from the "
+                                                                 + "declaration was '"
+                                                                 + calculatedDataType
+                                                                 + WHICH_IS_INCONSISTENT_PLEASE_FIX_THE
+                                                                 + DECLARATION_HINT_LOOK_FOR_NEARBY_WARNING
+                                                                 + "messages that indicate why the data type "
+                                                                 + "inferred from the declaration was '"
+                                                                 + calculatedDataType
+                                                                 + "'." )
+                                               .build();
+                events.add( event );
+            }
+
+            Dataset newLeft = DatasetBuilder.builder( observed )
+                                            .type( calculatedDataType )
+                                            .build();
+            builder.left( newLeft );
         }
 
         return Collections.unmodifiableList( events );
@@ -1301,9 +1402,11 @@ public class DeclarationInterpolator
     /**
      * Resolves the predicted data type.
      * @param builder the builder
+     * @param dataType the data type inferred from ingest
      * @return any interpolation events encountered
      */
-    private static List<EvaluationStatusEvent> resolvePredictedDataTypeIfRequired( EvaluationDeclarationBuilder builder )
+    private static List<EvaluationStatusEvent> interpolatePredictedDataType( EvaluationDeclarationBuilder builder,
+                                                                             DataType dataType )
     {
         Dataset predicted = builder.right();
 
@@ -1317,7 +1420,7 @@ public class DeclarationInterpolator
 
             String reasonMessage;
 
-            DataType dataType;
+            DataType calculatedDataType;
 
             // Discover hints from the declaration
             Set<String> ensembleDeclaration = DeclarationUtilities.getEnsembleDeclaration( builder );
@@ -1328,7 +1431,7 @@ public class DeclarationInterpolator
             {
                 reasonMessage = "Setting the 'type' to 'ensemble forecasts' because the following ensemble "
                                 + "declaration was discovered: " + ensembleDeclaration + ".";
-                dataType = DataType.ENSEMBLE_FORECASTS;
+                calculatedDataType = DataType.ENSEMBLE_FORECASTS;
             }
             // Forecast declaration?
             else if ( !forecastDeclaration.isEmpty() )
@@ -1336,7 +1439,7 @@ public class DeclarationInterpolator
                 reasonMessage = "Setting the 'type' to 'single valued forecasts' because the following forecast "
                                 + "declaration was discovered and no ensemble declaration was discovered to suggest "
                                 + "that the forecasts are 'ensemble forecasts': " + forecastDeclaration + ".";
-                dataType = DataType.SINGLE_VALUED_FORECASTS;
+                calculatedDataType = DataType.SINGLE_VALUED_FORECASTS;
             }
             // Source declaration that refers to a service that delivers multiple data types? If so, cannot infer type
             else if ( predicted.sources()
@@ -1346,7 +1449,7 @@ public class DeclarationInterpolator
             {
                 reasonMessage = "Could not infer the predicted data type because sources were declared with interfaces "
                                 + "that support multiple data types.";
-                dataType = null;
+                calculatedDataType = null;
             }
             else
             {
@@ -1354,11 +1457,33 @@ public class DeclarationInterpolator
                                 + "suggest that any dataset contains 'single valued forecasts' or 'ensemble "
                                 + "forecast'.";
 
-                dataType = DataType.SIMULATIONS;
+                calculatedDataType = DataType.SIMULATIONS;
+            }
+
+            // Is the calculated type consistent with the declared type?
+            if ( Objects.nonNull( dataType ) && dataType != calculatedDataType )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
+                                               .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
+                                                                 + "for the 'predicted' dataset was '"
+                                                                 + dataType
+                                                                 + "', but the data type inferred from the declaration "
+                                                                 + "was '"
+                                                                 + calculatedDataType
+                                                                 + WHICH_IS_INCONSISTENT_PLEASE_FIX_THE
+                                                                 + DECLARATION_HINT_LOOK_FOR_NEARBY_WARNING
+                                                                 + "messages that indicate why the data type inferred "
+                                                                 + "from the declaration was '"
+                                                                 + calculatedDataType
+                                                                 + "'." )
+                                               .build();
+                events.add( event );
             }
 
             // Set the type
-            Dataset newPredicted = DatasetBuilder.builder( predicted ).type( dataType ).build();
+            Dataset newPredicted = DatasetBuilder.builder( predicted ).type( calculatedDataType ).build();
             builder.right( newPredicted );
 
             // Warn
@@ -1378,9 +1503,11 @@ public class DeclarationInterpolator
     /**
      * Sets the baseline data type to match the data type of the predicted dataset.
      * @param builder the builder
+     * @param dataType the data type inferred from ingest
      * @return any interpolation events encountered
      */
-    private static List<EvaluationStatusEvent> resolveBaselineDataTypeIfRequired( EvaluationDeclarationBuilder builder )
+    private static List<EvaluationStatusEvent> interpolateBaselineDataType( EvaluationDeclarationBuilder builder,
+                                                                            DataType dataType )
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
@@ -1394,21 +1521,43 @@ public class DeclarationInterpolator
             if ( Objects.isNull( baselineDataset.type() ) )
             {
                 // Same as the predicted data type, by default
-                DataType type = predicted.type();
+                DataType calculatedDataType = predicted.type();
 
                 String reason = "Assuming that the 'type' is '"
-                                + type
+                                + calculatedDataType
                                 + "' to match the 'type' of the 'predicted' dataset.";
 
                 // Persistence defined? If so, observations
                 if ( Objects.nonNull( baseline.persistence() ) )
                 {
-                    type = DataType.OBSERVATIONS;
+                    calculatedDataType = DataType.OBSERVATIONS;
                     reason = "Inferred a 'type' of 'observations' because a persistence baseline was defined.";
                 }
 
+                // Is the calculated type consistent with the declared type?
+                if ( Objects.nonNull( dataType ) && dataType != calculatedDataType )
+                {
+                    EvaluationStatusEvent event
+                            = EvaluationStatusEvent.newBuilder()
+                                                   .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
+                                                   .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
+                                                                     + "for the 'baseline' dataset was '"
+                                                                     + dataType
+                                                                     + "', but the data type inferred from the "
+                                                                     + "declaration was '"
+                                                                     + calculatedDataType
+                                                                     + WHICH_IS_INCONSISTENT_PLEASE_FIX_THE
+                                                                     + DECLARATION_HINT_LOOK_FOR_NEARBY_WARNING
+                                                                     + "messages that indicate why the data type "
+                                                                     + "inferred from the declaration was '"
+                                                                     + calculatedDataType
+                                                                     + "'." )
+                                                   .build();
+                    events.add( event );
+                }
+
                 Dataset newBaselineDataset = DatasetBuilder.builder( baselineDataset )
-                                                           .type( type )
+                                                           .type( calculatedDataType )
                                                            .build();
                 BaselineDataset newBaseline =
                         BaselineDatasetBuilder.builder( baseline )

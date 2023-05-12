@@ -487,9 +487,17 @@ public class DatacardReader implements TimeSeriesReader
         // Zone offset is required configuration since datacard does not specify
         // its time zone.  Process it.
         ZoneOffset offset = source.timeZoneOffset();
+
+        // Overall offset for all sources?
+        if( Objects.isNull( offset ) )
+        {
+            offset = dataSource.getContext()
+                               .timeZoneOffset();
+        }
+
         LOGGER.debug( "The configured time zone offset is {}.", offset );
 
-        if ( offset == null )
+        if ( Objects.isNull( offset ) )
         {
             String message = "While reading a Datacard source from '"
                              + dataSource.getUri()

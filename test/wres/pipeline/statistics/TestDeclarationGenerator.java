@@ -99,7 +99,7 @@ class TestDeclarationGenerator
                                                                         .minimumSampleSize( 0 )
                                                                         .metrics( Set.of() ) // All valid
                                                                         .build();
-        return DeclarationInterpolator.interpolate( declaration, true );
+        return DeclarationInterpolator.interpolate( declaration );
     }
 
     /**
@@ -130,7 +130,7 @@ class TestDeclarationGenerator
                                                                                 .baseline( baseline )
                                                                                 .metrics( Set.of() ) // All valid
                                                                                 .build();
-        return DeclarationInterpolator.interpolate( ensembleDeclaration, true );
+        return DeclarationInterpolator.interpolate( ensembleDeclaration );
     }
 
     /**
@@ -174,7 +174,7 @@ class TestDeclarationGenerator
                                                                         .minimumSampleSize( 0 )
                                                                         .metrics( metrics ) // All valid
                                                                         .build();
-        return DeclarationInterpolator.interpolate( declaration, true );
+        return DeclarationInterpolator.interpolate( declaration );
     }
 
     /**
@@ -235,7 +235,7 @@ class TestDeclarationGenerator
                                                                         .metrics( metrics )
                                                                         .valueThresholds( valueThresholds )
                                                                         .build();
-        return DeclarationInterpolator.interpolate( declaration, true );
+        return DeclarationInterpolator.interpolate( declaration );
     }
 
     /**
@@ -283,7 +283,7 @@ class TestDeclarationGenerator
                                                                         .metrics( Set.of() )
                                                                         .valueThresholds( valueThresholds )
                                                                         .build();
-        return DeclarationInterpolator.interpolate( declaration, true );
+        return DeclarationInterpolator.interpolate( declaration );
     }
 
     /**
@@ -331,7 +331,7 @@ class TestDeclarationGenerator
                                                                         .minimumSampleSize( 0 )
                                                                         .metrics( Set.of( metric ) )
                                                                         .build();
-        return DeclarationInterpolator.interpolate( declaration, true );
+        return DeclarationInterpolator.interpolate( declaration );
     }
 
     /**
@@ -395,7 +395,7 @@ class TestDeclarationGenerator
                                                                                 .valueThresholds( thresholds )
                                                                                 .build();
 
-        return DeclarationInterpolator.interpolate( ensembleDeclaration, true );
+        return DeclarationInterpolator.interpolate( ensembleDeclaration );
     }
 
     /**
@@ -420,7 +420,7 @@ class TestDeclarationGenerator
                                                                                   .metrics( metrics )
                                                                                   .build();
 
-        return DeclarationInterpolator.interpolate( evaluationDeclaration, true );
+        return DeclarationInterpolator.interpolate( evaluationDeclaration );
     }
 
     /**
@@ -496,7 +496,7 @@ class TestDeclarationGenerator
                                                                                .probabilityThresholds( thresholds )
                                                                                .metrics( metrics )
                                                                                .build();
-        return DeclarationInterpolator.interpolate( ensembleDecaration, true );
+        return DeclarationInterpolator.interpolate( ensembleDecaration );
     }
 
     /**
@@ -601,7 +601,7 @@ class TestDeclarationGenerator
                                             .classifierThresholds( probabilityThresholds )
                                             .build();
 
-        return DeclarationInterpolator.interpolate( ensembleDeclaration, true );
+        return DeclarationInterpolator.interpolate( ensembleDeclaration );
     }
 
     /**

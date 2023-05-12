@@ -2147,4 +2147,46 @@ class DeclarationUtilitiesTest
 
         assertEquals( expected, actual );
     }
+
+    @Test
+    void testHasMissingDataTypes()
+    {
+        Dataset missing = DatasetBuilder.builder()
+                                        .build();
+        Dataset present = DatasetBuilder.builder()
+                                        .type( DataType.OBSERVATIONS )
+                                        .build();
+
+        EvaluationDeclaration withAllMissing
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( missing )
+                                              .right( missing )
+                                              .baseline( BaselineDatasetBuilder.builder()
+                                                                               .dataset( missing )
+                                                                               .build() )
+                                              .build();
+
+        EvaluationDeclaration withOneMissing
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( missing )
+                                              .right( present )
+                                              .baseline( BaselineDatasetBuilder.builder()
+                                                                               .dataset( missing )
+                                                                               .build() )
+                                              .build();
+
+        EvaluationDeclaration withNoneMissing
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( present )
+                                              .right( present )
+                                              .baseline( BaselineDatasetBuilder.builder()
+                                                                               .dataset( present )
+                                                                               .build() )
+                                              .build();
+
+        assertAll( () -> assertTrue( DeclarationUtilities.hasMissingDataTypes( withOneMissing ) ),
+                   () -> assertTrue( DeclarationUtilities.hasMissingDataTypes( withAllMissing ) ),
+                   () -> assertFalse( DeclarationUtilities.hasMissingDataTypes( withNoneMissing ) ) );
+
+    }
 }

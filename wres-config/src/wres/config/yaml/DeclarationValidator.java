@@ -184,45 +184,8 @@ public class DeclarationValidator
             return events;
         }
 
-        // Any warnings? Push to log for now, but see #61930 (logging isn't for users)
-        if ( LOGGER.isWarnEnabled() )
-        {
-            List<EvaluationStatus.EvaluationStatusEvent> warnEvents =
-                    events.stream()
-                          .filter( a -> a.getStatusLevel()
-                                        == EvaluationStatus.EvaluationStatusEvent.StatusLevel.WARN )
-                          .toList();
-            if ( !warnEvents.isEmpty() )
-            {
-                StringJoiner message = new StringJoiner( System.lineSeparator() );
-                String spacer = "    - ";
-                warnEvents.forEach( e -> message.add( spacer + e.getEventMessage() ) );
-
-                LOGGER.warn( "Encountered {} warnings when validating the declared evaluation: {}{}",
-                             warnEvents.size(),
-                             System.lineSeparator(),
-                             message );
-            }
-        }
-
-        // Errors?
-        List<EvaluationStatus.EvaluationStatusEvent> errorEvents =
-                events.stream()
-                      .filter( a -> a.getStatusLevel()
-                                    == EvaluationStatus.EvaluationStatusEvent.StatusLevel.ERROR )
-                      .toList();
-        if ( !errorEvents.isEmpty() )
-        {
-            StringJoiner message = new StringJoiner( System.lineSeparator() );
-            String spacer = "    - ";
-            errorEvents.forEach( e -> message.add( spacer + e.getEventMessage() ) );
-
-            throw new DeclarationException( "Encountered "
-                                            + errorEvents.size()
-                                            + " error(s) in the declared evaluation, which must be fixed:"
-                                            + System.lineSeparator() +
-                                            message );
-        }
+        // Notify
+        DeclarationValidator.notify( events );
 
         return events;
     }
@@ -287,18 +250,96 @@ public class DeclarationValidator
     }
 
     /**
-     * Validates the dataset declaration.
+     * Performs post-ingest validation of the declaration once the data type information has been gleaned by reading
+     * the sources. Performs default notification handling for any events encountered.
+     *
+     * @see #validate(EvaluationDeclaration)
      * @param declaration the declaration
-     * @return the validation events encountered
+     * @throws NullPointerException if the declaration is null
      */
-    private static List<EvaluationStatusEvent> validateDatasets( EvaluationDeclaration declaration )
+    public static void validateTypes( EvaluationDeclaration declaration )
     {
         // Data types are defined for all datasets
         List<EvaluationStatusEvent> typesDefined = DeclarationValidator.typesAreDefined( declaration );
         List<EvaluationStatusEvent> events = new ArrayList<>( typesDefined );
         // Data types are consistent with other declaration
         List<EvaluationStatusEvent> typesConsistent = DeclarationValidator.typesAreConsistent( declaration );
-        events.addAll( typesConsistent );
+        events.addAll(  typesConsistent );
+        // Ensembles cannot be present on both left and right sides
+        List<EvaluationStatusEvent> ensembles = DeclarationValidator.ensembleOnOneSideOnly( declaration );
+        events.addAll( ensembles );
+
+        // No need to check and sources because this is a post-ingest validation
+
+        // Check that the metrics declaration is valid
+        List<EvaluationStatusEvent> metrics = DeclarationValidator.metricsAreValid( declaration );
+        events.addAll( metrics );
+
+        List<EvaluationStatusEvent> finalEvents = Collections.unmodifiableList( events );
+
+        // Notify any events encountered
+        DeclarationValidator.notify( finalEvents );
+    }
+
+    /**
+     * Performs default notification of validation events, logging warnings and aggregating errors into an exception.
+     * @param events the validation events
+     * @throws DeclarationException if validation errors are encountered
+     */
+
+    private static void notify( List< EvaluationStatusEvent> events )
+    {
+        // Any warnings? Push to log for now, but see #61930 (logging isn't for users)
+        if ( LOGGER.isWarnEnabled() )
+        {
+            List<EvaluationStatus.EvaluationStatusEvent> warnEvents =
+                    events.stream()
+                          .filter( a -> a.getStatusLevel()
+                                        == EvaluationStatus.EvaluationStatusEvent.StatusLevel.WARN )
+                          .toList();
+            if ( !warnEvents.isEmpty() )
+            {
+                StringJoiner message = new StringJoiner( System.lineSeparator() );
+                String spacer = "    - ";
+                warnEvents.forEach( e -> message.add( spacer + e.getEventMessage() ) );
+
+                LOGGER.warn( "Encountered {} warnings when validating the declared evaluation: {}{}",
+                             warnEvents.size(),
+                             System.lineSeparator(),
+                             message );
+            }
+        }
+
+        // Errors?
+        List<EvaluationStatus.EvaluationStatusEvent> errorEvents =
+                events.stream()
+                      .filter( a -> a.getStatusLevel()
+                                    == EvaluationStatus.EvaluationStatusEvent.StatusLevel.ERROR )
+                      .toList();
+        if ( !errorEvents.isEmpty() )
+        {
+            StringJoiner message = new StringJoiner( System.lineSeparator() );
+            String spacer = "    - ";
+            errorEvents.forEach( e -> message.add( spacer + e.getEventMessage() ) );
+
+            throw new DeclarationException( "Encountered "
+                                            + errorEvents.size()
+                                            + " error(s) in the declared evaluation, which must be fixed:"
+                                            + System.lineSeparator() +
+                                            message );
+        }
+    }
+
+    /**
+     * Validates the dataset declaration.
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> validateDatasets( EvaluationDeclaration declaration )
+    {
+        // Data types are consistent with other declaration
+        List<EvaluationStatusEvent> typesConsistent = DeclarationValidator.typesAreConsistent( declaration );
+        List<EvaluationStatusEvent> events = new ArrayList<>( typesConsistent );
         // Ensembles cannot be present on both left and right sides
         List<EvaluationStatusEvent> ensembles = DeclarationValidator.ensembleOnOneSideOnly( declaration );
         events.addAll( ensembles );
@@ -824,8 +865,8 @@ public class DeclarationValidator
                                          .filter( Objects::nonNull )
                                          .collect( Collectors.toSet() );
 
-        if ( Set.of( universalOffset )
-                .equals( offsets ) )
+        if ( offsets.isEmpty() || Set.of( universalOffset )
+                                     .equals( offsets ) )
         {
             LOGGER.debug( "The {} dataset contained a universal time zone offset of {}, which is consistent with the "
                           + "offsets for the individual sources it composes.",
@@ -1312,8 +1353,10 @@ public class DeclarationValidator
         Set<MetricConstants> metrics =
                 DeclarationValidator.getSingleValuedTimeSeriesMetrics( declaration );
 
-        if ( declaration.right()
-                        .type() != DataType.SINGLE_VALUED_FORECASTS
+        if ( Objects.nonNull( declaration.right()
+                                         .type() )
+             && declaration.right()
+                           .type() != DataType.SINGLE_VALUED_FORECASTS
              && !metrics.isEmpty() )
 
         {
@@ -1414,7 +1457,8 @@ public class DeclarationValidator
             }
 
             // Ensembles, but no decision/classifier thresholds: warn
-            if ( declaration.right().type() == DataType.ENSEMBLE_FORECASTS
+            if ( declaration.right()
+                            .type() == DataType.ENSEMBLE_FORECASTS
                  && !DeclarationValidator.hasThresholdsOfThisType( ThresholdType.PROBABILITY_CLASSIFIER, declaration ) )
             {
                 EvaluationStatusEvent event
@@ -2421,7 +2465,8 @@ public class DeclarationValidator
                                                                            String orientation )
     {
         EvaluationStatusEvent.Builder eventBuilder =
-                EvaluationStatusEvent.newBuilder().setStatusLevel( StatusLevel.ERROR );
+                EvaluationStatusEvent.newBuilder()
+                                     .setStatusLevel( StatusLevel.ERROR );
 
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
@@ -2444,7 +2489,8 @@ public class DeclarationValidator
                                                                         + VALID_DATES + messageMiddleOuter
                                                                         + REFERENCE_DATES + " or " + VALID_DATES
                                                                         + messageMiddleFinal + "time-series"
-                                                                        + messageEnd ).build();
+                                                                        + messageEnd )
+                                                      .build();
             events.add( event );
         }
         // Forecasts with incomplete reference times
@@ -2697,6 +2743,8 @@ public class DeclarationValidator
     }
 
     /**
+     * Determines whether the data type is present on any side. If the data type is undefined for a given side, then
+     * that is neutral, i.e., the data type cannot be shown to be absent on that side.
      * @param type the data type
      * @param declaration the declaration
      * @return whether the declaration has the data type on any side
@@ -2704,10 +2752,20 @@ public class DeclarationValidator
 
     private static boolean doesNotHaveThisDataType( DataType type, EvaluationDeclaration declaration )
     {
-        return declaration.left().type() != type
-               && declaration.right().type() != type
+        return Objects.nonNull( declaration.left()
+                                           .type() )
+               && declaration.left()
+                             .type() != type
+               && Objects.nonNull( declaration.right()
+                                              .type() )
+               && declaration.right()
+                             .type() != type
                && ( !DeclarationUtilities.hasBaseline( declaration )
-                    || declaration.baseline().dataset().type() != type );
+                    || ( Objects.nonNull( declaration.baseline()
+                                                     .dataset()
+                                                     .type() ) && declaration.baseline()
+                                                                             .dataset()
+                                                                             .type() != type ) );
     }
 
     /**

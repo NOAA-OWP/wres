@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.SourceInterface;
@@ -235,9 +236,10 @@ public class NwmVectorReader implements TimeSeriesReader
                                                        .sourceInterface();
 
         NwmProfile nwmProfile = NwmProfiles.getProfileFromShortHand( interfaceShortHand );
+        Set<DataType> types = interfaceShortHand.getDataTypes();
 
-        ReferenceTimeType referenceTimeType = DeclarationUtilities.getReferenceTimeType( dataSource.getContext()
-                                                                                                   .type() );
+        ReferenceTimeType referenceTimeType = DeclarationUtilities.getReferenceTimeType( types.iterator()
+                                                                                              .next() );
 
         // Create the smaller suppliers, one per reference time
         List<Supplier<TimeSeriesTuple>> suppliers = this.getTimeSeriesSuppliers( nwmProfile,
@@ -574,7 +576,7 @@ public class NwmVectorReader implements TimeSeriesReader
             }
             catch ( NumberFormatException nfe )
             {
-                LOGGER.warn( "Skipping non-integer NWM feature ID {} due to {}",
+                LOGGER.warn( "Skipping non-integer NWM feature ID '{}' due to: {}",
                              feature,
                              nfe.getMessage() );
             }

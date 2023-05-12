@@ -109,7 +109,7 @@ public final class StatisticsProcessorTest
                                                                                   .valueThresholds( Set.of() )
                                                                                   .metrics( metrics )
                                                                                   .build();
-        evaluationDeclaration = DeclarationInterpolator.interpolate( evaluationDeclaration, true );
+        evaluationDeclaration = DeclarationInterpolator.interpolate( evaluationDeclaration );
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
                 StatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( evaluationDeclaration );
