@@ -41,7 +41,7 @@ public class FormatsSerializer extends JsonSerializer<Formats>
         }
 
         // The numeric formats do not have effective parameters because the decimal precision is abstracted away, one
-        // for all formats currently and the deprecated netcdf parameters are not modeled
+        // for all formats currently
         if ( outputs.hasCsv2() )
         {
             writer.writeString( "csv2" );

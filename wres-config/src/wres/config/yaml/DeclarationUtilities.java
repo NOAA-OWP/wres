@@ -255,6 +255,28 @@ public class DeclarationUtilities
     }
 
     /**
+     * Determines whether any datasets have an unknown data type.
+     *
+     * @param evaluation the evaluation
+     * @return whether any data types are unknown
+     * @throws NullPointerException if the input is null
+     */
+
+    public static boolean hasMissingDataTypes( EvaluationDeclaration evaluation )
+    {
+        Objects.requireNonNull( evaluation );
+
+        return Objects.isNull( evaluation.left()
+                                         .type() )
+               || Objects.isNull( evaluation.right()
+                                            .type() )
+               || ( DeclarationUtilities.hasBaseline( evaluation )
+                    && Objects.isNull( evaluation.baseline()
+                                                 .dataset()
+                                                 .type() ) );
+    }
+
+    /**
      * Returns the features from all contexts in the declaration that declare features explicitly. Does not consider
      * features that are declared implicitly, such as those associated with featureful thresholds.
      * @param declaration the declaration

@@ -25,7 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationException;
+import wres.config.yaml.DeclarationInterpolator;
 import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.DeclarationValidator;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
@@ -348,21 +350,14 @@ class EvaluationUtilities
         {
             EvaluationDeclaration declaration = evaluationDetails.declaration();
 
-            // Look up any needed feature correlations and thresholds, generate a new declaration.
-            EvaluationDeclaration declarationWithFeatures = ReaderUtilities.readAndFillFeatures( declaration );
-            // Update the small bag-o-state
-            evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
-                                                                           .declaration( declarationWithFeatures )
-                                                                           .build();
+            // Gridded features cache, if required. See #51232.
+            GriddedFeatures.Builder griddedFeaturesBuilder =
+                    EvaluationUtilities.getGriddedFeaturesCache( declaration );
 
             LOGGER.debug( "Beginning ingest of time-series data..." );
 
             Project project;
             SystemSettings systemSettings = evaluationDetails.systemSettings();
-
-            // Gridded features cache, if required. See #51232.
-            GriddedFeatures.Builder griddedFeaturesBuilder =
-                    EvaluationUtilities.getGriddedFeaturesCache( declarationWithFeatures );
 
             // Is the evaluation in a database? If so, use implementations that support a database
             if ( systemSettings.isInDatabase() )
@@ -382,8 +377,10 @@ class EvaluationUtilities
                 {
                     List<IngestResult> ingestResults = SourceLoader.load( databaseIngester,
                                                                           evaluationDetails.systemSettings(),
-                                                                          declarationWithFeatures,
+                                                                          declaration,
                                                                           griddedFeaturesBuilder );
+
+                    declaration = EvaluationUtilities.interpolateMissingDataTypes( declaration, null, null, null );
 
                     // Create the gridded features cache if needed
                     GriddedFeatures griddedFeatures = null;
@@ -394,7 +391,7 @@ class EvaluationUtilities
 
                     // Get the project, which provides an interface to the underlying store of time-series data
                     project = Projects.getProject( databaseServices.database(),
-                                                   declarationWithFeatures,
+                                                   declaration,
                                                    caches,
                                                    griddedFeatures,
                                                    ingestResults );
@@ -412,8 +409,11 @@ class EvaluationUtilities
                 // Load the sources using the ingester and create the ingest results to share
                 List<IngestResult> ingestResults = SourceLoader.load( timeSeriesIngester,
                                                                       evaluationDetails.systemSettings(),
-                                                                      declarationWithFeatures,
+                                                                      declaration,
                                                                       griddedFeaturesBuilder );
+
+                // Interpolate any missing elements of the declaration that depend on the data types
+                declaration = EvaluationUtilities.interpolateMissingDataTypes( declaration, null, null, null );
 
                 // The immutable collection of in-memory time-series
                 TimeSeriesStore timeSeriesStore = timeSeriesStoreBuilder.build();
@@ -421,12 +421,19 @@ class EvaluationUtilities
                 evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
                                                                                .timeSeriesStore( timeSeriesStore )
                                                                                .build();
-                project = Projects.getProject( declarationWithFeatures,
+                project = Projects.getProject( declaration,
                                                timeSeriesStore,
                                                ingestResults );
             }
 
             LOGGER.debug( "Finished ingest of time-series data." );
+
+            // Look up any needed feature correlations and thresholds, generate a new declaration.
+            EvaluationDeclaration declarationWithFeatures = ReaderUtilities.readAndFillFeatures( declaration );
+            // Update the small bag-o-state
+            evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
+                                                                           .declaration( declarationWithFeatures )
+                                                                           .build();
 
             // Set the project hash for identification
             projectHash = project.getHash();
@@ -556,6 +563,38 @@ class EvaluationUtilities
                 evaluation.close();
             }
         }
+    }
+
+    /**
+     * Interpolates any missing data types and validates the interpolated declaration for internal consistency.
+     * @param declaration the declaration with missing data types
+     * @param leftType the left type inferred from ingest
+     * @param rightType the right type inferred from ingest
+     * @param baselineType the baseline type inferred from ingest
+     * @return the interpolated declaration
+     * @throws DeclarationException if the declaration is inconsistent with the inferred types
+     */
+
+    private static EvaluationDeclaration interpolateMissingDataTypes( EvaluationDeclaration declaration,
+                                                                      DataType leftType,
+                                                                      DataType rightType,
+                                                                      DataType baselineType )
+    {
+        // Interpolate any missing elements of the declaration that depend on the data types
+        if ( DeclarationUtilities.hasMissingDataTypes( declaration ) )
+        {
+            // If the ingested types differ from any existing types, this will throw an exception
+            declaration = DeclarationInterpolator.interpolate( declaration,
+                                                               leftType,
+                                                               rightType,
+                                                               baselineType,
+                                                               true );
+
+            // Validate the declaration in relation to the interpolated data types only
+            DeclarationValidator.validateTypes( declaration );
+        }
+
+        return declaration;
     }
 
     /**
@@ -889,7 +928,7 @@ class EvaluationUtilities
             builder.setLeftVariableName( project.getVariableName( DatasetOrientation.LEFT ) );
         }
         if ( evaluation.getRightVariableName()
-                .isBlank() )
+                       .isBlank() )
         {
             builder.setRightVariableName( project.getVariableName( DatasetOrientation.RIGHT ) );
         }

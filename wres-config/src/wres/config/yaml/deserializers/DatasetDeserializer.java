@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +71,23 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
         if ( node instanceof ObjectNode )
         {
             TreeNode sourcesNode = node.get( "sources" );
-            List<Source> sources = this.getSourcesFromArray( reader, ( ArrayNode ) sourcesNode );
+            List<Source> sources;
+
+            // Explicit array?
+            if( sourcesNode instanceof ArrayNode arrayNode )
+            {
+                sources = this.getSourcesFromArray( reader, arrayNode );
+            }
+            // Singleton
+            else if( sourcesNode instanceof TextNode textNode )
+            {
+                sources = this.getSingletonSource( textNode );
+            }
+            else
+            {
+                throw new IOException( "Unsupported format for sources node." );
+            }
+
             Variable variable = this.getVariable( reader, node );
             FeatureAuthority featureAuthority = this.getFeatureAuthority( node );
             DataType dataType = this.getDataType( reader, node, jp.currentName() );
@@ -156,6 +173,26 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
         }
 
         return sources;
+    }
+
+    /**
+     * Creates a list of sources from a singleton node of sources.
+     * @param node the node of sources
+     * @return the list of sources
+     */
+
+    private List<Source> getSingletonSource( TextNode node )
+    {
+        String nextUriString = node.asText();
+
+        // Replace illegal backslashes (e.g., in Windows paths)
+        nextUriString = nextUriString.replace( "\\", "/" );
+
+        URI uri = URI.create( nextUriString );
+        Source source = SourceBuilder.builder()
+                                  .uri( uri )
+                                  .build();
+        return List.of( source );
     }
 
     /**

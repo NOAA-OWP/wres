@@ -262,6 +262,26 @@ class DeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeWithSingletonArraySources() throws IOException
+    {
+        String yaml = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDeserializeWithShortSourcesAndBaseline() throws IOException
     {
         String yaml = """

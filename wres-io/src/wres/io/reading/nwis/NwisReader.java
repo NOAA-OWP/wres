@@ -48,17 +48,17 @@ import wres.system.SystemSettings;
  * Reads time-series data from the National Water Information System (NWIS) Instantaneous Values (IV) web service. This 
  * service provides access to observed time-series whose event values always have an instantaneous time scale. The
  * service and its API is described here:
- * 
+ *
  * <p><a href="https://waterservices.usgs.gov/rest/IV-Service.html">USGS NWIS IV Web Service</a> 
- * 
+ *
  * <p>The above link was last accessed: 20220804T11:00Z.
- * 
+ *
  * <p>Implementation notes:
- * 
+ *
  * <p>This implementation reads time-series data in WaterML format only. The NWIS IV Service does support other formats, 
  * but WaterML is the default. Time-series are chunked by feature and year ranges. The underlying format reader is a
  * {@link WatermlReader}.
- * 
+ *
  * @author James Brown
  * @author Jesse Bickel
  * @author Christopher Tubbs
@@ -167,7 +167,7 @@ public class NwisReader implements TimeSeriesReader
 
     /**
      * Reads the data source by forming separate requests by feature and time range.
-     * 
+     *
      * @param dataSource the data source
      * @param declaration the declaration used for chunking
      * @throws NullPointerException if either input is null
@@ -216,7 +216,7 @@ public class NwisReader implements TimeSeriesReader
 
     /**
      * Returns a time-series supplier from the inputs.
-     * 
+     *
      * @param dataSource the data source
      * @param chunks the data chunks to iterate
      * @return a time-series supplier
@@ -443,7 +443,7 @@ public class NwisReader implements TimeSeriesReader
 
     /**
      * Returns a byte stream from a file or web source.
-     * 
+     *
      * @param uri the uri
      * @return the byte stream
      * @throws UnsupportedOperationException if the uri scheme is not one of http(s) or file
@@ -470,7 +470,7 @@ public class NwisReader implements TimeSeriesReader
 
                     return null;
                 }
-                else if ( ! ( httpStatus >= 200 && httpStatus < 300 ) )
+                else if ( !( httpStatus >= 200 && httpStatus < 300 ) )
                 {
                     throw new ReadException( "Failed to read data from '"
                                              + uri

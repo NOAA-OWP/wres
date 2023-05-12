@@ -78,30 +78,30 @@ class DeclarationValidatorTest
                                             .build();
     }
 
-    @Test
-    void testTypesAreNotDefinedResultsInErrors()
-    {
-        BaselineDataset baselineDataset = BaselineDatasetBuilder.builder()
-                                                                .dataset( this.defaultDataset )
-                                                                .build();
-        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
-                                                                        .left( this.defaultDataset )
-                                                                        .right( this.defaultDataset )
-                                                                        .baseline( baselineDataset )
-                                                                        .build();
-        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
-
-        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events, "The data type was undefined "
-                                                                                + "for the observed",
-                                                                        StatusLevel.ERROR ) ),
-                   () -> assertTrue( DeclarationValidatorTest.contains( events, "The data type was undefined "
-                                                                                + "for the predicted",
-                                                                        StatusLevel.ERROR ) ),
-                   () -> assertTrue( DeclarationValidatorTest.contains( events, "The data type was undefined "
-                                                                                + "for the baseline",
-                                                                        StatusLevel.ERROR ) )
-        );
-    }
+//    @Test
+//    void testTypesAreNotDefinedResultsInErrors()
+//    {
+//        BaselineDataset baselineDataset = BaselineDatasetBuilder.builder()
+//                                                                .dataset( this.defaultDataset )
+//                                                                .build();
+//        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+//                                                                        .left( this.defaultDataset )
+//                                                                        .right( this.defaultDataset )
+//                                                                        .baseline( baselineDataset )
+//                                                                        .build();
+//        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+//
+//        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events, "The data type was undefined "
+//                                                                                + "for the observed",
+//                                                                        StatusLevel.ERROR ) ),
+//                   () -> assertTrue( DeclarationValidatorTest.contains( events, "The data type was undefined "
+//                                                                                + "for the predicted",
+//                                                                        StatusLevel.ERROR ) ),
+//                   () -> assertTrue( DeclarationValidatorTest.contains( events, "The data type was undefined "
+//                                                                                + "for the baseline",
+//                                                                        StatusLevel.ERROR ) )
+//        );
+//    }
 
     @Test
     void testLeftAndRightAreNotBothEnsemblesResultsInError()
