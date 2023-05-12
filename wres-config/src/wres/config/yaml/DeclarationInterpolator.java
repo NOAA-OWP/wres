@@ -279,7 +279,8 @@ public class DeclarationInterpolator
     }
 
     /**
-     * Interpolates sparsely declared features where possible (without using a feature service).
+     * Interpolates sparsely declared features where possible (without using a feature service). Interpolation is only
+     * possible when the feature authorities match for each dataset orientation that requires an interpolated feature.
      *
      * @param builder the declaration builder to adjust
      */

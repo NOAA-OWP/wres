@@ -70,31 +70,20 @@ public class FeaturesSerializer extends JsonSerializer<Features>
      */
     private void writeGeometryTuple( GeometryTuple geometryTuple, JsonGenerator writer ) throws IOException
     {
-        // Simple geometry tuple, i.e., one geometry and no fields other than name?
-        if ( this.isSimpleGeometryTuple( geometryTuple ) )
+        writer.writeStartObject();
+        if ( geometryTuple.hasLeft() )
         {
-            LOGGER.debug( "Discovered a simple geometry tuple with name {}.", geometryTuple.getLeft()
-                                                                                           .getName() );
-            writer.writeString( geometryTuple.getLeft()
-                                             .getName() );
+            this.writeGeometry( geometryTuple.getLeft(), writer, "observed" );
         }
-        else
+        if ( geometryTuple.hasRight() )
         {
-            writer.writeStartObject();
-            if ( geometryTuple.hasLeft() )
-            {
-                this.writeGeometry( geometryTuple.getLeft(), writer, "observed" );
-            }
-            if ( geometryTuple.hasRight() )
-            {
-                this.writeGeometry( geometryTuple.getRight(), writer, "predicted" );
-            }
-            if ( geometryTuple.hasBaseline() )
-            {
-                this.writeGeometry( geometryTuple.getBaseline(), writer, "baseline" );
-            }
-            writer.writeEndObject();
+            this.writeGeometry( geometryTuple.getRight(), writer, "predicted" );
         }
+        if ( geometryTuple.hasBaseline() )
+        {
+            this.writeGeometry( geometryTuple.getBaseline(), writer, "baseline" );
+        }
+        writer.writeEndObject();
     }
 
     /**
@@ -134,40 +123,6 @@ public class FeaturesSerializer extends JsonSerializer<Features>
             }
             writer.writeEndObject();
         }
-    }
-
-    /**
-     * @param geometryTuple  the geometry tuple to test
-     * @return whether the geometry tuple can be represented as a single feature name
-     */
-
-    private boolean isSimpleGeometryTuple( GeometryTuple geometryTuple )
-    {
-        // Left geometry only
-        if ( !geometryTuple.hasRight() && !geometryTuple.hasBaseline() )
-        {
-            // Is the geometry simple?
-            return this.isSimpleGeometry( geometryTuple.getLeft() );
-        }
-
-        // Left and right, but no baseline
-        if ( geometryTuple.hasRight() && !geometryTuple.hasBaseline() )
-        {
-            // Are both geometries simple and both equal on name?
-            return this.isSimpleGeometry( geometryTuple.getLeft() )
-                   && this.isSimpleGeometry( geometryTuple.getRight() )
-                   && geometryTuple.getLeft()
-                                   .equals( geometryTuple.getRight() );
-        }
-
-        // Left, right and baseline present. Are all simple and all equal?
-        return this.isSimpleGeometry( geometryTuple.getLeft() )
-               && this.isSimpleGeometry( geometryTuple.getRight() )
-               && this.isSimpleGeometry( geometryTuple.getBaseline() )
-               && geometryTuple.getLeft()
-                               .equals( geometryTuple.getRight() )
-               && geometryTuple.getLeft()
-                               .equals( geometryTuple.getBaseline() );
     }
 
     /**
