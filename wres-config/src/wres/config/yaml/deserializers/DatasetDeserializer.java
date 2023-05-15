@@ -108,6 +108,14 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
                                  .timeScale( timeScale )
                                  .build();
         }
+        // Singleton
+        else if( node instanceof TextNode textNode )
+        {
+            List<Source> sources = this.getSingletonSource( textNode );
+            return DatasetBuilder.builder()
+                                 .sources( sources )
+                                 .build();
+        }
         // Plain array of sources
         else if ( node instanceof ArrayNode arrayNode )
         {

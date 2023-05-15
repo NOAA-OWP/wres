@@ -24,6 +24,12 @@ public class ExecutionResult
     private final String hash;
 
     /**
+     * The declaration string, if available.
+     */
+
+    private final String declaration;
+
+    /**
      * The exception that stopped execution if execution failed without Error. When an Error occurs, this should not be
      * constructed and the Error should propagate.
      */
@@ -41,49 +47,38 @@ public class ExecutionResult
 
     public static ExecutionResult success()
     {
-        return new ExecutionResult( null, null, null, Set.of() );
+        return new ExecutionResult( null, null, null, null, Set.of() );
     }
 
     /**
      * Create a successful result with a project name.
      * @param name the project name
+     * @param declaration the project declaration string
      * @return an execution result
      */
 
-    public static ExecutionResult success( String name )
+    public static ExecutionResult success( String name, String declaration )
     {
-        return new ExecutionResult( name, null, null, Set.of() );
+        return new ExecutionResult( name, null, declaration, null, Set.of() );
     }
 
     /**
      * Create a successful result with a project name and a collection of resources that were created.
      * @param name the project name
+     * @param declaration the project declaration string
      * @param hash the hash of the project datasets
      * @param resources the resources created
      * @return an execution result
      * @throws NullPointerException if the set of resources is null
      */
 
-    public static ExecutionResult success( String name, String hash, Set<Path> resources )
+    public static ExecutionResult success( String name, String declaration, String hash, Set<Path> resources )
     {
-        return new ExecutionResult( name, hash, null, resources );
+        return new ExecutionResult( name, hash, declaration, null, resources );
     }
 
     /**
-     * Create a unsuccessful result with a project name and an exception thrown.
-     * @param name the project name
-     * @param e the exception thrown
-     * @return an execution result
-     */
-
-    public static ExecutionResult failure( String name, Exception e )
-    {
-        Objects.requireNonNull( e );
-        return new ExecutionResult( name, null, e, Set.of() );
-    }
-
-    /**
-     * Create a unsuccessful result with an exception thrown.
+     * Create an unsuccessful result with an exception thrown.
      * @param e the exception thrown
      * @return an execution result
      */
@@ -91,7 +86,34 @@ public class ExecutionResult
     public static ExecutionResult failure( Exception e )
     {
         Objects.requireNonNull( e );
-        return new ExecutionResult( null, null, e, Set.of() );
+        return new ExecutionResult( null, null, null, e, Set.of() );
+    }
+
+    /**
+     * Create an unsuccessful result with a project name and an exception thrown.
+     * @param declaration the project declaration string
+     * @param e the exception thrown
+     * @return an execution result
+     */
+
+    public static ExecutionResult failure( String declaration, Exception e )
+    {
+        Objects.requireNonNull( e );
+        return new ExecutionResult( null, null, declaration, e, Set.of() );
+    }
+
+    /**
+     * Create an unsuccessful result with a project name and an exception thrown.
+     * @param name the project name
+     * @param declaration the project declaration string
+     * @param e the exception thrown
+     * @return an execution result
+     */
+
+    public static ExecutionResult failure( String name, String declaration, Exception e )
+    {
+        Objects.requireNonNull( e );
+        return new ExecutionResult( name, null, declaration, e, Set.of() );
     }
 
     /**
@@ -127,6 +149,15 @@ public class ExecutionResult
     }
 
     /**
+     * @return the declaration string or null
+     */
+
+    public String getDeclaration()
+    {
+        return this.declaration;
+    }
+
+    /**
      * Success?
      * @return True when the result was success, false when it was failure.
      */
@@ -149,11 +180,13 @@ public class ExecutionResult
      * Hidden constructor.
      * @param name the project name, if available
      * @param hash the hash of the project datasets, if available
+     * @param declaration the declaration, if available
      * @param exception an exception, if applicable
      * @param resources the resources created, not null
      */
     private ExecutionResult( String name,
                              String hash,
+                             String declaration,
                              Exception exception,
                              Set<Path> resources )
     {
@@ -161,6 +194,7 @@ public class ExecutionResult
 
         this.name = name;
         this.hash = hash;
+        this.declaration = declaration;
         this.exception = exception;
         this.resources = Collections.unmodifiableSet( new TreeSet<>( resources ) );
     }

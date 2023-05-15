@@ -1,6 +1,7 @@
 package wres.pipeline;
 
 import java.io.IOException;
+import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.sql.SQLException;
@@ -88,7 +89,7 @@ public class Evaluator
 
     public ExecutionResult evaluate( String declarationOrPath )
     {
-        if( Objects.isNull( declarationOrPath ) )
+        if ( Objects.isNull( declarationOrPath ) )
         {
             throw new InternalWresException( "Expected a non-null declaration string or path." );
         }
@@ -98,12 +99,12 @@ public class Evaluator
         failure.begin();
 
         EvaluationDeclaration declaration;
+        String rawDeclaration;
         try
         {
-            declaration = MultiDeclarationFactory.from( declarationOrPath,
-                                                        FileSystems.getDefault(),
-                                                        true,
-                                                        true );
+            FileSystem fileSystem = FileSystems.getDefault();
+            rawDeclaration = MultiDeclarationFactory.getDeclarationString( declarationOrPath, fileSystem );
+            declaration = MultiDeclarationFactory.from( rawDeclaration, fileSystem, true, true );
         }
         catch ( IOException e )
         {
@@ -121,17 +122,19 @@ public class Evaluator
             LOGGER.info( "Running evaluation in memory." );
         }
 
-        return this.evaluate( declaration );
+        return this.evaluate( declaration, rawDeclaration );
     }
 
     /**
      * Executes an evaluation.
      * @param declaration the declaration
+     * @param rawDeclaration the raw declaration string to log
      * @return the result of the execution
      * @throws NullPointerException if the projectConfigPlus is null
      */
 
-    public ExecutionResult evaluate( EvaluationDeclaration declaration )
+    private ExecutionResult evaluate( EvaluationDeclaration declaration,
+                                      String rawDeclaration )
     {
         Objects.requireNonNull( declaration );
 
@@ -267,11 +270,12 @@ public class Evaluator
         }
         catch ( DeclarationException userException )
         {
-            String message = "Please correct the project configuration.";
+            String message = "Please correct the project declaration.";
             UserInputException userInputException = new UserInputException( message, userException );
             monitor.setFailed();
             monitor.commit();
             return ExecutionResult.failure( declaration.label(),
+                                            rawDeclaration,
                                             userInputException );
         }
         catch ( RuntimeException | IOException | SQLException internalException )
@@ -281,6 +285,7 @@ public class Evaluator
             monitor.setFailed();
             monitor.commit();
             return ExecutionResult.failure( declaration.label(),
+                                            rawDeclaration,
                                             internalWresException );
         }
         // Shutdown
@@ -300,6 +305,7 @@ public class Evaluator
         monitor.setSucceeded();
         monitor.commit();
         return ExecutionResult.success( declaration.label(),
+                                        rawDeclaration,
                                         projectHash,
                                         pathsWrittenTo );
     }

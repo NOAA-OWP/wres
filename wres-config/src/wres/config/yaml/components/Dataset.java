@@ -20,11 +20,11 @@ import wres.config.yaml.serializers.ZoneOffsetSerializer;
 
 /**
  * Observed or predicted dataset.
+ * @param label the label
  * @param sources the sources
  * @param variable the variable
  * @param featureAuthority the feature authority
  * @param type the type of data
- * @param label the label
  * @param ensembleFilter the ensemble filter
  * @param timeShift the time shift
  * @param timeZoneOffset the time zone offset
@@ -32,12 +32,12 @@ import wres.config.yaml.serializers.ZoneOffsetSerializer;
  */
 @RecordBuilder
 @JsonDeserialize( using = DatasetDeserializer.class )
-public record Dataset( @JsonProperty( "sources" ) List<Source> sources,
+public record Dataset( @JsonProperty( "label" ) String label,
+                       @JsonProperty( "sources" ) List<Source> sources,
                        @JsonSerialize( using = VariableSerializer.class )
                        @JsonProperty( "variable" ) Variable variable,
                        @JsonProperty( "feature_authority" ) FeatureAuthority featureAuthority,
                        @JsonProperty( "type" ) DataType type,
-                       @JsonProperty( "label" ) String label,
                        @JsonSerialize( using = EnsembleFilterSerializer.class )
                        @JsonProperty( "ensemble_filter" ) EnsembleFilter ensembleFilter,
                        @JsonSerialize( using = DurationSerializer.class )
@@ -50,11 +50,11 @@ public record Dataset( @JsonProperty( "sources" ) List<Source> sources,
 {
     /**
      * Set the defaults.
+     * @param label the label
      * @param sources the sources
      * @param variable the variable
      * @param featureAuthority the feature authority
      * @param type the type of data
-     * @param label the label
      * @param ensembleFilter the ensemble filter
      * @param timeShift the time shift
      * @param timeZoneOffset the time zone offset

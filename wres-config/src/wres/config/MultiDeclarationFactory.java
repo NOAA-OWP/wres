@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.detect.Detector;
 import org.apache.tika.exception.TikaException;
@@ -65,7 +66,7 @@ public class MultiDeclarationFactory
      * @param validate is true to validate the declaration
      * @return an evaluation declaration
      * @throws IllegalStateException if the project declaration schema could not be found on the classpath
-     * @throws IOException if the schema could not be read
+     * @throws IOException if the schema or path could not be read
      * @throws FileNotFoundException if the input string is a path, but the path points to a missing file
      * @throws DeclarationException if the declaration is invalid
      * @throws NullPointerException if the input string is null
@@ -78,6 +79,93 @@ public class MultiDeclarationFactory
     {
         Objects.requireNonNull( declarationOrPath );
 
+        Pair<String, String> declarationPair =
+                MultiDeclarationFactory.getDeclarationStringAndOrigin( declarationOrPath, fileSystem );
+
+        String declarationString = declarationPair.getLeft();
+        String origin = declarationPair.getRight();
+
+        // Now we have the string, detect the type of declaration
+        MediaType detectedMediaType = MultiDeclarationFactory.getMediaType( declarationString );
+
+        if ( MultiDeclarationFactory.isOldDeclarationString( detectedMediaType, declarationString ) )
+        {
+            return MultiDeclarationFactory.fromOld( declarationString, interpolate, validate, origin );
+        }
+
+        // Must be the new language, else invalid
+        return DeclarationFactory.from( declarationString, fileSystem, interpolate, validate );
+    }
+
+    /**
+     * Returns a declaration string and inferred origin from either a declaration string or path, reading from the path
+     * as needed.
+     * @param declarationOrPath the string containing declaration or a path
+     * @param fileSystem a file system to use when reading a path, optional
+     * @return the declaration string
+     * @throws IOException if a path could not be read
+     */
+
+    public static String getDeclarationString( String declarationOrPath,
+                                               FileSystem fileSystem ) throws IOException
+    {
+        return MultiDeclarationFactory.getDeclarationStringAndOrigin( declarationOrPath, fileSystem )
+                                      .getLeft();
+    }
+
+    /**
+     * Determines whether the supplied string is a path that contains a declaration string or a declaration string
+     * itself, else unrecognized. The string may be formatted in either of the two declaration languages. Performs a
+     * shallow analysis only and does not fully parse or validate the string against its schema.
+     *
+     * @param declarationOrPath the declaration or path
+     * @return whether the input is a readable declaration or declaration string
+     * @throws NullPointerException if the input is null
+     */
+
+    public static boolean isDeclarationPathOrString( String declarationOrPath )
+    {
+        Objects.requireNonNull( declarationOrPath );
+
+        try
+        {
+            FileSystem fileSystem = FileSystems.getDefault();
+            Pair<String, String> declarationPair =
+                    MultiDeclarationFactory.getDeclarationStringAndOrigin( declarationOrPath, fileSystem );
+            String declarationString = declarationPair.getLeft();
+
+            MediaType detectedMediaType = MultiDeclarationFactory.getMediaType( declarationString );
+
+            // XML? Then considered a declaration string
+            if ( MultiDeclarationFactory.isOldDeclarationString( detectedMediaType, declarationString ) )
+            {
+                return true;
+            }
+
+            // New-style declaration?
+            return DeclarationFactory.isDeclarationString( declarationString );
+        }
+        catch ( IOException e )
+        {
+            String message = "Encountered an exception while inspecting the declaration or path: "
+                             + declarationOrPath;
+            LOGGER.warn( message, e );
+            return false;
+        }
+    }
+
+    /**
+     * Returns a declaration string and inferred origin from either a declaration string or path, reading from the path
+     * as needed.
+     * @param declarationOrPath the string containing declaration or a path
+     * @param fileSystem a file system to use when reading a path, optional
+     * @return the declaration string and origin in that order
+     * @throws IOException if a path could not be read
+     */
+
+    private static Pair<String, String> getDeclarationStringAndOrigin( String declarationOrPath,
+                                                                       FileSystem fileSystem ) throws IOException
+    {
         String declarationString = declarationOrPath;
 
         // Default origin
@@ -103,33 +191,55 @@ public class MultiDeclarationFactory
             LOGGER.debug( "Discovered a declaration string to read:{}{}", System.lineSeparator(), declarationString );
         }
 
-        // Now we have the string, detect the type of declaration
-        MediaType detectedMediaType;
+        return Pair.of( declarationString, origin );
+    }
 
+    /**
+     * Determines whether the declaration string is an old-style declaration string.
+     * @param mediaType the media type associated with the declaration string
+     * @param declarationString the declaration string
+     * @return whether the string is an old-style declaration string
+     * @throws NullPointerException if either input is null
+     */
+
+    private static boolean isOldDeclarationString( MediaType mediaType, String declarationString )
+    {
+        Objects.requireNonNull( mediaType );
+        Objects.requireNonNull( declarationString );
+
+        // Permissive check because a string without <?xml version="1.0" encoding="UTF-8"?> will still parse correctly,
+        // even though the content type will not be detected correctly. The first check deals with that scenario and
+        // the second check deals with a correctly detected content type.
+        return declarationString.startsWith( "<project" ) || ( "application".equals( mediaType.getType() )
+                                                               && "xml".equals( mediaType.getSubtype() ) );
+    }
+
+    /**
+     * Inspects the string for MIME type.
+     * @param declarationString the declaration
+     * @return the media type
+     * @throws IOException if the content could not be parsed for detection
+     */
+
+    private static MediaType getMediaType( String declarationString ) throws IOException
+    {
         try ( InputStream inputStream = new ByteArrayInputStream( declarationString.getBytes() ) )
         {
             Metadata metadata = new Metadata();
             TikaConfig tikaConfig = new TikaConfig();
             Detector detector = tikaConfig.getDetector();
-            detectedMediaType = detector.detect( inputStream, metadata );
+            MediaType detectedMediaType = detector.detect( inputStream, metadata );
 
             LOGGER.debug( "The detected MIME type of the declaration string was {} and the subtype was {}.",
                           detectedMediaType.getType(),
                           detectedMediaType.getSubtype() );
+
+            return detectedMediaType;
         }
         catch ( TikaException e )
         {
             throw new IOException( "Failed to detect the MIME type of the declaration string: " + declarationString );
         }
-
-        if ( "application".equals( detectedMediaType.getType() )
-             && "xml".equals( detectedMediaType.getSubtype() ) )
-        {
-            return MultiDeclarationFactory.fromOld( declarationString, interpolate, validate, origin );
-        }
-
-        // Must be the new language, else invalid
-        return DeclarationFactory.from( declarationString, fileSystem, interpolate, validate );
     }
 
     /**
@@ -194,13 +304,13 @@ public class MultiDeclarationFactory
 
         // Validate the migrated declaration. This exposes the declaration to two layers of validation, first against
         // the old schema and business logic, now against the new schema and business logic
-        if( validate )
+        if ( validate )
         {
             DeclarationValidator.validate( migrated, true );
         }
 
         // Interpolate any missing declaration for internal use
-        if( interpolate )
+        if ( interpolate )
         {
             migrated = DeclarationInterpolator.interpolate( migrated );
         }

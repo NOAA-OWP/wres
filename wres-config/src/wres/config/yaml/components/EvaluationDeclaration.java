@@ -31,6 +31,7 @@ import wres.statistics.generated.Pool;
 
 /**
  * Root class for an evaluation declaration.
+ * @param label an optional label or name for the evaluation
  * @param left the left or observed data sources, required
  * @param right the right or predicted data sources, required
  * @param baseline the baseline data sources
@@ -64,11 +65,11 @@ import wres.statistics.generated.Pool;
  * @param durationFormat the duration format
  * @param decimalFormat the decimal format
  * @param formats the statistics formats to write
- * @param label an optional label or name for the evaluation
  */
 
 @RecordBuilder
-public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
+public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
+                                     @JsonProperty( "observed" ) Dataset left,
                                      @JsonProperty( "predicted" ) Dataset right,
                                      @JsonProperty( "baseline" ) BaselineDataset baseline,
                                      @JsonProperty( "features" ) Features features,
@@ -102,7 +103,7 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
                                      @JsonDeserialize( using = ThresholdSetsDeserializer.class )
                                      @JsonSerialize( using = ThresholdSetsSerializer.class )
                                      @JsonProperty( "threshold_sets" ) Set<Threshold> thresholdSets,
-                                     @JsonProperty( "threshold_service") ThresholdService thresholdService,
+                                     @JsonProperty( "threshold_service" ) ThresholdService thresholdService,
                                      @JsonSerialize( using = EnsembleAverageTypeSerializer.class )
                                      @JsonProperty( "ensemble_average" ) Pool.EnsembleAverageType ensembleAverageType,
                                      @JsonSerialize( using = PositiveIntegerSerializer.class )
@@ -116,8 +117,7 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
                                      @JsonSerialize( using = DecimalFormatSerializer.class )
                                      @JsonDeserialize( using = DecimalFormatDeserializer.class )
                                      @JsonProperty( "decimal_format" ) DecimalFormat decimalFormat,
-                                     @JsonProperty( "output_formats" ) Formats formats,
-                                     @JsonProperty( "label" ) String label )
+                                     @JsonProperty( "output_formats" ) Formats formats )
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationDeclaration.class );
@@ -223,7 +223,7 @@ public record EvaluationDeclaration( @JsonProperty( "observed" ) Dataset left,
             durationFormat = ChronoUnit.SECONDS;
         }
 
-        if( Objects.isNull( minimumSampleSize ) )
+        if ( Objects.isNull( minimumSampleSize ) )
         {
             minimumSampleSize = 0;
         }

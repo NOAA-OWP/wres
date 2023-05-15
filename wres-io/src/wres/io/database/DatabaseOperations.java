@@ -3,9 +3,6 @@ package wres.io.database;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -45,6 +42,7 @@ public class DatabaseOperations
      * The log parameters.
      * @param arguments the arguments used to run the application, at least two
      * @param projectName the project name
+     * @param declaration the declaration string
      * @param hash the hash of the project datasets
      * @param startTime the start of the execution interval
      * @param endTime the end of the execution interval
@@ -52,8 +50,10 @@ public class DatabaseOperations
      * @param exception any exception that caused the application to exit
      * @param version the top-level version of the application (module versions vary), not null
      */
+
     public record LogParameters( List<String> arguments,
                                  String projectName,
+                                 String declaration,
                                  String hash,
                                  Instant startTime,
                                  Instant endTime,
@@ -162,12 +162,11 @@ public class DatabaseOperations
      * Attempts to migrate the database.
      *
      * @param database the database
-     * @throws IOException if the migration fails
      * @throws SQLException if cleaning fails after migration
      * @throws NullPointerException if the database is null
      */
 
-    public static void migrateDatabase( Database database ) throws SQLException, IOException
+    public static void migrateDatabase( Database database ) throws SQLException
     {
         Objects.requireNonNull( database );
 
@@ -230,39 +229,13 @@ public class DatabaseOperations
         try
         {
             LocalDateTime startedAtZulu = LocalDateTime.ofInstant( logParameters.startTime(), UTC );
-            LocalDateTime endedAtZulu = LocalDateTime.ofInstant( logParameters.endTime, UTC );
+            LocalDateTime endedAtZulu = LocalDateTime.ofInstant( logParameters.endTime(), UTC );
 
-            // For any arguments that happen to be regular files, read the
-            // contents of the first file into the "project" field. Maybe there
-            // is an improvement that can be made, but this should cover the
-            // common case of a single file in the args.
+            // Log the declaration if available
             String project = "";
-
-            // The two operations that might perform a project related operation are 'execute' and 'ingest'
-            // these are the only cases where we might be interested in a project configuration
-            String testArg = arguments.get( 0 )
-                                      .toLowerCase();
-            if ( "execute".equals( testArg ) || "ingest".equals( testArg ) )
+            if ( Objects.nonNull( logParameters.declaration() ) )
             {
-
-                // Go ahead and assign the second argument as the project
-                // if this instance is in server mode,
-                // this will be the raw project text and a file path will not be involved
-                project = arguments.get( 1 );
-
-                // Look through the arguments to find the path to a file
-                // this is more than likely our project configuration
-                for ( String arg : arguments )
-                {
-                    Path path = Paths.get( arg );
-
-                    if ( path.toFile().isFile() )
-                    {
-                        project = String.join( System.lineSeparator(),
-                                               Files.readAllLines( path ) );
-                        break;
-                    }
-                }
+                project = logParameters.declaration();
             }
 
             DataScripter script = new DataScripter( database );
@@ -326,7 +299,7 @@ public class DatabaseOperations
                             logParameters.failed(),
                             exception );
         }
-        catch ( SQLException | IOException e )
+        catch ( SQLException e )
         {
             LOGGER.warn( "Execution metadata could not be logged to the database.",
                          e );
