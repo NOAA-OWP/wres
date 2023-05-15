@@ -99,6 +99,8 @@ public class DeclarationValidator
     private static final String AGAIN = "again.";
     /** Re-used string. */
     private static final String THE_TIME_SCALE_ASSOCIATED_WITH_THE = "The time scale associated with the ";
+    /** Re-used string. */
+    private static final String THE_EVALUATION_DECLARED = "The evaluation declared ";
 
     /**
      * Performs validation against the schema, followed by "business-logic" validation. First, reads the declaration
@@ -1878,7 +1880,7 @@ public class DeclarationValidator
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.WARN )
-                                           .setEventMessage( "The evaluation declared "
+                                           .setEventMessage( THE_EVALUATION_DECLARED
                                                              + featureful.size()
                                                              + "thresholds with explicit features, but no "
                                                              + "features to evaluate. An attempt will be made to "
@@ -1926,8 +1928,14 @@ public class DeclarationValidator
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
-        // Explicit features and featureful thresholds. Every featureful threshold must be correlated with a feature
-        Set<String> thresholdsWithNames = thresholds.stream()
+        if( thresholds.isEmpty() )
+        {
+            LOGGER.debug( "No featureful thresholds to validate" );
+            return List.of();
+        }
+
+        // Explicit features and featureful thresholds. Some featureful thresholds must be correlated with features
+        Set<String> thresholdFeatureNames = thresholds.stream()
                                                     .filter( n -> n.featureNameFrom() == orientation )
                                                     // Ignore all data, which was added automagically
                                                     .filter( n -> !DeclarationInterpolator.ALL_DATA_THRESHOLD.threshold()
@@ -1936,29 +1944,63 @@ public class DeclarationValidator
                                                     .map( wres.statistics.generated.Geometry::getName )
                                                     .collect( Collectors.toSet() );
 
+        if( thresholdFeatureNames.isEmpty() )
+        {
+            LOGGER.debug( "No featureful thresholds to validate with an {} orientation.", orientation );
+            return List.of();
+        }
+
         Set<String> names = DeclarationUtilities.getFeatureNamesFor( features, orientation );
 
+        int before = thresholdFeatureNames.size();
         // Any threshold feature names without corresponding feature names?
-        thresholdsWithNames.removeAll( names );
+        thresholdFeatureNames.removeAll( names );
+        int after = thresholdFeatureNames.size();
 
-        if ( !thresholdsWithNames.isEmpty() )
+        // Some must match
+        if( before == after )
         {
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.ERROR )
-                                           .setEventMessage( "The evaluation declared "
-                                                             + thresholdsWithNames.size()
+                                           .setEventMessage( THE_EVALUATION_DECLARED
+                                                             + before
                                                              + " thresholds with features whose "
                                                              + "'feature_name_from' is '"
                                                              + orientation
                                                              + "', but "
-                                                             + thresholdsWithNames.size()
+                                                             + after
                                                              + " of the features associated with these thresholds "
-                                                             + "had no corresponding feature to evaluate. Please "
-                                                             + "remove the thresholds for these features, add the "
-                                                             + "corresponding features or fix the threshold "
+                                                             + "had no corresponding feature to evaluate anywhere in "
+                                                             + "the declaration (e.g., 'features', 'feature_groups'). "
+                                                             + "Please remove the thresholds for these features, add "
+                                                             + "the corresponding features or fix the threshold "
                                                              + "declaration. The missing features are: "
-                                                             + thresholdsWithNames
+                                                             + thresholdFeatureNames
+                                                             + "." )
+                                           .build();
+            events.add( event );
+        }
+        // Some matched. some did not: warn
+        else if ( !thresholdFeatureNames.isEmpty() )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( THE_EVALUATION_DECLARED
+                                                             + before
+                                                             + " thresholds with features whose "
+                                                             + "'feature_name_from' is '"
+                                                             + orientation
+                                                             + "', but "
+                                                             + after
+                                                             + " of the features associated with these thresholds "
+                                                             + "had no corresponding feature to evaluate anywhere in "
+                                                             + "the declaration (e.g., 'features', 'feature_groups'). "
+                                                             + "Please remove the thresholds for these features, add "
+                                                             + "the corresponding features or fix the threshold "
+                                                             + "declaration. The missing features are: "
+                                                             + thresholdFeatureNames
                                                              + "." )
                                            .build();
             events.add( event );

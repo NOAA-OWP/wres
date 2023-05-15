@@ -1,6 +1,7 @@
 package wres.config.yaml.serializers;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.BeanDescription;
@@ -26,7 +27,7 @@ public class SourceSerializer extends JsonSerializer<Source>
                                       .uri( source.uri() )
                                       .build();
         // URI only
-        if ( compare.equals( source ) )
+        if ( compare.equals( source ) && Objects.nonNull( source.uri() ) )
         {
             writer.writeString( source.uri()
                                       .toString() );
