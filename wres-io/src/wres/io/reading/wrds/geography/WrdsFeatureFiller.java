@@ -77,9 +77,7 @@ public class WrdsFeatureFiller
         Objects.requireNonNull( evaluation );
 
         FeatureService featureService = evaluation.featureService();
-        boolean requiresFeatureRequests = Objects.nonNull( evaluation.featureService() )
-                                          && !featureService.featureGroups()
-                                                            .isEmpty();
+        boolean requiresFeatureRequests = Objects.nonNull( evaluation.featureService() );
 
         // In many cases, no need to declare features, such as evaluations where
         // all the feature names are identical in sources on both sides or in
@@ -108,7 +106,7 @@ public class WrdsFeatureFiller
             }
             else
             {
-                throw new IllegalStateException( "Discovered sparsely declared features, but these features could not "
+                throw new DeclarationException( "Discovered sparsely declared features, but these features could not "
                                                  + "be interpolated because no feature service was declared. Please "
                                                  + "declare a 'feature_service' or only declare dense features." );
             }

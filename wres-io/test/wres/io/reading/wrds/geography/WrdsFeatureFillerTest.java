@@ -3,6 +3,7 @@ package wres.io.reading.wrds.geography;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -42,16 +43,21 @@ class WrdsFeatureFillerTest
                                   .dataset( DatasetBuilder.builder()
                                                           .build() )
                                   .build();
-    private static final Dataset BOILERPLATE_LEFT_DATASOURCE_USGS_SITE_CODE_AUTHORITY =
+    private static final Dataset BOILERPLATE_DATASOURCE_USGS_SITE_CODE_AUTHORITY =
             DatasetBuilder.builder()
                           .featureAuthority( FeatureAuthority.USGS_SITE_CODE )
                           .build();
-
-    private static final Dataset BOILERPLATE_RIGHT_DATASOURCE_NWS_LID_AUTHORITY =
+    private static final Dataset BOILERPLATE_DATASOURCE_NWS_LID_AUTHORITY =
             DatasetBuilder.builder()
                           .featureAuthority( FeatureAuthority.NWS_LID )
                           .build();
 
+    private static final BaselineDataset BOILERPLATE_BASELINE_DATASOURCE_NWM_FEATURE_AUTHORITY =
+            BaselineDatasetBuilder.builder()
+                                  .dataset( DatasetBuilder.builder()
+                                                          .featureAuthority( FeatureAuthority.NWM_FEATURE_ID )
+                                                          .build() )
+                                  .build();
     private static final GeometryTuple FULLY_DECLARED_FEATURE_ONE_NO_BASELINE =
             GeometryTuple.newBuilder()
                          .setLeft( Geometry.newBuilder()
@@ -147,8 +153,8 @@ class WrdsFeatureFillerTest
         EvaluationDeclaration evaluation
                 = WrdsFeatureFillerTest.getBoilerplateEvaluationWith( null,
                                                                       featureService,
-                                                                      BOILERPLATE_LEFT_DATASOURCE_USGS_SITE_CODE_AUTHORITY,
-                                                                      BOILERPLATE_RIGHT_DATASOURCE_NWS_LID_AUTHORITY,
+                                                                      BOILERPLATE_DATASOURCE_USGS_SITE_CODE_AUTHORITY,
+                                                                      BOILERPLATE_DATASOURCE_NWS_LID_AUTHORITY,
                                                                       null );
 
         try ( MockedStatic<WrdsFeatureService> utilities = Mockito.mockStatic( WrdsFeatureService.class ) )
@@ -173,6 +179,106 @@ class WrdsFeatureFillerTest
                                  .build();
 
             assertEquals( Set.of( expectedGroup ), actualGroup );
+        }
+    }
+
+    @Test
+    void testFillOutSparseFeaturesUsingMockedFeatureService() throws URISyntaxException
+    {
+        URI uri = new URI( "https://some_fake_uri" );
+        FeatureService featureService = new FeatureService( uri, Set.of() );
+
+        GeometryTuple left = GeometryTuple.newBuilder()
+                                          .setLeft( Geometry.newBuilder()
+                                                            .setName( "foo" ) )
+                                          .build();
+        GeometryTuple right = GeometryTuple.newBuilder()
+                                           .setRight( Geometry.newBuilder()
+                                                              .setName( "bar" ) )
+                                           .build();
+        GeometryTuple baseline = GeometryTuple.newBuilder()
+                                              .setBaseline( Geometry.newBuilder()
+                                                                    .setName( "baz" ) )
+                                              .build();
+        EvaluationDeclaration evaluation
+                = WrdsFeatureFillerTest.getBoilerplateEvaluationWith( Set.of( left, right, baseline ),
+                                                                      featureService,
+                                                                      BOILERPLATE_DATASOURCE_USGS_SITE_CODE_AUTHORITY,
+                                                                      BOILERPLATE_DATASOURCE_NWS_LID_AUTHORITY,
+                                                                      BOILERPLATE_BASELINE_DATASOURCE_NWM_FEATURE_AUTHORITY );
+
+        try ( MockedStatic<WrdsFeatureService> utilities = Mockito.mockStatic( WrdsFeatureService.class ) )
+        {
+            // Mock the look-ups
+            utilities.when( () -> WrdsFeatureService.bulkLookup( evaluation,
+                                                                 featureService,
+                                                                 FeatureAuthority.USGS_SITE_CODE,
+                                                                 FeatureAuthority.NWS_LID,
+                                                                 Set.of( "foo" ) ) )
+                     .thenReturn( Map.of( "foo", "qux" ) );
+            utilities.when( () -> WrdsFeatureService.bulkLookup( evaluation,
+                                                                 featureService,
+                                                                 FeatureAuthority.USGS_SITE_CODE,
+                                                                 FeatureAuthority.NWM_FEATURE_ID,
+                                                                 Set.of( "foo" ) ) )
+                     .thenReturn( Map.of( "foo", "quux" ) );
+            utilities.when( () -> WrdsFeatureService.bulkLookup( evaluation,
+                                                                 featureService,
+                                                                 FeatureAuthority.NWS_LID,
+                                                                 FeatureAuthority.USGS_SITE_CODE,
+                                                                 Set.of( "bar" ) ) )
+                     .thenReturn( Map.of( "bar", "corge" ) );
+            utilities.when( () -> WrdsFeatureService.bulkLookup( evaluation,
+                                                                 featureService,
+                                                                 FeatureAuthority.NWS_LID,
+                                                                 FeatureAuthority.NWM_FEATURE_ID,
+                                                                 Set.of( "bar" ) ) )
+                     .thenReturn( Map.of( "bar", "grault" ) );
+            utilities.when( () -> WrdsFeatureService.bulkLookup( evaluation,
+                                                                 featureService,
+                                                                 FeatureAuthority.NWM_FEATURE_ID,
+                                                                 FeatureAuthority.USGS_SITE_CODE,
+                                                                 Set.of( "baz" ) ) )
+                     .thenReturn( Map.of( "baz", "garply" ) );
+            utilities.when( () -> WrdsFeatureService.bulkLookup( evaluation,
+                                                                 featureService,
+                                                                 FeatureAuthority.NWM_FEATURE_ID,
+                                                                 FeatureAuthority.NWS_LID,
+                                                                 Set.of( "baz" ) ) )
+                     .thenReturn( Map.of( "baz", "waldo" ) );
+
+            EvaluationDeclaration actualEvaluation = WrdsFeatureFiller.fillFeatures( evaluation );
+
+            Set<GeometryTuple> actual = actualEvaluation.features()
+                                                        .geometries();
+
+            GeometryTuple expectedOne = GeometryTuple.newBuilder()
+                                                     .setLeft( Geometry.newBuilder()
+                                                                       .setName( "foo" ) )
+                                                     .setRight( Geometry.newBuilder()
+                                                                        .setName( "qux" ) )
+                                                     .setBaseline( Geometry.newBuilder()
+                                                                           .setName( "quux" ) )
+                                                     .build();
+            GeometryTuple expectedTwo = GeometryTuple.newBuilder()
+                                                     .setLeft( Geometry.newBuilder()
+                                                                       .setName( "corge" ) )
+                                                     .setRight( Geometry.newBuilder()
+                                                                        .setName( "bar" ) )
+                                                     .setBaseline( Geometry.newBuilder()
+                                                                           .setName( "grault" ) )
+                                                     .build();
+            GeometryTuple expectedThree = GeometryTuple.newBuilder()
+                                                     .setLeft( Geometry.newBuilder()
+                                                                       .setName( "garply" ) )
+                                                     .setRight( Geometry.newBuilder()
+                                                                        .setName( "waldo" ) )
+                                                     .setBaseline( Geometry.newBuilder()
+                                                                           .setName( "baz" ) )
+                                                     .build();
+            Set<GeometryTuple> expected = Set.of( expectedOne, expectedTwo, expectedThree );
+
+            assertEquals( expected, actual);
         }
     }
 
