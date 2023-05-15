@@ -351,9 +351,16 @@ class EvaluationUtilities
         {
             EvaluationDeclaration declaration = evaluationDetails.declaration();
 
+            // Look up any needed feature correlations and thresholds, generate a new declaration. These are needed for
+            // reading and ingest, as well as subsequent steps, so perform this upfront: #116208
+            EvaluationDeclaration declarationWithFeatures = ReaderUtilities.readAndFillFeatures( declaration );
+            // Update the small bag-o-state
+            evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
+                                                                           .declaration( declarationWithFeatures )
+                                                                           .build();
             // Gridded features cache, if required. See #51232.
             GriddedFeatures.Builder griddedFeaturesBuilder =
-                    EvaluationUtilities.getGriddedFeaturesCache( declaration );
+                    EvaluationUtilities.getGriddedFeaturesCache( declarationWithFeatures );
 
             LOGGER.debug( "Beginning ingest of time-series data..." );
 
@@ -381,11 +388,12 @@ class EvaluationUtilities
                 {
                     List<IngestResult> ingestResults = SourceLoader.load( databaseIngester,
                                                                           evaluationDetails.systemSettings(),
-                                                                          declaration,
+                                                                          declarationWithFeatures,
                                                                           griddedFeaturesBuilder );
 
-                    declaration = EvaluationUtilities.interpolateMissingDataTypes( declaration,
-                                                                                   timeSeriesTracker.getDataTypes() );
+                    declarationWithFeatures =
+                            EvaluationUtilities.interpolateMissingDataTypes( declarationWithFeatures,
+                                                                             timeSeriesTracker.getDataTypes() );
 
                     // Create the gridded features cache if needed
                     GriddedFeatures griddedFeatures = null;
@@ -396,7 +404,7 @@ class EvaluationUtilities
 
                     // Get the project, which provides an interface to the underlying store of time-series data
                     project = Projects.getProject( databaseServices.database(),
-                                                   declaration,
+                                                   declarationWithFeatures,
                                                    caches,
                                                    griddedFeatures,
                                                    ingestResults );
@@ -415,12 +423,13 @@ class EvaluationUtilities
                 // Load the sources using the ingester and create the ingest results to share
                 List<IngestResult> ingestResults = SourceLoader.load( timeSeriesIngester,
                                                                       evaluationDetails.systemSettings(),
-                                                                      declaration,
+                                                                      declarationWithFeatures,
                                                                       griddedFeaturesBuilder );
 
                 // Interpolate any missing elements of the declaration that depend on the data types
-                declaration = EvaluationUtilities.interpolateMissingDataTypes( declaration,
-                                                                               timeSeriesTracker.getDataTypes() );
+                declarationWithFeatures =
+                        EvaluationUtilities.interpolateMissingDataTypes( declarationWithFeatures,
+                                                                         timeSeriesTracker.getDataTypes() );
 
                 // The immutable collection of in-memory time-series
                 TimeSeriesStore timeSeriesStore = timeSeriesStoreBuilder.build();
@@ -428,19 +437,12 @@ class EvaluationUtilities
                 evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
                                                                                .timeSeriesStore( timeSeriesStore )
                                                                                .build();
-                project = Projects.getProject( declaration,
+                project = Projects.getProject( declarationWithFeatures,
                                                timeSeriesStore,
                                                ingestResults );
             }
 
             LOGGER.debug( "Finished ingest of time-series data." );
-
-            // Look up any needed feature correlations and thresholds, generate a new declaration.
-            EvaluationDeclaration declarationWithFeatures = ReaderUtilities.readAndFillFeatures( declaration );
-            // Update the small bag-o-state
-            evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
-                                                                           .declaration( declarationWithFeatures )
-                                                                           .build();
 
             // Set the project hash for identification
             projectHash = project.getHash();
@@ -581,7 +583,7 @@ class EvaluationUtilities
      */
 
     private static EvaluationDeclaration interpolateMissingDataTypes( EvaluationDeclaration declaration,
-                                                                      Map<DatasetOrientation,DataType> dataTypes )
+                                                                      Map<DatasetOrientation, DataType> dataTypes )
     {
         // Interpolate any missing elements of the declaration that depend on the data types
         if ( DeclarationUtilities.hasMissingDataTypes( declaration ) )
