@@ -2,12 +2,14 @@ package wres.io.ingesting.memory;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
+import wres.io.ingesting.TimeSeriesTracker;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 
@@ -21,16 +23,21 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
     /** The time-series store builder to populate with time-series. */
     private final TimeSeriesStore.Builder timeSeriesStoreBuilder;
 
+    /** A time-series tracker. */
+    private final UnaryOperator<TimeSeriesTuple> timeSeriesTracker;
+
     /**
      * Create an instance.
      * @param timeSeriesStoreBuilder the time-series store builder to populate
+     * @param timeSeriesTracker a time-series tracker
      * @return an instance
      * @throws NullPointerException if the input is null
      */
 
-    public static InMemoryTimeSeriesIngester of( TimeSeriesStore.Builder timeSeriesStoreBuilder )
+    public static InMemoryTimeSeriesIngester of( TimeSeriesStore.Builder timeSeriesStoreBuilder,
+                                                 TimeSeriesTracker timeSeriesTracker )
     {
-        return new InMemoryTimeSeriesIngester( timeSeriesStoreBuilder );
+        return new InMemoryTimeSeriesIngester( timeSeriesStoreBuilder, timeSeriesTracker );
     }
 
     @Override
@@ -45,6 +52,10 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
             List<TimeSeriesTuple> listedTuples = timeSeriesTuple.toList();
             for ( TimeSeriesTuple nextTuple : listedTuples )
             {
+                // Track the time-series
+                this.getTimeSeriesTracker()
+                    .apply( nextTuple );
+
                 DataSource innerSource = nextTuple.getDataSource();
                 DatasetOrientation innerOrientation =
                         DatasetOrientation.valueOf( innerSource.getDatasetOrientation()
@@ -87,12 +98,33 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
     }
 
     /**
+     * @return the time-series tracker
+     */
+
+    private UnaryOperator<TimeSeriesTuple> getTimeSeriesTracker()
+    {
+        return this.timeSeriesTracker;
+    }
+
+    /**
      * Hidden constructor.
+     * @param timeSeriesTracker a time-series tracker
      * @param timeSeriesStoreBuilder the time-series store builder
      */
-    private InMemoryTimeSeriesIngester( TimeSeriesStore.Builder timeSeriesStoreBuilder )
+    private InMemoryTimeSeriesIngester( TimeSeriesStore.Builder timeSeriesStoreBuilder,
+                                        TimeSeriesTracker timeSeriesTracker )
     {
         Objects.requireNonNull( timeSeriesStoreBuilder );
         this.timeSeriesStoreBuilder = timeSeriesStoreBuilder;
+
+        // Set the tracker or an identity operator
+        if( Objects.isNull( timeSeriesTracker ) )
+        {
+            this.timeSeriesTracker = in -> in;
+        }
+        else
+        {
+            this.timeSeriesTracker = timeSeriesTracker;
+        }
     }
 }

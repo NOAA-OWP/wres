@@ -74,7 +74,12 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
             List<Source> sources;
 
             // Explicit array?
-            if( sourcesNode instanceof ArrayNode arrayNode )
+            if( sourcesNode instanceof ObjectNode sourceNode )
+            {
+                Source nextSource = reader.readValue( sourceNode, Source.class );
+                sources = List.of( nextSource );
+            }
+            else if( sourcesNode instanceof ArrayNode arrayNode )
             {
                 sources = this.getSourcesFromArray( reader, arrayNode );
             }
@@ -85,7 +90,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
             }
             else
             {
-                throw new IOException( "Unsupported format for sources node." );
+                throw new IOException( "Unsupported format for sources node: " + sourcesNode.getClass() );
             }
 
             Variable variable = this.getVariable( reader, node );

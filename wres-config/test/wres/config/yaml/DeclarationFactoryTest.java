@@ -282,6 +282,39 @@ class DeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeWithSingletonSources() throws IOException
+    {
+        String yaml = """
+                observed:
+                  sources:
+                    uri: some_file.csv
+                    interface: usgs nwis
+                predicted:
+                  sources:
+                    uri: another_file.csv
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        List<Source> leftSources = this.observedDataset.sources();
+        List<Source> leftSourcesAdj = leftSources.stream()
+                                                 .map( n -> SourceBuilder.builder( n )
+                                                                         .sourceInterface( SourceInterface.USGS_NWIS )
+                                                                         .build() )
+                                                 .toList();
+        Dataset left = DatasetBuilder.builder( this.observedDataset )
+                                     .sources( leftSourcesAdj )
+                                     .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( left )
+                                                                     .right( this.predictedDataset )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDeserializeWithShortSourcesAndBaseline() throws IOException
     {
         String yaml = """
