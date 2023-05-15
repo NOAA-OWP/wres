@@ -142,6 +142,7 @@ public class DeclarationInterpolator
      * @param baselineType the baseline type inferred from ingest
      * @param notify whether to notify any warnings encountered or assumptions made during interpolation
      * @return the interpolated declaration
+     * @throws NullPointerException if the declaration is null
      */
     public static EvaluationDeclaration interpolate( EvaluationDeclaration declaration,
                                                      DataType leftType,
@@ -149,6 +150,8 @@ public class DeclarationInterpolator
                                                      DataType baselineType,
                                                      boolean notify )
     {
+        Objects.requireNonNull( declaration );
+
         EvaluationDeclarationBuilder adjustedDeclarationBuilder = EvaluationDeclarationBuilder.builder( declaration );
 
         // Disambiguate the "type" of data when it is not declared
