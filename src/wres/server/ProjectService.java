@@ -2,7 +2,6 @@ package wres.server;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -27,8 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.ExecutionResult;
-import wres.config.MultiDeclarationFactory;
-import wres.config.yaml.components.EvaluationDeclaration;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.events.broker.BrokerUtilities;
 import wres.eventsbroker.embedded.EmbeddedBroker;
@@ -63,7 +60,7 @@ public class ProjectService
             {
                 DatabaseOperations.migrateDatabase( DATABASE );
             }
-            catch ( SQLException | IOException e )
+            catch ( SQLException e )
             {
                 throw new IllegalStateException( "Failed to migrate the WRES database.", e );
             }
@@ -115,15 +112,12 @@ public class ProjectService
                                                  ProjectService.DATABASE,
                                                  brokerConnections );
 
-            EvaluationDeclaration declaration =
-                    MultiDeclarationFactory.from( rawDeclaration, FileSystems.getDefault(), true, true );
-
             // Guarantee a positive number. Using Math.abs would open up failure
             // in edge cases. A while loop seems complex. Thanks to Ted Hopp
             // on StackOverflow question id 5827023.
             projectId = RANDOM.nextLong() & Long.MAX_VALUE;
 
-            ExecutionResult result = evaluator.evaluate( declaration );
+            ExecutionResult result = evaluator.evaluate( rawDeclaration );
             Set<java.nio.file.Path> outputPaths = result.getResources();
             OUTPUTS.put( projectId, outputPaths );
         }

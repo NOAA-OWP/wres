@@ -73,7 +73,7 @@ public class ScenarioHelper
                 {
                     DatabaseOperations.migrateDatabase( DATABASE );
                 }
-                catch ( SQLException | IOException e )
+                catch ( SQLException e )
                 {
                     throw new IllegalStateException( "Failed to migrate the WRES database.", e );
                 }

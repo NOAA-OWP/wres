@@ -18,7 +18,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -30,14 +29,12 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.core.io.IOContext;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
-import com.fasterxml.jackson.dataformat.yaml.util.StringQuotingChecker;
 import com.google.protobuf.DoubleValue;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageOrBuilder;
@@ -154,6 +151,7 @@ import wres.config.yaml.components.Values;
 import wres.config.yaml.components.Variable;
 import wres.config.yaml.components.VariableBuilder;
 import wres.config.yaml.deserializers.ZoneOffsetDeserializer;
+import wres.config.yaml.serializers.CustomGenerator;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -245,6 +243,8 @@ public class DeclarationFactory
     private static final ObjectMapper DESERIALIZER = YAMLMapper.builder()
                                                                .enable( MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS )
                                                                .enable( DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY )
+                                                               .enable( DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY )
+                                                               .enable( JsonParser.Feature.STRICT_DUPLICATE_DETECTION )
                                                                .build()
                                                                .registerModule( new ProtobufModule() )
                                                                .registerModule( new JavaTimeModule() )
@@ -318,14 +318,13 @@ public class DeclarationFactory
             LOGGER.info( "Discovered a path to a declaration string: {}", path );
         }
         // Probably a file path, but not a valid one
-        else if( declarationString.split( System.lineSeparator() ).length <= 1
-                 && !declarationString.contains( "observed" )
-                 && !declarationString.contains( "predicted" ) )
+        else if ( declarationString.split( System.lineSeparator() ).length <= 1
+                  && !DeclarationFactory.isDeclarationString( declarationString ) )
         {
             throw new FileNotFoundException( "The following declaration string appears to be a path, but the file "
                                              + "cannot be found on the default file system: "
                                              + declarationString
-                                             +". Please check that the "
+                                             + ". Please check that the "
                                              + "file exists and try again with a valid path or declaration string." );
         }
 
@@ -511,6 +510,23 @@ public class DeclarationFactory
     }
 
     /**
+     * Examines the input and determines whether it is a new-style declaration string.
+     *
+     * @param candidate the candidate declaration string
+     * @return whether the input is a new-style declaration string
+     * @throws NullPointerException if the input is null
+     */
+
+    public static boolean isDeclarationString( String candidate )
+    {
+        Objects.requireNonNull( candidate );
+
+        // Could parse fully, but this should be good enough as the goal is detection for further processing
+        return candidate.contains( "observed" )
+               && candidate.contains( "predicted" );
+    }
+
+    /**
      * Deserializes a YAML string into a {@link JsonNode} for further processing.
      * @param yaml the yaml string
      * @return the node
@@ -521,18 +537,27 @@ public class DeclarationFactory
     {
         // Unfortunately, Jackson does not currently resolve anchors/references, despite using SnakeYAML under the
         // hood. Instead, use SnakeYAML to create a resolved string first. This is inefficient and undesirable
-        // because it means  that the declaration string is being read twice
+        // because it means that the declaration string is deserialized, then serialized, then deserialized again
         // TODO: use Jackson to read the raw YAML string once it can handle anchors/references properly
-        Yaml snakeYaml = new Yaml( new Constructor( new LoaderOptions() ),
-                                   new Representer( new DumperOptions() ),
-                                   new DumperOptions(),
+        DumperOptions dumperOptions = new DumperOptions();
+        LoaderOptions loaderOptions = new LoaderOptions();
+        // Disallow duplicate keys. This is already disallowed for Jackson in case this step can be removed in future
+        loaderOptions.setAllowDuplicateKeys( false );
+        Yaml snakeYaml = new Yaml( new Constructor( loaderOptions ),
+                                   new Representer( dumperOptions ),
+                                   dumperOptions,
+                                   loaderOptions,
                                    new CustomResolver() );
+
+        // Deserialize with SnakeYAML
         Object resolvedYaml = snakeYaml.load( yaml );
+
+        // Serialize
         String resolvedYamlString =
                 DESERIALIZER.writerWithDefaultPrettyPrinter()
                             .writeValueAsString( resolvedYaml );
 
-        // Use Jackson to (re-)read the declaration string once any anchors/references are resolved
+        // Deserialize with Jackson now that any anchors/references are resolved
         return DESERIALIZER.readTree( resolvedYamlString );
     }
 
@@ -961,7 +986,7 @@ public class DeclarationFactory
             LOGGER.debug( "Encountered {} groups of metrics to migrate.", metrics.size() );
 
             // Is there a single set of thresholds? If so, migrate to top-level thresholds
-            Map<wres.config.xml.generated.ThresholdType, ThresholdsConfig> globalThresholds =
+            List<ThresholdsConfig> globalThresholds =
                     DeclarationFactory.getGlobalThresholds( metrics );
             boolean addThresholdsPerMetric = true;
             if ( !globalThresholds.isEmpty() )
@@ -1850,40 +1875,49 @@ public class DeclarationFactory
      * @param builder the declaration builder
      */
 
-    private static void migrateGlobalThresholds( Map<wres.config.xml.generated.ThresholdType, ThresholdsConfig> thresholds,
+    private static void migrateGlobalThresholds( List<ThresholdsConfig> thresholds,
                                                  EvaluationDeclarationBuilder builder )
     {
-        // Probability thresholds
-        if ( thresholds.containsKey( wres.config.xml.generated.ThresholdType.PROBABILITY ) )
+        // Iterate the thresholds
+        for ( ThresholdsConfig nextThresholds : thresholds )
         {
-            ThresholdsConfig probabilityThresholdsConfig =
-                    thresholds.get( wres.config.xml.generated.ThresholdType.PROBABILITY );
-            Set<Threshold> probabilityThresholds = DeclarationFactory.migrateThresholds( probabilityThresholdsConfig,
-                                                                                         builder );
-            builder.probabilityThresholds( probabilityThresholds );
-            LOGGER.debug( "Migrated these probability thresholds for all metrics: {}.", probabilityThresholds );
-        }
+            wres.config.xml.generated.ThresholdType nextType = DeclarationFactory.getThresholdType( nextThresholds );
+            Set<Threshold> migrated = DeclarationFactory.migrateThresholds( nextThresholds, builder );
+            Set<Threshold> combined = new LinkedHashSet<>();
 
-        // Value thresholds
-        if ( thresholds.containsKey( wres.config.xml.generated.ThresholdType.VALUE ) )
-        {
-            ThresholdsConfig valueThresholdsConfig =
-                    thresholds.get( wres.config.xml.generated.ThresholdType.VALUE );
-            Set<Threshold> valueThresholds = DeclarationFactory.migrateThresholds( valueThresholdsConfig,
-                                                                                   builder );
-            builder.valueThresholds( valueThresholds );
-            LOGGER.debug( "Migrated these value thresholds for all metrics: {}.", valueThresholds );
-        }
+            if ( nextType == wres.config.xml.generated.ThresholdType.PROBABILITY )
+            {
+                if ( Objects.nonNull( builder.probabilityThresholds() ) )
+                {
+                    combined.addAll( builder.probabilityThresholds() );
+                }
+                combined.addAll( migrated );
+                builder.probabilityThresholds( combined );
 
-        // Probability classifier thresholds
-        if ( thresholds.containsKey( wres.config.xml.generated.ThresholdType.PROBABILITY_CLASSIFIER ) )
-        {
-            ThresholdsConfig classifierThresholdsConfig =
-                    thresholds.get( wres.config.xml.generated.ThresholdType.PROBABILITY_CLASSIFIER );
-            Set<Threshold> classifierThresholds = DeclarationFactory.migrateThresholds( classifierThresholdsConfig,
-                                                                                        builder );
-            builder.classifierThresholds( classifierThresholds );
-            LOGGER.debug( "Migrated these classifier thresholds for all metrics: {}.", classifierThresholds );
+                LOGGER.debug( "Migrated these probability thresholds for all metrics: {}.", migrated );
+            }
+            else if ( nextType == wres.config.xml.generated.ThresholdType.VALUE )
+            {
+                if ( Objects.nonNull( builder.valueThresholds() ) )
+                {
+                    combined.addAll( builder.valueThresholds() );
+                }
+                combined.addAll( migrated );
+                builder.valueThresholds( combined );
+
+                LOGGER.debug( "Migrated these value thresholds for all metrics: {}.", migrated );
+            }
+            else if ( nextType == wres.config.xml.generated.ThresholdType.PROBABILITY_CLASSIFIER )
+            {
+                if ( Objects.nonNull( builder.classifierThresholds() ) )
+                {
+                    combined.addAll( builder.classifierThresholds() );
+                }
+                combined.addAll( migrated );
+                builder.classifierThresholds( combined );
+
+                LOGGER.debug( "Migrated these classifier thresholds for all metrics: {}.", migrated );
+            }
         }
     }
 
@@ -2321,38 +2355,32 @@ public class DeclarationFactory
     }
 
     /**
-     * Inspects the metrics and looks for a single/global set of thresholds containing no more than one set of each
-     * type from {@link wres.config.yaml.components.ThresholdType}. If there are no global thresholds, returns an empty
+     * Inspects the metrics and looks for a single/global set of thresholds containing the same collection of
+     * {@link ThresholdsConfig} across all {@link MetricsConfig}. If there are no global thresholds, returns an empty
      * list. In that case, no thresholds are defined or there are different thresholds for different groups of metrics.
      *
      * @param metrics the metrics to inspect
      * @return the global thresholds, if available
      */
 
-    private static Map<wres.config.xml.generated.ThresholdType, ThresholdsConfig> getGlobalThresholds( List<MetricsConfig> metrics )
+    private static List<ThresholdsConfig> getGlobalThresholds( List<MetricsConfig> metrics )
     {
-        Map<wres.config.xml.generated.ThresholdType, ThresholdsConfig> thresholdsMap =
-                new EnumMap<>( wres.config.xml.generated.ThresholdType.class );
+        List<ThresholdsConfig> thresholds = new ArrayList<>();
         for ( MetricsConfig nextMetrics : metrics )
         {
-            List<ThresholdsConfig> thresholds = nextMetrics.getThresholds();
-            for ( ThresholdsConfig nextThresholds : thresholds )
+            List<ThresholdsConfig> innerThresholds = nextMetrics.getThresholds();
+            if ( !thresholds.isEmpty()
+                 && !thresholds.equals( innerThresholds ) )
             {
-                wres.config.xml.generated.ThresholdType nextType = DeclarationFactory.getThresholdType( nextThresholds );
-                if ( thresholdsMap.containsKey( nextType )
-                     && !thresholdsMap.get( nextType )
-                                      .equals( nextThresholds ) )
-                {
-                    return Collections.emptyMap();
-                }
-                else
-                {
-                    thresholdsMap.put( nextType, nextThresholds );
-                }
+                return Collections.emptyList();
+            }
+            else
+            {
+                thresholds = innerThresholds;
             }
         }
 
-        return Collections.unmodifiableMap( thresholdsMap );
+        return Collections.unmodifiableList( thresholds );
     }
 
     /**
@@ -2399,7 +2427,7 @@ public class DeclarationFactory
     }
 
     /**
-     * See the explanation in {@link YamlGeneratorWithCustomStyle}. This is a workaround to expose the SnakeYAML
+     * See the explanation in {@link CustomGenerator}. This is a workaround to expose the SnakeYAML
      * serialization options that Jackson can see, but fails to expose to configuration.
      *
      * @author James Brown
@@ -2407,76 +2435,10 @@ public class DeclarationFactory
     private static class YamlFactoryWithCustomGenerator extends YAMLFactory
     {
         @Override
-        protected YAMLGenerator _createGenerator( Writer out, IOContext ctxt) throws IOException
+        protected YAMLGenerator _createGenerator( Writer out, IOContext ctxt ) throws IOException
         {
-            return new YamlGeneratorWithCustomStyle( ctxt, _generatorFeatures, _yamlGeneratorFeatures,
-                                                     _quotingChecker, _objectCodec, out, _version );
-        }
-    }
-
-    /**
-     * <p>Implements an {@link YAMLGenerator} with custom styling.
-     *
-     * <p>This is not a preferred approach to achieve custom styling, but the default implementation of the
-     * {@link YAMLGenerator} does not expose the SnakeYAML {@link DumperOptions} to runtime configuration. If the
-     * default implementation exposed these options, they would be accessibleto runtime configuration  via the
-     * {@link SerializerProvider#getGenerator()}. If a future version of Jackson exposes these low-level implementation
-     * options, remove this custom generator and the associated {@link YamlFactoryWithCustomGenerator} that creates it.
-     * For further discussion, see:
-     * <a href="https://github.com/FasterXML/jackson-dataformats-text/issues/4">https://github.com/FasterXML/jackson-dataformats-text/issues/4</a>.
-     *
-     * <p>Currently, the only custom serialization performed by this class is to use the flow style when serializing
-     * array types.
-     *
-     * @author James Brown
-     */
-    private static class YamlGeneratorWithCustomStyle extends YAMLGenerator
-    {
-        /**
-         * Creates an instance.
-         * @param ctxt the IO context
-         * @param jsonFeatures the json feature count
-         * @param yamlFeatures the yaml feature count
-         * @param quotingChecker the quoting checker
-         * @param codec the codec
-         * @param out the writer
-         * @param version the dumper option version
-         * @throws IOException if the instance could not be created for any reason
-         */
-        public YamlGeneratorWithCustomStyle( IOContext ctxt,
-                                             int jsonFeatures,
-                                             int yamlFeatures,
-                                             StringQuotingChecker quotingChecker,
-                                             ObjectCodec codec,
-                                             Writer out,
-                                             DumperOptions.Version version ) throws IOException
-        {
-            super( ctxt, jsonFeatures, yamlFeatures, quotingChecker, codec, out, version );
-        }
-
-        @Override
-        public void writeObject( Object object ) throws IOException
-        {
-            // Use the flow style for arrays
-            if ( object.getClass()
-                       .isArray() )
-            {
-                DumperOptions.FlowStyle existing = _outputOptions.getDefaultFlowStyle();
-
-                // Set
-                _outputOptions.setDefaultFlowStyle( DumperOptions.FlowStyle.FLOW );
-
-                // Write
-                super.writeObject( object );
-
-                // Reset
-                _outputOptions.setDefaultFlowStyle( existing );
-            }
-            // Use the existing style for anything else
-            else
-            {
-                super.writeObject( object );
-            }
+            return new CustomGenerator( ctxt, _generatorFeatures, _yamlGeneratorFeatures,
+                                        _quotingChecker, _objectCodec, out, _version );
         }
     }
 

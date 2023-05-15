@@ -1772,10 +1772,8 @@ class DeclarationFactoryTest
                 feature_groups:
                   - name: a group
                     features:
-                      - observed: DRRC2
-                        predicted: DRRC2
-                      - observed: DOLC2
-                        predicted: DOLC2
+                      - {observed: DRRC2, predicted: DRRC2}
+                      - {observed: DOLC2, predicted: DOLC2}
                   """;
 
         GeometryTuple first = GeometryTuple.newBuilder()
@@ -2262,18 +2260,14 @@ class DeclarationFactoryTest
                 value_thresholds:
                   name: MAJOR FLOOD
                   values:
-                    - value: 27.0
-                      feature: DOLC2
-                    - value: 23.0
-                      feature: DRRC2
+                    - {value: 27.0, feature: DOLC2}
+                    - {value: 23.0, feature: DRRC2}
                   apply_to: predicted
                 classifier_thresholds:
                   name: COLONEL DROUGHT
                   values:
-                    - value: 0.3
-                      feature: DOLC2
-                    - value: 0.2
-                      feature: DRRC2
+                    - {value: 0.3, feature: DOLC2}
+                    - {value: 0.2, feature: DRRC2}
                 """;
 
         Threshold pOne = Threshold.newBuilder()

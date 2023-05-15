@@ -1,6 +1,7 @@
 package wres;
 
 import java.io.IOException;
+import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -116,12 +117,17 @@ final class Functions
         if ( LOGGER.isInfoEnabled() )
         {
             StringJoiner joiner = new StringJoiner( " " );
-            if ( !sharedResources.arguments().contains( operation ) )
+            if ( !sharedResources.arguments()
+                                 .contains( operation ) )
             {
                 joiner.add( operation );
             }
-            sharedResources.arguments().forEach( joiner::add );
-            LOGGER.info( "Executing: {}", joiner );
+            sharedResources.arguments()
+                           .forEach( joiner::add );
+
+            String report = Functions.curtail( joiner.toString() );
+
+            LOGGER.info( "Executing: {}", report );
         }
 
         Optional<Entry<WresFunction, Function<SharedResources, ExecutionResult>>> discovered
@@ -138,6 +144,27 @@ final class Functions
             return ExecutionResult.failure( new UnsupportedOperationException( "Cannot find operation "
                                                                                + operation ) );
         }
+    }
+
+    /**
+     * Returns only the first line of the input string, appending "..." if more than one line was found.
+     * @param input the input string
+     * @return the first line
+     */
+
+    static String curtail( String input )
+    {
+        Objects.requireNonNull( input );
+
+        // Only report the first line of a declaration string
+        String[] split = input.split( "\\r?\\n|\\r" );
+        String report = split[0];
+        if( split.length > 1 )
+        {
+            report = report + "...";
+        }
+
+        return report;
     }
 
     /**
@@ -292,7 +319,7 @@ final class Functions
             String message = "Failed to clean the database.";
             LOGGER.error( message, se );
             InternalWresException e = new InternalWresException( message, se );
-            return ExecutionResult.failure( null, e );
+            return ExecutionResult.failure( e );
         }
         finally
         {
@@ -393,11 +420,14 @@ final class Functions
         if ( !args.isEmpty() )
         {
             String projectPath = args.get( 0 );
+            String declarationString;
             EvaluationDeclaration declaration;
 
             try
             {
-                declaration = MultiDeclarationFactory.from( projectPath, FileSystems.getDefault(), true, true );
+                FileSystem fileSystem = FileSystems.getDefault();
+                declarationString = MultiDeclarationFactory.getDeclarationString( projectPath, fileSystem );
+                declaration = MultiDeclarationFactory.from( declarationString, fileSystem, true, true );
             }
             catch ( IOException ioe )
             {
@@ -441,12 +471,12 @@ final class Functions
                                    griddedFeatures );
 
                 lockManager.unlockShared( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
-                return ExecutionResult.success( declaration.label() );
+                return ExecutionResult.success( declaration.label(), declarationString );
             }
             catch ( RuntimeException | SQLException e )
             {
                 LOGGER.error( "Failed to ingest from {}", projectPath, e );
-                return ExecutionResult.failure( declaration.label(), e );
+                return ExecutionResult.failure( declaration.label(), declarationString, e );
             }
             finally
             {
@@ -477,12 +507,14 @@ final class Functions
         if ( !args.isEmpty() )
         {
             String pathOrDeclaration = args.get( 0 );
-
+            String rawDeclaration = null;
             try
             {
+                FileSystem fileSystem = FileSystems.getDefault();
+                rawDeclaration = MultiDeclarationFactory.getDeclarationString( pathOrDeclaration, fileSystem );
                 // Unmarshal the configuration
-                MultiDeclarationFactory.from( pathOrDeclaration,
-                                              FileSystems.getDefault(),
+                MultiDeclarationFactory.from( rawDeclaration,
+                                              fileSystem,
                                               true,
                                               true );
 
@@ -493,7 +525,7 @@ final class Functions
             {
                 String message = "Failed to unmarshal the project declaration at '" + pathOrDeclaration + "'";
                 UserInputException e = new UserInputException( message, error );
-                return ExecutionResult.failure( e ); // Or return 400 - Bad Request (see #41467)
+                return ExecutionResult.failure( rawDeclaration, e ); // Or return 400 - Bad Request (see #41467)
             }
         }
         else
@@ -553,7 +585,7 @@ final class Functions
             }
             catch ( UserInputException | IOException e )
             {
-                LOGGER.error( "Failed to unmarshal project configuration from command line argument.", e );
+                LOGGER.error( "Failed to unmarshal project declaration from command line argument.", e );
                 return ExecutionResult.failure( e );
             }
         }

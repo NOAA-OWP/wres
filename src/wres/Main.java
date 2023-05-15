@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+import wres.config.MultiDeclarationFactory;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.events.broker.BrokerUtilities;
 import wres.events.broker.CouldNotLoadBrokerConfigurationException;
@@ -74,7 +75,7 @@ public class Main
             return;
         }
         // One argument that looks like a project declaration, so default to execute
-        else if ( args.length == 1 && ( args[0].endsWith( ".xml" ) || args[0].startsWith( "<?xml " ) ) )
+        else if ( args.length == 1 && MultiDeclarationFactory.isDeclarationPathOrString( args[0] ) )
         {
             LOGGER.info( "Interpreting the first argument as project declaration and executing it..." );
 
@@ -101,7 +102,14 @@ public class Main
 
         final String finalFunction = function;
 
-        LOGGER.info( "Running function '{}' with arguments '{}'.", finalFunction, finalArgs );
+        // Report the function and arguments if possible
+        if ( LOGGER.isInfoEnabled() )
+        {
+            List<String> curtailedArgs = Arrays.stream( finalArgs )
+                                               .map( Functions::curtail )
+                                               .toList();
+            LOGGER.info( "Running function '{}' with arguments '{}'.", finalFunction, curtailedArgs );
+        }
 
         Instant beganExecution = Instant.now();
 
@@ -245,6 +253,7 @@ public class Main
                         new DatabaseOperations.LogParameters( Arrays.stream( argsToLog )
                                                                     .toList(),
                                                               result.getName(),
+                                                              result.getDeclaration(),
                                                               result.getHash(),
                                                               beganExecution,
                                                               endedExecution,
@@ -328,7 +337,7 @@ public class Main
                 {
                     DatabaseOperations.migrateDatabase( database );
                 }
-                catch ( SQLException | IOException e )
+                catch ( SQLException e )
                 {
                     throw new IllegalStateException( "Failed to migrate the WRES database.", e );
                 }

@@ -85,8 +85,6 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
                                                           ThresholdType type,
                                                           JsonGenerator writer ) throws IOException
     {
-
-
         // Preserve insertion order
         Map<String, Set<Threshold>> grouped
                 = thresholds.stream()
@@ -217,10 +215,22 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
             double[] values = this.getThresholdValues( type, nextThresholds );
             for ( double nextValue : values )
             {
+                // Use flow style if possible
+                if( writer instanceof CustomGenerator custom )
+                {
+                    custom.setFlowStyleOn();
+                }
+
                 writer.writeStartObject();
                 writer.writeNumberField( VALUE, nextValue );
                 writer.writeStringField( "feature", geometry.getName() );
                 writer.writeEndObject();
+
+                // Return to default style
+                if( writer instanceof CustomGenerator custom )
+                {
+                    custom.setFlowStyleOff();
+                }
             }
         }
 

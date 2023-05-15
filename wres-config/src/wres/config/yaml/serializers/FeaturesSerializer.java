@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.components.Features;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Geometry;
@@ -70,6 +71,12 @@ public class FeaturesSerializer extends JsonSerializer<Features>
      */
     private void writeGeometryTuple( GeometryTuple geometryTuple, JsonGenerator writer ) throws IOException
     {
+        // Use flow style if possible
+        if( writer instanceof CustomGenerator custom )
+        {
+            custom.setFlowStyleOn();
+        }
+
         writer.writeStartObject();
         if ( geometryTuple.hasLeft() )
         {
@@ -84,6 +91,12 @@ public class FeaturesSerializer extends JsonSerializer<Features>
             this.writeGeometry( geometryTuple.getBaseline(), writer, "baseline" );
         }
         writer.writeEndObject();
+
+        // Return to default style
+        if( writer instanceof CustomGenerator custom )
+        {
+            custom.setFlowStyleOff();
+        }
     }
 
     /**

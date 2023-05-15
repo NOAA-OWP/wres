@@ -34,6 +34,9 @@ definitions:
               minLength: 1
               maxLength: 2083
             minItems: 1
+          - type: string
+            minLength: 1
+            maxLength: 2083
       predicted:
         anyOf:
           - "$ref": "#/definitions/ObservedOrPredicted"
@@ -43,6 +46,9 @@ definitions:
               minLength: 1
               maxLength: 2083
             minItems: 1
+          - type: string
+            minLength: 1
+            maxLength: 2083
       baseline:
         anyOf:
           - "$ref": "#/definitions/Baseline"
@@ -52,6 +58,9 @@ definitions:
               minLength: 1
               maxLength: 2083
             minItems: 1
+          - type: string
+            minLength: 1
+            maxLength: 2083
       features:
         type: array
         items:
@@ -827,7 +836,7 @@ definitions:
       - unit
     title: UnitAlias
 
-  # A single set of value thresholds
+  # A set of value thresholds
   ValueThresholds:
     anyOf:
       # Thresholds with attributes
@@ -897,7 +906,7 @@ definitions:
       - value
     title: FeaturedValueThreshold
 
-  # A single set of probability thresholds
+  # A set of probability thresholds
   ProbabilityThresholds:
     anyOf:
       # Thresholds with attributes
