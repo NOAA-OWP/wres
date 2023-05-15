@@ -190,6 +190,7 @@ definitions:
     properties:
       sources:
         anyOf:
+          - "$ref": "#/definitions/Source"
           # No minimum array size because data posting allows for zero declared
           # sources.
           - type: array
@@ -254,6 +255,7 @@ definitions:
     properties:
       sources:
         anyOf:
+          - "$ref": "#/definitions/Source"
           # No minimum array size because data posting allows for zero declared
           # sources.
           - type: array

@@ -53,6 +53,7 @@ import wres.io.database.caching.GriddedFeatures;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.SourceLoader;
 import wres.io.ingesting.TimeSeriesIngester;
+import wres.io.ingesting.TimeSeriesTracker;
 import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
 import wres.io.ingesting.memory.InMemoryTimeSeriesIngester;
 import wres.io.project.Projects;
@@ -358,6 +359,8 @@ class EvaluationUtilities
 
             Project project;
             SystemSettings systemSettings = evaluationDetails.systemSettings();
+            // Track the time-series through ingest
+            TimeSeriesTracker timeSeriesTracker = TimeSeriesTracker.of();
 
             // Is the evaluation in a database? If so, use implementations that support a database
             if ( systemSettings.isInDatabase() )
@@ -372,6 +375,7 @@ class EvaluationUtilities
                               new DatabaseTimeSeriesIngester.Builder().setSystemSettings( evaluationDetails.systemSettings() )
                                                                       .setDatabase( databaseServices.database() )
                                                                       .setCaches( caches )
+                                                                      .setTimeSeriesTracker( timeSeriesTracker )
                                                                       .setLockManager( databaseServices.databaseLockManager() )
                                                                       .build() )
                 {
@@ -380,7 +384,8 @@ class EvaluationUtilities
                                                                           declaration,
                                                                           griddedFeaturesBuilder );
 
-                    declaration = EvaluationUtilities.interpolateMissingDataTypes( declaration, null, null, null );
+                    declaration = EvaluationUtilities.interpolateMissingDataTypes( declaration,
+                                                                                   timeSeriesTracker.getDataTypes() );
 
                     // Create the gridded features cache if needed
                     GriddedFeatures griddedFeatures = null;
@@ -404,7 +409,8 @@ class EvaluationUtilities
                 TimeSeriesStore.Builder timeSeriesStoreBuilder = new TimeSeriesStore.Builder();
 
                 // Ingester that ingests into the in-memory store
-                TimeSeriesIngester timeSeriesIngester = InMemoryTimeSeriesIngester.of( timeSeriesStoreBuilder );
+                TimeSeriesIngester timeSeriesIngester = InMemoryTimeSeriesIngester.of( timeSeriesStoreBuilder,
+                                                                                       timeSeriesTracker );
 
                 // Load the sources using the ingester and create the ingest results to share
                 List<IngestResult> ingestResults = SourceLoader.load( timeSeriesIngester,
@@ -413,7 +419,8 @@ class EvaluationUtilities
                                                                       griddedFeaturesBuilder );
 
                 // Interpolate any missing elements of the declaration that depend on the data types
-                declaration = EvaluationUtilities.interpolateMissingDataTypes( declaration, null, null, null );
+                declaration = EvaluationUtilities.interpolateMissingDataTypes( declaration,
+                                                                               timeSeriesTracker.getDataTypes() );
 
                 // The immutable collection of in-memory time-series
                 TimeSeriesStore timeSeriesStore = timeSeriesStoreBuilder.build();
@@ -568,26 +575,22 @@ class EvaluationUtilities
     /**
      * Interpolates any missing data types and validates the interpolated declaration for internal consistency.
      * @param declaration the declaration with missing data types
-     * @param leftType the left type inferred from ingest
-     * @param rightType the right type inferred from ingest
-     * @param baselineType the baseline type inferred from ingest
+     * @param dataTypes the data types detected through ingest
      * @return the interpolated declaration
      * @throws DeclarationException if the declaration is inconsistent with the inferred types
      */
 
     private static EvaluationDeclaration interpolateMissingDataTypes( EvaluationDeclaration declaration,
-                                                                      DataType leftType,
-                                                                      DataType rightType,
-                                                                      DataType baselineType )
+                                                                      Map<DatasetOrientation,DataType> dataTypes )
     {
         // Interpolate any missing elements of the declaration that depend on the data types
         if ( DeclarationUtilities.hasMissingDataTypes( declaration ) )
         {
             // If the ingested types differ from any existing types, this will throw an exception
             declaration = DeclarationInterpolator.interpolate( declaration,
-                                                               leftType,
-                                                               rightType,
-                                                               baselineType,
+                                                               dataTypes.get( DatasetOrientation.LEFT ),
+                                                               dataTypes.get( DatasetOrientation.RIGHT ),
+                                                               dataTypes.get( DatasetOrientation.BASELINE ),
                                                                true );
 
             // Validate the declaration in relation to the interpolated data types only

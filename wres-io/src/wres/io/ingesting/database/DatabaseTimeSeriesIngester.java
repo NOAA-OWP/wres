@@ -27,6 +27,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import org.apache.commons.codec.binary.Hex;
@@ -57,6 +58,7 @@ import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.database.caching.TimeScales;
+import wres.io.ingesting.TimeSeriesTracker;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
 import wres.system.DatabaseLockManager;
@@ -101,13 +103,23 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
     /** Level of patience in waiting for the ingest of a source to be marked complete. */
     private static final Duration PATIENCE_LEVEL = Duration.ofMinutes( 30 );
 
+    /** System settings. */
     private final SystemSettings systemSettings;
+
+    /** Database. */
     private final Database database;
+
+    /** Database ORMs/caches. */
     private final DatabaseCaches caches;
+
+    /** Database lock manager. */
     private final DatabaseLockManager lockManager;
 
     /** A thread pool to process ingests. */
     private final ThreadPoolExecutor executor;
+
+    /** A time-series tracker. */
+    private final UnaryOperator<TimeSeriesTuple> timeSeriesTracker;
 
     /**
      * Builds an instance incrementally.
@@ -119,6 +131,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         private Database database;
         private DatabaseCaches caches;
         private DatabaseLockManager lockManager;
+        private TimeSeriesTracker timeSeriesTracker;
 
         /**
          * @param systemSettings the system settings to set
@@ -157,6 +170,16 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         public Builder setLockManager( DatabaseLockManager lockManager )
         {
             this.lockManager = lockManager;
+            return this;
+        }
+
+        /**
+         * @param timeSeriesTracker the time-series tracker
+         * @return the builder
+         */
+        public Builder setTimeSeriesTracker( TimeSeriesTracker timeSeriesTracker )
+        {
+            this.timeSeriesTracker = timeSeriesTracker;
             return this;
         }
 
@@ -205,6 +228,10 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
             while ( tupleIterator.hasNext() )
             {
                 TimeSeriesTuple nextTuple = tupleIterator.next();
+
+                // Track the time-series
+                nextTuple = this.getTimeSeriesTracker()
+                                .apply( nextTuple );
 
                 DataSource innerSource = nextTuple.getDataSource();
 
@@ -1678,6 +1705,15 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
     }
 
     /**
+     * @return the time-series tracker
+     */
+
+    private UnaryOperator<TimeSeriesTuple> getTimeSeriesTracker()
+    {
+        return this.timeSeriesTracker;
+    }
+
+    /**
      * Creates an instance.
      * @param builder the builder
      */
@@ -1688,6 +1724,17 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         this.database = builder.database;
         this.caches = builder.caches;
         this.lockManager = builder.lockManager;
+
+        // Set the tracker or an identity operator if null
+        TimeSeriesTracker innerTracker = builder.timeSeriesTracker;
+        if( Objects.nonNull( innerTracker ) )
+        {
+            this.timeSeriesTracker = innerTracker;
+        }
+        else
+        {
+            this.timeSeriesTracker = in -> in;
+        }
 
         Objects.requireNonNull( this.systemSettings );
         Objects.requireNonNull( this.database );
