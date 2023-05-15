@@ -159,7 +159,7 @@ final class Functions
         // Only report the first line of a declaration string
         String[] split = input.split( "\\r?\\n|\\r" );
         String report = split[0];
-        if( split.length > 1 )
+        if ( split.length > 1 )
         {
             report = report + "...";
         }
@@ -504,6 +504,8 @@ final class Functions
     {
         List<String> args = sharedResources.arguments();
 
+        LOGGER.info( "Proceeding to validate a project declaration..." );
+
         if ( !args.isEmpty() )
         {
             String pathOrDeclaration = args.get( 0 );
@@ -512,7 +514,8 @@ final class Functions
             {
                 FileSystem fileSystem = FileSystems.getDefault();
                 rawDeclaration = MultiDeclarationFactory.getDeclarationString( pathOrDeclaration, fileSystem );
-                // Unmarshal the configuration
+
+                // Unmarshal the declaration
                 MultiDeclarationFactory.from( rawDeclaration,
                                               fileSystem,
                                               true,
@@ -523,7 +526,10 @@ final class Functions
             }
             catch ( IOException | DeclarationException error )
             {
-                String message = "Failed to unmarshal the project declaration at '" + pathOrDeclaration + "'";
+                LOGGER.warn( "The supplied declaration is invalid.", error );
+                String message = "Failed to unmarshal and validate the project declaration at '"
+                                 + pathOrDeclaration
+                                 + "'";
                 UserInputException e = new UserInputException( message, error );
                 return ExecutionResult.failure( rawDeclaration, e ); // Or return 400 - Bad Request (see #41467)
             }
@@ -531,6 +537,7 @@ final class Functions
         else
         {
             String message = "Could not find a project declaration to validate. Usage: validate <path to project>";
+            LOGGER.error( message );
             UserInputException e = new UserInputException( message );
             return ExecutionResult.failure( e );
         }

@@ -303,7 +303,7 @@ class WrdsFeatureService
         // Add to request set. (Request directly for now)
         String path = featureServiceBaseUri.getPath();
         String fullPath = path + DELIMITER
-                          + from.toString()
+                          + from.name()
                                 .toLowerCase()
                           + DELIMITER
                           + commaDelimitedFeatures
@@ -343,12 +343,14 @@ class WrdsFeatureService
         {
             throw new PreIngestException( "From the response at " + uri
                                           + " the following were missing "
-                                          + from
+                                          + from.name()
+                                                .toLowerCase()
                                           + " (from) values: "
                                           + fromWasNullOrBlank
                                           + " and/or "
                                           + "the following were missing "
-                                          + to
+                                          + to.name()
+                                              .toLowerCase()
                                           + " (to) values: "
                                           + toWasNullOrBlank
                                           + ". "
@@ -437,11 +439,11 @@ class WrdsFeatureService
         if ( uri.getScheme()
                 .equalsIgnoreCase( "file" ) )
         {
-            rawResponseBytes = readFromFile( uri );
+            rawResponseBytes = WrdsFeatureService.readFromFile( uri );
         }
         else
         {
-            rawResponseBytes = readFromWeb( uri );
+            rawResponseBytes = WrdsFeatureService.readFromWeb( uri );
         }
 
         if ( LOGGER.isDebugEnabled() )
