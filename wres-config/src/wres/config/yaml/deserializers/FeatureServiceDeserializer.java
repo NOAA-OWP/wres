@@ -56,11 +56,12 @@ public class FeatureServiceDeserializer extends JsonDeserializer<FeatureService>
             }
         }
         // Singleton group
-        else
+        else if( node.has( "group" ) )
         {
             FeatureServiceGroup singleton = mapper.readValue( node, FeatureServiceGroup.class );
             groups.add( singleton );
         }
+        // No groups
 
         return new FeatureService( uri, Collections.unmodifiableSet( groups ) );
     }

@@ -614,6 +614,33 @@ class DeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeWithFeatureServiceAndNoGroups() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                feature_service:
+                  uri: https://foo.service
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        FeatureService featureService = FeatureServiceBuilder.builder()
+                                                             .uri( URI.create( "https://foo.service" ) )
+                                                             .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .featureService( featureService )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDeserializeWithFeatureServiceAndSingletonGroup() throws IOException
     {
         String yaml = """
