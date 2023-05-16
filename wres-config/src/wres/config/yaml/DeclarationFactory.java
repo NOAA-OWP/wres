@@ -536,8 +536,9 @@ public class DeclarationFactory
     static JsonNode deserialize( String yaml ) throws JsonProcessingException
     {
         // Unfortunately, Jackson does not currently resolve anchors/references, despite using SnakeYAML under the
-        // hood. Instead, use SnakeYAML to create a resolved string first. This is inefficient and undesirable
-        // because it means that the declaration string is deserialized, then serialized, then deserialized again
+        // hood. Instead, use SnakeYAML to create a resolved string first. This is highly inefficient and undesirable
+        // because it means that the declaration string is deserialized, then serialized, then deserialized again.
+        // Aside from being ugly, this will be a performance bottleneck for very large declarations.
         // TODO: use Jackson to read the raw YAML string once it can handle anchors/references properly
         DumperOptions dumperOptions = new DumperOptions();
         LoaderOptions loaderOptions = new LoaderOptions();

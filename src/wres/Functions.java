@@ -6,6 +6,7 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -512,6 +513,7 @@ final class Functions
             String rawDeclaration = null;
             try
             {
+
                 FileSystem fileSystem = FileSystems.getDefault();
                 rawDeclaration = MultiDeclarationFactory.getDeclarationString( pathOrDeclaration, fileSystem );
 

@@ -658,10 +658,18 @@ class DeclarationInterpolatorTest
                                                                              .type( ThresholdType.VALUE )
                                                                              .build();
 
+        Dataset left = DatasetBuilder.builder( this.observedDataset )
+                                     .featureAuthority( FeatureAuthority.CUSTOM )
+                                     .build();
+
+        Dataset right = DatasetBuilder.builder( this.predictedDataset )
+                                     .featureAuthority( FeatureAuthority.CUSTOM )
+                                     .build();
+
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
-                                            .left( this.observedDataset )
-                                            .right( this.predictedDataset )
+                                            .left( left )
+                                            .right( right )
                                             .valueThresholds( Set.of( wrappedOne,
                                                                       wrappedTwo,
                                                                       wrappedThree ) )
@@ -1110,9 +1118,13 @@ class DeclarationInterpolatorTest
     {
         String yaml = """
                 observed:
-                  - some_file.csv
+                  sources:
+                    - some_file.csv
+                  feature_authority: custom
                 predicted:
-                  - another_file.csv
+                  sources:
+                    - another_file.csv
+                  feature_authority: custom
                 features:
                   - observed:
                       name: '09165000'

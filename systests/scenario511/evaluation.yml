@@ -13,13 +13,13 @@ predicted:
     - smalldata/25510318T12_FAKE3_forecast.xml
     - smalldata/25510319T00_FAKE3_forecast.xml
 features:
-  - FAKE3
-  - FAKE2
+  - {observed: FAKE3, predicted: FAKE3}
+  - {observed: FAKE2, predicted: FAKE2}
 feature_groups:
   - name: A FAKE FEATURE GROUP
     features:
-      - FAKE3
-      - FAKE2
+      - {observed: FAKE3, predicted: FAKE3}
+      - {observed: FAKE2, predicted: FAKE2}
 unit: CMS
 reference_dates:
   minimum: 2551-03-17T00:00:00Z

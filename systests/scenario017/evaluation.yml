@@ -8,7 +8,7 @@ predicted:
   variable: SQIN
   label: HEFS
 features:
-  - DRRC2HSF
+  - {observed: DRRC2HSF, predicted: DRRC2HSF}
 unit: CMS
 lead_times:
   minimum: 0

@@ -13,7 +13,7 @@ predicted:
   type: ensemble forecasts
   label: HEFS
 features:
-  - AMCK1
+  - {observed: 'AMCK1', predicted: 'AMCK1'}
 unit: CMS
 lead_times:
   minimum: 42

@@ -9,7 +9,7 @@ predicted:
   type: ensemble forecasts
   label: ESP
 features:
-  - LGNN5
+  - {observed: LGNN5, predicted: LGNN5}
 unit: CMS
 lead_times:
   minimum: 42

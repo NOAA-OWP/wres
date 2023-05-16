@@ -13,7 +13,7 @@ predicted:
   type: ensemble forecasts
   label: HEFS
 features:
-  - DRRC2HSF
+  - {observed: DRRC2HSF, predicted: DRRC2HSF}
 unit: CMS
 reference_dates:
   minimum: 1985-01-01T00:00:00Z

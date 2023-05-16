@@ -17,7 +17,7 @@ baseline:
   variable: QINE
   label: ESP
 features:
-  - AMCK1
+  - {observed: 'AMCK1', predicted: 'AMCK1', baseline: 'AMCK1'}
 unit: CMS
 lead_times:
   minimum: 42
