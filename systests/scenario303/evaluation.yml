@@ -9,7 +9,6 @@ predicted:
   sources:
     - data/abrfcExample/LGNN5_precip_1yr.tgz
   variable: MAPX
-  type: ensemble forecasts
   label: HEFS
 features:
   - {observed: LGNN5, predicted: LGNN5}

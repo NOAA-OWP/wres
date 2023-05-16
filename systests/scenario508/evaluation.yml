@@ -8,7 +8,6 @@ predicted:
     - smalldata/1985043013_DRRC2FAKE1_forecast.xml
     - smalldata/1985043014_DRRC2FAKE1_forecast.xml
   variable: SQIN
-  type: ensemble forecasts
 features:
   - {observed: FAKE1, predicted: FAKE1}
 unit: CMS

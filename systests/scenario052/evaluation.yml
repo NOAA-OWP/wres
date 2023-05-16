@@ -6,7 +6,6 @@ predicted:
   sources:
     - smalldata/DRRC2_SQIN_ENSEMBLE_FAKE.csv
   variable: SQIN
-  type: ensemble forecasts
 unit: CMS
 lead_times:
   minimum: 1

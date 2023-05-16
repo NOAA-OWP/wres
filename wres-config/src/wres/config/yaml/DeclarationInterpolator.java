@@ -79,17 +79,50 @@ public class DeclarationInterpolator
 
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( DeclarationInterpolator.class );
-
     /** Re-used string. */
     private static final String THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA =
             "The data type inferred from the time-series data ";
-
     /** Re-used string. */
-    private static final String WHICH_IS_INCONSISTENT_PLEASE_FIX_THE = "' which is inconsistent. Please fix the ";
-
+    private static final String WHICH_IS_INCONSISTENT_PLEASE_FIX_THE = "', which is inconsistent. Please fix the ";
     /** Re-used string. */
     private static final String DECLARATION_HINT_LOOK_FOR_NEARBY_WARNING =
             "declaration. Hint: look for nearby warning ";
+    /** Re-used string. */
+    private static final String BUT_THE_DATA_TYPE_INFERRED_FROM_THE = "', but the data type inferred from the ";
+    /** Re-used string. */
+    private static final String DECLARATION_WAS = "declaration was '";
+    /** Re-used string. */
+    private static final String MESSAGES_THAT_INDICATE_WHY_THE_DATA_TYPE = "messages that indicate why the data type ";
+    /** Re-used string. */
+    private static final String INFERRED_FROM_THE_DECLARATION_WAS = "inferred from the declaration was '";
+    /** Re-used string. */
+    private static final String TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA_WHICH =
+            "type inferred from the time-series data, which ";
+    /** Re-used string. */
+    private static final String THE_EVALUATION_WILL_PROCEED_WITH_THE_DATA =
+            "'. The evaluation will proceed with the data ";
+    /** Re-used string. */
+    private static final String IF_THIS_IS_INCORRECT_PLEASE_DECLARE_THE =
+            "'. If this is incorrect, please declare the ";
+    /** Re-used string. */
+    private static final String INTENDED_TYPE_EXPLICITLY = "intended 'type' explicitly.";
+    /** Re-used string. */
+    private static final String FOR_THE_OBSERVED_DATASET_WAS = "for the 'observed' dataset was '";
+    /** Re-used string. */
+    private static final String FOR_THE_PREDICTED_DATASET_WAS = "for the 'predicted' dataset was '";
+    /** Re-used string. */
+    private static final String BUT_THE_DATA_TYPE_WAS_EXPLICITLY_DECLARED_AS =
+            "', but the data 'type' was explicitly declared as '";
+    /** Re-used string. */
+    private static final String THE_EVALUATION_WILL_PROCEED_WITH_THE_EXPLICITLY =
+            "'. The evaluation will proceed with the explicitly";
+    /** Re-used string. */
+    private static final String DECLARED_TYPE_OF = " declared 'type' of '";
+    /** Re-used string. */
+    private static final String IF_THIS_IS_INCORRECT_PLEASE_FIX_THE_DECLARED =
+            "'. If this is incorrect, please fix the declared ";
+    /** Re-used string. */
+    private static final String TYPE = "'type'.";
 
     /**
      * Performs pre-ingest interpolation of "missing" declaration from the available declaration. Currently, this
@@ -350,7 +383,7 @@ public class DeclarationInterpolator
     {
         // No explicit features?
         Set<GeometryTuple> features = DeclarationUtilities.getFeatures( builder.build() );
-        if( !features.isEmpty() )
+        if ( !features.isEmpty() )
         {
             LOGGER.debug( "Could not interpolate any features from thresholds because explicit features were declared "
                           + "in other contexts. Features are only interpolated from thresholds when they are not "
@@ -422,8 +455,8 @@ public class DeclarationInterpolator
                                            .geometries() );
             }
             Features interpolatedFeatures = FeaturesBuilder.builder()
-                                               .geometries( notDeclared )
-                                               .build();
+                                                           .geometries( notDeclared )
+                                                           .build();
             builder.features( interpolatedFeatures );
         }
     }
@@ -974,7 +1007,18 @@ public class DeclarationInterpolator
     }
 
     /**
-     * Resolves the type of time-series data to evaluate when required.
+     * <p>Interpolates the type of time-series data to evaluate when required. There are three distinct sources of
+     * information about the data type of each dataset:
+     * <ol>
+     *     <li>1. The explicitly declared 'type', which may be missing;</li>
+     *     <li>2. The type inferred from the other declaration present; and</li>
+     *     <li>3. The type inferred by inspecting each time-series dataset, which is supplied for each dataset.</li>
+     * </ol>
+     * <p>When attempting to interpolate the data type, errors or warnings are emitted depending on any conflicts
+     * between these different sources of information. However, errors and warnings are only uncovered for conflicts
+     * between (1) and (3) and, separately, between (2) and (3) and not between (1) and (2) because the purpose of this
+     * class is not to validate the declaration for internal consistency (see {@link DeclarationValidator}), rather to
+     * check that a consistent interpolation is possible.
      *
      * @param builder the declaration builder to adjust
      * @param leftType the left type inferred from ingest
@@ -1349,7 +1393,7 @@ public class DeclarationInterpolator
     }
 
     /**
-     * Resolves the observed data type.
+     * Interpolates the observed data type.
      * @param builder the builder
      * @param dataType the data type inferred from ingest
      * @return any interpolation events encountered
@@ -1361,79 +1405,176 @@ public class DeclarationInterpolator
 
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
-        // Resolve the left or observed data type
+        // Interpolate the left or observed data type when undeclared
         if ( Objects.isNull( observed.type() ) )
         {
-            String defaultStartMessage = "Discovered that the 'observed' dataset has no declared data 'type'.";
-            String defaultEndMessage = "If this is incorrect, please declare the 'type' explicitly.";
-
-            DataType calculatedDataType;
-
-            // Analysis durations present? If so, assume analyses
-            if ( DeclarationUtilities.hasAnalysisDurations( builder ) )
-            {
-                calculatedDataType = DataType.ANALYSES;
-
-                // Warn
-                EvaluationStatusEvent event
-                        = EvaluationStatusEvent.newBuilder()
-                                               .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
-                                               .setEventMessage( defaultStartMessage
-                                                                 + " Assuming that the 'type' is 'analyses' because "
-                                                                 + "analysis durations were discovered and analyses "
-                                                                 + "are typically used to verify other datasets. "
-                                                                 + defaultEndMessage )
-                                               .build();
-                events.add( event );
-            }
-            else
-            {
-                calculatedDataType = DataType.OBSERVATIONS;
-
-                // Warn
-                EvaluationStatusEvent event
-                        = EvaluationStatusEvent.newBuilder()
-                                               .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
-                                               .setEventMessage( defaultStartMessage
-                                                                 + " Assuming that the 'type' is 'observations'. "
-                                                                 + defaultEndMessage )
-                                               .build();
-                events.add( event );
-            }
-
-            // Is the calculated type consistent with the declared type?
-            if ( Objects.nonNull( dataType ) && dataType != calculatedDataType )
-            {
-                EvaluationStatusEvent event
-                        = EvaluationStatusEvent.newBuilder()
-                                               .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
-                                               .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
-                                                                 + "for the 'observed' dataset was '"
-                                                                 + dataType
-                                                                 + "', but the data type inferred from the "
-                                                                 + "declaration was '"
-                                                                 + calculatedDataType
-                                                                 + WHICH_IS_INCONSISTENT_PLEASE_FIX_THE
-                                                                 + DECLARATION_HINT_LOOK_FOR_NEARBY_WARNING
-                                                                 + "messages that indicate why the data type "
-                                                                 + "inferred from the declaration was '"
-                                                                 + calculatedDataType
-                                                                 + "'." )
-                                               .build();
-                events.add( event );
-            }
-
-            Dataset newLeft = DatasetBuilder.builder( observed )
-                                            .type( calculatedDataType )
-                                            .build();
-            builder.left( newLeft );
+            List<EvaluationStatusEvent> undeclared =
+                    DeclarationInterpolator.interpolateObservedDataTypeWhenUndeclared( builder,
+                                                                                       dataType );
+            events.addAll( undeclared );
+        }
+        // Interpolate the left or observed data type when explicitly declared
+        else
+        {
+            List<EvaluationStatusEvent> declared =
+                    DeclarationInterpolator.interpolateObservedDataTypeWhenDeclared( builder,
+                                                                                     dataType );
+            events.addAll( declared );
         }
 
         return Collections.unmodifiableList( events );
     }
 
     /**
-     * Resolves the predicted data type.
+     * Interpolates the observed data type when there is no explicit declaration for an observed data type.
+     * @param builder the builder
+     * @param dataType the data type inferred from ingest
+     * @return any interpolation events encountered
+     */
+    private static List<EvaluationStatusEvent> interpolateObservedDataTypeWhenUndeclared( EvaluationDeclarationBuilder builder,
+                                                                                          DataType dataType )
+    {
+        Dataset observed = builder.left();
+
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        String defaultStartMessage = "Discovered that the 'observed' dataset has no declared data 'type'.";
+        String defaultEndMessage = "If this is incorrect, please declare the 'type' explicitly.";
+
+        DataType calculatedDataType;
+
+        // Analysis durations present? If so, assume analyses
+        if ( DeclarationUtilities.hasAnalysisDurations( builder ) )
+        {
+            calculatedDataType = DataType.ANALYSES;
+
+            // Warn
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
+                                           .setEventMessage( defaultStartMessage
+                                                             + " Inferred the 'type' is 'analyses' because "
+                                                             + "analysis durations were declared and analyses "
+                                                             + "are typically used to verify other datasets. "
+                                                             + defaultEndMessage )
+                                           .build();
+            events.add( event );
+        }
+        else
+        {
+            calculatedDataType = DataType.OBSERVATIONS;
+
+            // Warn
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
+                                           .setEventMessage( defaultStartMessage
+                                                             + " Inferred that the 'type' is 'observations'. "
+                                                             + defaultEndMessage )
+                                           .build();
+            events.add( event );
+        }
+
+        // The data type to use
+        DataType typeToUse = calculatedDataType;
+
+        // Is the ingested data type known?
+        if ( Objects.nonNull( dataType ) )
+        {
+            // Is it consistent with the type inferred from the declaration? If not, we only emit an error if the
+            // type inferred from the declaration is ANALYSES because this requires definitive/unique declaration
+            // options. Otherwise, we emit a warning.
+            if ( dataType != calculatedDataType && calculatedDataType == DataType.ANALYSES )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
+                                               .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
+                                                                 + FOR_THE_OBSERVED_DATASET_WAS
+                                                                 + dataType
+                                                                 + BUT_THE_DATA_TYPE_INFERRED_FROM_THE
+                                                                 + DECLARATION_WAS
+                                                                 + calculatedDataType
+                                                                 + WHICH_IS_INCONSISTENT_PLEASE_FIX_THE
+                                                                 + DECLARATION_HINT_LOOK_FOR_NEARBY_WARNING
+                                                                 + MESSAGES_THAT_INDICATE_WHY_THE_DATA_TYPE
+                                                                 + INFERRED_FROM_THE_DECLARATION_WAS
+                                                                 + calculatedDataType
+                                                                 + "'." )
+                                               .build();
+                events.add( event );
+            }
+            else if ( dataType != calculatedDataType )
+            {
+                typeToUse = dataType;
+
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
+                                               .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
+                                                                 + FOR_THE_OBSERVED_DATASET_WAS
+                                                                 + dataType
+                                                                 + BUT_THE_DATA_TYPE_INFERRED_FROM_THE
+                                                                 + DECLARATION_WAS
+                                                                 + calculatedDataType
+                                                                 + THE_EVALUATION_WILL_PROCEED_WITH_THE_DATA
+                                                                 + TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA_WHICH
+                                                                 + "is '"
+                                                                 + dataType
+                                                                 + IF_THIS_IS_INCORRECT_PLEASE_DECLARE_THE
+                                                                 + INTENDED_TYPE_EXPLICITLY )
+                                               .build();
+                events.add( event );
+            }
+        }
+
+        Dataset newLeft = DatasetBuilder.builder( observed )
+                                        .type( typeToUse )
+                                        .build();
+        builder.left( newLeft );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Interpolates the observed data type when there is explicit declaration for an observed data type. By default,
+     * uses the declared type, but also checks against the data type inferred from ingest.
+     * @param builder the builder
+     * @param dataType the data type inferred from ingest
+     * @return any interpolation events encountered
+     */
+    private static List<EvaluationStatusEvent> interpolateObservedDataTypeWhenDeclared( EvaluationDeclarationBuilder builder,
+                                                                                        DataType dataType )
+    {
+        Dataset observed = builder.left();
+
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        if ( Objects.nonNull( dataType )
+             && dataType != observed.type() )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
+                                           .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
+                                                             + FOR_THE_OBSERVED_DATASET_WAS
+                                                             + dataType
+                                                             + BUT_THE_DATA_TYPE_WAS_EXPLICITLY_DECLARED_AS
+                                                             + observed.type()
+                                                             + THE_EVALUATION_WILL_PROCEED_WITH_THE_EXPLICITLY
+                                                             + DECLARED_TYPE_OF
+                                                             + dataType
+                                                             + IF_THIS_IS_INCORRECT_PLEASE_FIX_THE_DECLARED
+                                                             + TYPE )
+                                           .build();
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Interpolates the predicted data type.
      * @param builder the builder
      * @param dataType the data type inferred from ingest
      * @return any interpolation events encountered
@@ -1445,87 +1586,187 @@ public class DeclarationInterpolator
 
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
-        // Resolve the right or predicted data type
+        // Interpolate the right or predicted data type when undeclared
         if ( Objects.isNull( predicted.type() ) )
         {
-            String defaultStartMessage = "Discovered that the 'predicted' dataset has no declared data 'type'. ";
-            String defaultEndMessage = " If this is incorrect, please declare the 'type' explicitly.";
+            List<EvaluationStatusEvent> undeclared =
+                    DeclarationInterpolator.interpolatePredictedDataTypeWhenUndeclared( builder,
+                                                                                        dataType );
+            events.addAll( undeclared );
+        }
+        // Interpolate the right or predicted data type when explicitly declared
+        else
+        {
+            List<EvaluationStatusEvent> declared =
+                    DeclarationInterpolator.interpolatePredictedDataTypeWhenDeclared( builder,
+                                                                                      dataType );
+            events.addAll( declared );
+        }
 
-            String reasonMessage;
+        return Collections.unmodifiableList( events );
+    }
 
-            DataType calculatedDataType;
+    /**
+     * Interpolates the predicted data type when the type is undeclared.
+     * @param builder the builder
+     * @param dataType the data type inferred from ingest
+     * @return any interpolation events encountered
+     */
+    private static List<EvaluationStatusEvent> interpolatePredictedDataTypeWhenUndeclared( EvaluationDeclarationBuilder builder,
+                                                                                           DataType dataType )
+    {
+        Dataset predicted = builder.right();
 
-            // Discover hints from the declaration
-            Set<String> ensembleDeclaration = DeclarationUtilities.getEnsembleDeclaration( builder );
-            Set<String> forecastDeclaration = DeclarationUtilities.getForecastDeclaration( builder );
+        List<EvaluationStatusEvent> events = new ArrayList<>();
 
-            // Ensemble declaration?
-            if ( !ensembleDeclaration.isEmpty() )
-            {
-                reasonMessage = "Setting the 'type' to 'ensemble forecasts' because the following ensemble "
-                                + "declaration was discovered: " + ensembleDeclaration + ".";
-                calculatedDataType = DataType.ENSEMBLE_FORECASTS;
-            }
-            // Forecast declaration?
-            else if ( !forecastDeclaration.isEmpty() )
-            {
-                reasonMessage = "Setting the 'type' to 'single valued forecasts' because the following forecast "
-                                + "declaration was discovered and no ensemble declaration was discovered to suggest "
-                                + "that the forecasts are 'ensemble forecasts': " + forecastDeclaration + ".";
-                calculatedDataType = DataType.SINGLE_VALUED_FORECASTS;
-            }
-            // Source declaration that refers to a service that delivers multiple data types? If so, cannot infer type
-            else if ( predicted.sources()
-                               .stream()
-                               .anyMatch( next -> Objects.nonNull( next.sourceInterface() )
-                                                  && next.sourceInterface().getDataTypes().size() > 1 ) )
-            {
-                reasonMessage = "Could not infer the predicted data type because sources were declared with interfaces "
-                                + "that support multiple data types.";
-                calculatedDataType = null;
-            }
-            else
-            {
-                reasonMessage = "Setting the 'type' to 'simulations' because no declaration was discovered to "
-                                + "suggest that any dataset contains 'single valued forecasts' or 'ensemble "
-                                + "forecast'.";
+        String defaultStartMessage = "Discovered that the 'predicted' dataset has no declared data 'type'. ";
+        String defaultEndMessage = " If this is incorrect, please declare the 'type' explicitly.";
 
-                calculatedDataType = DataType.SIMULATIONS;
-            }
+        String reasonMessage;
 
-            // Is the calculated type consistent with the declared type?
-            if ( Objects.nonNull( dataType ) && dataType != calculatedDataType )
+        DataType calculatedDataType;
+
+        // Discover hints from the declaration
+        Set<String> ensembleDeclaration = DeclarationUtilities.getEnsembleDeclaration( builder );
+        Set<String> forecastDeclaration = DeclarationUtilities.getForecastDeclaration( builder );
+
+        // Ensemble declaration?
+        if ( !ensembleDeclaration.isEmpty() )
+        {
+            reasonMessage = "Inferred a 'type' of 'ensemble forecasts' because the following ensemble "
+                            + "declaration was discovered: " + ensembleDeclaration + ".";
+            calculatedDataType = DataType.ENSEMBLE_FORECASTS;
+        }
+        // Forecast declaration?
+        else if ( !forecastDeclaration.isEmpty() )
+        {
+            reasonMessage = "Inferred a 'type' of 'single valued forecasts' because the following forecast "
+                            + "declaration was discovered and no ensemble declaration was discovered to suggest "
+                            + "that the forecasts are 'ensemble forecasts': " + forecastDeclaration + ".";
+            calculatedDataType = DataType.SINGLE_VALUED_FORECASTS;
+        }
+        // Source declaration that refers to a service that delivers multiple data types? If so, cannot infer type
+        else if ( predicted.sources()
+                           .stream()
+                           .anyMatch( next -> Objects.nonNull( next.sourceInterface() )
+                                              && next.sourceInterface()
+                                                     .getDataTypes().size() > 1 ) )
+        {
+            reasonMessage = "Could not infer the 'predicted' data type because sources were declared with "
+                            + "interfaces that support multiple data types.";
+            calculatedDataType = null;
+        }
+        else
+        {
+            reasonMessage = "Inferred a 'type' of 'simulations' because no declaration was discovered to "
+                            + "suggest that any dataset contains 'single valued forecasts' or 'ensemble "
+                            + "forecast'.";
+
+            calculatedDataType = DataType.SIMULATIONS;
+        }
+
+        // Warn
+        EvaluationStatusEvent declarationEvent
+                = EvaluationStatusEvent.newBuilder()
+                                       .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
+                                       .setEventMessage( defaultStartMessage
+                                                         + reasonMessage
+                                                         + defaultEndMessage )
+                                       .build();
+        events.add( declarationEvent );
+
+        // The data type to use
+        DataType typeToUse = calculatedDataType;
+
+        // Is the ingested data type known?
+        if ( Objects.nonNull( dataType ) )
+        {
+            // Is it consistent with the type inferred from the declaration? If not, we only emit an error if the
+            // type inferred from the declaration is ENSEMBLE_FORECASTS because this requires definitive/unique
+            // declaration options. Otherwise, we emit a warning.
+            if ( dataType != calculatedDataType && calculatedDataType == DataType.ENSEMBLE_FORECASTS )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
                                                .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
                                                .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
-                                                                 + "for the 'predicted' dataset was '"
+                                                                 + FOR_THE_PREDICTED_DATASET_WAS
                                                                  + dataType
-                                                                 + "', but the data type inferred from the declaration "
-                                                                 + "was '"
+                                                                 + BUT_THE_DATA_TYPE_INFERRED_FROM_THE
+                                                                 + DECLARATION_WAS
                                                                  + calculatedDataType
                                                                  + WHICH_IS_INCONSISTENT_PLEASE_FIX_THE
                                                                  + DECLARATION_HINT_LOOK_FOR_NEARBY_WARNING
-                                                                 + "messages that indicate why the data type inferred "
-                                                                 + "from the declaration was '"
+                                                                 + MESSAGES_THAT_INDICATE_WHY_THE_DATA_TYPE
+                                                                 + INFERRED_FROM_THE_DECLARATION_WAS
                                                                  + calculatedDataType
                                                                  + "'." )
                                                .build();
                 events.add( event );
             }
+            else if ( dataType != calculatedDataType )
+            {
+                typeToUse = dataType;
 
-            // Set the type
-            Dataset newPredicted = DatasetBuilder.builder( predicted ).type( calculatedDataType ).build();
-            builder.right( newPredicted );
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
+                                               .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
+                                                                 + FOR_THE_PREDICTED_DATASET_WAS
+                                                                 + dataType
+                                                                 + BUT_THE_DATA_TYPE_INFERRED_FROM_THE
+                                                                 + DECLARATION_WAS
+                                                                 + calculatedDataType
+                                                                 + THE_EVALUATION_WILL_PROCEED_WITH_THE_DATA
+                                                                 + TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA_WHICH
+                                                                 + "is '"
+                                                                 + dataType
+                                                                 + IF_THIS_IS_INCORRECT_PLEASE_DECLARE_THE
+                                                                 + INTENDED_TYPE_EXPLICITLY )
+                                               .build();
+                events.add( event );
+            }
+        }
 
-            // Warn
+        // Set the type
+        Dataset newPredicted = DatasetBuilder.builder( predicted )
+                                             .type( typeToUse )
+                                             .build();
+        builder.right( newPredicted );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Interpolates the predicted data type when there is explicit declaration for a predicted data type. By default,
+     * uses the declared type, but also checks against the data type inferred from ingest.
+     * @param builder the builder
+     * @param dataType the data type inferred from ingest
+     * @return any interpolation events encountered
+     */
+    private static List<EvaluationStatusEvent> interpolatePredictedDataTypeWhenDeclared( EvaluationDeclarationBuilder builder,
+                                                                                         DataType dataType )
+    {
+        Dataset predicted = builder.right();
+
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        if ( Objects.nonNull( dataType )
+             && dataType != predicted.type() )
+        {
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
-                                           .setEventMessage( defaultStartMessage
-                                                             + reasonMessage
-                                                             + defaultEndMessage )
+                                           .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
+                                                             + FOR_THE_PREDICTED_DATASET_WAS
+                                                             + dataType
+                                                             + BUT_THE_DATA_TYPE_WAS_EXPLICITLY_DECLARED_AS
+                                                             + predicted.type()
+                                                             + THE_EVALUATION_WILL_PROCEED_WITH_THE_EXPLICITLY
+                                                             + DECLARED_TYPE_OF
+                                                             + dataType
+                                                             + IF_THIS_IS_INCORRECT_PLEASE_FIX_THE_DECLARED
+                                                             + TYPE )
                                            .build();
             events.add( event );
         }
@@ -1534,7 +1775,7 @@ public class DeclarationInterpolator
     }
 
     /**
-     * Sets the baseline data type to match the data type of the predicted dataset.
+     * Interpolates the baseline data type.
      * @param builder the builder
      * @param dataType the data type inferred from ingest
      * @return any interpolation events encountered
@@ -1546,70 +1787,170 @@ public class DeclarationInterpolator
 
         if ( DeclarationUtilities.hasBaseline( builder ) )
         {
-            Dataset predicted = builder.right();
             BaselineDataset baseline = builder.baseline();
             Dataset baselineDataset = baseline.dataset();
 
-            // Set the baseline data type, if required
+            // Interpolate the baseline data type when undeclared
             if ( Objects.isNull( baselineDataset.type() ) )
             {
-                // Same as the predicted data type, by default
-                DataType calculatedDataType = predicted.type();
+                List<EvaluationStatusEvent> undeclared =
+                        DeclarationInterpolator.interpolateBaselineDataTypeWhenUndeclared( builder,
+                                                                                           dataType );
+                events.addAll( undeclared );
+            }
+            // Interpolate the baseline data type when explicitly declared
+            else
+            {
+                List<EvaluationStatusEvent> declared =
+                        DeclarationInterpolator.interpolateBaselineDataTypeWhenDeclared( builder,
+                                                                                         dataType );
+                events.addAll( declared );
+            }
+        }
 
-                String reason = "Assuming that the 'type' is '"
-                                + calculatedDataType
-                                + "' to match the 'type' of the 'predicted' dataset.";
+        return Collections.unmodifiableList( events );
+    }
 
-                // Persistence defined? If so, observations
-                if ( Objects.nonNull( baseline.persistence() ) )
-                {
-                    calculatedDataType = DataType.OBSERVATIONS;
-                    reason = "Inferred a 'type' of 'observations' because a persistence baseline was defined.";
-                }
+    /**
+     * Interpolates the baseline data type when there is no declaration of the baseline data type.
+     * @param builder the builder
+     * @param dataType the data type inferred from ingest
+     * @return any interpolation events encountered
+     */
+    private static List<EvaluationStatusEvent> interpolateBaselineDataTypeWhenUndeclared( EvaluationDeclarationBuilder builder,
+                                                                                          DataType dataType )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
 
-                // Is the calculated type consistent with the declared type?
-                if ( Objects.nonNull( dataType ) && dataType != calculatedDataType )
-                {
-                    EvaluationStatusEvent event
-                            = EvaluationStatusEvent.newBuilder()
-                                                   .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
-                                                   .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
-                                                                     + "for the 'baseline' dataset was '"
-                                                                     + dataType
-                                                                     + "', but the data type inferred from the "
-                                                                     + "declaration was '"
-                                                                     + calculatedDataType
-                                                                     + WHICH_IS_INCONSISTENT_PLEASE_FIX_THE
-                                                                     + DECLARATION_HINT_LOOK_FOR_NEARBY_WARNING
-                                                                     + "messages that indicate why the data type "
-                                                                     + "inferred from the declaration was '"
-                                                                     + calculatedDataType
-                                                                     + "'." )
-                                                   .build();
-                    events.add( event );
-                }
+        Dataset predicted = builder.right();
+        BaselineDataset baseline = builder.baseline();
+        Dataset baselineDataset = baseline.dataset();
 
-                Dataset newBaselineDataset = DatasetBuilder.builder( baselineDataset )
-                                                           .type( calculatedDataType )
-                                                           .build();
-                BaselineDataset newBaseline =
-                        BaselineDatasetBuilder.builder( baseline )
-                                              .dataset( newBaselineDataset )
-                                              .build();
-                builder.baseline( newBaseline );
+        // Same as the predicted data type, by default
+        DataType calculatedDataType = predicted.type();
 
-                // Warn
+        String reason = "Inferred a 'type' of '"
+                        + calculatedDataType
+                        + "' to match the 'type' of the 'predicted' dataset.";
+
+        // Persistence defined? If so, observations
+        if ( Objects.nonNull( baseline.persistence() ) )
+        {
+            calculatedDataType = DataType.OBSERVATIONS;
+            reason = "Inferred a 'type' of 'observations' because a persistence baseline was defined.";
+        }
+
+        // Warn
+        EvaluationStatusEvent declaredEvent
+                = EvaluationStatusEvent.newBuilder()
+                                       .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
+                                       .setEventMessage( "Discovered that the 'baseline' dataset has no "
+                                                         + "declared data 'type'. "
+                                                         + reason
+                                                         + " If this is incorrect, please declare the 'type' "
+                                                         + "explicitly." )
+                                       .build();
+        events.add( declaredEvent );
+
+        // The data type to use
+        DataType typeToUse = calculatedDataType;
+
+        // Is the ingested data type known?
+        if ( Objects.nonNull( dataType ) )
+        {
+            // Is it consistent with the type inferred from the declaration? If not, we only emit an error if
+            // the type inferred from the declaration is ENSEMBLE_FORECASTS because this requires
+            // definitive/unique declaration options. Otherwise, we emit a warning.
+            if ( dataType != calculatedDataType && calculatedDataType == DataType.ENSEMBLE_FORECASTS )
+            {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
-                                               .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
-                                               .setEventMessage( "Discovered that the 'baseline' dataset has no "
-                                                                 + "declared data 'type'. "
-                                                                 + reason
-                                                                 + " If this is incorrect, please declare the 'type'"
-                                                                 + "explicitly." )
+                                               .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
+                                               .setEventMessage(
+                                                       THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
+                                                       + "for the 'baseline' dataset was '"
+                                                       + dataType
+                                                       + BUT_THE_DATA_TYPE_INFERRED_FROM_THE
+                                                       + DECLARATION_WAS
+                                                       + calculatedDataType
+                                                       + WHICH_IS_INCONSISTENT_PLEASE_FIX_THE
+                                                       + DECLARATION_HINT_LOOK_FOR_NEARBY_WARNING
+                                                       + MESSAGES_THAT_INDICATE_WHY_THE_DATA_TYPE
+                                                       + INFERRED_FROM_THE_DECLARATION_WAS
+                                                       + calculatedDataType
+                                                       + "'." )
                                                .build();
                 events.add( event );
             }
+            else if ( dataType != calculatedDataType )
+            {
+                typeToUse = dataType;
+
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
+                                               .setEventMessage(
+                                                       THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
+                                                       + "for the 'baseline' dataset was '"
+                                                       + dataType
+                                                       + BUT_THE_DATA_TYPE_INFERRED_FROM_THE
+                                                       + DECLARATION_WAS
+                                                       + calculatedDataType
+                                                       + THE_EVALUATION_WILL_PROCEED_WITH_THE_DATA
+                                                       + TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA_WHICH
+                                                       + "is '"
+                                                       + dataType
+                                                       + IF_THIS_IS_INCORRECT_PLEASE_DECLARE_THE
+                                                       + INTENDED_TYPE_EXPLICITLY )
+                                               .build();
+                events.add( event );
+            }
+        }
+
+        Dataset newBaselineDataset = DatasetBuilder.builder( baselineDataset )
+                                                   .type( typeToUse )
+                                                   .build();
+        BaselineDataset newBaseline =
+                BaselineDatasetBuilder.builder( baseline )
+                                      .dataset( newBaselineDataset )
+                                      .build();
+        builder.baseline( newBaseline );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Interpolates the baseline data type when there is explicit declaration for a baseline data type. By default,
+     * uses the declared type, but also checks against the data type inferred from ingest.
+     * @param builder the builder
+     * @param dataType the data type inferred from ingest
+     * @return any interpolation events encountered
+     */
+    private static List<EvaluationStatusEvent> interpolateBaselineDataTypeWhenDeclared( EvaluationDeclarationBuilder builder,
+                                                                                        DataType dataType )
+    {
+        BaselineDataset baseline = builder.baseline();
+        Dataset baselineDataset = baseline.dataset();
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        if ( Objects.nonNull( dataType )
+             && dataType != baselineDataset.type() )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
+                                           .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
+                                                             + "for the baseline dataset was '"
+                                                             + dataType
+                                                             + BUT_THE_DATA_TYPE_WAS_EXPLICITLY_DECLARED_AS
+                                                             + baselineDataset.type()
+                                                             + THE_EVALUATION_WILL_PROCEED_WITH_THE_EXPLICITLY
+                                                             + DECLARED_TYPE_OF
+                                                             + dataType
+                                                             + IF_THIS_IS_INCORRECT_PLEASE_FIX_THE_DECLARED
+                                                             + TYPE )
+                                           .build();
+            events.add( event );
         }
 
         return Collections.unmodifiableList( events );
