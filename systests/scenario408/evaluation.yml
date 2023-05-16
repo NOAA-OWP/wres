@@ -6,13 +6,11 @@ observed:
     - data/singleValuedEx_ABRFC_ARCFUL_OBS/BLUO2X.QINE.19951101.20170905.datacard
   time_zone_offset: '-0600'
   variable: QINE
-  type: observations
   label: Observations
 predicted:
   sources:
     - data/singleValuedEx_ABRFC_ARCFUL_QINE
   variable: QINE
-  type: single valued forecasts
   label: Operational Single-Valued Forecasts
 features:
   - observed: ANTO2X

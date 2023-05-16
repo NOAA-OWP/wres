@@ -10,7 +10,6 @@ predicted:
   variable:
     name: SSTG
     label: STAGE
-  type: ensemble forecasts
   label: HEFS
 features:
   - observed: CKLN6

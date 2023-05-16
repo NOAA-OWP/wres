@@ -6,7 +6,6 @@ predicted:
   sources:
     - data/abrfcExample/LGNN5_hefs_flow_1yr.tgz
   variable: QINE
-  type: ensemble forecasts
   label: HEFS
 features:
   - {observed: LGNN5, predicted: LGNN5}

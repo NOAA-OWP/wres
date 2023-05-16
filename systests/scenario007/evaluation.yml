@@ -10,7 +10,6 @@ predicted:
   variable:
     name: SQIN
     label: discharge2
-  type: ensemble forecasts
   label: HEFS
 features:
   - {observed: DRRC2HSF, predicted: DRRC2HSF}

@@ -10,7 +10,6 @@ predicted:
   sources:
     - data/archive/baselineValidationExample/LGNN5_Streamflow_hefs_Baseline_Validation_19850101_20160106.tgz
   variable: QINE
-  type: ensemble forecasts
   label: HEFS
 features:
   - {observed: 'LGNN5', predicted: 'LGNN5'}

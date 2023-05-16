@@ -2,6 +2,7 @@ package wres.config.yaml;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.Duration;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -18,10 +19,13 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.config.MetricConstants;
 import wres.config.xml.generated.DataSourceConfig;
+import wres.config.yaml.components.AnalysisDurations;
+import wres.config.yaml.components.AnalysisDurationsBuilder;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.DataType;
@@ -34,6 +38,7 @@ import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.Formats;
+import wres.config.yaml.components.LeadTimeIntervalBuilder;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricBuilder;
 import wres.config.yaml.components.MetricParameters;
@@ -161,8 +166,6 @@ class DeclarationInterpolatorTest
     List<DataSourceConfig.Source> observedSources;
     /** Default list of predicted sources in the old-style declaration. */
     List<DataSourceConfig.Source> predictedSources;
-    /** Default list of baseline sources in the old-style declaration. */
-    List<DataSourceConfig.Source> baselineSources;
 
     @BeforeEach
     void runBeforeEach()
@@ -201,7 +204,6 @@ class DeclarationInterpolatorTest
 
         this.observedSources = List.of( observedDataSource );
         this.predictedSources = List.of( predictedDataSource );
-        this.baselineSources = List.of( predictedDataSource );
     }
 
     @Test
@@ -663,8 +665,8 @@ class DeclarationInterpolatorTest
                                      .build();
 
         Dataset right = DatasetBuilder.builder( this.predictedDataset )
-                                     .featureAuthority( FeatureAuthority.CUSTOM )
-                                     .build();
+                                      .featureAuthority( FeatureAuthority.CUSTOM )
+                                      .build();
 
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
@@ -946,6 +948,123 @@ class DeclarationInterpolatorTest
         Set<Metric> actual = actualDeclaration.metrics();
 
         assertEquals( expected, actual );
+    }
+
+    @Test
+    void testInterpolateDataTypesWhenUndeclaredAndIngestTypesSupplied()
+    {
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( this.predictedDataset )
+                                                         .build();
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .baseline( baseline )
+                                            .build();
+
+        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( evaluation,
+                                                                            DataType.OBSERVATIONS,
+                                                                            DataType.ENSEMBLE_FORECASTS,
+                                                                            DataType.ENSEMBLE_FORECASTS,
+                                                                            true );
+        DataType actualLeft = actual.left()
+                                    .type();
+        DataType actualRight = actual.right()
+                                     .type();
+        DataType actualBaseline = actual.baseline()
+                                        .dataset()
+                                        .type();
+
+        assertAll( () -> assertEquals( DataType.OBSERVATIONS, actualLeft ),
+                   () -> assertEquals( DataType.ENSEMBLE_FORECASTS, actualRight ),
+                   () -> assertEquals( DataType.ENSEMBLE_FORECASTS, actualBaseline ) );
+    }
+
+    @Test
+    void testInterpolateDataTypesWhenUndeclaredAndTypeInferredFromDeclarationDoesNotMatchIngestTypesButMismatchAllowed()
+    {
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            // Inferred as single-valued forecasts because no ensemble declaration
+                                            .leadTimes( LeadTimeIntervalBuilder.builder()
+                                                                               .minimum( Duration.ofHours( 1 ) )
+                                                                               .maximum( Duration.ofHours( 2 ) )
+                                                                               .build() )
+                                            .build();
+
+        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( evaluation,
+                                                                            DataType.OBSERVATIONS,
+                                                                            DataType.ENSEMBLE_FORECASTS,
+                                                                            null,
+                                                                            true );
+        DataType actualLeft = actual.left()
+                                    .type();
+        DataType actualRight = actual.right()
+                                     .type();
+
+        assertAll( () -> assertEquals( DataType.OBSERVATIONS, actualLeft ),
+                   () -> assertEquals( DataType.ENSEMBLE_FORECASTS, actualRight ) );
+    }
+
+    @Test
+    void testInterpolateDataTypesWhenUndeclaredAndTypeInferredFromDeclarationDoesNotMatchIngestTypesButMismatchDisallowed()
+    {
+        AnalysisDurations analysisDurations = AnalysisDurationsBuilder.builder()
+                                                                      .minimumExclusive( Duration.ofHours( 1 ) )
+                                                                      .maximum( Duration.ofHours( 2 ) )
+                                                                      .build();
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            // Inferred as single-valued forecasts because no ensemble declaration
+                                            .analysisDurations( analysisDurations )
+                                            .build();
+
+        DeclarationException expected =
+                assertThrows( DeclarationException.class, () -> DeclarationInterpolator.interpolate( evaluation,
+                                                                                                     DataType.OBSERVATIONS,
+                                                                                                     DataType.ENSEMBLE_FORECASTS,
+                                                                                                     null,
+                                                                                                     true ) );
+
+        assertTrue( expected.getMessage()
+                            .contains( "but the data type inferred from the declaration was 'analyses', "
+                                       + "which is inconsistent" ) );
+    }
+
+    @Test
+    void testInterpolateDataTypesWhenTypesDeclaredAndIngestTypesDifferResultsInUseOfDeclaredTypes()
+    {
+        Dataset left = DatasetBuilder.builder( this.observedDataset )
+                                     .type( DataType.ANALYSES )
+                                     .build();
+
+        Dataset right = DatasetBuilder.builder( this.predictedDataset )
+                                      .type( DataType.SINGLE_VALUED_FORECASTS )
+                                      .build();
+
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( left )
+                                            .right( right )
+                                            .build();
+
+        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( evaluation,
+                                                                            DataType.OBSERVATIONS,
+                                                                            DataType.ENSEMBLE_FORECASTS,
+                                                                            null,
+                                                                            true );
+        DataType actualLeft = actual.left()
+                                    .type();
+        DataType actualRight = actual.right()
+                                     .type();
+
+        assertAll( () -> assertEquals( DataType.ANALYSES, actualLeft ),
+                   () -> assertEquals( DataType.SINGLE_VALUED_FORECASTS, actualRight ) );
     }
 
     // The testDeserializeAndInterpolate* tests are integration tests of deserialization plus interpolation

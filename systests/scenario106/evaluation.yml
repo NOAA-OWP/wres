@@ -14,7 +14,6 @@ predicted:
     period: 1
     unit: seconds
   variable: QINE
-  type: ensemble forecasts
   label: HEFS
 unit: CMS
 lead_times:

@@ -10,7 +10,6 @@ predicted:
   sources:
     - data/archive/baselineValidationExample/AMCK1_Streamflow_hefs_Baseline_Validation.tgz
   variable: QINE
-  type: ensemble forecasts
   label: HEFS
 features:
   - {observed: 'AMCK1', predicted: 'AMCK1'}

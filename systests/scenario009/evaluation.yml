@@ -6,7 +6,6 @@ predicted:
   sources:
     - data/drrc2ForecastsOneMonth_cfs/
   variable: SQIN
-  type: ensemble forecasts
   label: HEFS
 features:
   - {observed: DRRC2HSF, predicted: DRRC2HSF}
