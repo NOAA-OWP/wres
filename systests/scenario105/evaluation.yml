@@ -13,7 +13,7 @@ baseline:
   variable: QINE
   label: ESP
 features:
-  - LGNN5
+  - {observed: LGNN5, predicted: LGNN5, baseline: LGNN5}
 unit: CMS
 lead_times:
   minimum: 42

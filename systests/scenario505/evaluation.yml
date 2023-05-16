@@ -10,7 +10,7 @@ predicted:
     - smalldata/25510319T00_FAKE2_forecast.xml
   variable: STREAMFLOW
 features:
-  - FAKE2
+  - {observed: FAKE2, predicted: FAKE2}
 unit: CMS
 reference_dates:
   minimum: 2551-03-17T00:00:00Z

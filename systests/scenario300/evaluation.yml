@@ -8,7 +8,7 @@ predicted:
   variable: MAPX
   label: HEFS
 features:
-  - LGNN5
+  - {observed: LGNN5, predicted: LGNN5}
 unit: MM
 lead_times:
   minimum: 6

@@ -10,7 +10,7 @@ predicted:
     - smalldata/wrds_json/25510319T00_FAKE2_forecast.json
   variable: QR
 features:
-  - FAKE2
+  - {observed: 'FAKE2', predicted: 'FAKE2'}
 unit: CMS
 lead_times:
   minimum: 3

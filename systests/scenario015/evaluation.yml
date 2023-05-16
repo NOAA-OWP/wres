@@ -9,7 +9,7 @@ predicted:
   label: HEFS
   ensemble_filter: 2009
 features:
-  - DRRC2HSF
+  - {observed: DRRC2HSF, predicted: DRRC2HSF}
 unit: CMS
 reference_dates:
   maximum: 1985-06-07T12:00:00Z

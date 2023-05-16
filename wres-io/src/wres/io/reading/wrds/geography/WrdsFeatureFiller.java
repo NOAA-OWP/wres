@@ -106,9 +106,13 @@ public class WrdsFeatureFiller
             }
             else
             {
-                throw new DeclarationException( "Discovered sparsely declared features, but these features could not "
-                                                 + "be interpolated because no feature service was declared. Please "
-                                                 + "declare a 'feature_service' or only declare dense features." );
+                throw new DeclarationException( "Discovered "
+                                                + sparse.size()
+                                                +" sparsely declared geographic features, which could not be "
+                                                + "interpolated because no feature service was declared. Please "
+                                                + "declare a 'feature_service' or declare the same 'feature_authority' "
+                                                + "for each dataset (to allow interpolation without a feature service) "
+                                                + "or fully declare all features." );
             }
         }
 

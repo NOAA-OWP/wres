@@ -15,7 +15,7 @@ baseline:
   variable: DISCHARGE
   persistence: 1
 features:
-  - FAKE2
+  - {observed: FAKE2, predicted: FAKE2, baseline: FAKE2}
 unit: CMS
 reference_dates:
   minimum: 2551-03-17T00:00:00Z

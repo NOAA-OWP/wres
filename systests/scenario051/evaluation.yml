@@ -8,8 +8,7 @@ predicted:
   variable: SQIN
   type: ensemble forecasts
 features:
-  - observed: DRRC2HSF
-    predicted: DRRC2
+  - {observed: DRRC2HSF, predicted: DRRC2}
 unit: CMS
 lead_times:
   minimum: 1
