@@ -100,10 +100,14 @@ definitions:
         minLength: 1
         maxLength: 2083
       unit_aliases:
-        type: array
-        items:
-          "$ref": "#/definitions/UnitAlias"
-        minItems: 1
+        anyOf:
+           # One or more
+           - type: array
+             items:
+               "$ref": "#/definitions/UnitAlias"
+             minItems: 1
+           # Singleton
+           - "$ref": "#/definitions/UnitAlias"
       pair_frequency:
         "$ref": "#/definitions/PairFrequency"
       cross_pair:
