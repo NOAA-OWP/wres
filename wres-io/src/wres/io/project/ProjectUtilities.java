@@ -90,7 +90,8 @@ class ProjectUtilities
                                                                       declaration );
 
         AtomicInteger groupNumber = new AtomicInteger( 1 ); // For naming when no name is present        
-        // Iterate the declared feature groups
+
+        // Iterate the declared feature groups and correlate with features that have data
         for ( GeometryGroup nextGroup : declaredGroups )
         {
             Set<FeatureTuple> groupedTuples = new HashSet<>();
@@ -460,7 +461,8 @@ class ProjectUtilities
         Set<FeatureTuple> leftMatched = featuresToSearch.stream()
                                                         .filter( next -> Objects.equals( featureToFind.getLeft()
                                                                                                       .getName(),
-                                                                                         next.getLeft().getName() ) )
+                                                                                         next.getLeft()
+                                                                                             .getName() ) )
                                                         .collect( Collectors.toSet() );
 
         if ( leftMatched.isEmpty() )
@@ -474,14 +476,16 @@ class ProjectUtilities
         }
         else if ( leftMatched.size() == 1 )
         {
-            return leftMatched.iterator().next();
+            return leftMatched.iterator()
+                              .next();
         }
 
         // Find the right-name matching features second.
         Set<FeatureTuple> rightMatched = leftMatched.stream()
                                                     .filter( next -> Objects.equals( featureToFind.getRight()
                                                                                                   .getName(),
-                                                                                     next.getRight().getName() ) )
+                                                                                     next.getRight()
+                                                                                         .getName() ) )
                                                     .collect( Collectors.toSet() );
 
         if ( rightMatched.isEmpty() )
@@ -495,11 +499,13 @@ class ProjectUtilities
         }
         else if ( rightMatched.size() == 1 )
         {
-            return rightMatched.iterator().next();
+            return rightMatched.iterator()
+                               .next();
         }
 
         // Find the baseline-name matching features last.
         Set<FeatureTuple> baselineMatched = rightMatched.stream()
+                                                        .filter( next -> Objects.nonNull( next.getBaseline() ) )
                                                         .filter( next -> Objects.equals( featureToFind.getBaseline()
                                                                                                       .getName(),
                                                                                          next.getBaseline()
@@ -517,7 +523,8 @@ class ProjectUtilities
         }
         else if ( baselineMatched.size() == 1 )
         {
-            return baselineMatched.iterator().next();
+            return baselineMatched.iterator()
+                                  .next();
         }
 
         throw new DeclarationException( "Discovered a feature group called '" + nextGroup.getRegionName()

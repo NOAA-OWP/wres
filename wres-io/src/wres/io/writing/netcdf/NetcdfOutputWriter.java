@@ -576,7 +576,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
                 if ( returnMe.containsKey( nextMetric ) )
                 {
-                    returnMe.get( nextMetric ).putAll( namedThresholds );
+                    returnMe.get( nextMetric )
+                            .putAll( namedThresholds );
                 }
                 else
                 {
@@ -1769,7 +1770,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                            + this.outputPath
                                                            + FAILED_TO_IDENTIFY_A_COORDINATE_FOR_LOCATION
                                                            + location
-                                                           + "." );
+                                                           + ". The available names were: "
+                                                           + this.vectorCoordinatesMap.keySet() );
                 }
             }
             // Comid is the glue
