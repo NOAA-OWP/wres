@@ -1,5 +1,6 @@
 package wres.io.reading.wrds.geography;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -12,6 +13,7 @@ import org.mockito.Mockito;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.Dataset;
@@ -200,8 +202,13 @@ class WrdsFeatureFillerTest
                                               .setBaseline( Geometry.newBuilder()
                                                                     .setName( "baz" ) )
                                               .build();
+        // No match for this one
+        GeometryTuple anotherLeft = GeometryTuple.newBuilder()
+                                          .setLeft( Geometry.newBuilder()
+                                                            .setName( "foofoo" ) )
+                                          .build();
         EvaluationDeclaration evaluation
-                = WrdsFeatureFillerTest.getBoilerplateEvaluationWith( Set.of( left, right, baseline ),
+                = WrdsFeatureFillerTest.getBoilerplateEvaluationWith( Set.of( left, right, baseline, anotherLeft ),
                                                                       featureService,
                                                                       BOILERPLATE_DATASOURCE_USGS_SITE_CODE_AUTHORITY,
                                                                       BOILERPLATE_DATASOURCE_NWS_LID_AUTHORITY,
@@ -214,13 +221,13 @@ class WrdsFeatureFillerTest
                                                                  featureService,
                                                                  FeatureAuthority.USGS_SITE_CODE,
                                                                  FeatureAuthority.NWS_LID,
-                                                                 Set.of( "foo" ) ) )
+                                                                 Set.of( "foo", "foofoo" ) ) )
                      .thenReturn( Map.of( "foo", "qux" ) );
             utilities.when( () -> WrdsFeatureService.bulkLookup( evaluation,
                                                                  featureService,
                                                                  FeatureAuthority.USGS_SITE_CODE,
                                                                  FeatureAuthority.NWM_FEATURE_ID,
-                                                                 Set.of( "foo" ) ) )
+                                                                 Set.of( "foo", "foofoo" ) ) )
                      .thenReturn( Map.of( "foo", "quux" ) );
             utilities.when( () -> WrdsFeatureService.bulkLookup( evaluation,
                                                                  featureService,
@@ -246,6 +253,12 @@ class WrdsFeatureFillerTest
                                                                  FeatureAuthority.NWS_LID,
                                                                  Set.of( "baz" ) ) )
                      .thenReturn( Map.of( "baz", "waldo" ) );
+            utilities.when( () -> WrdsFeatureService.bulkLookup( evaluation,
+                                                                 featureService,
+                                                                 FeatureAuthority.USGS_SITE_CODE,
+                                                                 FeatureAuthority.NWM_FEATURE_ID,
+                                                                 Set.of( "foofoo" ) ) )
+                     .thenReturn( Map.of() );
 
             EvaluationDeclaration actualEvaluation = WrdsFeatureFiller.fillFeatures( evaluation );
 

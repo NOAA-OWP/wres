@@ -27,6 +27,7 @@ import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.FeatureService;
 import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.Features;
+import wres.datamodel.space.FeatureTuple;
 import wres.io.ingesting.PreIngestException;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -108,7 +109,7 @@ public class WrdsFeatureFiller
             {
                 throw new DeclarationException( "Discovered "
                                                 + sparse.size()
-                                                +" sparsely declared geographic features, which could not be "
+                                                + " sparsely declared geographic features, which could not be "
                                                 + "interpolated because no feature service was declared. Please "
                                                 + "declare a 'feature_service' or declare the same 'feature_authority' "
                                                 + "for each dataset (to allow interpolation without a feature service) "
@@ -496,7 +497,11 @@ public class WrdsFeatureFiller
         LOGGER.debug( "New right names: {}", withNewRight );
         LOGGER.debug( "New baseline names: {}", withNewBaseline );
 
-        return WrdsFeatureFiller.getConsolidatedFeatures( withNewLeft, withNewRight, withNewBaseline, sparseFeatures );
+        return WrdsFeatureFiller.getConsolidatedFeatures( withNewLeft,
+                                                          withNewRight,
+                                                          withNewBaseline,
+                                                          sparseFeatures,
+                                                          Objects.nonNull( baselineAuthority ) );
     }
 
     /**
@@ -957,14 +962,19 @@ public class WrdsFeatureFiller
      * @param withNewRight the features with new right names
      * @param withNewBaseline the features with new baseline names
      * @param sparseFeatures the sparse features
+     * @param hasBaseline whether there are baseline features
      * @return the consolidated dense features
      */
     private static Set<GeometryTuple> getConsolidatedFeatures( Map<GeometryTuple, String> withNewLeft,
                                                                Map<GeometryTuple, String> withNewRight,
                                                                Map<GeometryTuple, String> withNewBaseline,
-                                                               Set<GeometryTuple> sparseFeatures )
+                                                               Set<GeometryTuple> sparseFeatures,
+                                                               boolean hasBaseline )
     {
         Set<GeometryTuple> consolidatedFeatures = new HashSet<>();
+
+        // Features that could not be correlated/densified
+        Set<FeatureTuple> stillSparse = new HashSet<>();
 
         for ( GeometryTuple feature : sparseFeatures )
         {
@@ -997,14 +1007,46 @@ public class WrdsFeatureFiller
                                                 .setName( newBaselineName ) );
             }
 
-            // Only add the feature if not empty
-            if ( newFeature.hasLeft() || newFeature.hasRight() || newFeature.hasBaseline() )
+            // Only add dense/correlated feature tuples
+            GeometryTuple complete = newFeature.build();
+            if ( WrdsFeatureFiller.isDense( complete, hasBaseline ) )
             {
-                consolidatedFeatures.add( newFeature.build() );
+                consolidatedFeatures.add( complete );
+            }
+            else if ( LOGGER.isWarnEnabled() )
+            {
+                FeatureTuple featureTuple = FeatureTuple.of( complete );
+                stillSparse.add( featureTuple );
             }
         }
 
+        // Warn about features that could not be correlated
+        if ( !stillSparse.isEmpty() && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "The evaluation contained {} sparse feature(s). However, {} of these feature(s) could not be "
+                         + "correlated using WRDS and will be omitted from the evaluation: {}.",
+                         sparseFeatures.size(),
+                         stillSparse.size(),
+                         stillSparse );
+        }
+
         return Collections.unmodifiableSet( consolidatedFeatures );
+    }
+
+    /**
+     * @param feature the feature to test
+     * @param hasBaseline whether the feature tuple has a baseline
+     * @return whether the feature tuple is dense
+     */
+
+    private static boolean isDense( GeometryTuple feature, boolean hasBaseline )
+    {
+        if ( !feature.hasLeft() || !feature.hasRight() )
+        {
+            return false;
+        }
+
+        return !hasBaseline || feature.hasBaseline();
     }
 
     /**

@@ -11,7 +11,12 @@ import wres.datamodel.messages.MessageUtilities;
 import wres.statistics.generated.GeometryTuple;
 
 /**
- * Represents a tuple of geographic features. Wraps a canonical {@link GeometryTuple} and adds behavior.
+ * <p>Represents a tuple of geographic features. Wraps a canonical {@link GeometryTuple} and adds behavior.
+ *
+ * <p>TODO: make this behave the same for a baseline feature as a left and right feature. Any one can be missing, but
+ * none of them are null in the canonical type. Yet we treat the baseline nullity as a special snowflake here.
+ *
+ * @author James Brown
  */
 
 public class FeatureTuple implements Comparable<FeatureTuple>
