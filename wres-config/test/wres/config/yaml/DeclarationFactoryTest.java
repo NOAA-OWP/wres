@@ -923,6 +923,31 @@ class DeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeWithSingletonArrayOfUnitAliases() throws IOException
+    {
+        String yaml = """
+                observed: some_file.csv
+                predicted: another_file.csv
+                unit_aliases:
+                  unit: '[degF]'
+                  alias: °F
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        UnitAlias one = new UnitAlias( "°F", "[degF]" );
+        Set<UnitAlias> unitAliases = Set.of( one );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .unitAliases( unitAliases )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDeserializeWithPairFrequency() throws IOException
     {
         String yaml = """
