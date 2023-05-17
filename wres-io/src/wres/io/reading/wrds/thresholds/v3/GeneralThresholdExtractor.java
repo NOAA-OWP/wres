@@ -176,9 +176,9 @@ public class GeneralThresholdExtractor
 
         for ( GeneralThresholdDefinition definition : thresholdDefinitions )
         {
-            //If the user specifies a threshold provider then it must match that found in the threshold for it 
-            //to be used.  If the user specifies a rating curve provider, then that must match as well.
-            //If either is unspecified (i.e., null), then it is not used to determine if a threshold is used.
+            // If the user specifies a threshold provider then it must match that found in the threshold for it
+            // to be used.  If the user specifies a rating curve provider, then that must match as well.
+            // If either is unspecified (i.e., null), then it is not used to determine if a threshold is used.
             if ( ( ( this.provider == null ) || this.provider.equals( definition.getThresholdProvider() ) )
                  && ( this.ratingProvider == null || this.ratingProvider.equals( definition.getRatingProvider() ) ) )
             {
@@ -190,10 +190,11 @@ public class GeneralThresholdExtractor
                 WrdsLocation singleLocation = singleResult.keySet().iterator().next();
                 Set<Threshold> singleOuter = singleResult.values().iterator().next();
 
-                //Check for location already in map.  If so, add to existing set.  Otherwise, put new entry.
+                // Check for location already in map.  If so, add to existing set.  Otherwise, put new entry.
                 if ( resultsMap.containsKey( singleLocation ) )
                 {
-                    resultsMap.get( singleLocation ).addAll( singleOuter );
+                    resultsMap.get( singleLocation )
+                              .addAll( singleOuter );
                 }
                 else
                 {

@@ -418,12 +418,8 @@ public class ReaderUtilities
 
         SourceInterface interfaceShortHand = source.getSource()
                                                    .sourceInterface();
-        if ( Objects.nonNull( interfaceShortHand ) )
-        {
-            return interfaceShortHand == SourceInterface.WRDS_OBS;
-        }
 
-        return false;
+        return interfaceShortHand == SourceInterface.WRDS_OBS;
     }
 
     /**
