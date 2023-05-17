@@ -101,6 +101,13 @@ public class DeclarationValidator
     private static final String THE_TIME_SCALE_ASSOCIATED_WITH_THE = "The time scale associated with the ";
     /** Re-used string. */
     private static final String THE_EVALUATION_DECLARED = "The evaluation declared ";
+    /** Re-used string. */
+    private static final String WHEN_INSPECTING_THE_INTERFACES_ASSOCIATED_WITH_THE =
+            "When inspecting the interfaces associated with the ";
+    /** Re-used string. */
+    private static final String DATA_DISCOVERED_AN_INTERFACE_OF = " data, discovered an interface of '";
+    /** Re-used string. */
+    private static final String WHICH_ADMITS_THE_DATA_TYPES = "', which admits the data types ";
 
     /**
      * Performs validation against the schema, followed by "business-logic" validation. First, reads the declaration
@@ -1928,7 +1935,7 @@ public class DeclarationValidator
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
-        if( thresholds.isEmpty() )
+        if ( thresholds.isEmpty() )
         {
             LOGGER.debug( "No featureful thresholds to validate" );
             return List.of();
@@ -1936,15 +1943,16 @@ public class DeclarationValidator
 
         // Explicit features and featureful thresholds. Some featureful thresholds must be correlated with features
         Set<String> thresholdFeatureNames = thresholds.stream()
-                                                    .filter( n -> n.featureNameFrom() == orientation )
-                                                    // Ignore all data, which was added automagically
-                                                    .filter( n -> !DeclarationInterpolator.ALL_DATA_THRESHOLD.threshold()
-                                                                                                             .equals( n.threshold() ) )
-                                                    .map( Threshold::feature )
-                                                    .map( wres.statistics.generated.Geometry::getName )
-                                                    .collect( Collectors.toSet() );
+                                                      .filter( n -> n.featureNameFrom() == orientation )
+                                                      // Ignore all data, which was added automagically
+                                                      .filter( n -> !DeclarationInterpolator.ALL_DATA_THRESHOLD.threshold()
+                                                                                                               .equals(
+                                                                                                                       n.threshold() ) )
+                                                      .map( Threshold::feature )
+                                                      .map( wres.statistics.generated.Geometry::getName )
+                                                      .collect( Collectors.toSet() );
 
-        if( thresholdFeatureNames.isEmpty() )
+        if ( thresholdFeatureNames.isEmpty() )
         {
             LOGGER.debug( "No featureful thresholds to validate with an {} orientation.", orientation );
             return List.of();
@@ -1958,7 +1966,7 @@ public class DeclarationValidator
         int after = thresholdFeatureNames.size();
 
         // Some must match
-        if( before == after )
+        if ( before == after )
         {
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
@@ -2624,6 +2632,7 @@ public class DeclarationValidator
     /**
      * Checks that all declared sources are valid.
      * @param sources the source to validate
+     * @param type the data type
      * @param orientation the orientation of the sources
      * @return the validation events encountered
      */
@@ -2632,7 +2641,7 @@ public class DeclarationValidator
                                                                                        String orientation )
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
-        if ( Objects.nonNull( sources ) && Objects.nonNull( type ) )
+        if ( Objects.nonNull( sources ) )
         {
             // Check whether the data type is contained in the data types supported by each source interface. If not,
             // then further check whether the data type is forecast-like and, in that case, add an error event
@@ -2649,9 +2658,15 @@ public class DeclarationValidator
             // this side of data
             for ( SourceInterface nextInterface : interfaces )
             {
+                // The type is a WRDS interface
                 Set<DataType> types = nextInterface.getDataTypes();
+                List<EvaluationStatusEvent> next = DeclarationValidator.validateWrdsSourceInterfaces( nextInterface,
+                                                                                                      type,
+                                                                                                      orientation );
+                events.addAll( next );
 
-                if ( !types.contains( type ) )
+                // The type is not one of the expected ones
+                if ( Objects.nonNull( type ) && !types.contains( type ) )
                 {
                     // Either the declared data type is a forecast or the set of types does not contain any
                     // observation-like data
@@ -2662,10 +2677,11 @@ public class DeclarationValidator
                                 EvaluationStatusEvent.newBuilder()
                                                      .setStatusLevel( StatusLevel.ERROR )
                                                      .setEventMessage(
-                                                             "When inspecting the interfaces associated with the "
-                                                             + orientation + " data, discovered an interface of "
+                                                             WHEN_INSPECTING_THE_INTERFACES_ASSOCIATED_WITH_THE
+                                                             + orientation
+                                                             + DATA_DISCOVERED_AN_INTERFACE_OF
                                                              + nextInterface
-                                                             + ", which admits the data types "
+                                                             + WHICH_ADMITS_THE_DATA_TYPES
                                                              + types
                                                              + ", but the declared or inferred data type for the "
                                                              + orientation
@@ -2685,10 +2701,10 @@ public class DeclarationValidator
                                 EvaluationStatusEvent.newBuilder()
                                                      .setStatusLevel( StatusLevel.WARN )
                                                      .setEventMessage(
-                                                             "When inspecting the interfaces associated with the "
-                                                             + orientation + " data, discovered an interface of "
+                                                             WHEN_INSPECTING_THE_INTERFACES_ASSOCIATED_WITH_THE
+                                                             + orientation + DATA_DISCOVERED_AN_INTERFACE_OF
                                                              + nextInterface
-                                                             + ", which admits the data types "
+                                                             + WHICH_ADMITS_THE_DATA_TYPES
                                                              + types
                                                              + ", but the declared or inferred data type for the "
                                                              + orientation
@@ -2705,6 +2721,48 @@ public class DeclarationValidator
                     }
                 }
             }
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Validates source interfaces that correspond to the NOAA Water Resources Data Service (WRDS).
+     * @param sourceInterface the interface
+     * @param type the data type
+     * @param orientation the dataset orientation
+     * @return any validation events encountered
+     */
+
+    private static List<EvaluationStatusEvent> validateWrdsSourceInterfaces( SourceInterface sourceInterface,
+                                                                             DataType type,
+                                                                             String orientation )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+        Set<DataType> types = sourceInterface.getDataTypes();
+        if ( Objects.isNull( type ) && ( sourceInterface == SourceInterface.WRDS_AHPS
+                                         || sourceInterface == SourceInterface.WRDS_NWM ) )
+        {
+            EvaluationStatusEvent event =
+                    EvaluationStatusEvent.newBuilder()
+                                         .setStatusLevel( StatusLevel.WARN )
+                                         .setEventMessage(
+                                                 WHEN_INSPECTING_THE_INTERFACES_ASSOCIATED_WITH_THE
+                                                 + orientation
+                                                 + DATA_DISCOVERED_AN_INTERFACE_OF
+                                                 + sourceInterface
+                                                 + WHICH_ADMITS_THE_DATA_TYPES
+                                                 + types
+                                                 + ", but the data 'type' for the '"
+                                                 + orientation
+                                                 + "' data was not declared. This is allowed, but a default "
+                                                 + "selection will be made when requesting data, namely "
+                                                 + "'single valued forecasts'. If this is not intended, please "
+                                                 + "add an explicit 'type' for the "
+                                                 + orientation
+                                                 + " data and try again." )
+                                         .build();
+            events.add( event );
         }
 
         return Collections.unmodifiableList( events );

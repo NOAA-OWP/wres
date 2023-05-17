@@ -1273,6 +1273,38 @@ class DeclarationValidatorTest
                                                        StatusLevel.WARN ) );
     }
 
+    @Test
+    void testWrdsServicesWithoutDataTypeProducesWarnings()
+    {
+        Dataset left = DatasetBuilder.builder()
+                                        .sources( List.of( SourceBuilder.builder()
+                                                                        .sourceInterface( SourceInterface.WRDS_AHPS )
+                                                                        .build()) )
+                                        .build();
+        Dataset right = DatasetBuilder.builder()
+                                     .sources( List.of( SourceBuilder.builder()
+                                                                     .sourceInterface( SourceInterface.WRDS_NWM )
+                                                                     .build()) )
+                                     .build();
+
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( left )
+                                            .right( right )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "discovered an interface of "
+                                                                        + "'wrds ahps', which admits the data types",
+                                                                        StatusLevel.WARN ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "discovered an interface of "
+                                                                        + "'wrds nwm', which admits the data types",
+                                                                        StatusLevel.WARN ) ) );
+    }
+
     /**
      * @param events the events to check
      * @param message the message sequence that should appear in one or more messages
