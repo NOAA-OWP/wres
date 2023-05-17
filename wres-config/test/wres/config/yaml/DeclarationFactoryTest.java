@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.config.MetricConstants;
 import wres.config.xml.generated.DataSourceBaselineConfig;
@@ -2712,6 +2713,41 @@ class DeclarationFactoryTest
                                                                      .build();
 
         assertEquals( expected, actual );
+    }
+
+    /**
+     * Redmine issue #116312.
+     */
+
+    @Test
+    void testMigrateProjectWithSeparateMetricsForBaseline()
+    {
+        DataSourceBaselineConfig baseline = new DataSourceBaselineConfig( null,
+                                                                          this.predictedSources,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          null,
+                                                                          true );
+
+        ProjectConfig.Inputs sources = new ProjectConfig.Inputs( null, null, baseline );
+
+        ProjectConfig project = new ProjectConfig( sources,
+                                                   this.pairs,
+                                                   this.metrics,
+                                                   this.outputs,
+                                                   null,
+                                                   null );
+
+        EvaluationDeclaration actual = DeclarationFactory.from( project );
+
+        assertTrue( actual.baseline()
+                          .separateMetrics() );
     }
 
     @Test
