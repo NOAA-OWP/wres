@@ -35,6 +35,12 @@ public class Scenario105
                     Path.of( "LGNN5_LGNN5_LGNN5_HEFS_MEAN_SQUARE_ERROR_SKILL_SCORE.csv" ),
                     Path.of( "LGNN5_LGNN5_LGNN5_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_SCORE.csv" ),
                     Path.of( "LGNN5_LGNN5_LGNN5_HEFS_SAMPLE_SIZE.csv" ),
+                    Path.of( "LGNN5_LGNN5_LGNN5_ESP_BRIER_SCORE.csv" ),
+                    Path.of( "LGNN5_LGNN5_LGNN5_ESP_BRIER_SKILL_SCORE.csv" ),
+                    Path.of( "LGNN5_LGNN5_LGNN5_ESP_MEAN_ERROR.csv" ),
+                    Path.of( "LGNN5_LGNN5_LGNN5_ESP_MEAN_SQUARE_ERROR_SKILL_SCORE.csv" ),
+                    Path.of( "LGNN5_LGNN5_LGNN5_ESP_RELATIVE_OPERATING_CHARACTERISTIC_SCORE.csv" ),
+                    Path.of( "LGNN5_LGNN5_LGNN5_ESP_SAMPLE_SIZE.csv" ),
                     Path.of( "pairs.csv" ) );
 
     private ScenarioInformation scenarioInfo;

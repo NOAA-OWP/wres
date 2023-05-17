@@ -12,6 +12,7 @@ baseline:
     - data/abrfcExample/LGNN5_hefs-mefp_flow_1yr.tgz
   variable: QINE
   label: ESP
+  separate_metrics: true
 features:
   - {observed: LGNN5, predicted: LGNN5, baseline: LGNN5}
 unit: CMS

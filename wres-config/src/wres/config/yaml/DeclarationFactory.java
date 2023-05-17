@@ -657,6 +657,9 @@ public class DeclarationFactory
                 baselineBuilder.persistence( 1 );
             }
 
+            // Separate metrics?
+            baselineBuilder.separateMetrics( baselineConfig.isSeparateMetrics() );
+
             baseline = baselineBuilder.build();
         }
 
