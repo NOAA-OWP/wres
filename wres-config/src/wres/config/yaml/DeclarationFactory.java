@@ -1473,12 +1473,16 @@ public class DeclarationFactory
 
     private static GeometryTuple migrateFeature( NamedFeature feature )
     {
-        Geometry left = Geometry.newBuilder()
-                                .setName( feature.getLeft() )
-                                .build();
+        GeometryTuple.Builder builder = GeometryTuple.newBuilder();
 
-        GeometryTuple.Builder builder = GeometryTuple.newBuilder()
-                                                     .setLeft( left );
+        String leftName = feature.getLeft();
+        if ( Objects.nonNull( leftName ) )
+        {
+            Geometry left = Geometry.newBuilder()
+                                    .setName( leftName )
+                                    .build();
+            builder.setLeft( left );
+        }
 
         String rightName = feature.getRight();
         if ( Objects.nonNull( rightName ) )
@@ -1488,6 +1492,7 @@ public class DeclarationFactory
                                      .build();
             builder.setRight( right );
         }
+
         String baselineName = feature.getBaseline();
         if ( Objects.nonNull( baselineName ) )
         {

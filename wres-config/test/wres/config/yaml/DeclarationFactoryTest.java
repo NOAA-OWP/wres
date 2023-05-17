@@ -614,6 +614,43 @@ class DeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeWithFeaturesAndPredictedNameOnly() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                features:
+                  - predicted: DRRC2
+                  - predicted: DOLC2
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        GeometryTuple first = GeometryTuple.newBuilder()
+                                           .setRight( Geometry.newBuilder().setName( DRRC2 ) )
+                                           .build();
+
+        GeometryTuple second = GeometryTuple.newBuilder()
+                                            .setRight( Geometry.newBuilder().setName( DOLC2 ) )
+                                            .build();
+
+        Set<GeometryTuple> geometries = Set.of( first, second );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( geometries )
+                                           .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .features( features )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDeserializeWithFeatureServiceAndNoGroups() throws IOException
     {
         String yaml = """
@@ -3119,5 +3156,60 @@ class DeclarationFactoryTest
         EvaluationDeclaration actual = DeclarationFactory.from( project );
 
         assertEquals( 14, actual.minimumSampleSize() );
+    }
+
+    @Test
+    void testMigrateProjectWithFeaturesAndPredictedNameOnly()
+    {
+        List<NamedFeature> features = List.of( new NamedFeature( null, DRRC2, null ),
+                                               new NamedFeature( null, DOLC2, null ) );
+        PairConfig pairOptions = new PairConfig( null,
+                                                 null,
+                                                 null,
+                                                 features,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null,
+                                                 null );
+
+        ProjectConfig project = new ProjectConfig( this.inputs,
+                                                   pairOptions,
+                                                   this.metrics,
+                                                   this.outputs,
+                                                   null,
+                                                   null );
+
+        GeometryTuple first = GeometryTuple.newBuilder()
+                                           .setRight( Geometry.newBuilder().setName( DRRC2 ) )
+                                           .build();
+
+        GeometryTuple second = GeometryTuple.newBuilder()
+                                            .setRight( Geometry.newBuilder().setName( DOLC2 ) )
+                                            .build();
+
+        Set<GeometryTuple> geometries = Set.of( first, second );
+        Features expectedFeatures = FeaturesBuilder.builder()
+                                           .geometries( geometries )
+                                           .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .features( expectedFeatures )
+                                                                     .build();
+
+        EvaluationDeclaration actual = DeclarationFactory.from( project );
+
+        assertEquals( expected, actual );
     }
 }
