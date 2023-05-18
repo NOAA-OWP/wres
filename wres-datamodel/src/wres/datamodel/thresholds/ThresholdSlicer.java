@@ -645,23 +645,24 @@ public class ThresholdSlicer
                                        Map<FeatureTuple, Set<ThresholdOuter>> thresholdsToIncrement,
                                        Set<GeometryTuple> geometries )
     {
-        Map<String, GeometryTuple> leftGeometries = geometries.stream()
-                                                              .filter( GeometryTuple::hasLeft )
-                                                              .collect( Collectors.toMap( n -> n.getLeft()
-                                                                                                .getName(),
-                                                                                          Function.identity() ) );
-        Map<String, GeometryTuple> rightGeometries = geometries.stream()
-                                                               .filter( GeometryTuple::hasRight )
-                                                               .collect( Collectors.toMap( n -> n.getRight()
-                                                                                                 .getName(),
-                                                                                           Function.identity() ) );
-        Map<String, GeometryTuple> baselineGeometries = geometries.stream()
-                                                                  .filter( GeometryTuple::hasBaseline )
-                                                                  .collect( Collectors.toMap( n -> n.getBaseline()
-                                                                                                    .getName(),
-                                                                                              Function.identity() ) );
+        // Up to many feature tuples per feature name: see issue #116312
+        Map<String, List<GeometryTuple>> leftGeometries =
+                geometries.stream()
+                          .filter( GeometryTuple::hasLeft )
+                          .collect( Collectors.groupingBy( n -> n.getLeft()
+                                                                 .getName() ) );
+        Map<String, List<GeometryTuple>> rightGeometries =
+                geometries.stream()
+                          .filter( GeometryTuple::hasRight )
+                          .collect( Collectors.groupingBy( n -> n.getRight()
+                                                                 .getName() ) );
+        Map<String, List<GeometryTuple>> baselineGeometries =
+                geometries.stream()
+                          .filter( GeometryTuple::hasBaseline )
+                          .collect( Collectors.groupingBy( n -> n.getBaseline()
+                                                                 .getName() ) );
 
-        BiFunction<Geometry, DatasetOrientation, GeometryTuple> mapper = ( g, d ) ->
+        BiFunction<Geometry, DatasetOrientation, List<GeometryTuple>> mapper = ( g, d ) ->
                 switch ( d )
                         {
                             case LEFT -> leftGeometries.get( g.getName() );
@@ -735,7 +736,7 @@ public class ThresholdSlicer
 
     private static void addThresholdForOneFeature( wres.config.yaml.components.Threshold nextThreshold,
                                                    Geometry nextFeature,
-                                                   BiFunction<Geometry, DatasetOrientation, GeometryTuple> mapper,
+                                                   BiFunction<Geometry, DatasetOrientation, List<GeometryTuple>> mapper,
                                                    ThresholdType type,
                                                    Map<FeatureTuple, Set<ThresholdOuter>> thresholdsToIncrement )
     {
@@ -752,21 +753,24 @@ public class ThresholdSlicer
                                           + "." );
         }
 
-        GeometryTuple nextTuple = mapper.apply( nextFeature, orientation );
-        if ( Objects.nonNull( nextTuple ) )
+        List<GeometryTuple> nextTuples = mapper.apply( nextFeature, orientation );
+        if ( !nextTuples.isEmpty() )
         {
-            FeatureTuple nextFeatureTuple = FeatureTuple.of( nextTuple );
-            ThresholdOuter threshold = ThresholdOuter.of( nextThreshold.threshold(), type );
-            if ( thresholdsToIncrement.containsKey( nextFeatureTuple ) )
+            for ( GeometryTuple nextTuple : nextTuples )
             {
-                thresholdsToIncrement.get( nextFeatureTuple )
-                                     .add( threshold );
-            }
-            else
-            {
-                Set<ThresholdOuter> newSet = new HashSet<>();
-                newSet.add( threshold );
-                thresholdsToIncrement.put( nextFeatureTuple, newSet );
+                FeatureTuple nextFeatureTuple = FeatureTuple.of( nextTuple );
+                ThresholdOuter threshold = ThresholdOuter.of( nextThreshold.threshold(), type );
+                if ( thresholdsToIncrement.containsKey( nextFeatureTuple ) )
+                {
+                    thresholdsToIncrement.get( nextFeatureTuple )
+                                         .add( threshold );
+                }
+                else
+                {
+                    Set<ThresholdOuter> newSet = new HashSet<>();
+                    newSet.add( threshold );
+                    thresholdsToIncrement.put( nextFeatureTuple, newSet );
+                }
             }
         }
     }
