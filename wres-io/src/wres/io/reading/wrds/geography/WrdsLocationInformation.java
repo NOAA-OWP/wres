@@ -1,10 +1,8 @@
-package wres.io.reading.wrds.geography.v3;
+package wres.io.reading.wrds.geography;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import wres.io.reading.wrds.geography.WrdsLocation;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -14,28 +12,19 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  * within the "locations" list.  Part of that element is "identifiers", which will be 
  * stored in {@link WrdsLocation}.
  * @author Hank.Herr
+ * @author James Brown
  */
 @JsonIgnoreProperties( ignoreUnknown = true )
-public class WrdsLocationInformation
+record WrdsLocationInformation( WrdsLocation locations )
 {
-    private final WrdsLocation locations;
-
     /**
      * Creates an instance.
      * @param locations the locations
      */
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
-    public WrdsLocationInformation( @JsonProperty( "identifiers" ) WrdsLocation locations )
+    WrdsLocationInformation( @JsonProperty( "identifiers" ) WrdsLocation locations )  // NOSONAR
     {
         this.locations = locations;
-    }
-
-    /**
-     * @return the locations
-     */
-    public WrdsLocation getLocations()
-    {
-        return this.locations;
     }
 
     @Override

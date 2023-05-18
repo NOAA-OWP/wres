@@ -1,4 +1,4 @@
-package wres.io.reading.wrds.geography.version;
+package wres.io.reading.wrds.geography;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
@@ -18,7 +18,7 @@ public record DeploymentInformation( String version )
      * @param version the version
      */
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
-    public DeploymentInformation( @JsonProperty( "version" ) String version )
+    public DeploymentInformation( @JsonProperty( "version" ) String version ) //NOSONAR
     {
         this.version = version;
     }

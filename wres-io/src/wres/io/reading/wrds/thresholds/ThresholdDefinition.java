@@ -1,4 +1,4 @@
-package wres.io.reading.wrds.thresholds.v3;
+package wres.io.reading.wrds.thresholds;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -9,7 +9,6 @@ import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.io.reading.wrds.geography.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
-import wres.io.reading.wrds.thresholds.WrdsThresholdType;
 import wres.statistics.generated.Threshold;
 
 import java.io.Serial;
@@ -26,7 +25,7 @@ import java.util.function.DoubleUnaryOperator;
  * Represents the combined elements that defined an atomic set of thresholds.
  */
 @JsonIgnoreProperties( ignoreUnknown = true )
-public class GeneralThresholdDefinition implements Serializable
+class ThresholdDefinition implements Serializable
 {
     @Serial
     private static final long serialVersionUID = -7094110343140389566L;
@@ -34,37 +33,37 @@ public class GeneralThresholdDefinition implements Serializable
     /**
      * Metadata describing where the values are valid and who produced them
      */
-    GeneralThresholdMetadata metadata;
+    private ThresholdMetadata metadata;
 
     /**
      * The stage values presented by the all-in-one NWS API.
      */
     @JsonProperty( "stage_values" )
-    GeneralThresholdValues stageValues;
+    private ThresholdValues stageValues;
 
     /**
      * The flow values presented by the all-in-one NWS API.
      */
     @JsonProperty( "flow_values" )
-    GeneralThresholdValues flowValues;
+    private ThresholdValues flowValues;
 
     /**
      * The calculated flow values presented by the all-in-one NWS API.
      */
     @JsonProperty( "calc_flow_values" )
-    GeneralThresholdValues calcFlowValues;
+    private ThresholdValues calcFlowValues;
 
     /**
      * The general values presented by other APIs, including the NWS
      * threshold API when stage or flow is specifically requested.
      */
-    GeneralThresholdValues values;
+    private ThresholdValues values;
 
     /**
      * @return the metadata
      */
 
-    public GeneralThresholdMetadata getMetadata()
+    ThresholdMetadata getMetadata()
     {
         return metadata;
     }
@@ -73,7 +72,7 @@ public class GeneralThresholdDefinition implements Serializable
      * Sets the metadata.
      * @param metadata the metadata
      */
-    public void setMetadata( GeneralThresholdMetadata metadata )
+    void setMetadata( ThresholdMetadata metadata )
     {
         this.metadata = metadata;
     }
@@ -81,7 +80,7 @@ public class GeneralThresholdDefinition implements Serializable
     /**
      * @return the stage values
      */
-    public GeneralThresholdValues getStageValues()
+    ThresholdValues getStageValues()
     {
         return stageValues;
     }
@@ -90,7 +89,7 @@ public class GeneralThresholdDefinition implements Serializable
      * Sets the stage values.
      * @param stageValues the stage values
      */
-    public void setStageValues( GeneralThresholdValues stageValues )
+    void setStageValues( ThresholdValues stageValues )
     {
         this.stageValues = stageValues;
     }
@@ -98,7 +97,7 @@ public class GeneralThresholdDefinition implements Serializable
     /**
      * @return the flow values
      */
-    public GeneralThresholdValues getFlowValues()
+    ThresholdValues getFlowValues()
     {
         return flowValues;
     }
@@ -107,7 +106,7 @@ public class GeneralThresholdDefinition implements Serializable
      * Sets the flow values
      * @param flowValues the flow values
      */
-    public void setFlowValues( GeneralThresholdValues flowValues )
+    void setFlowValues( ThresholdValues flowValues )
     {
         this.flowValues = flowValues;
     }
@@ -115,7 +114,7 @@ public class GeneralThresholdDefinition implements Serializable
     /**
      * @return the calculated flow values
      */
-    public GeneralThresholdValues getCalcFlowValues()
+    ThresholdValues getCalcFlowValues()
     {
         return calcFlowValues;
     }
@@ -124,7 +123,7 @@ public class GeneralThresholdDefinition implements Serializable
      * Sets the calculated flow values.
      * @param calcFlowValues the calculated flow values
      */
-    public void setCalcFlowValues( GeneralThresholdValues calcFlowValues )
+    void setCalcFlowValues( ThresholdValues calcFlowValues )
     {
         this.calcFlowValues = calcFlowValues;
     }
@@ -132,7 +131,7 @@ public class GeneralThresholdDefinition implements Serializable
     /**
      * @return the threshold values
      */
-    public GeneralThresholdValues getValues()
+    ThresholdValues getValues()
     {
         return values;
     }
@@ -141,7 +140,7 @@ public class GeneralThresholdDefinition implements Serializable
      * Sets the threshold values.
      * @param values the values
      */
-    public void setValues( GeneralThresholdValues values )
+    void setValues( ThresholdValues values )
     {
         this.values = values;
     }
@@ -149,7 +148,7 @@ public class GeneralThresholdDefinition implements Serializable
     /**
      * @return The threshold source or null if it is not specified.
      */
-    public String getThresholdProvider()
+    String getThresholdProvider()
     {
         String thresholdProvider = null;
         if ( Objects.nonNull( this.getMetadata() ) )
@@ -163,7 +162,7 @@ public class GeneralThresholdDefinition implements Serializable
     /**
      * @return the WRDS location
      */
-    public WrdsLocation getLocation()
+    WrdsLocation getLocation()
     {
         return new WrdsLocation( this.metadata.getNwmFeatureId(),
                                  this.metadata.getUsgsSideCode(),
@@ -176,7 +175,7 @@ public class GeneralThresholdDefinition implements Serializable
      * it returns the rating curve's source.  The rating curve info is currently
      * found inside of the calc_flow_values for NWS thresholds only.
      */
-    public String getRatingProvider()
+    String getRatingProvider()
     {
         String ratingProvider = null;
         if ( Objects.nonNull( this.getCalcFlowValues() ) )
@@ -199,7 +198,7 @@ public class GeneralThresholdDefinition implements Serializable
      * @return a map of thresholds by location.  This is a singleton map: only one location will be
      * returned at most.  
      */
-    public Map<WrdsLocation, Set<Threshold>> getThresholds( WrdsThresholdType thresholdType,
+    Map<WrdsLocation, Set<Threshold>> getThresholds( WrdsThresholdType thresholdType,
                                                             ThresholdOperator thresholdOperator,
                                                             ThresholdOrientation dataType,
                                                             boolean getCalculated,

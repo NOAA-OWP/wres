@@ -1,4 +1,4 @@
-package wres.io.reading.wrds.geography.version;
+package wres.io.reading.wrds.geography;
 
 import javax.xml.bind.annotation.XmlRootElement;
 
@@ -41,7 +41,7 @@ public class WrdsLocationRootVersionDocument
      * @param deploymentInfo deployment information
      */
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
-    public WrdsLocationRootVersionDocument( @JsonProperty( "deployment" )
+    WrdsLocationRootVersionDocument( @JsonProperty( "deployment" )
                                      DeploymentInformation deploymentInfo )
     {
         this.deploymentInfo = deploymentInfo;

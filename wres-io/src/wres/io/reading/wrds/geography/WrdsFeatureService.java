@@ -29,9 +29,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.FeatureAuthority;
-import wres.io.reading.wrds.geography.v2.WrdsLocationRootDocument;
-import wres.io.reading.wrds.geography.v3.WrdsLocationRootDocumentV3;
-import wres.io.reading.wrds.geography.version.WrdsLocationRootVersionDocument;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.web.WebClient;
@@ -102,11 +99,9 @@ class WrdsFeatureService
      * @param featureNames The names in the "from" dimension to look for in "to"
      * @return The Set of name pairs: "from" as key, "to" as value.
      * @throws DeclarationException When a feature service was needed but null
-     * @throws PreIngestException When the count of features in response differs
-     *                            from the count of feature names requested, or
-     *                            when the requested "to" was not found in the
-     *                            response.
-     * @throws UnsupportedOperationException When unknown "from" or "to" given.
+     * @throws PreIngestException When the count of features in response differs from the count of feature names
+     *                            requested, or when the requested "to" was not found in the response.
+     * @throws UnsupportedOperationException When unknown "from" or "to" given or the API version is insupported
      * @throws NullPointerException When projectConfig or featureNames is null.
      */
 
@@ -226,6 +221,7 @@ class WrdsFeatureService
     /**
      * @param uri a uri to read
      * @return the list of WRDS locations
+     * @throws UnsupportedOperationException if the API version is unsupported
      */
 
     static List<WrdsLocation> read( URI uri )
@@ -233,31 +229,35 @@ class WrdsFeatureService
         byte[] rawResponseBytes = WrdsFeatureService.getRawResponseBytes( uri );
 
         //Get the version information
-        WrdsLocationRootVersionDocument versionDoc;
-        try
+        if ( LOGGER.isDebugEnabled() )
         {
-            versionDoc = OBJECT_MAPPER.readValue( rawResponseBytes, WrdsLocationRootVersionDocument.class );
-        }
-        catch ( IOException e )
-        {
-            throw new PreIngestException( "Failed to parse API version information from "
-                                          + uri );
+            try
+            {
+                WrdsLocationRootVersionDocument versionDoc =
+                        OBJECT_MAPPER.readValue( rawResponseBytes, WrdsLocationRootVersionDocument.class );
+                if ( versionDoc.isDeploymentInfoPresent() )
+                {
+                    LOGGER.debug( "Using WRDS API version {}.", versionDoc.getDeploymentInfo()
+                                                                          .version() );
+                }
+                else
+                {
+                    throw new UnsupportedOperationException( "Unsupported API version: could not find the expected "
+                                                             + "deployment information in the threshold response body." );
+                }
+            }
+            catch ( IOException e )
+            {
+                LOGGER.debug( "Failed to parse API version information from {}.", uri );
+            }
         }
 
+        // Read the locations
         try
         {
-            if ( versionDoc.isDeploymentInfoPresent() )
-            {
-                WrdsLocationRootDocumentV3 doc = OBJECT_MAPPER.readValue( rawResponseBytes,
-                                                                          WrdsLocationRootDocumentV3.class );
-                return doc.getLocations();
-            }
-            else
-            {
-                WrdsLocationRootDocument doc = OBJECT_MAPPER.readValue( rawResponseBytes,
-                                                                        WrdsLocationRootDocument.class );
-                return doc.getLocations();
-            }
+            WrdsLocationRootDocument doc = OBJECT_MAPPER.readValue( rawResponseBytes,
+                                                                    WrdsLocationRootDocument.class );
+            return doc.getLocations();
         }
         catch ( IOException ioe )
         {

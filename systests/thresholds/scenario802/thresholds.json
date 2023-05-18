@@ -1,61 +1,141 @@
 {
-    "_documentation": "redacted/docs/stage/location/swagger/",
     "_metrics": {
         "threshold_count": 2,
-        "total_request_time": 0.02019023895263672
+        "total_request_time": 8.171748638153076
     },
-    "thresholds": [
+    "_warnings": [],
+    "_documentation": {
+        "swagger URL": "redacted/docs/location/v3.0/swagger/" 
+    },
+    "deployment": {
+        "api_url": "redacted/api/location/v3.0/nws_threshold/nws_lid/CKLN6/",
+        "stack": "prod",
+        "version": "v3.5.6",
+        "api_caller": "None" 
+    },
+    "Non-urgent_issue_reporting_link": "redacted/wrds-user-support/issues/new?issue[category_id]=2830",
+    "data_sources": {
+        "metadata_sources": [
+            "NWS data: NRLDB - Last updated: 2023-05-17 13:55:29 UTC",
+            "USGS data: USGS NWIS - Last updated: 2023-05-17 13:11:55 UTC" 
+        ],
+        "crosswalk_datasets": {
+            "location_nwm_crosswalk_dataset": {
+                "location_nwm_crosswalk_dataset_id": "1.2",
+                "name": "Location NWM Crosswalk v1.2",
+                "description": "Created 20220831.  Source:\n1) NWM Routelink File v2.2-corrected\n2) NHDPlus v2.1+\n3) GID" 
+            },
+            "nws_usgs_crosswalk_dataset": {
+                "nws_usgs_crosswalk_dataset_id": "2.0",
+                "name": "NWS Station to USGS Gages 2.0",
+                "description": "Created 2021-12-10.  Authoritative 2.0 dataset mapping NWS Stations to USGS Gages.  Source 1) AHPS CMS Report  2) HADS dataset  3) GID" 
+            }
+        }
+    },
+    "value_set": [
         {
             "metadata": {
-                "location_id": "CKLN6",
+                "data_type": "NWS Stream Thresholds",
                 "nws_lid": "CKLN6",
                 "usgs_site_code": "01503000",
                 "nwm_feature_id": "8088149",
-                "id_type": "NWS Station",
-                "threshold_source": "NWS-CMS",
-                "threshold_source_description": "National Weather Service - CMS",
-                "rating_source": "NRLDB",
-                "rating_source_description": "NRLDB",
-                "stage_unit": "FT",
-                "flow_unit": "CFS",
-                "rating": {}
+                "threshold_type": "all (stage,flow)",
+                "stage_units": "FT",
+                "flow_units": "CFS",
+                "calc_flow_units": "CFS",
+                "threshold_source": "NWS-NRLDB",
+                "threshold_source_description": "National Weather Service - National River Location Database" 
             },
-            "original_values": {
-                "low_stage": "None",
-                "bankfull_stage": "None",
-                "action_stage": "10.0",
-                "minor_stage": "12.0",
-                "moderate_stage": "15.0",
-                "major_stage": "20.0",
-                "record_stage": "None"
+            "stage_values": {
+                "low": 0.0,
+                "bankfull": 10.0,
+                "action": 10.0,
+                "flood": 12.0,
+                "minor": 12.0,
+                "moderate": 15.0,
+                "major": 20.0,
+                "record": 25.02
             },
-            "calculated_values": {}
+            "flow_values": {
+                "low": 0.0,
+                "bankfull": null,
+                "action": 16632.0,
+                "flood": 23113.0,
+                "minor": null,
+                "moderate": null,
+                "major": null,
+                "record": 76800.0
+            },
+            "calc_flow_values": {
+                "low": null,
+                "bankfull": 16632.0,
+                "action": 16632.0,
+                "flood": 23113.0,
+                "minor": 23113.0,
+                "moderate": 33464.0,
+                "major": 53545.0,
+                "record": 76833.6,
+                "rating_curve": {
+                    "location_id": "CKLN6",
+                    "id_type": "NWS Station",
+                    "source": "NRLDB",
+                    "description": "National Weather Service - National River Location Database",
+                    "interpolation_method": null,
+                    "interpolation_description": null
+                }
+            }
         },
         {
             "metadata": {
-                "location_id": "CKLN6",
+                "data_type": "NWS Stream Thresholds",
                 "nws_lid": "CKLN6",
                 "usgs_site_code": "01503000",
                 "nwm_feature_id": "8088149",
-                "id_type": "NWS Station",
+                "threshold_type": "all (stage,flow)",
+                "stage_units": "FT",
+                "flow_units": "CFS",
+                "calc_flow_units": "CFS",
                 "threshold_source": "NWS-NRLDB",
-                "threshold_source_description": "National Weather Service - National River Location Database",
-                "rating_source": "NRLDB",
-                "rating_source_description": "NRLDB",
-                "stage_unit": "FT",
-                "flow_unit": "CFS",
-                "rating": {}
+                "threshold_source_description": "National Weather Service - National River Location Database" 
             },
-            "original_values": {
-                "low_stage": "None",
-                "bankfull_stage": "10.0",
-                "action_stage": "10.0",
-                "minor_stage": "12.0",
-                "moderate_stage": "15.0",
-                "major_stage": "20.0",
-                "record_stage": "25.02"
+            "stage_values": {
+                "low": 0.0,
+                "bankfull": 10.0,
+                "action": 10.0,
+                "flood": 12.0,
+                "minor": 12.0,
+                "moderate": 15.0,
+                "major": 20.0,
+                "record": 25.02
             },
-            "calculated_values": {}
+            "flow_values": {
+                "low": 0.0,
+                "bankfull": null,
+                "action": 16632.0,
+                "flood": 23113.0,
+                "minor": null,
+                "moderate": null,
+                "major": null,
+                "record": 76800.0
+            },
+            "calc_flow_values": {
+                "low": null,
+                "bankfull": 16631.6,
+                "action": 16631.6,
+                "flood": 23112.6,
+                "minor": 23112.6,
+                "moderate": 33463.8,
+                "major": 53544.6,
+                "record": 76833.44,
+                "rating_curve": {
+                    "location_id": "01503000",
+                    "id_type": "USGS Gage",
+                    "source": "USGS Rating Depot",
+                    "description": "The EXSA rating curves provided by USGS",
+                    "interpolation_method": "logarithmic",
+                    "interpolation_description": "logarithmic" 
+                }
+            }
         }
     ]
 }

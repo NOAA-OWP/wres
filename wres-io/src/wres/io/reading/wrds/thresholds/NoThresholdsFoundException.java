@@ -8,7 +8,7 @@ import java.io.Serial;
  * @author James Brown
  */
 
-public class NoThresholdsFoundException extends RuntimeException
+class NoThresholdsFoundException extends RuntimeException
 {
     @Serial
     private static final long serialVersionUID = 7814760186227946523L;

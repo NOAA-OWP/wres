@@ -1,4 +1,4 @@
-package wres.io.reading.wrds.thresholds.v3;
+package wres.io.reading.wrds.thresholds;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -13,20 +13,20 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @JsonIgnoreProperties( ignoreUnknown = true )
 @XmlRootElement
-public class GeneralThresholdResponse implements Serializable
+class ThresholdResponse implements Serializable
 {
     @Serial
     private static final long serialVersionUID = 6355701807768699282L;
 
     /** Value set. */
     @JsonProperty( "value_set" )
-    private Collection<GeneralThresholdDefinition> valueSet;
+    private Collection<ThresholdDefinition> valueSet;
 
     /**
      * Convenience wrapper with more intuitive name.
      * @return Calls {@link #getValueSet()} and returns results.
      */
-    public Collection<GeneralThresholdDefinition> getThresholds()
+    Collection<ThresholdDefinition> getThresholds()
     {
         return getValueSet();
     }
@@ -35,7 +35,7 @@ public class GeneralThresholdResponse implements Serializable
      * Convenience wrapper with more intuitive name.  Calls {@link #setValueSet(Collection)}.
      * @param valueSet the value set
      */
-    public void setThresholds( Collection<GeneralThresholdDefinition> valueSet )
+    void setThresholds( Collection<ThresholdDefinition> valueSet )
     {
         setValueSet( valueSet );
     }
@@ -43,7 +43,7 @@ public class GeneralThresholdResponse implements Serializable
     /**
      * @return the value set
      */
-    public Collection<GeneralThresholdDefinition> getValueSet()
+    Collection<ThresholdDefinition> getValueSet()
     {
         return valueSet;
     }
@@ -52,7 +52,7 @@ public class GeneralThresholdResponse implements Serializable
      * Sets the value set.
      * @param valueSet the value set
      */
-    public void setValueSet( Collection<GeneralThresholdDefinition> valueSet )
+    void setValueSet( Collection<ThresholdDefinition> valueSet )
     {
         this.valueSet = valueSet;
     }

@@ -1,11 +1,9 @@
-package wres.io.reading.wrds.thresholds.v3;
+package wres.io.reading.wrds.thresholds;
 
 import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.io.reading.wrds.geography.WrdsLocation;
 import wres.datamodel.units.UnitMapper;
-import wres.io.reading.wrds.thresholds.NoThresholdsFoundException;
-import wres.io.reading.wrds.thresholds.WrdsThresholdType;
 import wres.statistics.generated.Threshold;
 
 import java.util.Collection;
@@ -18,14 +16,14 @@ import java.util.stream.Collectors;
 /**
  * Extracts a mapping between features and their thresholds from a WRDS formatted thresholds document
  */
-public class GeneralThresholdExtractor
+class ThresholdExtractor
 {
     /**
      * Create an Extractor from the given response
      *
      * @param response The deserialized Thresholds document
      */
-    public GeneralThresholdExtractor( GeneralThresholdResponse response )
+    ThresholdExtractor( ThresholdResponse response )
     {
         this.response = response;
     }
@@ -36,7 +34,7 @@ public class GeneralThresholdExtractor
      * @param provider The name of the provider, like 'NWS-NRLDB'
      * @return The updated extractor
      */
-    public GeneralThresholdExtractor from( String provider )
+    ThresholdExtractor from( String provider )
     {
         this.provider = provider;
         return this;
@@ -48,7 +46,7 @@ public class GeneralThresholdExtractor
      * @param ratingProvider The name of the provider of the rating curve, like 'NRLDB'
      * @return The updated extractor
      */
-    public GeneralThresholdExtractor ratingFrom( String ratingProvider )
+    ThresholdExtractor ratingFrom( String ratingProvider )
     {
         this.ratingProvider = ratingProvider;
         return this;
@@ -60,19 +58,19 @@ public class GeneralThresholdExtractor
      * @param side The side of the data that the threshold will apply to
      * @return The updated extractor
      */
-    public GeneralThresholdExtractor onSide( ThresholdOrientation side )
+    ThresholdExtractor onSide( ThresholdOrientation side )
     {
         this.sides = side;
         return this;
     }
 
     /**
-     * Whether or not calculated thresholds should be used
+     * Whether thresholds should be used
      *
-     * @param useCalculated Whether or not to use calculated thresholds
+     * @param useCalculated Whether to use calculated thresholds
      * @return The updated extractor
      */
-    public GeneralThresholdExtractor useCalculatedValues( boolean useCalculated )
+    ThresholdExtractor useCalculatedValues( boolean useCalculated )
     {
         this.calculated = useCalculated;
         return this;
@@ -84,7 +82,7 @@ public class GeneralThresholdExtractor
      * @param thresholdOperator The operator
      * @return The updated extractor
      */
-    public GeneralThresholdExtractor operatesBy( ThresholdOperator thresholdOperator )
+    ThresholdExtractor operatesBy( ThresholdOperator thresholdOperator )
     {
         this.thresholdOperator = thresholdOperator;
         return this;
@@ -95,7 +93,7 @@ public class GeneralThresholdExtractor
      *
      * @return The updated extractor
      */
-    public GeneralThresholdExtractor readFlow()
+    ThresholdExtractor readFlow()
     {
         this.thresholdType = WrdsThresholdType.FLOW;
         return this;
@@ -106,7 +104,7 @@ public class GeneralThresholdExtractor
      *
      * @return The updated extractor
      */
-    public GeneralThresholdExtractor readStage()
+    ThresholdExtractor readStage()
     {
         this.thresholdType = WrdsThresholdType.STAGE;
         return this;
@@ -117,7 +115,7 @@ public class GeneralThresholdExtractor
      * @param mapper the unit mapper
      * @return an instance
      */
-    public GeneralThresholdExtractor convertTo( UnitMapper mapper )
+    ThresholdExtractor convertTo( UnitMapper mapper )
     {
         this.desiredUnitMapper = mapper;
         return this;
@@ -128,15 +126,15 @@ public class GeneralThresholdExtractor
      *
      * @return A mapping between feature definitions and all of their thresholds
      */
-    public Map<WrdsLocation, Set<Threshold>> extract()
+    Map<WrdsLocation, Set<Threshold>> extract()
     {
         Objects.requireNonNull( this.response, "A valid response was not passed to extract" );
 
-        Collection<GeneralThresholdDefinition> thresholdDefinitions = this.response.getThresholds();
+        Collection<ThresholdDefinition> thresholdDefinitions = this.response.getThresholds();
 
         // Check that the user-declared filters return one or more locations with thresholds
         Set<String> providers = thresholdDefinitions.stream()
-                                                    .map( GeneralThresholdDefinition::getThresholdProvider )
+                                                    .map( ThresholdDefinition::getThresholdProvider )
                                                     .filter( Objects::nonNull )
                                                     .collect( Collectors.toUnmodifiableSet() );
 
@@ -154,7 +152,7 @@ public class GeneralThresholdExtractor
         }
 
         Set<String> ratingsProviders = thresholdDefinitions.stream()
-                                                           .map( GeneralThresholdDefinition::getRatingProvider )
+                                                           .map( ThresholdDefinition::getRatingProvider )
                                                            .filter( Objects::nonNull )
                                                            .collect( Collectors.toUnmodifiableSet() );
 
@@ -174,7 +172,7 @@ public class GeneralThresholdExtractor
 
         Map<WrdsLocation, Set<Threshold>> resultsMap = new LinkedHashMap<>();
 
-        for ( GeneralThresholdDefinition definition : thresholdDefinitions )
+        for ( ThresholdDefinition definition : thresholdDefinitions )
         {
             // If the user specifies a threshold provider then it must match that found in the threshold for it
             // to be used.  If the user specifies a rating curve provider, then that must match as well.
@@ -209,7 +207,7 @@ public class GeneralThresholdExtractor
     /**
      * The Threshold data from WRDS
      */
-    private final GeneralThresholdResponse response;
+    private final ThresholdResponse response;
 
     /**
      * The publisher of the threshold data

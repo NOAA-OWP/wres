@@ -1,4 +1,4 @@
-package wres.io.reading.wrds.geography.v3;
+package wres.io.reading.wrds.geography;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,13 +9,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import wres.io.NoDataException;
-import wres.io.reading.wrds.geography.WrdsLocation;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
-Parse relevant portions of a a document similar to this (which is generated when 
+Parse relevant portions of a document similar to this (which is generated when
 "?identifiers=true" is included at the end of the URL:
 
  <pre>{@code {
@@ -193,7 +192,7 @@ Parse relevant portions of a a document similar to this (which is generated when
  */
 @XmlRootElement
 @JsonIgnoreProperties( ignoreUnknown = true )
-public class WrdsLocationRootDocumentV3
+class WrdsLocationRootDocument
 {
     private final List<WrdsLocationInformation> locationInfos;
 
@@ -202,7 +201,7 @@ public class WrdsLocationRootDocumentV3
      * @param locationInfos the location information
      */
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
-    public WrdsLocationRootDocumentV3( @JsonProperty( "locations" ) List<WrdsLocationInformation> locationInfos )
+    WrdsLocationRootDocument( @JsonProperty( "locations" ) List<WrdsLocationInformation> locationInfos )
     {
         this.locationInfos = locationInfos;
     }
@@ -212,12 +211,12 @@ public class WrdsLocationRootDocumentV3
      * returning it in a list.
      * @return List of {@link WrdsLocation} instances.
      */
-    public List<WrdsLocation> getLocations()
+    List<WrdsLocation> getLocations()
     {
         List<WrdsLocation> locations = new ArrayList<>();
         for ( WrdsLocationInformation info : this.locationInfos )
         {
-            locations.add( info.getLocations() );
+            locations.add( info.locations() );
         }
 
         if ( locations.isEmpty() ) {
@@ -229,7 +228,7 @@ public class WrdsLocationRootDocumentV3
     /**
      * @return the location information
      */
-    public List<WrdsLocationInformation> getLocationInfos()
+    List<WrdsLocationInformation> getLocationInfos()
     {
         return locationInfos;
     }
