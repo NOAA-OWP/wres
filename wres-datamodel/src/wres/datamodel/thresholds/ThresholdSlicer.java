@@ -665,9 +665,9 @@ public class ThresholdSlicer
         BiFunction<Geometry, DatasetOrientation, List<GeometryTuple>> mapper = ( g, d ) ->
                 switch ( d )
                         {
-                            case LEFT -> leftGeometries.get( g.getName() );
-                            case RIGHT -> rightGeometries.get( g.getName() );
-                            case BASELINE -> baselineGeometries.get( g.getName() );
+                            case LEFT -> leftGeometries.getOrDefault( g.getName(), Collections.emptyList() );
+                            case RIGHT -> rightGeometries.getOrDefault( g.getName(), Collections.emptyList() );
+                            case BASELINE -> baselineGeometries.getOrDefault( g.getName(), Collections.emptyList() );
                         };
 
         // Increment the thresholds
