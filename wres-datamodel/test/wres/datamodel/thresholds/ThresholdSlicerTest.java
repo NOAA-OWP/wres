@@ -565,6 +565,99 @@ class ThresholdSlicerTest
         assertEquals( expected, actual );
     }
 
+    @Test
+    void testGetMetricsAndThresholdsForProcessingWithMultipleFeaturesPerLeftFeature()
+    {
+        Geometry oneLeft = Geometry.newBuilder()
+                                   .setName( "foo" )
+                                   .build();
+        Geometry twoLeft = Geometry.newBuilder()
+                                   .setName( "foo" )
+                                   .build();
+        Geometry oneRight = Geometry.newBuilder()
+                                    .setName( "baz" )
+                                    .build();
+        Geometry twoRight = Geometry.newBuilder()
+                                    .setName( "qux" )
+                                    .build();
+
+        wres.config.yaml.components.Threshold thresholdOne
+                = ThresholdBuilder.builder()
+                                  .threshold( Threshold.newBuilder()
+                                                       .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
+                                                       .setOperator( Threshold.ThresholdOperator.GREATER )
+                                                       .build() )
+                                  .type( ThresholdType.VALUE )
+                                  .featureNameFrom( DatasetOrientation.LEFT )
+                                  .feature( oneLeft )
+                                  .build();
+        wres.config.yaml.components.Threshold thresholdTwo
+                = ThresholdBuilder.builder()
+                                  .threshold( Threshold.newBuilder()
+                                                       .setLeftThresholdValue( DoubleValue.of( 0.2 ) )
+                                                       .setOperator( Threshold.ThresholdOperator.GREATER )
+                                                       .build() )
+                                  .type( ThresholdType.PROBABILITY )
+                                  .featureNameFrom( DatasetOrientation.LEFT )
+                                  .feature( twoLeft )
+                                  .build();
+
+        Metric one = MetricBuilder.Metric( MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                           MetricParametersBuilder.builder()
+                                                                  .ensembleAverageType( Pool.EnsembleAverageType.MEDIAN )
+                                                                  .valueThresholds( Set.of( thresholdOne ) )
+                                                                  .probabilityThresholds( Set.of( thresholdTwo ) )
+                                                                  .build() );
+
+        Set<Metric> metrics = Set.of( one );
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .build();
+
+        GeometryTuple singletonOne = GeometryTuple.newBuilder()
+                                                  .setLeft( oneLeft )
+                                                  .setRight( oneRight )
+                                                  .build();
+        GeometryTuple singletonTwo = GeometryTuple.newBuilder()
+                                                  .setLeft( twoLeft )
+                                                  .setRight( twoRight )
+                                                  .build();
+
+        Features features = new Features( Set.of( singletonOne, singletonTwo ) );
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( dataset )
+                                                                       .right( dataset )
+                                                                       .metrics( metrics )
+                                                                       .features( features )
+                                                                       .build();
+
+        Set<MetricsAndThresholds> actual = ThresholdSlicer.getMetricsAndThresholdsForProcessing( evaluation,
+                                                                                                 Set.of() );
+
+        FeatureTuple tupleOne = FeatureTuple.of( singletonOne );
+        FeatureTuple tupleTwo = FeatureTuple.of( singletonTwo );
+
+        ThresholdOuter expectedThresholdOne = ThresholdOuter.of( thresholdOne.threshold(), ThresholdType.VALUE );
+        ThresholdOuter expectedThresholdTwo = ThresholdOuter.of( thresholdTwo.threshold(), ThresholdType.PROBABILITY );
+
+        Map<FeatureTuple, Set<ThresholdOuter>> expectedThresholds = Map.of( tupleOne,
+                                                                               Set.of( expectedThresholdOne,
+                                                                                       expectedThresholdTwo ),
+                                                                               tupleTwo,
+                                                                               Set.of( expectedThresholdOne,
+                                                                                       expectedThresholdTwo ) );
+
+
+        MetricsAndThresholds firstExpected = new MetricsAndThresholds( Set.of( MetricConstants.MEAN_ABSOLUTE_ERROR ),
+                                                                       expectedThresholds,
+                                                                       0,
+                                                                       Pool.EnsembleAverageType.MEDIAN );
+
+        Set<MetricsAndThresholds> expected = Set.of( firstExpected );
+
+        assertEquals( expected, actual );
+    }
+
     /**
      * Returns a default container for testing.
      *
