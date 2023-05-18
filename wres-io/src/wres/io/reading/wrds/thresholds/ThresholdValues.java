@@ -1,4 +1,4 @@
-package wres.io.reading.wrds.thresholds.v3;
+package wres.io.reading.wrds.thresholds;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
@@ -14,7 +14,7 @@ import java.util.Map;
  * Represents threshold values that were formed as part of a calculation.
  */
 @JsonIgnoreProperties( ignoreUnknown = true )
-public class GeneralThresholdValues implements Serializable
+class ThresholdValues implements Serializable
 {
     @Serial
     private static final long serialVersionUID = 6437416253818226237L;
@@ -30,7 +30,7 @@ public class GeneralThresholdValues implements Serializable
      * @return the threshold values
      */
     @JsonAnyGetter
-    public Map<String, Double> getThresholdValues()
+    Map<String, Double> getThresholdValues()
     {
         return thresholdValues;
     }
@@ -41,7 +41,7 @@ public class GeneralThresholdValues implements Serializable
      * @param value the value
      */
     @JsonAnySetter
-    public void add( String key, Double value )
+    void add( String key, Double value )
     {
         thresholdValues.put( key, value );
     }
@@ -49,7 +49,7 @@ public class GeneralThresholdValues implements Serializable
     /**
      * @return the rating curve
      */
-    public RatingCurveInfo getRatingCurve()
+    RatingCurveInfo getRatingCurve()
     {
         return ratingCurve;
     }
@@ -58,7 +58,7 @@ public class GeneralThresholdValues implements Serializable
      * Sets the rating curve.
      * @param ratingCurve the rating curve
      */
-    public void setRatingCurve( RatingCurveInfo ratingCurve )
+    void setRatingCurve( RatingCurveInfo ratingCurve )
 
     {
         this.ratingCurve = ratingCurve;

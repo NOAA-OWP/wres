@@ -8,7 +8,7 @@ import java.io.Serial;
  * @author James Brown
  */
 
-public class ThresholdReadingException extends RuntimeException
+class ThresholdReadingException extends RuntimeException
 {
     /**
      * Serial identifier.

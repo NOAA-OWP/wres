@@ -17,6 +17,7 @@ import wres.config.yaml.components.FeatureAuthority;
  * the list of "locations".  For WRDS Location API 3.0 and later, this corresponds 
  * to the "identifiers" WITHIN an element in the list of "locations".  
  * @author Hank Herr
+ * @author James Brown
  */
 @JsonIgnoreProperties( ignoreUnknown = true )
 public record WrdsLocation( String nwmFeatureId, String usgsSiteCode, String nwsLid )

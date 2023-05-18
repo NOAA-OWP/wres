@@ -1,4 +1,4 @@
-package wres.io.reading.wrds.thresholds.v3;
+package wres.io.reading.wrds.thresholds;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -12,7 +12,7 @@ import java.util.Objects;
  */
 
 @JsonIgnoreProperties( ignoreUnknown = true )
-public class RatingCurveInfo implements Serializable
+class RatingCurveInfo implements Serializable
 {
     @Serial
     private static final long serialVersionUID = 1947722676033834492L;
@@ -29,7 +29,6 @@ public class RatingCurveInfo implements Serializable
     private String description;
     /** Interpolation scheme. */
     @JsonProperty( "interpolation_method" )
-    /** Interpolation method. */
     private String interpolationMethod;
     /** Interpolation description. */
     @JsonProperty( "interpolation_description" )
@@ -38,7 +37,7 @@ public class RatingCurveInfo implements Serializable
     /**
      * @return the location ID
      */
-    public String getLocationId()
+    String getLocationId()
     {
         return this.locationId;
     }
@@ -46,7 +45,7 @@ public class RatingCurveInfo implements Serializable
     /**
      * @return the identifier type
      */
-    public String getIdType()
+    String getIdType()
     {
         return idType;
     }
@@ -54,7 +53,7 @@ public class RatingCurveInfo implements Serializable
     /**
      * @return the sources
      */
-    public String getSource()
+    String getSource()
     {
         if ( Objects.isNull( this.source ) || this.source.equals( "None" ) )
         {
@@ -66,7 +65,7 @@ public class RatingCurveInfo implements Serializable
     /**
      * @return the description
      */
-    public String getDescription()
+    String getDescription()
     {
         return this.description;
     }
@@ -74,7 +73,7 @@ public class RatingCurveInfo implements Serializable
     /**
      * @return the interpolation method
      */
-    public String getInterpolationMethod()
+    String getInterpolationMethod()
     {
         return this.interpolationMethod;
     }
@@ -82,7 +81,7 @@ public class RatingCurveInfo implements Serializable
     /**
      * @return the interpolation description
      */
-    public String getInterplolationDescription()
+    String getInterplolationDescription()
     {
         return this.interpolationDescription;
     }
@@ -91,7 +90,7 @@ public class RatingCurveInfo implements Serializable
      * Sets trhe location ID.
      * @param locationId the location ID
      */
-    public void setLocationId( String locationId )
+    void setLocationId( String locationId )
     {
         this.locationId = locationId;
     }
@@ -100,7 +99,7 @@ public class RatingCurveInfo implements Serializable
      * Sets the identifier type.
      * @param idType the identifier type
      */
-    public void setIdType( String idType )
+    void setIdType( String idType )
     {
         this.idType = idType;
     }
@@ -109,7 +108,7 @@ public class RatingCurveInfo implements Serializable
      * Sets the sources.
      * @param source the source
      */
-    public void setSource( String source )
+    void setSource( String source )
     {
         this.source = source;
     }
@@ -118,7 +117,7 @@ public class RatingCurveInfo implements Serializable
      * Sets the description.
      * @param description the description
      */
-    public void setDescription( String description )
+    void setDescription( String description )
     {
         this.description = description;
     }

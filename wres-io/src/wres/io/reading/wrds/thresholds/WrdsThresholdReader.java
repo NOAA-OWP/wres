@@ -36,14 +36,10 @@ import wres.config.yaml.components.ThresholdService;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.units.UnitMapper;
 import wres.io.reading.wrds.geography.WrdsLocation;
-import wres.io.reading.wrds.geography.version.WrdsLocationRootVersionDocument;
+import wres.io.reading.wrds.geography.WrdsLocationRootVersionDocument;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.web.WebClient;
-import wres.io.reading.wrds.thresholds.v2.ThresholdExtractor;
-import wres.io.reading.wrds.thresholds.v2.ThresholdResponse;
-import wres.io.reading.wrds.thresholds.v3.GeneralThresholdExtractor;
-import wres.io.reading.wrds.thresholds.v3.GeneralThresholdResponse;
 import wres.statistics.generated.Threshold;
 
 /**
@@ -53,7 +49,7 @@ import wres.statistics.generated.Threshold;
  * @author Hank Herr
  * @author Chris Tubbs
  */
-public class WrdsThresholdReader
+class WrdsThresholdReader
 {
     /** The number of location requests." */
     static final int LOCATION_REQUEST_COUNT = 20;
@@ -169,7 +165,7 @@ public class WrdsThresholdReader
 
         if ( thresholdMapping.isEmpty() )
         {
-            throw new ThresholdReadingException( "No thresholds could be retrieved from " + uri );
+            throw new NoThresholdsFoundException( "No thresholds could be retrieved from " + uri );
         }
 
         LOGGER.debug( "The following thresholds were obtained from WRDS: {}.", thresholdMapping );
@@ -206,9 +202,9 @@ public class WrdsThresholdReader
                 .entrySet()
                 .parallelStream()
                 .filter( entry -> !entry.getValue()
-                                       .stream()
-                                       .allMatch( next -> ThresholdOuter.ALL_DATA.getThreshold()
-                                                                                 .equals( next ) ) )
+                                        .stream()
+                                        .allMatch( next -> ThresholdOuter.ALL_DATA.getThreshold()
+                                                                                  .equals( next ) ) )
                 .collect( Collectors.toUnmodifiableMap( Map.Entry::getKey,
                                                         Map.Entry::getValue ) );
 
@@ -221,6 +217,7 @@ public class WrdsThresholdReader
      * @param desiredUnitMapper the desired units
      * @return the thresholds
      * @throws ThresholdReadingException if the thresholds could not be read
+     * @throws UnsupportedOperationException if the threshold API version is unsupported
      */
     private Map<WrdsLocation, Set<Threshold>> extract( byte[] responseBytes,
                                                        ThresholdService thresholdService,
@@ -236,67 +233,50 @@ public class WrdsThresholdReader
             WrdsLocationRootVersionDocument versionDoc =
                     JSON_OBJECT_MAPPER.readValue( responseBytes, WrdsLocationRootVersionDocument.class );
 
-            // Extract using V3 API reader
             if ( versionDoc.isDeploymentInfoPresent() )
             {
-                // Get the response and construct the extractor.
-                GeneralThresholdResponse response =
-                        JSON_OBJECT_MAPPER.readValue( responseBytes, GeneralThresholdResponse.class );
-                GeneralThresholdExtractor extractor = new GeneralThresholdExtractor( response )
-                        .from( thresholdService.provider() )
-                        .operatesBy( operator )
-                        .onSide( side );
-
-                // If rating provider is not null, add it, too.
-                if ( Objects.nonNull( thresholdService.ratingProvider() ) )
+                if ( LOGGER.isDebugEnabled() )
                 {
-                    extractor.ratingFrom( thresholdService.ratingProvider() );
+                    LOGGER.debug( "Using WRDS API version {}.", versionDoc.getDeploymentInfo()
+                                                                          .version() );
                 }
-
-                // Flow is the default if the parameter is not specified. Note that this
-                // works for unified schema thresholds, such as recurrence flows, because the metadata
-                // does not specify the parameter, so that parameter is ignored.
-                if ( "stage".equalsIgnoreCase( thresholdService.parameter() ) )
-                {
-                    extractor.readStage();
-                }
-                else
-                {
-                    extractor.readFlow();
-                }
-
-                // Establish target unit
-                extractor.convertTo( desiredUnitMapper );
-
-                return extractor.extract();
             }
-            // Extract using V2 or older reader
             else
             {
-                ThresholdResponse response = JSON_OBJECT_MAPPER.readValue( responseBytes, ThresholdResponse.class );
-                ThresholdExtractor extractor = new ThresholdExtractor( response )
-                        .from( thresholdService.provider() )
-                        .operatesBy( operator )
-                        .onSide( side );
-
-                if ( Objects.nonNull( thresholdService.ratingProvider() ) )
-                {
-                    extractor.ratingFrom( thresholdService.ratingProvider() );
-                }
-
-                if ( "stage".equalsIgnoreCase( thresholdService.parameter() ) )
-                {
-                    extractor.readStage();
-                }
-                else
-                {
-                    extractor.readFlow();
-                }
-
-                extractor.convertTo( desiredUnitMapper );
-
-                return extractor.extract();
+                throw new UnsupportedOperationException( "Unsupported API version: could not find the expected "
+                                                         + "deployment information in the threshold response body." );
             }
+
+            // Get the response and construct the extractor.
+            ThresholdResponse response =
+                    JSON_OBJECT_MAPPER.readValue( responseBytes, ThresholdResponse.class );
+            ThresholdExtractor extractor = new ThresholdExtractor( response )
+                    .from( thresholdService.provider() )
+                    .operatesBy( operator )
+                    .onSide( side );
+
+            // If rating provider is not null, add it, too.
+            if ( Objects.nonNull( thresholdService.ratingProvider() ) )
+            {
+                extractor.ratingFrom( thresholdService.ratingProvider() );
+            }
+
+            // Flow is the default if the parameter is not specified. Note that this
+            // works for unified schema thresholds, such as recurrence flows, because the metadata
+            // does not specify the parameter, so that parameter is ignored.
+            if ( "stage".equalsIgnoreCase( thresholdService.parameter() ) )
+            {
+                extractor.readStage();
+            }
+            else
+            {
+                extractor.readFlow();
+            }
+
+            // Establish target unit
+            extractor.convertTo( desiredUnitMapper );
+
+            return extractor.extract();
         }
         catch ( IOException ioe )
         {

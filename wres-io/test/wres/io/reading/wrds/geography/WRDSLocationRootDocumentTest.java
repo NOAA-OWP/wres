@@ -1,4 +1,4 @@
-package wres.io.reading.wrds.geography.v3;
+package wres.io.reading.wrds.geography;
 
 import java.io.IOException;
 
@@ -13,9 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.io.NoDataException;
-import wres.io.reading.wrds.geography.v2.WrdsLocationRootDocument;
 
-public class WRDSLocationRootDocumentV3Test
+public class WRDSLocationRootDocumentTest
 {
 
     private static final String GOOD_TEST_CASE_V3 = "{\r\n" + 
@@ -230,7 +229,8 @@ public class WRDSLocationRootDocumentV3Test
     @Test
     public void readGoodTestCase() throws JsonParseException, JsonMappingException, IOException
     {
-        WrdsLocationRootDocumentV3 dataPoint = new ObjectMapper().readValue(GOOD_TEST_CASE_V3.getBytes(), WrdsLocationRootDocumentV3.class);
+        WrdsLocationRootDocument
+                dataPoint = new ObjectMapper().readValue( GOOD_TEST_CASE_V3.getBytes(), WrdsLocationRootDocument.class);
         Assert.assertEquals("OGCN2", dataPoint.getLocations().get( 0 ).nwsLid());
         Assert.assertEquals("23320100", dataPoint.getLocations().get( 0 ).nwmFeatureId());
         Assert.assertEquals("13174500", dataPoint.getLocations().get( 0 ).usgsSiteCode());
@@ -239,7 +239,7 @@ public class WRDSLocationRootDocumentV3Test
     @Test
     public void readCrosswalkOnlyTestCase() throws JsonParseException, JsonMappingException, IOException
     {
-        WrdsLocationRootDocumentV3 dataPoint = new ObjectMapper().readValue(CROSSWALK_ONLY_TEST_CASE_V3.getBytes(), WrdsLocationRootDocumentV3.class);
+        WrdsLocationRootDocument dataPoint = new ObjectMapper().readValue( CROSSWALK_ONLY_TEST_CASE_V3.getBytes(), WrdsLocationRootDocument.class);
         Assert.assertEquals("OGCN2", dataPoint.getLocations().get( 0 ).nwsLid());
         Assert.assertEquals("23320100", dataPoint.getLocations().get( 0 ).nwmFeatureId());
         Assert.assertEquals("13174500", dataPoint.getLocations().get( 0 ).usgsSiteCode());

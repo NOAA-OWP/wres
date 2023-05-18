@@ -1,4 +1,4 @@
-package wres.io.reading.wrds.thresholds.v3;
+package wres.io.reading.wrds.thresholds;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -11,7 +11,7 @@ import java.io.Serializable;
  */
 
 @JsonIgnoreProperties( ignoreUnknown = true )
-public class GeneralThresholdMetadata implements Serializable
+class ThresholdMetadata implements Serializable
 {
     @Serial
     private static final long serialVersionUID = -4195161592990949335L;
@@ -51,7 +51,7 @@ public class GeneralThresholdMetadata implements Serializable
     /**
      * @return the data type
      */
-    public String getDataType()
+    String getDataType()
     {
         return dataType;
     }
@@ -60,7 +60,7 @@ public class GeneralThresholdMetadata implements Serializable
      * Sets the data type.
      * @param dataType the data type
      */
-    public void setDataType( String dataType )
+    void setDataType( String dataType )
     {
         this.dataType = dataType;
     }
@@ -68,7 +68,7 @@ public class GeneralThresholdMetadata implements Serializable
     /**
      * @return the NWS LID
      */
-    public String getNwsLid()
+    String getNwsLid()
     {
         return nwsLid;
     }
@@ -77,7 +77,7 @@ public class GeneralThresholdMetadata implements Serializable
      * Sets the NWS LID.
      * @param nwsLid the NWS LID
      */
-    public void setNwsLid( String nwsLid )
+    void setNwsLid( String nwsLid )
     {
         this.nwsLid = nwsLid;
     }
@@ -85,7 +85,7 @@ public class GeneralThresholdMetadata implements Serializable
     /**
      * @return the USGS site code
      */
-    public String getUsgsSideCode()
+    String getUsgsSideCode()
     {
         return usgsSiteCode;
     }
@@ -94,7 +94,7 @@ public class GeneralThresholdMetadata implements Serializable
      * Sets the USGS site code.
      * @param usgsSiteCode the USGS site code
      */
-    public void setUsgsSideCode( String usgsSiteCode )
+    void setUsgsSideCode( String usgsSiteCode )
     {
         this.usgsSiteCode = usgsSiteCode;
     }
@@ -102,7 +102,7 @@ public class GeneralThresholdMetadata implements Serializable
     /**
      * @return the NWM feature ID
      */
-    public String getNwmFeatureId()
+    String getNwmFeatureId()
     {
         return nwmFeatureId;
     }
@@ -111,7 +111,7 @@ public class GeneralThresholdMetadata implements Serializable
      * Sets the NWM feature ID.
      * @param nwmFeatureId the NWM feature ID
      */
-    public void setNwmFeatureId( String nwmFeatureId )
+    void setNwmFeatureId( String nwmFeatureId )
     {
         this.nwmFeatureId = nwmFeatureId;
     }
@@ -119,7 +119,7 @@ public class GeneralThresholdMetadata implements Serializable
     /**
      * @return the threshold type
      */
-    public String getThresholdType()
+    String getThresholdType()
     {
         return thresholdType;
     }
@@ -128,7 +128,7 @@ public class GeneralThresholdMetadata implements Serializable
      * Sets the threshold type.
      * @param thresholdType the threshold type
      */
-    public void setThresholdType( String thresholdType )
+    void setThresholdType( String thresholdType )
     {
         this.thresholdType = thresholdType;
     }
@@ -136,7 +136,7 @@ public class GeneralThresholdMetadata implements Serializable
     /**
      * @return the threshold store
      */
-    public String getThresholdSource()
+    String getThresholdSource()
     {
         return thresholdSource;
     }
@@ -145,7 +145,7 @@ public class GeneralThresholdMetadata implements Serializable
      * Sets the threshold source.
      * @param thresholdSource the threshold source
      */
-    public void setThresholdSource( String thresholdSource )
+    void setThresholdSource( String thresholdSource )
     {
         this.thresholdSource = thresholdSource;
     }
@@ -153,7 +153,7 @@ public class GeneralThresholdMetadata implements Serializable
     /**
      * @return the threshold source description.
      */
-    public String getThresholdSourceDescription()
+    String getThresholdSourceDescription()
     {
         return thresholdSourceDescription;
     }
@@ -163,7 +163,7 @@ public class GeneralThresholdMetadata implements Serializable
      * @param thresholdSourceDescription the threshold source description.
      */
 
-    public void setThresholdSourceDescription( String thresholdSourceDescription )
+    void setThresholdSourceDescription( String thresholdSourceDescription )
     {
         this.thresholdSourceDescription = thresholdSourceDescription;
     }
@@ -171,7 +171,7 @@ public class GeneralThresholdMetadata implements Serializable
     /**
      * @return the stage units.
      */
-    public String getStageUnits()
+    String getStageUnits()
     {
         return stageUnits;
     }
@@ -180,7 +180,7 @@ public class GeneralThresholdMetadata implements Serializable
      * Sets the stage units.
      * @param stageUnits the stage units
      */
-    public void setStageUnits( String stageUnits )
+    void setStageUnits( String stageUnits )
     {
         this.stageUnits = stageUnits;
     }
@@ -188,7 +188,7 @@ public class GeneralThresholdMetadata implements Serializable
     /**
      * @return the flow units.
      */
-    public String getFlowUnits()
+    String getFlowUnits()
     {
         return flowUnits;
     }
@@ -197,7 +197,7 @@ public class GeneralThresholdMetadata implements Serializable
      * Sets the flow units.
      * @param flowUnits the flow units
      */
-    public void setFlowUnits( String flowUnits )
+    void setFlowUnits( String flowUnits )
     {
         this.flowUnits = flowUnits;
     }
@@ -205,7 +205,7 @@ public class GeneralThresholdMetadata implements Serializable
     /**
      * @return the calculated flow units
      */
-    public String getCalcFlowUnits()
+    String getCalcFlowUnits()
     {
         return calcFlowUnits;
     }
@@ -214,7 +214,7 @@ public class GeneralThresholdMetadata implements Serializable
      * Sets the calculated flow units.
      * @param calcFlowUnits the calculated flow units
      */
-    public void setCalcFlowUnits( String calcFlowUnits )
+    void setCalcFlowUnits( String calcFlowUnits )
     {
         this.calcFlowUnits = calcFlowUnits;
     }
@@ -222,7 +222,7 @@ public class GeneralThresholdMetadata implements Serializable
     /**
      * @return the units
      */
-    public String getUnits()
+    String getUnits()
     {
         return units;
     }
@@ -231,7 +231,7 @@ public class GeneralThresholdMetadata implements Serializable
      * Sets the units.
      * @param units the units
      */
-    public void setUnits( String units )
+    void setUnits( String units )
     {
         this.units = units;
     }
