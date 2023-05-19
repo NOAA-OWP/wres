@@ -3,7 +3,7 @@ package wres.io.reading.wrds.thresholds;
 /**
  * The WRDS variable that a threshold applies to
  */
-enum WrdsThresholdType
+enum ThresholdType
 {
     /**
      * Applies to streamflow data

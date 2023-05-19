@@ -35,8 +35,8 @@ import wres.config.yaml.components.ThresholdOrientation;
 import wres.config.yaml.components.ThresholdService;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.units.UnitMapper;
-import wres.io.reading.wrds.geography.WrdsLocation;
-import wres.io.reading.wrds.geography.WrdsLocationRootVersionDocument;
+import wres.io.reading.wrds.geography.Location;
+import wres.io.reading.wrds.geography.LocationRootVersionDocument;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.web.WebClient;
@@ -49,13 +49,13 @@ import wres.statistics.generated.Threshold;
  * @author Hank Herr
  * @author Chris Tubbs
  */
-class WrdsThresholdReader
+class ThresholdReader
 {
     /** The number of location requests." */
     static final int LOCATION_REQUEST_COUNT = 20;
 
     /** Logger. */
-    private static final Logger LOGGER = LoggerFactory.getLogger( WrdsThresholdReader.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( ThresholdReader.class );
 
     /** The context for establishing a secure connection. */
     private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
@@ -90,9 +90,9 @@ class WrdsThresholdReader
      * @return an instance
      */
 
-    public static WrdsThresholdReader of()
+    public static ThresholdReader of()
     {
-        return new WrdsThresholdReader();
+        return new ThresholdReader();
     }
 
     /**
@@ -103,10 +103,10 @@ class WrdsThresholdReader
      * @param featureAuthority the feature authority associated with the feature names
      * @return the thresholds mapped against features
      */
-    public Map<WrdsLocation, Set<Threshold>> readThresholds( ThresholdService thresholdService,
-                                                             UnitMapper unitMapper,
-                                                             Set<String> featureNames,
-                                                             FeatureAuthority featureAuthority )
+    public Map<Location, Set<Threshold>> readThresholds( ThresholdService thresholdService,
+                                                         UnitMapper unitMapper,
+                                                         Set<String> featureNames,
+                                                         FeatureAuthority featureAuthority )
     {
         Objects.requireNonNull( thresholdService );
         Objects.requireNonNull( unitMapper );
@@ -155,17 +155,25 @@ class WrdsThresholdReader
         // Read a file-like source
         else
         {
-            uri = WrdsThresholdReader.getAbsoluteUri( uri );
+            uri = ThresholdReader.getAbsoluteUri( uri );
             addresses.add( uri );
         }
 
-        Map<WrdsLocation, Set<Threshold>> thresholdMapping = this.readThresholds( thresholdService,
-                                                                                  addresses,
-                                                                                  unitMapper );
+        // Get the accumulated warnings across threshold extractions
+        Set<String> warnings = new HashSet<>();
+        // Read the thresholds and accumulate any warnings
+        Map<Location, Set<Threshold>> thresholdMapping = this.readThresholds( thresholdService,
+                                                                              addresses,
+                                                                              unitMapper,
+                                                                              warnings );
 
         if ( thresholdMapping.isEmpty() )
         {
-            throw new NoThresholdsFoundException( "No thresholds could be retrieved from " + uri );
+            throw new NoThresholdsFoundException( "No thresholds could be retrieved from "
+                                                  + uri
+                                                  + ". The following warnings were encountered while extracting "
+                                                  + "thresholds: "
+                                                  + warnings );
         }
 
         LOGGER.debug( "The following thresholds were obtained from WRDS: {}.", thresholdMapping );
@@ -177,13 +185,15 @@ class WrdsThresholdReader
      * Reads thresholds from a collection of addresses.
      * @param addresses the addresses
      * @param unitMapper the unit mapper
+     * @param warnings the accumulated warnings
      * @return the thresholds
      */
-    private Map<WrdsLocation, Set<Threshold>> readThresholds( ThresholdService thresholdService,
-                                                              List<URI> addresses,
-                                                              UnitMapper unitMapper )
+    private Map<Location, Set<Threshold>> readThresholds( ThresholdService thresholdService,
+                                                          List<URI> addresses,
+                                                          UnitMapper unitMapper,
+                                                          Set<String> warnings )
     {
-        Map<WrdsLocation, Set<Threshold>> thresholdMapping;
+        Map<Location, Set<Threshold>> thresholdMapping;
 
         // Get the non-null responses for the addresses, extract the thresholds,
         // and collect them into a map.
@@ -192,7 +202,8 @@ class WrdsThresholdReader
                                     .filter( Objects::nonNull )
                                     .map( thresholdResponse -> this.extract( thresholdResponse,
                                                                              thresholdService,
-                                                                             unitMapper ) )
+                                                                             unitMapper,
+                                                                             warnings ) )
                                     .flatMap( map -> map.entrySet()
                                                         .stream() )
                                     .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
@@ -215,13 +226,15 @@ class WrdsThresholdReader
      * @param responseBytes array of bytes to parse
      * @param thresholdService the threshold service
      * @param desiredUnitMapper the desired units
+     * @param warnings the accumulated warnings encountered
      * @return the thresholds
      * @throws ThresholdReadingException if the thresholds could not be read
      * @throws UnsupportedOperationException if the threshold API version is unsupported
      */
-    private Map<WrdsLocation, Set<Threshold>> extract( byte[] responseBytes,
-                                                       ThresholdService thresholdService,
-                                                       UnitMapper desiredUnitMapper )
+    private Map<Location, Set<Threshold>> extract( byte[] responseBytes,
+                                                   ThresholdService thresholdService,
+                                                   UnitMapper desiredUnitMapper,
+                                                   Set<String> warnings )
     {
         ThresholdOrientation side = thresholdService.applyTo();
         ThresholdOperator operator = thresholdService.operator();
@@ -230,8 +243,8 @@ class WrdsThresholdReader
         {
             // Read the version information from the response, first.  This is used to
             // identify version being processed
-            WrdsLocationRootVersionDocument versionDoc =
-                    JSON_OBJECT_MAPPER.readValue( responseBytes, WrdsLocationRootVersionDocument.class );
+            LocationRootVersionDocument versionDoc =
+                    JSON_OBJECT_MAPPER.readValue( responseBytes, LocationRootVersionDocument.class );
 
             if ( versionDoc.isDeploymentInfoPresent() )
             {
@@ -250,33 +263,37 @@ class WrdsThresholdReader
             // Get the response and construct the extractor.
             ThresholdResponse response =
                     JSON_OBJECT_MAPPER.readValue( responseBytes, ThresholdResponse.class );
-            ThresholdExtractor extractor = new ThresholdExtractor( response )
-                    .from( thresholdService.provider() )
-                    .operatesBy( operator )
-                    .onSide( side );
-
-            // If rating provider is not null, add it, too.
-            if ( Objects.nonNull( thresholdService.ratingProvider() ) )
-            {
-                extractor.ratingFrom( thresholdService.ratingProvider() );
-            }
+            ThresholdExtractor extractor = ThresholdExtractor.builder()
+                                                             .response( response )
+                                                             .operator( operator )
+                                                             .orientation( side )
+                                                             .provider( thresholdService.provider() )
+                                                             .ratingProvider( thresholdService.ratingProvider() )
+                                                             .unitMapper( desiredUnitMapper )
+                                                             .build();
 
             // Flow is the default if the parameter is not specified. Note that this
             // works for unified schema thresholds, such as recurrence flows, because the metadata
             // does not specify the parameter, so that parameter is ignored.
             if ( "stage".equalsIgnoreCase( thresholdService.parameter() ) )
             {
-                extractor.readStage();
+                extractor = extractor.toBuilder()
+                                     .type( ThresholdType.STAGE )
+                                     .build();
             }
             else
             {
-                extractor.readFlow();
+                extractor = extractor.toBuilder()
+                                     .type( ThresholdType.FLOW )
+                                     .build();
             }
 
-            // Establish target unit
-            extractor.convertTo( desiredUnitMapper );
+            Map<Location, Set<Threshold>> thresholds = extractor.extract();
 
-            return extractor.extract();
+            // Increment the warnings
+            warnings.addAll( extractor.getWarnings() );
+
+            return thresholds;
         }
         catch ( IOException ioe )
         {
@@ -328,7 +345,7 @@ class WrdsThresholdReader
         LOGGER.debug( "Opening URI {}", address );
         try
         {
-            URI fullAddress = WrdsThresholdReader.getAbsoluteUri( address );
+            URI fullAddress = ThresholdReader.getAbsoluteUri( address );
 
             if ( ReaderUtilities.isWebSource( fullAddress ) )
             {
@@ -480,7 +497,7 @@ class WrdsThresholdReader
     /**
      * Hidden constructor.
      */
-    private WrdsThresholdReader()
+    private ThresholdReader()
     {
     }
 }

@@ -1,6 +1,5 @@
 package wres.io.reading.wrds.geography;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
@@ -13,7 +12,6 @@ import org.mockito.Mockito;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.Dataset;
@@ -30,10 +28,10 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 
 /**
- * Tests the {@link WrdsFeatureFiller}.
+ * Tests the {@link FeatureFiller}.
  */
 
-class WrdsFeatureFillerTest
+class FeatureFillerTest
 {
     private static final Dataset BOILERPLATE_LEFT_DATASOURCE_NO_DIMENSION = DatasetBuilder.builder()
                                                                                           .build();
@@ -104,13 +102,13 @@ class WrdsFeatureFillerTest
         Set<GeometryTuple> features = Set.of( FULLY_DECLARED_FEATURE_ONE_NO_BASELINE,
                                               FULLY_DECLARED_FEATURE_TWO_NO_BASELINE );
         EvaluationDeclaration expected
-                = WrdsFeatureFillerTest.getBoilerplateEvaluationWith( features,
-                                                                      null,
-                                                                      BOILERPLATE_LEFT_DATASOURCE_NO_DIMENSION,
-                                                                      BOILERPLATE_RIGHT_DATASOURCE_NO_DIMENSION,
-                                                                      null );
+                = FeatureFillerTest.getBoilerplateEvaluationWith( features,
+                                                                  null,
+                                                                  BOILERPLATE_LEFT_DATASOURCE_NO_DIMENSION,
+                                                                  BOILERPLATE_RIGHT_DATASOURCE_NO_DIMENSION,
+                                                                  null );
 
-        EvaluationDeclaration actual = WrdsFeatureFiller.fillFeatures( expected );
+        EvaluationDeclaration actual = FeatureFiller.fillFeatures( expected );
         assertEquals( expected, actual );
     }
 
@@ -125,13 +123,13 @@ class WrdsFeatureFillerTest
         Set<GeometryTuple> features = Set.of( FULLY_DECLARED_FEATURE_ONE_WITH_BASELINE,
                                               FULLY_DECLARED_FEATURE_TWO_WITH_BASELINE );
         EvaluationDeclaration expected
-                = WrdsFeatureFillerTest.getBoilerplateEvaluationWith( features,
-                                                                      null,
-                                                                      BOILERPLATE_LEFT_DATASOURCE_NO_DIMENSION,
-                                                                      BOILERPLATE_RIGHT_DATASOURCE_NO_DIMENSION,
-                                                                      BOILERPLATE_BASELINE_DATASOURCE_NO_AUTHORITY );
+                = FeatureFillerTest.getBoilerplateEvaluationWith( features,
+                                                                  null,
+                                                                  BOILERPLATE_LEFT_DATASOURCE_NO_DIMENSION,
+                                                                  BOILERPLATE_RIGHT_DATASOURCE_NO_DIMENSION,
+                                                                  BOILERPLATE_BASELINE_DATASOURCE_NO_AUTHORITY );
 
-        EvaluationDeclaration actual = WrdsFeatureFiller.fillFeatures( expected );
+        EvaluationDeclaration actual = FeatureFiller.fillFeatures( expected );
         assertEquals( expected, actual );
     }
 
@@ -142,7 +140,7 @@ class WrdsFeatureFillerTest
                                                                         .label( "no features" )
                                                                         .build();
 
-        assertEquals( declaration, WrdsFeatureFiller.fillFeatures( declaration ) );
+        assertEquals( declaration, FeatureFiller.fillFeatures( declaration ) );
     }
 
     @Test
@@ -153,18 +151,18 @@ class WrdsFeatureFillerTest
         FeatureService featureService = new FeatureService( uri, Set.of( featureGroup ) );
 
         EvaluationDeclaration evaluation
-                = WrdsFeatureFillerTest.getBoilerplateEvaluationWith( null,
-                                                                      featureService,
-                                                                      BOILERPLATE_DATASOURCE_USGS_SITE_CODE_AUTHORITY,
-                                                                      BOILERPLATE_DATASOURCE_NWS_LID_AUTHORITY,
-                                                                      null );
+                = FeatureFillerTest.getBoilerplateEvaluationWith( null,
+                                                                  featureService,
+                                                                  BOILERPLATE_DATASOURCE_USGS_SITE_CODE_AUTHORITY,
+                                                                  BOILERPLATE_DATASOURCE_NWS_LID_AUTHORITY,
+                                                                  null );
 
         try ( MockedStatic<WrdsFeatureService> utilities = Mockito.mockStatic( WrdsFeatureService.class ) )
         {
             utilities.when( () -> WrdsFeatureService.read( Mockito.any() ) )
-                     .thenReturn( List.of( new WrdsLocation( "foo", "bar", "baz" ) ) );
+                     .thenReturn( List.of( new Location( "foo", "bar", "baz" ) ) );
 
-            EvaluationDeclaration actualEvaluation = WrdsFeatureFiller.fillFeatures( evaluation );
+            EvaluationDeclaration actualEvaluation = FeatureFiller.fillFeatures( evaluation );
 
             Set<GeometryGroup> actualGroup = actualEvaluation.featureGroups()
                                                              .geometryGroups();
@@ -208,11 +206,11 @@ class WrdsFeatureFillerTest
                                                             .setName( "foofoo" ) )
                                           .build();
         EvaluationDeclaration evaluation
-                = WrdsFeatureFillerTest.getBoilerplateEvaluationWith( Set.of( left, right, baseline, anotherLeft ),
-                                                                      featureService,
-                                                                      BOILERPLATE_DATASOURCE_USGS_SITE_CODE_AUTHORITY,
-                                                                      BOILERPLATE_DATASOURCE_NWS_LID_AUTHORITY,
-                                                                      BOILERPLATE_BASELINE_DATASOURCE_NWM_FEATURE_AUTHORITY );
+                = FeatureFillerTest.getBoilerplateEvaluationWith( Set.of( left, right, baseline, anotherLeft ),
+                                                                  featureService,
+                                                                  BOILERPLATE_DATASOURCE_USGS_SITE_CODE_AUTHORITY,
+                                                                  BOILERPLATE_DATASOURCE_NWS_LID_AUTHORITY,
+                                                                  BOILERPLATE_BASELINE_DATASOURCE_NWM_FEATURE_AUTHORITY );
 
         try ( MockedStatic<WrdsFeatureService> utilities = Mockito.mockStatic( WrdsFeatureService.class ) )
         {
@@ -260,7 +258,7 @@ class WrdsFeatureFillerTest
                                                                  Set.of( "foofoo" ) ) )
                      .thenReturn( Map.of() );
 
-            EvaluationDeclaration actualEvaluation = WrdsFeatureFiller.fillFeatures( evaluation );
+            EvaluationDeclaration actualEvaluation = FeatureFiller.fillFeatures( evaluation );
 
             Set<GeometryTuple> actual = actualEvaluation.features()
                                                         .geometries();

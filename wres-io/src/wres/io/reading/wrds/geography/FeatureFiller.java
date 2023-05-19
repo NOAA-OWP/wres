@@ -43,10 +43,10 @@ import wres.statistics.generated.GeometryTuple;
  * @author James Brown
  */
 
-public class WrdsFeatureFiller
+public class FeatureFiller
 {
     /** Logger. */
-    private static final Logger LOGGER = LoggerFactory.getLogger( WrdsFeatureFiller.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( FeatureFiller.class );
 
     /** Maximum URL length. */
     private static final int MAX_SAFE_URL_LENGTH = 2000;
@@ -119,33 +119,33 @@ public class WrdsFeatureFiller
 
         // Figure out if the same authority is used on multiple sides. If so, consolidate the features.
         FeatureAuthority leftAuthority =
-                WrdsFeatureFiller.determineAuthority( evaluation.left() );
+                FeatureFiller.determineAuthority( evaluation.left() );
         FeatureAuthority rightAuthority =
-                WrdsFeatureFiller.determineAuthority( evaluation.right() );
+                FeatureFiller.determineAuthority( evaluation.right() );
         FeatureAuthority baselineAuthority = null;
 
         boolean hasBaseline = Objects.nonNull( evaluation.baseline() );
         if ( hasBaseline )
         {
-            baselineAuthority = WrdsFeatureFiller.determineAuthority( evaluation.baseline()
-                                                                                .dataset() );
+            baselineAuthority = FeatureFiller.determineAuthority( evaluation.baseline()
+                                                                            .dataset() );
         }
 
         // Explicitly declared singleton features, plus any implicitly declared with "group" declaration
-        Set<GeometryTuple> filledSingletonFeatures = WrdsFeatureFiller.fillSingletonFeatures( evaluation,
-                                                                                              featureService,
-                                                                                              leftAuthority,
-                                                                                              rightAuthority,
-                                                                                              baselineAuthority );
-
-        LOGGER.debug( "Filled these singleton features: {}", filledSingletonFeatures );
-
-        // Explicitly declared feature groups
-        Set<GeometryGroup> filledGroupedFeatures = WrdsFeatureFiller.fillGroupedFeatures( evaluation,
+        Set<GeometryTuple> filledSingletonFeatures = FeatureFiller.fillSingletonFeatures( evaluation,
                                                                                           featureService,
                                                                                           leftAuthority,
                                                                                           rightAuthority,
                                                                                           baselineAuthority );
+
+        LOGGER.debug( "Filled these singleton features: {}", filledSingletonFeatures );
+
+        // Explicitly declared feature groups
+        Set<GeometryGroup> filledGroupedFeatures = FeatureFiller.fillGroupedFeatures( evaluation,
+                                                                                      featureService,
+                                                                                      leftAuthority,
+                                                                                      rightAuthority,
+                                                                                      baselineAuthority );
 
         LOGGER.debug( "Filled these grouped features: {}", filledGroupedFeatures );
 
@@ -191,12 +191,12 @@ public class WrdsFeatureFiller
         }
 
         Set<GeometryTuple> filledFeatures =
-                WrdsFeatureFiller.fillFeatures( evaluation,
-                                                featureService,
-                                                features,
-                                                leftAuthority,
-                                                rightAuthority,
-                                                baselineAuthority );
+                FeatureFiller.fillFeatures( evaluation,
+                                            featureService,
+                                            features,
+                                            leftAuthority,
+                                            rightAuthority,
+                                            baselineAuthority );
 
         // Add in group requests from the feature service
         Set<GeometryTuple> consolidatedFeatures = new HashSet<>( filledFeatures );
@@ -214,13 +214,13 @@ public class WrdsFeatureFiller
                     featureService.featureGroups()
                                   .stream()
                                   .filter( next -> !next.pool() )
-                                  .flatMap( nextGroup -> WrdsFeatureFiller.getFeatureGroup( featureService,
-                                                                                            nextGroup,
-                                                                                            leftAuthority,
-                                                                                            rightAuthority,
-                                                                                            baselineAuthority,
-                                                                                            hasBaseline )
-                                                                          .stream() )
+                                  .flatMap( nextGroup -> FeatureFiller.getFeatureGroup( featureService,
+                                                                                        nextGroup,
+                                                                                        leftAuthority,
+                                                                                        rightAuthority,
+                                                                                        baselineAuthority,
+                                                                                        hasBaseline )
+                                                                      .stream() )
                                   .collect( Collectors.toSet() );
 
             if ( LOGGER.isDebugEnabled() )
@@ -278,12 +278,12 @@ public class WrdsFeatureFiller
             Set<GeometryTuple> features = new HashSet<>( nextGroup.getGeometryTuplesList() );
 
             Set<GeometryTuple> filledFeatures =
-                    WrdsFeatureFiller.fillFeatures( evaluation,
-                                                    featureService,
-                                                    features,
-                                                    leftAuthority,
-                                                    rightAuthority,
-                                                    baselineAuthority );
+                    FeatureFiller.fillFeatures( evaluation,
+                                                featureService,
+                                                features,
+                                                leftAuthority,
+                                                rightAuthority,
+                                                baselineAuthority );
 
             LOGGER.debug( "Densified feature group {}.", nextGroup.getRegionName() );
 
@@ -308,12 +308,12 @@ public class WrdsFeatureFiller
             {
                 if ( Boolean.TRUE.equals( nextGroup.pool() ) )
                 {
-                    Set<GeometryTuple> featuresToGroup = WrdsFeatureFiller.getFeatureGroup( featureService,
-                                                                                            nextGroup,
-                                                                                            leftAuthority,
-                                                                                            rightAuthority,
-                                                                                            baselineAuthority,
-                                                                                            hasBaseline );
+                    Set<GeometryTuple> featuresToGroup = FeatureFiller.getFeatureGroup( featureService,
+                                                                                        nextGroup,
+                                                                                        leftAuthority,
+                                                                                        rightAuthority,
+                                                                                        baselineAuthority,
+                                                                                        hasBaseline );
 
                     GeometryGroup group = GeometryGroup.newBuilder()
                                                        .addAllGeometryTuples( featuresToGroup )
@@ -362,14 +362,14 @@ public class WrdsFeatureFiller
         // Double-check for sparsity
         Set<GeometryTuple> actuallySparse
                 = sparseFeatures.stream()
-                                .filter( next -> !WrdsFeatureFiller.isFullyDeclared( next,
-                                                                                     projectHasBaseline ) )
+                                .filter( next -> !FeatureFiller.isFullyDeclared( next,
+                                                                                 projectHasBaseline ) )
                                 .collect( Collectors.toSet() );
 
         LOGGER.debug( "Attempting to fill these features: {}", actuallySparse );
 
-        FillRequirements fillRequirements = WrdsFeatureFiller.getFillRequirements( actuallySparse,
-                                                                                   projectHasBaseline );
+        FillRequirements fillRequirements = FeatureFiller.getFillRequirements( actuallySparse,
+                                                                               projectHasBaseline );
 
         LOGGER.debug( "Determined these fill requirements: {}", fillRequirements );
 
@@ -405,36 +405,36 @@ public class WrdsFeatureFiller
                                                             .getName();
         Function<GeometryTuple, String> baselineGetter = f -> f.getBaseline()
                                                                .getName();
-        WrdsFeatureFiller.setLookupMap( needsLookup,
-                                        hasLeftNeedsRight,
-                                        leftAuthority,
-                                        rightAuthority,
-                                        leftGetter );
-        WrdsFeatureFiller.setLookupMap( needsLookup,
-                                        hasLeftNeedsBaseline,
-                                        leftAuthority,
-                                        baselineAuthority,
-                                        leftGetter );
-        WrdsFeatureFiller.setLookupMap( needsLookup,
-                                        hasRightNeedsLeft,
-                                        rightAuthority,
-                                        leftAuthority,
-                                        rightGetter );
-        WrdsFeatureFiller.setLookupMap( needsLookup,
-                                        hasRightNeedsBaseline,
-                                        rightAuthority,
-                                        baselineAuthority,
-                                        rightGetter );
-        WrdsFeatureFiller.setLookupMap( needsLookup,
-                                        hasBaselineNeedsLeft,
-                                        baselineAuthority,
-                                        leftAuthority,
-                                        baselineGetter );
-        WrdsFeatureFiller.setLookupMap( needsLookup,
-                                        hasBaselineNeedsRight,
-                                        baselineAuthority,
-                                        rightAuthority,
-                                        baselineGetter );
+        FeatureFiller.setLookupMap( needsLookup,
+                                    hasLeftNeedsRight,
+                                    leftAuthority,
+                                    rightAuthority,
+                                    leftGetter );
+        FeatureFiller.setLookupMap( needsLookup,
+                                    hasLeftNeedsBaseline,
+                                    leftAuthority,
+                                    baselineAuthority,
+                                    leftGetter );
+        FeatureFiller.setLookupMap( needsLookup,
+                                    hasRightNeedsLeft,
+                                    rightAuthority,
+                                    leftAuthority,
+                                    rightGetter );
+        FeatureFiller.setLookupMap( needsLookup,
+                                    hasRightNeedsBaseline,
+                                    rightAuthority,
+                                    baselineAuthority,
+                                    rightGetter );
+        FeatureFiller.setLookupMap( needsLookup,
+                                    hasBaselineNeedsLeft,
+                                    baselineAuthority,
+                                    leftAuthority,
+                                    baselineGetter );
+        FeatureFiller.setLookupMap( needsLookup,
+                                    hasBaselineNeedsRight,
+                                    baselineAuthority,
+                                    rightAuthority,
+                                    baselineGetter );
 
         LOGGER.debug( "These need lookups: {}", needsLookup );
 
@@ -458,38 +458,38 @@ public class WrdsFeatureFiller
             if ( from == leftAuthority )
             {
                 LOGGER.debug( "Filling features with a left authority of {}", leftAuthority );
-                WrdsFeatureFiller.fromLeft( toAuthority,
-                                            rightAuthority,
-                                            baselineAuthority,
-                                            hasLeftNeedsRight,
-                                            hasLeftNeedsBaseline,
-                                            withNewRight,
-                                            withNewBaseline );
+                FeatureFiller.fromLeft( toAuthority,
+                                        rightAuthority,
+                                        baselineAuthority,
+                                        hasLeftNeedsRight,
+                                        hasLeftNeedsBaseline,
+                                        withNewRight,
+                                        withNewBaseline );
             }
 
             // No if/else, because both could be true.
             if ( from == rightAuthority )
             {
                 LOGGER.debug( "Filling features with a right authority of {}", rightAuthority );
-                WrdsFeatureFiller.fromRight( toAuthority,
-                                             leftAuthority,
-                                             baselineAuthority,
-                                             hasRightNeedsLeft,
-                                             hasRightNeedsBaseline,
-                                             withNewLeft,
-                                             withNewBaseline );
+                FeatureFiller.fromRight( toAuthority,
+                                         leftAuthority,
+                                         baselineAuthority,
+                                         hasRightNeedsLeft,
+                                         hasRightNeedsBaseline,
+                                         withNewLeft,
+                                         withNewBaseline );
             }
 
             if ( from == baselineAuthority )
             {
                 LOGGER.debug( "Filling features with a baseline authority of {}", baselineAuthority );
-                WrdsFeatureFiller.fromBaseline( toAuthority,
-                                                leftAuthority,
-                                                rightAuthority,
-                                                hasBaselineNeedsLeft,
-                                                hasBaselineNeedsRight,
-                                                withNewRight,
-                                                withNewLeft );
+                FeatureFiller.fromBaseline( toAuthority,
+                                            leftAuthority,
+                                            rightAuthority,
+                                            hasBaselineNeedsLeft,
+                                            hasBaselineNeedsRight,
+                                            withNewRight,
+                                            withNewLeft );
             }
         }
 
@@ -497,11 +497,11 @@ public class WrdsFeatureFiller
         LOGGER.debug( "New right names: {}", withNewRight );
         LOGGER.debug( "New baseline names: {}", withNewBaseline );
 
-        return WrdsFeatureFiller.getConsolidatedFeatures( withNewLeft,
-                                                          withNewRight,
-                                                          withNewBaseline,
-                                                          sparseFeatures,
-                                                          Objects.nonNull( baselineAuthority ) );
+        return FeatureFiller.getConsolidatedFeatures( withNewLeft,
+                                                      withNewRight,
+                                                      withNewBaseline,
+                                                      sparseFeatures,
+                                                      Objects.nonNull( baselineAuthority ) );
     }
 
     /**
@@ -524,7 +524,7 @@ public class WrdsFeatureFiller
         // Go through the features, finding what was declared and not.
         for ( GeometryTuple feature : sparseFeatures )
         {
-            boolean filled = WrdsFeatureFiller.setFillRequirement( feature, featuresToFill, projectHasBaseline );
+            boolean filled = FeatureFiller.setFillRequirement( feature, featuresToFill, projectHasBaseline );
 
             if ( !filled )
             {
@@ -660,13 +660,13 @@ public class WrdsFeatureFiller
 
         if ( to.equals( rightAuthority ) )
         {
-            WrdsFeatureFiller.fromLeftToRight( hasLeftNeedsRight, withNewRight, found );
+            FeatureFiller.fromLeftToRight( hasLeftNeedsRight, withNewRight, found );
         }
 
         // No if/else, because both could be true.
         if ( to.equals( baselineAuthority ) )
         {
-            WrdsFeatureFiller.fromLeftToBaseline( hasLeftNeedsBaseline, withNewBaseline, found );
+            FeatureFiller.fromLeftToBaseline( hasLeftNeedsBaseline, withNewBaseline, found );
         }
     }
 
@@ -766,13 +766,13 @@ public class WrdsFeatureFiller
 
         if ( to.equals( leftAuthority ) )
         {
-            WrdsFeatureFiller.fromRightToLeft( hasRightNeedsLeft, withNewLeft, found );
+            FeatureFiller.fromRightToLeft( hasRightNeedsLeft, withNewLeft, found );
         }
 
         // No if/else, because both could be true.
         if ( to.equals( baselineAuthority ) )
         {
-            WrdsFeatureFiller.fromRightToBaseline( hasRightNeedsBaseline, withNewBaseline, found );
+            FeatureFiller.fromRightToBaseline( hasRightNeedsBaseline, withNewBaseline, found );
         }
     }
 
@@ -873,12 +873,12 @@ public class WrdsFeatureFiller
 
         if ( to.equals( leftAuthority ) )
         {
-            WrdsFeatureFiller.fromBaselineToLeft( hasBaselineNeedsLeft, withNewLeft, found );
+            FeatureFiller.fromBaselineToLeft( hasBaselineNeedsLeft, withNewLeft, found );
         }
 
         if ( to.equals( rightAuthority ) )
         {
-            WrdsFeatureFiller.fromBaselineToRight( hasBaselineNeedsRight, withNewRight, found );
+            FeatureFiller.fromBaselineToRight( hasBaselineNeedsRight, withNewRight, found );
         }
     }
 
@@ -1009,7 +1009,7 @@ public class WrdsFeatureFiller
 
             // Only add dense/correlated feature tuples
             GeometryTuple complete = newFeature.build();
-            if ( WrdsFeatureFiller.isDense( complete, hasBaseline ) )
+            if ( FeatureFiller.isDense( complete, hasBaseline ) )
             {
                 consolidatedFeatures.add( complete );
             }
@@ -1111,11 +1111,11 @@ public class WrdsFeatureFiller
                                             + "type or group value." );
         }
 
-        return WrdsFeatureFiller.readWrdsFeatures( uri,
-                                                   leftAuthority,
-                                                   rightAuthority,
-                                                   baselineAuthority,
-                                                   hasBaseline );
+        return FeatureFiller.readWrdsFeatures( uri,
+                                               leftAuthority,
+                                               rightAuthority,
+                                               baselineAuthority,
+                                               hasBaseline );
     }
 
     /**
@@ -1136,16 +1136,16 @@ public class WrdsFeatureFiller
         Set<GeometryTuple> features = new HashSet<>();
 
         // Read the features from either V3 or older API.
-        List<WrdsLocation> wrdsLocations = WrdsFeatureService.read( uri );
-        for ( WrdsLocation wrdsLocation : wrdsLocations )
+        List<Location> locations = WrdsFeatureService.read( uri );
+        for ( Location location : locations )
         {
-            String leftName = WrdsLocation.getNameForAuthority( leftAuthority, wrdsLocation );
-            String rightName = WrdsLocation.getNameForAuthority( rightAuthority, wrdsLocation );
-            String baselineName = WrdsLocation.getNameForAuthority( baselineAuthority, wrdsLocation );
+            String leftName = Location.getNameForAuthority( leftAuthority, location );
+            String rightName = Location.getNameForAuthority( rightAuthority, location );
+            String baselineName = Location.getNameForAuthority( baselineAuthority, location );
 
             // If all three names are present, create a feature
-            if ( WrdsFeatureFiller.isValidFeatureName( leftName )
-                 && WrdsFeatureFiller.isValidFeatureName( rightName ) )
+            if ( FeatureFiller.isValidFeatureName( leftName )
+                 && FeatureFiller.isValidFeatureName( rightName ) )
             {
                 GeometryTuple.Builder featureFromGroup = GeometryTuple.newBuilder()
                                                                       .setLeft( Geometry.newBuilder()
@@ -1154,7 +1154,7 @@ public class WrdsFeatureFiller
                                                                                          .setName( rightName ) );
 
                 // Baseline?
-                if ( hasBaseline && WrdsFeatureFiller.isValidFeatureName( baselineName ) )
+                if ( hasBaseline && FeatureFiller.isValidFeatureName( baselineName ) )
                 {
                     featureFromGroup.setBaseline( Geometry.newBuilder()
                                                           .setName( baselineName ) );
@@ -1229,7 +1229,7 @@ public class WrdsFeatureFiller
                                             + "source interface (e.g. WRES knows interface usgs_nwis uses the "
                                             + "usgs_site_code authority) or explicitly declared in the "
                                             + "'feature_authority' attribute of the dataset. Valid values include: "
-                                            + WrdsFeatureFiller.getValidFeatureAuthorityValues() );
+                                            + FeatureFiller.getValidFeatureAuthorityValues() );
 
         }
 
@@ -1280,7 +1280,7 @@ public class WrdsFeatureFiller
     /**
      * Hidden constructor.
      */
-    private WrdsFeatureFiller()
+    private FeatureFiller()
     {
     }
 }

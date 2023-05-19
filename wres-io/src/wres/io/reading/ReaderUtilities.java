@@ -52,8 +52,8 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.units.UnitMapper;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.DataSource.DataDisposition;
-import wres.io.reading.wrds.geography.WrdsFeatureFiller;
-import wres.io.reading.wrds.thresholds.WrdsThresholdFiller;
+import wres.io.reading.wrds.geography.FeatureFiller;
+import wres.io.reading.wrds.thresholds.ThresholdFiller;
 import wres.system.SSLStuffThatTrustsOneCertificate;
 
 /**
@@ -90,7 +90,7 @@ public class ReaderUtilities
         Objects.requireNonNull( declaration );
 
         // Currently, there is only one feature service supported
-        return WrdsFeatureFiller.fillFeatures( declaration );
+        return FeatureFiller.fillFeatures( declaration );
     }
 
     /**
@@ -111,7 +111,7 @@ public class ReaderUtilities
         Objects.requireNonNull( unitMapper );
 
         // Currently, there is only one threshold service supported
-        return WrdsThresholdFiller.fillThresholds( declaration, unitMapper );
+        return ThresholdFiller.fillThresholds( declaration, unitMapper );
     }
 
     /**

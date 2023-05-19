@@ -23,6 +23,7 @@ import org.mockserver.model.HttpResponse;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.config.yaml.components.DatasetOrientation;
@@ -30,17 +31,17 @@ import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.ThresholdService;
 import wres.config.yaml.components.ThresholdServiceBuilder;
 import wres.datamodel.units.UnitMapper;
-import wres.io.reading.wrds.geography.WrdsLocation;
+import wres.io.reading.wrds.geography.Location;
 import wres.statistics.generated.Threshold;
 
 /**
- * Tests the {@link WrdsThresholdReader}.
+ * Tests the {@link ThresholdReader}.
  *
  * @author James Brown
  * @author Hank Herr
  * @author Chris Tubbs
  */
-class WrdsThresholdReaderTest
+class ThresholdReaderTest
 {
     /** Mocker server instance. */
     private ClientAndServer mockServer;
@@ -760,97 +761,97 @@ class WrdsThresholdReaderTest
     private static final String FT = "FT";
 
     // Various locations to test
-    private static final WrdsLocation PTSA1 = WrdsThresholdReaderTest.createFeature( "2323396", "02372250", "PTSA1" );
-    private static final WrdsLocation MNTG1 = WrdsThresholdReaderTest.createFeature( "6444276", "02349605", "MNTG1" );
-    private static final WrdsLocation BLOF1 = WrdsThresholdReaderTest.createFeature( "2297254", "02358700", "BLOF1" );
-    private static final WrdsLocation CEDG1 = WrdsThresholdReaderTest.createFeature( "2310009", "02343940", "CEDG1" );
-    private static final WrdsLocation SMAF1 = WrdsThresholdReaderTest.createFeature( "2298964", "02359170", "SMAF1" );
-    private static final WrdsLocation CHAF1 = WrdsThresholdReaderTest.createFeature( "2293124", "02358000", "CHAF1" );
-    private static final WrdsLocation OKFG1 = WrdsThresholdReaderTest.createFeature( "6447636", "02350512", "OKFG1" );
-    private static final WrdsLocation TLPT2 = WrdsThresholdReaderTest.createFeature( "13525368", "07311630", "TLPT2" );
-    private static final WrdsLocation NUTF1 = WrdsThresholdReaderTest.createFeature( null, null, "NUTF1" );
-    private static final WrdsLocation CDRA1 = WrdsThresholdReaderTest.createFeature( null, null, "CDRA1" );
-    private static final WrdsLocation MUCG1 = WrdsThresholdReaderTest.createFeature( null, null, "MUCG1" );
-    private static final WrdsLocation PRSG1 = WrdsThresholdReaderTest.createFeature( null, null, "PRSG1" );
-    private static final WrdsLocation LSNO2 = WrdsThresholdReaderTest.createFeature( null, null, "LSNO2" );
-    private static final WrdsLocation HDGA4 = WrdsThresholdReaderTest.createFeature( null, null, "HDGA4" );
-    private static final WrdsLocation FAKE3 = WrdsThresholdReaderTest.createFeature( null, null, "FAKE3" );
-    private static final WrdsLocation CNMP1 = WrdsThresholdReaderTest.createFeature( null, null, "CNMP1" );
-    private static final WrdsLocation WLLM2 = WrdsThresholdReaderTest.createFeature( null, null, "WLLM2" );
-    private static final WrdsLocation RCJD2 = WrdsThresholdReaderTest.createFeature( null, null, "RCJD2" );
-    private static final WrdsLocation MUSM5 = WrdsThresholdReaderTest.createFeature( null, null, "MUSM5" );
-    private static final WrdsLocation DUMM5 = WrdsThresholdReaderTest.createFeature( null, null, "DUMM5" );
-    private static final WrdsLocation DMTM5 = WrdsThresholdReaderTest.createFeature( null, null, "DMTM5" );
-    private static final WrdsLocation PONS2 = WrdsThresholdReaderTest.createFeature( null, null, "PONS2" );
-    private static final WrdsLocation MCKG1 = WrdsThresholdReaderTest.createFeature( null, null, "MCKG1" );
-    private static final WrdsLocation DSNG1 = WrdsThresholdReaderTest.createFeature( null, null, "DSNG1" );
-    private static final WrdsLocation BVAW2 = WrdsThresholdReaderTest.createFeature( null, null, "BVAW2" );
-    private static final WrdsLocation CNEO2 = WrdsThresholdReaderTest.createFeature( null, null, "CNEO2" );
-    private static final WrdsLocation CMKT2 = WrdsThresholdReaderTest.createFeature( null, null, "CMKT2" );
-    private static final WrdsLocation BDWN6 = WrdsThresholdReaderTest.createFeature( null, null, "BDWN6" );
-    private static final WrdsLocation CFBN6 = WrdsThresholdReaderTest.createFeature( null, null, "CFBN6" );
-    private static final WrdsLocation CCSA1 = WrdsThresholdReaderTest.createFeature( null, null, "CCSA1" );
-    private static final WrdsLocation LGNN8 = WrdsThresholdReaderTest.createFeature( null, null, "LGNN8" );
-    private static final WrdsLocation BCLN7 = WrdsThresholdReaderTest.createFeature( null, null, "BCLN7" );
-    private static final WrdsLocation KERV2 = WrdsThresholdReaderTest.createFeature( null, null, "KERV2" );
-    private static final WrdsLocation ARDS1 = WrdsThresholdReaderTest.createFeature( null, null, "ARDS1" );
-    private static final WrdsLocation WINW2 = WrdsThresholdReaderTest.createFeature( null, null, "WINW2" );
-    private static final WrdsLocation SRDN5 = WrdsThresholdReaderTest.createFeature( null, null, "SRDN5" );
-    private static final WrdsLocation MNTN1 = WrdsThresholdReaderTest.createFeature( null, null, "MNTN1" );
-    private static final WrdsLocation GNSW4 = WrdsThresholdReaderTest.createFeature( null, null, "GNSW4" );
-    private static final WrdsLocation JAIO1 = WrdsThresholdReaderTest.createFeature( null, null, "JAIO1" );
-    private static final WrdsLocation INCO1 = WrdsThresholdReaderTest.createFeature( null, null, "INCO1" );
-    private static final WrdsLocation PRMO1 = WrdsThresholdReaderTest.createFeature( null, null, "PRMO1" );
-    private static final WrdsLocation PARO1 = WrdsThresholdReaderTest.createFeature( null, null, "PARO1" );
-    private static final WrdsLocation BRCO1 = WrdsThresholdReaderTest.createFeature( null, null, "BRCO1" );
-    private static final WrdsLocation WRNO1 = WrdsThresholdReaderTest.createFeature( null, null, "WRNO1" );
-    private static final WrdsLocation BLEO1 = WrdsThresholdReaderTest.createFeature( null, null, "BLEO1" );
+    private static final Location PTSA1 = ThresholdReaderTest.createFeature( "2323396", "02372250", "PTSA1" );
+    private static final Location MNTG1 = ThresholdReaderTest.createFeature( "6444276", "02349605", "MNTG1" );
+    private static final Location BLOF1 = ThresholdReaderTest.createFeature( "2297254", "02358700", "BLOF1" );
+    private static final Location CEDG1 = ThresholdReaderTest.createFeature( "2310009", "02343940", "CEDG1" );
+    private static final Location SMAF1 = ThresholdReaderTest.createFeature( "2298964", "02359170", "SMAF1" );
+    private static final Location CHAF1 = ThresholdReaderTest.createFeature( "2293124", "02358000", "CHAF1" );
+    private static final Location OKFG1 = ThresholdReaderTest.createFeature( "6447636", "02350512", "OKFG1" );
+    private static final Location TLPT2 = ThresholdReaderTest.createFeature( "13525368", "07311630", "TLPT2" );
+    private static final Location NUTF1 = ThresholdReaderTest.createFeature( null, null, "NUTF1" );
+    private static final Location CDRA1 = ThresholdReaderTest.createFeature( null, null, "CDRA1" );
+    private static final Location MUCG1 = ThresholdReaderTest.createFeature( null, null, "MUCG1" );
+    private static final Location PRSG1 = ThresholdReaderTest.createFeature( null, null, "PRSG1" );
+    private static final Location LSNO2 = ThresholdReaderTest.createFeature( null, null, "LSNO2" );
+    private static final Location HDGA4 = ThresholdReaderTest.createFeature( null, null, "HDGA4" );
+    private static final Location FAKE3 = ThresholdReaderTest.createFeature( null, null, "FAKE3" );
+    private static final Location CNMP1 = ThresholdReaderTest.createFeature( null, null, "CNMP1" );
+    private static final Location WLLM2 = ThresholdReaderTest.createFeature( null, null, "WLLM2" );
+    private static final Location RCJD2 = ThresholdReaderTest.createFeature( null, null, "RCJD2" );
+    private static final Location MUSM5 = ThresholdReaderTest.createFeature( null, null, "MUSM5" );
+    private static final Location DUMM5 = ThresholdReaderTest.createFeature( null, null, "DUMM5" );
+    private static final Location DMTM5 = ThresholdReaderTest.createFeature( null, null, "DMTM5" );
+    private static final Location PONS2 = ThresholdReaderTest.createFeature( null, null, "PONS2" );
+    private static final Location MCKG1 = ThresholdReaderTest.createFeature( null, null, "MCKG1" );
+    private static final Location DSNG1 = ThresholdReaderTest.createFeature( null, null, "DSNG1" );
+    private static final Location BVAW2 = ThresholdReaderTest.createFeature( null, null, "BVAW2" );
+    private static final Location CNEO2 = ThresholdReaderTest.createFeature( null, null, "CNEO2" );
+    private static final Location CMKT2 = ThresholdReaderTest.createFeature( null, null, "CMKT2" );
+    private static final Location BDWN6 = ThresholdReaderTest.createFeature( null, null, "BDWN6" );
+    private static final Location CFBN6 = ThresholdReaderTest.createFeature( null, null, "CFBN6" );
+    private static final Location CCSA1 = ThresholdReaderTest.createFeature( null, null, "CCSA1" );
+    private static final Location LGNN8 = ThresholdReaderTest.createFeature( null, null, "LGNN8" );
+    private static final Location BCLN7 = ThresholdReaderTest.createFeature( null, null, "BCLN7" );
+    private static final Location KERV2 = ThresholdReaderTest.createFeature( null, null, "KERV2" );
+    private static final Location ARDS1 = ThresholdReaderTest.createFeature( null, null, "ARDS1" );
+    private static final Location WINW2 = ThresholdReaderTest.createFeature( null, null, "WINW2" );
+    private static final Location SRDN5 = ThresholdReaderTest.createFeature( null, null, "SRDN5" );
+    private static final Location MNTN1 = ThresholdReaderTest.createFeature( null, null, "MNTN1" );
+    private static final Location GNSW4 = ThresholdReaderTest.createFeature( null, null, "GNSW4" );
+    private static final Location JAIO1 = ThresholdReaderTest.createFeature( null, null, "JAIO1" );
+    private static final Location INCO1 = ThresholdReaderTest.createFeature( null, null, "INCO1" );
+    private static final Location PRMO1 = ThresholdReaderTest.createFeature( null, null, "PRMO1" );
+    private static final Location PARO1 = ThresholdReaderTest.createFeature( null, null, "PARO1" );
+    private static final Location BRCO1 = ThresholdReaderTest.createFeature( null, null, "BRCO1" );
+    private static final Location WRNO1 = ThresholdReaderTest.createFeature( null, null, "WRNO1" );
+    private static final Location BLEO1 = ThresholdReaderTest.createFeature( null, null, "BLEO1" );
 
-    private static final List<WrdsLocation> DESIRED_FEATURES = List.of( PTSA1,
-                                                                        MNTG1,
-                                                                        BLOF1,
-                                                                        CEDG1,
-                                                                        SMAF1,
-                                                                        CHAF1,
-                                                                        OKFG1,
-                                                                        TLPT2,
-                                                                        NUTF1,
-                                                                        CDRA1,
-                                                                        MUCG1,
-                                                                        PRSG1,
-                                                                        LSNO2,
-                                                                        HDGA4,
-                                                                        FAKE3,
-                                                                        CNMP1,
-                                                                        WLLM2,
-                                                                        RCJD2,
-                                                                        MUSM5,
-                                                                        DUMM5,
-                                                                        DMTM5,
-                                                                        PONS2,
-                                                                        MCKG1,
-                                                                        DSNG1,
-                                                                        BVAW2,
-                                                                        CNEO2,
-                                                                        CMKT2,
-                                                                        BDWN6,
-                                                                        CFBN6,
-                                                                        CCSA1,
-                                                                        LGNN8,
-                                                                        BCLN7,
-                                                                        KERV2,
-                                                                        ARDS1,
-                                                                        WINW2,
-                                                                        SRDN5,
-                                                                        MNTN1,
-                                                                        GNSW4,
-                                                                        JAIO1,
-                                                                        INCO1,
-                                                                        PRMO1,
-                                                                        PARO1,
-                                                                        BRCO1,
-                                                                        WRNO1,
-                                                                        BLEO1 );
+    private static final List<Location> DESIRED_FEATURES = List.of( PTSA1,
+                                                                    MNTG1,
+                                                                    BLOF1,
+                                                                    CEDG1,
+                                                                    SMAF1,
+                                                                    CHAF1,
+                                                                    OKFG1,
+                                                                    TLPT2,
+                                                                    NUTF1,
+                                                                    CDRA1,
+                                                                    MUCG1,
+                                                                    PRSG1,
+                                                                    LSNO2,
+                                                                    HDGA4,
+                                                                    FAKE3,
+                                                                    CNMP1,
+                                                                    WLLM2,
+                                                                    RCJD2,
+                                                                    MUSM5,
+                                                                    DUMM5,
+                                                                    DMTM5,
+                                                                    PONS2,
+                                                                    MCKG1,
+                                                                    DSNG1,
+                                                                    BVAW2,
+                                                                    CNEO2,
+                                                                    CMKT2,
+                                                                    BDWN6,
+                                                                    CFBN6,
+                                                                    CCSA1,
+                                                                    LGNN8,
+                                                                    BCLN7,
+                                                                    KERV2,
+                                                                    ARDS1,
+                                                                    WINW2,
+                                                                    SRDN5,
+                                                                    MNTN1,
+                                                                    GNSW4,
+                                                                    JAIO1,
+                                                                    INCO1,
+                                                                    PRMO1,
+                                                                    PARO1,
+                                                                    BRCO1,
+                                                                    WRNO1,
+                                                                    BLEO1 );
 
     /** A unit mapper for stage. */
     private UnitMapper stageMapper;
@@ -859,12 +860,12 @@ class WrdsThresholdReaderTest
     private UnitMapper flowMapper;
 
     /** A reader to test. */
-    private WrdsThresholdReader reader;
+    private ThresholdReader reader;
 
     @BeforeEach
     void runBeforeEachTest()
     {
-        this.reader = WrdsThresholdReader.of();
+        this.reader = ThresholdReader.of();
         this.stageMapper = UnitMapper.of( "FT" );
         this.flowMapper = UnitMapper.of( "CFS" );
         this.mockServer = ClientAndServer.startClientAndServer( 0 );
@@ -899,7 +900,7 @@ class WrdsThresholdReaderTest
                                          .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
                                          .build();
 
-        Map<WrdsLocation, Set<Threshold>> actual =
+        Map<Location, Set<Threshold>> actual =
                 this.reader.readThresholds( service,
                                             this.stageMapper,
                                             Set.of( "PTSA1", "MNTG1", "BLOF1", "CEDG1", "SMAF1" ),
@@ -1126,11 +1127,11 @@ class WrdsThresholdReaderTest
                                              .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
                                              .build();
 
-            Map<WrdsLocation, Set<Threshold>> readThresholds =
+            Map<Location, Set<Threshold>> readThresholds =
                     this.reader.readThresholds( service,
                                                 this.stageMapper,
                                                 DESIRED_FEATURES.stream()
-                                                                .map( WrdsLocation::nwsLid )
+                                                                .map( Location::nwsLid )
                                                                 .collect( Collectors.toSet() ),
                                                 FeatureAuthority.NWS_LID );
 
@@ -1256,11 +1257,11 @@ class WrdsThresholdReaderTest
                                              .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
                                              .build();
 
-            Map<WrdsLocation, Set<Threshold>> readThresholds =
+            Map<Location, Set<Threshold>> readThresholds =
                     this.reader.readThresholds( service,
                                                 this.flowMapper,
                                                 DESIRED_FEATURES.stream()
-                                                                .map( WrdsLocation::nwsLid )
+                                                                .map( Location::nwsLid )
                                                                 .collect( Collectors.toSet() ),
                                                 FeatureAuthority.NWS_LID );
 
@@ -1357,6 +1358,92 @@ class WrdsThresholdReaderTest
         }
     }
 
+    @Test
+    void testExtractThresholdsWithUnexpectedRatingProviderThrowsExpectedException() throws IOException
+    {
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
+        {
+            // Write a new WRDS JSON service response to an in-memory file system
+            Path directory = fileSystem.getPath( TEST );
+            Files.createDirectory( directory );
+            Path pathToStore = fileSystem.getPath( TEST, TEST_JSON );
+            Path jsonPath = Files.createFile( pathToStore );
+
+            try ( BufferedWriter writer = Files.newBufferedWriter( jsonPath ) )
+            {
+                writer.append( YET_ANOTHER_RESPONSE );
+            }
+
+            ThresholdService service
+                    = ThresholdServiceBuilder.builder()
+                                             .uri( jsonPath.toUri() )
+                                             .featureNameFrom( DatasetOrientation.LEFT )
+                                             .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                             .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                             // No such rating provider
+                                             .ratingProvider( "foofoo" )
+                                             .build();
+
+            NoThresholdsFoundException actual =
+                    assertThrows( NoThresholdsFoundException.class, // NOSONAR
+                                  () -> this.reader.readThresholds( service,
+                                                                    this.flowMapper,
+                                                                    DESIRED_FEATURES.stream()
+                                                                                    .map( Location::nwsLid )
+                                                                                    .collect(
+                                                                                            Collectors.toSet() ),
+                                                                    FeatureAuthority.NWS_LID ) );
+
+            String expectedMessagePart = "ratings provider 'foofoo', discovered no thresholds that match the ratings";
+
+            assertTrue( actual.getMessage()
+                              .contains( expectedMessagePart ) );
+        }
+    }
+
+    @Test
+    void testExtractThresholdsWithUnexpectedThresholdProviderThrowsExpectedException() throws IOException
+    {
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
+        {
+            // Write a new WRDS JSON service response to an in-memory file system
+            Path directory = fileSystem.getPath( TEST );
+            Files.createDirectory( directory );
+            Path pathToStore = fileSystem.getPath( TEST, TEST_JSON );
+            Path jsonPath = Files.createFile( pathToStore );
+
+            try ( BufferedWriter writer = Files.newBufferedWriter( jsonPath ) )
+            {
+                writer.append( YET_ANOTHER_RESPONSE );
+            }
+
+            ThresholdService service
+                    = ThresholdServiceBuilder.builder()
+                                             .uri( jsonPath.toUri() )
+                                             .featureNameFrom( DatasetOrientation.LEFT )
+                                             .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                             .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                             // No such provider
+                                             .provider( "barbar" )
+                                             .build();
+
+            NoThresholdsFoundException actual =
+                    assertThrows( NoThresholdsFoundException.class, // NOSONAR
+                                  () -> this.reader.readThresholds( service,
+                                                                    this.flowMapper,
+                                                                    DESIRED_FEATURES.stream()
+                                                                                    .map( Location::nwsLid )
+                                                                                    .collect(
+                                                                                            Collectors.toSet() ),
+                                                                    FeatureAuthority.NWS_LID ) );
+
+            String expectedMessagePart = "provider 'barbar', discovered no thresholds that match the provider";
+
+            assertTrue( actual.getMessage()
+                              .contains( expectedMessagePart ) );
+        }
+    }
+
     /**
      * Creates a location from the inputs.
      *
@@ -1365,8 +1452,8 @@ class WrdsThresholdReaderTest
      * @param lid the NWS LID
      * @return the location
      */
-    private static WrdsLocation createFeature( final String featureId, final String usgsSiteCode, final String lid )
+    private static Location createFeature( final String featureId, final String usgsSiteCode, final String lid )
     {
-        return new WrdsLocation( featureId, usgsSiteCode, lid );
+        return new Location( featureId, usgsSiteCode, lid );
     }
 }

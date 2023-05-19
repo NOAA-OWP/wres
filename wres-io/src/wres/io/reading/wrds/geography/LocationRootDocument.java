@@ -192,16 +192,16 @@ Parse relevant portions of a document similar to this (which is generated when
  */
 @XmlRootElement
 @JsonIgnoreProperties( ignoreUnknown = true )
-class WrdsLocationRootDocument
+class LocationRootDocument
 {
-    private final List<WrdsLocationInformation> locationInfos;
+    private final List<LocationInformation> locationInfos;
 
     /**
      * Creates an instance.
      * @param locationInfos the location information
      */
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
-    WrdsLocationRootDocument( @JsonProperty( "locations" ) List<WrdsLocationInformation> locationInfos )
+    LocationRootDocument( @JsonProperty( "locations" ) List<LocationInformation> locationInfos )
     {
         this.locationInfos = locationInfos;
     }
@@ -209,12 +209,12 @@ class WrdsLocationRootDocument
     /**
      * Pass through the locations, extracting the identifier information, and 
      * returning it in a list.
-     * @return List of {@link WrdsLocation} instances.
+     * @return List of {@link Location} instances.
      */
-    List<WrdsLocation> getLocations()
+    List<Location> getLocations()
     {
-        List<WrdsLocation> locations = new ArrayList<>();
-        for ( WrdsLocationInformation info : this.locationInfos )
+        List<Location> locations = new ArrayList<>();
+        for ( LocationInformation info : this.locationInfos )
         {
             locations.add( info.locations() );
         }
@@ -228,7 +228,7 @@ class WrdsLocationRootDocument
     /**
      * @return the location information
      */
-    List<WrdsLocationInformation> getLocationInfos()
+    List<LocationInformation> getLocationInfos()
     {
         return locationInfos;
     }

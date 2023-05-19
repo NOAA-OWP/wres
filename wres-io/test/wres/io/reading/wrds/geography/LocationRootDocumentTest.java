@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.io.NoDataException;
 
-public class WRDSLocationRootDocumentTest
+public class LocationRootDocumentTest
 {
 
     private static final String GOOD_TEST_CASE_V3 = "{\r\n" + 
@@ -229,8 +229,8 @@ public class WRDSLocationRootDocumentTest
     @Test
     public void readGoodTestCase() throws JsonParseException, JsonMappingException, IOException
     {
-        WrdsLocationRootDocument
-                dataPoint = new ObjectMapper().readValue( GOOD_TEST_CASE_V3.getBytes(), WrdsLocationRootDocument.class);
+        LocationRootDocument
+                dataPoint = new ObjectMapper().readValue( GOOD_TEST_CASE_V3.getBytes(), LocationRootDocument.class);
         Assert.assertEquals("OGCN2", dataPoint.getLocations().get( 0 ).nwsLid());
         Assert.assertEquals("23320100", dataPoint.getLocations().get( 0 ).nwmFeatureId());
         Assert.assertEquals("13174500", dataPoint.getLocations().get( 0 ).usgsSiteCode());
@@ -239,7 +239,8 @@ public class WRDSLocationRootDocumentTest
     @Test
     public void readCrosswalkOnlyTestCase() throws JsonParseException, JsonMappingException, IOException
     {
-        WrdsLocationRootDocument dataPoint = new ObjectMapper().readValue( CROSSWALK_ONLY_TEST_CASE_V3.getBytes(), WrdsLocationRootDocument.class);
+        LocationRootDocument
+                dataPoint = new ObjectMapper().readValue( CROSSWALK_ONLY_TEST_CASE_V3.getBytes(), LocationRootDocument.class);
         Assert.assertEquals("OGCN2", dataPoint.getLocations().get( 0 ).nwsLid());
         Assert.assertEquals("23320100", dataPoint.getLocations().get( 0 ).nwmFeatureId());
         Assert.assertEquals("13174500", dataPoint.getLocations().get( 0 ).usgsSiteCode());
@@ -248,7 +249,7 @@ public class WRDSLocationRootDocumentTest
     @Test
     public void readBadTestCaseNoLocationData() throws IOException
     {
-        WrdsLocationRootDocument dataPoint = new ObjectMapper().readValue( NO_LOCATION_DATA_TEST_CASE_V3.getBytes(), WrdsLocationRootDocument.class);
+        LocationRootDocument dataPoint = new ObjectMapper().readValue( NO_LOCATION_DATA_TEST_CASE_V3.getBytes(), LocationRootDocument.class);
         Exception exception = assertThrows( NoDataException.class, dataPoint::getLocations );
 
         String expectedErrorMessage = "Unable to get wrds location data. Check that the URL is formed correctly";

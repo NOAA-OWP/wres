@@ -38,7 +38,7 @@ import wres.io.reading.web.WebClient;
  * prescribed feature dimensions and retrieval of features from a supplied URI.
  *
  * <p>TODO: abstract an interface from this class if more than one feature service implementation arises. In that case,
- * the {@link WrdsFeatureFiller} should be changed to accept an instance of the abstracted class. The objective would
+ * the {@link FeatureFiller} should be changed to accept an instance of the abstracted class. The objective would
  * be an improved separation of two concerns, namely filling out a sparse declaration with dense features on the one 
  * hand and acquiring named features from a feature service using partial or implicit declaration, on the other.
  *
@@ -224,7 +224,7 @@ class WrdsFeatureService
      * @throws UnsupportedOperationException if the API version is unsupported
      */
 
-    static List<WrdsLocation> read( URI uri )
+    static List<Location> read( URI uri )
     {
         byte[] rawResponseBytes = WrdsFeatureService.getRawResponseBytes( uri );
 
@@ -233,8 +233,8 @@ class WrdsFeatureService
         {
             try
             {
-                WrdsLocationRootVersionDocument versionDoc =
-                        OBJECT_MAPPER.readValue( rawResponseBytes, WrdsLocationRootVersionDocument.class );
+                LocationRootVersionDocument versionDoc =
+                        OBJECT_MAPPER.readValue( rawResponseBytes, LocationRootVersionDocument.class );
                 if ( versionDoc.isDeploymentInfoPresent() )
                 {
                     LOGGER.debug( "Using WRDS API version {}.", versionDoc.getDeploymentInfo()
@@ -255,8 +255,8 @@ class WrdsFeatureService
         // Read the locations
         try
         {
-            WrdsLocationRootDocument doc = OBJECT_MAPPER.readValue( rawResponseBytes,
-                                                                    WrdsLocationRootDocument.class );
+            LocationRootDocument doc = OBJECT_MAPPER.readValue( rawResponseBytes,
+                                                                LocationRootDocument.class );
             return doc.getLocations();
         }
         catch ( IOException ioe )
@@ -313,8 +313,8 @@ class WrdsFeatureService
                                        .normalize();
 
         //Read features from either V3 or the older API.
-        List<WrdsLocation> wrdsLocations = WrdsFeatureService.read( uri );
-        int countOfLocations = wrdsLocations.size();
+        List<Location> locations = WrdsFeatureService.read( uri );
+        int countOfLocations = locations.size();
 
         if ( countOfLocations != featureNames.size() )
         {
@@ -328,10 +328,10 @@ class WrdsFeatureService
                                           + EXPLANATION_OF_WHY_AND_WHAT_TO_DO );
         }
 
-        List<WrdsLocation> fromWasNullOrBlank = new ArrayList<>( 2 );
-        List<WrdsLocation> toWasNullOrBlank = new ArrayList<>( 2 );
+        List<Location> fromWasNullOrBlank = new ArrayList<>( 2 );
+        List<Location> toWasNullOrBlank = new ArrayList<>( 2 );
 
-        for ( WrdsLocation location : wrdsLocations )
+        for ( Location location : locations )
         {
             String original = WrdsFeatureService.getFeatureNameFromAuthority( from, location, fromWasNullOrBlank );
             String found = WrdsFeatureService.getFeatureNameFromAuthority( to, location, toWasNullOrBlank );
@@ -369,8 +369,8 @@ class WrdsFeatureService
      */
 
     private static String getFeatureNameFromAuthority( FeatureAuthority authority,
-                                                       WrdsLocation location,
-                                                       List<WrdsLocation> fromWasNullOrBlank )
+                                                       Location location,
+                                                       List<Location> fromWasNullOrBlank )
     {
         String original;
         if ( authority == FeatureAuthority.NWS_LID )

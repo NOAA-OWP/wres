@@ -27,11 +27,10 @@ Parse deployment and version information from JSON that starts like this:
         "version": "v3.1.0"
     },...
 }
- Note that older API will not include deployment, so I need to allow for a null deployment object.
  */
 @XmlRootElement
 @JsonIgnoreProperties( ignoreUnknown = true )
-public class WrdsLocationRootVersionDocument
+public class LocationRootVersionDocument
 {
     /** Deployment information. */
     private final DeploymentInformation deploymentInfo;
@@ -41,7 +40,7 @@ public class WrdsLocationRootVersionDocument
      * @param deploymentInfo deployment information
      */
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
-    WrdsLocationRootVersionDocument( @JsonProperty( "deployment" )
+    LocationRootVersionDocument( @JsonProperty( "deployment" )
                                      DeploymentInformation deploymentInfo )
     {
         this.deploymentInfo = deploymentInfo;
