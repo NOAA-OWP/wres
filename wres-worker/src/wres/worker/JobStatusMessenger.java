@@ -96,7 +96,7 @@ public class JobStatusMessenger implements Runnable
             String exchangeName = this.getExchangeName();
             String exchangeType = "topic";
 
-            channel.exchangeDeclare( exchangeName, exchangeType );
+            channel.exchangeDeclare( exchangeName, exchangeType, true );
 
             this.sendMessage( channel, RECEIVED );
 

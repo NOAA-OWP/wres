@@ -215,7 +215,7 @@ class JobOutputMessenger implements Runnable, Closeable
             String exchangeName = this.getExchangeName();
             String exchangeType = "topic";
 
-            channel.exchangeDeclare( exchangeName, exchangeType );
+            channel.exchangeDeclare( exchangeName, exchangeType, true );
 
             while ( !this.closed )
             {

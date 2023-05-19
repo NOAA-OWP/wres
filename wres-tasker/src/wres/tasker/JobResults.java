@@ -378,7 +378,7 @@ class JobResults
             try
             {
                 channel = this.getConnection().createChannel();
-                channel.exchangeDeclare( exchangeName, exchangeType );
+                channel.exchangeDeclare( exchangeName, exchangeType, true );
 
                 // As the consumer, I want an exclusive queue for me?
                 queueName = channel.queueDeclare( bindingKey, true, false, false, null ).getQueue();
@@ -578,7 +578,7 @@ class JobResults
             try
             {
                 channel = this.getConnection().createChannel();
-                channel.exchangeDeclare( exchangeName, exchangeType );
+                channel.exchangeDeclare( exchangeName, exchangeType, true );
 
                 // As the consumer, I want an exclusive queue for me.
                 queueName = channel.queueDeclare( bindingKey, true, false, false, null ).getQueue();
