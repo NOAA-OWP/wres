@@ -31,7 +31,7 @@ import wres.config.yaml.components.ThresholdService;
 import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.units.UnitMapper;
 import wres.io.reading.ReaderUtilities;
-import wres.io.reading.wrds.geography.WrdsLocation;
+import wres.io.reading.wrds.geography.Location;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -41,13 +41,13 @@ import wres.statistics.generated.Threshold;
  * Fills a supplied declaration with thresholds acquired from a Water Resources Data Service (WRDS).
  * @author James Brown
  */
-public class WrdsThresholdFiller
+public class ThresholdFiller
 {
     /** Logger. */
-    private static final Logger LOGGER = LoggerFactory.getLogger( WrdsThresholdFiller.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( ThresholdFiller.class );
 
     /** The threshold reader. */
-    private static final WrdsThresholdReader READER = WrdsThresholdReader.of();
+    private static final ThresholdReader READER = ThresholdReader.of();
 
     /**
      * Attempts to acquire thresholds from WRDS and populate them in the supplied declaration, as needed.
@@ -144,28 +144,28 @@ public class WrdsThresholdFiller
         }
 
         // Get the adjusted feature names mapped to the original names
-        Map<String, String> featureNames = WrdsThresholdFiller.getFeatureNames( tuples,
-                                                                                orientation,
-                                                                                featureAuthority,
-                                                                                serviceUri );
+        Map<String, String> featureNames = ThresholdFiller.getFeatureNames( tuples,
+                                                                            orientation,
+                                                                            featureAuthority,
+                                                                            serviceUri );
 
         // Continue to read the thresholds
-        Map<WrdsLocation, Set<Threshold>> thresholds = READER.readThresholds( service,
-                                                                              unitMapper,
-                                                                              featureNames.keySet(),
-                                                                              featureAuthority );
+        Map<Location, Set<Threshold>> thresholds = READER.readThresholds( service,
+                                                                          unitMapper,
+                                                                          featureNames.keySet(),
+                                                                          featureAuthority );
 
         LOGGER.trace( "Read the following thresholds from WRDS: {}.", thresholds );
 
         // Validate the thresholds against the features
-        WrdsThresholdFiller.validate( featureNames, thresholds, featureAuthority );
+        ThresholdFiller.validate( featureNames, thresholds, featureAuthority );
 
         // Adjust the declaration and return it
-        return WrdsThresholdFiller.getAdjustedDeclaration( evaluation,
-                                                           thresholds,
-                                                           featureAuthority,
-                                                           orientation,
-                                                           featureNames );
+        return ThresholdFiller.getAdjustedDeclaration( evaluation,
+                                                       thresholds,
+                                                       featureAuthority,
+                                                       orientation,
+                                                       featureNames );
     }
 
     /**
@@ -213,7 +213,7 @@ public class WrdsThresholdFiller
      * @return the adjusted declaration
      */
     private static EvaluationDeclaration getAdjustedDeclaration( EvaluationDeclaration evaluation,
-                                                                 Map<WrdsLocation, Set<Threshold>> thresholds,
+                                                                 Map<Location, Set<Threshold>> thresholds,
                                                                  FeatureAuthority featureAuthority,
                                                                  DatasetOrientation orientation,
                                                                  Map<String, String> featureNames )
@@ -222,12 +222,12 @@ public class WrdsThresholdFiller
         Set<wres.config.yaml.components.Threshold> mappedThresholds = new HashSet<>();
 
         Set<Geometry> featuresWithThresholds = new HashSet<>();
-        for ( Map.Entry<WrdsLocation, Set<Threshold>> nextEntry : thresholds.entrySet() )
+        for ( Map.Entry<Location, Set<Threshold>> nextEntry : thresholds.entrySet() )
         {
-            WrdsLocation location = nextEntry.getKey();
+            Location location = nextEntry.getKey();
             Set<Threshold> nextThresholds = nextEntry.getValue();
 
-            String featureName = WrdsLocation.getNameForAuthority( featureAuthority, location );
+            String featureName = Location.getNameForAuthority( featureAuthority, location );
             String originalFeatureName = featureNames.get( featureName );
 
             Geometry feature = Geometry.newBuilder()
@@ -285,7 +285,7 @@ public class WrdsThresholdFiller
         adjusted.metrics( adjustedMetrics );
 
         // Remove any features for which the threshold service returned no thresholds
-        return WrdsThresholdFiller.removeFeaturesWithoutThresholds( adjusted, featuresWithThresholds, orientation );
+        return ThresholdFiller.removeFeaturesWithoutThresholds( adjusted, featuresWithThresholds, orientation );
     }
 
     /**
@@ -307,8 +307,8 @@ public class WrdsThresholdFiller
                                                .geometries();
 
         Predicate<GeometryTuple> filter =
-                next -> featuresWithThresholds.contains( WrdsThresholdFiller.getFeatureFor( next,
-                                                                                            orientation ) );
+                next -> featuresWithThresholds.contains( ThresholdFiller.getFeatureFor( next,
+                                                                                        orientation ) );
         Set<GeometryTuple> adjustedSingletons
                 = singletons.stream()
                             .filter( filter )
@@ -405,7 +405,7 @@ public class WrdsThresholdFiller
      */
 
     private static void validate( Map<String, String> featureNames,
-                                  Map<WrdsLocation, Set<Threshold>> thresholds,
+                                  Map<Location, Set<Threshold>> thresholds,
                                   FeatureAuthority featureAuthority )
     {
         // No external thresholds declared
@@ -422,10 +422,10 @@ public class WrdsThresholdFiller
                       thresholds.size() );
 
         // Identify the features that have thresholds
-        Set<WrdsLocation> thresholdFeatures = thresholds.keySet();
+        Set<Location> thresholdFeatures = thresholds.keySet();
         Set<String> thresholdFeatureNames =
                 thresholdFeatures.stream()
-                                 .map( n -> WrdsLocation.getNameForAuthority( featureAuthority, n ) )
+                                 .map( n -> Location.getNameForAuthority( featureAuthority, n ) )
                                  .collect( Collectors.toSet() );
         Set<String> featureNamesWithThresholds = new TreeSet<>( featureNames.keySet() );
         featureNamesWithThresholds.retainAll( thresholdFeatureNames );
@@ -484,7 +484,7 @@ public class WrdsThresholdFiller
     /**
      * Do not construct.
      */
-    private WrdsThresholdFiller()
+    private ThresholdFiller()
     {
     }
 }

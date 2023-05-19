@@ -45,11 +45,11 @@ import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Threshold;
 
 /**
- * Tests the {@link WrdsThresholdFiller}.
+ * Tests the {@link ThresholdFiller}.
  *
  * @author James Brown
  */
-class WrdsThresholdFillerTest
+class ThresholdFillerTest
 {
     /** Test file name. */
     private static final String TEST_JSON = "test.json";
@@ -704,7 +704,7 @@ class WrdsThresholdFillerTest
 
             UnitMapper unitMapper = UnitMapper.of( FT );
 
-            EvaluationDeclaration actual = WrdsThresholdFiller.fillThresholds( declaration, unitMapper );
+            EvaluationDeclaration actual = ThresholdFiller.fillThresholds( declaration, unitMapper );
 
             // Build the expected declaration
             Set<wres.config.yaml.components.Threshold> expectedThresholds = new HashSet<>();
@@ -1195,7 +1195,7 @@ class WrdsThresholdFillerTest
 
             UnitMapper unitMapper = UnitMapper.of( FT );
 
-            EvaluationDeclaration actual = WrdsThresholdFiller.fillThresholds( declaration, unitMapper );
+            EvaluationDeclaration actual = ThresholdFiller.fillThresholds( declaration, unitMapper );
 
             Set<GeometryTuple> actualSingletons = actual.features()
                                                         .geometries();
@@ -1282,7 +1282,7 @@ class WrdsThresholdFillerTest
 
         UnitMapper unitMapper = UnitMapper.of( FT );
 
-        EvaluationDeclaration actual = WrdsThresholdFiller.fillThresholds( declaration, unitMapper );
+        EvaluationDeclaration actual = ThresholdFiller.fillThresholds( declaration, unitMapper );
 
         Set<GeometryTuple> actualSingletons = actual.features()
                                                     .geometries();

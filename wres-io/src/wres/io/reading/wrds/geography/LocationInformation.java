@@ -8,21 +8,20 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
- * Specific to WRDS Location API v3.0 and later, this class stores an element contained
- * within the "locations" list.  Part of that element is "identifiers", which will be 
- * stored in {@link WrdsLocation}.
+ * Stores an element contained within the "locations" list.  Part of that element is "identifiers", which will be
+ * stored in {@link Location}.
  * @author Hank.Herr
  * @author James Brown
  */
 @JsonIgnoreProperties( ignoreUnknown = true )
-record WrdsLocationInformation( WrdsLocation locations )
+record LocationInformation( Location locations )
 {
     /**
      * Creates an instance.
      * @param locations the locations
      */
     @JsonCreator( mode = JsonCreator.Mode.PROPERTIES )
-    WrdsLocationInformation( @JsonProperty( "identifiers" ) WrdsLocation locations )  // NOSONAR
+    LocationInformation( @JsonProperty( "identifiers" ) Location locations )  // NOSONAR
     {
         this.locations = locations;
     }

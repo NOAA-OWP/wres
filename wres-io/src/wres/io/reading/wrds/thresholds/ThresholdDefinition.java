@@ -7,7 +7,7 @@ import com.google.protobuf.DoubleValue;
 import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.pools.MeasurementUnit;
-import wres.io.reading.wrds.geography.WrdsLocation;
+import wres.io.reading.wrds.geography.Location;
 import wres.datamodel.units.UnitMapper;
 import wres.statistics.generated.Threshold;
 
@@ -162,11 +162,11 @@ class ThresholdDefinition implements Serializable
     /**
      * @return the WRDS location
      */
-    WrdsLocation getLocation()
+    Location getLocation()
     {
-        return new WrdsLocation( this.metadata.getNwmFeatureId(),
-                                 this.metadata.getUsgsSideCode(),
-                                 this.metadata.getNwsLid() );
+        return new Location( this.metadata.getNwmFeatureId(),
+                             this.metadata.getUsgsSideCode(),
+                             this.metadata.getNwsLid() );
     }
 
     /**
@@ -192,19 +192,17 @@ class ThresholdDefinition implements Serializable
      * @param thresholdType the threshold type
      * @param thresholdOperator the threshold operator
      * @param dataType the data type
-     * @param getCalculated If true, then calculated will be used for flow thresholds if available; 
      * otherwise the original flow thresholds are used.  This flag is ignored for all other thresholds.
      * @param desiredUnitMapper the unit mapper
      * @return a map of thresholds by location.  This is a singleton map: only one location will be
      * returned at most.  
      */
-    Map<WrdsLocation, Set<Threshold>> getThresholds( WrdsThresholdType thresholdType,
-                                                            ThresholdOperator thresholdOperator,
-                                                            ThresholdOrientation dataType,
-                                                            boolean getCalculated,
-                                                            UnitMapper desiredUnitMapper )
+    Map<Location, Set<Threshold>> getThresholds( ThresholdType thresholdType,
+                                                 ThresholdOperator thresholdOperator,
+                                                 ThresholdOrientation dataType,
+                                                 UnitMapper desiredUnitMapper )
     {
-        WrdsLocation location = this.getLocation();
+        Location location = this.getLocation();
         Map<String, Threshold> thresholdMap = new HashMap<>();
 
         //If either of these is null, then it is not used. 
@@ -229,7 +227,7 @@ class ThresholdDefinition implements Serializable
         //When values is not used, then we are looking at NWS thresholds,
         //which come with stage, flow, and calculated flow options. Select
         //based on provided threshold type.
-        else if ( thresholdType.equals( WrdsThresholdType.STAGE ) )
+        else if ( thresholdType.equals( ThresholdType.STAGE ) )
         {
             if ( this.getStageValues() != null )
             {
@@ -249,7 +247,7 @@ class ThresholdDefinition implements Serializable
                                                                         .getUnit() );
             }
 
-            if ( getCalculated && this.getCalcFlowValues() != null )
+            if ( this.getCalcFlowValues() != null )
             {
                 calculatedThresholds = this.getCalcFlowValues()
                                            .getThresholdValues();

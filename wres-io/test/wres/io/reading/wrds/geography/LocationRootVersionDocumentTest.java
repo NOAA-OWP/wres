@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class WRDSLocationRootVersionDocumentTest
+class LocationRootVersionDocumentTest
 {
 
     private static final String GOOD_TEST_CASE_OLD = """
@@ -199,7 +199,8 @@ class WRDSLocationRootVersionDocumentTest
     @Test
     void readGoodTestCase() throws IOException
     {
-        WrdsLocationRootVersionDocument versionInfo = new ObjectMapper().readValue(GOOD_TEST_CASE.getBytes(), WrdsLocationRootVersionDocument.class);
+        LocationRootVersionDocument
+                versionInfo = new ObjectMapper().readValue( GOOD_TEST_CASE.getBytes(), LocationRootVersionDocument.class);
         assertEquals("v3.1.0", versionInfo.getDeploymentInfo().version());
         assertTrue( versionInfo.isDeploymentInfoPresent() );
     }
@@ -207,7 +208,8 @@ class WRDSLocationRootVersionDocumentTest
     @Test
     void readOldTestCase() throws IOException
     {
-        WrdsLocationRootVersionDocument versionInfo = new ObjectMapper().readValue(GOOD_TEST_CASE_OLD.getBytes(), WrdsLocationRootVersionDocument.class);
+        LocationRootVersionDocument
+                versionInfo = new ObjectMapper().readValue( GOOD_TEST_CASE_OLD.getBytes(), LocationRootVersionDocument.class);
         assertNull( versionInfo.getDeploymentInfo() );
         assertFalse( versionInfo.isDeploymentInfoPresent() );
     }
