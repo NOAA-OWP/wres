@@ -110,7 +110,7 @@ public class JobStandardStreamMessenger implements Runnable
             String exchangeName = this.getExchangeName();
             String exchangeType = "topic";
 
-            channel.exchangeDeclare( exchangeName, exchangeType );
+            channel.exchangeDeclare( exchangeName, exchangeType, true );
 
             reader.lines()
                   .forEach( line -> this.sendLine( channel, line ) );

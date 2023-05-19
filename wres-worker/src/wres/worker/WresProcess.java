@@ -253,7 +253,7 @@ class WresProcess implements Callable<Integer>
             String exchangeType = "topic";
             String routingKey = "job." + this.getJobId() + ".exitCode";
 
-            channel.exchangeDeclare( theExchangeName, exchangeType );
+            channel.exchangeDeclare( theExchangeName, exchangeType, true );
 
             channel.basicPublish( theExchangeName,
                                   routingKey,
