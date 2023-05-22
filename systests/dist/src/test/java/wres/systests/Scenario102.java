@@ -69,7 +69,7 @@ public class Scenario102
                     Path.of( "LGNN5_LGNN5_ESP_SUM_OF_SQUARE_ERROR.csv" ),
                     Path.of( "LGNN5_LGNN5_ESP_THREAT_SCORE.csv" ),
                     Path.of( "LGNN5_LGNN5_ESP_VOLUMETRIC_EFFICIENCY.csv" ),
-                    Path.of( "pairs.csv" ) );
+                    Path.of( "pairs.csv.gz" ) );
     
     private ScenarioInformation scenarioInfo;
     

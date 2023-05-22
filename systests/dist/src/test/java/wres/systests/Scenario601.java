@@ -27,7 +27,7 @@ public class Scenario601
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "pairs.csv" ),
+            Set.of( Path.of( "pairs.csv.gz" ),
                     Path.of( "2298964_2298964_NWM_Short_Range_BIAS_FRACTION.csv" ),
                     Path.of( "2298964_2298964_NWM_Short_Range_BIAS_FRACTION.png" ),
                     Path.of( "2298964_2298964_NWM_Short_Range_COEFFICIENT_OF_DETERMINATION.csv" ),

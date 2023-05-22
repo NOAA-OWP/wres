@@ -30,7 +30,7 @@ public class Scenario007
             Set.of( Path.of( "DRRC2HSF_DRRC2HSF_HEFS_MEAN_ERROR.csv" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_MEAN_ERROR.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_SAMPLE_SIZE.csv" ),
-                    Path.of( "pairs.csv" ) );    
+                    Path.of( "pairs.csv.gz" ) );
     
     private ScenarioInformation scenarioInfo;
     

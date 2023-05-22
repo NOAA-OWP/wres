@@ -29,7 +29,7 @@ public class Scenario720
     private static final Set<Path> EXPECTED_FILE_NAMES =
             Set.of( Path.of( "06893000_KCDM7_AHPS_MEAN_ERROR.csv" ),
                     Path.of( "06893000_KCDM7_AHPS_SAMPLE_SIZE.csv" ),
-                    Path.of( "pairs.csv" ) );
+                    Path.of( "pairs.csv.gz" ) );
     
     private ScenarioInformation scenarioInfo;
     

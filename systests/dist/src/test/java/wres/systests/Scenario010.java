@@ -33,7 +33,7 @@ public class Scenario010
                     Path.of( "DRRC2_DRRC2HSF_HEFS_MEAN_ERROR.png" ),
                     Path.of( "DRRC2_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_154800_SECONDS.csv" ),
                     Path.of( "DRRC2_DRRC2HSF_HEFS_RELIABILITY_DIAGRAM_154800_SECONDS.png" ),
-                    Path.of( "pairs.csv" ) );       
+                    Path.of( "pairs.csv.gz" ) );
     
     private ScenarioInformation scenarioInfo;
     

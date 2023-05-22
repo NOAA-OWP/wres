@@ -31,7 +31,7 @@ public class Scenario1000
                     Path.of( "FAKE3_FAKE3_TIME_TO_PEAK_ERROR.png" ),
                     Path.of( "FAKE3_FAKE3_TIME_TO_PEAK_ERROR_STATISTIC.csv" ),
                     Path.of( "FAKE3_FAKE3_TIME_TO_PEAK_ERROR_STATISTIC.png" ),
-                    Path.of( "pairs.csv" ) );
+                    Path.of( "pairs.csv.gz" ) );
     
     private ScenarioInformation scenarioInfo;
     

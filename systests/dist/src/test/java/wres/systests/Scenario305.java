@@ -31,7 +31,7 @@ public class Scenario305
                     Path.of( "LGNN5_LGNN5_HEFS_MEAN_ERROR.png" ),
                     Path.of( "LGNN5_LGNN5_HEFS_SAMPLE_SIZE.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_SAMPLE_SIZE.png" ),
-                    Path.of( "pairs.csv" ) );
+                    Path.of( "pairs.csv.gz" ) );
 
     private ScenarioInformation scenarioInfo;
     

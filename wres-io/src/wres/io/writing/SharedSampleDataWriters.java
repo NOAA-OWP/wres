@@ -136,9 +136,10 @@ public class SharedSampleDataWriters implements Supplier<Set<Path>>, Closeable
     {
         this.singleValuedWriter = SingleValuedPairsWriter.of( outputPath,
                                                               timeResolution,
-                                                              decimalFormatter );
+                                                              decimalFormatter,
+                                                              true );
 
-        this.ensembleWriter = EnsemblePairsWriter.of( outputPath, timeResolution, decimalFormatter );
+        this.ensembleWriter = EnsemblePairsWriter.of( outputPath, timeResolution, decimalFormatter, true );
     }
 
 }

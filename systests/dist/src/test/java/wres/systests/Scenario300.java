@@ -49,7 +49,7 @@ public class Scenario300
                     Path.of( "LGNN5_LGNN5_HEFS_RELIABILITY_DIAGRAM_86400_SECONDS.png" ),
                     Path.of( "LGNN5_LGNN5_HEFS_SAMPLE_SIZE.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_SAMPLE_SIZE.png" ),
-                    Path.of( "pairs.csv" ) );
+                    Path.of( "pairs.csv.gz" ) );
 
     private ScenarioInformation scenarioInfo;
     

@@ -43,7 +43,7 @@ public class Scenario401
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_MEAN_ERROR.png" ),
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_SAMPLE_SIZE.csv" ),
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_SAMPLE_SIZE.png" ),
-                    Path.of( "pairs.csv" ) );
+                    Path.of( "pairs.csv.gz" ) );
 
     private ScenarioInformation scenarioInfo;
     

@@ -72,7 +72,7 @@ public class Scenario651
                     Path.of( "124.768875W_50.54845N_NWM_Short_Range_MEAN_ERROR.csv" ),
                     Path.of( "124.768875W_50.54845N_NWM_Short_Range_PEARSON_CORRELATION_COEFFICIENT.csv" ),
                     Path.of( "124.768875W_50.54845N_NWM_Short_Range_SAMPLE_SIZE.csv" ),
-                    Path.of( "pairs.csv" ),
+                    Path.of( "pairs.csv.gz" ),
                     Path.of( "NWM_Short_Range_14400_SECONDS.nc" ),
                     Path.of( "NWM_Short_Range_50400_SECONDS.nc" ),
                     Path.of( "NWM_Short_Range_21600_SECONDS.nc" ),

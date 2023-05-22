@@ -100,7 +100,7 @@ public class Scenario400
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_THREAT_SCORE.png" ),
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_VOLUMETRIC_EFFICIENCY.csv" ),
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_VOLUMETRIC_EFFICIENCY.png" ),
-                    Path.of( "pairs.csv" ) );
+                    Path.of( "pairs.csv.gz" ) );
 
     private ScenarioInformation scenarioInfo;
 

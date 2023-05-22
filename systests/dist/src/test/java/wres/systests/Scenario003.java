@@ -327,7 +327,7 @@ public class Scenario003
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_SUM_OF_SQUARE_ERROR.png" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_VOLUMETRIC_EFFICIENCY.csv" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_VOLUMETRIC_EFFICIENCY.png" ),
-                    Path.of( "pairs.csv" ),
+                    Path.of( "pairs.csv.gz" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_BIAS_FRACTION.svg" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_BOX_PLOT_OF_ERRORS.svg" ),
                     Path.of( "DRRC2HSF_DRRC2HSF_HEFS_BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE_10800_SECONDS.svg" ),

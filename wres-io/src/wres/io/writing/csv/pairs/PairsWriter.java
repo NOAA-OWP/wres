@@ -84,10 +84,10 @@ public abstract class PairsWriter<L, R>
     public static final String DEFAULT_PAIRS_NAME = "pairs.csv";
 
     /**
-     * A default name for the pairs.
+     * A default name for the zipped pairs.
      */
 
-    public static final String DEFAULT_PAIRS_ZIP_NAME = "pairs.zip";
+    public static final String DEFAULT_PAIRS_ZIP_NAME = "pairs.csv.gz";
 
     /**
      * Delimiter.
@@ -100,6 +100,12 @@ public abstract class PairsWriter<L, R>
      */
 
     public static final String DEFAULT_BASELINE_PAIRS_NAME = "baseline_pairs.csv";
+
+    /**
+     * A default name for the zipped baseline pairs.
+     */
+
+    public static final String DEFAULT_BASELINE_PAIRS_ZIP_NAME = "baseline_pairs.csv.gz";
 
     /**
      * Logger.

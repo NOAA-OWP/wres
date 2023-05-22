@@ -103,8 +103,8 @@ public class Scenario703
                                         .collect( Collectors.toSet() );
         Set<Path> csvFilesThatExist =
                 actualFileNamesThatExist.stream()
-                                        .filter( p -> p.toString()
-                                                       .endsWith( ".csv" ) )
+                                        .filter( p -> p.toString().endsWith( ".csv" )
+                                                      || p.toString().endsWith( ".csv.gz" ) )
                                         .collect( Collectors.toSet() );
         assertEquals( "The actual set of netCDF file names does not match the expected set of file names."
                       + " These existed in expected, but not in actual: "

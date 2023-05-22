@@ -29,7 +29,7 @@ public class Scenario512
     private static final Set<Path> EXPECTED_FILE_NAMES =
             Set.of( Path.of( "10800_SECONDS.nc" ),
                     Path.of( "evaluation.csv.gz" ),
-                    Path.of( "pairs.csv" ),
+                    Path.of( "pairs.csv.gz" ),
                     Path.of( "volcano_mountain_MEAN_ERROR.csv"),
                     Path.of( "volcano_mountain_MEAN_ERROR.png"),
                     Path.of( "volcano_mountain_MEAN_ERROR.svg"),
