@@ -71,10 +71,10 @@ class WrdsAhpsReaderTest
     private static final String FORECAST_RESPONSE_V2 = """
             {
                 "_documentation": {
-                    "swagger URL": "http://***REMOVED***.***REMOVED***.***REMOVED***/docs/rfc_forecast/v2.0/swagger/"
+                    "swagger URL": "http://fake.wrds.gov/docs/rfc_forecast/v2.0/swagger/"
                 },
                 "deployment": {
-                    "api_url": "https://***REMOVED***.***REMOVED***.***REMOVED***/api/rfc_forecast/v2.0/forecast/streamflow/nws_lid/FROV2/",
+                    "api_url": "https://fake.wrds.gov/api/rfc_forecast/v2.0/forecast/streamflow/nws_lid/FROV2/",
                     "stack": "prod",
                     "version": "v2.4.0",
                     "api_caller": "None"
@@ -244,15 +244,15 @@ class WrdsAhpsReaderTest
     private static final String OBSERVED_RESPONSE_V1 = """
             {
                 "_documentation": {
-                    "swaggerURL": "http://***REMOVED***.***REMOVED***.***REMOVED***/docs/observed/v1.0/swagger/"\s
+                    "swaggerURL": "http://fake.wrds.gov/docs/observed/v1.0/swagger/"\s
                 },
                 "_deployment": {
-                    "apiUrl":"https://***REMOVED***.***REMOVED***.***REMOVED***/api/observed/v1.0/observed/streamflow/nws_lid/FROV2/?proj=WRES&validTime=%5B2022-03-01T00%3A00%3A00Z%2C2022-03-01T14%3A12%3A59Z%5D",
+                    "apiUrl":"https://fake.wrds.gov/api/observed/v1.0/observed/streamflow/nws_lid/FROV2/?proj=WRES&validTime=%5B2022-03-01T00%3A00%3A00Z%2C2022-03-01T14%3A12%3A59Z%5D",
                     "stack": "dev",
                     "version": "v1.0.0",
                     "apiCaller": "WRES"\s
                 },
-                "_nonUrgentIssueReportingLink": "https://vlab.***REMOVED***/redmine/projects/wrds-user-support/issues/new?issue[category_id]=2835",
+                "_nonUrgentIssueReportingLink": "https://fake.gov/redmine/projects/wrds-user-support/issues/new?issue[category_id]=2835",
                 "_metrics": {
                     "observedDataCount": 64,
                     "locationCount": 2,
@@ -368,15 +368,15 @@ class WrdsAhpsReaderTest
     private static final String ANOTHER_FORECAST_RESPONSE_V2 = """
             {
               "_documentation": {
-                "swagger URL": "http://***REMOVED***.***REMOVED***.***REMOVED***/docs/rfc_forecast/v2.0/swagger/"
+                "swagger URL": "http://fake.wrds.gov/docs/rfc_forecast/v2.0/swagger/"
               },
               "deployment": {
-                "api_url": "https://***REMOVED***.***REMOVED***.***REMOVED***/api/rfc_forecast/v2.0/forecast/streamflow/nws_lid/FROV2/?format=json&issuedTime=%5B2022-09-17T00%3A00%3A00Z%2C2022-09-19T18%3A57%3A46Z%5D&proj=WRES",
+                "api_url": "https://fake.wrds.gov/api/rfc_forecast/v2.0/forecast/streamflow/nws_lid/FROV2/?format=json&issuedTime=%5B2022-09-17T00%3A00%3A00Z%2C2022-09-19T18%3A57%3A46Z%5D&proj=WRES",
                 "stack": "prod",
                 "version": "v2.5.1",
                 "api_caller": "WRES"
               },
-              "Non-urgent_issue_reporting_link": "https://vlab.***REMOVED***/redmine/projects/wrds-user-support/issues/new?issue[category_id]=2831",
+              "Non-urgent_issue_reporting_link": "https://fake.gov/redmine/projects/wrds-user-support/issues/new?issue[category_id]=2831",
               "header": {
                 "request": {
                   "params": {
