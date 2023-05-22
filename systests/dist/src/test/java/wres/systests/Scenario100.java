@@ -114,7 +114,7 @@ public class Scenario100
                     Path.of( "LGNN5_LGNN5_HEFS_THREAT_SCORE.png" ),
                     Path.of( "LGNN5_LGNN5_HEFS_VOLUMETRIC_EFFICIENCY.csv" ),
                     Path.of( "LGNN5_LGNN5_HEFS_VOLUMETRIC_EFFICIENCY.png" ),
-                    Path.of( "pairs.csv" ) );
+                    Path.of( "pairs.csv.gz" ) );
 
     private ScenarioInformation scenarioInfo;
     

@@ -7,10 +7,13 @@ import static junit.framework.TestCase.fail;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.InputStreamReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,6 +27,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.zip.GZIPInputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -304,7 +308,7 @@ public class ScenarioHelper
                 try
                 {
                     //Pairs has its own method because it has to sort the lines.
-                    if ( outputFileName.endsWith( "pairs.csv" ) )
+                    if ( outputFileName.endsWith( "pairs.csv.gz" ) )
                     {
                         assertOutputPairsEqualExpectedPairs( outputFilePath.toFile(), benchmarkFile );
                     }
@@ -317,7 +321,7 @@ public class ScenarioHelper
                 //Modify the result code if an assertion error is reported.
                 catch ( AssertionError e )
                 {
-                    if ( outputFileName.endsWith( "pairs.csv" ) )
+                    if ( outputFileName.endsWith( "pairs.csv.gz" ) )
                     {
                         pairResultCode = 16;
                         //LOGGER.warn("The pairs file differ from benchmark (result code " + pairResultCode + ") for file with name " + outputFileName);
@@ -371,13 +375,26 @@ public class ScenarioHelper
     {
         File benchmarkFile = null;
         File outputFile = outputFilePath.toFile();
-        if ( outputFile.getName().endsWith( "pairs.csv" ) )
+        if ( outputFile.getName().endsWith( "baseline_pairs.csv.gz" ) )
         {
             benchmarkFile = Paths.get( benchmarkDirPath.toString(), outputFile.getName() ).toFile();
             if ( !benchmarkFile.isFile() || !benchmarkFile.canRead() )
             {
                 //First attempt wasn't good; look for sorted_*.
-                benchmarkFile = Paths.get( benchmarkDirPath.toString(), "sorted_" + outputFile.getName() ).toFile();
+                benchmarkFile = Paths.get( benchmarkDirPath.toString(), "sorted_baseline_pairs.csv" ).toFile();
+                if ( !benchmarkFile.isFile() || !benchmarkFile.canRead() )
+                {
+                    return null;
+                }
+            }
+        }
+        else if ( outputFile.getName().endsWith( "pairs.csv.gz" ) )
+        {
+            benchmarkFile = Paths.get( benchmarkDirPath.toString(), outputFile.getName() ).toFile();
+            if ( !benchmarkFile.isFile() || !benchmarkFile.canRead() )
+            {
+                //First attempt wasn't good; look for sorted_*.
+                benchmarkFile = Paths.get( benchmarkDirPath.toString(), "sorted_pairs.csv" ).toFile();
                 if ( !benchmarkFile.isFile() || !benchmarkFile.canRead() )
                 {
                     return null;
@@ -445,7 +462,7 @@ public class ScenarioHelper
         assertTrue( pairsFile.isFile() && pairsFile.canRead() );
 
         //Read in all of the data.  May need a lot of memory!
-        List<String> actualRows = Files.readAllLines( pairsFile.toPath() );
+        List<String> actualRows = readZipFile( pairsFile );
         List<String> expectedRows = Files.readAllLines( benchmarkFile.toPath() );
 
         //Files must not be zero sized and must be identical in number of lines.
@@ -468,6 +485,24 @@ public class ScenarioHelper
                           actualRows.get( i ).trim(), //TODO Should this and next be trimmed?
                           expectedRows.get( i ).trim() );
         }
+    }
+
+    /**
+     * Helper method to read contents from a zipped file
+     * @param zippedFile the zipped file to read
+     * @throws IOException
+     * @return List of Strings
+     */
+    private static List<String> readZipFile( File zippedFile ) throws IOException
+    {
+        List<String> lines = new ArrayList<>();
+        GZIPInputStream gzip = new GZIPInputStream( new FileInputStream( zippedFile ) );
+        BufferedReader br = new BufferedReader( new InputStreamReader( gzip, StandardCharsets.UTF_8 ) );
+        String line = null;
+        while ( ( line = br.readLine() ) != null) {
+            lines.add( line );
+        }
+        return lines;
     }
 
     

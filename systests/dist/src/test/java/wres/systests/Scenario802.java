@@ -28,7 +28,7 @@ public class Scenario802
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
             Set.of( Path.of( "CKLN6_CKLN6SUQ_HEFS_CONTINGENCY_TABLE.csv" ),
-                    Path.of( "pairs.csv" ) );
+                    Path.of( "pairs.csv.gz" ) );
     
     private ScenarioInformation scenarioInfo;
     

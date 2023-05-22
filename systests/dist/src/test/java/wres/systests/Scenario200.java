@@ -31,7 +31,7 @@ public class Scenario200
                     Path.of( "DOSC1_DOSC1_HEFS_MEAN_ERROR.png" ),
                     Path.of( "DOSC1_DOSC1_HEFS_SAMPLE_SIZE.csv" ),
                     Path.of( "DOSC1_DOSC1_HEFS_SAMPLE_SIZE.png" ),
-                    Path.of( "pairs.csv" ) );
+                    Path.of( "pairs.csv.gz" ) );
     
     private ScenarioInformation scenarioInfo;
     

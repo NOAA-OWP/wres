@@ -714,14 +714,14 @@ class EvaluationUtilities
             DecimalFormat decimalFormatter = declaration.decimalFormat();
 
             sharedSampleWriters =
-                    SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(), PairsWriter.DEFAULT_PAIRS_NAME ),
+                    SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(), PairsWriter.DEFAULT_PAIRS_ZIP_NAME ),
                                                 durationUnits,
                                                 decimalFormatter );
             // Baseline writer?
             if ( DeclarationUtilities.hasBaseline( declaration ) )
             {
                 sharedBaselineSampleWriters = SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(),
-                                                                                     PairsWriter.DEFAULT_BASELINE_PAIRS_NAME ),
+                                                                                     PairsWriter.DEFAULT_BASELINE_PAIRS_ZIP_NAME ),
                                                                           durationUnits,
                                                                           decimalFormatter );
             }

@@ -30,7 +30,7 @@ public class Scenario511
             Set.of( Path.of( "A_FAKE_FEATURE_GROUP_SAMPLE_SIZE.csv" ),
                     Path.of( "FAKE2_FAKE2_SAMPLE_SIZE.csv" ),
                     Path.of( "FAKE3_FAKE3_SAMPLE_SIZE.csv" ),
-                    Path.of( "pairs.csv" ) );
+                    Path.of( "pairs.csv.gz" ) );
 
     private ScenarioInformation scenarioInfo;
     

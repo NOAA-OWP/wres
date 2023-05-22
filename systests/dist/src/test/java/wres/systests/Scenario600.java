@@ -43,7 +43,7 @@ public class Scenario600
                     Path.of( "18384141_18384141_NWM_Short_Range_ROOT_MEAN_SQUARE_ERROR.png" ),
                     Path.of( "18384141_18384141_NWM_Short_Range_SAMPLE_SIZE.csv" ),
                     Path.of( "18384141_18384141_NWM_Short_Range_SAMPLE_SIZE.png" ),
-                    Path.of( "pairs.csv" ) );
+                    Path.of( "pairs.csv.gz" ) );
 
     private ScenarioInformation scenarioInfo;
     

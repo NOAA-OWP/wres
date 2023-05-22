@@ -27,7 +27,7 @@ public class Scenario107
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "baseline_pairs.csv" ),
+            Set.of( Path.of( "baseline_pairs.csv.gz" ),
                     Path.of( "LGNN5_LGNN5_LGNN5_HEFS_CONTINGENCY_TABLE.csv" ),
                     Path.of( "LGNN5_LGNN5_LGNN5_HEFS_MEAN_ERROR.csv" ),
                     Path.of( "LGNN5_LGNN5_LGNN5_HEFS_MEAN_ERROR.png" ),
@@ -38,7 +38,7 @@ public class Scenario107
                     Path.of( "LGNN5_LGNN5_LGNN5_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_151200_SECONDS.csv" ),
                     Path.of( "LGNN5_LGNN5_LGNN5_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_GTE_1.69901_CMS_Pr_EQ_0.9.png" ),
                     Path.of( "LGNN5_LGNN5_LGNN5_HEFS_RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM_GTE_4.0932_CMS_Pr_EQ_0.95.png" ),
-                    Path.of( "pairs.csv" ) );
+                    Path.of( "pairs.csv.gz" ) );
 
     private ScenarioInformation scenarioInfo;
     

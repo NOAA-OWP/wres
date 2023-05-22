@@ -29,7 +29,7 @@ public class Scenario510
     private static final Set<Path> EXPECTED_FILE_NAMES =
             Set.of( Path.of( "FAKE2_FAKE2_MEAN_ERROR.svg" ),
                     Path.of( "FAKE2_FAKE2_SAMPLE_SIZE.svg" ),
-                    Path.of( "pairs.csv" ) );
+                    Path.of( "pairs.csv.gz" ) );
 
     private ScenarioInformation scenarioInfo;
     

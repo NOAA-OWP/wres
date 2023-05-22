@@ -29,7 +29,7 @@ public class Scenario402
     private static final Set<Path> EXPECTED_FILE_NAMES =
             Set.of( Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_MEAN_ERROR.csv" ),
                     Path.of( "GLOO2X_GLOO2_Operational_Single-Valued_Forecasts_SAMPLE_SIZE.csv" ),
-                    Path.of( "pairs.csv" ) );
+                    Path.of( "pairs.csv.gz" ) );
     
     private ScenarioInformation scenarioInfo;
     
