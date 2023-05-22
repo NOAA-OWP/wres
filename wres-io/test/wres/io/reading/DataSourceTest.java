@@ -186,7 +186,7 @@ class DataSourceTest
                               + "        \"scale_factor\": 0.009999999776482582,\r\n"
                               + "        \"total_request_time\": 22.629672050476074\r\n"
                               + "    },\r\n"
-                              + "    \"_documentation\": \"https://***REMOVED***.***REMOVED***.***REMOVED***/docs/nwm2.1/v2.0/swagger/";
+                              + "    \"_documentation\": \"https://wrds.nwm/docs/nwm2.1/v2.0/swagger/";
 
         try ( InputStream stream = new ByteArrayInputStream( formatString.getBytes() ) )
         {

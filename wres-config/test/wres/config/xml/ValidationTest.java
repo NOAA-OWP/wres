@@ -397,7 +397,7 @@ class ValidationTest
     {
         DataSourceConfig.Source wrdsNwmSource;
        
-        wrdsNwmSource = new DataSourceConfig.Source( new URI( "https://***REMOVED***.***REMOVED***.***REMOVED***/api/nwm2.1/v2.0/ops/medium_range" ),
+        wrdsNwmSource = new DataSourceConfig.Source( new URI( "https://mockServer/api/nwm2.1/v2.0/ops/medium_range" ),
                                                      InterfaceShortHand.WRDS_NWM,
                                                      null,
                                                      null,

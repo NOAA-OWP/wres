@@ -65,10 +65,10 @@ class WrdsAhpsJsonReaderTest
                 """
                         {
                             "_documentation": {
-                                "swagger URL": "http://***REMOVED***.***REMOVED***.***REMOVED***/docs/rfc_forecast/v2.0/swagger/"
+                                "swagger URL": "http://fake.wrds.gov/docs/rfc_forecast/v2.0/swagger/"
                             },
                             "deployment": {
-                                "api_url": "https://***REMOVED***.***REMOVED***.***REMOVED***/api/rfc_forecast/v2.0/forecast/streamflow/nws_lid/FROV2/",
+                                "api_url": "https://fake.wrds.gov/api/rfc_forecast/v2.0/forecast/streamflow/nws_lid/FROV2/",
                                 "stack": "prod",
                                 "version": "v2.4.0",
                                 "api_caller": "None"
