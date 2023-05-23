@@ -118,14 +118,20 @@ public class ReaderUtilities
 
         EvaluationDeclaration adjusted = declaration;
 
-        // Adjust the declaration iteratively, once for each source
-        for ( ThresholdSource nextSource : declaration.thresholdSources() )
+        Set<ThresholdSource> thresholdSources = declaration.thresholdSources();
+        if( ! thresholdSources.isEmpty() )
         {
-            adjusted = ReaderUtilities.fillThresholds( nextSource, adjusted, unitMapper );
+            // Adjust the declaration iteratively, once for each threshold source
+            for ( ThresholdSource nextSource : declaration.thresholdSources() )
+            {
+                adjusted = ReaderUtilities.fillThresholds( nextSource, adjusted, unitMapper );
+            }
+
+            // Remove any features for which there are no thresholds in the sources
+            adjusted = DeclarationUtilities.removeFeaturesWithoutThresholds( adjusted );
         }
 
-        // Remove any features for which there are no thresholds
-        return DeclarationUtilities.removeFeaturesWithoutThresholds( adjusted );
+        return adjusted;
     }
 
     /**

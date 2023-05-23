@@ -953,17 +953,20 @@ public class DeclarationUtilities
         Set<String> leftFeatureNamesWithThresholds = thresholds.stream()
                                                                .filter( n -> n.featureNameFrom()
                                                                              == DatasetOrientation.LEFT )
-                                                               .map( n -> n.feature().getName() )
+                                                               .map( n -> n.feature()
+                                                                           .getName() )
                                                                .collect( Collectors.toSet() );
         Set<String> rightFeatureNamesWithThresholds = thresholds.stream()
                                                                 .filter( n -> n.featureNameFrom()
                                                                               == DatasetOrientation.RIGHT )
-                                                                .map( n -> n.feature().getName() )
+                                                                .map( n -> n.feature()
+                                                                            .getName() )
                                                                 .collect( Collectors.toSet() );
         Set<String> baselineFeatureNamesWithThresholds = thresholds.stream()
                                                                    .filter( n -> n.featureNameFrom()
                                                                                  == DatasetOrientation.BASELINE )
-                                                                   .map( n -> n.feature().getName() )
+                                                                   .map( n -> n.feature()
+                                                                               .getName() )
                                                                    .collect( Collectors.toSet() );
 
         // Create a filter
@@ -1977,7 +1980,6 @@ public class DeclarationUtilities
             Set<GeometryTuple> filtered = features.stream()
                                                   .filter( retain )
                                                   .collect( Collectors.toSet() );
-
             // Set the new features
             Features filteredFeatures = new Features( filtered );
             builder.features( filteredFeatures );
