@@ -8,7 +8,6 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -25,6 +24,7 @@ import wres.config.xml.Validation;
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.DeclarationInterpolator;
+import wres.config.yaml.DeclarationMigrator;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.DeclarationValidator;
 import wres.config.yaml.components.EvaluationDeclaration;
@@ -289,7 +289,7 @@ public class MultiDeclarationFactory
         }
 
         // Suggest a migrated declaration string to use
-        EvaluationDeclaration migrated = DeclarationFactory.from( project.getProjectConfig() );
+        EvaluationDeclaration migrated = DeclarationMigrator.from( project.getProjectConfig(), false );
 
         if ( LOGGER.isInfoEnabled() )
         {

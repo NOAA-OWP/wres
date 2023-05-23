@@ -40,6 +40,7 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.FeatureGroupsBuilder;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.LeadTimeIntervalBuilder;
@@ -52,8 +53,8 @@ import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.ThresholdBuilder;
-import wres.config.yaml.components.ThresholdService;
-import wres.config.yaml.components.ThresholdServiceBuilder;
+import wres.config.yaml.components.ThresholdSource;
+import wres.config.yaml.components.ThresholdSourceBuilder;
 import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimeIntervalBuilder;
@@ -1681,12 +1682,12 @@ class DeclarationUtilitiesTest
         Metric one = MetricBuilder.Metric( MetricConstants.MEAN_ABSOLUTE_ERROR,
                                            MetricParametersBuilder.builder()
                                                                   .ensembleAverageType( Pool.EnsembleAverageType.MEDIAN )
-                                                                  .valueThresholds( thresholdsOne )
+                                                                  .thresholds( thresholdsOne )
                                                                   .build() );
         Metric two = MetricBuilder.Metric( MetricConstants.MEAN_ERROR,
                                            MetricParametersBuilder.builder()
                                                                   .ensembleAverageType( Pool.EnsembleAverageType.MEDIAN )
-                                                                  .valueThresholds( thresholdsOne )
+                                                                  .thresholds( thresholdsOne )
                                                                   .build() );
 
         Set<wres.config.yaml.components.Threshold> thresholdsTwo
@@ -2013,12 +2014,13 @@ class DeclarationUtilitiesTest
         EvaluationDeclaration thresholdSetEvaluation = EvaluationDeclarationBuilder.builder()
                                                                                    .thresholdSets( Set.of( wrapped ) )
                                                                                    .build();
-        ThresholdService thresholdService = ThresholdServiceBuilder.builder()
-                                                                   .type( ThresholdType.PROBABILITY )
-                                                                   .build();
-        EvaluationDeclaration serviceEvaluation = EvaluationDeclarationBuilder.builder()
-                                                                              .thresholdService( thresholdService )
-                                                                              .build();
+        ThresholdSource thresholdSource = ThresholdSourceBuilder.builder()
+                                                                .type( ThresholdType.PROBABILITY )
+                                                                .build();
+        EvaluationDeclaration serviceEvaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .thresholdSources( Set.of( thresholdSource ) )
+                                            .build();
         Metric metric = MetricBuilder.builder()
                                      .parameters( MetricParametersBuilder.builder()
                                                                          .probabilityThresholds( Set.of( wrapped ) )
@@ -2131,13 +2133,13 @@ class DeclarationUtilitiesTest
 
         Metric metric = MetricBuilder.builder()
                                      .parameters( MetricParametersBuilder.builder()
-                                                                         .valueThresholds( Set.of( wrappedThree ) )
+                                                                         .thresholds( Set.of( wrappedThree ) )
                                                                          .build() )
                                      .build();
 
         EvaluationDeclaration evaluation =
                 EvaluationDeclarationBuilder.builder()
-                                            .valueThresholds( Set.of( wrappedOne ) )
+                                            .thresholds( Set.of( wrappedOne ) )
                                             .thresholdSets( Set.of( wrappedTwo ) )
                                             .metrics( Set.of( metric ) )
                                             .build();
@@ -2188,5 +2190,167 @@ class DeclarationUtilitiesTest
                    () -> assertTrue( DeclarationUtilities.hasMissingDataTypes( withAllMissing ) ),
                    () -> assertFalse( DeclarationUtilities.hasMissingDataTypes( withNoneMissing ) ) );
 
+    }
+
+    @Test
+    void testAddThresholdsToDeclaration()
+    {
+        Metric metricOne = MetricBuilder.builder()
+                                        .name( MetricConstants.MEAN_ABSOLUTE_ERROR )
+                                        .build();
+
+        Metric metricTwo = MetricBuilder.builder()
+                                        .name( MetricConstants.PROBABILITY_OF_DETECTION )
+                                        .build();
+
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .metrics( Set.of( metricOne, metricTwo ) )
+                                            .build();
+
+        Threshold one = Threshold.newBuilder()
+                                 .setLeftThresholdValue( DoubleValue.of( 0.1 ) )
+                                 .build();
+        wres.config.yaml.components.Threshold wrappedOne = ThresholdBuilder.builder()
+                                                                           .threshold( one )
+                                                                           .type( ThresholdType.VALUE )
+                                                                           .build();
+        Threshold two = Threshold.newBuilder()
+                                 .setLeftThresholdValue( DoubleValue.of( 0.2 ) )
+                                 .build();
+        wres.config.yaml.components.Threshold wrappedTwo = ThresholdBuilder.builder()
+                                                                           .threshold( two )
+                                                                           .type( ThresholdType.PROBABILITY )
+                                                                           .build();
+        Threshold three = Threshold.newBuilder()
+                                   .setLeftThresholdValue( DoubleValue.of( 0.3 ) )
+                                   .build();
+        wres.config.yaml.components.Threshold wrappedThree = ThresholdBuilder.builder()
+                                                                             .threshold( three )
+                                                                             .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                                                             .build();
+        Set<wres.config.yaml.components.Threshold> thresholds = Set.of( wrappedOne, wrappedTwo, wrappedThree );
+        EvaluationDeclaration actual = DeclarationUtilities.addThresholds( evaluation, thresholds );
+
+        Metric expectedMetricOne =
+                MetricBuilder.builder()
+                             .name( MetricConstants.MEAN_ABSOLUTE_ERROR )
+                             .parameters( MetricParametersBuilder.builder()
+                                                                 .probabilityThresholds( Set.of( wrappedTwo ) )
+                                                                 .thresholds( Set.of( wrappedOne ) )
+                                                                 .build() )
+                             .build();
+
+        Metric expectedMetricTwo =
+                MetricBuilder.builder()
+                             .name( MetricConstants.PROBABILITY_OF_DETECTION )
+                             .parameters( MetricParametersBuilder.builder()
+                                                                 .probabilityThresholds( Set.of( wrappedTwo ) )
+                                                                 .thresholds( Set.of( wrappedOne ) )
+                                                                 .classifierThresholds( Set.of( wrappedThree ) )
+                                                                 .build() )
+                             .build();
+        Set<Metric> expectedMetrics = Set.of( expectedMetricOne, expectedMetricTwo );
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .thresholds( Set.of( wrappedOne ) )
+                                                                     .probabilityThresholds( Set.of( wrappedTwo ) )
+                                                                     .classifierThresholds( Set.of( wrappedThree ) )
+                                                                     .metrics( expectedMetrics )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testRemoveFeaturesWithoutThresholds()
+    {
+        Geometry left = Geometry.newBuilder()
+                                .setName( "foo" )
+                                .build();
+        Geometry right = Geometry.newBuilder()
+                                 .setName( "bar" )
+                                 .build();
+        Geometry baseline = Geometry.newBuilder()
+                                    .setName( "baz" )
+                                    .build();
+
+        // Tuple foo-bar-baz
+        GeometryTuple one = GeometryTuple.newBuilder()
+                                         .setLeft( left )
+                                         .setRight( right )
+                                         .setBaseline( baseline )
+                                         .build();
+        // Tuple baz-foo-bar
+        GeometryTuple two = GeometryTuple.newBuilder()
+                                         .setLeft( baseline )
+                                         .setRight( left )
+                                         .setBaseline( right )
+                                         .build();
+        // Tuple bar-baz-foo
+        GeometryTuple three = GeometryTuple.newBuilder()
+                                           .setLeft( right )
+                                           .setRight( baseline )
+                                           .setBaseline( left )
+                                           .build();
+
+        Threshold threshold = Threshold.newBuilder()
+                                       .setLeftThresholdValue( DoubleValue.of( 1 ) )
+                                       .build();
+        wres.config.yaml.components.Threshold wrappedThresholdOne =
+                ThresholdBuilder.builder()
+                                .threshold( threshold )
+                                .feature( left )
+                                .featureNameFrom( DatasetOrientation.LEFT )
+                                .build();
+        wres.config.yaml.components.Threshold wrappedThresholdTwo =
+                ThresholdBuilder.builder()
+                                .threshold( threshold )
+                                .feature( right )
+                                .featureNameFrom( DatasetOrientation.RIGHT )
+                                .build();
+        wres.config.yaml.components.Threshold wrappedThresholdThree =
+                ThresholdBuilder.builder()
+                                .threshold( threshold )
+                                .feature( baseline )
+                                .featureNameFrom( DatasetOrientation.BASELINE )
+                                .build();
+
+        Set<GeometryTuple> geometryTuples = Set.of( one, two, three );
+        Features features = new Features( geometryTuples );
+        GeometryGroup group = GeometryGroup.newBuilder()
+                                           .addAllGeometryTuples( geometryTuples )
+                                           .setRegionName( "foorbarbaz" )
+                                           .build();
+        FeatureGroups featureGroups = FeatureGroupsBuilder.builder()
+                                                          .geometryGroups( Set.of( group ) )
+                                                          .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .features( features )
+                                            .featureGroups( featureGroups )
+                                            .thresholds( Set.of( wrappedThresholdOne,
+                                                                 wrappedThresholdTwo,
+                                                                 wrappedThresholdThree ) )
+                                            .build();
+
+        EvaluationDeclaration actual = DeclarationUtilities.removeFeaturesWithoutThresholds( declaration );
+
+        Features expectedFeatures = new Features( Set.of( one ) );
+        GeometryGroup expectedGroup = GeometryGroup.newBuilder()
+                                                   .addGeometryTuples( one )
+                                                   .setRegionName( "foorbarbaz" )
+                                                   .build();
+        FeatureGroups expectedFeatureGroups = FeatureGroupsBuilder.builder()
+                                                          .geometryGroups( Set.of( expectedGroup ) )
+                                                          .build();
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .features( expectedFeatures )
+                                                                     .featureGroups( expectedFeatureGroups )
+                                                                     .thresholds( Set.of( wrappedThresholdOne,
+                                                                                          wrappedThresholdTwo,
+                                                                                          wrappedThresholdThree ) )
+                                                                     .build();
+
+        assertEquals( expected, actual );
     }
 }

@@ -173,10 +173,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
             {
                 String nextUriString = nextNode.asText();
 
-                // Replace illegal backslashes (e.g., in Windows paths)
-                nextUriString = nextUriString.replace( "\\", "/" );
-
-                URI uri = URI.create( nextUriString );
+                URI uri = UriDeserializer.deserializeUri( nextUriString );
                 nextSource = SourceBuilder.builder()
                                           .uri( uri )
                                           .build();
@@ -192,16 +189,13 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
      * Creates a list of sources from a singleton node of sources.
      * @param node the node of sources
      * @return the list of sources
+     * @throws IOException if the source URI could not be deserialized
      */
 
-    private List<Source> getSingletonSource( TextNode node )
+    private List<Source> getSingletonSource( TextNode node ) throws IOException
     {
         String nextUriString = node.asText();
-
-        // Replace illegal backslashes (e.g., in Windows paths)
-        nextUriString = nextUriString.replace( "\\", "/" );
-
-        URI uri = URI.create( nextUriString );
+        URI uri = UriDeserializer.deserializeUri( nextUriString );
         Source source = SourceBuilder.builder()
                                   .uri( uri )
                                   .build();

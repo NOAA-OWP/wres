@@ -482,26 +482,26 @@ class ThresholdSlicerTest
         Metric one = MetricBuilder.Metric( MetricConstants.MEAN_ABSOLUTE_ERROR,
                                            MetricParametersBuilder.builder()
                                                                   .ensembleAverageType( Pool.EnsembleAverageType.MEDIAN )
-                                                                  .valueThresholds( Set.of( thresholdOne ) )
+                                                                  .thresholds( Set.of( thresholdOne ) )
                                                                   .probabilityThresholds( Set.of( thresholdThree ) )
                                                                   .build() );
         Metric two = MetricBuilder.Metric( MetricConstants.MEAN_ERROR,
                                            MetricParametersBuilder.builder()
                                                                   .ensembleAverageType( Pool.EnsembleAverageType.MEDIAN )
-                                                                  .valueThresholds( Set.of( thresholdOne ) )
+                                                                  .thresholds( Set.of( thresholdOne ) )
                                                                   .probabilityThresholds( Set.of( thresholdThree ) )
                                                                   .build() );
 
         Metric three = MetricBuilder.Metric( MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
                                              MetricParametersBuilder.builder()
                                                                     .ensembleAverageType( Pool.EnsembleAverageType.MEAN )
-                                                                    .valueThresholds( Set.of( thresholdTwo ) )
+                                                                    .thresholds( Set.of( thresholdTwo ) )
                                                                     .probabilityThresholds( Set.of( thresholdFour ) )
                                                                     .build() );
         Metric four = MetricBuilder.Metric( MetricConstants.MEAN_SQUARE_ERROR,
                                             MetricParametersBuilder.builder()
                                                                    .ensembleAverageType( Pool.EnsembleAverageType.MEAN )
-                                                                   .valueThresholds( Set.of( thresholdTwo ) )
+                                                                   .thresholds( Set.of( thresholdTwo ) )
                                                                    .probabilityThresholds( Set.of( thresholdFour ) )
                                                                    .build() );
 
@@ -605,7 +605,7 @@ class ThresholdSlicerTest
         Metric one = MetricBuilder.Metric( MetricConstants.MEAN_ABSOLUTE_ERROR,
                                            MetricParametersBuilder.builder()
                                                                   .ensembleAverageType( Pool.EnsembleAverageType.MEDIAN )
-                                                                  .valueThresholds( Set.of( thresholdOne ) )
+                                                                  .thresholds( Set.of( thresholdOne ) )
                                                                   .probabilityThresholds( Set.of( thresholdTwo ) )
                                                                   .build() );
 

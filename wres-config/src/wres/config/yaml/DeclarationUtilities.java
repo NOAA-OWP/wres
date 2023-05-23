@@ -19,6 +19,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import com.google.protobuf.Timestamp;
@@ -38,6 +39,8 @@ import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
+import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.Features;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricBuilder;
@@ -52,6 +55,7 @@ import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimePools;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.TimeScale;
@@ -323,7 +327,7 @@ public class DeclarationUtilities
 
         Set<Threshold> thresholds = new HashSet<>();
 
-        thresholds.addAll( declaration.valueThresholds() );
+        thresholds.addAll( declaration.thresholds() );
         thresholds.addAll( declaration.probabilityThresholds() );
         thresholds.addAll( declaration.classifierThresholds() );
         thresholds.addAll( declaration.thresholdSets() );
@@ -332,7 +336,7 @@ public class DeclarationUtilities
         {
             Set<Threshold> metricThresholds = new HashSet<>();
             metricThresholds.addAll( parameters.classifierThresholds() );
-            metricThresholds.addAll( parameters.valueThresholds() );
+            metricThresholds.addAll( parameters.thresholds() );
             metricThresholds.addAll( parameters.probabilityThresholds() );
             return metricThresholds;
         };
@@ -538,10 +542,10 @@ public class DeclarationUtilities
             return true;
         }
 
-        // A threshold service with probability thresholds?
-        if ( Objects.nonNull( declaration.thresholdService() )
-             && declaration.thresholdService()
-                           .type() == ThresholdType.PROBABILITY )
+        // Threshold sources with probability thresholds?
+        if ( declaration.thresholdSources()
+                        .stream()
+                        .anyMatch( next -> next.type() == ThresholdType.PROBABILITY ) )
         {
             return true;
         }
@@ -721,7 +725,7 @@ public class DeclarationUtilities
             if ( Objects.nonNull( metric.parameters() ) )
             {
                 MetricParameters existing = metric.parameters();
-                builder.valueThresholds( existing.valueThresholds() );
+                builder.thresholds( existing.thresholds() );
                 builder.probabilityThresholds( existing.probabilityThresholds() );
                 builder.classifierThresholds( existing.classifierThresholds() );
                 builder.ensembleAverageType( existing.ensembleAverageType() );
@@ -742,59 +746,6 @@ public class DeclarationUtilities
         Set<Set<Metric>> toExpand = Set.copyOf( grouped.values() );
 
         return DeclarationUtilities.expand( toExpand );
-    }
-
-    /**
-     * Adds the URIs to the supplied declaration, correlating the source names with any existing sources, as needed.
-     * Correlation of sources is based on the presence of the path element of a declared source URI within a supplied
-     * URI.
-     *
-     * @param evaluation the existing evaluation declaration, required
-     * @param leftSources the left sources, required
-     * @param rightSources the right sources, required
-     * @param baselineSources the baseline sources, optional
-     * @throws IllegalArgumentException if baseline sources are provided and there is no baseline dataset
-     * @throws NullPointerException if any required input is null
-     * @return the adjusted declaration
-     */
-
-    public static EvaluationDeclaration addDataSources( EvaluationDeclaration evaluation,
-                                                        List<URI> leftSources,
-                                                        List<URI> rightSources,
-                                                        List<URI> baselineSources )
-    {
-        Objects.requireNonNull( evaluation );
-        Objects.requireNonNull( leftSources );
-        Objects.requireNonNull( rightSources );
-        Objects.requireNonNull( baselineSources );
-        Objects.requireNonNull( evaluation.left() );
-        Objects.requireNonNull( evaluation.right() );
-
-        EvaluationDeclarationBuilder builder = EvaluationDeclarationBuilder.builder( evaluation );
-        DatasetBuilder leftBuilder = DatasetBuilder.builder( evaluation.left() );
-        DatasetBuilder rightBuilder = DatasetBuilder.builder( evaluation.right() );
-
-        // Adjust the left and right datasets
-        DeclarationUtilities.addDataSources( leftBuilder, leftSources, DatasetOrientation.LEFT );
-        DeclarationUtilities.addDataSources( rightBuilder, rightSources, DatasetOrientation.RIGHT );
-
-        // Add them
-        builder.left( leftBuilder.build() )
-               .right( rightBuilder.build() );
-
-        // Baseline?
-        if ( DeclarationUtilities.hasBaseline( evaluation ) )
-        {
-            BaselineDataset baseline = evaluation.baseline();
-            DatasetBuilder baselineBuilder = DatasetBuilder.builder( baseline.dataset() );
-            DeclarationUtilities.addDataSources( baselineBuilder, baselineSources, DatasetOrientation.BASELINE );
-            BaselineDataset adjustedBaseline = BaselineDatasetBuilder.builder( baseline )
-                                                                     .dataset( baselineBuilder.build() )
-                                                                     .build();
-            builder.baseline( adjustedBaseline );
-        }
-
-        return builder.build();
     }
 
     /**
@@ -866,6 +817,176 @@ public class DeclarationUtilities
         }
 
         return ThresholdType.VALUE;
+    }
+
+    /**
+     * Adds the URIs to the supplied declaration, correlating the source names with any existing sources, as needed.
+     * Correlation of sources is based on the presence of the path element of a declared source URI within a supplied
+     * URI.
+     *
+     * @param evaluation the existing evaluation declaration, required
+     * @param leftSources the left sources, required
+     * @param rightSources the right sources, required
+     * @param baselineSources the baseline sources, optional
+     * @throws IllegalArgumentException if baseline sources are provided and there is no baseline dataset
+     * @throws NullPointerException if any required input is null
+     * @return the adjusted declaration
+     */
+
+    public static EvaluationDeclaration addDataSources( EvaluationDeclaration evaluation,
+                                                        List<URI> leftSources,
+                                                        List<URI> rightSources,
+                                                        List<URI> baselineSources )
+    {
+        Objects.requireNonNull( evaluation );
+        Objects.requireNonNull( leftSources );
+        Objects.requireNonNull( rightSources );
+        Objects.requireNonNull( baselineSources );
+        Objects.requireNonNull( evaluation.left() );
+        Objects.requireNonNull( evaluation.right() );
+
+        EvaluationDeclarationBuilder builder = EvaluationDeclarationBuilder.builder( evaluation );
+        DatasetBuilder leftBuilder = DatasetBuilder.builder( evaluation.left() );
+        DatasetBuilder rightBuilder = DatasetBuilder.builder( evaluation.right() );
+
+        // Adjust the left and right datasets
+        DeclarationUtilities.addDataSources( leftBuilder, leftSources, DatasetOrientation.LEFT );
+        DeclarationUtilities.addDataSources( rightBuilder, rightSources, DatasetOrientation.RIGHT );
+
+        // Add them
+        builder.left( leftBuilder.build() )
+               .right( rightBuilder.build() );
+
+        // Baseline?
+        if ( DeclarationUtilities.hasBaseline( evaluation ) )
+        {
+            BaselineDataset baseline = evaluation.baseline();
+            DatasetBuilder baselineBuilder = DatasetBuilder.builder( baseline.dataset() );
+            DeclarationUtilities.addDataSources( baselineBuilder, baselineSources, DatasetOrientation.BASELINE );
+            BaselineDataset adjustedBaseline = BaselineDatasetBuilder.builder( baseline )
+                                                                     .dataset( baselineBuilder.build() )
+                                                                     .build();
+            builder.baseline( adjustedBaseline );
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Adds the prescribed thresholds to the declaration.
+     *
+     * @param declaration the declaration to adjust
+     * @param thresholds the thresholds to add
+     * @return the adjusted declaration with thresholds added
+     * @throws NullPointerException if any input is null
+     */
+
+    public static EvaluationDeclaration addThresholds( EvaluationDeclaration declaration, Set<Threshold> thresholds )
+    {
+        Objects.requireNonNull( declaration );
+        Objects.requireNonNull( thresholds );
+
+        LOGGER.debug( "Adding {} thresholds to the supplied declaration: {}.", thresholds.size(), thresholds );
+
+        // Group the thresholds by type
+        Map<ThresholdType, Set<Threshold>> thresholdsByType = DeclarationUtilities.groupThresholdsByType( thresholds );
+        EvaluationDeclarationBuilder builder = EvaluationDeclarationBuilder.builder( declaration );
+
+        Set<Threshold> valueThresholds = new HashSet<>();
+        Set<Threshold> probabilityThresholds = new HashSet<>();
+        Set<Threshold> classifierThresholds = new HashSet<>();
+
+        // Add the ordinary value thresholds to their global context
+        if ( thresholdsByType.containsKey( ThresholdType.VALUE ) )
+        {
+            Set<Threshold> supplied = thresholdsByType.get( ThresholdType.VALUE );
+            valueThresholds.addAll( supplied );
+            valueThresholds.addAll( builder.thresholds() );
+            builder.thresholds( valueThresholds );
+        }
+
+        // Add the probability thresholds to their global context
+        if ( thresholdsByType.containsKey( ThresholdType.PROBABILITY ) )
+        {
+            Set<Threshold> supplied = thresholdsByType.get( ThresholdType.PROBABILITY );
+            probabilityThresholds.addAll( supplied );
+            probabilityThresholds.addAll( builder.probabilityThresholds() );
+            builder.probabilityThresholds( probabilityThresholds );
+        }
+
+        // Add the classifier thresholds to their global context
+        if ( thresholdsByType.containsKey( ThresholdType.PROBABILITY_CLASSIFIER ) )
+        {
+            Set<Threshold> supplied = thresholdsByType.get( ThresholdType.PROBABILITY_CLASSIFIER );
+            classifierThresholds.addAll( supplied );
+            classifierThresholds.addAll( builder.classifierThresholds() );
+            builder.classifierThresholds( classifierThresholds );
+        }
+
+        // Add the thresholds to the individual metrics and return
+        DeclarationInterpolator.addThresholdsToMetrics( thresholdsByType, builder, false );
+
+        return builder.build();
+    }
+
+    /**
+     * Removes from the declaration any features for which featureful thresholds are undefined. Features are matched on
+     * name only.
+     * @param declaration the declaration
+     * @return the adjusted declaration
+     * @throws NullPointerException if the declaration is null
+     */
+
+    public static EvaluationDeclaration removeFeaturesWithoutThresholds( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration );
+
+        if ( Objects.isNull( declaration.features() )
+             && Objects.isNull( declaration.featureGroups() ) )
+        {
+            LOGGER.debug( "No features were discovered to filter against thresholds." );
+        }
+
+        Set<Threshold> thresholds = DeclarationUtilities.getThresholds( declaration );
+
+        // Get the names of left-ish features with thresholds
+        Set<String> leftFeatureNamesWithThresholds = thresholds.stream()
+                                                               .filter( n -> n.featureNameFrom()
+                                                                             == DatasetOrientation.LEFT )
+                                                               .map( n -> n.feature().getName() )
+                                                               .collect( Collectors.toSet() );
+        Set<String> rightFeatureNamesWithThresholds = thresholds.stream()
+                                                                .filter( n -> n.featureNameFrom()
+                                                                              == DatasetOrientation.RIGHT )
+                                                                .map( n -> n.feature().getName() )
+                                                                .collect( Collectors.toSet() );
+        Set<String> baselineFeatureNamesWithThresholds = thresholds.stream()
+                                                                   .filter( n -> n.featureNameFrom()
+                                                                                 == DatasetOrientation.BASELINE )
+                                                                   .map( n -> n.feature().getName() )
+                                                                   .collect( Collectors.toSet() );
+
+        // Create a filter
+        Predicate<GeometryTuple> retain = geoTuple ->
+        {
+            if ( geoTuple.hasLeft() && !leftFeatureNamesWithThresholds.contains( geoTuple.getLeft()
+                                                                                         .getName() ) )
+            {
+                return false;
+            }
+
+            if ( geoTuple.hasRight() && !rightFeatureNamesWithThresholds.contains( geoTuple.getRight()
+                                                                                           .getName() ) )
+            {
+                return false;
+            }
+
+            return !geoTuple.hasBaseline() || baselineFeatureNamesWithThresholds.contains( geoTuple.getBaseline()
+                                                                                                   .getName() );
+        };
+
+        // Remove the features in all contexts
+        return DeclarationUtilities.removeFeaturesWithoutThresholds( declaration, retain );
     }
 
     /**
@@ -1831,6 +1952,99 @@ public class DeclarationUtilities
         }
 
         return metric.get();
+    }
+
+    /**
+     * Removes from the declaration any features that do not meet the filter. The logging assumes that the filter
+     * identifies features for which featureful thresholds are available, although the method itself is more general.
+     * If needed in other contexts, then the method should be renamed and the precise context injected.
+     * @param declaration the declaration
+     * @param retain the features for which featureful thresholds are available
+     * @return the adjusted declaration
+     * @throws NullPointerException if the declaration is null
+     */
+
+    private static EvaluationDeclaration removeFeaturesWithoutThresholds( EvaluationDeclaration declaration,
+                                                                          Predicate<GeometryTuple> retain )
+    {
+        EvaluationDeclarationBuilder builder = EvaluationDeclarationBuilder.builder( declaration );
+
+        // Filter the declared features
+        if ( Objects.nonNull( declaration.features() ) )
+        {
+            Set<GeometryTuple> features = declaration.features()
+                                                     .geometries();
+            Set<GeometryTuple> filtered = features.stream()
+                                                  .filter( retain )
+                                                  .collect( Collectors.toSet() );
+
+            // Set the new features
+            Features filteredFeatures = new Features( filtered );
+            builder.features( filteredFeatures );
+
+            if ( LOGGER.isWarnEnabled() && filtered.size() != features.size() )
+            {
+                Set<GeometryTuple> copy = new HashSet<>( features );
+                copy.removeAll( filtered );
+
+                LOGGER.warn( "Discovered {} feature(s) for which thresholds were not available. These features "
+                             + "have been removed from the evaluation. The features are: {}.", copy.size(),
+                             copy.stream()
+                                 .map( DeclarationFactory.PROTBUF_STRINGIFIER )
+                                 .toList() );
+            }
+        }
+
+        // Filter the grouped features
+        // Adjust the feature groups, if any
+        if ( Objects.nonNull( builder.featureGroups() ) )
+        {
+            Set<GeometryGroup> originalGroups = builder.featureGroups()
+                                                       .geometryGroups();
+            Set<GeometryGroup> adjustedGroups = new HashSet<>();
+
+            // Iterate the groups and adjust as needed
+            for ( GeometryGroup nextGroup : originalGroups )
+            {
+                List<GeometryTuple> nextTuples = nextGroup.getGeometryTuplesList();
+                List<GeometryTuple> adjusted = nextTuples.stream()
+                                                         .filter( retain )
+                                                         .toList();
+
+                // Adjustments made?
+                if ( adjusted.size() != nextTuples.size() )
+                {
+                    GeometryGroup adjustedGroup = nextGroup.toBuilder()
+                                                           .clearGeometryTuples()
+                                                           .addAllGeometryTuples( adjusted )
+                                                           .build();
+                    adjustedGroups.add( adjustedGroup );
+                }
+                else
+                {
+                    adjustedGroups.add( nextGroup );
+                }
+            }
+
+            if ( LOGGER.isWarnEnabled() && !adjustedGroups.isEmpty() )
+            {
+                Set<GeometryGroup> copy = new HashSet<>( originalGroups );
+                copy.removeAll( adjustedGroups );
+
+                LOGGER.warn( "Discovered {} feature group(s) where thresholds were not available for one or more of "
+                             + "their component features. These features have been removed from the evaluation. "
+                             + "Features were removed from the following feature groups: {}.",
+                             copy.size(),
+                             copy.stream()
+                                 .map( GeometryGroup::getRegionName )
+                                 .toList() );
+            }
+
+            FeatureGroups finalFeatureGroups = new FeatureGroups( adjustedGroups );
+            builder.featureGroups( finalFeatureGroups );
+        }
+
+        return builder.build();
     }
 
     /**

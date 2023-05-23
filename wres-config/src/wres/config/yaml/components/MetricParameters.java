@@ -22,7 +22,7 @@ import wres.statistics.generated.Pool;
  * valid parameters for particular metrics are imposed at the schema level.
  *
  * @param probabilityThresholds probability thresholds
- * @param valueThresholds value thresholds
+ * @param thresholds value thresholds
  * @param classifierThresholds probability classifier thresholds
  * @param summaryStatistics summary statistics
  * @param ensembleAverageType the ensemble average type
@@ -32,9 +32,9 @@ import wres.statistics.generated.Pool;
 @RecordBuilder
 @JsonIgnoreProperties( ignoreUnknown = true )
 public record MetricParameters( @JsonDeserialize( using = ThresholdsDeserializer.class )
-                                @JsonProperty( "probability_thresholds" ) Set<Threshold> probabilityThresholds,
+                                @JsonProperty( "thresholds" ) Set<Threshold> thresholds,
                                 @JsonDeserialize( using = ThresholdsDeserializer.class )
-                                @JsonProperty( "value_thresholds" ) Set<Threshold> valueThresholds,
+                                @JsonProperty( "probability_thresholds" ) Set<Threshold> probabilityThresholds,
                                 @JsonDeserialize( using = ThresholdsDeserializer.class )
                                 @JsonProperty( "classifier_thresholds" ) Set<Threshold> classifierThresholds,
                                 @JsonDeserialize( using = SummaryStatisticsDeserializer.class )
@@ -46,8 +46,8 @@ public record MetricParameters( @JsonDeserialize( using = ThresholdsDeserializer
 {
     /**
      * Sets the default values.
+     * @param thresholds the value thresholds
      * @param probabilityThresholds the probability thresholds
-     * @param valueThresholds the value thresholds
      * @param classifierThresholds the probability classifier thresholds
      * @param summaryStatistics the summary statistics
      * @param ensembleAverageType the ensemble average type
@@ -66,14 +66,14 @@ public record MetricParameters( @JsonDeserialize( using = ThresholdsDeserializer
             probabilityThresholds = Collections.unmodifiableSet( new LinkedHashSet<>( probabilityThresholds ) );
         }
 
-        if ( Objects.isNull( valueThresholds ) )
+        if ( Objects.isNull( thresholds ) )
         {
-            valueThresholds = Collections.emptySet();
+            thresholds = Collections.emptySet();
         }
         else
         {
             // Immutable copy, preserving insertion order
-            valueThresholds = Collections.unmodifiableSet( new LinkedHashSet<>( valueThresholds ) );
+            thresholds = Collections.unmodifiableSet( new LinkedHashSet<>( thresholds ) );
         }
 
         if ( Objects.isNull( classifierThresholds ) )

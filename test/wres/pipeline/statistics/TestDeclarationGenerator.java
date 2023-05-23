@@ -94,7 +94,7 @@ class TestDeclarationGenerator
                                                                         .referenceDates( referenceDates )
                                                                         .referenceDatePools( referenceTimePools )
                                                                         .unit( "CFS" )
-                                                                        .valueThresholds( thresholds )
+                                                                        .thresholds( thresholds )
                                                                         .ensembleAverageType( Pool.EnsembleAverageType.MEAN )
                                                                         .minimumSampleSize( 0 )
                                                                         .metrics( Set.of() ) // All valid
@@ -233,7 +233,7 @@ class TestDeclarationGenerator
                                                                         .unit( "CMS" )
                                                                         .minimumSampleSize( 0 )
                                                                         .metrics( metrics )
-                                                                        .valueThresholds( valueThresholds )
+                                                                        .thresholds( valueThresholds )
                                                                         .build();
         return DeclarationInterpolator.interpolate( declaration );
     }
@@ -281,7 +281,7 @@ class TestDeclarationGenerator
                                                                         .unit( "CMS" )
                                                                         .minimumSampleSize( 0 )
                                                                         .metrics( Set.of() )
-                                                                        .valueThresholds( valueThresholds )
+                                                                        .thresholds( valueThresholds )
                                                                         .build();
         return DeclarationInterpolator.interpolate( declaration );
     }
@@ -392,7 +392,7 @@ class TestDeclarationGenerator
 
         EvaluationDeclaration ensembleDeclaration = EvaluationDeclarationBuilder.builder( declaration )
                                                                                 .metrics( Set.of() ) // All valid
-                                                                                .valueThresholds( thresholds )
+                                                                                .thresholds( thresholds )
                                                                                 .build();
 
         return DeclarationInterpolator.interpolate( ensembleDeclaration );
@@ -416,7 +416,7 @@ class TestDeclarationGenerator
                                       new Metric( MetricConstants.ROOT_MEAN_SQUARE_ERROR, null ) );
 
         EvaluationDeclaration evaluationDeclaration = EvaluationDeclarationBuilder.builder( declaration )
-                                                                                  .valueThresholds( Set.of() )
+                                                                                  .thresholds( Set.of() )
                                                                                   .metrics( metrics )
                                                                                   .build();
 
@@ -492,7 +492,7 @@ class TestDeclarationGenerator
         thresholds.add( fiveOuter );
 
         EvaluationDeclaration ensembleDecaration = EvaluationDeclarationBuilder.builder( declaration )
-                                                                               .valueThresholds( Set.of() )
+                                                                               .thresholds( Set.of() )
                                                                                .probabilityThresholds( thresholds )
                                                                                .metrics( metrics )
                                                                                .build();
@@ -597,7 +597,7 @@ class TestDeclarationGenerator
                 EvaluationDeclarationBuilder.builder( declaration )
                                             .referenceDatePools( null )
                                             .metrics( metrics )
-                                            .valueThresholds( valueThresholds )
+                                            .thresholds( valueThresholds )
                                             .classifierThresholds( probabilityThresholds )
                                             .build();
 

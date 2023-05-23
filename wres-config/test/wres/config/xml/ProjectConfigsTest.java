@@ -28,6 +28,7 @@ import wres.config.xml.generated.ProjectConfig;
 import wres.config.xml.generated.ProjectConfig.Inputs;
 import wres.config.xml.ProjectConfigs;
 
+@Deprecated( since = "6.14", forRemoval = true )
 public class ProjectConfigsTest
 {
     /**

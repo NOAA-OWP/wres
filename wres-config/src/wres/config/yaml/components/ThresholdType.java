@@ -12,7 +12,7 @@ public enum ThresholdType
     @JsonProperty( "probability" ) PROBABILITY( "probability" ),
     /** Probability classifier threshold. */
     @JsonProperty( "classifier" ) PROBABILITY_CLASSIFIER( "classifier" ),
-    /** Value threshold. */
+    /** Ordinary value threshold in real units. */
     @JsonProperty( "value" ) VALUE( "value" ),
     /** Quantile threshold, used internally. */
     QUANTILE( "quantile" );

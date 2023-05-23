@@ -29,6 +29,7 @@ import wres.config.xml.generated.ProjectConfig;
 import wres.config.xml.generated.ProjectConfig.Inputs;
 import wres.config.xml.generated.ProjectConfig.Outputs;
 
+@Deprecated( since = "6.14", forRemoval = true )
 class ValidationTest
 {
     private static final String FOO_TEST_PROJECT = "foo test project";

@@ -3,7 +3,6 @@ package wres.system;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
 
@@ -47,7 +46,6 @@ public class SystemSettings extends XMLReader
     private Integer maximumArchiveThreads = null;
     private int maximumWebClientThreads = 3;
     private int maximumNwmIngestThreads = 6;
-    private Path dataDirectory = Paths.get( System.getProperty( "user.dir" ) );
     private int maximumPoolThreads = 6;
     private int maximumThresholdThreads = 1;
     private int maximumMetricThreads = 1;
@@ -212,15 +210,6 @@ public class SystemSettings extends XMLReader
     }
 
     /**
-     * @return The (file) source directory prefix to use when loading source
-     * files that are not absolute
-     */
-    public Path getDataDirectory()
-    {
-        return this.dataDirectory;
-    }
-
-    /**
      * @return the connection pool size
      */
     public int getDatabaseMaximumPoolSize()
@@ -362,8 +351,6 @@ public class SystemSettings extends XMLReader
                          this.maximumWebClientThreads )
                 .append( "maximumNwmIngestThreads",
                          this.maximumNwmIngestThreads )
-                .append( "dataDirectory",
-                         this.dataDirectory )
                 .append( "maximumPoolThreads",
                          this.maximumPoolThreads )
                 .append( "maximumThresholdThreads",
@@ -462,9 +449,6 @@ public class SystemSettings extends XMLReader
                         break;
                     case "hard_netcdf_cache_limit":
                         this.setHardNetcdfCacheLimit( reader );
-                        break;
-                    case "data_directory":
-                        this.setDataDirectory( reader );
                         break;
                     case "maximum_pool_threads":
                         this.setMaximumPoolThreads( reader );
@@ -733,17 +717,6 @@ public class SystemSettings extends XMLReader
         if ( SystemSettings.isValidPathFormat( path ) )
         {
             this.netcdfStorePath = path;
-        }
-    }
-
-    private void setDataDirectory( XMLStreamReader reader )
-            throws XMLStreamException
-    {
-        String dir = XMLHelper.getXMLText( reader );
-
-        if ( SystemSettings.isValidPathFormat( dir ) )
-        {
-            this.dataDirectory = Paths.get( dir );
         }
     }
 
@@ -1032,19 +1005,6 @@ public class SystemSettings extends XMLReader
         if ( storePath != null )
         {
             this.netcdfStorePath = storePath;
-        }
-
-        String directory = System.getProperty( "wres.dataDirectory" );
-
-        if ( SystemSettings.isValidPathFormat( directory ) )
-        {
-            this.dataDirectory = Paths.get( directory );
-        }
-        else
-        {
-            LOGGER.debug( "'{}' is not a valid path for wres.dataDirectory. Falling back to {}.",
-                          directory,
-                          this.dataDirectory );
         }
 
         String maxPoolThreads = System.getProperty( "wres.maximumPoolThreads" );

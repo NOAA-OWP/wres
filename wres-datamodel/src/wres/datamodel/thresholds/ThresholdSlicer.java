@@ -602,7 +602,7 @@ public class ThresholdSlicer
 
                 if ( Objects.nonNull( nextParameters ) )
                 {
-                    ThresholdSlicer.addThresholds( nextParameters.valueThresholds(),
+                    ThresholdSlicer.addThresholds( nextParameters.thresholds(),
                                                    ThresholdType.VALUE,
                                                    thresholds,
                                                    features );

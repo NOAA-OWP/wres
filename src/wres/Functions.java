@@ -6,7 +6,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,6 +31,7 @@ import wres.config.xml.ProjectConfigPlus;
 import wres.config.xml.ProjectConfigs;
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationFactory;
+import wres.config.yaml.DeclarationMigrator;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.io.database.caching.DatabaseCaches;
@@ -205,6 +205,14 @@ final class Functions
                                          "Migrates a project declaration from XML (old-style) to YAML "
                                          + "(new style). Example usage: migrate /foo/bar/project_config.xml", true ),
                        Functions::migrate );
+        functions.put( new WresFunction( "-mi",
+                                         "migrateinline",
+                                         "Migrates a project declaration from XML (old-style) to YAML "
+                                         + "(new style). In addition, if the declaration references any external "
+                                         + "sources of CSV thresholds, these will be migrated inline to the "
+                                         + "declaration. Example usage: migrateinline /foo/bar/project_config.xml",
+                                         true ),
+                       Functions::migrateInline );
         functions.put( new WresFunction( "-r", "refreshdatabase", "Refreshes the database.", false ),
                        Functions::refreshDatabase );
         functions.put( new WresFunction( "-v",
@@ -553,6 +561,30 @@ final class Functions
 
     private static ExecutionResult migrate( SharedResources sharedResources )
     {
+        return Functions.migrate( sharedResources, false );
+    }
+
+    /**
+     * Migrates an old-style XML declaration to a new-style YAML declaration. If the declaration includes any external
+     * sources of CSV thresholds, they will be migrated inline to the declaration.
+     * @param sharedResources the shared resources
+     * @return the execution result
+     */
+
+    private static ExecutionResult migrateInline( SharedResources sharedResources )
+    {
+        return Functions.migrate( sharedResources, true );
+    }
+
+    /**
+     * Migrates an old-style XML declaration to a new-style YAML declaration.
+     * @param sharedResources the shared resources
+     * @param inlineThresholds is true to migrate any external CSV thresholds inline to the declaration
+     * @return the execution result
+     */
+
+    private static ExecutionResult migrate( SharedResources sharedResources, boolean inlineThresholds )
+    {
         List<String> args = sharedResources.arguments();
 
         if ( !args.isEmpty() )
@@ -563,7 +595,7 @@ final class Functions
             {
                 ProjectConfigPlus projectConfigPlus = ProjectConfigs.readDeclaration( evaluationConfigArgument );
                 EvaluationDeclaration newDeclaration =
-                        DeclarationFactory.from( projectConfigPlus.getProjectConfig() );
+                        DeclarationMigrator.from( projectConfigPlus.getProjectConfig(), inlineThresholds );
                 LOGGER.debug( "Migrated the supplied declaration to: {}.", newDeclaration );
                 String yaml = DeclarationFactory.from( newDeclaration );
                 String announce = "Here is your migrated declaration:";

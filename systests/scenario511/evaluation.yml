@@ -36,7 +36,7 @@ time_scale:
   function: mean
   period: 6
   unit: hours
-value_thresholds:
+thresholds:
   - name: ACTION
     values:
       - { value: 400.0, feature: FAKE2 }

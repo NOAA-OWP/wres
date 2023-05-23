@@ -26,7 +26,7 @@ time_scale:
   function: maximum
   period: 96
   unit: hours
-value_thresholds:
+thresholds:
   - name: ACTION
     values:
       - value: 8.0

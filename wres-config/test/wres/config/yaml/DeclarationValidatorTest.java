@@ -41,8 +41,8 @@ import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.SpatialMask;
 import wres.config.yaml.components.ThresholdBuilder;
-import wres.config.yaml.components.ThresholdService;
-import wres.config.yaml.components.ThresholdServiceBuilder;
+import wres.config.yaml.components.ThresholdSource;
+import wres.config.yaml.components.ThresholdSourceBuilder;
 import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimePools;
@@ -958,11 +958,11 @@ class DeclarationValidatorTest
     @Test
     void testInvalidThresholdServiceDeclarationResultsInErrors()
     {
-        ThresholdService service
-                = ThresholdServiceBuilder.builder()
-                                         .uri( URI.create( "http://foo" ) )
-                                         .featureNameFrom( DatasetOrientation.BASELINE )
-                                         .build();
+        ThresholdSource service
+                = ThresholdSourceBuilder.builder()
+                                        .uri( URI.create( "http://foo" ) )
+                                        .featureNameFrom( DatasetOrientation.BASELINE )
+                                        .build();
 
         // No baseline feature = first error
         Set<GeometryTuple> geometries = Set.of( GeometryTuple.newBuilder()
@@ -975,7 +975,7 @@ class DeclarationValidatorTest
                                                                         .right( this.defaultDataset )
                                                                         // No baseline = second error
                                                                         .features( features )
-                                                                        .thresholdService( service )
+                                                                        .thresholdSources( Set.of( service ) )
                                                                         .build();
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
@@ -1127,7 +1127,7 @@ class DeclarationValidatorTest
     }
 
     @Test
-    void testThresholdServiceAllowsForValidationWithoutErrorWhenMetricsRequireValueThresholds()
+    void testThresholdServiceAllowsForValidationWithoutErrorWhenMetricsRequirethresholds()
     {
         Metric first =
                 MetricBuilder.builder()
@@ -1135,14 +1135,14 @@ class DeclarationValidatorTest
                              .build();
 
         Set<Metric> metrics = Set.of( first );
-        ThresholdService service = ThresholdServiceBuilder.builder()
-                                                          .uri( URI.create( "http://foo.bar" ) )
-                                                          .build();
+        ThresholdSource service = ThresholdSourceBuilder.builder()
+                                                        .uri( URI.create( "http://foo.bar" ) )
+                                                        .build();
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
                                             .left( this.defaultDataset )
                                             .right( this.defaultDataset )
-                                            .thresholdService( service )
+                                            .thresholdSources( Set.of( service ) )
                                             .metrics( metrics )
                                             .build();
 
@@ -1226,10 +1226,10 @@ class DeclarationValidatorTest
                                             .left( this.defaultDataset )
                                             .right( this.defaultDataset )
                                             .features( new Features( features ) )
-                                            .valueThresholds( Set.of( wrappedOne,
-                                                                      wrappedTwo,
-                                                                      wrappedThree,
-                                                                      wrappedFour ) )
+                                            .thresholds( Set.of( wrappedOne,
+                                                                 wrappedTwo,
+                                                                 wrappedThree,
+                                                                 wrappedFour ) )
                                             .build();
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
@@ -1262,7 +1262,7 @@ class DeclarationValidatorTest
                 EvaluationDeclarationBuilder.builder()
                                             .left( this.defaultDataset )
                                             .right( this.defaultDataset )
-                                            .valueThresholds( Set.of( wrappedOne ) )
+                                            .thresholds( Set.of( wrappedOne ) )
                                             .build();
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
@@ -1277,15 +1277,15 @@ class DeclarationValidatorTest
     void testWrdsServicesWithoutDataTypeProducesWarnings()
     {
         Dataset left = DatasetBuilder.builder()
-                                        .sources( List.of( SourceBuilder.builder()
-                                                                        .sourceInterface( SourceInterface.WRDS_AHPS )
-                                                                        .build()) )
-                                        .build();
-        Dataset right = DatasetBuilder.builder()
                                      .sources( List.of( SourceBuilder.builder()
-                                                                     .sourceInterface( SourceInterface.WRDS_NWM )
-                                                                     .build()) )
+                                                                     .sourceInterface( SourceInterface.WRDS_AHPS )
+                                                                     .build() ) )
                                      .build();
+        Dataset right = DatasetBuilder.builder()
+                                      .sources( List.of( SourceBuilder.builder()
+                                                                      .sourceInterface( SourceInterface.WRDS_NWM )
+                                                                      .build() ) )
+                                      .build();
 
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()

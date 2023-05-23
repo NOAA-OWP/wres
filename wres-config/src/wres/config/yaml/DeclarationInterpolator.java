@@ -1,5 +1,8 @@
 package wres.config.yaml;
 
+import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,6 +43,8 @@ import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.Threshold;
 import wres.config.yaml.components.ThresholdBuilder;
+import wres.config.yaml.components.ThresholdSource;
+import wres.config.yaml.components.ThresholdSourceBuilder;
 import wres.config.yaml.components.ThresholdType;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
@@ -140,6 +145,9 @@ public class DeclarationInterpolator
     {
         EvaluationDeclarationBuilder adjustedDeclarationBuilder = EvaluationDeclarationBuilder.builder( declaration );
 
+        // Interpolate any absolute paths from paths relative to the default data directory. The UriDeserializer
+        // performs basic disambiguation only and does not interpolate absolute paths
+        DeclarationInterpolator.interpolateUris( adjustedDeclarationBuilder );
         // Interpolate the time zone offsets for individual sources when supplied for the overall dataset
         DeclarationInterpolator.interpolateTimeZoneOffsets( adjustedDeclarationBuilder );
         // Interpolate the feature authorities
@@ -299,6 +307,37 @@ public class DeclarationInterpolator
         }
 
         return Collections.unmodifiableSet( sparseFeatures );
+    }
+
+    /**
+     * Associates the specified thresholds with the appropriate metrics and adds an "all data" threshold to each
+     * continuous metric.
+     *
+     * @param thresholdsByType the mapped thresholds
+     * @param addAllData is true to add an all data threshold where appropriate, false otherwise
+     * @param builder the builder to mutate
+     */
+
+    static void addThresholdsToMetrics( Map<wres.config.yaml.components.ThresholdType, Set<Threshold>> thresholdsByType,
+                                        EvaluationDeclarationBuilder builder,
+                                        boolean addAllData )
+    {
+        Set<Metric> metrics = builder.metrics();
+        Set<Metric> adjustedMetrics = new LinkedHashSet<>( metrics.size() );
+
+        LOGGER.debug( "Discovered these metrics whose thresholds will be adjusted: {}.", metrics );
+
+        // Adjust the metrics
+        for ( Metric next : metrics )
+        {
+            Metric adjustedMetric = DeclarationInterpolator.addThresholdsToMetric( thresholdsByType,
+                                                                                   next,
+                                                                                   builder,
+                                                                                   addAllData );
+            adjustedMetrics.add( adjustedMetric );
+        }
+
+        builder.metrics( adjustedMetrics );
     }
 
     /**
@@ -492,7 +531,7 @@ public class DeclarationInterpolator
                 metrics.addAll( ensemble );
 
                 // Probability or value thresholds? Then add discrete probability metrics and dichotomous metrics
-                if ( !builder.probabilityThresholds().isEmpty() || !builder.valueThresholds().isEmpty() )
+                if ( !builder.probabilityThresholds().isEmpty() || !builder.thresholds().isEmpty() )
                 {
                     Set<MetricConstants> discreteProbability =
                             MetricConstants.SampleDataGroup.DISCRETE_PROBABILITY.getMetrics();
@@ -508,7 +547,7 @@ public class DeclarationInterpolator
                 metrics.addAll( singleValued );
 
                 // Probability or value thresholds? Then add dichotomous metrics
-                if ( !builder.probabilityThresholds().isEmpty() || !builder.valueThresholds().isEmpty() )
+                if ( !builder.probabilityThresholds().isEmpty() || !builder.thresholds().isEmpty() )
                 {
                     Set<MetricConstants> dichotomous = MetricConstants.SampleDataGroup.DICHOTOMOUS.getMetrics();
                     metrics.addAll( dichotomous );
@@ -801,9 +840,9 @@ public class DeclarationInterpolator
             String unit = builder.unit();
 
             // Value thresholds
-            Set<Threshold> valueThresholds = builder.valueThresholds();
+            Set<Threshold> valueThresholds = builder.thresholds();
             valueThresholds = DeclarationInterpolator.addUnitToValueThresholds( valueThresholds, unit );
-            builder.valueThresholds( valueThresholds );
+            builder.thresholds( valueThresholds );
 
             // Threshold sets
             Set<Threshold> thresholdSets = builder.thresholdSets();
@@ -817,14 +856,14 @@ public class DeclarationInterpolator
             {
                 // Adjust?
                 if ( Objects.nonNull( next.parameters() ) && !next.parameters()
-                                                                  .valueThresholds()
+                                                                  .thresholds()
                                                                   .isEmpty() )
                 {
                     Set<Threshold> adjusted = next.parameters()
-                                                  .valueThresholds();
+                                                  .thresholds();
                     adjusted = DeclarationInterpolator.addUnitToValueThresholds( adjusted, unit );
                     MetricParameters adjustedParameters = MetricParametersBuilder.builder( next.parameters() )
-                                                                                 .valueThresholds( adjusted )
+                                                                                 .thresholds( adjusted )
                                                                                  .build();
                     Metric adjustedMetric = MetricBuilder.builder( next )
                                                          .parameters( adjustedParameters )
@@ -855,7 +894,7 @@ public class DeclarationInterpolator
         // Assemble the thresholds for each type
         Set<Threshold> allThresholds = new LinkedHashSet<>();
         allThresholds.addAll( builder.probabilityThresholds() );
-        allThresholds.addAll( builder.valueThresholds() );
+        allThresholds.addAll( builder.thresholds() );
         allThresholds.addAll( builder.classifierThresholds() );
         allThresholds.addAll( builder.thresholdSets() );
 
@@ -865,7 +904,7 @@ public class DeclarationInterpolator
         LOGGER.debug( "When interpolating thresholds for metrics, discovered the following thresholds to use: {}.",
                       thresholdsByType );
 
-        DeclarationInterpolator.addThresholdsToMetrics( thresholdsByType, builder );
+        DeclarationInterpolator.addThresholdsToMetrics( thresholdsByType, builder, true );
     }
 
     /**
@@ -935,34 +974,6 @@ public class DeclarationInterpolator
                                                     .setCsv2( Formats.CSV2_FORMAT );
             builder.formats( new Formats( formatsBuilder.build() ) );
         }
-    }
-
-    /**
-     * Associates the specified thresholds with the appropriate metrics and adds an "all data" threshold to each
-     * continuous metric.
-     *
-     * @param thresholdsByType the mapped thresholds
-     * @param builder the builder to mutate
-     */
-
-    private static void addThresholdsToMetrics( Map<wres.config.yaml.components.ThresholdType, Set<Threshold>> thresholdsByType,
-                                                EvaluationDeclarationBuilder builder )
-    {
-        Set<Metric> metrics = builder.metrics();
-        Set<Metric> adjustedMetrics = new LinkedHashSet<>( metrics.size() );
-
-        LOGGER.debug( "Discovered these metrics whose thresholds will be adjusted: {}.", metrics );
-
-        // Adjust the metrics
-        for ( Metric next : metrics )
-        {
-            Metric adjustedMetric = DeclarationInterpolator.addThresholdsToMetric( thresholdsByType,
-                                                                                   next,
-                                                                                   builder );
-            adjustedMetrics.add( adjustedMetric );
-        }
-
-        builder.metrics( adjustedMetrics );
     }
 
     /**
@@ -1045,6 +1056,111 @@ public class DeclarationInterpolator
         events.addAll( baseTypes );
 
         return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Interpolates all URIs, resolving relative paths where needed.
+     *
+     * @param builder the declaration builder
+     */
+
+    private static void interpolateUris( EvaluationDeclarationBuilder builder )
+    {
+        Dataset adjustedLeft = DeclarationInterpolator.interpolateUris( builder.left() );
+        Dataset adjustedRight = DeclarationInterpolator.interpolateUris( builder.right() );
+
+        // Adjust the left and right
+        builder.left( adjustedLeft )
+               .right( adjustedRight );
+
+        // Baseline?
+        if ( Objects.nonNull( builder.baseline() ) )
+        {
+            Dataset adjustedBaselineDataset = DeclarationInterpolator.interpolateUris( builder.baseline()
+                                                                                              .dataset() );
+            BaselineDataset adjustedBaseline = BaselineDatasetBuilder.builder( builder.baseline() )
+                                                                     .dataset( adjustedBaselineDataset )
+                                                                     .build();
+            // Adjust the baseline
+            builder.baseline( adjustedBaseline );
+        }
+
+        // Adjust any threshold sources
+        Set<ThresholdSource> thresholdSources = builder.thresholdSources();
+        Set<ThresholdSource> adjustedThresholdSources = new HashSet<>();
+        for ( ThresholdSource nextSource : thresholdSources )
+        {
+            URI adjustedUri = DeclarationInterpolator.interpolateUri( nextSource.uri() );
+            ThresholdSource adjustedSource = ThresholdSourceBuilder.builder( nextSource )
+                                                                   .uri( adjustedUri )
+                                                                   .build();
+            adjustedThresholdSources.add( adjustedSource );
+        }
+        builder.thresholdSources( adjustedThresholdSources );
+    }
+
+    /**
+     * Interpolates all URIs, resolving relative paths where needed.
+     *
+     * @param dataset the dataset whose source URIs should be interpolated
+     * @return the dataset with interpolated URIs
+     */
+
+    private static Dataset interpolateUris( Dataset dataset )
+    {
+        List<Source> sources = dataset.sources();
+        List<Source> adjusted = new ArrayList<>();
+        for ( Source next : sources )
+        {
+            URI adjustedUri = DeclarationInterpolator.interpolateUri( next.uri() );
+            Source nextAdjusted = SourceBuilder.builder( next )
+                                               .uri( adjustedUri )
+                                               .build();
+            adjusted.add( nextAdjusted );
+        }
+
+        return DatasetBuilder.builder( dataset )
+                             .sources( adjusted )
+                             .build();
+    }
+
+    /**
+     * Interpolates a URI, adding a file scheme where needed, resolving relative paths and performing any
+     * platform-dependent disambiguation.
+     * @param uri the URI
+     * @return the adjusted URI
+     */
+
+    private static URI interpolateUri( URI uri )
+    {
+        // Web-like URI? If so, return as-is
+        if ( Objects.isNull( uri ) )
+        {
+            LOGGER.debug( "Not adjusting null URI." );
+            return null;
+        }
+
+        if ( !uri.isAbsolute() )
+        {
+            // Look for a data directory override first
+            String dataDirectory = System.getProperty( "wres.dataDirectory" );
+            if ( Objects.isNull( dataDirectory ) )
+            {
+                dataDirectory = System.getProperty( "user.dir" );
+                LOGGER.debug( "Failed to discover a system property 'wres.dataDirectory': using the 'user.dir' as the "
+                              + "default data directory, which is: {}", dataDirectory );
+            }
+
+            Path dataDirectoryPath = Paths.get( dataDirectory );
+            URI absolute = dataDirectoryPath.resolve( uri.getPath() )
+                                            .toUri();
+
+            LOGGER.debug( "Adjusted a relative path of {} to an absolute path of {}.", uri, absolute );
+
+            uri = absolute;
+        }
+
+        return uri;
     }
 
     /**
@@ -1201,12 +1317,14 @@ public class DeclarationInterpolator
      * @param thresholdsByType the mapped thresholds
      * @param metric the metric
      * @param builder the builder
+     * @param addAllData is true to add an all data threshold where appropriate, false otherwise
      * @return the adjusted metric
      */
 
     private static Metric addThresholdsToMetric( Map<wres.config.yaml.components.ThresholdType, Set<Threshold>> thresholdsByType,
                                                  Metric metric,
-                                                 EvaluationDeclarationBuilder builder )
+                                                 EvaluationDeclarationBuilder builder,
+                                                 boolean addAllData )
     {
         MetricConstants name = metric.name();
 
@@ -1226,10 +1344,10 @@ public class DeclarationInterpolator
                 thresholdsByType.get( ThresholdType.VALUE );
         Set<Threshold> valueThresholds =
                 DeclarationInterpolator.getCombinedThresholds( valByType,
-                                                               parametersBuilder.valueThresholds() );
+                                                               parametersBuilder.thresholds() );
 
         // Add "all data" thresholds?
-        if ( name.isContinuous() )
+        if ( name.isContinuous() && addAllData )
         {
             valueThresholds.add( ALL_DATA_THRESHOLD );
         }
@@ -1238,7 +1356,7 @@ public class DeclarationInterpolator
         valueThresholds = DeclarationInterpolator.getFeatureFulThresholds( valueThresholds, builder );
 
         // Set them
-        parametersBuilder.valueThresholds( valueThresholds );
+        parametersBuilder.thresholds( valueThresholds );
 
         // Probability thresholds
         Set<Threshold> probByType =

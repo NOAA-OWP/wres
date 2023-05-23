@@ -37,7 +37,7 @@ import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.SpatialMask;
 import wres.config.yaml.components.Threshold;
-import wres.config.yaml.components.ThresholdService;
+import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimePools;
@@ -237,8 +237,8 @@ public class DeclarationValidator
         // Check that the metrics declaration is valid
         List<EvaluationStatusEvent> metrics = DeclarationValidator.metricsAreValid( declaration );
         events.addAll( metrics );
-        // Check that the threshold service declaration is valid
-        List<EvaluationStatusEvent> thresholdService = DeclarationValidator.thresholdServiceIsValid( declaration );
+        // Check that the threshold sources are valid
+        List<EvaluationStatusEvent> thresholdService = DeclarationValidator.thresholdSourcesAreValid( declaration );
         events.addAll( thresholdService );
         // Check that the output formats declaration is valid
         List<EvaluationStatusEvent> outputs = DeclarationValidator.outputFormatsAreValid( declaration );
@@ -523,26 +523,11 @@ public class DeclarationValidator
     {
         Set<Threshold> thresholds = DeclarationUtilities.getThresholds( declaration );
 
-        if ( thresholdType == ThresholdType.PROBABILITY )
-        {
-            return thresholds.stream()
-                             .anyMatch( n -> n.type() == ThresholdType.PROBABILITY );
-        }
-        else if ( thresholdType == ThresholdType.PROBABILITY_CLASSIFIER )
-        {
-            return thresholds.stream()
-                             .anyMatch( n -> n.type() == ThresholdType.PROBABILITY_CLASSIFIER );
-        }
-        else if ( thresholdType == ThresholdType.VALUE )
-        {
-            return Objects.nonNull( declaration.thresholdService() )
-                   || thresholds.stream()
-                                .anyMatch( n -> n.type() == ThresholdType.VALUE );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Unrecognized threshold type: " + thresholdType + "." );
-        }
+        return declaration.thresholdSources()
+                          .stream()
+                          .anyMatch( n -> n.type() == thresholdType )
+               || thresholds.stream()
+                            .anyMatch( n -> n.type() == thresholdType );
     }
 
     /**
@@ -1154,26 +1139,49 @@ public class DeclarationValidator
     }
 
     /**
-     * Checks that the threshold service declaration is valid.
-     * @param declaration the evaluation declaration
+     * Checks that the threshold source declaration is valid.
+     * @param declaration the declaration
      * @return the validation events encountered
      */
-    private static List<EvaluationStatusEvent> thresholdServiceIsValid( EvaluationDeclaration declaration )
+    private static List<EvaluationStatusEvent> thresholdSourcesAreValid( EvaluationDeclaration declaration )
     {
-        ThresholdService service = declaration.thresholdService();
-
-        if ( Objects.isNull( service ) )
+        if ( !declaration.thresholdSources().isEmpty() )
         {
-            LOGGER.debug( "There is no threshold service declaration to validate." );
+            Set<GeometryTuple> features = DeclarationUtilities.getFeatures( declaration );
+            boolean hasBaseline = DeclarationUtilities.hasBaseline( declaration );
+            return declaration.thresholdSources()
+                              .stream()
+                              .flatMap( n -> DeclarationValidator.thresholdSourceIsValid( n, features, hasBaseline )
+                                                                 .stream() )
+                              .toList();
+        }
+
+        return Collections.emptyList();
+    }
+
+    /**
+     * Checks that the threshold service declaration is valid.
+     * @param source the threshold source
+     * @param tuples the features
+     * @param hasBaseline whether the evaluation has a baseline dataset
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> thresholdSourceIsValid( ThresholdSource source,
+                                                                       Set<GeometryTuple> tuples,
+                                                                       boolean hasBaseline )
+    {
+        if ( Objects.isNull( source ) )
+        {
+            LOGGER.debug( "There is no threshold source declaration to validate." );
             return Collections.emptyList();
         }
 
-        DatasetOrientation orientation = service.featureNameFrom();
+        DatasetOrientation orientation = source.featureNameFrom();
 
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
         // If the orientation for service thresholds is 'BASELINE', then a baseline must be present
-        if ( orientation == DatasetOrientation.BASELINE && !DeclarationUtilities.hasBaseline( declaration ) )
+        if ( orientation == DatasetOrientation.BASELINE && !hasBaseline )
         {
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
@@ -1189,9 +1197,6 @@ public class DeclarationValidator
 
             events.add( event );
         }
-
-        // Assemble the features that require thresholds
-        Set<GeometryTuple> tuples = DeclarationUtilities.getFeatures( declaration );
 
         // Baseline orientation and some feature tuples present that are missing a baseline feature?
         if ( orientation == DatasetOrientation.BASELINE

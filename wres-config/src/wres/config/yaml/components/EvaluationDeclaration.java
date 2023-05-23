@@ -19,6 +19,7 @@ import wres.config.yaml.deserializers.DecimalFormatDeserializer;
 import wres.config.yaml.deserializers.DurationDeserializer;
 import wres.config.yaml.deserializers.MetricsDeserializer;
 import wres.config.yaml.deserializers.ThresholdSetsDeserializer;
+import wres.config.yaml.deserializers.ThresholdSourcesDeserializer;
 import wres.config.yaml.deserializers.ThresholdsDeserializer;
 import wres.config.yaml.serializers.ChronoUnitSerializer;
 import wres.config.yaml.serializers.DecimalFormatSerializer;
@@ -52,11 +53,11 @@ import wres.statistics.generated.Pool;
  * @param rescaleLenience whether rescaling should admit periods with missing values
  * @param pairFrequency the frequency of the paired data
  * @param crossPair whether to conduct cross-pairing of predicted and baseline datasets
+ * @param thresholds the value thresholds
  * @param probabilityThresholds the probability thresholds
- * @param valueThresholds the value thresholds
  * @param classifierThresholds the probability classifier thresholds
  * @param thresholdSets a collection of thresholds sets
- * @param thresholdService the threshold service
+ * @param thresholdSources the threshold service
  * @param ensembleAverageType the type of ensemble average to use
  * @param minimumSampleSize the minimum sample size for which metrics should be computed
  * @param season the season
@@ -93,17 +94,18 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonProperty( "cross_pair" ) CrossPair crossPair,
                                      @JsonSerialize( using = ThresholdsSerializer.class )
                                      @JsonDeserialize( using = ThresholdsDeserializer.class )
-                                     @JsonProperty( "probability_thresholds" ) Set<Threshold> probabilityThresholds,
+                                     @JsonProperty( "thresholds" ) Set<Threshold> thresholds,
                                      @JsonSerialize( using = ThresholdsSerializer.class )
                                      @JsonDeserialize( using = ThresholdsDeserializer.class )
-                                     @JsonProperty( "value_thresholds" ) Set<Threshold> valueThresholds,
+                                     @JsonProperty( "probability_thresholds" ) Set<Threshold> probabilityThresholds,
                                      @JsonSerialize( using = ThresholdsSerializer.class )
                                      @JsonDeserialize( using = ThresholdsDeserializer.class )
                                      @JsonProperty( "classifier_thresholds" ) Set<Threshold> classifierThresholds,
                                      @JsonDeserialize( using = ThresholdSetsDeserializer.class )
                                      @JsonSerialize( using = ThresholdSetsSerializer.class )
                                      @JsonProperty( "threshold_sets" ) Set<Threshold> thresholdSets,
-                                     @JsonProperty( "threshold_service" ) ThresholdService thresholdService,
+                                     @JsonDeserialize( using = ThresholdSourcesDeserializer.class )
+                                     @JsonProperty( "threshold_sources" ) Set<ThresholdSource> thresholdSources,
                                      @JsonSerialize( using = EnsembleAverageTypeSerializer.class )
                                      @JsonProperty( "ensemble_average" ) Pool.EnsembleAverageType ensembleAverageType,
                                      @JsonSerialize( using = PositiveIntegerSerializer.class )
@@ -144,11 +146,11 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
      * @param rescaleLenience whether rescaling should admit periods with missing values
      * @param pairFrequency the frequency of the paired data
      * @param crossPair whether to conduct cross-pairing of predicted and baseline datasets
+     * @param thresholds the value thresholds
      * @param probabilityThresholds the probability thresholds
-     * @param valueThresholds the value thresholds
      * @param classifierThresholds the probability classifier thresholds
      * @param thresholdSets a collection of thresholds sets
-     * @param thresholdService the threshold service
+     * @param thresholdSources the threshold service
      * @param ensembleAverageType the type of ensemble average to use
      * @param minimumSampleSize the minimum sample size for which metrics should be computed
      * @param season the season
@@ -188,14 +190,14 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
             probabilityThresholds = Collections.unmodifiableSet( new LinkedHashSet<>( probabilityThresholds ) );
         }
 
-        if ( Objects.isNull( valueThresholds ) )
+        if ( Objects.isNull( thresholds ) )
         {
-            valueThresholds = Collections.emptySet();
+            thresholds = Collections.emptySet();
         }
         else
         {
             // Immutable copy, preserving insertion order
-            valueThresholds = Collections.unmodifiableSet( new LinkedHashSet<>( valueThresholds ) );
+            thresholds = Collections.unmodifiableSet( new LinkedHashSet<>( thresholds ) );
         }
 
         if ( Objects.isNull( classifierThresholds ) )
@@ -226,6 +228,11 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
         if ( Objects.isNull( minimumSampleSize ) )
         {
             minimumSampleSize = 0;
+        }
+
+        if( Objects.isNull( thresholdSources ) )
+        {
+            thresholdSources = Collections.emptySet();
         }
     }
 }

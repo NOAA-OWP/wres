@@ -39,8 +39,12 @@ import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.SourceInterface;
+import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.TimeInterval;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
@@ -53,7 +57,7 @@ import wres.datamodel.units.UnitMapper;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.DataSource.DataDisposition;
 import wres.io.reading.wrds.geography.FeatureFiller;
-import wres.io.reading.wrds.thresholds.ThresholdFiller;
+import wres.statistics.generated.GeometryTuple;
 import wres.system.SSLStuffThatTrustsOneCertificate;
 
 /**
@@ -89,7 +93,9 @@ public class ReaderUtilities
     {
         Objects.requireNonNull( declaration );
 
-        // Currently, there is only one feature service supported
+        // Currently, there is only one feature service supported. If others are supported in the future, consider
+        // separating the reading and filling concerns by adding a reading API and abstracting the filling to a helper
+        // in DeclarationUtilities, similar to the approach used for thresholds
         return FeatureFiller.fillFeatures( declaration );
     }
 
@@ -110,8 +116,16 @@ public class ReaderUtilities
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( unitMapper );
 
-        // Currently, there is only one threshold service supported
-        return ThresholdFiller.fillThresholds( declaration, unitMapper );
+        EvaluationDeclaration adjusted = declaration;
+
+        // Adjust the declaration iteratively, once for each source
+        for ( ThresholdSource nextSource : declaration.thresholdSources() )
+        {
+            adjusted = ReaderUtilities.fillThresholds( nextSource, adjusted, unitMapper );
+        }
+
+        // Remove any features for which there are no thresholds
+        return DeclarationUtilities.removeFeaturesWithoutThresholds( adjusted );
     }
 
     /**
@@ -522,9 +536,9 @@ public class ReaderUtilities
     public static boolean isWebSource( URI uri )
     {
         return Objects.nonNull( uri.getScheme() )
-        && uri.getScheme()
-              .toLowerCase()
-              .startsWith( "http" );
+               && uri.getScheme()
+                     .toLowerCase()
+                     .startsWith( "http" );
     }
 
     /**
@@ -815,6 +829,101 @@ public class ReaderUtilities
         LOGGER.debug( "Delaying retrieval of chunk until more tasks have been submitted." );
 
         return List.of();
+    }
+
+    /**
+     * Attempts to acquire thresholds from WRDS and populate them in the supplied declaration, as needed.
+     * @param thresholdSource the threshold source
+     * @param evaluation the declaration to adjust
+     * @param unitMapper a unit mapper to map the threshold values to correct units
+     * @return the adjusted declaration, including any thresholds acquired from WRDS
+     */
+    private static EvaluationDeclaration fillThresholds( ThresholdSource thresholdSource,
+                                                         EvaluationDeclaration evaluation,
+                                                         UnitMapper unitMapper )
+    {
+        Objects.requireNonNull( evaluation );
+        Objects.requireNonNull( unitMapper );
+        Objects.requireNonNull( thresholdSource );
+
+        if( Objects.isNull( thresholdSource.uri() ) )
+        {
+            throw new ThresholdReadingException( "Cannot read from a threshold source with a missing URI. Please "
+                                                 + "add a URI for each threshold source that should be read." );
+        }
+
+        // Acquire the feature names for which thresholds are required
+        DatasetOrientation orientation = thresholdSource.featureNameFrom();
+
+        if ( Objects.isNull( orientation ) )
+        {
+            throw new ThresholdReadingException( "The 'feature_name_from' is missing from the 'threshold_service' "
+                                                 + "declaration, which is not allowed because the feature service "
+                                                 + "request must use feature names with a prescribed feature "
+                                                 + "authority." );
+        }
+
+        // If the orientation for service thresholds is 'BASELINE', then a baseline must be present
+        if ( orientation == DatasetOrientation.BASELINE && !DeclarationUtilities.hasBaseline( evaluation ) )
+        {
+            throw new ThresholdReadingException( "The 'threshold_service' declaration requested that feature names "
+                                                 + "with an orientation of '"
+                                                 + DatasetOrientation.BASELINE
+                                                 + "' are used to correlate features with thresholds, but no "
+                                                 + "'baseline' dataset was discovered. Please add a 'baseline' dataset "
+                                                 + "or fix the 'feature_name_from' in the 'threshold_service' "
+                                                 + "declaration." );
+        }
+
+        // Assemble the features that require thresholds
+        Set<GeometryTuple> features = DeclarationUtilities.getFeatures( evaluation );
+
+        // No features?
+        if ( features.isEmpty() )
+        {
+            throw new ThresholdReadingException( "While attempting to read thresholds from the WRDS feature service, "
+                                                 + "discovered no features in the declaration for which thresholds "
+                                                 + "could be acquired. Please add some features to the declaration "
+                                                 + "using 'features', 'feature_groups' or 'feature_service' and try "
+                                                 + "again." );
+        }
+
+        // Get the feature authority for this data orientation
+        FeatureAuthority featureAuthority = DeclarationUtilities.getFeatureAuthorityFor( evaluation, orientation );
+
+        // Baseline orientation and some feature tuples present that are missing a baseline feature?
+        if ( orientation == DatasetOrientation.BASELINE
+             && features.stream()
+                        .anyMatch( next -> !next.hasBaseline() ) )
+        {
+            throw new ThresholdReadingException( "Discovered declaration for a 'threshold_service', which requests "
+                                                 + "thresholds whose feature names have an orientation of '"
+                                                 + DatasetOrientation.BASELINE
+                                                 + "'. However, some features were discovered with a missing '"
+                                                 + DatasetOrientation.BASELINE
+                                                 + "' feature name. Please fix the 'feature_name_from' in the "
+                                                 + "'threshold_service' declaration or supply fully composed feature "
+                                                 + "tuples with an appropriate feature for the '"
+                                                 + DatasetOrientation.BASELINE
+                                                 + "' dataset." );
+        }
+
+        // Acquire a threshold reader
+        ThresholdReader reader = ThresholdReaderFactory.getReader( thresholdSource );
+
+        // Get the adjusted feature names mapped to the original names
+        Set<String> featureNames = DeclarationUtilities.getFeatureNamesFor( features, orientation );
+
+        // Continue to read the thresholds
+        Set<wres.config.yaml.components.Threshold> thresholds = reader.read( thresholdSource,
+                                                                             unitMapper,
+                                                                             featureNames,
+                                                                             featureAuthority );
+
+        LOGGER.trace( "Read the following thresholds from {}: {}.", thresholdSource.uri(), thresholds );
+
+        // Adjust the declaration and return it
+        return DeclarationUtilities.addThresholds( evaluation, thresholds );
     }
 
     /**

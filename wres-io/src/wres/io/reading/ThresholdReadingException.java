@@ -1,4 +1,4 @@
-package wres.io.reading.wrds.thresholds;
+package wres.io.reading;
 
 import java.io.Serial;
 
@@ -8,7 +8,7 @@ import java.io.Serial;
  * @author James Brown
  */
 
-class ThresholdReadingException extends RuntimeException
+public class ThresholdReadingException extends RuntimeException
 {
     /**
      * Serial identifier.
