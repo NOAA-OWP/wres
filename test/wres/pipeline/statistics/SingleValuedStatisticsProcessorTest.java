@@ -440,7 +440,7 @@ public final class SingleValuedStatisticsProcessorTest
                                                                         .left( left )
                                                                         .right( right )
                                                                         .features( features )
-                                                                        .valueThresholds( thresholds )
+                                                                        .thresholds( thresholds )
                                                                         .metrics( metrics ) // All valid
                                                                         .build();
         declaration = DeclarationInterpolator.interpolate( declaration );

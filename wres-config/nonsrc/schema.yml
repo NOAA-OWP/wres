@@ -2,34 +2,35 @@
 "$schema": http://json-schema.org/draft/2019-09/schema#
 "$ref": "#/definitions/EvaluationDeclaration"
 definitions:
-
-  # The root node for an evaluation declaration. The "observed" or "left"
-  # dataset generally contains the "truth" or reference against which the
-  # forecasts will be evaluated. The "predicted" or "right" data generally
-  # contains the predictions to evaluate. The "baseline" dataset always
-  # contains the baseline against which the predictions will be compared when
-  # calculating skill scores. However, the naming is somewhat arbitrary and is
-  # mainly intended to guide users with respect to the majority use case of
-  # comparing predictions and observations. The content of the datasets is not
-  # otherwise important. For example, time-series that conceptually represent
-  # "observations" can be compared to other time-series that represent
-  # "observations" by placing one of these datasets in the "predicted"
-  # position. However, as of v6.14, ensemble forecasts cannot be declared with
-  # an "observed" orientation. Furthermore, there in an ordering of datasets,
-  # which is important for interpreting statistics produced by the software. In
-  # particular, when computing an "error", the "observed" value is always
-  # subtracted from its corresponding (paired) "predicted" value. Thus,
-  # negative errors should be interpreted as "under-prediction" insofar as the
-  # "predicted" dataset contains predictions.
   EvaluationDeclaration:
+    title: An evaluation declaration.
+    description: "A complete description of an evaluation, including the 
+    datasets to read, filters to apply to the data, how to group or 'pool' the 
+    data, the metrics to calculate and the formats to write, among others."
     type: object
     additionalProperties: false
     properties:
       observed:
+        description: "The 'observed' dataset or 'left' side of a pairing 
+        generally contains the 'truth' or reference against which the 
+        predictions will be evaluated. However, the naming of this and other 
+        datasets is mainly intended to guide users with respect to the majority 
+        use case of comparing predictions and observations. The content of the 
+        datasets is not otherwise important. For example, time-series that 
+        conceptually represent 'observations' can be compared to other 
+        time-series that represent 'observations' by placing one of these 
+        datasets in the 'predicted' position. However, as of v6.14, ensemble 
+        forecasts cannot be declared with an 'observed' orientation. 
+        Furthermore, there in an ordering of datasets, which is important for 
+        interpreting statistics produced by the software. In particular, when 
+        computing an 'error', the 'observed' value is always subtracted from 
+        its corresponding (paired) 'predicted' value. Thus,negative errors 
+        should be interpreted as 'under-prediction' insofar as the 'predicted' 
+        dataset contains predictions."
         anyOf:
           - "$ref": "#/definitions/ObservedOrPredicted"
           - type: array
-            items: 
+            items:
               type: string
               minLength: 1
               maxLength: 2083
@@ -38,10 +39,12 @@ definitions:
             minLength: 1
             maxLength: 2083
       predicted:
+        description: "The 'predicted' or 'right' data generally contains the 
+        predictions to evaluate."
         anyOf:
           - "$ref": "#/definitions/ObservedOrPredicted"
           - type: array
-            items: 
+            items:
               type: string
               minLength: 1
               maxLength: 2083
@@ -50,10 +53,12 @@ definitions:
             minLength: 1
             maxLength: 2083
       baseline:
+        description: "The 'baseline' dataset contains the baseline against 
+        which the predictions will be compared when calculating skill scores."
         anyOf:
           - "$ref": "#/definitions/Baseline"
           - type: array
-            items: 
+            items:
               type: string
               minLength: 1
               maxLength: 2083
@@ -89,9 +94,9 @@ definitions:
         "$ref": "#/definitions/TimePools"
       analysis_durations:
         "$ref": "#/definitions/AnalysisDurations"
-      # The time-scale in this context is the time-scale at which pairs should
-      # be created.
       time_scale:
+        description: "The time-scale in this context is the time-scale at which 
+        pairs should be created."
         "$ref": "#/definitions/TimeScale"
       rescale_lenience:
         "$ref": "#/definitions/TimeScaleLenienceEnum"
@@ -101,13 +106,13 @@ definitions:
         maxLength: 2083
       unit_aliases:
         anyOf:
-           # One or more
-           - type: array
-             items:
-               "$ref": "#/definitions/UnitAlias"
-             minItems: 1
-           # Singleton
-           - "$ref": "#/definitions/UnitAlias"
+          # One or more
+          - type: array
+            items:
+              "$ref": "#/definitions/UnitAlias"
+            minItems: 1
+          # Singleton
+          - "$ref": "#/definitions/UnitAlias"
       pair_frequency:
         "$ref": "#/definitions/PairFrequency"
       cross_pair:
@@ -118,45 +123,61 @@ definitions:
         "$ref": "#/definitions/SeasonFilter"
       values:
         "$ref": "#/definitions/ValueFilter"
+      thresholds:
+        "$ref": "#/definitions/Thresholds"
       probability_thresholds:
         "$ref": "#/definitions/ProbabilityThresholds"
       classifier_thresholds:
         "$ref": "#/definitions/ProbabilityThresholds"
-      value_thresholds:
-        "$ref": "#/definitions/ValueThresholds"
-      threshold_service:
-        "$ref": "#/definitions/ThresholdService"
+      threshold_sources:
+         anyOf:
+          # One or more
+          - type: array
+            items:
+              anyOf:
+                - "$ref": "#/definitions/ThresholdSource"
+                - type: string
+                  minLength: 1
+                  maxLength: 2083
+            minItems: 1
+            uniqueItems: true
+          # Singleton
+          - "$ref": "#/definitions/ThresholdSource"
+          # URI only
+          - type: string
+            minLength: 1
+            maxLength: 2083
       threshold_sets:
         type: array
         items:
           "$ref": "#/definitions/ThresholdSet"
         minItems: 1
-      # Declares the minimum number of samples for which a statistic will be
-      # computed. For measures on continuous variables, such as the mean error,
-      # the minimum sample size corresponds to the number of pairs. For single-
-      # valued measures on dichotomous variables, such as the probability of
-      # detection, it corresponds to the smallest of the number of occurrences
-      # and non-occurrences on the left/observed side of the pairs. For
-      # probabilistic measures on dichotomous variables, such as the Brier
-      # Score, it corresponds to the smallest of the number of occurrences and
-      # non-occurrences on the left/observed side of the pairs, as represented
-      # by a probability of 1.0 and 0.0, respectively.
       minimum_sample_size:
+        description: "Declares the minimum number of samples for which a 
+        statistic will be computed. For measures on continuous variables, such 
+        as the mean error, the minimum sample size corresponds to the number of 
+        pairs. For single-valued measures on dichotomous variables, such as the 
+        probability of detection, it corresponds to the smallest of the number 
+        of occurrences and non-occurrences on the left/observed side of the 
+        pairs. For probabilistic measures on dichotomous variables, such as the 
+        Brier Score, it corresponds to the smallest of the number of 
+        occurrences and non-occurrences on the left/observed side of the pairs, 
+        as represented by a probability of 1.0 and 0.0, respectively."
         type: integer
         minimum: 1
       metrics:
         type: array
         items:
-            # A simple name or a parameterized type
-            anyOf:
-              - "$ref": "#/definitions/MetricEnum"
-              - "$ref": "#/definitions/CategoricalMetricEnum"
-              - "$ref": "#/definitions/SingleValuedMetricEnum"
-              - "$ref": "#/definitions/TimeSeriesMetricEnum"
-              - "$ref": "#/definitions/MetricWithParameters"
-              - "$ref": "#/definitions/CategoricalMetricWithParameters"
-              - "$ref": "#/definitions/SingleValuedMetricWithParameters"
-              - "$ref": "#/definitions/TimeSeriesMetricWithParameters"
+          # A simple name or a parameterized type
+          anyOf:
+            - "$ref": "#/definitions/MetricEnum"
+            - "$ref": "#/definitions/CategoricalMetricEnum"
+            - "$ref": "#/definitions/SingleValuedMetricEnum"
+            - "$ref": "#/definitions/TimeSeriesMetricEnum"
+            - "$ref": "#/definitions/MetricWithParameters"
+            - "$ref": "#/definitions/CategoricalMetricWithParameters"
+            - "$ref": "#/definitions/SingleValuedMetricWithParameters"
+            - "$ref": "#/definitions/TimeSeriesMetricWithParameters"
         minItems: 1
         uniqueItems: true
       duration_format:
@@ -169,7 +190,7 @@ definitions:
         type: array
         items:
           # A simple name or a parameterized type
-          anyOf:   
+          anyOf:
             - "$ref": "#/definitions/FormatEnum"
             - "$ref": "#/definitions/GraphicFormatEnum"
             - "$ref": "#/definitions/FormatWithoutParameters"
@@ -185,10 +206,10 @@ definitions:
     required:
       - observed
       - predicted
-    title: EvaluationDeclaration
 
   # The observed or predicted datasets
   ObservedOrPredicted:
+    title: Observed or predicted dataset.
     type: object
     additionalProperties: false
     properties:
@@ -236,14 +257,13 @@ definitions:
       # strings as integers, but both are interpreted properly post-validation.
       # This property is also defined per source.
       time_zone_offset:
-        anyOf:        
+        anyOf:
           - type: string
             minLength: 1
             maxLength: 6
           - type: integer
     required:
       - sources
-    title: ObservedOrPredicted
 
   # Should be possible to re-use ObservedOrPredicted by adding a persistence
   # property within an allOf block, but this does not work in practice while
@@ -254,6 +274,7 @@ definitions:
   
   # The baseline-ish datasets
   Baseline:
+    title: Baseline dataset
     type: object
     additionalProperties: false
     properties:
@@ -297,53 +318,53 @@ definitions:
       # as integers, but both are interpreted properly post-validation. This
       # property is also defined per source.
       time_zone_offset:
-        anyOf:        
+        anyOf:
           - type: string
             minLength: 1
             maxLength: 6
           - type: integer
-      # Creates a baseline by persisting each source forwards in time with a
-      # specified order or "lag", which must be greater than or equal to zero.
-      # For non-forecast sources, the lag is applied to the valid time. For
-      # example, a lag of 1 means that the persisted value is the value from
-      # the persistence source that is one time step prior to the current valid
-      # time. For a forecast source, the lag is applied to the forecast
-      # reference time, or the first reference time if there are many. In this
-      # context, a lag of 3 means that the persisted value at all forecast
-      # valid times is the value from the persistence source that is 3 steps
-      # prior to the forecast reference time.
       persistence:
+        description: "Creates a baseline by persisting each source forwards in 
+        time with a specified order or 'lag', which must be greater than or 
+        equal to zero. For non-forecast sources, the lag is applied to the 
+        valid time. For example, a lag of 1 means that the persisted value is 
+        the value from the persistence source that is one time step prior to 
+        the current valid time. For a forecast source, the lag is applied to 
+        the forecast reference time, or the first reference time if there are 
+        many. In this context, a lag of 3 means that the persisted value at all 
+        forecast valid times is the value from the persistence source that is 3 
+        steps prior to the forecast reference time."
         type: integer
         minimum: 0
-      #  When declaring separate_metrics as "true", all possible metrics will
-      # be computed for the baseline pairs, as well as the predicted pairs. All
-      # possible metrics include skill scores that have a default baseline,
-      # such as climatology. For skill scores that do not have a default
-      # baseline, statistics will only be computed for the pairs of observed
-      # and predicted values, not for the pairs of observed and baseline values.
       separate_metrics:
+        description: "When declaring separate_metrics as 'true', all possible 
+        metrics will be computed for the baseline pairs, as well as the 
+        predicted pairs. All possible metrics include skill scores that have a 
+        default baseline, such as climatology. For skill scores that do not 
+        have a default baseline, statistics will only be computed for the pairs 
+        of observed and predicted values, not for the pairs of observed and 
+        baseline values."
         type: boolean
       type:
         "$ref": "#/definitions/DataTypeEnum"
     required:
       - sources
-    title: Baseline
 
-  # Provides details about the source of the data. The text value or URI
-  # specifies an individual file to read (absolute path or a path relative to
-  # the installation); a directory to process (it is scanned recursively and
-  # all files read unless the pattern is set; see below); or a URL (if the
-  # source is a web service).
   Source:
+    title: A data source.
+    description: "Provides details about the source of the data. The text value 
+    or URI specifies an individual file to read (absolute path or a path 
+    relative to the installation); a directory to process (it is scanned 
+    recursively and all files read unless the pattern is set; see below); or a 
+    URL (if the source is a web service)."
     anyOf:
       - "$ref": "#/definitions/SourceElement"
       - type: string
         minLength: 1
         maxLength: 2083
-    title: Source
 
-  # A fully elaborated data source
   SourceElement:
+    title: A fully elaborated data source.
     type: object
     additionalProperties: false
     properties:
@@ -353,23 +374,24 @@ definitions:
         maxLength: 2083
         # Avoid uri type because local files would require file scheme.
         pattern: ^(?!\s*$).+
-      # A GLOB string, https://en.wikipedia.org/wiki/Glob_(programming), which
-      # specifies a pattern that restricts files read to only those matching the
-      # pattern. For example, "**/*.xml" will match any XML file. Note that the
-      # "**/" at the beginning is required.
       pattern:
+        description: "See: https://en.wikipedia.org/wiki/Glob_(programming). A 
+        GLOB string specifies a pattern that restricts files read to only those 
+        matching the pattern. For example, '**/*.xml' will match any XML file. 
+        Note that the '**/' at the beginning is required."
         type: string
         minLength: 1
         maxLength: 2083
-      # Specifies the time zone offset for the data. This is required for the
-      # datacard format, which does not include time zone information in the
-      # file. For example, datacard data from ABRFC may including a
-      # time_zone_offset of "CST". It should be unnecessary for most/all other
-      # formats. Allowing both an integer and a string is a workaround because
-      # the networknt validator sometimes sees these strings as integers, but
-      # both are interpreted properly post-validation
       time_zone_offset:
-        anyOf:        
+        description: "Specifies the time zone offset for the data. This is 
+        required for the datacard format, which does not include time zone 
+        information in the file. For example, datacard data from ABRFC may 
+        including a time_zone_offset of 'CST'. It should be unnecessary for 
+        most/all other formats."
+        anyOf:
+          # Allowing both an integer and a string is a  workaround because the
+          # networknt validator sometimes sees these strings as integers, but
+          # both are interpreted properly post-validation
           - type: string
             minLength: 1
             maxLength: 6
@@ -391,10 +413,9 @@ definitions:
           - type: number
     required:
       - uri
-    title: SourceElement
 
-  # A variable to evaluate
   Variable:
+    title: A variable to evaluate.
     type: object
     additionalProperties: false
     properties:
@@ -408,19 +429,20 @@ definitions:
         maxLength: 2083
     required:
       - name
-    title: Variable
 
-  # Describes the time-scale of a measurement within a time-series. The time-
-  # scale includes a function that integrates the measurement over a prescribed
-  # period, in prescribed time units. Optionally, the time scale may represent
-  # a period bounded by a minimum monthday or a maximum monthday or a pair of
-  # monthdays, representing the lower and upper bookends of the period, such as
-  # 1 April through 31 July. The period cannot be declared when both bookends
-  # are present. The low bookend begins at the start of the day (0Z) and the
-  # high bookend finishes at the end of the day (one instant before 0Z of the
-  # next day). Otherwise, a rescaled period spans a right-closed interval that
-  # ends at (and includes) a particular valid time.
   TimeScale:
+    title: The time-scale of a dataset or the evaluation
+    description: "Describes the time-scale of a measurement within a 
+    time-series. The time-scale includes a function that integrates the 
+    measurement over a prescribed period, in prescribed time units. Optionally, 
+    the time scale may represent a period bounded by a minimum monthday or a 
+    maximum monthday or a pair of monthdays, representing the lower and upper 
+    bookends of the period, such as 1 April through 31 July. The period cannot 
+    be declared when both bookends are present. The low bookend begins at the 
+    start of the day (0Z) and the high bookend finishes at the end of the day 
+    (one instant before 0Z of the next day). Otherwise, a rescaled period spans 
+    a right-closed interval that ends at (and includes) a particular valid 
+    time."
     type: object
     additionalProperties: false
     properties:
@@ -453,14 +475,14 @@ definitions:
       # is needed between schema-level validation (fail early) and application-
       # level validation (fail later, but better).
     required:
-    - function
-    title: TimeScale
+      - function
 
-  # Can be used to manually time-shift the data read from the source, which may
-  # assist with pairing. For example, with the period set "-2" and a unit set
-  # to "hours", the valid times in all time-series covered by this declaration
-  # will be adjusted by -2 hours.
   TimeShift:
+    title: A timeshift to apply to a dataset.
+    description: " Can be used to manually time-shift the data read from the 
+    source, which may assist with pairing. For example, with the period set '-2' 
+    and a unit set to 'hours', two hours will be subtracted from the valid 
+    times in all time-series covered by this declaration."
     type: object
     additionalProperties: false
     properties:
@@ -471,28 +493,29 @@ definitions:
     required:
       - period
       - unit
-    title: TimeShift
 
-  # A geospatial feature, composed of a simple name or a tuple of names.
   Feature:
+    title: A geospatial feature.
+    description: "A geospatial feature, composed of a simple name or a tuple of 
+    names."
     anyOf:
       - "$ref": "#/definitions/FeatureTuple"
       - type: string
         minLength: 1
         maxLength: 32
-    title: Feature
 
-  # A tuple of geospatial feature names, each one corresponding to a particular
-  # dataset orientation (observed/left, predicted/right or baseline). This is
-  # necessary because each dataset may use a different feature authority and,
-  # therefore, name the same conceptual features in different ways. It is also
-  # possible to pair data from distinct conceptual features. The name in a
-  # dataset may be an arbitrary name that belongs to a particular feature
-  # authority. For example, the NWIS web service uses the USGS feature naming
-  # authority, which is composed of site codes. When observed="X" and
-  # predicted="Y" is declared, it means "pair observed data for feature name X
-  # with predicted data for feature name Y."
   FeatureTuple:
+    title: A tuple of geospatial feature names
+    description: "A tuple of geospatial feature names, each one corresponding 
+    to a particular dataset orientation (observed/left, predicted/right or 
+    baseline). This is necessary because each dataset may use a different 
+    feature authority and, therefore, name the same conceptual features in 
+    different ways. It is also possible to pair data from distinct conceptual 
+    features. The name in a dataset may be an arbitrary name that belongs to a 
+    particular feature authority. For example, the NWIS web service uses the 
+    USGS feature naming authority, which is composed of site codes. When 
+    observed='X' and predicted='Y' is declared, it means 'pair observed data 
+    for feature name X with predicted data for feature name Y.'"
     type: object
     additionalProperties: false
     properties:
@@ -514,10 +537,9 @@ definitions:
           - type: string
             minLength: 1
             maxLength: 32
-    title: FeatureTuple
-  
-  # A feature tuple with additional properties
+
   FeatureTupleFull:
+    title: A feature tuple with additional properties
     type: object
     additionalProperties: false
     properties:
@@ -531,10 +553,11 @@ definitions:
         maxLength: 2083
     required:
       - name
-    title: FeatureTupleFull
 
-  # A group of feature tuples, such as all features within a geospatial region.
   FeatureGroup:
+    title: A group of geospatial feature tuples
+    description: "A group of feature tuples, such as all features within a 
+    geospatial region."
     type: object
     additionalProperties: false
     properties:
@@ -549,19 +572,18 @@ definitions:
         uniqueItems: true
     required:
       - features
-    title: FeatureGroup
 
-  # A feature service from which feature tuples may be acquired. One way to use
-  # a feature service is to fill in missing feature names among explicitly
-  # declared features. Another way is to acquire groups of features within a
-  # declared region.
   FeatureService:
+    description: "A feature service from which feature tuples may be acquired. 
+    One way to use a feature service is to fill in missing feature names among 
+    explicitly declared features. Another way is to acquire groups of features 
+    within a declared region."
     anyOf:
       - "$ref": "#/definitions/SingletonFeatureService"
       - "$ref": "#/definitions/MultiGroupFeatureService"
 
-  # A feature service with up to one feature group.
   SingletonFeatureService:
+    title: A feature service with up to one feature group.
     type: object
     additionalProperties: false
     properties:
@@ -578,16 +600,15 @@ definitions:
         type: string
         minLength: 1
         maxLength: 2083
-      # Whether to pool together all the features in the group or evaluate them
-      # separately
       pool:
+        description: "Whether to pool together all the features in the group or 
+        evaluate them separately"
         type: boolean
     required:
       - uri
-    title: SingletonFeatureService
 
-  # A feature service with up to many feature groups.
   MultiGroupFeatureService:
+    title: A feature service with up to many feature groups.
     type: object
     additionalProperties: false
     properties:
@@ -603,10 +624,9 @@ definitions:
         minItems: 1
     required:
       - uri
-    title: MultiGroupFeatureService
 
-  # A key-value pair that represents a source interface parameter.
   SourceInterfaceParameter:
+    title: A key-value pair that represents a source interface parameter.
     type: object
     additionalProperties: false
     properties:
@@ -618,10 +638,9 @@ definitions:
         type: string
         minLength: 1
         maxLength: 2083
-    title: SourceInterfaceParameter
 
-  # The declaration of a feature group to acquire from a feature service.
   FeatureServiceGroup:
+    title: The declaration of a feature group to acquire from a feature service.
     type: object
     additionalProperties: false
     properties:
@@ -638,21 +657,21 @@ definitions:
     required:
       - group
       - value
-    title: FeatureServiceGroup
 
-  # A geospatial mask based on a WKT shape. Features contained within this mask
-  # will be evaluated. Features that fall outside this mask will not be
-  # evaluated. Currently, the mask is only used for gridded evaluations. The
-  # mask may be declared as a simple WKT string or as a named region with other
-  # properties.
   SpatialMask:
+    title: A geospatial mask.
+    description: "A geospatial mask based on a WKT shape. Features contained 
+    within this mask will be evaluated. Features that fall outside this mask 
+    will not be evaluated. Currently, the mask is only used for gridded 
+    evaluations. The mask may be declared as a simple WKT string or as a named 
+    region with other properties."
     oneOf:
       - type: string
         minLength: 1
       - "$ref": "#/definitions/NamedSpatialMask"
 
-  # A geospatial mask based on a WKT shape and optional name.
   NamedSpatialMask:
+    title: A geospatial mask based on a WKT shape and optional name.
     type: object
     additionalProperties: false
     properties:
@@ -663,17 +682,16 @@ definitions:
       wkt:
         type: string
         minLength: 1
-      # Spatial Reference System Identifier (SRID). See:
-      # https://en.wikipedia.org/wiki/Spatial_reference_system
-      # For example, WGS84 has a SRID of 4326.
       srid:
+        description: "Spatial Reference System Identifier (SRID). See:
+        https://en.wikipedia.org/wiki/Spatial_reference_system
+        For example, WGS84 has a SRID of 4326."
         type: integer
     required:
       - wkt
-    title: NamedSpatialMask
 
-  # The durations to consider when evaluating model analyses.
   AnalysisDurations:
+    title: The durations to consider when evaluating model analyses.
     type: object
     additionalProperties: false
     properties:
@@ -685,10 +703,9 @@ definitions:
         "$ref": "#/definitions/DurationEnum"
     required:
       - unit
-    title: AnalysisDurations
 
-  # The date constraints on an evaluation.
   Dates:
+    title: The date constraints on an evaluation.
     type: object
     additionalProperties: false
     properties:
@@ -698,10 +715,9 @@ definitions:
       maximum:
         type: string
         format: date-time
-    title: Dates
 
-  # The lead time constraints on an evaluation.
   LeadTimes:
+    title: The lead time constraints on an evaluation.
     type: object
     additionalProperties: false
     properties:
@@ -711,14 +727,14 @@ definitions:
         type: integer
       unit:
         "$ref": "#/definitions/DurationEnum"
-    title: LeadTimes
 
-  # The declaration of a regular sequence of time pools. Each pool contains an 
-  # interval of times whose corresponding pairs will be pooled together when 
-  # calculating statistics. The regular sequence contains pools that are as 
-  # wide as the period and as frequent as the frequency, both in the same time 
-  # units, which are prescribed.
   TimePools:
+    title: The temporal boundaries of a pool of data to evaluate.
+    description: "The declaration of a regular sequence of time pools. Each 
+    pool contains an interval of times whose corresponding pairs will be pooled 
+    together when calculating statistics. The regular sequence contains pools 
+    that are as wide as the period and as frequent as the frequency, both in 
+    the same time units, which are prescribed."
     type: object
     additionalProperties: false
     properties:
@@ -733,11 +749,11 @@ definitions:
     required:
       - period
       - unit
-    title: TimePools
 
-  # A filter to only include pairs whose valid times fall within a prescribed 
-  # season.
   SeasonFilter:
+    title: A season filter.
+    description: "A filter to only include pairs whose valid times fall within 
+    a prescribed season."
     type: object
     additionalProperties: false
     properties:
@@ -757,11 +773,11 @@ definitions:
         type: integer
         minimum: 1
         maximum: 31
-    title: SeasonFilter
 
-  # A filter to include only those paired values that fall between a minimum 
-  # and a maximum.
   ValueFilter:
+    title: A value filter.
+    description: "A filter to include only those paired values that fall 
+    between a minimum and a maximum."
     type: object
     additionalProperties: false
     properties:
@@ -774,17 +790,17 @@ definitions:
       above_maximum:
         type: number
     required:
-    title: ValueFilter
 
-  # The ensemble filter can be used to filter time-series based upon ensemble
-  # trace names. The mapping between the member names and the time-series is
-  # source format dependent. For example, the name will filter against the
-  # ensembleMemberIndex for PI-XML and the zero-based integer index of the
-  # ensemble trace for National Water Model NetCDF sources (and sources with no
-  # trace names). If the exclude flag is set to true, then the settings
-  # identify the time series to exclude; otherwise it specifies the time-series
-  # to include.
   EnsembleFilter:
+    title: A filter for ensemble forecast values.
+    description: "The ensemble filter can be used to filter time-series based
+     upon ensemble trace names. The mapping between the member names and the 
+     time-series is source format dependent. For example, the name will filter 
+     against the ensembleMemberIndex for PI-XML and the zero-based integer 
+     index of the ensemble trace for National Water Model NetCDF sources (and 
+     sources with no trace names). If the exclude flag is set to true, then the 
+     settings identify the time series to exclude; otherwise it specifies the 
+     time-series to include."
     type: object
     additionalProperties: false
     properties:
@@ -801,11 +817,11 @@ definitions:
         type: boolean
     required:
       - members
-    title: EnsembleFilter
 
-  # The frequency with which pairs should be included. Use this to "thin" the 
-  # paired data in time.
   PairFrequency:
+    title: The temporal frequency at which pairs should be created.
+    description: "The frequency with which pairs should be included. Use this 
+    to 'thin' the paired data in time."
     type: object
     additionalProperties: false
     properties:
@@ -817,15 +833,16 @@ definitions:
     required:
       - period
       - unit
-    title: PairFrequency
 
-  # A mapping between known UCUM units and informal unit names. Declares that
-  # the value for "alias" should be interpreted as the value for "unit" by the
-  # software. The "unit" should be a UCUM unit and hence parseable by the
-  # indriya measurement units library. For example, 'mm/s' is parseable but
-  # 'millimeters per second' is not. To treat 'millimeters per second' as
-  # 'mm/s', set the alias to 'millimeters per second' and the unit to 'mm/s'.
   UnitAlias:
+    title: A measurement unit alias.
+    description: "A mapping between known UCUM units and informal unit names. 
+    Declares that the value for 'alias' should be interpreted as the value for 
+    'unit' by the software. The 'unit' should be a UCUM unit and hence 
+    parseable by the indriya measurement units library. For example, 'mm/s' is 
+    parseable but 'millimeters per second' is not. To treat 'millimeters per 
+    second' as 'mm/s', set the alias to 'millimeters per second' and the unit 
+    to 'mm/s'."
     type: object
     additionalProperties: false
     properties:
@@ -840,17 +857,18 @@ definitions:
     required:
       - alias
       - unit
-    title: UnitAlias
 
-  # A set of value thresholds
-  ValueThresholds:
+  Thresholds:
+    title: An ordinary set of thresholds.
+    description: "An ordinary set of thresholds whose values are in prescribed 
+    units, else evaluation units."
     anyOf:
       # Thresholds with attributes
-      - "$ref": "#/definitions/ElaboratedValueThresholds"
+      - "$ref": "#/definitions/ElaboratedThresholds"
       # A list of thresholds with attributes
       - type: array
         items:
-          "$ref": "#/definitions/ElaboratedValueThresholds"
+          "$ref": "#/definitions/ElaboratedThresholds"
         minItems: 1
       # Plain thresholds
       - type: array
@@ -860,17 +878,17 @@ definitions:
       # Single number
       - type: number
     required:
-    title: ValueThresholds
 
-  # A single set of value thresholds with additional attributes
-  ElaboratedValueThresholds:
+  ElaboratedThresholds:
+    title: Thresholds with parameters.
+    description: "A single set of thresholds with with additional parameters."
     type: object
     additionalProperties: false
     properties:
       values:
         type: array
         items:
-          "$ref": "#/definitions/ValueThreshold"
+          "$ref": "#/definitions/Threshold"
         minItems: 1
       operator:
         "$ref": "#/definitions/ThresholdOperatorEnum"
@@ -886,19 +904,17 @@ definitions:
         type: string
     required:
       - values
-    title: ElaboratedValueThresholds
 
-  # A value threshold
-  ValueThreshold:
+  Threshold:
+    title: An ordinary threshold.
     anyOf:
       # A value threshold with a feature
-      - "$ref": "#/definitions/FeaturedValueThreshold"
+      - "$ref": "#/definitions/FeaturedThreshold"
       # A plain value threshold
       - type: number
-    title: ValueThreshold
 
-  # A value threshold with an optional feature
-  FeaturedValueThreshold:
+  FeaturedThreshold:
+    title: A value threshold with an optional feature.
     type: object
     additionalProperties: false
     properties:
@@ -910,10 +926,9 @@ definitions:
         maxLength: 2083
     required:
       - value
-    title: FeaturedValueThreshold
 
-  # A set of probability thresholds
   ProbabilityThresholds:
+    title: A set of probability thresholds.
     anyOf:
       # Thresholds with attributes
       - "$ref": "#/definitions/ElaboratedProbabilityThresholds"
@@ -932,10 +947,11 @@ definitions:
       # Single number
       - type: number
     required:
-    title: ProbabilityThresholds
 
-  # A single set of probability thresholds with additional attributes
   ElaboratedProbabilityThresholds:
+    title: Probability thresholds with parameters.
+    description: "A single set of probability thresholds with additional 
+    parameters."
     type: object
     additionalProperties: false
     properties:
@@ -956,10 +972,9 @@ definitions:
         maxLength: 2083
     required:
       - values
-    title: ElaboratedProbabilityThresholds
 
-  # A probability threshold
   ProbabilityThreshold:
+    title: A probability threshold.
     anyOf:
       # A probability threshold with a feature
       - "$ref": "#/definitions/FeaturedProbabilityThreshold"
@@ -967,10 +982,9 @@ definitions:
       - type: number
         minimum: 0
         maximum: 1.0
-    title: ProbabilityThreshold
 
-  # A probability threshold with an optional feature
   FeaturedProbabilityThreshold:
+    title: A probability threshold with an optional feature.
     type: object
     additionalProperties: false
     properties:
@@ -984,28 +998,28 @@ definitions:
         maxLength: 2083
     required:
       - value
-    title: FeaturedProbabilityThreshold
 
-  # A list of threshold sets to be used for the most complex thresholding 
-  # problems whereby multiple thresholds of the same type are required in a
-  # single evaluation and different sets of thresholds are required for
-  # different metrics. In this situation, threshold sets provide a hook for
-  # anchors and aliases so that thresholds don't need to be repeated for every
-  # metric that requires a common subset of thresholds.
   ThresholdSet:
+    title: A list of threshold sets that provide hooks for anchors/references.
+    description: "A list of threshold sets to be used for the most complex 
+    thresholding problems whereby multiple thresholds of the same type are 
+    required in a single evaluation and different sets of thresholds are 
+    required for different metrics. In this situation, threshold sets provide a 
+    hook for anchors and references so that thresholds don't need to be 
+    repeated for every metric that requires a common subset of thresholds."
     type: object
     additionalProperties: false
     properties:
+      thresholds:
+        "$ref": "#/definitions/Thresholds"
       probability_thresholds:
         "$ref": "#/definitions/ProbabilityThresholds"
       classifier_thresholds:
         "$ref": "#/definitions/ProbabilityThresholds"
-      value_thresholds:
-        "$ref": "#/definitions/ValueThresholds"
-    title: ThresholdSet
 
-  # A service from which to acquire threshold values.
-  ThresholdService:
+  ThresholdSource:
+    title: References to thresholds from external sources.
+    description: References to one or more external sources of threshold values.
     type: object
     additionalProperties: false
     properties:
@@ -1041,38 +1055,36 @@ definitions:
         "$ref": "#/definitions/ObservedPredictedOrBaselineEnum"
     required:
       - uri
-    title: ThresholdService
 
-  # A parameterized metric.
   MetricWithParameters:
+    title: A metric with parameters.
     type: object
     additionalProperties: false
     properties:
       name:
         "$ref": "#/definitions/MetricEnum"
+      thresholds:
+        "$ref": "#/definitions/Thresholds"
       probability_thresholds:
         "$ref": "#/definitions/ProbabilityThresholds"
-      value_thresholds:
-        "$ref": "#/definitions/ValueThresholds"
       svg:
         type: boolean
       png:
         type: boolean
     required:
       - name
-    title: MetricWithParameters
 
-  # A parameterized categorical metric.
   CategoricalMetricWithParameters:
+    title: A metric with parameters for categorical datasets.
     type: object
     additionalProperties: false
     properties:
       name:
         "$ref": "#/definitions/CategoricalMetricEnum"
+      thresholds:
+        "$ref": "#/definitions/Thresholds"
       probability_thresholds:
         "$ref": "#/definitions/ProbabilityThresholds"
-      value_thresholds:
-        "$ref": "#/definitions/ValueThresholds"
       classifier_thresholds:
         "$ref": "#/definitions/ProbabilityThresholds"
       minimum_sample_size:
@@ -1086,19 +1098,18 @@ definitions:
         type: boolean
     required:
       - name
-    title: CategoricalMetricWithParameters
 
-  # A parameterized single-valued metric.
   SingleValuedMetricWithParameters:
+    title: A metric with parameters for single-valued datasets.
     type: object
     additionalProperties: false
     properties:
       name:
         "$ref": "#/definitions/SingleValuedMetricEnum"
+      thresholds:
+        "$ref": "#/definitions/Thresholds"
       probability_thresholds:
         "$ref": "#/definitions/ProbabilityThresholds"
-      value_thresholds:
-        "$ref": "#/definitions/ValueThresholds"
       minimum_sample_size:
         type: integer
         minimum: 1
@@ -1110,10 +1121,9 @@ definitions:
         type: boolean
     required:
       - name
-    title: SingleValuedMetricWithParameters
 
-  # A parameterized time-series metric.
   TimeSeriesMetricWithParameters:
+    title: A metric with parameters for time-series datasets.
     type: object
     additionalProperties: false
     properties:
@@ -1132,7 +1142,6 @@ definitions:
         minItems: 1
     required:
       - name
-    title: TimeSeriesMetricWithParameters
 
   # Format. A facade that supports a parameterized declaration 
   # of a format without parameters. Reduces friction for users.
@@ -1144,10 +1153,9 @@ definitions:
         "$ref": "#/definitions/FormatEnum"
     required:
       - format
-    title: FormatWithoutParameters
 
-  # Graphic format.
   GraphicFormatWithParameters:
+    title: A graphics format with optional parameters.
     type: object
     additionalProperties: false
     properties:
@@ -1164,10 +1172,9 @@ definitions:
         minimum: 300
     required:
       - format
-    title: GraphicFormatWithParameters
 
-  # NetCDF format.
   NetcdfFormatWithParameters:
+    title: A NetCDF format with optional parameters.
     type: object
     additionalProperties: false
     properties:
@@ -1185,7 +1192,6 @@ definitions:
         type: boolean
     required:
       - format
-    title: NetcdfFormatWithParameters
 
   # These values are intentionally convertible to java.time.temporal.ChronoUnit
   # values. Please only add values to this enum that are listed in
@@ -1198,7 +1204,6 @@ definitions:
       - minutes
       - hours
       - days
-    title: DurationEnum
 
   # The source interface serves as a shorthand to tell WRES how to get a
   # dataset from a particular URI. It can mean the API structure of a web
@@ -1207,6 +1212,7 @@ definitions:
   # automatically discerned from the URI or data within that URI is summarized
   # by one of these short-hands and must be specified.
   SourceInterfaceEnum:
+    title: The interfaces associated with time-series data sources.
     type: string
     enum:
       - wrds ahps
@@ -1232,16 +1238,15 @@ definitions:
       - nwm analysis assim channel rt puertorico
       - nwm analysis assim no da channel rt puertorico
       - nwm long range channel rt conus
-    title: SourceInterfaceEnum
 
   FeatureAuthorityEnum:
     type: string
+    title: The supported naming authorities for geospatial features.
     enum:
       - nws lid
       - usgs site code
       - nwm feature id
       - custom
-    title: FeatureAuthorityEnum
 
   ObservedPredictedOrBaselineEnum:
     type: string
@@ -1249,7 +1254,6 @@ definitions:
       - observed
       - predicted
       - baseline
-    title: ObservedPredictedOrBaselineEnum
 
   TimeScaleFunctionEnum:
     type: string
@@ -1258,17 +1262,17 @@ definitions:
       - mean
       - minimum
       - maximum
-    title: TimeScaleFunctionEnum
 
-  # The side(s) of data where lenience should be applied when rescaling
-  # time-series. Provides additional control over the treatment of missing data
-  # or data whose valid times are at irregular intervals. A value of "all"
-  # indicates lenience with respect to all sides, "none" indicates lenience
-  # with respect to no sides, and the other instances name particular sides or
-  # combinations of sides. When undefined or "none", rescaling is only
-  # performed for intervals that contain regularly spaced events with no
-  # missing values.
   TimeScaleLenienceEnum:
+    title: The lenience to apply when rescaling time-series.
+    description: "The side(s) of data where lenience should be applied when 
+    rescaling time-series. Provides additional control over the treatment of 
+    missing data or data whose valid times are at irregular intervals. A value 
+    of 'all' indicates lenience with respect to all sides, 'none' indicates 
+    lenience with respect to no sides, and the other instances name particular 
+    sides or combinations of sides. When undefined or 'none', rescaling is only
+    performed for intervals that contain regularly spaced events with no
+    missing values."
     type: string
     enum:
       - all
@@ -1279,37 +1283,36 @@ definitions:
       - predicted and baseline
       - observed and baseline
       - observed and predicted
-    title: TimeScaleLenienceEnum
 
-  # Controls cross-pairing of observed-predicted ("main") pairs with
-  # observed-baseline ("baseline") pairs. If one of these options is present,
-  # evaluates common pairs by reference time and valid time. If absent, retains
-  # all pairs of each type. Only applies when a baseline is declared. With
-  # fuzzy matching, each time-series in the main set of pairs is matched with a
-  # time-series in the baseline set of pairs (and vice versa) according to the
-  # total duration between all reference times of a corresponding type. In
-  # other words, if there is an exact match, that will be used, else the time-
-  # series whose reference times are nearest overall. Once a time-series has
-  # been matched, it cannot be re-used. Always uses exact matching for valid
-  # times.
   CrossPairEnum:
+    title: The cross-pairing methodology.
+    description: "Controls cross-pairing of observed-predicted ('main') pairs 
+    with observed-baseline ('baseline') pairs. If one of these options is 
+    present, evaluates common pairs by reference time and valid time. If 
+    absent, retains all pairs of each type. Only applies when a baseline is 
+    declared. With fuzzy matching, each time-series in the main set of pairs is 
+    matched with a time-series in the baseline set of pairs (and vice versa) 
+    according to the total duration between all reference times of a 
+    corresponding type. In other words, if there is an exact match, that will 
+    be used, else the time-series whose reference times are nearest overall. 
+    Once a time-series has been matched, it cannot be re-used. Always uses 
+    exact matching for valid times."
     type: string
     enum:
       - exact
       - fuzzy
-    title: CrossPairEnum
 
-  # The name of a function that converts an ensemble of values into a single
-  # value.
   EnsembleAverageEnum:
+    title: The ensemble averaging function.
+    description: "The name of a function that converts an ensemble of values 
+    into a single value."
     type: string
     enum:
       - mean
       - median
-    title: EnsembleAverageEnum
 
-  # A big bucket of metrics that all accept the same parameters
   MetricEnum:
+    title: A big bucket of metrics that all accept the same parameters.
     type: string
     enum:
       - box plot of errors by observed value
@@ -1329,18 +1332,16 @@ definitions:
       - reliability diagram
       - sample size
       - standard deviation
-    title: MetricEnum
 
-  # Time-series metrics
   TimeSeriesMetricEnum:
+    title: Time-series metrics.
     type: string
     enum:
       - time to peak relative error
       - time to peak error
-    title: TimeSeriesMetricEnum
 
-  # Categorical metrics
   CategoricalMetricEnum:
+    title: Categorical metrics.
     type: string
     enum:
       - contingency table
@@ -1351,10 +1352,9 @@ definitions:
       - probability of false detection
       - false alarm ratio
       - peirce skill score
-    title: CategoricalMetricEnum
 
-  # Single-valued metrics
   SingleValuedMetricEnum:
+    title: Single-valued metrics.
     type: string
     enum:
       - bias fraction
@@ -1377,9 +1377,9 @@ definitions:
       - sum of square error
       - volumetric efficiency
       - mean absolute error skill score
-    title: SingleValuedMetricEnum
 
   FormatEnum:
+    title: The statistics serialization formats.
     type: string
     enum:
       - csv
@@ -1390,27 +1390,25 @@ definitions:
       - netcdf2
       - pairs
       - protobuf
-    title: FormatEnum
 
   GraphicFormatEnum:
+    title: The graphics serialization formats.
     type: string
     enum:
       - png
       - svg
-    title: GraphicFormatEnum
 
   NetcdfFormatEnum:
     type: string
     enum:
       - netcdf
-    title: NetcdfFormatEnum
 
   OrientationEnum:
+    title: The orientation to use when organizing data for format writing.
     type: string
     enum:
       - lead threshold
       - threshold lead
-    title: OrientationEnum
 
   SummaryStatisticsEnum:
     type: string
@@ -1421,7 +1419,6 @@ definitions:
       - maximum
       - standard deviation
       - mean absolute
-    title: SummaryStatisticsEnum
 
   ThresholdDataTypeEnum:
     type: string
@@ -1433,7 +1430,6 @@ definitions:
       - observed and any predicted
       - predicted mean
       - observed and predicted mean
-    title: ThresholdDataTypeEnum
 
   ThresholdTypeEnum:
     type: string
@@ -1441,7 +1437,6 @@ definitions:
       - probability
       - value
       - classifier
-    title: ThresholdTypeEnum
 
   ThresholdOperatorEnum:
     type: string
@@ -1451,7 +1446,6 @@ definitions:
       - greater equal
       - less
       - less equal
-    title: ThresholdOperatorEnum
 
   # Originally, this type was used to direct ingest to either a set of
   # "forecast" or "observation" tables in the database. See discussion in
@@ -1463,6 +1457,10 @@ definitions:
   # from the other declaration present in most cases, else from the ingested
   # data, so the type should become optional or potentially even deprecated.
   DataTypeEnum:
+    title: The type of time-series dataset.
+    description: "Use this to clarify the type of time-series data, where 
+    required. In general, this is not required because it can be inferred from 
+    the other declaration present or from the time-series data, once ingested."
     type: string
     enum:
       - ensemble forecasts
@@ -1470,4 +1468,3 @@ definitions:
       - observations
       - simulations
       - analyses
-    title: DataTypeEnum

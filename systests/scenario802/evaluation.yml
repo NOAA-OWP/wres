@@ -28,7 +28,7 @@ time_scale:
   period: 96
   unit: hours
 classifier_thresholds: [0.1, 0.3, 0.5, 0.7, 0.9]
-threshold_service:
+threshold_sources:
   uri: thresholds/scenario802/thresholds.json
   parameter: stage
   provider: NWS-NRLDB

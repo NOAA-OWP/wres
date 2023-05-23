@@ -66,19 +66,19 @@ public class MetricSerializer extends JsonSerializer<Metric>
         writer.writeStartObject();
         writer.writeStringField( "name", friendlyName );
 
+        // Value thresholds
+        if ( !parameters.thresholds()
+                        .isEmpty() )
+        {
+            writer.writeFieldName( "thresholds" );
+            THRESHOLDS_SERIALIZER.serialize( parameters.thresholds(), writer, serializers );
+        }
         // Probability thresholds
         if ( !parameters.probabilityThresholds()
                         .isEmpty() )
         {
             writer.writeFieldName( "probability_thresholds" );
             THRESHOLDS_SERIALIZER.serialize( parameters.probabilityThresholds(), writer, serializers );
-        }
-        // Value thresholds
-        if ( !parameters.valueThresholds()
-                        .isEmpty() )
-        {
-            writer.writeFieldName( "value_thresholds" );
-            THRESHOLDS_SERIALIZER.serialize( parameters.valueThresholds(), writer, serializers );
         }
         // Classifier thresholds
         if ( !parameters.classifierThresholds()

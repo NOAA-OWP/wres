@@ -14,8 +14,9 @@ import wres.config.yaml.deserializers.FeatureServiceDeserializer;
 import wres.config.yaml.serializers.FeatureServiceSerializer;
 
 /**
- * A feature service.
+ * A geospatial feature service.
  * @param uri the URI
+ * @param featureGroups the optional feature groups for which to acquire geospatial features
  */
 @RecordBuilder
 @JsonSerialize( using = FeatureServiceSerializer.class )

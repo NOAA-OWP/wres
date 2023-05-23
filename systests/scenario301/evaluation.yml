@@ -22,7 +22,7 @@ time_scale:
   function: total
   period: 6
   unit: hours
-value_thresholds: 0.0
+thresholds: 0.0
 metrics:
   - mean error
   - sample size

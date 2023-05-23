@@ -362,7 +362,7 @@ public final class EnsembleStatisticsProcessorTest
                                                                         .left( left )
                                                                         .right( right )
                                                                         .features( features )
-                                                                        .valueThresholds( thresholds )
+                                                                        .thresholds( thresholds )
                                                                         .classifierThresholds( classifiers )
                                                                         .ensembleAverageType( wres.statistics.generated.Pool.EnsembleAverageType.MEAN )
                                                                         .minimumSampleSize( 0 )

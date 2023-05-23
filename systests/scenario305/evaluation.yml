@@ -18,7 +18,7 @@ lead_time_pools:
   period: 0
   frequency: 6
   unit: hours
-value_thresholds: 0.0
+thresholds: 0.0
 values:
   minimum: 1.0
   below_minimum: 0.0

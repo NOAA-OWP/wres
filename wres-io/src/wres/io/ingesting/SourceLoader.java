@@ -3,7 +3,6 @@ package wres.io.ingesting;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,7 +31,6 @@ import java.util.stream.Stream;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -262,8 +260,7 @@ public class SourceLoader
         // Create the sources for which ingest should be attempted, together with any required links. A link is a 
         // connection between a data source and a context or LeftOrRightOrBaseline. A link is required for each context 
         // in which the source appears within a project.
-        Set<DataSource> sources = SourceLoader.createSourcesToLoadAndLink( this.getSystemSettings(),
-                                                                           this.getDeclaration() );
+        Set<DataSource> sources = SourceLoader.createSourcesToLoadAndLink( this.getDeclaration() );
 
         LOGGER.debug( "Created these sources to load and link: {}", sources );
 
@@ -440,13 +437,11 @@ public class SourceLoader
      * directory of files, the tree is walked and a {@link DataSource} is returned for each one within the tree that
      * meets any prescribed filters.
      *
-     * @param systemSettings the system settings
      * @param declaration the project declaration
      * @return the set of distinct sources to load and any additional links to create
      */
 
-    private static Set<DataSource> createSourcesToLoadAndLink( SystemSettings systemSettings,
-                                                               EvaluationDeclaration declaration )
+    private static Set<DataSource> createSourcesToLoadAndLink( EvaluationDeclaration declaration )
     {
         // Somewhat convoluted structure that will be turned into a simple one.
         // The key is the distinct source, and the paired value is the context in
@@ -499,7 +494,7 @@ public class SourceLoader
             DatasetOrientation orientation = dataSource.orientation();
 
             // Evaluate the path, which is null for a source that is not file-like
-            Path path = SourceLoader.evaluatePath( systemSettings, nextSource.getKey() );
+            Path path = SourceLoader.evaluatePath( nextSource.getKey() );
 
             // If there is a file-like source, test for a directory and decompose it as required
             if ( Objects.nonNull( path ) )
@@ -742,8 +737,7 @@ public class SourceLoader
      * @return the path of a file-like source or null
      */
 
-    private static Path evaluatePath( SystemSettings systemSettings,
-                                      Source source )
+    private static Path evaluatePath( Source source )
     {
         LOGGER.trace( "Called evaluatePath with source {}", source );
         URI uri = source.uri();
@@ -764,39 +758,8 @@ public class SourceLoader
             return null;
         }
 
-        Path sourcePath;
-
-        // Construct a path using the SystemSetting wres.dataDirectory when
-        // the specified source is not absolute.
-        if ( !uri.isAbsolute() )
-        {
-            sourcePath = systemSettings.getDataDirectory()
-                                       .resolve( uri.getPath() );
-            LOGGER.debug( "Transformed relative URI {} to Path {}.",
-                          uri,
-                          sourcePath );
-        }
-        else
-        {
-            try
-            {
-                URIBuilder uriBuilder = new URIBuilder( uri );
-                uriBuilder.setScheme( "file" );
-                uri = uriBuilder.build();
-            }
-            catch( URISyntaxException e )
-            {
-                throw new ReadException( "While attempting to evaluate a path to a source, failed to add the file scheme "
-                                         + "to a file-like URI: " + uri );
-            }
-
-            sourcePath = Paths.get( uri );
-        }
-
-        LOGGER.debug( "Returning source path {} from source {}",
-                      sourcePath,
-                      source.uri() );
-        return sourcePath;
+        // File-like source
+        return Paths.get( uri );
     }
 
     /**

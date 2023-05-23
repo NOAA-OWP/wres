@@ -35,7 +35,6 @@ import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.Variable;
 import wres.io.ingesting.IngestResult;
-import wres.io.ingesting.PreIngestException;
 
 /**
  * A data source.
@@ -74,10 +73,14 @@ public class DataSource
         JSON_WRDS_NWM,
         /** The data has been detected as a json, wrds/ahps stream. */
         JSON_WRDS_AHPS,
-        /** The data has been detected as a json, waterml stream. */
+        /** The data has been detected as a json response from the wrds threshold service. */
+        JSON_WRDS_THRESHOLDS,
+        /** The data has been detected as a csv, wres stream. */
         JSON_WATERML,
         /** The data has been detected as a csv, wres stream. */
         CSV_WRES,
+        /** The data has been detected as a csv thresholds in the wres csv format. */
+        CSV_WRES_THRESHOLDS,
         /** The data type is unknown or to be determined. */
         UNKNOWN;
 
@@ -359,7 +362,7 @@ public class DataSource
      * Look at the data, open the data, to detect its WRES type.
      * @param uri The uri to examine.
      * @return The WRES Format guess, or UNKNOWN if unknown.
-     * @throws PreIngestException When format detection encounters an exception.
+     * @throws ReadException When format detection encounters an exception.
      */
 
     public static DataDisposition detectFormat( URI uri )
@@ -374,7 +377,7 @@ public class DataSource
         }
         catch ( IOException ioe )
         {
-            throw new PreIngestException( "Failed to open '" + uri + "'", ioe );
+            throw new ReadException( "Failed to open '" + uri + "'", ioe );
         }
     }
 
@@ -385,7 +388,7 @@ public class DataSource
      *                    there, must support mark/reset.
      * @param uri A real or fake URI (basically a name) to log with messages.
      * @return The WRES guess, or UNKNOWN if unknown.
-     * @throws PreIngestException When format detection encounters an exception.
+     * @throws ReadException When format detection encounters an exception.
      * @throws UnsupportedOperationException When !inputStream.markSupported()
      */
 
@@ -510,10 +513,10 @@ public class DataSource
         }
         catch ( TikaException | IOException e )
         {
-            throw new PreIngestException( "Could not read from stream associated with '"
-                                          + uri
-                                          + "':",
-                                          e );
+            throw new ReadException( "Could not read from stream associated with '"
+                                     + uri
+                                     + "':",
+                                     e );
         }
 
         return Pair.of( detectedMediaType, firstBytes );
@@ -562,8 +565,8 @@ public class DataSource
 
         if ( jsonCharset == null )
         {
-            throw new PreIngestException( "Unable to detect charset for JSON document starting with bytes "
-                                          + Arrays.toString( firstBytes ) );
+            throw new ReadException( "Unable to detect charset for JSON document starting with bytes "
+                                     + Arrays.toString( firstBytes ) );
         }
 
         String start = new String( firstBytes, jsonCharset );
@@ -572,8 +575,11 @@ public class DataSource
         {
             innerDisposition = DataDisposition.JSON_WATERML;
         }
-        // There is a WRDS json format for thresholds (it's not timeseries).
-        else if ( !start.contains( "\"threshold" ) )
+        else if ( start.contains( "\"threshold" ) )
+        {
+            innerDisposition = DataDisposition.JSON_WRDS_THRESHOLDS;
+        }
+        else
         {
             if ( start.contains( "wrds" ) && start.contains( "nwm" ) )
             {
@@ -583,11 +589,11 @@ public class DataSource
             {
                 innerDisposition = DataDisposition.JSON_WRDS_AHPS;
             }
-        }
-        else
-        {
-            LOGGER.warn( "Found JSON document but it did not appear to be one WRES could parse: '{}'",
-                         uri );
+            else
+            {
+                LOGGER.warn( "Found JSON document but it did not appear to be one WRES could parse: '{}'",
+                             uri );
+            }
         }
 
         return innerDisposition;
@@ -607,6 +613,15 @@ public class DataSource
         // Our CSV reader used default charset as of 5.10, changing it to
         // UTF-8 as of this commit, see CSVDataProvider class.
         String start = new String( firstBytes, StandardCharsets.UTF_8 );
+
+        // Thresholds?
+        if ( start.contains( "locationId" ) || start.contains( "feature" ) )
+        {
+            LOGGER.debug( "Detected a WRES CSV threshold format in: {}", uri );
+
+            return DataDisposition.CSV_WRES_THRESHOLDS;
+        }
+
         String[] wresCsvRequiredHeaders = { "value_date", "variable_name",
                 "location", "measurement_unit",
                 "value" };

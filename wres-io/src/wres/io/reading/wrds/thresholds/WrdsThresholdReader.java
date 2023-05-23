@@ -5,10 +5,10 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -16,6 +16,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
@@ -29,17 +30,22 @@ import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.FeatureAuthority;
+import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
-import wres.config.yaml.components.ThresholdService;
+import wres.config.yaml.components.ThresholdSource;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.units.UnitMapper;
+import wres.io.reading.ThresholdReader;
+import wres.io.reading.ThresholdReadingException;
 import wres.io.reading.wrds.geography.Location;
 import wres.io.reading.wrds.geography.LocationRootVersionDocument;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.web.WebClient;
+import wres.statistics.generated.Geometry;
 import wres.statistics.generated.Threshold;
 
 /**
@@ -49,13 +55,13 @@ import wres.statistics.generated.Threshold;
  * @author Hank Herr
  * @author Chris Tubbs
  */
-class ThresholdReader
+public class WrdsThresholdReader implements ThresholdReader
 {
     /** The number of location requests." */
     static final int LOCATION_REQUEST_COUNT = 20;
 
     /** Logger. */
-    private static final Logger LOGGER = LoggerFactory.getLogger( ThresholdReader.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( WrdsThresholdReader.class );
 
     /** The context for establishing a secure connection. */
     private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
@@ -90,38 +96,86 @@ class ThresholdReader
      * @return an instance
      */
 
-    public static ThresholdReader of()
+    public static WrdsThresholdReader of()
     {
-        return new ThresholdReader();
+        return new WrdsThresholdReader();
     }
 
     /**
      * Reads thresholds.
-     * @param thresholdService the threshold service declaration
+     * @param thresholdSource the threshold service declaration
      * @param unitMapper a unit mapper to translate and set threshold units
      * @param featureNames the named features for which thresholds are required
      * @param featureAuthority the feature authority associated with the feature names
      * @return the thresholds mapped against features
      */
-    public Map<Location, Set<Threshold>> readThresholds( ThresholdService thresholdService,
-                                                         UnitMapper unitMapper,
-                                                         Set<String> featureNames,
-                                                         FeatureAuthority featureAuthority )
+    public Set<wres.config.yaml.components.Threshold> read( ThresholdSource thresholdSource,
+                                                            UnitMapper unitMapper,
+                                                            Set<String> featureNames,
+                                                            FeatureAuthority featureAuthority )
     {
-        Objects.requireNonNull( thresholdService );
+        Objects.requireNonNull( thresholdSource );
         Objects.requireNonNull( unitMapper );
         Objects.requireNonNull( featureNames );
+
+        URI serviceUri = thresholdSource.uri();
+        if( Objects.isNull( serviceUri ) )
+        {
+            throw new ThresholdReadingException( "Cannot read from a threshold source with a missing URI. Please "
+                                                 + "add a URI for each threshold source that should be read." );
+        }
+
+        // Acquire the feature names for which thresholds are required
+        DatasetOrientation orientation = thresholdSource.featureNameFrom();
+
+        if ( Objects.isNull( orientation ) )
+        {
+            throw new ThresholdReadingException( "The 'feature_name_from' is missing from the 'threshold_service' "
+                                                 + "declaration, which is not allowed because the feature service "
+                                                 + "request must use feature names with a prescribed feature "
+                                                 + "authority." );
+        }
+
+        // Feature authority must be present if the URI is web-like and not a local file
+        if ( ReaderUtilities.isWebSource( serviceUri )
+             && Objects.isNull( featureAuthority ) )
+        {
+            throw new ThresholdReadingException( "The 'feature_authority' associated with the '"
+                                                 + orientation
+                                                 + "' data was not supplied, but this is needed to "
+                                                 + "correlate feature names with thresholds. Please clarify by adding "
+                                                 + "a 'feature_authority' to the '"
+                                                 + orientation
+                                                 + "' dataset. " );
+        }
+
+        // No features?
+        if ( featureNames.isEmpty() )
+        {
+            throw new ThresholdReadingException( "While attempting to read thresholds from the WRDS feature service, "
+                                                 + "discovered no features in the declaration for which thresholds "
+                                                 + "could be acquired. Please add some features to the declaration "
+                                                 + "using 'features', 'feature_groups' or 'feature_service' and try "
+                                                 + "again." );
+        }
+
+        // Adjust the feature names, as required, and map them to the original/supplied names. An adjustment is needed
+        // for feature names associated with the nws lid feature authority because WRDS only accepts "handbook 5"
+        // names, i.e., the first five characters of the supplied name.
+        Map<String, String> mappedAndAdjustedFeatureNames =
+                WrdsThresholdReader.getMappedAndAdjustedFeatureNames( featureNames, featureAuthority, serviceUri );
+        Set<String> adjustedFeatureNames = mappedAndAdjustedFeatureNames.keySet();
 
         // The list of URIs to acquire, build from the input URI as needed
         List<URI> addresses = new ArrayList<>();
 
-        URI uri = thresholdService.uri();
+        URI uri = thresholdSource.uri();
 
         // Web service
         if ( ReaderUtilities.isWebSource( uri ) )
         {
             // Build the location groups to use.
-            Set<String> locationGroups = this.chunkFeatures( featureNames );
+            Set<String> locationGroups = this.chunkFeatures( adjustedFeatureNames );
             URIBuilder builder = new URIBuilder( uri );
             String originalPath = uri.getPath();
             String adjustedPath = this.getAdjustedPath( originalPath, featureAuthority );
@@ -155,17 +209,16 @@ class ThresholdReader
         // Read a file-like source
         else
         {
-            uri = ThresholdReader.getAbsoluteUri( uri );
             addresses.add( uri );
         }
 
         // Get the accumulated warnings across threshold extractions
         Set<String> warnings = new HashSet<>();
         // Read the thresholds and accumulate any warnings
-        Map<Location, Set<Threshold>> thresholdMapping = this.readThresholds( thresholdService,
-                                                                              addresses,
-                                                                              unitMapper,
-                                                                              warnings );
+        Map<Location, Set<Threshold>> thresholdMapping = this.read( thresholdSource,
+                                                                    addresses,
+                                                                    unitMapper,
+                                                                    warnings );
 
         if ( thresholdMapping.isEmpty() )
         {
@@ -178,7 +231,14 @@ class ThresholdReader
 
         LOGGER.debug( "The following thresholds were obtained from WRDS: {}.", thresholdMapping );
 
-        return thresholdMapping;
+        // Validate the thresholds acquired from WRDS in relation to the features for which thresholds were required
+        WrdsThresholdReader.validate( serviceUri, mappedAndAdjustedFeatureNames, thresholdMapping, featureAuthority );
+
+        // Map the thresholds to featureful thresholds
+        return WrdsThresholdReader.getFeaturefulThresholds( thresholdMapping,
+                                                            orientation,
+                                                            mappedAndAdjustedFeatureNames,
+                                                            featureAuthority );
     }
 
     /**
@@ -188,10 +248,10 @@ class ThresholdReader
      * @param warnings the accumulated warnings
      * @return the thresholds
      */
-    private Map<Location, Set<Threshold>> readThresholds( ThresholdService thresholdService,
-                                                          List<URI> addresses,
-                                                          UnitMapper unitMapper,
-                                                          Set<String> warnings )
+    private Map<Location, Set<Threshold>> read( ThresholdSource thresholdSource,
+                                                List<URI> addresses,
+                                                UnitMapper unitMapper,
+                                                Set<String> warnings )
     {
         Map<Location, Set<Threshold>> thresholdMapping;
 
@@ -201,7 +261,7 @@ class ThresholdReader
                                     .map( this::getResponse )
                                     .filter( Objects::nonNull )
                                     .map( thresholdResponse -> this.extract( thresholdResponse,
-                                                                             thresholdService,
+                                                                             thresholdSource,
                                                                              unitMapper,
                                                                              warnings ) )
                                     .flatMap( map -> map.entrySet()
@@ -224,7 +284,7 @@ class ThresholdReader
 
     /**
      * @param responseBytes array of bytes to parse
-     * @param thresholdService the threshold service
+     * @param thresholdSource the threshold service
      * @param desiredUnitMapper the desired units
      * @param warnings the accumulated warnings encountered
      * @return the thresholds
@@ -232,12 +292,12 @@ class ThresholdReader
      * @throws UnsupportedOperationException if the threshold API version is unsupported
      */
     private Map<Location, Set<Threshold>> extract( byte[] responseBytes,
-                                                   ThresholdService thresholdService,
+                                                   ThresholdSource thresholdSource,
                                                    UnitMapper desiredUnitMapper,
                                                    Set<String> warnings )
     {
-        ThresholdOrientation side = thresholdService.applyTo();
-        ThresholdOperator operator = thresholdService.operator();
+        ThresholdOrientation side = thresholdSource.applyTo();
+        ThresholdOperator operator = thresholdSource.operator();
 
         try
         {
@@ -267,15 +327,15 @@ class ThresholdReader
                                                              .response( response )
                                                              .operator( operator )
                                                              .orientation( side )
-                                                             .provider( thresholdService.provider() )
-                                                             .ratingProvider( thresholdService.ratingProvider() )
+                                                             .provider( thresholdSource.provider() )
+                                                             .ratingProvider( thresholdSource.ratingProvider() )
                                                              .unitMapper( desiredUnitMapper )
                                                              .build();
 
             // Flow is the default if the parameter is not specified. Note that this
             // works for unified schema thresholds, such as recurrence flows, because the metadata
             // does not specify the parameter, so that parameter is ignored.
-            if ( "stage".equalsIgnoreCase( thresholdService.parameter() ) )
+            if ( "stage".equalsIgnoreCase( thresholdSource.parameter() ) )
             {
                 extractor = extractor.toBuilder()
                                      .type( ThresholdType.STAGE )
@@ -335,25 +395,22 @@ class ThresholdReader
     }
 
     /**
-     * This is protected to support testing.
      * @param address the address
      * @return The response in byte[], where the URI can point to a file or a website
      * @throws ThresholdReadingException if the thresholds could not be read
      */
-    byte[] getResponse( final URI address )
+    private byte[] getResponse( final URI address )
     {
         LOGGER.debug( "Opening URI {}", address );
         try
         {
-            URI fullAddress = ThresholdReader.getAbsoluteUri( address );
-
-            if ( ReaderUtilities.isWebSource( fullAddress ) )
+            if ( ReaderUtilities.isWebSource( address ) )
             {
-                return getRemoteResponse( fullAddress );
+                return WrdsThresholdReader.getResponseFromWeb( address );
             }
             else
             {
-                try ( InputStream data = Files.newInputStream( Paths.get( fullAddress ) ) )
+                try ( InputStream data = Files.newInputStream( Paths.get( address ) ) )
                 {
                     return IOUtils.toByteArray( data );
                 }
@@ -368,7 +425,7 @@ class ThresholdReader
     /**
      * @return The response from the remote URI as bytes[].
      */
-    private static byte[] getRemoteResponse( URI inputAddress ) throws IOException
+    private static byte[] getResponseFromWeb( URI inputAddress ) throws IOException
     {
         try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( inputAddress ) )
         {
@@ -383,25 +440,6 @@ class ThresholdReader
 
             return response.getResponse().readAllBytes();
         }
-    }
-
-    /**
-     * Create a complete-with-scheme, absolute URI for the given URI.
-     * @param maybeIncomplete A potentially incomplete URI (relative path)
-     * @return The complete URI with guaranteed scheme.
-     */
-
-    private static URI getAbsoluteUri( URI maybeIncomplete )
-    {
-        if ( Objects.isNull( maybeIncomplete.getScheme() ) )
-        {
-            Path dataDirectory = Path.of( System.getProperty( "user.dir" ) );
-            return dataDirectory.toUri()
-                                .resolve( maybeIncomplete.getPath() );
-
-        }
-
-        return maybeIncomplete;
     }
 
     /**
@@ -495,9 +533,172 @@ class ThresholdReader
     }
 
     /**
+     * Generates featureful thresholds from the inputs.
+     * @param thresholds the thresholds
+     * @param orientation the orientation of the dataset to which the feature names apply
+     * @param featureNames the feature names
+     * @param featureAuthority the feature authority to help with feature naming
+     * @return the featureful thresholds
+     */
+    private static Set<wres.config.yaml.components.Threshold> getFeaturefulThresholds( Map<Location, Set<Threshold>> thresholds,
+                                                                                       DatasetOrientation orientation,
+                                                                                       Map<String, String> featureNames,
+                                                                                       FeatureAuthority featureAuthority )
+    {
+        // Ordered, mapped thresholds
+        Set<wres.config.yaml.components.Threshold> mappedThresholds = new HashSet<>();
+
+        for ( Map.Entry<Location, Set<Threshold>> nextEntry : thresholds.entrySet() )
+        {
+            Location location = nextEntry.getKey();
+            Set<Threshold> nextThresholds = nextEntry.getValue();
+
+            String featureName = Location.getNameForAuthority( featureAuthority, location );
+            String originalFeatureName = featureNames.get( featureName );
+
+            Geometry feature = Geometry.newBuilder()
+                                       .setName( originalFeatureName )
+                                       .build();
+            Set<wres.config.yaml.components.Threshold> nextMappedThresholds =
+                    nextThresholds.stream()
+                                  .map( next -> ThresholdBuilder.builder()
+                                                                .threshold( next )
+                                                                .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                                                .feature( feature )
+                                                                .featureNameFrom( orientation )
+                                                                .build() )
+                                  .collect( Collectors.toSet() );
+            mappedThresholds.addAll( nextMappedThresholds );
+        }
+
+        return Collections.unmodifiableSet( mappedThresholds );
+    }
+
+    /**
+     * Returns the requested feature names mapped against the original names. The requested names will differ in some
+     * cases. For example, when requesting names with the {@link FeatureAuthority#NWS_LID}, the names must be
+     * "Handbook 5" names, which contain up to five characters.
+     *
+     * @param originalNames the original feature names
+     * @param featureAuthority the feature authority
+     * @param serviceUri the service URI
+     * @return the feature names to use when forming a request to a web service
+     */
+
+    private static Map<String, String> getMappedAndAdjustedFeatureNames( Set<String> originalNames,
+                                                                         FeatureAuthority featureAuthority,
+                                                                         URI serviceUri )
+    {
+        Map<String, String> names;
+        // Only handbook 5 names are allowed in this context, so use up to the first 5 characters of an NWS LID only
+        if ( featureAuthority == FeatureAuthority.NWS_LID && ReaderUtilities.isWebSource( serviceUri ) )
+        {
+            names = originalNames.stream()
+                            .collect( Collectors.toUnmodifiableMap( n -> n.substring( 0, Math.min( n.length(), 5 ) ),
+                                                                    Function.identity() ) );
+        }
+        else
+        {
+            names = originalNames.stream()
+                            .collect( Collectors.toUnmodifiableMap( Function.identity(), Function.identity() ) );
+        }
+
+        return names;
+    }
+
+    /**
+     * Validates the thresholds against features
+     * @param uri the service URI
+     * @param featureNames the feature names
+     * @param thresholds the thresholds
+     * @param featureAuthority the feature authority
+     */
+
+    private static void validate( URI uri,
+                                  Map<String, String> featureNames,
+                                  Map<Location, Set<Threshold>> thresholds,
+                                  FeatureAuthority featureAuthority )
+    {
+        // No external thresholds declared
+        if ( thresholds.isEmpty() )
+        {
+            LOGGER.debug( "No external thresholds to validate." );
+
+            return;
+        }
+
+        LOGGER.debug( "Attempting to reconcile the {} features to evaluate with the {} features for which external "
+                      + "thresholds are available.",
+                      featureNames.size(),
+                      thresholds.size() );
+
+        // Identify the features that have thresholds
+        Set<Location> thresholdFeatures = thresholds.keySet();
+        Set<String> thresholdFeatureNames =
+                thresholdFeatures.stream()
+                                 .map( n -> Location.getNameForAuthority( featureAuthority, n ) )
+                                 .collect( Collectors.toSet() );
+
+        Set<String> featureNamesWithThresholds = new TreeSet<>( featureNames.keySet() );
+        featureNamesWithThresholds.retainAll( thresholdFeatureNames );
+        Set<String> featureNamesWithoutThresholds = new TreeSet<>( featureNames.keySet() );
+        featureNamesWithoutThresholds.removeAll( thresholdFeatureNames );
+
+        Set<String> thresholdNamesWithoutFeatures = new TreeSet<>( thresholdFeatureNames );
+        thresholdNamesWithoutFeatures.removeAll( featureNames.keySet() );
+
+        if ( ( !featureNamesWithoutThresholds.isEmpty() || !thresholdNamesWithoutFeatures.isEmpty() )
+             && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}{}",
+                         "While attempting to reconcile the features to ",
+                         "evaluate with the features for which thresholds ",
+                         "are available, found ",
+                         featureNames.size(),
+                         " features to evaluate and ",
+                         featureNamesWithThresholds.size(),
+                         " features for which thresholds were found, but ",
+                         featureNamesWithoutThresholds.size(),
+                         " features for which thresholds could not be ",
+                         "reconciled with features to evaluate. Features without ",
+                         "thresholds will be skipped. If the number of features ",
+                         "without thresholds is larger than expected, ensure that ",
+                         "the source of feature names (featureNameFrom) is properly ",
+                         "declared for the external thresholds. The ",
+                         "declared features without thresholds are: ",
+                         featureNamesWithoutThresholds,
+                         ". The feature names associated with thresholds for which no features were declared are: ",
+                         thresholdNamesWithoutFeatures );
+        }
+
+        if ( featureNamesWithoutThresholds.size() == featureNames.size() )
+        {
+            throw new ThresholdReadingException( "When reading thresholds from "
+                                                 + uri
+                                                 + ", failed to discover any features for which thresholds were "
+                                                 + "available. Add some thresholds for one or more of the declared "
+                                                 + "features, declare some features for which thresholds are available "
+                                                 + "or remove the declaration of thresholds altogether. The names of "
+                                                 + "features encountered without thresholds are: "
+                                                 + thresholdNamesWithoutFeatures
+                                                 + ". Thresholds were not discovered for any of the following declared "
+                                                 + "features: "
+                                                 + featureNamesWithoutThresholds
+                                                 + "." );
+        }
+
+        LOGGER.info( "While reading thresholds from {}, discovered {} features to evaluate for which external "
+                     + "thresholds were available and {} features with external thresholds that could not be evaluated "
+                     + "(e.g., because there was no data for these features).",
+                     uri,
+                     featureNamesWithThresholds.size(),
+                     thresholdNamesWithoutFeatures.size() );
+    }
+
+    /**
      * Hidden constructor.
      */
-    private ThresholdReader()
+    private WrdsThresholdReader()
     {
     }
 }

@@ -672,7 +672,7 @@ class DeclarationInterpolatorTest
                 EvaluationDeclarationBuilder.builder()
                                             .left( left )
                                             .right( right )
-                                            .valueThresholds( Set.of( wrappedOne,
+                                            .thresholds( Set.of( wrappedOne,
                                                                       wrappedTwo,
                                                                       wrappedThree ) )
                                             .build();
@@ -833,7 +833,7 @@ class DeclarationInterpolatorTest
                              .name( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE )
                              .parameters( MetricParametersBuilder.builder()
                                                                  .ensembleAverageType( Pool.EnsembleAverageType.MEAN )
-                                                                 .valueThresholds( Set.of( ALL_DATA_THRESHOLD ) )
+                                                                 .thresholds( Set.of( ALL_DATA_THRESHOLD ) )
                                                                  .build() )
                              .build();
         Metric secondExpected =
@@ -841,7 +841,7 @@ class DeclarationInterpolatorTest
                              .name( MetricConstants.MEAN_ABSOLUTE_ERROR )
                              .parameters( MetricParametersBuilder.builder()
                                                                  .ensembleAverageType( Pool.EnsembleAverageType.MEDIAN )
-                                                                 .valueThresholds( Set.of( ALL_DATA_THRESHOLD ) )
+                                                                 .thresholds( Set.of( ALL_DATA_THRESHOLD ) )
                                                                  .build() )
                              .build();
 
@@ -869,7 +869,7 @@ class DeclarationInterpolatorTest
                 EvaluationDeclarationBuilder.builder( evaluation )
                                             .left( this.observedDataset )
                                             .right( this.predictedDataset )
-                                            .valueThresholds( Set.of( ALL_DATA_THRESHOLD ) );
+                                            .thresholds( Set.of( ALL_DATA_THRESHOLD ) );
 
         // Create some metric-specific thresholds, one with a feature, one without
         wres.config.yaml.components.Threshold one =
@@ -890,7 +890,7 @@ class DeclarationInterpolatorTest
                 MetricBuilder.builder()
                              .name( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE )
                              .parameters( MetricParametersBuilder.builder()
-                                                                 .valueThresholds( Set.of( one, two ) )
+                                                                 .thresholds( Set.of( one, two ) )
                                                                  .build() )
                              .build();
         Metric second =
@@ -929,7 +929,7 @@ class DeclarationInterpolatorTest
                 MetricBuilder.builder()
                              .name( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE )
                              .parameters( MetricParametersBuilder.builder()
-                                                                 .valueThresholds( Set.of( expectedOne,
+                                                                 .thresholds( Set.of( expectedOne,
                                                                                            expectedTwo,
                                                                                            one,
                                                                                            expectedThree,
@@ -940,7 +940,7 @@ class DeclarationInterpolatorTest
                 MetricBuilder.builder()
                              .name( MetricConstants.MEAN_ERROR )
                              .parameters( MetricParametersBuilder.builder()
-                                                                 .valueThresholds( Set.of( expectedOne,
+                                                                 .thresholds( Set.of( expectedOne,
                                                                                            expectedTwo ) )
                                                                  .build() )
                              .build();
@@ -1079,7 +1079,7 @@ class DeclarationInterpolatorTest
                   sources:
                     - uri: another_file.csv
                   type: simulations
-                value_thresholds: [23.0, 25.0]
+                thresholds: [23.0, 25.0]
                   """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
@@ -1109,7 +1109,7 @@ class DeclarationInterpolatorTest
                   sources:
                     - uri: another_file.csv
                   type: ensemble forecasts
-                value_thresholds: [23.0, 25.0]
+                thresholds: [23.0, 25.0]
                   """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
@@ -1292,7 +1292,7 @@ class DeclarationInterpolatorTest
     }
 
     @Test
-    void testDeserializeAndInterpolateAddsUnitToValueThresholds() throws IOException
+    void testDeserializeAndInterpolateAddsUnitTothresholds() throws IOException
     {
         String yaml = """
                 observed:
@@ -1300,18 +1300,18 @@ class DeclarationInterpolatorTest
                 predicted:
                   - another_file.csv
                 unit: foo
-                value_thresholds: [26,9,73]
+                thresholds: [26,9,73]
                 threshold_sets:
-                  - value_thresholds: [23,2,45]
+                  - thresholds: [23,2,45]
                 metrics:
                   - name: mean square error skill score
-                    value_thresholds: [12, 24, 27]
+                    thresholds: [12, 24, 27]
                   """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
         EvaluationDeclaration actualInterpolated = DeclarationInterpolator.interpolate( actual );
 
-        assertAll( () -> assertTrue( actualInterpolated.valueThresholds()
+        assertAll( () -> assertTrue( actualInterpolated.thresholds()
                                                        .stream()
                                                        .filter( next -> next
                                                                         != DeclarationInterpolator.ALL_DATA_THRESHOLD )
@@ -1326,7 +1326,7 @@ class DeclarationInterpolatorTest
                    () -> assertTrue( actualInterpolated.metrics()
                                                        .stream()
                                                        .map( Metric::parameters )
-                                                       .flatMap( next -> next.valueThresholds().stream() )
+                                                       .flatMap( next -> next.thresholds().stream() )
                                                        .filter( next -> next
                                                                         != DeclarationInterpolator.ALL_DATA_THRESHOLD )
                                                        .allMatch( next -> "foo".equals( next.threshold()
@@ -1372,10 +1372,10 @@ class DeclarationInterpolatorTest
                   - some_file.csv
                 predicted:
                   - another_file.csv
-                value_thresholds: [1]
+                thresholds: [1]
                 classifier_thresholds: [0.1]
                 threshold_sets:
-                  - value_thresholds: [2]
+                  - thresholds: [2]
                   - classifier_thresholds: [0.2]
                 metrics:
                   - mean square error skill score
@@ -1409,14 +1409,14 @@ class DeclarationInterpolatorTest
                                 .build();
 
         // Preserve insertion order
-        Set<wres.config.yaml.components.Threshold> valueThresholds = new LinkedHashSet<>();
-        valueThresholds.add( oneWrapped );
-        valueThresholds.add( twoWrapped );
-        valueThresholds.add( ALL_DATA_THRESHOLD );
+        Set<wres.config.yaml.components.Threshold> thresholds = new LinkedHashSet<>();
+        thresholds.add( oneWrapped );
+        thresholds.add( twoWrapped );
+        thresholds.add( ALL_DATA_THRESHOLD );
 
         MetricParameters firstParameters =
                 MetricParametersBuilder.builder()
-                                       .valueThresholds( valueThresholds )
+                                       .thresholds( thresholds )
                                        .build();
         Metric first = MetricBuilder.builder()
                                     .name( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE )
@@ -1450,11 +1450,11 @@ class DeclarationInterpolatorTest
         classifierThresholds.add( fourWrapped );
 
         // Re-use the value thresholds without the all data threshold
-        valueThresholds.remove( ALL_DATA_THRESHOLD );
+        thresholds.remove( ALL_DATA_THRESHOLD );
 
         MetricParameters secondParameters =
                 MetricParametersBuilder.builder()
-                                       .valueThresholds( valueThresholds )
+                                       .thresholds( thresholds )
                                        .classifierThresholds( classifierThresholds )
                                        .build();
         Metric second = MetricBuilder.builder()

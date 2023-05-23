@@ -106,7 +106,7 @@ public final class StatisticsProcessorTest
         Set<Metric> metrics = Set.of( new Metric( MetricConstants.MEAN_ERROR, null ) );
 
         EvaluationDeclaration evaluationDeclaration = EvaluationDeclarationBuilder.builder( declaration )
-                                                                                  .valueThresholds( Set.of() )
+                                                                                  .thresholds( Set.of() )
                                                                                   .metrics( metrics )
                                                                                   .build();
         evaluationDeclaration = DeclarationInterpolator.interpolate( evaluationDeclaration );

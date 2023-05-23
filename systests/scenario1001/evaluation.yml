@@ -10,7 +10,7 @@ predicted:
     - smalldata/25510319T00_FAKE3_forecast.xml
   variable: STREAMFLOW
 unit: CMS
-value_thresholds:
+thresholds:
   values: [183.0, 184.0]
   apply_to: observed and predicted
 metrics:

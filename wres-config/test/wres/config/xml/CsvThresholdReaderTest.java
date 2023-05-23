@@ -29,7 +29,7 @@ import java.util.TreeMap;
  *
  * @author James Brown
  */
-
+@Deprecated( since = "6.14", forRemoval = true )
 class CsvThresholdReaderTest
 {
     private static final String TEST_CSV = "test.csv";

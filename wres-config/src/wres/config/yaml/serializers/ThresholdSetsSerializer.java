@@ -50,14 +50,14 @@ public class ThresholdSetsSerializer extends JsonSerializer<Set<Threshold>>
                 ThresholdType type = nextThresholds.getKey()
                                                    .type();
                 Set<Threshold> thresholdSet = nextThresholds.getValue();
-                if ( type == ThresholdType.PROBABILITY )
+                if ( type == ThresholdType.VALUE )
                 {
-                    writer.writeFieldName( "probability_thresholds" );
+                    writer.writeFieldName( "thresholds" );
                     THRESHOLDS_SERIALIZER.serialize( thresholdSet, writer, serializers );
                 }
-                else if ( type == ThresholdType.VALUE )
+                else if ( type == ThresholdType.PROBABILITY )
                 {
-                    writer.writeFieldName( "value_thresholds" );
+                    writer.writeFieldName( "probability_thresholds" );
                     THRESHOLDS_SERIALIZER.serialize( thresholdSet, writer, serializers );
                 }
                 else if ( type == ThresholdType.PROBABILITY_CLASSIFIER )

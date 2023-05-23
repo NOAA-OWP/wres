@@ -7,7 +7,6 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -28,20 +27,23 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.FeatureAuthority;
-import wres.config.yaml.components.ThresholdService;
-import wres.config.yaml.components.ThresholdServiceBuilder;
+import wres.config.yaml.components.ThresholdBuilder;
+import wres.config.yaml.components.ThresholdSource;
+import wres.config.yaml.components.ThresholdSourceBuilder;
+import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.units.UnitMapper;
 import wres.io.reading.wrds.geography.Location;
+import wres.statistics.generated.Geometry;
 import wres.statistics.generated.Threshold;
 
 /**
- * Tests the {@link ThresholdReader}.
+ * Tests the {@link WrdsThresholdReader}.
  *
  * @author James Brown
  * @author Hank Herr
  * @author Chris Tubbs
  */
-class ThresholdReaderTest
+class WrdsThresholdReaderTest
 {
     /** Mocker server instance. */
     private ClientAndServer mockServer;
@@ -761,51 +763,51 @@ class ThresholdReaderTest
     private static final String FT = "FT";
 
     // Various locations to test
-    private static final Location PTSA1 = ThresholdReaderTest.createFeature( "2323396", "02372250", "PTSA1" );
-    private static final Location MNTG1 = ThresholdReaderTest.createFeature( "6444276", "02349605", "MNTG1" );
-    private static final Location BLOF1 = ThresholdReaderTest.createFeature( "2297254", "02358700", "BLOF1" );
-    private static final Location CEDG1 = ThresholdReaderTest.createFeature( "2310009", "02343940", "CEDG1" );
-    private static final Location SMAF1 = ThresholdReaderTest.createFeature( "2298964", "02359170", "SMAF1" );
-    private static final Location CHAF1 = ThresholdReaderTest.createFeature( "2293124", "02358000", "CHAF1" );
-    private static final Location OKFG1 = ThresholdReaderTest.createFeature( "6447636", "02350512", "OKFG1" );
-    private static final Location TLPT2 = ThresholdReaderTest.createFeature( "13525368", "07311630", "TLPT2" );
-    private static final Location NUTF1 = ThresholdReaderTest.createFeature( null, null, "NUTF1" );
-    private static final Location CDRA1 = ThresholdReaderTest.createFeature( null, null, "CDRA1" );
-    private static final Location MUCG1 = ThresholdReaderTest.createFeature( null, null, "MUCG1" );
-    private static final Location PRSG1 = ThresholdReaderTest.createFeature( null, null, "PRSG1" );
-    private static final Location LSNO2 = ThresholdReaderTest.createFeature( null, null, "LSNO2" );
-    private static final Location HDGA4 = ThresholdReaderTest.createFeature( null, null, "HDGA4" );
-    private static final Location FAKE3 = ThresholdReaderTest.createFeature( null, null, "FAKE3" );
-    private static final Location CNMP1 = ThresholdReaderTest.createFeature( null, null, "CNMP1" );
-    private static final Location WLLM2 = ThresholdReaderTest.createFeature( null, null, "WLLM2" );
-    private static final Location RCJD2 = ThresholdReaderTest.createFeature( null, null, "RCJD2" );
-    private static final Location MUSM5 = ThresholdReaderTest.createFeature( null, null, "MUSM5" );
-    private static final Location DUMM5 = ThresholdReaderTest.createFeature( null, null, "DUMM5" );
-    private static final Location DMTM5 = ThresholdReaderTest.createFeature( null, null, "DMTM5" );
-    private static final Location PONS2 = ThresholdReaderTest.createFeature( null, null, "PONS2" );
-    private static final Location MCKG1 = ThresholdReaderTest.createFeature( null, null, "MCKG1" );
-    private static final Location DSNG1 = ThresholdReaderTest.createFeature( null, null, "DSNG1" );
-    private static final Location BVAW2 = ThresholdReaderTest.createFeature( null, null, "BVAW2" );
-    private static final Location CNEO2 = ThresholdReaderTest.createFeature( null, null, "CNEO2" );
-    private static final Location CMKT2 = ThresholdReaderTest.createFeature( null, null, "CMKT2" );
-    private static final Location BDWN6 = ThresholdReaderTest.createFeature( null, null, "BDWN6" );
-    private static final Location CFBN6 = ThresholdReaderTest.createFeature( null, null, "CFBN6" );
-    private static final Location CCSA1 = ThresholdReaderTest.createFeature( null, null, "CCSA1" );
-    private static final Location LGNN8 = ThresholdReaderTest.createFeature( null, null, "LGNN8" );
-    private static final Location BCLN7 = ThresholdReaderTest.createFeature( null, null, "BCLN7" );
-    private static final Location KERV2 = ThresholdReaderTest.createFeature( null, null, "KERV2" );
-    private static final Location ARDS1 = ThresholdReaderTest.createFeature( null, null, "ARDS1" );
-    private static final Location WINW2 = ThresholdReaderTest.createFeature( null, null, "WINW2" );
-    private static final Location SRDN5 = ThresholdReaderTest.createFeature( null, null, "SRDN5" );
-    private static final Location MNTN1 = ThresholdReaderTest.createFeature( null, null, "MNTN1" );
-    private static final Location GNSW4 = ThresholdReaderTest.createFeature( null, null, "GNSW4" );
-    private static final Location JAIO1 = ThresholdReaderTest.createFeature( null, null, "JAIO1" );
-    private static final Location INCO1 = ThresholdReaderTest.createFeature( null, null, "INCO1" );
-    private static final Location PRMO1 = ThresholdReaderTest.createFeature( null, null, "PRMO1" );
-    private static final Location PARO1 = ThresholdReaderTest.createFeature( null, null, "PARO1" );
-    private static final Location BRCO1 = ThresholdReaderTest.createFeature( null, null, "BRCO1" );
-    private static final Location WRNO1 = ThresholdReaderTest.createFeature( null, null, "WRNO1" );
-    private static final Location BLEO1 = ThresholdReaderTest.createFeature( null, null, "BLEO1" );
+    private static final Location PTSA1 = WrdsThresholdReaderTest.createFeature( "2323396", "02372250", "PTSA1" );
+    private static final Location MNTG1 = WrdsThresholdReaderTest.createFeature( "6444276", "02349605", "MNTG1" );
+    private static final Location BLOF1 = WrdsThresholdReaderTest.createFeature( "2297254", "02358700", "BLOF1" );
+    private static final Location CEDG1 = WrdsThresholdReaderTest.createFeature( "2310009", "02343940", "CEDG1" );
+    private static final Location SMAF1 = WrdsThresholdReaderTest.createFeature( "2298964", "02359170", "SMAF1" );
+    private static final Location CHAF1 = WrdsThresholdReaderTest.createFeature( "2293124", "02358000", "CHAF1" );
+    private static final Location OKFG1 = WrdsThresholdReaderTest.createFeature( "6447636", "02350512", "OKFG1" );
+    private static final Location TLPT2 = WrdsThresholdReaderTest.createFeature( "13525368", "07311630", "TLPT2" );
+    private static final Location NUTF1 = WrdsThresholdReaderTest.createFeature( null, null, "NUTF1" );
+    private static final Location CDRA1 = WrdsThresholdReaderTest.createFeature( null, null, "CDRA1" );
+    private static final Location MUCG1 = WrdsThresholdReaderTest.createFeature( null, null, "MUCG1" );
+    private static final Location PRSG1 = WrdsThresholdReaderTest.createFeature( null, null, "PRSG1" );
+    private static final Location LSNO2 = WrdsThresholdReaderTest.createFeature( null, null, "LSNO2" );
+    private static final Location HDGA4 = WrdsThresholdReaderTest.createFeature( null, null, "HDGA4" );
+    private static final Location FAKE3 = WrdsThresholdReaderTest.createFeature( null, null, "FAKE3" );
+    private static final Location CNMP1 = WrdsThresholdReaderTest.createFeature( null, null, "CNMP1" );
+    private static final Location WLLM2 = WrdsThresholdReaderTest.createFeature( null, null, "WLLM2" );
+    private static final Location RCJD2 = WrdsThresholdReaderTest.createFeature( null, null, "RCJD2" );
+    private static final Location MUSM5 = WrdsThresholdReaderTest.createFeature( null, null, "MUSM5" );
+    private static final Location DUMM5 = WrdsThresholdReaderTest.createFeature( null, null, "DUMM5" );
+    private static final Location DMTM5 = WrdsThresholdReaderTest.createFeature( null, null, "DMTM5" );
+    private static final Location PONS2 = WrdsThresholdReaderTest.createFeature( null, null, "PONS2" );
+    private static final Location MCKG1 = WrdsThresholdReaderTest.createFeature( null, null, "MCKG1" );
+    private static final Location DSNG1 = WrdsThresholdReaderTest.createFeature( null, null, "DSNG1" );
+    private static final Location BVAW2 = WrdsThresholdReaderTest.createFeature( null, null, "BVAW2" );
+    private static final Location CNEO2 = WrdsThresholdReaderTest.createFeature( null, null, "CNEO2" );
+    private static final Location CMKT2 = WrdsThresholdReaderTest.createFeature( null, null, "CMKT2" );
+    private static final Location BDWN6 = WrdsThresholdReaderTest.createFeature( null, null, "BDWN6" );
+    private static final Location CFBN6 = WrdsThresholdReaderTest.createFeature( null, null, "CFBN6" );
+    private static final Location CCSA1 = WrdsThresholdReaderTest.createFeature( null, null, "CCSA1" );
+    private static final Location LGNN8 = WrdsThresholdReaderTest.createFeature( null, null, "LGNN8" );
+    private static final Location BCLN7 = WrdsThresholdReaderTest.createFeature( null, null, "BCLN7" );
+    private static final Location KERV2 = WrdsThresholdReaderTest.createFeature( null, null, "KERV2" );
+    private static final Location ARDS1 = WrdsThresholdReaderTest.createFeature( null, null, "ARDS1" );
+    private static final Location WINW2 = WrdsThresholdReaderTest.createFeature( null, null, "WINW2" );
+    private static final Location SRDN5 = WrdsThresholdReaderTest.createFeature( null, null, "SRDN5" );
+    private static final Location MNTN1 = WrdsThresholdReaderTest.createFeature( null, null, "MNTN1" );
+    private static final Location GNSW4 = WrdsThresholdReaderTest.createFeature( null, null, "GNSW4" );
+    private static final Location JAIO1 = WrdsThresholdReaderTest.createFeature( null, null, "JAIO1" );
+    private static final Location INCO1 = WrdsThresholdReaderTest.createFeature( null, null, "INCO1" );
+    private static final Location PRMO1 = WrdsThresholdReaderTest.createFeature( null, null, "PRMO1" );
+    private static final Location PARO1 = WrdsThresholdReaderTest.createFeature( null, null, "PARO1" );
+    private static final Location BRCO1 = WrdsThresholdReaderTest.createFeature( null, null, "BRCO1" );
+    private static final Location WRNO1 = WrdsThresholdReaderTest.createFeature( null, null, "WRNO1" );
+    private static final Location BLEO1 = WrdsThresholdReaderTest.createFeature( null, null, "BLEO1" );
 
     private static final List<Location> DESIRED_FEATURES = List.of( PTSA1,
                                                                     MNTG1,
@@ -860,12 +862,12 @@ class ThresholdReaderTest
     private UnitMapper flowMapper;
 
     /** A reader to test. */
-    private ThresholdReader reader;
+    private WrdsThresholdReader reader;
 
     @BeforeEach
     void runBeforeEachTest()
     {
-        this.reader = ThresholdReader.of();
+        this.reader = WrdsThresholdReader.of();
         this.stageMapper = UnitMapper.of( "FT" );
         this.flowMapper = UnitMapper.of( "CFS" );
         this.mockServer = ClientAndServer.startClientAndServer( 0 );
@@ -890,21 +892,21 @@ class ThresholdReaderTest
                                          .withMethod( "GET" ) )
                        .respond( HttpResponse.response( ANOTHER_RESPONSE ) );
 
-        ThresholdService service
-                = ThresholdServiceBuilder.builder()
-                                         .uri( fakeUri )
-                                         .featureNameFrom( DatasetOrientation.LEFT )
-                                         .type( wres.config.yaml.components.ThresholdType.VALUE )
-                                         .parameter( "stage" )
-                                         .provider( "NWS-NRLDB" )
-                                         .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
-                                         .build();
+        ThresholdSource service
+                = ThresholdSourceBuilder.builder()
+                                        .uri( fakeUri )
+                                        .featureNameFrom( DatasetOrientation.LEFT )
+                                        .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                        .parameter( "stage" )
+                                        .provider( "NWS-NRLDB" )
+                                        .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                        .build();
 
-        Map<Location, Set<Threshold>> actual =
-                this.reader.readThresholds( service,
-                                            this.stageMapper,
-                                            Set.of( "PTSA1", "MNTG1", "BLOF1", "CEDG1", "SMAF1" ),
-                                            FeatureAuthority.NWS_LID );
+        Set<wres.config.yaml.components.Threshold> actual =
+                this.reader.read( service,
+                                  this.stageMapper,
+                                  Set.of( "PTSA1", "MNTG1", "BLOF1", "CEDG1", "SMAF1" ),
+                                  FeatureAuthority.NWS_LID );
 
         Threshold firstOne = Threshold.newBuilder()
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
@@ -949,15 +951,21 @@ class ThresholdReaderTest
                                         .setName( "record" )
                                         .build();
 
-        Set<Threshold> firstExpected = Set.of( firstOne,
-                                               firstTwo,
-                                               firstThree,
-                                               firstFour,
-                                               firstFive,
-                                               firstSix,
-                                               firstSeven );
+        Set<Threshold> firstExpectedInner = Set.of( firstOne,
+                                                    firstTwo,
+                                                    firstThree,
+                                                    firstFour,
+                                                    firstFive,
+                                                    firstSix,
+                                                    firstSeven );
 
-        assertEquals( firstExpected, actual.get( SMAF1 ) );
+        Set<wres.config.yaml.components.Threshold> firstExpected =
+                WrdsThresholdReaderTest.createThresholds( firstExpectedInner,
+                                                          "SMAF1" );
+
+        Set<wres.config.yaml.components.Threshold> firstActual = WrdsThresholdReaderTest.filter( actual, "SMAF1" );
+
+        assertEquals( firstExpected, firstActual );
 
         Threshold secondOne = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
@@ -972,10 +980,16 @@ class ThresholdReaderTest
                                        .setName( "record" )
                                        .build();
 
-        Set<Threshold> secondExpected = Set.of( secondOne,
-                                                secondTwo );
+        Set<Threshold> secondExpectedInner = Set.of( secondOne,
+                                                     secondTwo );
 
-        assertEquals( secondExpected, actual.get( CEDG1 ) );
+        Set<wres.config.yaml.components.Threshold> secondExpected =
+                WrdsThresholdReaderTest.createThresholds( secondExpectedInner,
+                                                          "CEDG1" );
+
+        Set<wres.config.yaml.components.Threshold> secondActual = WrdsThresholdReaderTest.filter( actual, "CEDG1" );
+
+        assertEquals( secondExpected, secondActual );
 
         Threshold thirdOne = Threshold.newBuilder()
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
@@ -984,9 +998,15 @@ class ThresholdReaderTest
                                       .setName( "low" )
                                       .build();
 
-        Set<Threshold> thirdExpected = Set.of( thirdOne );
+        Set<Threshold> thirdExpectedInner = Set.of( thirdOne );
 
-        assertEquals( thirdExpected, actual.get( PTSA1 ) );
+        Set<wres.config.yaml.components.Threshold> thirdExpected =
+                WrdsThresholdReaderTest.createThresholds( thirdExpectedInner,
+                                                          "PTSA1" );
+
+        Set<wres.config.yaml.components.Threshold> thirdActual = WrdsThresholdReaderTest.filter( actual, "PTSA1" );
+
+        assertEquals( thirdExpected, thirdActual );
 
         Threshold fourthOne = Threshold.newBuilder()
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
@@ -1031,15 +1051,21 @@ class ThresholdReaderTest
                                          .setName( "record" )
                                          .build();
 
-        Set<Threshold> fourthExpected = Set.of( fourthOne,
-                                                fourthTwo,
-                                                fourthThree,
-                                                fourthFour,
-                                                fourthFive,
-                                                fourthSix,
-                                                fourthSeven );
+        Set<Threshold> fourthExpectedInner = Set.of( fourthOne,
+                                                     fourthTwo,
+                                                     fourthThree,
+                                                     fourthFour,
+                                                     fourthFive,
+                                                     fourthSix,
+                                                     fourthSeven );
 
-        assertEquals( fourthExpected, actual.get( BLOF1 ) );
+        Set<wres.config.yaml.components.Threshold> fourthExpected =
+                WrdsThresholdReaderTest.createThresholds( fourthExpectedInner,
+                                                          "BLOF1" );
+
+        Set<wres.config.yaml.components.Threshold> fourthActual = WrdsThresholdReaderTest.filter( actual, "BLOF1" );
+
+        assertEquals( fourthExpected, fourthActual );
 
         Threshold fifthOne = Threshold.newBuilder()
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
@@ -1089,16 +1115,22 @@ class ThresholdReaderTest
                                          .setThresholdValueUnits( FT )
                                          .setName( "record" )
                                          .build();
-        Set<Threshold> fifthExpected = Set.of( fifthOne,
-                                               fifthTwo,
-                                               fifthThree,
-                                               fifthFour,
-                                               fifthFive,
-                                               fifthSix,
-                                               fifthSeven,
-                                               fifthEighth );
+        Set<Threshold> fifthExpectedInner = Set.of( fifthOne,
+                                                    fifthTwo,
+                                                    fifthThree,
+                                                    fifthFour,
+                                                    fifthFive,
+                                                    fifthSix,
+                                                    fifthSeven,
+                                                    fifthEighth );
 
-        assertEquals( fifthExpected, actual.get( MNTG1 ) );
+        Set<wres.config.yaml.components.Threshold> fifthExpected =
+                WrdsThresholdReaderTest.createThresholds( fifthExpectedInner,
+                                                          "MNTG1" );
+
+        Set<wres.config.yaml.components.Threshold> fifthActual = WrdsThresholdReaderTest.filter( actual, "MNTG1" );
+
+        assertEquals( fifthExpected, fifthActual );
     }
 
     @Test
@@ -1117,35 +1149,42 @@ class ThresholdReaderTest
                 writer.append( ANOTHER_RESPONSE );
             }
 
-            ThresholdService service
-                    = ThresholdServiceBuilder.builder()
-                                             .uri( jsonPath.toUri() )
-                                             .featureNameFrom( DatasetOrientation.LEFT )
-                                             .type( wres.config.yaml.components.ThresholdType.VALUE )
-                                             .parameter( "stage" )
-                                             .provider( "NWS-NRLDB" )
-                                             .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
-                                             .build();
+            ThresholdSource service
+                    = ThresholdSourceBuilder.builder()
+                                            .uri( jsonPath.toUri() )
+                                            .featureNameFrom( DatasetOrientation.LEFT )
+                                            .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                            .parameter( "stage" )
+                                            .provider( "NWS-NRLDB" )
+                                            .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                            .build();
 
-            Map<Location, Set<Threshold>> readThresholds =
-                    this.reader.readThresholds( service,
-                                                this.stageMapper,
-                                                DESIRED_FEATURES.stream()
-                                                                .map( Location::nwsLid )
-                                                                .collect( Collectors.toSet() ),
-                                                FeatureAuthority.NWS_LID );
+            Set<wres.config.yaml.components.Threshold> readThresholds =
+                    this.reader.read( service,
+                                      this.stageMapper,
+                                      DESIRED_FEATURES.stream()
+                                                      .map( Location::nwsLid )
+                                                      .collect( Collectors.toSet() ),
+                                      FeatureAuthority.NWS_LID );
 
-            assertTrue( readThresholds.containsKey( PTSA1 ) );
-            assertTrue( readThresholds.containsKey( MNTG1 ) );
-            assertTrue( readThresholds.containsKey( BLOF1 ) );
-            assertTrue( readThresholds.containsKey( SMAF1 ) );
-            assertTrue( readThresholds.containsKey( CEDG1 ) );
+            Set<wres.config.yaml.components.Threshold> ptsa1Thresholds = WrdsThresholdReaderTest.filter( readThresholds,
+                                                                                                         "PTSA1" );
+            assertFalse( ptsa1Thresholds.isEmpty() );
+            Set<wres.config.yaml.components.Threshold> blof1Thresholds = WrdsThresholdReaderTest.filter( readThresholds,
+                                                                                                         "BLOF1" );
+            assertFalse( blof1Thresholds.isEmpty() );
+            assertFalse( WrdsThresholdReaderTest.filter( readThresholds,
+                                                         "MNTG1" )
+                                                .isEmpty() );
+            assertFalse( WrdsThresholdReaderTest.filter( readThresholds,
+                                                         "SMAF1" )
+                                                .isEmpty() );
+            assertFalse( WrdsThresholdReaderTest.filter( readThresholds,
+                                                         "CEDG1" )
+                                                .isEmpty() );
 
             //The two low thresholds available are identical in both label and value, so only one is included.
-            Set<Threshold> ptsa1Thresholds = readThresholds.get( PTSA1 );
             assertEquals( 1, ptsa1Thresholds.size() );
-
-            Set<Threshold> blof1Thresholds = readThresholds.get( BLOF1 );
             assertEquals( 7, blof1Thresholds.size() );
 
             boolean hasLow = false;
@@ -1164,8 +1203,9 @@ class ThresholdReaderTest
                                                      "major",
                                                      "record" );
 
-            for ( Threshold threshold : blof1Thresholds )
+            for ( wres.config.yaml.components.Threshold wrappedThreshold : blof1Thresholds )
             {
+                Threshold threshold = wrappedThreshold.threshold();
                 String thresholdName = threshold.getName().toLowerCase();
 
                 assertTrue( properThresholds.contains( thresholdName ) );
@@ -1176,42 +1216,48 @@ class ThresholdReaderTest
                     {
                         hasBankfull = true;
                         assertEquals( 15.0,
-                                      threshold.getLeftThresholdValue().getValue(),
+                                      threshold.getLeftThresholdValue()
+                                               .getValue(),
                                       EPSILON );
                     }
                     case "action" ->
                     {
                         hasAction = true;
                         assertEquals( 13.0,
-                                      threshold.getLeftThresholdValue().getValue(),
+                                      threshold.getLeftThresholdValue()
+                                               .getValue(),
                                       EPSILON );
                     }
                     case "flood", "minor" ->
                     {
                         hasMinor = true;
                         assertEquals( 17.0,
-                                      threshold.getLeftThresholdValue().getValue(),
+                                      threshold.getLeftThresholdValue()
+                                               .getValue(),
                                       EPSILON );
                     }
                     case "moderate" ->
                     {
                         hasModerate = true;
                         assertEquals( 23.5,
-                                      threshold.getLeftThresholdValue().getValue(),
+                                      threshold.getLeftThresholdValue()
+                                               .getValue(),
                                       EPSILON );
                     }
                     case "major" ->
                     {
                         hasMajor = true;
                         assertEquals( 26.0,
-                                      threshold.getLeftThresholdValue().getValue(),
+                                      threshold.getLeftThresholdValue()
+                                               .getValue(),
                                       EPSILON );
                     }
                     case "record" ->
                     {
                         hasRecord = true;
                         assertEquals( 28.6,
-                                      threshold.getLeftThresholdValue().getValue(),
+                                      threshold.getLeftThresholdValue()
+                                               .getValue(),
                                       EPSILON );
                     }
                 }
@@ -1249,30 +1295,38 @@ class ThresholdReaderTest
                 writer.append( YET_ANOTHER_RESPONSE );
             }
 
-            ThresholdService service
-                    = ThresholdServiceBuilder.builder()
-                                             .uri( jsonPath.toUri() )
-                                             .featureNameFrom( DatasetOrientation.LEFT )
-                                             .type( wres.config.yaml.components.ThresholdType.VALUE )
-                                             .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
-                                             .build();
+            ThresholdSource service
+                    = ThresholdSourceBuilder.builder()
+                                            .uri( jsonPath.toUri() )
+                                            .featureNameFrom( DatasetOrientation.LEFT )
+                                            .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                            .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                            .build();
 
-            Map<Location, Set<Threshold>> readThresholds =
-                    this.reader.readThresholds( service,
-                                                this.flowMapper,
-                                                DESIRED_FEATURES.stream()
-                                                                .map( Location::nwsLid )
-                                                                .collect( Collectors.toSet() ),
-                                                FeatureAuthority.NWS_LID );
+            Set<wres.config.yaml.components.Threshold> readThresholds =
+                    this.reader.read( service,
+                                      this.flowMapper,
+                                      DESIRED_FEATURES.stream()
+                                                      .map( Location::nwsLid )
+                                                      .collect( Collectors.toSet() ),
+                                      FeatureAuthority.NWS_LID );
 
-            assertTrue( readThresholds.containsKey( PTSA1 ) );
-            assertTrue( readThresholds.containsKey( MNTG1 ) );
-            assertTrue( readThresholds.containsKey( BLOF1 ) );
-            assertTrue( readThresholds.containsKey( SMAF1 ) );
-            assertTrue( readThresholds.containsKey( CEDG1 ) );
+            Set<wres.config.yaml.components.Threshold> blof1Thresholds = WrdsThresholdReaderTest.filter( readThresholds,
+                                                                                                         "BLOF1" );
+            assertFalse( blof1Thresholds.isEmpty() );
+            assertFalse( WrdsThresholdReaderTest.filter( readThresholds,
+                                                         "PTSA1" )
+                                                .isEmpty() );
+            assertFalse( WrdsThresholdReaderTest.filter( readThresholds,
+                                                         "MNTG1" )
+                                                .isEmpty() );
+            assertFalse( WrdsThresholdReaderTest.filter( readThresholds,
+                                                         "SMAF1" )
+                                                .isEmpty() );
+            assertFalse( WrdsThresholdReaderTest.filter( readThresholds,
+                                                         "CEDG1" )
+                                                .isEmpty() );
 
-
-            Set<Threshold> blof1Thresholds = readThresholds.get( BLOF1 );
             assertEquals( 6, blof1Thresholds.size() );
 
             boolean has1_5 = false;
@@ -1290,9 +1344,11 @@ class ThresholdReaderTest
                     "year_5_0",
                     "year_10_0" );
 
-            for ( Threshold threshold : blof1Thresholds )
+            for ( wres.config.yaml.components.Threshold wrappedThreshold : blof1Thresholds )
             {
-                String thresholdName = threshold.getName().toLowerCase();
+                Threshold threshold = wrappedThreshold.threshold();
+                String thresholdName = threshold.getName()
+                                                .toLowerCase();
 
                 assertTrue( properThresholds.contains( thresholdName ) );
 
@@ -1302,42 +1358,48 @@ class ThresholdReaderTest
                     {
                         has1_5 = true;
                         assertEquals( 58864.26,
-                                      threshold.getLeftThresholdValue().getValue(),
+                                      threshold.getLeftThresholdValue()
+                                               .getValue(),
                                       EPSILON );
                     }
                     case "year_2_0" ->
                     {
                         has2_0 = true;
                         assertEquals( 87362.48,
-                                      threshold.getLeftThresholdValue().getValue(),
+                                      threshold.getLeftThresholdValue()
+                                               .getValue(),
                                       EPSILON );
                     }
                     case "year_3_0" ->
                     {
                         has3_0 = true;
                         assertEquals( 109539.05,
-                                      threshold.getLeftThresholdValue().getValue(),
+                                      threshold.getLeftThresholdValue()
+                                               .getValue(),
                                       EPSILON );
                     }
                     case "year_4_0" ->
                     {
                         has4_0 = true;
                         assertEquals( 128454.64,
-                                      threshold.getLeftThresholdValue().getValue(),
+                                      threshold.getLeftThresholdValue()
+                                               .getValue(),
                                       EPSILON );
                     }
                     case "year_5_0" ->
                     {
                         has5_0 = true;
                         assertEquals( 176406.6,
-                                      threshold.getLeftThresholdValue().getValue(),
+                                      threshold.getLeftThresholdValue()
+                                               .getValue(),
                                       EPSILON );
                     }
                     case "year_10_0" ->
                     {
                         has10_0 = true;
                         assertEquals( 216831.58000000002,
-                                      threshold.getLeftThresholdValue().getValue(),
+                                      threshold.getLeftThresholdValue()
+                                               .getValue(),
                                       EPSILON );
                     }
                 }
@@ -1374,25 +1436,25 @@ class ThresholdReaderTest
                 writer.append( YET_ANOTHER_RESPONSE );
             }
 
-            ThresholdService service
-                    = ThresholdServiceBuilder.builder()
-                                             .uri( jsonPath.toUri() )
-                                             .featureNameFrom( DatasetOrientation.LEFT )
-                                             .type( wres.config.yaml.components.ThresholdType.VALUE )
-                                             .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
-                                             // No such rating provider
-                                             .ratingProvider( "foofoo" )
-                                             .build();
+            ThresholdSource service
+                    = ThresholdSourceBuilder.builder()
+                                            .uri( jsonPath.toUri() )
+                                            .featureNameFrom( DatasetOrientation.LEFT )
+                                            .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                            .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                            // No such rating provider
+                                            .ratingProvider( "foofoo" )
+                                            .build();
 
             NoThresholdsFoundException actual =
                     assertThrows( NoThresholdsFoundException.class, // NOSONAR
-                                  () -> this.reader.readThresholds( service,
-                                                                    this.flowMapper,
-                                                                    DESIRED_FEATURES.stream()
-                                                                                    .map( Location::nwsLid )
-                                                                                    .collect(
-                                                                                            Collectors.toSet() ),
-                                                                    FeatureAuthority.NWS_LID ) );
+                                  () -> this.reader.read( service,
+                                                          this.flowMapper,
+                                                          DESIRED_FEATURES.stream()
+                                                                          .map( Location::nwsLid )
+                                                                          .collect(
+                                                                                  Collectors.toSet() ),
+                                                          FeatureAuthority.NWS_LID ) );
 
             String expectedMessagePart = "ratings provider 'foofoo', discovered no thresholds that match the ratings";
 
@@ -1417,25 +1479,25 @@ class ThresholdReaderTest
                 writer.append( YET_ANOTHER_RESPONSE );
             }
 
-            ThresholdService service
-                    = ThresholdServiceBuilder.builder()
-                                             .uri( jsonPath.toUri() )
-                                             .featureNameFrom( DatasetOrientation.LEFT )
-                                             .type( wres.config.yaml.components.ThresholdType.VALUE )
-                                             .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
-                                             // No such provider
-                                             .provider( "barbar" )
-                                             .build();
+            ThresholdSource service
+                    = ThresholdSourceBuilder.builder()
+                                            .uri( jsonPath.toUri() )
+                                            .featureNameFrom( DatasetOrientation.LEFT )
+                                            .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                            .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                            // No such provider
+                                            .provider( "barbar" )
+                                            .build();
 
             NoThresholdsFoundException actual =
                     assertThrows( NoThresholdsFoundException.class, // NOSONAR
-                                  () -> this.reader.readThresholds( service,
-                                                                    this.flowMapper,
-                                                                    DESIRED_FEATURES.stream()
-                                                                                    .map( Location::nwsLid )
-                                                                                    .collect(
-                                                                                            Collectors.toSet() ),
-                                                                    FeatureAuthority.NWS_LID ) );
+                                  () -> this.reader.read( service,
+                                                          this.flowMapper,
+                                                          DESIRED_FEATURES.stream()
+                                                                          .map( Location::nwsLid )
+                                                                          .collect(
+                                                                                  Collectors.toSet() ),
+                                                          FeatureAuthority.NWS_LID ) );
 
             String expectedMessagePart = "provider 'barbar', discovered no thresholds that match the provider";
 
@@ -1455,5 +1517,59 @@ class ThresholdReaderTest
     private static Location createFeature( final String featureId, final String usgsSiteCode, final String lid )
     {
         return new Location( featureId, usgsSiteCode, lid );
+    }
+
+    /**
+     * Creates a featureful thresholds from the inputs.
+     * @param thresholds the thresholds
+     * @param featureName the feature name
+     * @return the featureful threshold
+     */
+
+    private static Set<wres.config.yaml.components.Threshold> createThresholds( Set<Threshold> thresholds,
+                                                                                String featureName )
+    {
+        return thresholds.stream()
+                         .map( n -> WrdsThresholdReaderTest.createThreshold( n, featureName ) )
+                         .collect( Collectors.toUnmodifiableSet() );
+    }
+
+    /**
+     * Creates a featureful threshold from the inputs.
+     * @param threshold the threshold
+     * @param featureName the feature name
+     * @return the featureful threshold
+     */
+
+    private static wres.config.yaml.components.Threshold createThreshold( Threshold threshold,
+                                                                          String featureName )
+    {
+        Geometry geometry = Geometry.newBuilder()
+                                    .setName( featureName )
+                                    .build();
+
+        return ThresholdBuilder.builder()
+                               .threshold( threshold )
+                               .feature( geometry )
+                               .type( ThresholdType.VALUE )
+                               .featureNameFrom( DatasetOrientation.LEFT )
+                               .build();
+    }
+
+    /**
+     * Filters the input thresholds for the named feature.
+     * @param thresholds the thresholds
+     * @param featureName the named feature
+     * @return the filtered thresholds
+     */
+
+    private static Set<wres.config.yaml.components.Threshold> filter( Set<wres.config.yaml.components.Threshold> thresholds,
+                                                                      String featureName )
+    {
+        return thresholds.stream()
+                         .filter( n -> n.feature()
+                                        .getName()
+                                        .equals( featureName ) )
+                         .collect( Collectors.toSet() );
     }
 }
