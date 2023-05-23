@@ -47,6 +47,8 @@ import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.ThresholdBuilder;
+import wres.config.yaml.components.ThresholdSource;
+import wres.config.yaml.components.ThresholdSourceBuilder;
 import wres.config.yaml.components.ThresholdType;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -673,8 +675,8 @@ class DeclarationInterpolatorTest
                                             .left( left )
                                             .right( right )
                                             .thresholds( Set.of( wrappedOne,
-                                                                      wrappedTwo,
-                                                                      wrappedThree ) )
+                                                                 wrappedTwo,
+                                                                 wrappedThree ) )
                                             .build();
 
         EvaluationDeclaration actualEvaluation = DeclarationInterpolator.interpolate( declaration );
@@ -930,10 +932,10 @@ class DeclarationInterpolatorTest
                              .name( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE )
                              .parameters( MetricParametersBuilder.builder()
                                                                  .thresholds( Set.of( expectedOne,
-                                                                                           expectedTwo,
-                                                                                           one,
-                                                                                           expectedThree,
-                                                                                           expectedFour ) )
+                                                                                      expectedTwo,
+                                                                                      one,
+                                                                                      expectedThree,
+                                                                                      expectedFour ) )
                                                                  .build() )
                              .build();
         Metric expectedSecond =
@@ -941,13 +943,87 @@ class DeclarationInterpolatorTest
                              .name( MetricConstants.MEAN_ERROR )
                              .parameters( MetricParametersBuilder.builder()
                                                                  .thresholds( Set.of( expectedOne,
-                                                                                           expectedTwo ) )
+                                                                                      expectedTwo ) )
                                                                  .build() )
                              .build();
         Set<Metric> expected = Set.of( expectedFirst, expectedSecond );
         Set<Metric> actual = actualDeclaration.metrics();
 
         assertEquals( expected, actual );
+    }
+
+    @Test
+    void testInterpolateMeasurementUnitsForValueThresholds()
+    {
+        // Create some metric-specific thresholds, one with a feature, one without
+        Threshold oneInner = Threshold.newBuilder()
+                                      .setLeftThresholdValue( DoubleValue.of( 1.0 ) )
+                                      .build();
+        wres.config.yaml.components.Threshold one =
+                ThresholdBuilder.builder()
+                                .threshold( oneInner )
+                                .type( ThresholdType.VALUE )
+                                .build();
+
+        // Add some metrics
+        Metric first =
+                MetricBuilder.builder()
+                             .name( MetricConstants.PROBABILITY_OF_DETECTION )
+                             .parameters( MetricParametersBuilder.builder()
+                                                                 .thresholds( Set.of( one ) )
+                                                                 .build() )
+                             .build();
+
+        Set<Metric> metrics = Set.of( first );
+
+        ThresholdSource source = ThresholdSourceBuilder.builder()
+                                                       .uri( URI.create( "http://foo.html" ) )
+                                                       .type( ThresholdType.VALUE )
+                                                       .build();
+
+        EvaluationDeclaration declarationToInterpolate =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .metrics( metrics )
+                                            .thresholds( Set.of( one ) )
+                                            .thresholdSources( Set.of( source ) )
+                                            .thresholdSets( Set.of( one ) )
+                                            .unit( "BANANAS" )
+                                            .build();
+
+        EvaluationDeclaration actual =
+                DeclarationInterpolator.interpolate( declarationToInterpolate );
+
+        Threshold oneInnerExpected = oneInner.toBuilder()
+                                             .setThresholdValueUnits( "BANANAS" )
+                                             .build();
+        wres.config.yaml.components.Threshold oneExpected =
+                ThresholdBuilder.builder()
+                                .threshold( oneInnerExpected )
+                                .type( ThresholdType.VALUE )
+                                .build();
+
+        Metric firstExpected =
+                MetricBuilder.builder()
+                             .name( MetricConstants.PROBABILITY_OF_DETECTION )
+                             .parameters( MetricParametersBuilder.builder()
+                                                                 .thresholds( Set.of( oneExpected ) )
+                                                                 .build() )
+                             .build();
+
+        Set<Metric> metricsExpected = Set.of( firstExpected );
+
+        ThresholdSource sourceExpected = ThresholdSourceBuilder.builder()
+                                                               .uri( URI.create( "http://foo.html" ) )
+                                                               .type( ThresholdType.VALUE )
+                                                               .unit( "BANANAS" )
+                                                               .build();
+
+        assertAll( () -> assertEquals( Set.of( oneExpected ), actual.thresholds() ),
+                   () -> assertEquals( Set.of( oneExpected ), actual.thresholdSets() ),
+                   () -> assertEquals( Set.of( sourceExpected ), actual.thresholdSources() ),
+                   () -> assertEquals( metricsExpected, actual.metrics() ) );
     }
 
     @Test

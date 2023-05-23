@@ -381,9 +381,7 @@ public class CsvThresholdReader implements ThresholdReader
         if ( Objects.nonNull( dataType.thresholdType() ) )
         {
             isProbability = dataType.thresholdType()
-                                    .name()
-                                    .toLowerCase()
-                                    .contains( "probability" );
+                                    .isProbability();
         }
 
         return getThresholds( Arrays.copyOfRange( featureThresholds,

@@ -217,11 +217,14 @@ class ThresholdDefinition implements Serializable
 
         //Point the two maps and identify the unit operator appropriately.
         //Unified schema values takes precedence over all others.
-        if ( getValues() != null && !getValues().getThresholdValues().isEmpty() )
+        if ( this.getValues() != null && !this.getValues().getThresholdValues()
+                                              .isEmpty() )
         {
             originalThresholds = getValues().getThresholdValues();
             originalUnitConversionOperator =
-                    desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata().getUnits() ).getUnit() );
+                    desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata()
+                                                                             .getUnits() )
+                                                                    .getUnit() );
         }
 
         //When values is not used, then we are looking at NWS thresholds,
@@ -233,7 +236,8 @@ class ThresholdDefinition implements Serializable
             {
                 originalThresholds = getStageValues().getThresholdValues();
                 originalUnitConversionOperator =
-                        desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata().getStageUnits() )
+                        desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata()
+                                                                                 .getStageUnits() )
                                                                         .getUnit() );
             }
         }
@@ -243,7 +247,8 @@ class ThresholdDefinition implements Serializable
             {
                 originalThresholds = getFlowValues().getThresholdValues();
                 originalUnitConversionOperator =
-                        desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata().getFlowUnits() )
+                        desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata()
+                                                                                 .getFlowUnits() )
                                                                         .getUnit() );
             }
 
