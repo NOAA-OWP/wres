@@ -849,6 +849,9 @@ public class DeclarationInterpolator
             thresholdSets = DeclarationInterpolator.addUnitToValueThresholds( thresholdSets, unit );
             builder.thresholdSets( thresholdSets );
 
+            // Threshold sources
+            DeclarationInterpolator.addUnitToValueThresholdSources( builder, unit );
+
             // Individual metrics
             Set<Metric> metrics = builder.metrics();
             Set<Metric> adjustedMetrics = new LinkedHashSet<>( metrics.size() );
@@ -878,6 +881,39 @@ public class DeclarationInterpolator
             }
 
             builder.metrics( adjustedMetrics );
+        }
+    }
+
+    /**
+     * Adds the prescribed measurement unit to all value threshold sources unless already defined.
+     * @param builder the builder
+     * @param unit the unit
+     */
+
+    private static void addUnitToValueThresholdSources( EvaluationDeclarationBuilder builder,
+                                                        String unit )
+    {
+        Set<ThresholdSource> thresholdSources = builder.thresholdSources();
+        if ( Objects.nonNull( thresholdSources ) )
+        {
+            Set<ThresholdSource> adjustedSources = new HashSet<>();
+
+            for ( ThresholdSource nextSource : thresholdSources )
+            {
+                if ( Objects.isNull( nextSource.unit() ) )
+                {
+                    ThresholdSource adjusted = ThresholdSourceBuilder.builder( nextSource )
+                                                                     .unit( unit )
+                                                                     .build();
+                    adjustedSources.add( adjusted );
+                }
+                else
+                {
+                    adjustedSources.add( nextSource );
+                }
+            }
+
+            builder.thresholdSources( adjustedSources );
         }
     }
 

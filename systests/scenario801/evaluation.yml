@@ -26,17 +26,9 @@ time_scale:
   function: maximum
   period: 96
   unit: hours
-thresholds:
-  - name: ACTION
-    values:
-      - value: 8.0
-        feature: CKLN6
-    unit: FT
-  - name: MINOR FLOOD
-    values:
-      - value: 12.0
-        feature: CKLN6
-    unit: FT
+threshold_sources:
+  uri: thresholds/scenario801/thresholds.csv
+  type: value
 classifier_thresholds: [0.1, 0.3, 0.5, 0.7, 0.9]
 metrics:
   - contingency table
