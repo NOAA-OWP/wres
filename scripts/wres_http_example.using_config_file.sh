@@ -65,6 +65,13 @@ then
     user_name=$1
 fi
 
+# You must edit this host variable or pass as arg.
+host=host_name_to_use
+
+if [ ! -z "$3" ]
+then
+    host=$3
+fi
 
 # Second, POST the evaluation project configuration to the WRES.
 # "POST" is a standard HTTP verb, see more about the various HTTP verbs here:
@@ -77,7 +84,7 @@ fi
 # We furthermore want to save the server's response to the POST, because it
 # contains the name of the created resource in its response. We use post_result.
 # The tr -d is to remove carriage return characters from the response.
-post_result=$( curl -i --cacert $wres_ca_file --data "userName=${user_name}&projectConfig=${project_config}" https://***REMOVED***wres${env_suffix}.***REMOVED***.***REMOVED***/job | tr -d '\r' )
+post_result=$( curl -i --cacert $wres_ca_file --data "userName=${user_name}&projectConfig=${project_config}" https://${host}/job | tr -d '\r' )
 
 echo "The response from the server was:"
 echo "$post_result"
