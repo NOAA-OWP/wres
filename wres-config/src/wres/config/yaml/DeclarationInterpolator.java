@@ -900,7 +900,8 @@ public class DeclarationInterpolator
 
             for ( ThresholdSource nextSource : thresholdSources )
             {
-                if ( Objects.isNull( nextSource.unit() ) )
+                String nextUnit = nextSource.unit();
+                if ( Objects.isNull( nextUnit ) || nextUnit.isBlank() )
                 {
                     ThresholdSource adjusted = ThresholdSourceBuilder.builder( nextSource )
                                                                      .unit( unit )
