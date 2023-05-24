@@ -309,7 +309,17 @@ public class SourceDetails extends CachedDetail<SourceDetails, String>
 
             try ( DataProvider data = scriptWithId.getData() )
             {
-                this.sourceId = data.getLong( this.getIDName() );
+                if ( !data.isEmpty() )
+                {
+                    this.sourceId = data.getLong( this.getIDName() );
+                }
+                else if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( "Failed to acquire a time-series source_id for time-series {}. This may be because "
+                                 + "the source was deleted by another thread while attempting to insert it in "
+                                 + "this thread, '{}'.", this.hash, Thread.currentThread()
+                                                                          .getName() );
+                }
             }
         }
 
