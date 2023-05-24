@@ -969,23 +969,30 @@ public class DeclarationUtilities
                                                                                .getName() )
                                                                    .collect( Collectors.toSet() );
 
-        // Create a filter
+        // Create a filter. Only filter when the above sets contain some features
         Predicate<GeometryTuple> retain = geoTuple ->
         {
-            if ( geoTuple.hasLeft() && !leftFeatureNamesWithThresholds.contains( geoTuple.getLeft()
-                                                                                         .getName() ) )
+            if ( geoTuple.hasLeft()
+                 && !leftFeatureNamesWithThresholds.isEmpty()
+                 && !leftFeatureNamesWithThresholds.contains( geoTuple.getLeft()
+                                                                      .getName() ) )
             {
                 return false;
             }
 
-            if ( geoTuple.hasRight() && !rightFeatureNamesWithThresholds.contains( geoTuple.getRight()
-                                                                                           .getName() ) )
+            if ( geoTuple.hasRight()
+                 && !rightFeatureNamesWithThresholds.isEmpty()
+                 && !rightFeatureNamesWithThresholds.contains( geoTuple.getRight()
+                                                                       .getName() ) )
             {
                 return false;
             }
 
-            return !geoTuple.hasBaseline() || baselineFeatureNamesWithThresholds.contains( geoTuple.getBaseline()
-                                                                                                   .getName() );
+            return !DeclarationUtilities.hasBaseline( declaration )
+                   || !geoTuple.hasBaseline()
+                   || baselineFeatureNamesWithThresholds.isEmpty()
+                   || baselineFeatureNamesWithThresholds.contains( geoTuple.getBaseline()
+                                                                           .getName() );
         };
 
         // Remove the features in all contexts
@@ -1136,9 +1143,9 @@ public class DeclarationUtilities
         Set<String> ensembleInterfaces = DeclarationUtilities.getSourcesWithEnsembleInterface( builder );
         if ( !ensembleInterfaces.isEmpty() )
         {
-            ensembleDeclaration.add(
-                    "Discovered one or more data sources whose interfaces are ensemble-like: " + ensembleInterfaces
-                    + "." );
+            ensembleDeclaration.add( "Discovered one or more data sources whose interfaces are ensemble-like: "
+                                     + ensembleInterfaces
+                                     + "." );
         }
 
         // Ensemble average declared?
@@ -2004,6 +2011,7 @@ public class DeclarationUtilities
             Set<GeometryGroup> originalGroups = builder.featureGroups()
                                                        .geometryGroups();
             Set<GeometryGroup> adjustedGroups = new HashSet<>();
+            Set<GeometryGroup> groupsWithAdjustments = new HashSet<>();
 
             // Iterate the groups and adjust as needed
             for ( GeometryGroup nextGroup : originalGroups )
@@ -2021,6 +2029,7 @@ public class DeclarationUtilities
                                                            .addAllGeometryTuples( adjusted )
                                                            .build();
                     adjustedGroups.add( adjustedGroup );
+                    groupsWithAdjustments.add( adjustedGroup );
                 }
                 else
                 {
@@ -2028,18 +2037,15 @@ public class DeclarationUtilities
                 }
             }
 
-            if ( LOGGER.isWarnEnabled() && !adjustedGroups.isEmpty() )
+            if ( LOGGER.isWarnEnabled() && !groupsWithAdjustments.isEmpty() )
             {
-                Set<GeometryGroup> copy = new HashSet<>( originalGroups );
-                copy.removeAll( adjustedGroups );
-
                 LOGGER.warn( "Discovered {} feature group(s) where thresholds were not available for one or more of "
                              + "their component features. These features have been removed from the evaluation. "
                              + "Features were removed from the following feature groups: {}.",
-                             copy.size(),
-                             copy.stream()
-                                 .map( GeometryGroup::getRegionName )
-                                 .toList() );
+                             groupsWithAdjustments.size(),
+                             groupsWithAdjustments.stream()
+                                                  .map( GeometryGroup::getRegionName )
+                                                  .toList() );
             }
 
             FeatureGroups finalFeatureGroups = new FeatureGroups( adjustedGroups );
