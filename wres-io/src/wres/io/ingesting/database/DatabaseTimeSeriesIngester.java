@@ -84,7 +84,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  * generate a baseline time-series and, therefore, appear in two contexts, left and baseline.
  *
  * <p>Does not preclude the skipping of ingest at a higher level.
- * 
+ *
  * @author James Brown
  * @author Jesse Bickel
  */
@@ -243,8 +243,9 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                                                                                    innerSource.getUri() );
 
                     Future<List<IngestResult>> innerResults = this.getExecutor()
-                                                                  .submit( () -> this.ingestSingleValuedTimeSeriesWithRetries( nextSeries,
-                                                                                                                               innerSource ) );
+                                                                  .submit( () -> this.ingestSingleValuedTimeSeriesWithRetries(
+                                                                          nextSeries,
+                                                                          innerSource ) );
 
                     // Add the future ingest results to the ingest queue
                     ingestQueue.add( innerResults );
@@ -259,8 +260,9 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                                                                                    innerSource.getUri() );
 
                     Future<List<IngestResult>> innerResults = this.getExecutor()
-                                                                  .submit( () -> this.ingestEnsembleTimeSeriesWithRetries( nextSeries,
-                                                                                                                           innerSource ) );
+                                                                  .submit( () -> this.ingestEnsembleTimeSeriesWithRetries(
+                                                                          nextSeries,
+                                                                          innerSource ) );
 
                     // Add the future ingest results to the ingest queue
                     ingestQueue.add( innerResults );
@@ -271,7 +273,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                 if ( startGettingResults.getCount() <= 0 )
                 {
                     Future<List<IngestResult>> futureResult = ingestQueue.poll();
-                    if( Objects.nonNull( futureResult ) )
+                    if ( Objects.nonNull( futureResult ) )
                     {
                         finalResults.addAll( futureResult.get() );
                     }
@@ -359,7 +361,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
     /**
      * Ingests a time-series whose events are {@link Double}. Retries, as necessary, using exponential back-off, up to
      * the {@link #MAXIMUM_RETRIES}.
-     *  
+     *
      * @param timeSeries the time-series to ingest, not null
      * @param dataSource the data source
      * @return the ingest results
@@ -456,6 +458,23 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
         // Try to insert a row into wres.Source for the time-series
         SourceDetails source = this.saveTimeSeriesSource( timeSeries, dataSource.getUri() );
+
+        // The source identifier may be null if this thread did not perform the insert AND another thread deleted the
+        // existing source in the interim, as the source is not yet locked. See #116551. To mitigate, return a retry
+        // request
+        if ( Objects.isNull( source.getId() ) )
+        {
+            LOGGER.debug( "Discovered a source {} without a source_id. This may occur if another thread deleted the "
+                          + "source while this thread was attempting ingest it. Returning a retry request.",
+                          source.getHash() );
+
+            // Return a retry request with a fake surrogate key
+            return IngestResult.singleItemListFrom( dataSource,
+                                                    0,
+                                                    true,
+                                                    true );
+        }
+
         DatabaseLockManager innerLockManager = this.getLockManager();
 
         // Inserted?
@@ -523,7 +542,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
     /**
      * Ingests a time-series whose events are {@link Ensemble}. Retries, as necessary, using exponential back-off, up to
      * the {@link #MAXIMUM_RETRIES}.
-     *  
+     *
      * @param timeSeries the time-series to ingest, not null
      * @param dataSource the data source
      * @return the ingest results
@@ -620,6 +639,23 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
         // Try to insert a row into wres.Source for the time-series
         SourceDetails source = this.saveTimeSeriesSource( timeSeries, dataSource.getUri() );
+
+        // The source identifier may be null if this thread did not perform the insert AND another thread deleted the
+        // existing source in the interim, as the source is not yet locked. See #116551. To mitigate, return a retry
+        // request
+        if ( Objects.isNull( source.getId() ) )
+        {
+            LOGGER.debug( "Discovered a source {} without a source_id. This may occur if another thread deleted the "
+                          + "source while this thread was attempting to ingest it. Returning a retry request.",
+                          source.getHash() );
+
+            // Return a retry request with a fake surrogate key
+            return IngestResult.singleItemListFrom( dataSource,
+                                                    0,
+                                                    true,
+                                                    true );
+        }
+
         DatabaseLockManager innerLockManager = this.getLockManager();
 
         // Inserted?
@@ -697,7 +733,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
     /**
      * Ingests a gridded data source, which involves inserting the source reference only, not the time-series data. See
      * ticket #51232.
-     * 
+     *
      * @param dataSource the data source
      * @return the ingest results
      */
@@ -873,7 +909,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
     /**
      * Completes a new source.  Requires that locking semantics are handled by the caller.
-     * 
+     *
      * @param source the source details
      * @param latches the latches used to coordinate with other ingest tasks
      * @param dataSource the data source
@@ -885,15 +921,15 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                                                   DataSource dataSource )
     {
         /* Mark the given source completed because the caller was in charge of
-        * ingest and needs to mark it so.
-        *
-        * Ensure that ingest of a given sourceId is complete, either by verifying
-        * that another task has finished it or by finishing it right here and now.
-        *
-        * Due to #64922 (empty WRDS AHPS data sources) and #65049 (empty CSV
-        * data sources), this class tolerates an empty Set of latches and logs a
-        * warning (prior behavior was to throw IllegalArgumentException). 
-        */
+         * ingest and needs to mark it so.
+         *
+         * Ensure that ingest of a given sourceId is complete, either by verifying
+         * that another task has finished it or by finishing it right here and now.
+         *
+         * Due to #64922 (empty WRDS AHPS data sources) and #65049 (empty CSV
+         * data sources), this class tolerates an empty Set of latches and logs a
+         * warning (prior behavior was to throw IllegalArgumentException).
+         */
 
         // Make sure the ingest is actually complete by sending
         // a signal that we sit and await the ingest of values prior to
@@ -915,8 +951,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
             {
                 String message =
                         "Interrupted while waiting for another task to ingest data for source "
-                                 + source
-                                 + ".";
+                        + source
+                        + ".";
                 Thread.currentThread().interrupt();
                 // Additionally throw exception to ensure we don't accidentally mark
                 // this source as completed a few lines down.
@@ -961,7 +997,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
      * Creates a list of ingest results for a completed source or an abandoned source that should be retried. If an 
      * abandoned source is detected, the source is locked and removal in preparation for a retry. The caller does not
      * need to handle locking semantics because locking is only required on source removal.
-     *  
+     *
      * @param source the source details
      * @param dataSource the data source
      * @return the ingest results
@@ -1068,7 +1104,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
     /**
      * Attempts to flush ingested data to the database.
-     * 
+     *
      * @param latches the latches
      * @param source the source
      * @throws InterruptedException if the flush was interrupted
@@ -1121,13 +1157,13 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                     if ( !done )
                     {
                         throw new IngestException(
-                                                   "Another task did not "
-                                                   + "ingest and complete "
-                                                   + latchPair
-                                                   + " within "
-                                                   + PATIENCE_LEVEL
-                                                   + ", therefore assuming "
-                                                   + "it failed." );
+                                "Another task did not "
+                                + "ingest and complete "
+                                + latchPair
+                                + " within "
+                                + PATIENCE_LEVEL
+                                + ", therefore assuming "
+                                + "it failed." );
                     }
                 }
             }
@@ -1427,7 +1463,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         return IngestedValues.addTimeSeriesValue( systemSettings,
                                                   database,
                                                   timeSeriesId,
-                                                  (int) leadDuration.toMinutes(),
+                                                  ( int ) leadDuration.toMinutes(),
                                                   valueToAdd );
     }
 
@@ -1526,10 +1562,10 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
      */
 
     private wres.io.database.details.TimeSeries
-            getDatabaseTimeSeries( Database database,
-                                   Ensembles ensemblesCache,
-                                   long sourceId )
-                    throws SQLException
+    getDatabaseTimeSeries( Database database,
+                           Ensembles ensemblesCache,
+                           long sourceId )
+            throws SQLException
     {
         return new wres.io.database.details.TimeSeries( database,
                                                         ensemblesCache.getDefaultEnsembleId(),
@@ -1727,7 +1763,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
         // Set the tracker or an identity operator if null
         TimeSeriesTracker innerTracker = builder.timeSeriesTracker;
-        if( Objects.nonNull( innerTracker ) )
+        if ( Objects.nonNull( innerTracker ) )
         {
             this.timeSeriesTracker = innerTracker;
         }

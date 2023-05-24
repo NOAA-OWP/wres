@@ -54,9 +54,7 @@ public interface IngestResult
     short getBaselineCount();
 
     /**
-     * List with a single IngestResult from the given config, hash, foundAlready
-     * <br>
-     * For convenience (since this will be done all over the various ingesters).
+     * Creates a singleton list from the inputs.
      * @param dataSource the data source information
      * @param surrogateKey The surrogate key of the source data.
      * @param foundAlready true if found in the backing store, false otherwise
