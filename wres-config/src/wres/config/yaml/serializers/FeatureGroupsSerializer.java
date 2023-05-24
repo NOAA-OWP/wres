@@ -61,18 +61,21 @@ public class FeatureGroupsSerializer extends JsonSerializer<FeatureGroups>
     private void writeGeometryGroup( GeometryGroup group,
                                      JsonGenerator writer ) throws IOException
     {
+        writer.writeStartObject();
         if ( !group.getRegionName()
                    .isBlank() )
         {
-            writer.writeStartObject();
             writer.writeStringField( "name", group.getRegionName() );
+        }
 
-            // Preserve insertion order
-            Set<GeometryTuple> geometries = new LinkedHashSet<>( group.getGeometryTuplesList() );
+        // Preserve insertion order
+        Set<GeometryTuple> geometries = new LinkedHashSet<>( group.getGeometryTuplesList() );
+        if( ! geometries.isEmpty() )
+        {
             writer.writeFieldName( "features" );
             FEATURES_SERIALIZER.serialize( geometries,
                                            writer );
-            writer.writeEndObject();
         }
+        writer.writeEndObject();
     }
 }

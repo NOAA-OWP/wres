@@ -238,9 +238,11 @@ public class SourceDetails extends CachedDetail<SourceDetails, String>
 
         script.setHighPriority( true );
 
-        script.addLine(
-                "INSERT INTO wres.Source ( path, lead, hash, is_point_data, feature_id, timescale_id, measurementunit_id, variable_name )" );
-        script.addTab().addLine( "SELECT ?, ?, ?, ?, ?, ?, ?, ?" );
+        String insertStatement =
+                "INSERT INTO wres.Source ( path, lead, hash, is_point_data, feature_id, timescale_id, measurementunit_id, variable_name )";
+        script.addLine( insertStatement );
+        script.addTab()
+              .addLine( "SELECT ?, ?, ?, ?, ?, ?, ?, ?" );
 
         if ( this.getSourcePath() != null )
         {
@@ -262,9 +264,12 @@ public class SourceDetails extends CachedDetail<SourceDetails, String>
 
         script.addTab().addLine( "WHERE NOT EXISTS" );
         script.addTab().addLine( "(" );
-        script.addTab( 2 ).addLine( "SELECT 1" );
-        script.addTab( 2 ).addLine( "FROM wres.Source" );
-        script.addTab( 2 ).addLine( "WHERE hash = ?" );
+        script.addTab( 2 )
+              .addLine( "SELECT 1" );
+        script.addTab( 2 )
+              .addLine( "FROM wres.Source" );
+        script.addTab( 2 )
+              .addLine( "WHERE hash = ?" );
 
         script.addArgument( this.getHash() );
 
@@ -295,7 +300,8 @@ public class SourceDetails extends CachedDetail<SourceDetails, String>
             DataScripter scriptWithId = new DataScripter( database );
             scriptWithId.setHighPriority( true );
             scriptWithId.setUseTransaction( false );
-            scriptWithId.add( "SELECT " ).addLine( this.getIDName() );
+            scriptWithId.add( "SELECT " )
+                        .addLine( this.getIDName() );
             scriptWithId.addLine( "FROM wres.Source" );
             scriptWithId.addLine( "WHERE hash = ? " );
             scriptWithId.addArgument( this.hash );

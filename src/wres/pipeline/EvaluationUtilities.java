@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationException;
+import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.DeclarationInterpolator;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.DeclarationValidator;
@@ -458,7 +459,7 @@ class EvaluationUtilities
 
             // Update the small bag-o-state
             evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
-                                                                           .declaration( declarationWithFeatures )
+                                                                           .declaration( declarationWithFeaturesAndThresholds )
                                                                            .build();
             // Get the features. These are the features as described in the ingested time-series data, which may differ
             // in some details from the declared features

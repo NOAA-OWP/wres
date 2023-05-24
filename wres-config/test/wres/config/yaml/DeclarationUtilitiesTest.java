@@ -2353,4 +2353,69 @@ class DeclarationUtilitiesTest
 
         assertEquals( expected, actual );
     }
+
+    @Test
+    void testRemoveFeaturesWithoutThresholdsWhenThresholdsContainSingleDataOrientation()
+    {
+        Geometry left = Geometry.newBuilder()
+                                .setName( "foo" )
+                                .build();
+        Geometry right = Geometry.newBuilder()
+                                 .setName( "bar" )
+                                 .build();
+        Geometry baseline = Geometry.newBuilder()
+                                    .setName( "baz" )
+                                    .build();
+
+        // Tuple foo-bar-baz
+        GeometryTuple one = GeometryTuple.newBuilder()
+                                         .setLeft( left )
+                                         .setRight( right )
+                                         .setBaseline( baseline )
+                                         .build();
+
+        Threshold threshold = Threshold.newBuilder()
+                                       .setLeftThresholdValue( DoubleValue.of( 1 ) )
+                                       .build();
+        wres.config.yaml.components.Threshold wrappedThresholdOne =
+                ThresholdBuilder.builder()
+                                .threshold( threshold )
+                                .feature( left )
+                                .featureNameFrom( DatasetOrientation.LEFT )
+                                .build();
+
+        Set<GeometryTuple> geometryTuples = Set.of( one );
+        Features features = new Features( geometryTuples );
+        GeometryGroup group = GeometryGroup.newBuilder()
+                                           .addAllGeometryTuples( geometryTuples )
+                                           .setRegionName( "foorbarbaz" )
+                                           .build();
+        FeatureGroups featureGroups = FeatureGroupsBuilder.builder()
+                                                          .geometryGroups( Set.of( group ) )
+                                                          .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .features( features )
+                                            .featureGroups( featureGroups )
+                                            .thresholds( Set.of( wrappedThresholdOne ) )
+                                            .build();
+
+        EvaluationDeclaration actual = DeclarationUtilities.removeFeaturesWithoutThresholds( declaration );
+
+        Features expectedFeatures = new Features( Set.of( one ) );
+        GeometryGroup expectedGroup = GeometryGroup.newBuilder()
+                                                   .addGeometryTuples( one )
+                                                   .setRegionName( "foorbarbaz" )
+                                                   .build();
+        FeatureGroups expectedFeatureGroups = FeatureGroupsBuilder.builder()
+                                                                  .geometryGroups( Set.of( expectedGroup ) )
+                                                                  .build();
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .features( expectedFeatures )
+                                                                     .featureGroups( expectedFeatureGroups )
+                                                                     .thresholds( Set.of( wrappedThresholdOne ) )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
 }
