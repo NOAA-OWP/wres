@@ -41,7 +41,7 @@ main()
 # client to trust a ca for this request explicitly, referencing a file that
 # contains the certificate of the server. The file may be retrieved at
 #
-# https://***REMOVED***/redmine/projects/wres-user-support/wiki/Import_Certificate_Authority_in_Browser_for_Access_to_WRES_Web_Front-End
+# https://removed.gov/redmine/projects/wres-user-support/wiki/Import_Certificate_Authority_in_Browser_for_Access_to_WRES_Web_Front-End
 #
 # Be sure to place the file appropriately and modify the file name, below, to
 # point to that file.  

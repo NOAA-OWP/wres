@@ -352,7 +352,7 @@ public class NwmTimeSeriesTest
         try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
                                                                Instant.parse( "2019-10-23T02:00:00Z" ),
                                                                ReferenceTimeType.ANALYSIS_START_TIME,
-                                                               URI.create( "https://nomads.ncep.***REMOVED***/pub/data/nccf/com/nwm/prod/" ) ) )
+                                                               URI.create( "https://example.gov/pub/data/nccf/com/nwm/prod/" ) ) )
         {
             assertEquals( nwmProfile, nwmTimeSeries.getProfile() );
             assertNotNull( nwmProfile );
@@ -385,7 +385,7 @@ public class NwmTimeSeriesTest
         try ( NwmTimeSeries nwmTimeSeries = new NwmTimeSeries( nwmProfile,
                                                                Instant.parse( "2019-10-22T02:00:00Z" ),
                                                                ReferenceTimeType.T0,
-                                                               URI.create( "https://nomads.ncep.***REMOVED***/pub/data/nccf/com/nwm/prod/" ) ) )
+                                                               URI.create( "https://example.gov/pub/data/nccf/com/nwm/prod/" ) ) )
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int featureId = 18384141;
