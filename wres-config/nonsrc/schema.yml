@@ -77,7 +77,11 @@ definitions:
           "$ref": "#/definitions/FeatureGroup"
         uniqueItems: true
       feature_service:
-        "$ref": "#/definitions/FeatureService"
+        anyOf:
+          - "$ref": "#/definitions/FeatureService"
+          - type: string
+            minLength: 1
+            maxLength: 2083
       spatial_mask:
         "$ref": "#/definitions/SpatialMask"
       reference_dates:
