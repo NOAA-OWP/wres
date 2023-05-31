@@ -507,9 +507,25 @@ public class DeclarationMigrator
             LOGGER.debug( "Migrated an evaluation timescale: {}.", adjusted );
 
             LenienceType lenience = timeScale.getLenient();
-            TimeScaleLenience timeScaleLenience = TimeScaleLenience.valueOf( lenience.name() );
+            TimeScaleLenience timeScaleLenience = DeclarationMigrator.migrateLenienceType( lenience );
             builder.rescaleLenience( timeScaleLenience );
         }
+    }
+
+    /**
+     * Migrates the {@link LenienceType} to a {@link TimeScaleLenience}.
+     * @param lenienceType the lenience type to migrate
+     * @return the migrated lenience type
+     */
+
+    private static TimeScaleLenience migrateLenienceType( LenienceType lenienceType )
+    {
+        return switch( lenienceType )
+        {
+            case TRUE -> TimeScaleLenience.ALL;
+            case FALSE -> TimeScaleLenience.NONE;
+            default -> TimeScaleLenience.valueOf( lenienceType.name() );
+        };
     }
 
     /**
