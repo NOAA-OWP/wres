@@ -242,10 +242,10 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                             this.checkForEmptySeriesAndAddReferenceTimeIfRequired( nextTuple.getSingleValuedTimeSeries(),
                                                                                    innerSource.getUri() );
 
-                    Future<List<IngestResult>> innerResults = this.getExecutor()
-                                                                  .submit( () -> this.ingestSingleValuedTimeSeriesWithRetries(
-                                                                          nextSeries,
-                                                                          innerSource ) );
+                    Future<List<IngestResult>> innerResults =
+                            this.getExecutor()
+                                .submit( () -> this.ingestSingleValuedTimeSeriesWithRetries( nextSeries,
+                                                                                             innerSource ) );
 
                     // Add the future ingest results to the ingest queue
                     ingestQueue.add( innerResults );
@@ -259,10 +259,10 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                             this.checkForEmptySeriesAndAddReferenceTimeIfRequired( nextTuple.getEnsembleTimeSeries(),
                                                                                    innerSource.getUri() );
 
-                    Future<List<IngestResult>> innerResults = this.getExecutor()
-                                                                  .submit( () -> this.ingestEnsembleTimeSeriesWithRetries(
-                                                                          nextSeries,
-                                                                          innerSource ) );
+                    Future<List<IngestResult>> innerResults =
+                            this.getExecutor()
+                                .submit( () -> this.ingestEnsembleTimeSeriesWithRetries( nextSeries,
+                                                                                         innerSource ) );
 
                     // Add the future ingest results to the ingest queue
                     ingestQueue.add( innerResults );

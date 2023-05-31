@@ -46,7 +46,7 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import static systems.uom.ucum.format.UCUMFormat.Variant.CASE_SENSITIVE;
 
 /**
- * Build units using javax.measure.
+ * Build units using {@link javax.measure}.
  */
 public class Units
 {
@@ -345,7 +345,7 @@ public class Units
     }
 
     /**
-     * <p>Given a unit name, return the formal javax.measure Unit of Measure.
+     * <p>Given a unit name, return the formal {@link javax.measure} Unit of Measure.
      *
      * <p>Look in overrides and use the value found (when found).
      * If not found in overrides, look in convenient defaults.
@@ -353,7 +353,7 @@ public class Units
      *
      * @param unitName The name String
      * @param overrideAliases Unit name aliases to official unit names.
-     * @return the javax.measure if known, null otherwise.
+     * @return the {@link javax.measure} if known, null otherwise.
      * @throws UnrecognizedUnitException when unable to find the unit.
      */
 
@@ -402,24 +402,24 @@ public class Units
         if ( LOGGER.isInfoEnabled() )
         {
             LOGGER.debug( "Treating measurement unit name '{}' as UCUM "
-                         + "unit '{}' along dimension '{}'. "
-                         + "This message may be repeated (up to) as many times as pooling threads.",
-                         unitName,
-                         officialName,
-                         unit.getDimension() );
+                          + "unit '{}' along dimension '{}'. "
+                          + "This message may be repeated (up to) as many times as pooling threads.",
+                          unitName,
+                          officialName,
+                          unit.getDimension() );
         }
 
         return unit;
     }
 
     /**
-     * <p>Given a unit name, return the formal javax.measure Unit of Measure.
+     * <p>Given a unit name, return the formal {@link javax.measure} Unit of Measure.
      *
      * <p>Look in convenient defaults.
      * If not found in convenient defaults, parse straightaway.
      *
      * @param unitName The name String
-     * @return the javax.measure if known, null otherwise.
+     * @return the {@link javax.measure} unit if known, null otherwise.
      * @throws UnrecognizedUnitException when unable to find the unit.
      */
 
@@ -432,12 +432,12 @@ public class Units
      * Creates a converter that integrates the existing unit over time to form the desired unit.
      *
      * @see #isSupportedTimeIntegralConversion(Unit, Unit)
-     * @param timeScale the time scale
+     * @param timeScale the timescale
      * @param existingUnit the existing measurement unit
      * @param desiredUnit the desired measurement unit
      * @return a converter from volumetric flow rate to volume
      * @throws NullPointerException if any input is null
-     * @throws IllegalArgumentException if the time scale does not represent an average over the scale period
+     * @throws IllegalArgumentException if the timescale does not represent an average over the scale period
      * @throws UnsupportedOperationException if the conversion is not a supported time integration
      */
 
@@ -638,20 +638,18 @@ public class Units
                    + "' was not recognized as a UCUM "
                    + "unit and/or the UCUM unit declared for '"
                    + unitNameGiven
-                   + "' in a unitAlias declaration was not recognized (look "
+                   + "' in a unit_aliases declaration was not recognized (look "
                    + "for an earlier WARN message). You may need to add a unit "
                    + "alias to the project declaration (or replace an existing "
                    + "one) to tell WRES which UCUM unit '"
                    + unitNameGiven
-                   + "'"
-                   + " represents. For example, if '"
+                   + "' represents. For example, if '"
                    + unitNameGiven
-                   + "' "
-                   + "represents cubic meters per second then use this: "
-                   + "<unitAlias><alias>"
+                   + "' represents cubic meters per second then use this: "
+                   + "unit_aliases: [{alias: "
                    + unitNameGiven
-                   + "</alias><unit>"
-                   + "m3/s</unit></unitAlias>. WRES expects UCUM case-sensitive"
+                   + ",unit: m3/s}]"
+                   + ". WRES expects UCUM case-sensitive"
                    + " unit format. To learn the UCUM format for your "
                    + "particular unit(s), try the demo at "
                    + "https://ucum.nlm.nih.gov/ucum-lhc/demo.html and/or review"

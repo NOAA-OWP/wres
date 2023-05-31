@@ -25,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationException;
-import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.DeclarationInterpolator;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.DeclarationValidator;

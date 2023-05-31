@@ -24,7 +24,6 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
-import wres.config.yaml.components.FeatureService;
 import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.Features;
 import wres.datamodel.space.FeatureTuple;
@@ -77,7 +76,7 @@ public class FeatureFiller
     {
         Objects.requireNonNull( evaluation );
 
-        FeatureService featureService = evaluation.featureService();
+        wres.config.yaml.components.FeatureService featureService = evaluation.featureService();
         boolean requiresFeatureRequests = Objects.nonNull( evaluation.featureService() );
 
         // In many cases, no need to declare features, such as evaluations where
@@ -177,7 +176,7 @@ public class FeatureFiller
      */
 
     private static Set<GeometryTuple> fillSingletonFeatures( EvaluationDeclaration evaluation,
-                                                             FeatureService featureService,
+                                                             wres.config.yaml.components.FeatureService featureService,
                                                              FeatureAuthority leftAuthority,
                                                              FeatureAuthority rightAuthority,
                                                              FeatureAuthority baselineAuthority )
@@ -255,7 +254,7 @@ public class FeatureFiller
      */
 
     private static Set<GeometryGroup> fillGroupedFeatures( EvaluationDeclaration evaluation,
-                                                           FeatureService featureService,
+                                                           wres.config.yaml.components.FeatureService featureService,
                                                            FeatureAuthority leftAuthority,
                                                            FeatureAuthority rightAuthority,
                                                            FeatureAuthority baselineAuthority )
@@ -351,7 +350,7 @@ public class FeatureFiller
      */
 
     private static Set<GeometryTuple> fillFeatures( EvaluationDeclaration evaluation,
-                                                    FeatureService featureService,
+                                                    wres.config.yaml.components.FeatureService featureService,
                                                     Set<GeometryTuple> sparseFeatures,
                                                     FeatureAuthority leftAuthority,
                                                     FeatureAuthority rightAuthority,
@@ -444,11 +443,11 @@ public class FeatureFiller
             Set<String> namesToLookUp = nextEntry.getValue();
             FeatureAuthority from = fromAndTo.getKey();
             FeatureAuthority to = fromAndTo.getValue();
-            Map<String, String> found = WrdsFeatureService.bulkLookup( evaluation,
-                                                                       featureService,
-                                                                       from,
-                                                                       to,
-                                                                       namesToLookUp );
+            Map<String, String> found = FeatureService.bulkLookup( evaluation,
+                                                                   featureService,
+                                                                   from,
+                                                                   to,
+                                                                   namesToLookUp );
 
             LOGGER.debug( "Bulk lookup produced these features: {}", found );
 
@@ -1060,7 +1059,7 @@ public class FeatureFiller
      * @param hasBaseline whether the evaluation has a baseline dataset
      * @return A list of fully populated features.
      */
-    private static Set<GeometryTuple> getFeatureGroup( FeatureService featureService,
+    private static Set<GeometryTuple> getFeatureGroup( wres.config.yaml.components.FeatureService featureService,
                                                        FeatureServiceGroup featureGroup,
                                                        FeatureAuthority leftAuthority,
                                                        FeatureAuthority rightAuthority,
@@ -1094,7 +1093,7 @@ public class FeatureFiller
                           + DELIMITER
                           + featureGroup.value()
                           + DELIMITER
-                          + WrdsFeatureService.CROSSWALK_ONLY_FLAG;
+                          + FeatureService.CROSSWALK_ONLY_FLAG;
 
         URI uri = featureServiceBaseUri.resolve( fullPath )
                                        .normalize();
@@ -1136,7 +1135,7 @@ public class FeatureFiller
         Set<GeometryTuple> features = new HashSet<>();
 
         // Read the features from either V3 or older API.
-        List<Location> locations = WrdsFeatureService.read( uri );
+        List<Location> locations = FeatureService.read( uri );
         for ( Location location : locations )
         {
             String leftName = Location.getNameForAuthority( leftAuthority, location );

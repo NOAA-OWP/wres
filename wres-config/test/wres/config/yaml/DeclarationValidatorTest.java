@@ -883,8 +883,9 @@ class DeclarationValidatorTest
 
         assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
                                                                         "The declaration includes metrics that "
-                                                                        + "require either 'probability_thresholds' or "
-                                                                        + "'value_thresholds' but none were found",
+                                                                        + "require either 'thresholds' or "
+                                                                        + "'probability_thresholds' but none were "
+                                                                        + "found",
                                                                         StatusLevel.ERROR ) ),
                    () -> assertTrue( DeclarationValidatorTest.contains( events,
                                                                         "The declaration includes ensemble "

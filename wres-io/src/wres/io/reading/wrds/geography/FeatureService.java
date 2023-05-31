@@ -46,7 +46,7 @@ import wres.io.reading.web.WebClient;
  * @author James Brown
  */
 
-class WrdsFeatureService
+class FeatureService
 {
     private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
     private static final String AND_MISSING = " and missing ";
@@ -71,7 +71,7 @@ class WrdsFeatureService
 
     protected static final String CROSSWALK_ONLY_FLAG = "?identifiers=true";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( WrdsFeatureService.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( FeatureService.class );
 
     private static final String EXPLANATION_OF_WHY_AND_WHAT_TO_DO = "By declaring a feature, WRES interprets it as an "
                                                                     + "intent to use that feature in the evaluation. "
@@ -192,10 +192,10 @@ class WrdsFeatureService
             // At this point there are more features to go, but we hit the safe
             // URL length limit.
             Map<String, String> batchOfResults =
-                    WrdsFeatureService.getBatchOfFeatures( from,
-                                                           to,
-                                                           featureServiceBaseUri,
-                                                           batchOfFeatureNames );
+                    FeatureService.getBatchOfFeatures( from,
+                                                       to,
+                                                       featureServiceBaseUri,
+                                                       batchOfFeatureNames );
             locations.putAll( batchOfResults );
             batchOfFeatureNames = new HashSet<>();
             totalLength = baseLength;
@@ -205,10 +205,10 @@ class WrdsFeatureService
                       batchOfFeatureNames );
         // Get the remaining features.
         Map<String, String> batchOfResults =
-                WrdsFeatureService.getBatchOfFeatures( from,
-                                                       to,
-                                                       featureServiceBaseUri,
-                                                       batchOfFeatureNames );
+                FeatureService.getBatchOfFeatures( from,
+                                                   to,
+                                                   featureServiceBaseUri,
+                                                   batchOfFeatureNames );
         locations.putAll( batchOfResults );
 
         LOGGER.debug( "For from={} and to={}, found these: {}",
@@ -226,7 +226,7 @@ class WrdsFeatureService
 
     static List<Location> read( URI uri )
     {
-        byte[] rawResponseBytes = WrdsFeatureService.getRawResponseBytes( uri );
+        byte[] rawResponseBytes = FeatureService.getRawResponseBytes( uri );
 
         //Get the version information
         if ( LOGGER.isDebugEnabled() )
@@ -313,7 +313,7 @@ class WrdsFeatureService
                                        .normalize();
 
         //Read features from either V3 or the older API.
-        List<Location> locations = WrdsFeatureService.read( uri );
+        List<Location> locations = FeatureService.read( uri );
         int countOfLocations = locations.size();
 
         if ( countOfLocations != featureNames.size() )
@@ -333,8 +333,8 @@ class WrdsFeatureService
 
         for ( Location location : locations )
         {
-            String original = WrdsFeatureService.getFeatureNameFromAuthority( from, location, fromWasNullOrBlank );
-            String found = WrdsFeatureService.getFeatureNameFromAuthority( to, location, toWasNullOrBlank );
+            String original = FeatureService.getFeatureNameFromAuthority( from, location, fromWasNullOrBlank );
+            String found = FeatureService.getFeatureNameFromAuthority( to, location, toWasNullOrBlank );
             batchOfLocations.put( original, found );
         }
 
@@ -439,11 +439,11 @@ class WrdsFeatureService
         if ( uri.getScheme()
                 .equalsIgnoreCase( "file" ) )
         {
-            rawResponseBytes = WrdsFeatureService.readFromFile( uri );
+            rawResponseBytes = FeatureService.readFromFile( uri );
         }
         else
         {
-            rawResponseBytes = WrdsFeatureService.readFromWeb( uri );
+            rawResponseBytes = FeatureService.readFromWeb( uri );
         }
 
         if ( LOGGER.isDebugEnabled() )
@@ -492,7 +492,7 @@ class WrdsFeatureService
         }
     }
 
-    private WrdsFeatureService()
+    private FeatureService()
     {
         // Do not construct
     }

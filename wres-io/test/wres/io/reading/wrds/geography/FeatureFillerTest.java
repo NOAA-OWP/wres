@@ -19,7 +19,6 @@ import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
-import wres.config.yaml.components.FeatureService;
 import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.UnitAlias;
@@ -148,7 +147,8 @@ class FeatureFillerTest
     {
         URI uri = new URI( "https://some_fake_uri" );
         FeatureServiceGroup featureGroup = new FeatureServiceGroup( "state", "AL", true );
-        FeatureService featureService = new FeatureService( uri, Set.of( featureGroup ) );
+        wres.config.yaml.components.FeatureService
+                featureService = new wres.config.yaml.components.FeatureService( uri, Set.of( featureGroup ) );
 
         EvaluationDeclaration evaluation
                 = FeatureFillerTest.getBoilerplateEvaluationWith( null,
@@ -157,9 +157,9 @@ class FeatureFillerTest
                                                                   BOILERPLATE_DATASOURCE_NWS_LID_AUTHORITY,
                                                                   null );
 
-        try ( MockedStatic<WrdsFeatureService> utilities = Mockito.mockStatic( WrdsFeatureService.class ) )
+        try ( MockedStatic<FeatureService> utilities = Mockito.mockStatic( FeatureService.class ) )
         {
-            utilities.when( () -> WrdsFeatureService.read( Mockito.any() ) )
+            utilities.when( () -> FeatureService.read( Mockito.any() ) )
                      .thenReturn( List.of( new Location( "foo", "bar", "baz" ) ) );
 
             EvaluationDeclaration actualEvaluation = FeatureFiller.fillFeatures( evaluation );
@@ -186,7 +186,8 @@ class FeatureFillerTest
     void testFillOutSparseFeaturesUsingMockedFeatureService() throws URISyntaxException
     {
         URI uri = new URI( "https://some_fake_uri" );
-        FeatureService featureService = new FeatureService( uri, Set.of() );
+        wres.config.yaml.components.FeatureService
+                featureService = new wres.config.yaml.components.FeatureService( uri, Set.of() );
 
         GeometryTuple left = GeometryTuple.newBuilder()
                                           .setLeft( Geometry.newBuilder()
@@ -212,50 +213,50 @@ class FeatureFillerTest
                                                                   BOILERPLATE_DATASOURCE_NWS_LID_AUTHORITY,
                                                                   BOILERPLATE_BASELINE_DATASOURCE_NWM_FEATURE_AUTHORITY );
 
-        try ( MockedStatic<WrdsFeatureService> utilities = Mockito.mockStatic( WrdsFeatureService.class ) )
+        try ( MockedStatic<FeatureService> utilities = Mockito.mockStatic( FeatureService.class ) )
         {
             // Mock the look-ups
-            utilities.when( () -> WrdsFeatureService.bulkLookup( evaluation,
-                                                                 featureService,
-                                                                 FeatureAuthority.USGS_SITE_CODE,
-                                                                 FeatureAuthority.NWS_LID,
-                                                                 Set.of( "foo", "foofoo" ) ) )
+            utilities.when( () -> FeatureService.bulkLookup( evaluation,
+                                                             featureService,
+                                                             FeatureAuthority.USGS_SITE_CODE,
+                                                             FeatureAuthority.NWS_LID,
+                                                             Set.of( "foo", "foofoo" ) ) )
                      .thenReturn( Map.of( "foo", "qux" ) );
-            utilities.when( () -> WrdsFeatureService.bulkLookup( evaluation,
-                                                                 featureService,
-                                                                 FeatureAuthority.USGS_SITE_CODE,
-                                                                 FeatureAuthority.NWM_FEATURE_ID,
-                                                                 Set.of( "foo", "foofoo" ) ) )
+            utilities.when( () -> FeatureService.bulkLookup( evaluation,
+                                                             featureService,
+                                                             FeatureAuthority.USGS_SITE_CODE,
+                                                             FeatureAuthority.NWM_FEATURE_ID,
+                                                             Set.of( "foo", "foofoo" ) ) )
                      .thenReturn( Map.of( "foo", "quux" ) );
-            utilities.when( () -> WrdsFeatureService.bulkLookup( evaluation,
-                                                                 featureService,
-                                                                 FeatureAuthority.NWS_LID,
-                                                                 FeatureAuthority.USGS_SITE_CODE,
-                                                                 Set.of( "bar" ) ) )
+            utilities.when( () -> FeatureService.bulkLookup( evaluation,
+                                                             featureService,
+                                                             FeatureAuthority.NWS_LID,
+                                                             FeatureAuthority.USGS_SITE_CODE,
+                                                             Set.of( "bar" ) ) )
                      .thenReturn( Map.of( "bar", "corge" ) );
-            utilities.when( () -> WrdsFeatureService.bulkLookup( evaluation,
-                                                                 featureService,
-                                                                 FeatureAuthority.NWS_LID,
-                                                                 FeatureAuthority.NWM_FEATURE_ID,
-                                                                 Set.of( "bar" ) ) )
+            utilities.when( () -> FeatureService.bulkLookup( evaluation,
+                                                             featureService,
+                                                             FeatureAuthority.NWS_LID,
+                                                             FeatureAuthority.NWM_FEATURE_ID,
+                                                             Set.of( "bar" ) ) )
                      .thenReturn( Map.of( "bar", "grault" ) );
-            utilities.when( () -> WrdsFeatureService.bulkLookup( evaluation,
-                                                                 featureService,
-                                                                 FeatureAuthority.NWM_FEATURE_ID,
-                                                                 FeatureAuthority.USGS_SITE_CODE,
-                                                                 Set.of( "baz" ) ) )
+            utilities.when( () -> FeatureService.bulkLookup( evaluation,
+                                                             featureService,
+                                                             FeatureAuthority.NWM_FEATURE_ID,
+                                                             FeatureAuthority.USGS_SITE_CODE,
+                                                             Set.of( "baz" ) ) )
                      .thenReturn( Map.of( "baz", "garply" ) );
-            utilities.when( () -> WrdsFeatureService.bulkLookup( evaluation,
-                                                                 featureService,
-                                                                 FeatureAuthority.NWM_FEATURE_ID,
-                                                                 FeatureAuthority.NWS_LID,
-                                                                 Set.of( "baz" ) ) )
+            utilities.when( () -> FeatureService.bulkLookup( evaluation,
+                                                             featureService,
+                                                             FeatureAuthority.NWM_FEATURE_ID,
+                                                             FeatureAuthority.NWS_LID,
+                                                             Set.of( "baz" ) ) )
                      .thenReturn( Map.of( "baz", "waldo" ) );
-            utilities.when( () -> WrdsFeatureService.bulkLookup( evaluation,
-                                                                 featureService,
-                                                                 FeatureAuthority.USGS_SITE_CODE,
-                                                                 FeatureAuthority.NWM_FEATURE_ID,
-                                                                 Set.of( "foofoo" ) ) )
+            utilities.when( () -> FeatureService.bulkLookup( evaluation,
+                                                             featureService,
+                                                             FeatureAuthority.USGS_SITE_CODE,
+                                                             FeatureAuthority.NWM_FEATURE_ID,
+                                                             Set.of( "foofoo" ) ) )
                      .thenReturn( Map.of() );
 
             EvaluationDeclaration actualEvaluation = FeatureFiller.fillFeatures( evaluation );
@@ -304,7 +305,7 @@ class FeatureFillerTest
      */
 
     private static EvaluationDeclaration getBoilerplateEvaluationWith( Set<GeometryTuple> features,
-                                                                       FeatureService featureService,
+                                                                       wres.config.yaml.components.FeatureService featureService,
                                                                        Dataset left,
                                                                        Dataset right,
                                                                        BaselineDataset baseline )
