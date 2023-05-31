@@ -28,8 +28,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.config.MetricConstants;
-import wres.config.yaml.components.AnalysisDurations;
-import wres.config.yaml.components.AnalysisDurationsBuilder;
+import wres.config.yaml.components.AnalysisTimes;
+import wres.config.yaml.components.AnalysisTimesBuilder;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.DataType;
@@ -1605,12 +1605,12 @@ class DeclarationUtilitiesTest
     @Test
     void testHasAnalysisDurationsReturnsTrue()
     {
-        AnalysisDurations analysisDurations =
-                AnalysisDurationsBuilder.builder()
-                                        .minimumExclusive( java.time.Duration.ofHours( 3 ) )
-                                        .build();
+        AnalysisTimes analysisTimes =
+                AnalysisTimesBuilder.builder()
+                                    .minimum( java.time.Duration.ofHours( 3 ) )
+                                    .build();
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
-                                                                       .analysisDurations( analysisDurations )
+                                                                       .analysisTimes( analysisTimes )
                                                                        .build();
 
         assertTrue( DeclarationUtilities.hasAnalysisDurations( evaluation ) );
@@ -1951,11 +1951,11 @@ class DeclarationUtilitiesTest
     @Test
     void testGetEarliestAnalysisDuration()
     {
-        AnalysisDurations analysisDurations = AnalysisDurationsBuilder.builder()
-                                                                      .minimumExclusive( Duration.ZERO )
-                                                                      .build();
+        AnalysisTimes analysisTimes = AnalysisTimesBuilder.builder()
+                                                          .minimum( Duration.ZERO )
+                                                          .build();
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
-                                                                       .analysisDurations( analysisDurations )
+                                                                       .analysisTimes( analysisTimes )
                                                                        .build();
         assertEquals( Duration.ZERO, DeclarationUtilities.getEarliestAnalysisDuration( evaluation ) );
     }
@@ -1963,11 +1963,11 @@ class DeclarationUtilitiesTest
     @Test
     void testGetLatestAnalysisDuration()
     {
-        AnalysisDurations analysisDurations = AnalysisDurationsBuilder.builder()
-                                                                      .maximum( Duration.ZERO )
-                                                                      .build();
+        AnalysisTimes analysisTimes = AnalysisTimesBuilder.builder()
+                                                          .maximum( Duration.ZERO )
+                                                          .build();
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
-                                                                       .analysisDurations( analysisDurations )
+                                                                       .analysisTimes( analysisTimes )
                                                                        .build();
         assertEquals( Duration.ZERO, DeclarationUtilities.getLatestAnalysisDuration( evaluation ) );
     }
@@ -2341,8 +2341,8 @@ class DeclarationUtilitiesTest
                                                    .setRegionName( "foorbarbaz" )
                                                    .build();
         FeatureGroups expectedFeatureGroups = FeatureGroupsBuilder.builder()
-                                                          .geometryGroups( Set.of( expectedGroup ) )
-                                                          .build();
+                                                                  .geometryGroups( Set.of( expectedGroup ) )
+                                                                  .build();
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
                                                                      .features( expectedFeatures )
                                                                      .featureGroups( expectedFeatureGroups )

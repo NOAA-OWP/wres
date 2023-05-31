@@ -23,7 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConstants;
-import wres.config.yaml.components.AnalysisDurations;
+import wres.config.yaml.components.AnalysisTimes;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
@@ -947,7 +947,7 @@ public class DeclarationValidator
                                                                                            VALID_DATES );
         events.addAll( validDates );
         List<EvaluationStatusEvent> analysisDurations
-                = DeclarationValidator.analysisDurationsAreValid( declaration.analysisDurations() );
+                = DeclarationValidator.analysisDurationsAreValid( declaration.analysisTimes() );
         events.addAll( analysisDurations );
 
         // Lead times
@@ -1588,7 +1588,7 @@ public class DeclarationValidator
                                                       .filter( filter )
                                                       .collect( Collectors.toSet() );
 
-            if ( Objects.nonNull( declaration.validDatePools() ) )
+            if ( Objects.nonNull( declaration.validDatePools() ) && ! metrics.isEmpty() )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
@@ -1604,7 +1604,7 @@ public class DeclarationValidator
                 events.add( event );
             }
 
-            if ( Objects.nonNull( declaration.referenceDatePools() ) )
+            if ( Objects.nonNull( declaration.referenceDatePools() ) && ! metrics.isEmpty() )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
@@ -2208,29 +2208,29 @@ public class DeclarationValidator
 
     /**
      * Checks that the analysis durations are valid.
-     * @param analysisDurations the analysis durations
+     * @param analysisTimes the analysis durations
      * @return the validation events encountered
      */
 
-    private static List<EvaluationStatusEvent> analysisDurationsAreValid( AnalysisDurations analysisDurations )
+    private static List<EvaluationStatusEvent> analysisDurationsAreValid( AnalysisTimes analysisTimes )
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
-        if ( Objects.nonNull( analysisDurations )
-             && Objects.nonNull( analysisDurations.minimumExclusive() )
-             && Objects.nonNull( analysisDurations.maximum() )
-             && ( analysisDurations.maximum()
-                                   .compareTo( analysisDurations.minimumExclusive() ) < 0 ) )
+        if ( Objects.nonNull( analysisTimes )
+             && Objects.nonNull( analysisTimes.minimum() )
+             && Objects.nonNull( analysisTimes.maximum() )
+             && ( analysisTimes.maximum()
+                               .compareTo( analysisTimes.minimum() ) < 0 ) )
         {
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.ERROR )
                                            .setEventMessage( "The 'analysis_durations' interval is invalid because the "
                                                              + "'maximum' value of '"
-                                                             + analysisDurations.maximum()
+                                                             + analysisTimes.maximum()
                                                              + "' is less than the 'minimum_exclusive' "
                                                              + "value of '"
-                                                             + analysisDurations.minimumExclusive()
+                                                             + analysisTimes.minimum()
                                                              + "'. Please adjust the analysis durations to form a "
                                                              + "valid time interval and try again." )
                                            .build();

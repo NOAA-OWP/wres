@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConstants;
 import wres.config.xml.ProjectConfigException;
-import wres.config.yaml.components.AnalysisDurations;
+import wres.config.yaml.components.AnalysisTimes;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.DataType;
@@ -431,10 +431,10 @@ public class DeclarationUtilities
 
         Duration returnMe = null;
 
-        if ( Objects.nonNull( declaration.analysisDurations() ) )
+        if ( Objects.nonNull( declaration.analysisTimes() ) )
         {
-            AnalysisDurations durations = declaration.analysisDurations();
-            returnMe = durations.minimumExclusive();
+            AnalysisTimes durations = declaration.analysisTimes();
+            returnMe = durations.minimum();
         }
 
         if ( Objects.isNull( returnMe ) )
@@ -459,9 +459,9 @@ public class DeclarationUtilities
 
         Duration returnMe = null;
 
-        if ( Objects.nonNull( declaration.analysisDurations() ) )
+        if ( Objects.nonNull( declaration.analysisTimes() ) )
         {
-            AnalysisDurations durations = declaration.analysisDurations();
+            AnalysisTimes durations = declaration.analysisTimes();
             returnMe = durations.maximum();
         }
 
@@ -1071,9 +1071,11 @@ public class DeclarationUtilities
 
     static boolean hasAnalysisDurations( EvaluationDeclarationBuilder builder )
     {
-        return Objects.nonNull( builder.analysisDurations() ) && (
-                Objects.nonNull( builder.analysisDurations().minimumExclusive() )
-                || Objects.nonNull( builder.analysisDurations().maximum() ) );
+        return Objects.nonNull( builder.analysisTimes() ) && (
+                Objects.nonNull( builder.analysisTimes()
+                                        .minimum() )
+                || Objects.nonNull( builder.analysisTimes()
+                                           .maximum() ) );
     }
 
     /**

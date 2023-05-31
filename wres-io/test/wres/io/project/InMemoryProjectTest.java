@@ -17,8 +17,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import wres.config.yaml.components.AnalysisDurations;
-import wres.config.yaml.components.AnalysisDurationsBuilder;
+import wres.config.yaml.components.AnalysisTimes;
+import wres.config.yaml.components.AnalysisTimesBuilder;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.Dataset;
@@ -170,10 +170,10 @@ class InMemoryProjectTest
                                        .setFunction( TimeScale.TimeScaleFunction.MEAN )
                                        .build();
 
-        AnalysisDurations analysisDurations = AnalysisDurationsBuilder.builder()
-                                                                      .minimumExclusive( Duration.ofHours( 1 ) )
-                                                                      .maximum( Duration.ofHours( 3 ) )
-                                                                      .build();
+        AnalysisTimes analysisTimes = AnalysisTimesBuilder.builder()
+                                                          .minimum( Duration.ofHours( 1 ) )
+                                                          .maximum( Duration.ofHours( 3 ) )
+                                                          .build();
         Season season = SeasonBuilder.builder()
                                      .minimum( MonthDay.of( 12, 2 ) )
                                      .maximum( MonthDay.of( 2, 4 ) )
@@ -198,7 +198,7 @@ class InMemoryProjectTest
                                                        .features( features )
                                                        .probabilityThresholds( thresholds )
                                                        .rescaleLenience( TimeScaleLenience.RIGHT )
-                                                       .analysisDurations( analysisDurations )
+                                                       .analysisTimes( analysisTimes )
                                                        .timeScale( TimeScaleBuilder.builder()
                                                                                    .timeScale( timeScale )
                                                                                    .build() )
