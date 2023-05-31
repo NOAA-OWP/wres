@@ -6,7 +6,7 @@ import wres.datamodel.DataException;
 
 /**
  * A runtime exception associated with the functional generation of time-series.
- * 
+ *
  * @author James Brown
  */
 
@@ -21,12 +21,12 @@ public class TimeSeriesGeneratorException extends DataException
 
     /**
      * Constructs a {@link TimeSeriesGeneratorException} with the specified message.
-     * 
+     *
      * @param message the message.
      */
 
-    public TimeSeriesGeneratorException(final String message)
+    public TimeSeriesGeneratorException( final String message )
     {
-        super(message);
+        super( message );
     }
 }

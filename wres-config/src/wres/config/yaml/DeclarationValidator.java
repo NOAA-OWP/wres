@@ -1460,7 +1460,7 @@ public class DeclarationValidator
                         = EvaluationStatusEvent.newBuilder()
                                                .setStatusLevel( StatusLevel.ERROR )
                                                .setEventMessage( "The declaration includes metrics that require either "
-                                                                 + "'probability_thresholds' or 'value_thresholds' "
+                                                                 + "'thresholds' or 'probability_thresholds' "
                                                                  + "but none were found. Please remove the following "
                                                                  + "metrics or add the required thresholds and try "
                                                                  + "again: "
@@ -2133,7 +2133,7 @@ public class DeclarationValidator
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
                                                .setStatusLevel( StatusLevel.ERROR )
-                                               .setEventMessage( "The declaration included lead_time_pools', which "
+                                               .setEventMessage( "The declaration included 'lead_time_pools', which "
                                                                  + "requires the 'lead_times' to be fully declared. "
                                                                  + "Please remove the 'lead_time_pools' or fully "
                                                                  + "declare the 'lead_times' and try again." )
