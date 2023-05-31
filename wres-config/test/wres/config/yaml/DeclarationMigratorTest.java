@@ -968,4 +968,58 @@ class DeclarationMigratorTest
 
         assertEquals( expected, actual );
     }
+
+    /**
+     * Redmine issue #116697.
+     */
+
+    @Test
+    void testMigrateProjectWithRescaleLenienceTrue()
+    {
+        DesiredTimeScaleConfig desiredTimeScale = new DesiredTimeScaleConfig( TimeScaleFunction.MEAN,
+                                                                              1,
+                                                                              DurationUnit.HOURS,
+                                                                              null,
+                                                                              null,
+                                                                              null,
+                                                                              null,
+                                                                              null,
+                                                                              null,
+                                                                              LenienceType.TRUE );
+        PairConfig innerPairs = new PairConfig( null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                desiredTimeScale,
+                                                null,
+                                                null,
+                                                null,
+                                                null,
+                                                null );
+
+        ProjectConfig project = new ProjectConfig( this.inputs,
+                                                   innerPairs,
+                                                   this.metrics,
+                                                   this.outputs,
+                                                   null,
+                                                   null );
+
+        EvaluationDeclaration migrated = DeclarationMigrator.from( project, false );
+
+        TimeScale timeScale = TimeScale.newBuilder().setPeriod( Duration.newBuilder()
+                                                                        .setSeconds( 3600 ) )
+                                       .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                       .build();
+        wres.config.yaml.components.TimeScale expected = new wres.config.yaml.components.TimeScale( timeScale );
+        wres.config.yaml.components.TimeScale actual = migrated.timeScale();
+        assertEquals( expected, actual );
+    }
 }
