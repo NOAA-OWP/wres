@@ -170,20 +170,27 @@ definitions:
         type: integer
         minimum: 1
       metrics:
-        type: array
-        items:
-          # A simple name or a parameterized type
-          anyOf:
-            - "$ref": "#/definitions/MetricEnum"
-            - "$ref": "#/definitions/CategoricalMetricEnum"
-            - "$ref": "#/definitions/SingleValuedMetricEnum"
-            - "$ref": "#/definitions/TimeSeriesMetricEnum"
-            - "$ref": "#/definitions/MetricWithParameters"
-            - "$ref": "#/definitions/CategoricalMetricWithParameters"
-            - "$ref": "#/definitions/SingleValuedMetricWithParameters"
-            - "$ref": "#/definitions/TimeSeriesMetricWithParameters"
-        minItems: 1
-        uniqueItems: true
+        anyOf:
+          # Singleton without parameters
+          - "$ref": "#/definitions/MetricEnum"
+          - "$ref": "#/definitions/CategoricalMetricEnum"
+          - "$ref": "#/definitions/SingleValuedMetricEnum"
+          - "$ref": "#/definitions/TimeSeriesMetricEnum"
+          # Tuple
+          - type: array
+            items:
+            # A simple name or a parameterized type
+              anyOf:
+                - "$ref": "#/definitions/MetricEnum"
+                - "$ref": "#/definitions/CategoricalMetricEnum"
+                - "$ref": "#/definitions/SingleValuedMetricEnum"
+                - "$ref": "#/definitions/TimeSeriesMetricEnum"
+                - "$ref": "#/definitions/MetricWithParameters"
+                - "$ref": "#/definitions/CategoricalMetricWithParameters"
+                - "$ref": "#/definitions/SingleValuedMetricWithParameters"
+                - "$ref": "#/definitions/TimeSeriesMetricWithParameters"
+            minItems: 1
+            uniqueItems: true
       duration_format:
         "$ref": "#/definitions/DurationEnum"
       decimal_format:
@@ -191,17 +198,21 @@ definitions:
         minLength: 1
         maxLength: 2083
       output_formats:
-        type: array
-        items:
-          # A simple name or a parameterized type
-          anyOf:
-            - "$ref": "#/definitions/FormatEnum"
-            - "$ref": "#/definitions/GraphicFormatEnum"
-            - "$ref": "#/definitions/FormatWithoutParameters"
-            - "$ref": "#/definitions/GraphicFormatWithParameters"
-            - "$ref": "#/definitions/NetcdfFormatWithParameters"
-        minItems: 1
-        uniqueItems: true
+        anyOf:
+          # Singleton without parameters
+          - "$ref": "#/definitions/FormatEnum"
+          # Tuple of formats
+          - type: array
+            items:
+              # A simple name or a parameterized type
+              anyOf:
+                - "$ref": "#/definitions/FormatEnum"
+                - "$ref": "#/definitions/GraphicFormatEnum"
+                - "$ref": "#/definitions/FormatWithoutParameters"
+                - "$ref": "#/definitions/GraphicFormatWithParameters"
+                - "$ref": "#/definitions/NetcdfFormatWithParameters"
+            minItems: 1
+            uniqueItems: true
       # An optional label or name for the evaluation
       label:
         type: string
