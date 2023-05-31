@@ -191,6 +191,66 @@ class DeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeWithNoPredictedDatasetToSupportDataDirect() throws IOException
+    {
+        String yaml = """
+                observed: some_file.csv
+                predicted:
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithNoPredictedSourcesToSupportDataDirect() throws IOException
+    {
+        String yaml = """
+                observed: some_file.csv
+                predicted:
+                  sources:
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( DatasetBuilder.builder().build() )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithNoPredictedSourcesAndSomeParametersToSupportDataDirect() throws IOException
+    {
+        String yaml = """
+                observed: some_file.csv
+                predicted:
+                  label: "foo"
+                  variable: "bar"
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        EvaluationDeclaration expected =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( DatasetBuilder.builder()
+                                                                  .label( "foo" )
+                                                                  .variable( new Variable( "bar", null ) )
+                                                                  .build() )
+                                            .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDeserializeWithShortSourcesAndBaseline() throws IOException
     {
         String yaml = """

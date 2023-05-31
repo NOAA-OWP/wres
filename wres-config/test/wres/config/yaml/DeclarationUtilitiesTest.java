@@ -1760,7 +1760,7 @@ class DeclarationUtilitiesTest
     }
 
     @Test
-    void addDataSources()
+    void testAddDataSources()
     {
         // Create some sources with parameters to correlate
         Source leftOne = SourceBuilder.builder()
@@ -1844,6 +1844,62 @@ class DeclarationUtilitiesTest
                                               .sources( rightSourcesExpected )
                                               .build();
         List<Source> baselineSourcesExpected = List.of( baselineSourceExpectedOne, baselineSourceExpectedTwo );
+        Dataset baselineDatasetExpected = DatasetBuilder.builder()
+                                                        .sources( baselineSourcesExpected )
+                                                        .build();
+        BaselineDataset baselineExpected =
+                BaselineDatasetBuilder.builder()
+                                      .dataset( baselineDatasetExpected )
+                                      .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( leftExpected )
+                                                                     .right( rightExpected )
+                                                                     .baseline( baselineExpected )
+                                                                     .build();
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testAddDataSourcesWithMissingDatasets()
+    {
+        // Create some sources
+        EvaluationDeclaration evaluationDeclaration = EvaluationDeclarationBuilder.builder()
+                                                                                  .build();
+
+        // Create some correlated and some uncorrelated URIs
+        URI leftSource = URI.create( "foopath/foo.csv" );
+        URI rightSource = URI.create( "barpath/bar.csv" );
+        URI baselineSource = URI.create( "bazpath/baz.csv" );
+
+        List<URI> newLeftSources = List.of( leftSource );
+        List<URI> newRightSources = List.of( rightSource );
+        List<URI> newBaselineSources = List.of( baselineSource );
+
+        EvaluationDeclaration actual = DeclarationUtilities.addDataSources( evaluationDeclaration,
+                                                                            newLeftSources,
+                                                                            newRightSources,
+                                                                            newBaselineSources );
+
+        // Create the expectation
+        Source leftSourceExpectedOne = SourceBuilder.builder( )
+                                                    .uri( leftSource )
+                                                    .build();
+        Source rightSourceExpectedOne = SourceBuilder.builder( )
+                                                     .uri( rightSource )
+                                                     .build();
+        Source baselineSourceExpectedOne = SourceBuilder.builder( )
+                                                        .uri( baselineSource )
+                                                        .build();
+        List<Source> leftSourcesExpected = List.of( leftSourceExpectedOne );
+        Dataset leftExpected = DatasetBuilder.builder()
+                                             .sources( leftSourcesExpected )
+                                             .build();
+        List<Source> rightSourcesExpected = List.of( rightSourceExpectedOne );
+        Dataset rightExpected = DatasetBuilder.builder()
+                                              .sources( rightSourcesExpected )
+                                              .build();
+        List<Source> baselineSourcesExpected = List.of( baselineSourceExpectedOne );
         Dataset baselineDatasetExpected = DatasetBuilder.builder()
                                                         .sources( baselineSourcesExpected )
                                                         .build();

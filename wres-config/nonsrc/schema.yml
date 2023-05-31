@@ -38,6 +38,8 @@ definitions:
           - type: string
             minLength: 1
             maxLength: 2083
+          # To support data direct
+          - type: "null"
       predicted:
         description: "The 'predicted' or 'right' data generally contains the 
         predictions to evaluate."
@@ -52,6 +54,8 @@ definitions:
           - type: string
             minLength: 1
             maxLength: 2083
+          # To support data direct
+          - type: "null"
       baseline:
         description: "The 'baseline' dataset contains the baseline against 
         which the predictions will be compared when calculating skill scores."
@@ -66,6 +70,8 @@ definitions:
           - type: string
             minLength: 1
             maxLength: 2083
+          # To support data direct
+          - type: "null"
       features:
         type: array
         items:
@@ -239,6 +245,8 @@ definitions:
           - type: string
             minLength: 1
             maxLength: 2083
+          # To support data direct
+          - type: "null"
       variable:
         anyOf:
           - "$ref": "#/definitions/Variable"
@@ -277,8 +285,6 @@ definitions:
             minLength: 1
             maxLength: 6
           - type: integer
-    required:
-      - sources
 
   # Should be possible to re-use ObservedOrPredicted by adding a persistence
   # property within an allOf block, but this does not work in practice while
@@ -304,6 +310,8 @@ definitions:
           - type: string
             minLength: 1
             maxLength: 2083
+          # To support data direct
+          - type: "null"
       feature_authority:
         "$ref": "#/definitions/FeatureAuthorityEnum"
       variable:
@@ -362,8 +370,6 @@ definitions:
         type: boolean
       type:
         "$ref": "#/definitions/DataTypeEnum"
-    required:
-      - sources
 
   Source:
     title: A data source.
