@@ -17,7 +17,6 @@ import com.google.protobuf.DoubleValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DatasetOrientation;
@@ -130,7 +129,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         }
         else
         {
-            throw new DeclarationException( "Unsupported type of threshold node: " + thresholdsNode.getClass() );
+            throw new IOException( "Unsupported type of threshold node: " + thresholdsNode.getClass() );
         }
 
         LOGGER.debug( "Deserialized the following thresholds: {}.", thresholds );
@@ -261,7 +260,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             }
             else
             {
-                throw new DeclarationException( "Unsupported type of threshold values node: " + valuesNode.getClass() );
+                throw new IOException( "Unsupported type of threshold values node: " + valuesNode.getClass() );
             }
         }
 

@@ -345,6 +345,33 @@ class DeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeWithSingletonMetric() throws IOException
+    {
+        String declaration = """
+                observed: some_file.csv
+                predicted: another_file.csv
+                metrics: pearson correlation coefficient
+                  """;
+
+        Metric metric = MetricBuilder.builder()
+                                     .name( MetricConstants.PEARSON_CORRELATION_COEFFICIENT )
+                                     .build();
+
+        // Insertion order
+        Set<Metric> metrics = Set.of( metric );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .metrics( metrics )
+                                                                     .build();
+
+        EvaluationDeclaration actual = DeclarationFactory.from( declaration );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDeserializeWithLongMetrics() throws IOException
     {
         String yaml = """
@@ -1050,6 +1077,30 @@ class DeclarationFactoryTest
                                                                      .right( this.predictedDataset )
                                                                      .decimalFormat( formatter )
                                                                      .durationFormat( ChronoUnit.HOURS )
+                                                                     .formats( new Formats( formats ) )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithSingletonOutputFormat() throws IOException
+    {
+        String yaml = """
+                observed: some_file.csv
+                predicted: another_file.csv
+                output_formats: netcdf2
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        Outputs formats = Outputs.newBuilder()
+                                 .setNetcdf2( Outputs.Netcdf2Format.getDefaultInstance() )
+                                 .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
                                                                      .formats( new Formats( formats ) )
                                                                      .build();
 
