@@ -17,6 +17,7 @@ import com.google.protobuf.DoubleValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DatasetOrientation;
@@ -93,7 +94,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         else if ( thresholdsNode.isNumber() )
         {
             LOGGER.debug( "Encountered a plain array of thresholds for node {}.", nodeName );
-            Set<Threshold> innerThresholds = this.getSingletonThreshold( thresholdsNode, type );
+            Set<Threshold> innerThresholds = this.getSingletonThreshold( thresholdsNode, type, null );
             thresholds.addAll( innerThresholds );
         }
         // Explicit array node, which is either a plain array of thresholds or an array of thresholds with attributes
@@ -127,6 +128,10 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
                 thresholds.addAll( innerThresholds );
             }
         }
+        else
+        {
+            throw new DeclarationException( "Unsupported type of threshold node: " + thresholdsNode.getClass() );
+        }
 
         LOGGER.debug( "Deserialized the following thresholds: {}.", thresholds );
 
@@ -137,14 +142,19 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
      * Creates a singleton threshold from an implicit array.
      * @param thresholdNode the threshold node
      * @param type the threshold type
+     * @param builder an optional builder
      * @return the thresholds
      */
 
     private Set<Threshold> getSingletonThreshold( JsonNode thresholdNode,
-                                                  ThresholdType type )
+                                                  ThresholdType type,
+                                                  wres.statistics.generated.Threshold.Builder builder )
     {
-        wres.statistics.generated.Threshold.Builder builder
-                = DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder();
+        // No builder supplied?
+        if( Objects.isNull( builder ) )
+        {
+            builder = DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder();
+        }
 
         // Preserve insertion order
         double value = thresholdNode.asDouble();
@@ -241,6 +251,17 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
                                                                               type,
                                                                               builder );
                 thresholds.addAll( plainThresholds );
+            }
+            // Singleton
+            else if ( valuesNode.isNumber() )
+            {
+                LOGGER.debug( "Encountered a threshold value node with a singleton threshold." );
+                Set<Threshold> innerThresholds = this.getSingletonThreshold( valuesNode, type, builder );
+                thresholds.addAll( innerThresholds );
+            }
+            else
+            {
+                throw new DeclarationException( "Unsupported type of threshold values node: " + valuesNode.getClass() );
             }
         }
 

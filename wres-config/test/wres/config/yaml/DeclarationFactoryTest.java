@@ -34,6 +34,8 @@ import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.DecimalFormatPretty;
+import wres.config.yaml.components.EnsembleFilter;
+import wres.config.yaml.components.EnsembleFilterBuilder;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.FeatureGroupsBuilder;
@@ -101,8 +103,8 @@ class DeclarationFactoryTest
 
         URI predictedUri = URI.create( "another_file.csv" );
         Source predictedSource = SourceBuilder.builder()
-                                            .uri( predictedUri )
-                                            .build();
+                                              .uri( predictedUri )
+                                              .build();
 
         List<Source> observedSources = List.of( observedSource );
         this.observedDataset = DatasetBuilder.builder()
@@ -656,6 +658,31 @@ class DeclarationFactoryTest
                                                                      .spatialMask( expectedMask )
                                                                      .build();
 
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithEnsembleFilter() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  sources: another_file.csv
+                  ensemble_filter:
+                    members: 23
+                    exclude: true
+                  """;
+
+        EvaluationDeclaration deserialized = DeclarationFactory.from( yaml );
+
+        EnsembleFilter actual = deserialized.right()
+                                            .ensembleFilter();
+
+        EnsembleFilter expected = EnsembleFilterBuilder.builder()
+                                                       .members( Set.of( "23" ) )
+                                                       .exclude( true )
+                                                       .build();
         assertEquals( expected, actual );
     }
 
@@ -1272,6 +1299,43 @@ class DeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeWithSingletonProbabilityThresholdAndOperator() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                probability_thresholds:
+                  values: 0.5
+                  operator: greater equal
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        Threshold vOne =
+                DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder()
+                                                              .setLeftThresholdProbability( DoubleValue.of( 0.5 ) )
+                                                              .setOperator( Threshold.ThresholdOperator.GREATER_EQUAL )
+                                                              .build();
+
+        wres.config.yaml.components.Threshold vOneWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( vOne )
+                                                                            .type( ThresholdType.PROBABILITY )
+                                                                            .build();
+
+        Set<wres.config.yaml.components.Threshold> thresholds = Set.of( vOneWrapped );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .probabilityThresholds( thresholds )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDeserializeTimeToPeakError() throws IOException
     {
         String yaml = """
@@ -1492,16 +1556,16 @@ class DeclarationFactoryTest
         Set<ThresholdSource> actual = actualEvaluation.thresholdSources();
 
         ThresholdSource thresholdSourceOne = ThresholdSourceBuilder.builder()
-                                                                .uri( URI.create( "https://foo" ) )
-                                                                .build();
+                                                                   .uri( URI.create( "https://foo" ) )
+                                                                   .build();
 
         ThresholdSource thresholdSourceTwo = ThresholdSourceBuilder.builder()
                                                                    .uri( URI.create( "https://bar" ) )
                                                                    .build();
 
         ThresholdSource thresholdSourceThree = ThresholdSourceBuilder.builder()
-                                                                   .uri( URI.create( "https://baz" ) )
-                                                                   .build();
+                                                                     .uri( URI.create( "https://baz" ) )
+                                                                     .build();
 
         Set<ThresholdSource> expected = Set.of( thresholdSourceOne, thresholdSourceTwo, thresholdSourceThree );
 
