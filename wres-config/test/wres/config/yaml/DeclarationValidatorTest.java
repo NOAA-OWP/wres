@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.config.MetricConstants;
-import wres.config.yaml.components.AnalysisDurations;
+import wres.config.yaml.components.AnalysisTimes;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.DataType;
@@ -519,15 +519,15 @@ class DeclarationValidatorTest
         TimeInterval interval = new TimeInterval( Instant.MAX, Instant.MIN );
         LeadTimeInterval leadInterval = new LeadTimeInterval( java.time.Duration.ofHours( 3 ),
                                                               java.time.Duration.ofHours( 1 ) );
-        AnalysisDurations analysisDurations = new AnalysisDurations( java.time.Duration.ofHours( 1 ),
-                                                                     java.time.Duration.ZERO );
+        AnalysisTimes analysisTimes = new AnalysisTimes( java.time.Duration.ofHours( 1 ),
+                                                         java.time.Duration.ZERO );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
                                                                         .right( this.defaultDataset )
                                                                         .referenceDates( interval )
                                                                         .validDates( interval )
                                                                         .leadTimes( leadInterval )
-                                                                        .analysisDurations( analysisDurations )
+                                                                        .analysisTimes( analysisTimes )
                                                                         .build();
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 

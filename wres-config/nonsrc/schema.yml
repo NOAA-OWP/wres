@@ -96,8 +96,8 @@ definitions:
         "$ref": "#/definitions/LeadTimes"
       lead_time_pools:
         "$ref": "#/definitions/TimePools"
-      analysis_durations:
-        "$ref": "#/definitions/AnalysisDurations"
+      analysis_times:
+        "$ref": "#/definitions/AnalysisTimes"
       time_scale:
         description: "The time-scale in this context is the time-scale at which 
         pairs should be created."
@@ -694,12 +694,12 @@ definitions:
     required:
       - wkt
 
-  AnalysisDurations:
+  AnalysisTimes:
     title: The durations to consider when evaluating model analyses.
     type: object
     additionalProperties: false
     properties:
-      minimum_exclusive:
+      minimum:
         type: integer
       maximum:
         type: integer

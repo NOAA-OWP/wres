@@ -65,7 +65,7 @@ import wres.config.xml.generated.TimeScaleConfig;
 import wres.config.xml.generated.TimeSeriesMetricConfigName;
 import wres.config.xml.generated.UnnamedFeature;
 import wres.config.xml.generated.UrlParameter;
-import wres.config.yaml.components.AnalysisDurations;
+import wres.config.yaml.components.AnalysisTimes;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.CrossPair;
@@ -414,11 +414,30 @@ public class DeclarationMigrator
             DurationBoundsType durations = pair.getAnalysisDurations();
             ChronoUnit unit = ChronoUnit.valueOf( durations.getUnit()
                                                            .name() );
-            Duration minimum = DeclarationMigrator.getDurationOrNull( durations.getGreaterThan(), unit );
+            Integer minimumDeclared = durations.getGreaterThan();
+            if ( Objects.nonNull( minimumDeclared ) )
+            {
+                minimumDeclared = minimumDeclared + 1;
+                Integer maximum = durations.getLessThanOrEqualTo();
+                if ( Objects.nonNull( maximum ) && minimumDeclared > maximum )
+                {
+                    minimumDeclared = maximum;
+                }
+                else
+                {
+                    LOGGER.debug( "When migrating the analysis times, added 1 {} to the lower bound, as the old "
+                                  + "declaration language uses an exclusive lower bound and the new declaration "
+                                  + "language uses an inclusive lower bound. The migrated lower bound is: {}.",
+                                  minimumDeclared,
+                                  unit );
+                }
+            }
+
+            Duration minimum = DeclarationMigrator.getDurationOrNull( minimumDeclared, unit );
             Duration maximum = DeclarationMigrator.getDurationOrNull( durations.getLessThanOrEqualTo(), unit );
-            AnalysisDurations analysisDurations = new AnalysisDurations( minimum, maximum );
-            builder.analysisDurations( analysisDurations );
-            LOGGER.debug( "Migrated an analysis duration filter: {}.", analysisDurations );
+            AnalysisTimes analysisTimes = new AnalysisTimes( minimum, maximum );
+            builder.analysisTimes( analysisTimes );
+            LOGGER.debug( "Migrated an analysis duration filter: {}.", analysisTimes );
         }
 
         // Season filter
@@ -520,12 +539,12 @@ public class DeclarationMigrator
 
     private static TimeScaleLenience migrateLenienceType( LenienceType lenienceType )
     {
-        return switch( lenienceType )
-        {
-            case TRUE -> TimeScaleLenience.ALL;
-            case FALSE -> TimeScaleLenience.NONE;
-            default -> TimeScaleLenience.valueOf( lenienceType.name() );
-        };
+        return switch ( lenienceType )
+                {
+                    case TRUE -> TimeScaleLenience.ALL;
+                    case FALSE -> TimeScaleLenience.NONE;
+                    default -> TimeScaleLenience.valueOf( lenienceType.name() );
+                };
     }
 
     /**

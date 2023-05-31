@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import wres.config.MetricConstants;
-import wres.config.yaml.components.AnalysisDurations;
+import wres.config.yaml.components.AnalysisTimes;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.CrossPair;
 import wres.config.yaml.components.DataType;
@@ -740,8 +740,8 @@ class DeclarationFactoryTest
                   period: 23
                   frequency: 17
                   unit: hours
-                analysis_durations:
-                  minimum_exclusive: 0
+                analysis_times:
+                  minimum: 0
                   maximum: 1
                   unit: hours
                   """;
@@ -765,8 +765,8 @@ class DeclarationFactoryTest
         TimePools leadTimePools = new TimePools( java.time.Duration.ofHours( 23 ),
                                                  java.time.Duration.ofHours( 17 ) );
 
-        AnalysisDurations analysisDurations = new AnalysisDurations( java.time.Duration.ZERO,
-                                                                     java.time.Duration.ofHours( 1 ) );
+        AnalysisTimes analysisTimes = new AnalysisTimes( java.time.Duration.ZERO,
+                                                         java.time.Duration.ofHours( 1 ) );
 
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
                                                                      .left( this.observedDataset )
@@ -777,7 +777,7 @@ class DeclarationFactoryTest
                                                                      .validDatePools( validDatePools )
                                                                      .leadTimes( leadTimeInterval )
                                                                      .leadTimePools( leadTimePools )
-                                                                     .analysisDurations( analysisDurations )
+                                                                     .analysisTimes( analysisTimes )
                                                                      .build();
 
         assertEquals( expected, actual );
@@ -2092,8 +2092,8 @@ class DeclarationFactoryTest
                   period: 23
                   frequency: 17
                   unit: hours
-                analysis_durations:
-                  minimum_exclusive: 0
+                analysis_times:
+                  minimum: 0
                   maximum: 1
                   unit: hours
                 pair_frequency:
@@ -2118,8 +2118,8 @@ class DeclarationFactoryTest
         TimePools leadTimePools = new TimePools( java.time.Duration.ofHours( 23 ),
                                                  java.time.Duration.ofHours( 17 ) );
 
-        AnalysisDurations analysisDurations = new AnalysisDurations( java.time.Duration.ZERO,
-                                                                     java.time.Duration.ofHours( 1 ) );
+        AnalysisTimes analysisTimes = new AnalysisTimes( java.time.Duration.ZERO,
+                                                         java.time.Duration.ofHours( 1 ) );
 
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
                                                                        .left( this.observedDataset )
@@ -2130,7 +2130,7 @@ class DeclarationFactoryTest
                                                                        .validDatePools( validDatePools )
                                                                        .leadTimes( leadTimeInterval )
                                                                        .leadTimePools( leadTimePools )
-                                                                       .analysisDurations( analysisDurations )
+                                                                       .analysisTimes( analysisTimes )
                                                                        .pairFrequency( java.time.Duration.ofHours( 3 ) )
                                                                        .build();
 

@@ -27,7 +27,7 @@ lead_time_pools:
   period: 0
   frequency: 1
   unit: hours
-analysis_durations:
+analysis_times:
   maximum: 0
   unit: hours
 metrics:

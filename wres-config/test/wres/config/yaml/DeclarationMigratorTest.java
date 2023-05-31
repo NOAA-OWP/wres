@@ -6,7 +6,6 @@ import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.MonthDay;
 import java.time.temporal.ChronoUnit;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -54,8 +53,8 @@ import wres.config.xml.generated.TimeScaleConfig;
 import wres.config.xml.generated.TimeScaleFunction;
 import wres.config.xml.generated.UnnamedFeature;
 import wres.config.xml.generated.UrlParameter;
-import wres.config.yaml.components.AnalysisDurations;
-import wres.config.yaml.components.AnalysisDurationsBuilder;
+import wres.config.yaml.components.AnalysisTimes;
+import wres.config.yaml.components.AnalysisTimesBuilder;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.CrossPair;
@@ -423,7 +422,7 @@ class DeclarationMigratorTest
                                                  featureGroup,
                                                  grid,
                                                  new IntBoundsType( 1, 3 ),
-                                                 new DurationBoundsType( 4, 5, DurationUnit.HOURS ),
+                                                 new DurationBoundsType( 3, 5, DurationUnit.HOURS ),
                                                  new DateCondition( "2096-12-01T00:00:00Z", "2097-12-01T00:00:00Z" ),
                                                  new DateCondition( "2093-12-01T00:00:00Z", "2094-12-01T00:00:00Z" ),
                                                  new PairConfig.Season( ( short ) 1,
@@ -505,11 +504,11 @@ class DeclarationMigratorTest
                                                                 .minimum( Instant.parse( "2093-12-01T00:00:00Z" ) )
                                                                 .maximum( Instant.parse( "2094-12-01T00:00:00Z" ) )
                                                                 .build();
-        AnalysisDurations analysisDurations =
-                AnalysisDurationsBuilder.builder()
-                                        .minimumExclusive( java.time.Duration.ofHours( 4 ) )
-                                        .maximum( java.time.Duration.ofHours( 5 ) )
-                                        .build();
+        AnalysisTimes analysisTimes =
+                AnalysisTimesBuilder.builder()
+                                    .minimum( java.time.Duration.ofHours( 4 ) )
+                                    .maximum( java.time.Duration.ofHours( 5 ) )
+                                    .build();
         TimePools validTimePools = TimePoolsBuilder.builder()
                                                    .period( java.time.Duration.ofHours( 17 ) )
                                                    .frequency( java.time.Duration.ofHours( 4 ) )
@@ -546,7 +545,7 @@ class DeclarationMigratorTest
                                                                      .rescaleLenience( TimeScaleLenience.RIGHT )
                                                                      .leadTimes( leadTimeInterval )
                                                                      .validDates( validTimeInterval )
-                                                                     .analysisDurations( analysisDurations )
+                                                                     .analysisTimes( analysisTimes )
                                                                      .referenceDates( referenceTimeInterval )
                                                                      .validDatePools( validTimePools )
                                                                      .referenceDatePools( referenceTimePools )
