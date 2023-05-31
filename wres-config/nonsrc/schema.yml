@@ -805,14 +805,19 @@ definitions:
     additionalProperties: false
     properties:
       members:
-        type: array
-        items:
-          anyOf:
-            - type: string
-              minLength: 1
-              maxLength: 72
-            - type: integer
-        minItems: 1
+        anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 72
+          - type: integer
+          - type: array
+            items:
+              anyOf:
+                - type: string
+                  minLength: 1
+                  maxLength: 72
+                - type: integer
+            minItems: 1
       exclude:
         type: boolean
     required:
@@ -886,10 +891,12 @@ definitions:
     additionalProperties: false
     properties:
       values:
-        type: array
-        items:
-          "$ref": "#/definitions/Threshold"
-        minItems: 1
+        anyOf:
+          - type: array
+            items:
+              "$ref": "#/definitions/Threshold"
+            minItems: 1
+          - type: number
       operator:
         "$ref": "#/definitions/ThresholdOperatorEnum"
       apply_to:
@@ -956,10 +963,14 @@ definitions:
     additionalProperties: false
     properties:
       values:
-        type: array
-        items:
-          "$ref": "#/definitions/ProbabilityThreshold"
-        minItems: 1
+        anyOf:
+          - type: array
+            items:
+              "$ref": "#/definitions/ProbabilityThreshold"
+            minItems: 1
+          - type: number
+            minimum: 0.0
+            maximum: 1.0
       operator:
         "$ref": "#/definitions/ThresholdOperatorEnum"
       apply_to:
