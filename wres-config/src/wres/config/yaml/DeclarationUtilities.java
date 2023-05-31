@@ -842,12 +842,20 @@ public class DeclarationUtilities
         Objects.requireNonNull( leftSources );
         Objects.requireNonNull( rightSources );
         Objects.requireNonNull( baselineSources );
-        Objects.requireNonNull( evaluation.left() );
-        Objects.requireNonNull( evaluation.right() );
 
         EvaluationDeclarationBuilder builder = EvaluationDeclarationBuilder.builder( evaluation );
-        DatasetBuilder leftBuilder = DatasetBuilder.builder( evaluation.left() );
-        DatasetBuilder rightBuilder = DatasetBuilder.builder( evaluation.right() );
+        DatasetBuilder leftBuilder = DatasetBuilder.builder();
+        DatasetBuilder rightBuilder = DatasetBuilder.builder();
+
+        // Datasets present?
+        if ( Objects.nonNull( builder.left() ) )
+        {
+            leftBuilder = DatasetBuilder.builder( evaluation.left() );
+        }
+        if ( Objects.nonNull( builder.right() ) )
+        {
+            rightBuilder = DatasetBuilder.builder( evaluation.right() );
+        }
 
         // Adjust the left and right datasets
         DeclarationUtilities.addDataSources( leftBuilder, leftSources, DatasetOrientation.LEFT );
@@ -858,10 +866,26 @@ public class DeclarationUtilities
                .right( rightBuilder.build() );
 
         // Baseline?
-        if ( DeclarationUtilities.hasBaseline( evaluation ) )
+        if ( DeclarationUtilities.hasBaseline( evaluation ) || !baselineSources.isEmpty() )
         {
             BaselineDataset baseline = evaluation.baseline();
-            DatasetBuilder baselineBuilder = DatasetBuilder.builder( baseline.dataset() );
+            DatasetBuilder baselineBuilder = DatasetBuilder.builder();
+
+            // Dataset present?
+            if ( Objects.nonNull( baseline )
+                 && Objects.nonNull( baseline.dataset() ) )
+            {
+                baselineBuilder = DatasetBuilder.builder( baseline.dataset() );
+            }
+            // No, so set an empty one
+            else
+            {
+                baseline = BaselineDatasetBuilder.builder()
+                                                 .dataset( DatasetBuilder.builder()
+                                                                         .build() )
+                                                 .build();
+            }
+
             DeclarationUtilities.addDataSources( baselineBuilder, baselineSources, DatasetOrientation.BASELINE );
             BaselineDataset adjustedBaseline = BaselineDatasetBuilder.builder( baseline )
                                                                      .dataset( baselineBuilder.build() )
@@ -1403,8 +1427,8 @@ public class DeclarationUtilities
         }
 
         // No existing sources to correlate
-        if ( builder.sources()
-                    .isEmpty() )
+        if ( Objects.isNull( builder.sources() ) || builder.sources()
+                                                           .isEmpty() )
         {
             List<Source> newSources = sources.stream()
                                              .map( uri -> SourceBuilder.builder()
