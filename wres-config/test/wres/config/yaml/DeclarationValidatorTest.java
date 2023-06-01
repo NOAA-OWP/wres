@@ -912,11 +912,11 @@ class DeclarationValidatorTest
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
         assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
-                                                                        "The declaration requested 'csv' "
+                                                                        "The evaluation requested the 'csv' "
                                                                         + "format, which has been marked deprecated",
                                                                         StatusLevel.WARN ) ),
                    () -> assertTrue( DeclarationValidatorTest.contains( events,
-                                                                        "The declaration requested 'netcdf' "
+                                                                        "The evaluation requested the 'netcdf' "
                                                                         + "format, which has been marked deprecated",
                                                                         StatusLevel.WARN ) )
         );

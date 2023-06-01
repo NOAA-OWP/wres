@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -1134,17 +1135,19 @@ public class FeatureFiller
     {
         Set<GeometryTuple> features = new HashSet<>();
 
-        // Read the features from either V3 or older API.
         List<Location> locations = FeatureService.read( uri );
+        Set<String> missingTuples = new TreeSet<>();
         for ( Location location : locations )
         {
             String leftName = Location.getNameForAuthority( leftAuthority, location );
             String rightName = Location.getNameForAuthority( rightAuthority, location );
             String baselineName = Location.getNameForAuthority( baselineAuthority, location );
 
-            // If all three names are present, create a feature
+            // If all names are present, create a feature
             if ( FeatureFiller.isValidFeatureName( leftName )
-                 && FeatureFiller.isValidFeatureName( rightName ) )
+                 && FeatureFiller.isValidFeatureName( rightName )
+                 // Either no baseline name is required or the baseline name is valid: see Redmine issue #116808
+                 && ( !hasBaseline || FeatureFiller.isValidFeatureName( baselineName ) ) )
             {
                 GeometryTuple.Builder featureFromGroup = GeometryTuple.newBuilder()
                                                                       .setLeft( Geometry.newBuilder()
@@ -1153,7 +1156,7 @@ public class FeatureFiller
                                                                                          .setName( rightName ) );
 
                 // Baseline?
-                if ( hasBaseline && FeatureFiller.isValidFeatureName( baselineName ) )
+                if ( hasBaseline )
                 {
                     featureFromGroup.setBaseline( Geometry.newBuilder()
                                                           .setName( baselineName ) );
@@ -1161,6 +1164,25 @@ public class FeatureFiller
 
                 features.add( featureFromGroup.build() );
             }
+            else if( LOGGER.isWarnEnabled() )
+            {
+                StringJoiner joiner = new StringJoiner( ",", "(", ")" );
+                joiner.add( leftName )
+                      .add( rightName );
+                if( hasBaseline )
+                {
+                    joiner.add( baselineName );
+                }
+                missingTuples.add( joiner.toString() );
+            }
+        }
+
+        // Warn about missing tuples: see Redmine issue #116808
+        if( LOGGER.isWarnEnabled() && ! missingTuples.isEmpty() )
+        {
+            LOGGER.warn( "While reading features from {}, discovered some feature names that were required but "
+                         + "unavailable. The following feature tuples had one or more missing names and the resulting "
+                         + "feature tuples will not be evaluated: {}.", uri, missingTuples );
         }
 
         return Collections.unmodifiableSet( features );

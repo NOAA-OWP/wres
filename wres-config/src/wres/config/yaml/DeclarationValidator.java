@@ -1267,7 +1267,7 @@ public class DeclarationValidator
         {
             Outputs outputs = formats.outputs();
 
-            String start = "The declaration requested '";
+            String start = "The evaluation requested the '";
             String middle =
                     "' format, which has been marked deprecated and may be removed from a future version of the "
                     + "software without warning. It is recommended that you substitute this format with the '";
