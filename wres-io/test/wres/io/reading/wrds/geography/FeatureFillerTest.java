@@ -183,6 +183,50 @@ class FeatureFillerTest
     }
 
     @Test
+    void testFillOutImplicitFeatureGroupUsingMockedFeatureServiceAndNullBaseline() throws URISyntaxException
+    {
+        URI uri = new URI( "https://some_fake_uri" );
+        FeatureServiceGroup featureGroup = new FeatureServiceGroup( "state", "AL", true );
+        wres.config.yaml.components.FeatureService
+                featureService = new wres.config.yaml.components.FeatureService( uri, Set.of( featureGroup ) );
+
+        EvaluationDeclaration evaluation
+                = FeatureFillerTest.getBoilerplateEvaluationWith( null,
+                                                                  featureService,
+                                                                  BOILERPLATE_DATASOURCE_USGS_SITE_CODE_AUTHORITY,
+                                                                  BOILERPLATE_DATASOURCE_NWS_LID_AUTHORITY,
+                                                                  BOILERPLATE_BASELINE_DATASOURCE_NWM_FEATURE_AUTHORITY );
+
+        try ( MockedStatic<FeatureService> utilities = Mockito.mockStatic( FeatureService.class ) )
+        {
+            utilities.when( () -> FeatureService.read( Mockito.any() ) )
+                     // Return one location with a missing NWM feature ID, which should be removed
+                     .thenReturn( List.of( new Location( null, "bar", "baz" ),
+                                           new Location( "qux", "quux", "corge" )) );
+
+            EvaluationDeclaration actualEvaluation = FeatureFiller.fillFeatures( evaluation );
+
+            Set<GeometryGroup> actualGroup = actualEvaluation.featureGroups()
+                                                             .geometryGroups();
+
+            GeometryGroup expectedGroup =
+                    GeometryGroup.newBuilder()
+                                 .addAllGeometryTuples( Set.of( GeometryTuple.newBuilder()
+                                                                             .setLeft( Geometry.newBuilder()
+                                                                                               .setName( "quux" ) )
+                                                                             .setRight( Geometry.newBuilder()
+                                                                                                .setName( "corge" ) )
+                                                                             .setBaseline( Geometry.newBuilder()
+                                                                                                .setName( "qux" ) )
+                                                                             .build() ) )
+                                 .setRegionName( "AL" )
+                                 .build();
+
+            assertEquals( Set.of( expectedGroup ), actualGroup );
+        }
+    }
+
+    @Test
     void testFillOutSparseFeaturesUsingMockedFeatureService() throws URISyntaxException
     {
         URI uri = new URI( "https://some_fake_uri" );

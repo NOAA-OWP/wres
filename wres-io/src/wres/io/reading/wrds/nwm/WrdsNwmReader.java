@@ -178,6 +178,14 @@ public class WrdsNwmReader implements TimeSeriesReader
 
         LOGGER.debug( "Preparing a request to WRDS for NWM time-series without any chunking of the data." );
         InputStream stream = WrdsNwmReader.getByteStreamFromUri( dataSource.getUri() );
+
+        if ( Objects.isNull( stream ) )
+        {
+            LOGGER.warn( "Failed to obtain time-series data from {}. Returning an empty stream.", dataSource.getUri() );
+
+            return Stream.of();
+        }
+
         return this.read( dataSource, stream );
     }
 
@@ -663,7 +671,7 @@ public class WrdsNwmReader implements TimeSeriesReader
      * Returns a byte stream from a URI.
      *
      * @param uri the URI
-     * @return the byte stream
+     * @return the byte stream or null if an http error is encountered between 400 inclusive and 500 exclusive
      * @throws UnsupportedOperationException if the uri scheme is not one of http(s) or file
      * @throws ReadException if the stream could not be created for any other reason
      */
@@ -681,6 +689,10 @@ public class WrdsNwmReader implements TimeSeriesReader
                 int httpStatus = response.getStatusCode();
 
                 // Read an error if possible
+                // Is this too broad? Perhaps a 404 only, else a read exception. The problem is that "no data" is
+                // routine from the perspective of WRES, but apparently not WRDS, so we get a 404, not a 200. See
+                // Redmine issue #116808. The difficulty with such a broad range is that we potentially aggregate
+                // buggy requests with no data responses.
                 if ( httpStatus >= 400 && httpStatus < 500 )
                 {
                     String possibleError = WrdsNwmReader.tryToReadErrorMessage( response.getResponse() );
@@ -692,6 +704,7 @@ public class WrdsNwmReader implements TimeSeriesReader
                                      possibleError );
                     }
 
+                    // Flag to the caller as no data
                     return null;
                 }
 
