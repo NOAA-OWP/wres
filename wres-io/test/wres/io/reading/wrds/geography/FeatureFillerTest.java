@@ -1,11 +1,18 @@
 package wres.io.reading.wrds.geography;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -183,6 +190,84 @@ class FeatureFillerTest
     }
 
     @Test
+    void testFillOutFeaturesUsingResponseFromFileSystem() throws URISyntaxException, IOException
+    {
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
+        {
+            // Write a new csv file to an in-memory file system
+            Path directory = fileSystem.getPath( "test" );
+            Files.createDirectory( directory );
+            Path pathToStore = fileSystem.getPath( "test", "test.json" );
+            Path jsonPath = Files.createFile( pathToStore );
+
+            try ( BufferedWriter writer = Files.newBufferedWriter( jsonPath ) )
+            {
+                String jsonString = """
+                        {
+                            "_metrics": {
+                                "location_count": 4603,
+                                "model_tracing_api_call": 0.10254240036010742,
+                                "total_request_time": 19.812459230422974
+                            },
+                            "_warnings": [],
+                            "_documentation": {
+                                "swagger URL": "foo_docs"
+                            },
+                            "deployment": {
+                                "api_url": "foo_url",
+                                "stack": "prod",
+                                "version": "v3.5.6",
+                                "api_caller": "None"
+                            },
+                            "locations": [
+                                {
+                                    "identifiers": {
+                                        "nws_lid": "baz",
+                                        "usgs_site_code": "bar",
+                                        "nwm_feature_id": "foo"
+                                    }
+                                }
+                            ]
+                        }
+                        """;
+                writer.write( jsonString );
+            }
+
+            URI serviceUri = jsonPath.toUri();
+            wres.config.yaml.components.FeatureService
+                    featureService = new wres.config.yaml.components.FeatureService( serviceUri, Set.of() );
+
+            // Create a sparse feature to correlate
+            GeometryTuple feature = GeometryTuple.newBuilder()
+                                                 .setLeft( Geometry.newBuilder()
+                                                                   .setName( "bar" ) )
+                                                 .build();
+
+            EvaluationDeclaration evaluation
+                    = FeatureFillerTest.getBoilerplateEvaluationWith( Set.of( feature ),
+                                                                      featureService,
+                                                                      BOILERPLATE_DATASOURCE_USGS_SITE_CODE_AUTHORITY,
+                                                                      BOILERPLATE_DATASOURCE_NWS_LID_AUTHORITY,
+                                                                      null );
+
+            EvaluationDeclaration actualEvaluation = FeatureFiller.fillFeatures( evaluation );
+
+            GeometryTuple expectedFeature = GeometryTuple.newBuilder()
+                                                         .setLeft( Geometry.newBuilder()
+                                                                           .setName( "bar" ) )
+                                                         .setRight( Geometry.newBuilder()
+                                                                           .setName( "baz" ) )
+                                                         .build();
+
+            Set<GeometryTuple> expected = Set.of( expectedFeature );
+            Set<GeometryTuple> actual = actualEvaluation.features()
+                                                        .geometries();
+
+            assertEquals( expected, actual );
+        }
+    }
+
+    @Test
     void testFillOutImplicitFeatureGroupUsingMockedFeatureServiceAndNullBaseline() throws URISyntaxException
     {
         URI uri = new URI( "https://some_fake_uri" );
@@ -202,7 +287,7 @@ class FeatureFillerTest
             utilities.when( () -> FeatureService.read( Mockito.any() ) )
                      // Return one location with a missing NWM feature ID, which should be removed
                      .thenReturn( List.of( new Location( null, "bar", "baz" ),
-                                           new Location( "qux", "quux", "corge" )) );
+                                           new Location( "qux", "quux", "corge" ) ) );
 
             EvaluationDeclaration actualEvaluation = FeatureFiller.fillFeatures( evaluation );
 
@@ -217,7 +302,7 @@ class FeatureFillerTest
                                                                              .setRight( Geometry.newBuilder()
                                                                                                 .setName( "corge" ) )
                                                                              .setBaseline( Geometry.newBuilder()
-                                                                                                .setName( "qux" ) )
+                                                                                                   .setName( "qux" ) )
                                                                              .build() ) )
                                  .setRegionName( "AL" )
                                  .build();
@@ -247,9 +332,9 @@ class FeatureFillerTest
                                               .build();
         // No match for this one
         GeometryTuple anotherLeft = GeometryTuple.newBuilder()
-                                          .setLeft( Geometry.newBuilder()
-                                                            .setName( "foofoo" ) )
-                                          .build();
+                                                 .setLeft( Geometry.newBuilder()
+                                                                   .setName( "foofoo" ) )
+                                                 .build();
         EvaluationDeclaration evaluation
                 = FeatureFillerTest.getBoilerplateEvaluationWith( Set.of( left, right, baseline, anotherLeft ),
                                                                   featureService,
@@ -325,16 +410,16 @@ class FeatureFillerTest
                                                                            .setName( "grault" ) )
                                                      .build();
             GeometryTuple expectedThree = GeometryTuple.newBuilder()
-                                                     .setLeft( Geometry.newBuilder()
-                                                                       .setName( "garply" ) )
-                                                     .setRight( Geometry.newBuilder()
-                                                                        .setName( "waldo" ) )
-                                                     .setBaseline( Geometry.newBuilder()
-                                                                           .setName( "baz" ) )
-                                                     .build();
+                                                       .setLeft( Geometry.newBuilder()
+                                                                         .setName( "garply" ) )
+                                                       .setRight( Geometry.newBuilder()
+                                                                          .setName( "waldo" ) )
+                                                       .setBaseline( Geometry.newBuilder()
+                                                                             .setName( "baz" ) )
+                                                       .build();
             Set<GeometryTuple> expected = Set.of( expectedOne, expectedTwo, expectedThree );
 
-            assertEquals( expected, actual);
+            assertEquals( expected, actual );
         }
     }
 
