@@ -2,11 +2,11 @@ package wres.io.reading.wrds.geography;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,6 +20,7 @@ import java.util.StringJoiner;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
 
+import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,7 @@ import wres.config.yaml.DeclarationException;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.io.ingesting.PreIngestException;
+import wres.io.reading.ReadException;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.web.WebClient;
 
@@ -99,8 +101,8 @@ class FeatureService
      * @param featureNames The names in the "from" dimension to look for in "to"
      * @return The Set of name pairs: "from" as key, "to" as value.
      * @throws DeclarationException When a feature service was needed but null
-     * @throws PreIngestException When the count of features in response differs from the count of feature names
-     *                            requested, or when the requested "to" was not found in the response.
+     * @throws ReadException When the count of features in response differs from the count of feature names
+     *                       requested, or when the requested "to" was not found in the response.
      * @throws UnsupportedOperationException When unknown "from" or "to" given or the API version is insupported
      * @throws NullPointerException When projectConfig or featureNames is null.
      */
@@ -261,8 +263,8 @@ class FeatureService
         }
         catch ( IOException ioe )
         {
-            throw new PreIngestException( "Failed to parse location information from document from "
-                                          + uri );
+            throw new ReadException( "Failed to parse location information from document from "
+                                     + uri, ioe );
         }
     }
 
@@ -274,8 +276,8 @@ class FeatureService
      * @param featureServiceBaseUri The base URI from which to build a full URI.
      * @param featureNames The names in the "from" dimension to look for in "to"
      * @return The Set of name pairs: "from" as key, "to" as value.
-     * @throws PreIngestException When the count of features in response differs from the count of feature names
-     *                            requested, or when the requested "to" was not found in the response.
+     * @throws ReadException When the count of features in response differs from the count of feature names
+     *                       requested, or when the requested "to" was not found in the response.
      * @throws NullPointerException When any argument is null.
      * @throws UnsupportedOperationException When unknown "from" or "to" given.
      * @throws IllegalArgumentException When any arg is null.
@@ -318,14 +320,14 @@ class FeatureService
 
         if ( countOfLocations != featureNames.size() )
         {
-            throw new PreIngestException( "Response from WRDS at " + uri
-                                          + " did not include exactly "
-                                          + featureNames.size()
-                                          + " locations, "
-                                          + " but had "
-                                          + countOfLocations
-                                          + ". "
-                                          + EXPLANATION_OF_WHY_AND_WHAT_TO_DO );
+            throw new ReadException( "Response from WRDS at " + uri
+                                     + " did not include exactly "
+                                     + featureNames.size()
+                                     + " locations, "
+                                     + " but had "
+                                     + countOfLocations
+                                     + ". "
+                                     + EXPLANATION_OF_WHY_AND_WHAT_TO_DO );
         }
 
         List<Location> fromWasNullOrBlank = new ArrayList<>( 2 );
@@ -341,20 +343,20 @@ class FeatureService
         if ( !fromWasNullOrBlank.isEmpty()
              || !toWasNullOrBlank.isEmpty() )
         {
-            throw new PreIngestException( "From the response at " + uri
-                                          + " the following were missing "
-                                          + from.name()
-                                                .toLowerCase()
-                                          + " (from) values: "
-                                          + fromWasNullOrBlank
-                                          + " and/or "
-                                          + "the following were missing "
-                                          + to.name()
-                                              .toLowerCase()
-                                          + " (to) values: "
-                                          + toWasNullOrBlank
-                                          + ". "
-                                          + EXPLANATION_OF_WHY_AND_WHAT_TO_DO );
+            throw new ReadException( "From the response at " + uri
+                                     + " the following were missing "
+                                     + from.name()
+                                           .toLowerCase()
+                                     + " (from) values: "
+                                     + fromWasNullOrBlank
+                                     + " and/or "
+                                     + "the following were missing "
+                                     + to.name()
+                                         .toLowerCase()
+                                     + " (to) values: "
+                                     + toWasNullOrBlank
+                                     + ". "
+                                     + EXPLANATION_OF_WHY_AND_WHAT_TO_DO );
         }
 
         return Collections.unmodifiableMap( batchOfLocations );
@@ -436,14 +438,13 @@ class FeatureService
         LOGGER.info( " Getting location data from {}", uri );
         byte[] rawResponseBytes;
 
-        if ( uri.getScheme()
-                .equalsIgnoreCase( "file" ) )
+        if ( ReaderUtilities.isWebSource( uri ) )
         {
-            rawResponseBytes = FeatureService.readFromFile( uri );
+            rawResponseBytes = FeatureService.readFromWeb( uri );
         }
         else
         {
-            rawResponseBytes = FeatureService.readFromWeb( uri );
+            rawResponseBytes = FeatureService.readFromFile( uri );
         }
 
         if ( LOGGER.isDebugEnabled() )
@@ -455,16 +456,22 @@ class FeatureService
         return rawResponseBytes;
     }
 
+    /**
+     * Read a response from the web.
+     * @param uri the URI
+     * @return the response bytes
+     */
+
     private static byte[] readFromWeb( URI uri )
     {
         try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri ) )
         {
             if ( response.getStatusCode() != 200 )
             {
-                throw new PreIngestException( "Failed to read location data from "
-                                              + uri
-                                              + " due to HTTP status "
-                                              + response.getStatusCode() );
+                throw new ReadException( "Failed to read location data from "
+                                         + uri
+                                         + " due to HTTP status "
+                                         + response.getStatusCode() );
             }
 
             return response.getResponse()
@@ -472,23 +479,29 @@ class FeatureService
         }
         catch ( IOException ioe )
         {
-            throw new PreIngestException( "Unable to read location data from web at "
-                                          + uri,
-                                          ioe );
+            throw new ReadException( "Unable to read location data from web at "
+                                     + uri,
+                                     ioe );
         }
     }
 
+    /**
+     * Read a response from a file on the default filesystem.
+     * @param uri the URI
+     * @return the response bytes
+     */
+
     private static byte[] readFromFile( URI uri )
     {
-        try ( InputStream response = new FileInputStream( new File( uri ) ) )
+        try ( InputStream data = Files.newInputStream( Paths.get( uri ) ) )
         {
-            return response.readAllBytes();
+            return IOUtils.toByteArray( data );
         }
         catch ( IOException ioe )
         {
-            throw new PreIngestException( "Unable to read location data from file at "
-                                          + uri,
-                                          ioe );
+            throw new ReadException( "Unable to read location data from file at "
+                                     + uri,
+                                     ioe );
         }
     }
 

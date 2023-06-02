@@ -41,14 +41,14 @@ public class FeatureServiceDeserializer extends JsonDeserializer<FeatureService>
         if( node instanceof TextNode textNode )
         {
             String uriString = textNode.asText();
-            uri = URI.create( uriString );
+            uri = UriDeserializer.deserializeUri( uriString );
         }
         // Explicit URI
         else if ( node.has( "uri" ) )
         {
             String uriString = node.get( "uri" )
                                    .asText();
-            uri = URI.create( uriString );
+            uri = UriDeserializer.deserializeUri( uriString );
         }
 
         // Explicit groups

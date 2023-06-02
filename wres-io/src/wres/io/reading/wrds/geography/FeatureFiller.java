@@ -29,6 +29,7 @@ import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.Features;
 import wres.datamodel.space.FeatureTuple;
 import wres.io.ingesting.PreIngestException;
+import wres.io.reading.ReaderUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -131,24 +132,68 @@ public class FeatureFiller
                                                                             .dataset() );
         }
 
-        // Explicitly declared singleton features, plus any implicitly declared with "group" declaration
-        Set<GeometryTuple> filledSingletonFeatures = FeatureFiller.fillSingletonFeatures( evaluation,
-                                                                                          featureService,
-                                                                                          leftAuthority,
-                                                                                          rightAuthority,
-                                                                                          baselineAuthority );
+        return FeatureFiller.fillFeatures( evaluation,
+                                           featureService,
+                                           leftAuthority,
+                                           rightAuthority,
+                                           baselineAuthority );
+    }
 
-        LOGGER.debug( "Filled these singleton features: {}", filledSingletonFeatures );
+    /**
+     * Fills the supplied declaration with features.
+     * @param evaluation the declaration
+     * @param featureService the feature service
+     * @param leftAuthority the left feature naming authority
+     * @param rightAuthority the right feature naming authority
+     * @param baselineAuthority the baseline feature naming authority
+     * @return the filled declaration
+     */
 
-        // Explicitly declared feature groups
-        Set<GeometryGroup> filledGroupedFeatures = FeatureFiller.fillGroupedFeatures( evaluation,
-                                                                                      featureService,
-                                                                                      leftAuthority,
-                                                                                      rightAuthority,
-                                                                                      baselineAuthority );
+    private static EvaluationDeclaration fillFeatures( EvaluationDeclaration evaluation,
+                                                       wres.config.yaml.components.FeatureService featureService,
+                                                       FeatureAuthority leftAuthority,
+                                                       FeatureAuthority rightAuthority,
+                                                       FeatureAuthority baselineAuthority )
+    {
+        // Is this an actual feature service request or a response from a filesystem? If the latter, then any other
+        // service declaration, such as groups, must be ignored and the response read as singleton features
+        Set<GeometryTuple> filledSingletonFeatures;
+        Set<GeometryGroup> filledGroupedFeatures = Collections.emptySet();
+        if ( !ReaderUtilities.isWebSource( featureService.uri() ) )
+        {
+            LOGGER.warn( "While reading data from a feature service, discovered a URI that looks like a file path, {}."
+                         + " This is allowed, but the response will be read as a plain list of features and all other "
+                         + "feature service declaration, including 'groups', 'group' and 'pool', will be ignored.",
+                         featureService.uri() );
 
-        LOGGER.debug( "Filled these grouped features: {}", filledGroupedFeatures );
+            filledSingletonFeatures = FeatureFiller.readWrdsFeatures( featureService.uri(),
+                                                                      leftAuthority,
+                                                                      rightAuthority,
+                                                                      baselineAuthority,
+                                                                      DeclarationUtilities.hasBaseline( evaluation ) );
+        }
+        else
+        {
+            // Explicitly declared singleton features, plus any implicitly declared with "group" declaration
+            filledSingletonFeatures = FeatureFiller.fillSingletonFeatures( evaluation,
+                                                                           featureService,
+                                                                           leftAuthority,
+                                                                           rightAuthority,
+                                                                           baselineAuthority );
 
+            LOGGER.debug( "Filled these singleton features: {}", filledSingletonFeatures );
+
+            // Explicitly declared feature groups
+            filledGroupedFeatures = FeatureFiller.fillGroupedFeatures( evaluation,
+                                                                       featureService,
+                                                                       leftAuthority,
+                                                                       rightAuthority,
+                                                                       baselineAuthority );
+
+            LOGGER.debug( "Filled these grouped features: {}", filledGroupedFeatures );
+        }
+
+        // No features?
         if ( filledSingletonFeatures.isEmpty() && filledGroupedFeatures.isEmpty() )
         {
             throw new PreIngestException( "No geographic features found to evaluate." );
@@ -1164,12 +1209,12 @@ public class FeatureFiller
 
                 features.add( featureFromGroup.build() );
             }
-            else if( LOGGER.isWarnEnabled() )
+            else if ( LOGGER.isWarnEnabled() )
             {
                 StringJoiner joiner = new StringJoiner( ",", "(", ")" );
                 joiner.add( leftName )
                       .add( rightName );
-                if( hasBaseline )
+                if ( hasBaseline )
                 {
                     joiner.add( baselineName );
                 }
@@ -1178,7 +1223,7 @@ public class FeatureFiller
         }
 
         // Warn about missing tuples: see Redmine issue #116808
-        if( LOGGER.isWarnEnabled() && ! missingTuples.isEmpty() )
+        if ( LOGGER.isWarnEnabled() && !missingTuples.isEmpty() )
         {
             LOGGER.warn( "While reading features from {}, discovered some feature names that were required but "
                          + "unavailable. The following feature tuples had one or more missing names and the resulting "
