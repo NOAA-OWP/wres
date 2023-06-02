@@ -1486,11 +1486,32 @@ public class DeclarationUtilities
                 newSources.add( newSource );
             }
         }
+
         LOGGER.debug( "Added the following new sources for the {} data: {}. The new sources were added to the "
                       + "following existing sources {}.",
                       orientation,
                       newSources,
                       existingSources );
+
+        // Add back existing sources that are uncorrelated with new sources
+        Set<Source> existingSourcesToAdd = new HashSet<>();
+        for ( Source existingSource : existingSources )
+        {
+            boolean match = newSources.stream()
+                                      .anyMatch( next -> next.uri()
+                                                             .getPath()
+                                                             .endsWith( existingSource.uri()
+                                                                                      .getPath() ) );
+
+            if ( !match )
+            {
+                existingSourcesToAdd.add( existingSource );
+            }
+        }
+
+        LOGGER.debug( "Retained the following existing sources that were uncorrelated with new sources: {}.",
+                      existingSourcesToAdd );
+        newSources.addAll( existingSourcesToAdd );
 
         builder.sources( newSources );
     }
