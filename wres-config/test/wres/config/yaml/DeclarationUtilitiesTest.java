@@ -1767,7 +1767,11 @@ class DeclarationUtilitiesTest
                                       .uri( URI.create( "foo.csv" ) )
                                       .timeZoneOffset( ZoneOffset.ofHours( 3 ) )
                                       .build();
-        List<wres.config.yaml.components.Source> leftSources = List.of( leftOne );
+        Source leftTwo = SourceBuilder.builder()
+                                      .uri( URI.create( "qux.csv" ) )
+                                      .timeZoneOffset( ZoneOffset.ofHours( 4 ) )
+                                      .build();
+        List<wres.config.yaml.components.Source> leftSources = List.of( leftOne, leftTwo );
         Dataset left = DatasetBuilder.builder()
                                      .sources( leftSources )
                                      .build();
@@ -1835,7 +1839,7 @@ class DeclarationUtilitiesTest
         Source baselineSourceExpectedTwo = SourceBuilder.builder()
                                                         .uri( baselineUncorrelated )
                                                         .build();
-        List<Source> leftSourcesExpected = List.of( leftSourceExpectedOne, leftSourceExpectedTwo );
+        List<Source> leftSourcesExpected = List.of( leftSourceExpectedOne, leftSourceExpectedTwo, leftTwo );
         Dataset leftExpected = DatasetBuilder.builder()
                                              .sources( leftSourcesExpected )
                                              .build();
