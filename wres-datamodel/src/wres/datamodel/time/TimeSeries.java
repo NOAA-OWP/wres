@@ -16,13 +16,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.Immutable;
+
 import wres.datamodel.scale.TimeScaleOuter;
 
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * <p>A time-series contains a time-ordered set of {@link Event}, together with {@link TimeSeriesMetadata}.
- * 
+ *
  * @param <T> the type of time-series event value
  * @author James Brown
  * @author Jesse Bickel
@@ -55,7 +56,7 @@ public class TimeSeries<T>
 
     /**
      * Returns a {@link TimeSeries} with prescribed metadata.
-     * 
+     *
      * @param <T> the event type
      * @param timeSeriesMetadata the metadata
      * @param events the events
@@ -75,7 +76,7 @@ public class TimeSeries<T>
 
     /**
      * Returns the underlying events in the time-series.
-     * 
+     *
      * @return the underlying events.
      */
 
@@ -86,7 +87,7 @@ public class TimeSeries<T>
 
     /**
      * Returns the {@link TimeSeriesMetadata}. 
-     * 
+     *
      * @return the metadata
      */
 
@@ -98,7 +99,7 @@ public class TimeSeries<T>
     /**
      * Returns the {@link TimeScaleOuter} associated with the events or <code>null</code> if {@link #hasTimeScale()} returns
      * <code>false</code>.
-     * 
+     *
      * @return the time-scale or null
      */
 
@@ -110,7 +111,7 @@ public class TimeSeries<T>
 
     /**
      * Returns <code>true</code> if the time-scale is known, otherwise <code>false</code>.
-     * 
+     *
      * @return true if the time scale is known, otherwise false
      */
 
@@ -123,7 +124,7 @@ public class TimeSeries<T>
 
     /**
      * Returns the reference datetime.
-     * 
+     *
      * @return the reference datetime
      */
 
@@ -146,7 +147,7 @@ public class TimeSeries<T>
             return false;
         }
 
-        TimeSeries<?> that = (TimeSeries<?>) o;
+        TimeSeries<?> that = ( TimeSeries<?> ) o;
         return this.metadata.equals( that.metadata ) &&
                this.events.equals( that.events );
     }
@@ -161,14 +162,14 @@ public class TimeSeries<T>
     public String toString()
     {
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                                                                            .append( "metadata", metadata )
-                                                                            .append( "events", events )
-                                                                            .toString();
+                .append( "metadata", metadata )
+                .append( "events", events )
+                .toString();
     }
 
     /**
      * Builder that allows for incremental construction and validation. 
-     * 
+     *
      * @param <T> the type of data
      */
 
@@ -190,7 +191,7 @@ public class TimeSeries<T>
 
         /**
          * Adds an event. This is the preferred method to build a time-series incrementally.
-         * 
+         *
          * @param event the event
          * @return the builder
          * @throws NullPointerException if the input is null
@@ -209,7 +210,8 @@ public class TimeSeries<T>
                                                     + "same valid datetime as an existing event, which is not allowed. "
                                                     + "The duplicate event by time is '"
                                                     + event
-                                                    + "'." );
+                                                    + "'. The time-series metadata is: "
+                                                    + this.metadata );
             }
 
             return this;
@@ -221,7 +223,7 @@ public class TimeSeries<T>
          * events locally and then call this method, as it will be less performant than building incrementally with 
          * {@link #addEvent(Event)}, although more performant than using the same pattern with 
          * {@link #addEvents(SortedSet)} (i.e., avoid both, but especially the latter).
-         * 
+         *
          * @param events the events
          * @return the builder
          * @throws NullPointerException if the input is null
@@ -258,7 +260,7 @@ public class TimeSeries<T>
          * multiple pre-existing time-series or event collections, otherwise favor {@link #addEvent(Event)} or 
          * {@link #setEvents(SortedSet)}. Do not build a set of events locally and then call this method, as it will 
          * be less performant for very large time-series (requires a set to be populated twice).
-         * 
+         *
          * @param events the events
          * @return the builder
          * @throws NullPointerException if the input is null
@@ -276,7 +278,7 @@ public class TimeSeries<T>
 
         /**
          * Sets the time-series metadata.
-         * 
+         *
          * @param metadata the time-series metadata
          * @return the builder
          */
@@ -290,7 +292,7 @@ public class TimeSeries<T>
 
         /**
          * Clears all state from the builder, returning it to its new/original state.
-         * 
+         *
          * @return the builder
          */
 
@@ -304,7 +306,7 @@ public class TimeSeries<T>
 
         /**
          * Builds the time-series.
-         * 
+         *
          * @return a time-series
          */
 
@@ -317,7 +319,7 @@ public class TimeSeries<T>
 
     /**
      * Builds with a builder.
-     * 
+     *
      * @param builder the builder
      */
     private TimeSeries( Builder<T> builder )

@@ -250,6 +250,14 @@ public class WresJobInput
         }
 
         String declaration = jobMessage.getProjectConfig();
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Encountered the following declaration string to which posted sources will be added:{}{}",
+                          System.lineSeparator(),
+                          declaration );
+        }
+
         List<URI> leftUris = sharedJobResults.getLeftInputs( jobId );
         List<URI> rightUris = sharedJobResults.getRightInputs( jobId );
         List<URI> baselineUris = sharedJobResults.getBaselineInputs( jobId );
@@ -272,8 +280,12 @@ public class WresJobInput
             // Serialize the adjusted declaration
             newDeclaration = DeclarationFactory.from( adjusted );
 
-            LOGGER.debug( "Created new project declaration:\n{}",
-                          newDeclaration );
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Created a new project declaration string that includes the posted sources:{}{}",
+                              System.lineSeparator(),
+                              newDeclaration );
+            }
         }
         catch ( DeclarationException e )
         {
