@@ -28,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConstants;
-import wres.config.xml.ProjectConfigException;
 import wres.config.yaml.components.AnalysisTimes;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
@@ -94,7 +93,8 @@ public class DeclarationUtilities
         TimePools validDatesPools = declaration.validDatePools();
 
         // Has explicit pooling windows
-        if ( Objects.nonNull( leadDurationPools ) || Objects.nonNull( referenceDatesPools )
+        if ( Objects.nonNull( leadDurationPools )
+             || Objects.nonNull( referenceDatesPools )
              || Objects.nonNull( validDatesPools ) )
         {
             // All dimensions
@@ -865,14 +865,14 @@ public class DeclarationUtilities
         builder.left( leftBuilder.build() )
                .right( rightBuilder.build() );
 
-        // Baseline?
-        if ( DeclarationUtilities.hasBaseline( evaluation ) || !baselineSources.isEmpty() )
+        // Baseline sources to add?
+        if ( !baselineSources.isEmpty() )
         {
-            BaselineDataset baseline = evaluation.baseline();
             DatasetBuilder baselineBuilder = DatasetBuilder.builder();
+            BaselineDataset baseline = evaluation.baseline();
 
-            // Dataset present?
-            if ( Objects.nonNull( baseline )
+            // Existing baseline?
+            if ( DeclarationUtilities.hasBaseline( evaluation )
                  && Objects.nonNull( baseline.dataset() ) )
             {
                 baselineBuilder = DatasetBuilder.builder( baseline.dataset() );
@@ -881,13 +881,12 @@ public class DeclarationUtilities
             else
             {
                 baseline = BaselineDatasetBuilder.builder()
-                                                 .dataset( DatasetBuilder.builder()
-                                                                         .build() )
+                                                 .dataset( baselineBuilder.build() )
                                                  .build();
             }
 
             DeclarationUtilities.addDataSources( baselineBuilder, baselineSources, DatasetOrientation.BASELINE );
-            BaselineDataset adjustedBaseline = BaselineDatasetBuilder.builder( baseline )
+            BaselineDataset adjustedBaseline = BaselineDatasetBuilder.builder( baseline ) // Existing, if any
                                                                      .dataset( baselineBuilder.build() )
                                                                      .build();
             builder.baseline( adjustedBaseline );
@@ -1461,11 +1460,8 @@ public class DeclarationUtilities
             // If there are matches, add them, preserving the existing source information
             if ( !matched.isEmpty() )
             {
-                if ( LOGGER.isDebugEnabled() )
-                {
-                    LOGGER.debug( "While inspecting URI {}, discovered the following correlated URIs among the "
-                                  + "existing sources: {}", uri, matched );
-                }
+                LOGGER.debug( "While inspecting URI {}, discovered the following correlated URIs among the "
+                              + "existing sources: {}", uri, matched );
 
                 matched.forEach( next -> newSources.add( SourceBuilder.builder( next )
                                                                       .uri( uri )
@@ -1474,11 +1470,8 @@ public class DeclarationUtilities
             // Otherwise add the new source with the unmatched URI
             else
             {
-                if ( LOGGER.isDebugEnabled() )
-                {
-                    LOGGER.debug( "While inspecting URI {}, discovered no correlated URIs among the existing "
-                                  + "sources.", uri );
-                }
+                LOGGER.debug( "While inspecting URI {}, discovered no correlated URIs among the existing "
+                              + "sources.", uri );
 
                 Source newSource = SourceBuilder.builder()
                                                 .uri( uri )
@@ -1494,7 +1487,7 @@ public class DeclarationUtilities
                       existingSources );
 
         // Add back existing sources that are uncorrelated with new sources
-        Set<Source> existingSourcesToAdd = new HashSet<>();
+        List<Source> existingSourcesToAdd = new ArrayList<>();
         for ( Source existingSource : existingSources )
         {
             boolean match = newSources.stream()
@@ -1511,9 +1504,10 @@ public class DeclarationUtilities
 
         LOGGER.debug( "Retained the following existing sources that were uncorrelated with new sources: {}.",
                       existingSourcesToAdd );
-        newSources.addAll( existingSourcesToAdd );
+        List<Source> combinedSources = new ArrayList<>( existingSourcesToAdd );
+        combinedSources.addAll( newSources );
 
-        builder.sources( newSources );
+        builder.sources( combinedSources );
     }
 
     /**
@@ -1524,7 +1518,6 @@ public class DeclarationUtilities
      * @param declaration the declaration
      * @return the set of lead duration time windows
      * @throws NullPointerException if any required input is null
-     * @throws ProjectConfigException if the time windows cannot be determined
      */
 
     private static Set<TimeWindow> getLeadDurationTimeWindows( EvaluationDeclaration declaration )
@@ -1693,7 +1686,6 @@ public class DeclarationUtilities
      * @param areReferenceTimes is true if the dates are reference dates, false for valid dates
      * @return the set of reference time windows
      * @throws NullPointerException if any input is null
-     * @throws ProjectConfigException if the time windows cannot be determined for any reason
      */
 
     private static Set<TimeWindow> getTimeWindowsForDateSequence( TimeInterval dates,

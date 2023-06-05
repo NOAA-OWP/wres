@@ -392,15 +392,16 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                 // Exponential back-off
                 sleepMillis *= 2;
 
-                LOGGER.debug( "Failed to ingest a time-series from {} on attempt {} of {} in thread '{}'. Continuing to "
-                             + "retry until the maximum retry count of {} is reached. There are {} attempts remaining.",
-                             dataSource,
-                             i,
-                             DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
-                             Thread.currentThread()
-                                   .getName(),
-                             DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
-                             DatabaseTimeSeriesIngester.MAXIMUM_RETRIES - i );
+                LOGGER.debug( "Failed to ingest a time-series from {} on attempt {} of {} in thread '{}'. Continuing "
+                              + "to retry until the maximum retry count of {} is reached. There are {} attempts "
+                              + "remaining.",
+                              dataSource,
+                              i,
+                              DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
+                              Thread.currentThread()
+                                    .getName(),
+                              DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
+                              DatabaseTimeSeriesIngester.MAXIMUM_RETRIES - i );
             }
 
             List<IngestResult> results = this.ingestSingleValuedTimeSeries( timeSeries, dataSource );
@@ -573,15 +574,16 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                 // Exponential back-off
                 sleepMillis *= 2;
 
-                LOGGER.debug( "Failed to ingest a time-series from {} on attempt {} of {} in thread '{}'. Continuing to "
-                             + "retry until the maximum retry count of {} is reached. There are {} attempts remaining.",
-                             dataSource,
-                             i,
-                             DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
-                             Thread.currentThread()
-                                   .getName(),
-                             DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
-                             DatabaseTimeSeriesIngester.MAXIMUM_RETRIES - i );
+                LOGGER.debug( "Failed to ingest a time-series from {} on attempt {} of {} in thread '{}'. Continuing "
+                              + "to retry until the maximum retry count of {} is reached. There are {} attempts "
+                              + "remaining.",
+                              dataSource,
+                              i,
+                              DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
+                              Thread.currentThread()
+                                    .getName(),
+                              DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
+                              DatabaseTimeSeriesIngester.MAXIMUM_RETRIES - i );
             }
 
             List<IngestResult> result = this.ingestEnsembleTimeSeries( timeSeries, dataSource );

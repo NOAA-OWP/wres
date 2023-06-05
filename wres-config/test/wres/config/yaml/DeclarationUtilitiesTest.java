@@ -60,6 +60,7 @@ import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimeIntervalBuilder;
 import wres.config.yaml.components.TimePools;
 import wres.config.yaml.components.TimePoolsBuilder;
+import wres.config.yaml.components.Variable;
 import wres.config.yaml.components.VariableBuilder;
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.Geometry;
@@ -1839,7 +1840,7 @@ class DeclarationUtilitiesTest
         Source baselineSourceExpectedTwo = SourceBuilder.builder()
                                                         .uri( baselineUncorrelated )
                                                         .build();
-        List<Source> leftSourcesExpected = List.of( leftSourceExpectedOne, leftSourceExpectedTwo, leftTwo );
+        List<Source> leftSourcesExpected = List.of( leftTwo, leftSourceExpectedOne, leftSourceExpectedTwo );
         Dataset leftExpected = DatasetBuilder.builder()
                                              .sources( leftSourcesExpected )
                                              .build();
@@ -1861,6 +1862,116 @@ class DeclarationUtilitiesTest
                                                                      .right( rightExpected )
                                                                      .baseline( baselineExpected )
                                                                      .build();
+        assertEquals( expected, actual );
+    }
+
+    /**
+     * See Redmine issue #116899
+     */
+
+    @Test
+    void testAddDataSourcesRetainsExistingSources()
+    {
+        Source baselineOne =
+                SourceBuilder.builder()
+                             .uri( URI.create( "singleValuedEx_ABRFC_ARCFUL_OBS/FLTA4X.QINE.19951101.20170905.datacard" ) )
+                             .build();
+        Source baselineTwo =
+                SourceBuilder.builder()
+                             .uri( URI.create( "singleValuedEx_ABRFC_ARCFUL_OBS/FRSO2X.QINE.19951101.20170905.datacard" ) )
+                             .build();
+
+        List<wres.config.yaml.components.Source> baselineSources = List.of( baselineOne, baselineTwo );
+        TimeScale timeScaleInner = TimeScale.newBuilder()
+                                            .setPeriod( com.google.protobuf.Duration.newBuilder().setSeconds( 1 ) )
+                                            .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                            .build();
+        wres.config.yaml.components.TimeScale timeScale = new wres.config.yaml.components.TimeScale( timeScaleInner );
+        BaselineDataset baseline =
+                BaselineDatasetBuilder.builder()
+                                      .dataset( DatasetBuilder.builder()
+                                                              .sources( baselineSources )
+                                                              .variable( new Variable( "QINE", null ) )
+                                                              .type( DataType.OBSERVATIONS )
+                                                              .timeZoneOffset( ZoneOffset.ofHours( -6 ) )
+                                                              .timeScale( timeScale )
+                                                              .build() )
+                                      .persistence( 1 )
+                                      .build();
+
+        EvaluationDeclaration evaluationDeclaration = EvaluationDeclarationBuilder.builder()
+                                                                                  .baseline( baseline )
+                                                                                  .build();
+
+        // Create some correlated and some uncorrelated URIs
+        URI sourceOne = URI.create( "file:///mnt/wres_share/input_data/2831045288138671584_9291293271822018547" );
+        URI sourceTwo = URI.create( "file:///mnt/wres_share/input_data/2831045288138671584_11687359385535593111" );
+        URI sourceThree = URI.create( "file:///mnt/wres_share/input_data/2831045288138671584_16018604822676150580" );
+        URI sourceFour = URI.create( "file:///mnt/wres_share/input_data/2831045288138671584_14964912810788706087" );
+        URI sourceFive = URI.create( "file:///mnt/wres_share/input_data/2831045288138671584_4655376427529148367" );
+        URI sourceSix = URI.create( "file:///mnt/wres_share/input_data/2831045288138671584_9748034963021086804" );
+        URI sourceSeven = URI.create( "file:///mnt/wres_share/input_data/2831045288138671584_17342198904464396701" );
+
+        List<URI> newBaselineSources = List.of( sourceOne,
+                                                sourceTwo,
+                                                sourceThree,
+                                                sourceFour,
+                                                sourceFive,
+                                                sourceSix,
+                                                sourceSeven );
+
+        EvaluationDeclaration actualEvaluation = DeclarationUtilities.addDataSources( evaluationDeclaration,
+                                                                                      List.of(),
+                                                                                      List.of(),
+                                                                                      newBaselineSources );
+
+        // Create the expectation
+        Source baselineSourceExpectedOne = SourceBuilder.builder()
+                                                        .uri( sourceOne )
+                                                        .build();
+        Source baselineSourceExpectedTwo = SourceBuilder.builder()
+                                                        .uri( sourceTwo )
+                                                        .build();
+        Source baselineSourceExpectedThree = SourceBuilder.builder()
+                                                          .uri( sourceThree )
+                                                          .build();
+        Source baselineSourceExpectedFour = SourceBuilder.builder()
+                                                         .uri( sourceFour )
+                                                         .build();
+        Source baselineSourceExpectedFive = SourceBuilder.builder()
+                                                         .uri( sourceFive )
+                                                         .build();
+        Source baselineSourceExpectedSix = SourceBuilder.builder()
+                                                        .uri( sourceSix )
+                                                        .build();
+        Source baselineSourceExpectedSeven = SourceBuilder.builder()
+                                                          .uri( sourceSeven )
+                                                          .build();
+
+        List<Source> baselineSourcesExpected = List.of( baselineOne,
+                                                        baselineTwo,
+                                                        baselineSourceExpectedOne,
+                                                        baselineSourceExpectedTwo,
+                                                        baselineSourceExpectedThree,
+                                                        baselineSourceExpectedFour,
+                                                        baselineSourceExpectedFive,
+                                                        baselineSourceExpectedSix,
+                                                        baselineSourceExpectedSeven );
+        Dataset baselineDatasetExpected = DatasetBuilder.builder()
+                                                        .sources( baselineSourcesExpected )
+                                                        .variable( new Variable( "QINE", null ) )
+                                                        .type( DataType.OBSERVATIONS )
+                                                        .timeZoneOffset( ZoneOffset.ofHours( -6 ) )
+                                                        .timeScale( timeScale )
+                                                        .build();
+        BaselineDataset expected =
+                BaselineDatasetBuilder.builder()
+                                      .dataset( baselineDatasetExpected )
+                                      .persistence( 1 )
+                                      .build();
+
+        BaselineDataset actual = actualEvaluation.baseline();
+
         assertEquals( expected, actual );
     }
 
@@ -1886,13 +1997,13 @@ class DeclarationUtilitiesTest
                                                                             newBaselineSources );
 
         // Create the expectation
-        Source leftSourceExpectedOne = SourceBuilder.builder( )
+        Source leftSourceExpectedOne = SourceBuilder.builder()
                                                     .uri( leftSource )
                                                     .build();
-        Source rightSourceExpectedOne = SourceBuilder.builder( )
+        Source rightSourceExpectedOne = SourceBuilder.builder()
                                                      .uri( rightSource )
                                                      .build();
-        Source baselineSourceExpectedOne = SourceBuilder.builder( )
+        Source baselineSourceExpectedOne = SourceBuilder.builder()
                                                         .uri( baselineSource )
                                                         .build();
         List<Source> leftSourcesExpected = List.of( leftSourceExpectedOne );
