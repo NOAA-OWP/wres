@@ -411,7 +411,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
             {
                 if ( i > 0 )
                 {
-                    LOGGER.info( "Successfully ingested a time-series from {} on attempt {} of {} in thread '{}'.",
+                    LOGGER.debug( "Successfully ingested a time-series from {} on attempt {} of {} in thread '{}'.",
                                  dataSource,
                                  i + 1,
                                  DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
@@ -593,7 +593,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
             {
                 if ( i > 0 )
                 {
-                    LOGGER.info( "Successfully ingested a time-series from {} on attempt {} of {} in thread '{}'.",
+                    LOGGER.debug( "Successfully ingested a time-series from {} on attempt {} of {} in thread '{}'.",
                                  dataSource,
                                  i + 1,
                                  DatabaseTimeSeriesIngester.MAXIMUM_RETRIES,
