@@ -25,6 +25,7 @@ import wres.datamodel.DataUtilities;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.io.Downloader;
+import wres.io.database.DatabaseOperations;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.details.SourceCompletedDetails;
 import wres.io.database.details.SourceDetails;
@@ -171,10 +172,11 @@ class GriddedMetadataSaver implements Callable<List<IngestResult>>
                                             "reference_time_type" );
             boolean[] quotedColumns = { false, true, true };
 
-            db.copy( "wres.TimeSeriesReferenceTime",
-                     columns,
-                     referenceDatetimeRows,
-                     quotedColumns );
+            DatabaseOperations.insertIntoDatabase( db,
+                                                   "wres.TimeSeriesReferenceTime",
+                                                   columns,
+                                                   referenceDatetimeRows,
+                                                   quotedColumns );
 
             SourceCompletedDetails completedDetails =
                     new SourceCompletedDetails( this.getDatabase(),

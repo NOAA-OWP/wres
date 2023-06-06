@@ -21,6 +21,7 @@ import javax.json.JsonValue;
 
 import wres.datamodel.MissingValues;
 import wres.io.database.Database;
+import wres.io.database.DatabaseOperations;
 import wres.io.reading.csv.CsvDataProvider;
 
 /**
@@ -349,32 +350,16 @@ public interface DataProvider extends AutoCloseable
     }
 
     /**
-     * Copies the data within the provider from the current row through the last row into the the schema and table
-     * <br>
-     * The position of the provider will be at the end of the dataset after function completion
-     * @param database The database to use.
-     * TODO: implementations may not have/use a database, may want to not
-     *       require the database as a param but as a member of implementations.
-     * @param table Fully qualified table name to copy data into
-     * @throws wres.io.ingesting.IngestException When the copy fails.
-     */
-    default void copy( Database database, final String table )
-    {
-        this.copy( database, table, false );
-    }
-
-    /**
-     * Copies the data within the provider from the current row through the last row into the the schema and table
+     * Copies the data within the provider from the current row through the last row into the schema and table
      * <br>
      * The position of the provider will be at the end of the dataset after function completion
      * @param database The database to use
      * TODO: implementations may not have/use a database, may want to not
      *       require the database as a param but as a member of implementations.
      * @param table Fully qualified table name to copy data into
-     * @param showProgress Whether or not to show progress during the copy operation
      * @throws wres.io.ingesting.IngestException When the copy fails.
      */
-    default void copy( Database database, final String table, final boolean showProgress )
+    default void copy( Database database, final String table )
     {
         List<String> columnNames = this.getColumnNames();
         List<String[]> values = new ArrayList<>();
@@ -397,10 +382,10 @@ public interface DataProvider extends AutoCloseable
         // Until we can figure out how to get exceptions to propagate from
         // submitting to the Database executor, run synchronously in caller's
         // Thread.
-        database.copy( table,
-                       columnNames,
-                       values,
-                       charColumns );
+        DatabaseOperations.insertIntoDatabase( database, table,
+                                               columnNames,
+                                               values,
+                                               charColumns );
     }
 
     /**

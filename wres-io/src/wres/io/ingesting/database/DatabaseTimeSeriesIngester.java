@@ -45,6 +45,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
+import wres.io.database.DatabaseOperations;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.DataSources;
 import wres.io.database.caching.Ensembles;
@@ -1343,10 +1344,10 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
                                         "reference_time",
                                         "reference_time_type" );
         boolean[] quotedColumns = { false, true, true };
-        database.copy( "wres.TimeSeriesReferenceTime",
-                       columns,
-                       rows,
-                       quotedColumns );
+        DatabaseOperations.insertIntoDatabase( database, "wres.TimeSeriesReferenceTime",
+                                               columns,
+                                               rows,
+                                               quotedColumns );
     }
 
     /**

@@ -35,6 +35,7 @@ import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.io.database.DatabaseOperations;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.Features;
 import wres.io.database.caching.MeasurementUnits;
@@ -163,16 +164,19 @@ public class SingleValuedGriddedRetrieverTest
 
         // Build the retriever
         SingleValuedGriddedRetriever retriever =
-                (SingleValuedGriddedRetriever) new SingleValuedGriddedRetriever.Builder().setIsForecast( true )
-                                                                                         .setFeatures( Set.of( FEATURE ) )
-                                                                                         .setProjectId( PROJECT_ID )
-                                                                                         .setDatasetOrientation( SingleValuedGriddedRetrieverTest.ORIENTATION )
-                                                                                         .setTimeWindow( timeWindow )
-                                                                                         .setDatabase( this.wresDatabase )
-                                                                                         .setMeasurementUnitsCache( this.measurementUnitsCache )
-                                                                                         .setFeaturesCache( this.mockCaches.getFeaturesCache() )
-                                                                                         .setVariableName( SingleValuedGriddedRetrieverTest.VARIABLE_NAME )
-                                                                                         .build();
+                ( SingleValuedGriddedRetriever ) new SingleValuedGriddedRetriever.Builder().setIsForecast( true )
+                                                                                           .setFeatures( Set.of( FEATURE ) )
+                                                                                           .setProjectId( PROJECT_ID )
+                                                                                           .setDatasetOrientation(
+                                                                                                   SingleValuedGriddedRetrieverTest.ORIENTATION )
+                                                                                           .setTimeWindow( timeWindow )
+                                                                                           .setDatabase( this.wresDatabase )
+                                                                                           .setMeasurementUnitsCache(
+                                                                                                   this.measurementUnitsCache )
+                                                                                           .setFeaturesCache( this.mockCaches.getFeaturesCache() )
+                                                                                           .setVariableName(
+                                                                                                   SingleValuedGriddedRetrieverTest.VARIABLE_NAME )
+                                                                                           .build();
 
         List<String> actualPaths = retriever.getPaths();
 
@@ -229,7 +233,7 @@ public class SingleValuedGriddedRetrieverTest
     /**
      * Performs the detailed set-up work to add one time-series to the database. Some assertions are made here, which
      * could fail, in order to clarify the source of a failure.
-     * 
+     *
      * @throws SQLException if the detailed set-up fails
      */
 
@@ -258,12 +262,11 @@ public class SingleValuedGriddedRetrieverTest
         Instant sequenceOrigin = Instant.parse( "2017-06-16T11:13:00Z" );
         String projectSourceInsert =
                 "INSERT INTO wres.ProjectSource (project_id, source_id, member) VALUES ("
-                                     + project.getId()
-                                     + ",{0},''"
-                                     + SingleValuedGriddedRetrieverTest.ORIENTATION.name()
-                                                                                   .toLowerCase()
-                                     + "'')";
-
+                + project.getId()
+                + ",{0},''"
+                + SingleValuedGriddedRetrieverTest.ORIENTATION.name()
+                                                              .toLowerCase()
+                + "'')";
 
         for ( int i = 0; i < 5; i++ )
         {
@@ -300,10 +303,11 @@ public class SingleValuedGriddedRetrieverTest
                                             "reference_time",
                                             "reference_time_type" );
             boolean[] quotedColumns = { false, true, true };
-            this.wresDatabase.copy( "wres.TimeSeriesReferenceTime",
-                                    columns,
-                                    rows,
-                                    quotedColumns );
+            DatabaseOperations.insertIntoDatabase( this.wresDatabase,
+                                                   "wres.TimeSeriesReferenceTime",
+                                                   columns,
+                                                   rows,
+                                                   quotedColumns );
 
             // Add a project source
             String insert = MessageFormat.format( projectSourceInsert, sourceId );
