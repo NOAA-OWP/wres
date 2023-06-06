@@ -3,6 +3,7 @@ package wres.io.database;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -10,16 +11,23 @@ import java.sql.Statement;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
+import java.util.StringJoiner;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.postgresql.PGConnection;
+import org.postgresql.copy.CopyIn;
+import org.postgresql.copy.CopyManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.time.ZoneOffset.UTC;
 
+import wres.io.ingesting.IngestException;
 import wres.io.ingesting.database.IncompleteIngest;
 import wres.system.DatabaseLockManager;
 import wres.system.DatabaseLockManagerNoop;
@@ -37,6 +45,9 @@ public class DatabaseOperations
 {
     /** Logger. **/
     private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseOperations.class );
+
+    /** Re-used string. */
+    private static final String TRUNCATE_TABLE = "TRUNCATE TABLE ";
 
     /**
      * The log parameters.
@@ -128,7 +139,7 @@ public class DatabaseOperations
     public static void refreshDatabase( Database database ) throws SQLException
     {
         boolean removed = IncompleteIngest.removeOrphanedData( database );
-        database.refreshStatistics( true );
+        DatabaseOperations.refreshStatistics( database );
         LOGGER.debug( "Upon refreshing the database, orphaned data was removed: {}.", removed );
     }
 
@@ -149,8 +160,8 @@ public class DatabaseOperations
 
         Instant start = Instant.now();
 
-        database.clean();
-        database.refreshStatistics( true );
+        DatabaseOperations.clean( database );
+        DatabaseOperations.refreshStatistics( database );
 
         Instant stop = Instant.now();
         Duration elapsed = Duration.between( start, stop );
@@ -202,6 +213,88 @@ public class DatabaseOperations
 
         DatabaseOperations.cleanPriorRuns( database );
         LOGGER.info( "Finished database migration." );
+    }
+
+    /**
+     * Inserts data into the database (or copies in the case of postgres).
+     * @param database the database
+     * @param tableName The table name for the copy or insert statement.
+     * @param columnNames The column names in the order the values appear.
+     * @param values The values in the order the columnNames appear.
+     * @param charColumns True and false in the order of column names/values. When true, this is a column needs quoting
+     *                    on insert.
+     * @throws NullPointerException if any input is null
+     * @throws IllegalArgumentException if any of the inputs are empty or inconsistent with each other
+     */
+
+    public static void insertIntoDatabase( Database database,
+                                           String tableName,
+                                           List<String> columnNames,
+                                           List<String[]> values,
+                                           boolean[] charColumns )
+    {
+        Objects.requireNonNull( database );
+        Objects.requireNonNull( tableName );
+        Objects.requireNonNull( columnNames );
+        Objects.requireNonNull( values );
+        Objects.requireNonNull( charColumns );
+
+        if ( columnNames.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Cannot insert data without column names." );
+        }
+
+        if ( values.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Cannot insert values unless some values are provided." );
+        }
+
+        // Check the rows in advance of calling either internal method.
+        for ( String[] row : values )
+        {
+            if ( row.length != columnNames.size() )
+            {
+                throw new IllegalArgumentException( "Every row length (found "
+                                                    + row.length
+                                                    + ") needs to match column count "
+                                                    + columnNames.size()
+                                                    + " or it won't work. "
+                                                    + "Column names: "
+                                                    + columnNames
+                                                    + "Values: "
+                                                    + Arrays.toString( row ) );
+            }
+
+            if ( row.length != charColumns.length )
+            {
+                throw new IllegalArgumentException( "Every row length (found "
+                                                    + row.length
+                                                    + ") needs to match char column count "
+                                                    + charColumns.length
+                                                    + " or it won't work. "
+                                                    + "Char columns: "
+                                                    + Arrays.toString( charColumns )
+                                                    + "Values: "
+                                                    + Arrays.toString( row ) );
+            }
+        }
+
+        if ( database.getSystemSettings()
+                     .getDatabaseType() == DatabaseType.POSTGRESQL )
+        {
+            DatabaseOperations.pgCopy( database,
+                                       tableName,
+                                       columnNames,
+                                       values );
+        }
+        else
+        {
+            DatabaseOperations.insert( database,
+                                       tableName,
+                                       columnNames,
+                                       values,
+                                       charColumns );
+        }
     }
 
     /**
@@ -381,6 +474,332 @@ public class DatabaseOperations
             LOGGER.warn( message, ioe );
             return false;
         }
+    }
+
+    /**
+     * Refreshes statistics that the database uses to optimize queries. Performance suffers if the operation is told to
+     * vacuum missing values, but the performance of the system as a whole is improved if many values were removed
+     * prior to running. Thus, if a vacuum is available for a given database implementation, the database is vacuumed.
+     * @param database the database whose statistics should be refreshed
+     * @throws SQLException when refresh or adding indices goes wrong
+     */
+    private static void refreshStatistics( Database database ) throws SQLException
+    {
+        String sql;
+
+        final String optionalVacuum;
+
+        if ( database.getType()
+                     .hasVacuumAnalyze() )
+        {
+            optionalVacuum = "VACUUM ";
+        }
+        else
+        {
+            optionalVacuum = "";
+        }
+
+        if ( database.getType()
+                     .hasAnalyze() )
+        {
+            sql = optionalVacuum + "ANALYZE;";
+            LOGGER.info( "Analyzing data for efficient execution..." );
+
+            Query query = new Query( database.getSystemSettings(), sql );
+
+            try ( Connection connection = database.getConnection() )
+            {
+                query.execute( connection );
+            }
+            catch ( SQLException se )
+            {
+                throw new SQLException( "Data in the database could not be "
+                                        + "analyzed for efficient execution.",
+                                        se );
+            }
+
+            LOGGER.info( "Database statistical analysis is now complete." );
+        }
+        else
+        {
+            LOGGER.info( "WRES skipping analysis for efficient execution for db {}",
+                         database.getType() );
+        }
+    }
+
+    /**
+     * Removes all user data from the database
+     * TODO: This should probably accept an object or list to allow for the removal of business logic.
+     * Assumes that locking has already been done at a higher level by caller(s)
+     * @throws SQLException Thrown if successful communication with the
+     * database could not be established
+     */
+    private static void clean( Database database ) throws SQLException
+    {
+        StringJoiner builder;
+        Set<String> partitions = database.getPartitionTables();
+
+        if ( database.getType() == DatabaseType.H2 )
+        {
+            builder = new StringJoiner( System.lineSeparator(),
+                                        "SET REFERENTIAL_INTEGRITY FALSE;"
+                                        + System.lineSeparator(),
+                                        System.lineSeparator()
+                                        + "SET REFERENTIAL_INTEGRITY TRUE;" );
+        }
+        else
+        {
+            builder = new StringJoiner( System.lineSeparator() );
+        }
+
+        for ( String partition : partitions )
+        {
+            builder.add( TRUNCATE_TABLE + partition + ";" );
+        }
+
+        List<String> tables = List.of( "wres.Source",
+                                       "wres.TimeSeries",
+                                       "wres.Ensemble",
+                                       "wres.Project",
+                                       "wres.ProjectSource",
+                                       "wres.Feature",
+                                       "wres.MeasurementUnit" );
+
+        for ( String table : tables )
+        {
+            if ( database.getType()
+                         .hasTruncateCascade() )
+            {
+                builder.add( TRUNCATE_TABLE + table + " CASCADE;" );
+            }
+            else
+            {
+                builder.add( TRUNCATE_TABLE + table + ";" );
+            }
+        }
+
+        builder.add( "INSERT INTO wres.Ensemble ( ensemble_name ) VALUES ('default');" );
+
+        Query query = new Query( database.getSystemSettings(), builder.toString() );
+
+        try
+        {
+            database.execute( query, false );
+        }
+        catch ( final SQLException e )
+        {
+            String message = "WRES data could not be removed from the database."
+                             + System.lineSeparator()
+                             + System.lineSeparator()
+                             + builder;
+            // Decorate with contextual information.
+            throw new SQLException( message, e );
+        }
+    }
+
+    /**
+     * Inserts data into the database.
+     * @param database the database
+     * @param tableName the table name
+     * @param columnNames the column names
+     * @param values the data values
+     * @param charColumns whether the columns are char columns
+     */
+
+    private static void insert( Database database,
+                                String tableName,
+                                List<String> columnNames,
+                                List<String[]> values,
+                                boolean[] charColumns )
+    {
+        StringJoiner columns = new StringJoiner( ",", " ( ", " ) " );
+
+        for ( String column : columnNames )
+        {
+            columns.add( column );
+        }
+
+        String insertHeader = "INSERT INTO " + tableName
+                              + columns
+                              + "VALUES\n";
+        StringJoiner insertsJoiner = new StringJoiner( ",\n", insertHeader, ";\n" );
+
+        for ( String[] row : values )
+        {
+            StringJoiner insertForRowJoiner = new StringJoiner( ",", "( ", " )" );
+
+            for ( int i = 0; i < row.length; i++ )
+            {
+                // When it's labeled as a charColumn, add quotes to insert.
+                if ( charColumns[i] )
+                {
+                    insertForRowJoiner.add( "'" + row[i] + "'" );
+                }
+                else
+                {
+                    // It's numeric, no need for quotes.
+                    insertForRowJoiner.add( row[i] );
+                }
+            }
+
+            String insertForRow = insertForRowJoiner.toString();
+            insertsJoiner.add( insertForRow );
+        }
+
+        String insertsQuery = insertsJoiner.toString();
+        Query query = new Query( database.getSystemSettings(), insertsQuery );
+        int rowsModified;
+
+        try ( Connection connection = database.getConnection() )
+        {
+            rowsModified = query.execute( connection );
+        }
+        catch ( SQLException se )
+        {
+            throw new IngestException( "Failed to insert data into "
+                                       + tableName,
+                                       se );
+        }
+
+        if ( rowsModified != values.size() )
+        {
+            LOGGER.warn( "Expected to insert {} rows but {} were inserted.",
+                         values.size(),
+                         rowsModified );
+        }
+    }
+
+    /**
+     * Sends a copy statement to the indicated table within a postgres db.
+     * @param database the database
+     * @param tableName The table name.
+     * @param columnNames The columns consistent with the order of values.
+     * @param values The values to copy, outer array is a tuple/row,
+     *               inner array is each value in the row (one for each col).
+     * @throws IngestException Thrown if an error was encountered when trying to
+     * copy data to the database.
+     */
+
+    private static void pgCopy( Database database,
+                                String tableName,
+                                List<String> columnNames,
+                                List<String[]> values )
+    {
+        StringJoiner columns = new StringJoiner( ",", " ( ", " )" );
+
+        columnNames.forEach( columns::add );
+
+        String tableDefinition = tableName + columns;
+        String delimiter = "|";
+
+        // The format of the copy statement needs to be of the format
+        // "COPY wres.TimeSeriesValue_xxxx FROM STDIN WITH DELIMITER '|'"
+        String copyDefinition = "COPY "
+                                + tableDefinition
+                                + " FROM STDIN WITH DELIMITER '"
+                                + delimiter
+                                + "'";
+
+        final byte[] nullBytes = "\\N".getBytes( StandardCharsets.UTF_8 );
+        CopyIn copyIn = null;
+
+        try ( Connection connection = database.getConnection() )
+        {
+            PGConnection pgConnection = connection.unwrap( PGConnection.class );
+
+            // We need specialized functionality to copy, so we need to create a manager object that will
+            // handle the copy operation from the postgresql driver
+            CopyManager manager = pgConnection.getCopyAPI();
+
+            // Use the manager to stream the data through to the database
+            copyIn = manager.copyIn( copyDefinition );
+            byte[] valueDelimiterBytes = delimiter.getBytes( StandardCharsets.UTF_8 );
+            byte[] valueRowDelimiterBytes = "\n".getBytes( StandardCharsets.UTF_8 );
+
+            for ( String[] row : values )
+            {
+                DatabaseOperations.copyRow( row,
+                                            valueDelimiterBytes,
+                                            valueRowDelimiterBytes,
+                                            nullBytes,
+                                            copyIn );
+            }
+
+            copyIn.endCopy();
+        }
+        catch ( SQLException e )
+        {
+            // If we are in a non-production environment, it would help to see the format of the data
+            // that couldn't be added
+            if ( LOGGER.isDebugEnabled() )
+            {
+                String allValues = values.toString();
+                int subStringMax = Math.min( allValues.length(), 5000 );
+                LOGGER.debug( "Data could not be copied to the database:{}{}...",
+                              copyDefinition,
+                              allValues.substring( 0, subStringMax ),
+                              e );
+            }
+
+            // From https://www.postgresql.org/message-id/8D1E8D0DC762E82-1320-C263%40webmail-vm124.sysops.aol.com
+            // Quoting Brett Wooldridge, author of HikariCP, "call cancelCopy()"
+            if ( copyIn != null )
+            {
+                try
+                {
+                    copyIn.cancelCopy();
+                }
+                catch ( SQLException se )
+                {
+                    LOGGER.warn( "Failed to cancel copy operation on table {}.",
+                                 tableName,
+                                 se );
+                }
+            }
+
+            throw new IngestException( "Data could not be copied to the database.", e );
+        }
+    }
+
+    /**
+     * Copies a row to the database.
+     * @param row the row
+     * @param valueDelimiterBytes the value delimiter bytes
+     * @param valueRowDelimiterBytes the value row delimiter bytes
+     * @param nullBytes the null bytes
+     * @param copyIn the copy operation
+     * @throws SQLException if the copy failed for any reason
+     */
+    private static void copyRow( String[] row,
+                                 byte[] valueDelimiterBytes,
+                                 byte[] valueRowDelimiterBytes,
+                                 byte[] nullBytes,
+                                 CopyIn copyIn ) throws SQLException
+    {
+        for ( int i = 0; i < row.length; i++ )
+        {
+            if ( Objects.nonNull( row[i] ) )
+            {
+                byte[] bytes = row[i].getBytes( StandardCharsets.UTF_8 );
+                copyIn.writeToCopy( bytes, 0, bytes.length );
+
+            }
+            else
+            {
+                copyIn.writeToCopy( nullBytes, 0, nullBytes.length );
+            }
+
+            if ( i < row.length - 1 )
+            {
+                copyIn.writeToCopy( valueDelimiterBytes,
+                                    0,
+                                    valueDelimiterBytes.length );
+            }
+        }
+
+        copyIn.writeToCopy( valueRowDelimiterBytes,
+                            0,
+                            valueDelimiterBytes.length );
     }
 
     /**
