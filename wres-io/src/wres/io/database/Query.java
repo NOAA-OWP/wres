@@ -24,7 +24,7 @@ import static java.sql.Statement.RETURN_GENERATED_KEYS;
 import wres.system.SystemSettings;
 
 /**
- * Facilitates the execution of Database Queries upon connections
+ * Facilitates the execution of database queries upon connections
  */
 public class Query
 {

@@ -40,8 +40,7 @@ import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
 /**
- * An Interface structure used for organizing database operations and providing
- * common database operations.
+ * A class that provides common database operations.
  */
 public class Database
 {
