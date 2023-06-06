@@ -27,10 +27,10 @@ import net.jcip.annotations.ThreadSafe;
 
 
 /**
- * Manages application-level locks on PostgreSQL database objects.
+ * <p>Manages application-level locks on PostgreSQL database objects.
  *
- * Each semantic lock (caller-provided lock name) is a positive {@link Integer}. The opposite of the Integer is used on 
- * the second {@link Connection} managed by this class.
+ * <p>Each semantic lock (caller-provided lock name) is a positive {@link Integer}. The opposite of the Integer is used
+ * on the second {@link Connection} managed by this class.
  */
 
 @ThreadSafe

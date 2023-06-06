@@ -5,14 +5,14 @@ import java.sql.SQLException;
 import java.util.function.Supplier;
 
 /**
- * Manages application-level locks on database objects.
+ * <p>Manages application-level locks on database objects.
  * 
- * These are outside of, or in addition to, the usual locks on tables and rows for queries.
+ * <p>These are outside of, or in addition to, the usual locks on tables and rows for queries.
  *
- * If there are different strategies required for locking with one rdbms versus another rdbms, those differences are in 
- * different {@link DatabaseLockManager} implementations.
+ * <p>If there are different strategies required for locking with one rdbms versus another rdbms, those differences are
+ * in different {@link DatabaseLockManager} implementations.
  *
- * Exactly one instance of this class is expected to be used by each WRES process and shared as needed.
+ * <p>Exactly one instance of this class is expected to be used by each WRES process and shared as needed.
  */
 
 public interface DatabaseLockManager

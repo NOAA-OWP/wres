@@ -3,9 +3,9 @@ package wres.system;
 import javax.sql.DataSource;
 import java.sql.Driver;
 
-/** 
+/**
  * The type of relational database management system. The {@link DataSource} class names come from: 
- * https://github.com/brettwooldridge/HikariCP#popular-datasource-class-names.
+ * <a href="https://github.com/brettwooldridge/HikariCP#popular-datasource-class-names">...</a>.
  */
 public enum DatabaseType
 {   

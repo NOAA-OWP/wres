@@ -495,8 +495,6 @@ definitions:
       # resulting validation does not produce intelligible errors, so a balance
       # is needed between schema-level validation (fail early) and application-
       # level validation (fail later, but better).
-    required:
-      - function
 
   TimeShift:
     title: A timeshift to apply to a dataset.
