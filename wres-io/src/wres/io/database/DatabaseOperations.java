@@ -29,9 +29,9 @@ import static java.time.ZoneOffset.UTC;
 
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.database.IncompleteIngest;
-import wres.system.DatabaseLockManager;
-import wres.system.DatabaseLockManagerNoop;
-import wres.system.DatabaseLockManagerPostgres;
+import wres.io.database.locking.DatabaseLockManager;
+import wres.io.database.locking.DatabaseLockManagerNoop;
+import wres.io.database.locking.DatabaseLockManagerPostgres;
 import wres.system.DatabaseSettings;
 import wres.system.DatabaseType;
 

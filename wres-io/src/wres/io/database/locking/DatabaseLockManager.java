@@ -1,8 +1,11 @@
-package wres.system;
+package wres.io.database.locking;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.function.Supplier;
+
+import wres.system.DatabaseType;
+import wres.system.SystemSettings;
 
 /**
  * <p>Manages application-level locks on database objects.

@@ -46,7 +46,7 @@ import wres.io.writing.netcdf.NetCDFCopier;
 import wres.pipeline.Evaluator;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
-import wres.system.DatabaseLockManager;
+import wres.io.database.locking.DatabaseLockManager;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 

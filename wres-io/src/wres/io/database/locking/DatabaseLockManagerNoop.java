@@ -1,6 +1,4 @@
-package wres.system;
-
-import java.sql.SQLException;
+package wres.io.database.locking;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,37 +26,37 @@ public class DatabaseLockManagerNoop implements DatabaseLockManager
     }
 
     @Override
-    public boolean lockSource( Long lockName ) throws SQLException
+    public boolean lockSource( Long lockName )
     {
         return true;
     }
 
     @Override
-    public boolean unlockSource( Long lockName ) throws SQLException
+    public boolean unlockSource( Long lockName )
     {
         return true;
     }
 
     @Override
-    public void lockExclusive( Long lockName ) throws SQLException
+    public void lockExclusive( Long lockName )
     {
         // No-op
     }
 
     @Override
-    public void unlockExclusive( Long lockName ) throws SQLException
+    public void unlockExclusive( Long lockName )
     {
         // No-op
     }
 
     @Override
-    public void lockShared( Long lockName ) throws SQLException
+    public void lockShared( Long lockName )
     {
         // No-op
     }
 
     @Override
-    public void unlockShared( Long lockName ) throws SQLException
+    public void unlockShared( Long lockName )
     {
         // No-op
     }
