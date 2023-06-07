@@ -1,5 +1,6 @@
-package wres.system;
+package wres.io.database.locking;
 
+import java.io.Serial;
 import java.util.Objects;
 
 /**
@@ -8,6 +9,7 @@ import java.util.Objects;
 
 public class DatabaseLockFailed extends RuntimeException
 {
+    @Serial
     private static final long serialVersionUID = -8951384634940360610L;
 
     enum Operation

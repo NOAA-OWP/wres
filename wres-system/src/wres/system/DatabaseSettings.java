@@ -20,16 +20,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Contains access to configured settings and objects for accessing the database
+ * <p>Contains access to configured settings and objects for accessing the database
  * 
- * TODO: this class and {@link SystemSettings} need work. Connection verification should happen separately from the
- * instantiation of settings. Connections should mostly be acquired from a common pool (HikariCP), which uses the 
- * {@link DataSource} route, not the {@link DriverManager} route. The latter should not be used. When acquiring 
- * connections for the {@link DatabaseLockManager}, these connections should not be from the same pool, but they should 
- * be obtained by creating a {@link DataSource}, not by using the {@link DriverManager}. See #103431 for further 
- * discussion. Once this work is completed, there should be no need to skip the parsing of database settings when using 
- * in-memory mode, only the connection verification and database interaction. See the relevant block of instantiation in
- * {@link SystemSettings} for this class.
+ * <p>TODO: this class and {@link SystemSettings} need work. This should be a dumb data class and should not
+ * instantiate data sources for database connectivity. Connections should mostly be acquired from a common pool
+ * (HikariCP), which uses the {@link DataSource} route, not the {@link DriverManager} route. The latter should not be
+ * used. When acquiring connections for a database lock manager, these connections should not be from the same pool,
+ * but they should be obtained by creating a {@link DataSource}, not by using the {@link DriverManager}. See #103431
+ * for further discussion. Once this work is completed, there should be no need to skip the parsing of database
+ * settings when using in-memory mode, only the connection verification and database interaction. See the relevant
+ * block of instantiation in {@link SystemSettings} for this class.
  * 
  * @author Christopher Tubbs
  */
@@ -425,7 +425,7 @@ public final class DatabaseSettings
     /**
      * @param maxPoolSize the maximum pool size
      * @param connectionTimeOutMs the maximum connection timeout in milliseconds
-     * @return
+     * @return the data source
      */
     DataSource createDataSource( int maxPoolSize, long connectionTimeOutMs )
     {
@@ -451,7 +451,7 @@ public final class DatabaseSettings
 
     /**
      * Get the jdbc url that was set. Takes precedence over type:host:port
-     * @return
+     * @return the JDBC URL
      */
     private String getJdbcUrl()
     {
@@ -487,7 +487,7 @@ public final class DatabaseSettings
 
     /**
      * Sets the identifier for the port used to connect to the database
-     * @param port
+     * @param port the port
      */
     private void setPort( int port )
     {
@@ -575,61 +575,36 @@ public final class DatabaseSettings
 
                     switch ( tagName )
                     {
-                        case "database_type":
+                        case "database_type" ->
+                        {
                             String typeString = value.toUpperCase();
                             DatabaseType type = DatabaseType.valueOf( typeString );
                             setDatabaseType( type );
-                            break;
-                        case "port":
-                            this.setPort( Integer.parseInt( value ) );
-                            break;
-                        case "name":
-                            this.setDatabaseName( value );
-                            break;
-                        case "password":
-                            this.setPassword( value );
-                            break;
-                        case "url":
-                            LOGGER.warn( "Deprecated 'url' tag found, use 'host' for a hostname or 'jdbcUrl' for a jdbc url instead." );
+                        }
+                        case "port" -> this.setPort( Integer.parseInt( value ) );
+                        case "name" -> this.setDatabaseName( value );
+                        case "password" -> this.setPassword( value );
+                        case "url" ->
+                        {
+                            LOGGER.warn(
+                                    "Deprecated 'url' tag found, use 'host' for a hostname or 'jdbcUrl' for a jdbc url instead." );
                             setHost( value );
-                            break;
-                        case "host":
-                            this.setHost( value );
-                            break;
-                        case "jdbcUrl":
-                            this.setJdbcUrl( value );
-                            break;
-                        case "username":
-                            this.setUsername( value );
-                            break;
-                        case "max_pool_size":
-                            this.maxPoolSize = Integer.parseInt( value );
-                            break;
-                        case "max_idle_time":
-                            this.maxIdleTime = Integer.parseInt( value );
-                            break;
-                        case "query_timeout":
-                            this.queryTimeout = Integer.parseInt( value );
-                            break;
-                        case "connectionTimeoutMs":
-                            this.connectionTimeoutMs = Integer.parseInt( value );
-                            break;
-                        case "use_ssl":
-                            this.setUseSSL( Boolean.parseBoolean( value ) );
-                            break;
-                        case "validate_ssl":
-                            this.setValidateSSL( Boolean.parseBoolean( value ) );
-                            break;
-                        case "certificate_file_to_trust":
-                            this.setCertificateFileToTrust( value );
-                            break;
-                        case "attempt_to_migrate":
-                            this.setAttemptToMigrate( value );
-                            break;
-                        default:
-                            LOGGER.warn( "Database configuration option '{}'{}",
-                                         tagName,
-                                         " was skipped because it's not used." );
+                        }
+                        case "host" -> this.setHost( value );
+                        case "jdbcUrl" -> this.setJdbcUrl( value );
+                        case "username" -> this.setUsername( value );
+                        case "max_pool_size" -> this.maxPoolSize = Integer.parseInt( value );
+                        case "max_high_priority_pool_size" -> this.maxHighPriorityPoolSize = Integer.parseInt( value );
+                        case "max_idle_time" -> this.maxIdleTime = Integer.parseInt( value );
+                        case "query_timeout" -> this.queryTimeout = Integer.parseInt( value );
+                        case "connectionTimeoutMs" -> this.connectionTimeoutMs = Integer.parseInt( value );
+                        case "use_ssl" -> this.setUseSSL( Boolean.parseBoolean( value ) );
+                        case "validate_ssl" -> this.setValidateSSL( Boolean.parseBoolean( value ) );
+                        case "certificate_file_to_trust" -> this.setCertificateFileToTrust( value );
+                        case "attempt_to_migrate" -> this.setAttemptToMigrate( value );
+                        default -> LOGGER.warn( "Database configuration option '{}'{}",
+                                                tagName,
+                                                " was skipped because it's not used." );
                     }
                 }
             }
@@ -732,7 +707,7 @@ public final class DatabaseSettings
                     this.setHost( hostAndMaybePort );
                 }
 
-                String dbName = "";
+                String dbName;
 
                 // The db name follows the third slash but not including '?'
                 if ( questionMarkIndex <= thirdSlashIndex )

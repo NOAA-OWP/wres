@@ -62,7 +62,7 @@ import wres.io.database.caching.TimeScales;
 import wres.io.ingesting.TimeSeriesTracker;
 import wres.io.reading.DataSource;
 import wres.io.reading.TimeSeriesTuple;
-import wres.system.DatabaseLockManager;
+import wres.io.database.locking.DatabaseLockManager;
 import wres.system.SystemSettings;
 import wres.io.reading.netcdf.Netcdf;
 
