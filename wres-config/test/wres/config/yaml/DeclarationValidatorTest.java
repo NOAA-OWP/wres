@@ -32,6 +32,7 @@ import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.Formats;
 import wres.config.yaml.components.LeadTimeInterval;
+import wres.config.yaml.components.LeadTimeIntervalBuilder;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricBuilder;
 import wres.config.yaml.components.MetricParametersBuilder;
@@ -45,6 +46,7 @@ import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.ThresholdSourceBuilder;
 import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimeInterval;
+import wres.config.yaml.components.TimeIntervalBuilder;
 import wres.config.yaml.components.TimePools;
 import wres.config.yaml.components.TimeScaleBuilder;
 import wres.config.yaml.components.TimeScaleLenience;
@@ -1304,6 +1306,154 @@ class DeclarationValidatorTest
                                                                         "discovered an interface of "
                                                                         + "'wrds nwm', which admits the data types",
                                                                         StatusLevel.WARN ) ) );
+    }
+
+    @Test
+    void testMinimumValidTimeLaterThanMaximumReferenceTimePlusMaximumLeadTimeProducesError()
+    {
+        TimeInterval referenceInterval = TimeIntervalBuilder.builder()
+                                                            .minimum( Instant.parse( "2021-03-24T00:00:00Z" ) )
+                                                            .maximum( Instant.parse( "2021-04-24T00:00:00Z" ) )
+                                                            .build();
+        TimeInterval validInterval = TimeIntervalBuilder.builder()
+                                                        .minimum( Instant.parse( "2022-03-24T00:00:00Z" ) )
+                                                        .maximum( Instant.parse( "2022-04-24T00:00:00Z" ) )
+                                                        .build();
+        LeadTimeInterval leadTimeInterval = LeadTimeIntervalBuilder.builder()
+                                                                   .minimum( java.time.Duration.ZERO )
+                                                                   .maximum( java.time.Duration.ofDays( 300 ) )
+                                                                   .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .referenceDates( referenceInterval )
+                                            .validDates( validInterval )
+                                            .leadTimes( leadTimeInterval )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "The 'maximum' value of the 'reference_dates' is",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testMinimumValidTimeLaterThanMaximumReferenceTimeProducesWarning()
+    {
+        TimeInterval referenceInterval = TimeIntervalBuilder.builder()
+                                                            .minimum( Instant.parse( "2021-03-24T00:00:00Z" ) )
+                                                            .maximum( Instant.parse( "2021-04-24T00:00:00Z" ) )
+                                                            .build();
+        TimeInterval validInterval = TimeIntervalBuilder.builder()
+                                                        .minimum( Instant.parse( "2022-03-24T00:00:00Z" ) )
+                                                        .maximum( Instant.parse( "2022-04-24T00:00:00Z" ) )
+                                                        .build();
+        LeadTimeInterval leadTimeInterval = LeadTimeIntervalBuilder.builder()
+                                                                   .minimum( java.time.Duration.ZERO )
+                                                                   .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .referenceDates( referenceInterval )
+                                            .validDates( validInterval )
+                                            .leadTimes( leadTimeInterval )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "The 'maximum' value of the 'reference_dates' is",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
+    void testMaximumValidTimeLaterThanMinimumReferenceTimePlusMinimumLeadTimeProducesError()
+    {
+        TimeInterval referenceInterval = TimeIntervalBuilder.builder()
+                                                            .minimum( Instant.parse( "2022-03-24T00:00:00Z" ) )
+                                                            .maximum( Instant.parse( "2022-04-24T00:00:00Z" ) )
+                                                            .build();
+        TimeInterval validInterval = TimeIntervalBuilder.builder()
+                                                        .minimum( Instant.parse( "2021-03-24T00:00:00Z" ) )
+                                                        .maximum( Instant.parse( "2021-04-24T00:00:00Z" ) )
+                                                        .build();
+        LeadTimeInterval leadTimeInterval = LeadTimeIntervalBuilder.builder()
+                                                                   .minimum( java.time.Duration.ofDays( -300 ) )
+                                                                   .maximum( java.time.Duration.ZERO )
+                                                                   .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .referenceDates( referenceInterval )
+                                            .validDates( validInterval )
+                                            .leadTimes( leadTimeInterval )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "The 'minimum' value of the 'reference_dates' is",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testMaximumValidTimeLaterThanMinimumReferenceTimeProducesWarning()
+    {
+        TimeInterval referenceInterval = TimeIntervalBuilder.builder()
+                                                            .minimum( Instant.parse( "2022-03-24T00:00:00Z" ) )
+                                                            .maximum( Instant.parse( "2022-04-24T00:00:00Z" ) )
+                                                            .build();
+        TimeInterval validInterval = TimeIntervalBuilder.builder()
+                                                        .minimum( Instant.parse( "2021-03-24T00:00:00Z" ) )
+                                                        .maximum( Instant.parse( "2021-04-24T00:00:00Z" ) )
+                                                        .build();
+        LeadTimeInterval leadTimeInterval = LeadTimeIntervalBuilder.builder()
+                                                                   .maximum( java.time.Duration.ofDays( -300 ) )
+                                                                   .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .referenceDates( referenceInterval )
+                                            .validDates( validInterval )
+                                            .leadTimes( leadTimeInterval )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "The 'minimum' value of the 'reference_dates' is",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
+    void testReferencesDatesAndValidDatesDoNotOverlapButNoLeadTimesProducesWarning()
+    {
+        TimeInterval referenceInterval = TimeIntervalBuilder.builder()
+                                                            .minimum( Instant.parse( "2021-03-24T00:00:00Z" ) )
+                                                            .maximum( Instant.parse( "2021-04-24T00:00:00Z" ) )
+                                                            .build();
+        TimeInterval validInterval = TimeIntervalBuilder.builder()
+                                                        .minimum( Instant.parse( "2022-03-24T00:00:00Z" ) )
+                                                        .maximum( Instant.parse( "2022-04-24T00:00:00Z" ) )
+                                                        .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .referenceDates( referenceInterval )
+                                            .validDates( validInterval )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "The 'reference_dates' and 'valid_dates' do not overlap",
+                                                       StatusLevel.WARN ) );
     }
 
     /**
