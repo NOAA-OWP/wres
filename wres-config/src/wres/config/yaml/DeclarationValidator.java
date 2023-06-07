@@ -312,7 +312,7 @@ public class DeclarationValidator
                 String spacer = "    - ";
                 warnEvents.forEach( e -> message.add( spacer + e.getEventMessage() ) );
 
-                LOGGER.warn( "Encountered {} warnings when validating the declared evaluation: {}{}",
+                LOGGER.warn( "Encountered {} warning(s) when validating the declared evaluation: {}{}",
                              warnEvents.size(),
                              System.lineSeparator(),
                              message );
@@ -951,6 +951,26 @@ public class DeclarationValidator
         events.addAll( analysisDurations );
 
         // Lead times
+        List<EvaluationStatusEvent> leadTimes = DeclarationValidator.leadIntervalIsValid( declaration );
+        events.addAll( leadTimes );
+
+        // Check that the datetime intervals are mutually consistent/overlapping, after accounting for lead times
+        List<EvaluationStatusEvent> consistent = DeclarationValidator.timeIntervalsAreConsistent( declaration );
+        events.addAll( consistent );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the lead time interval is valid.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> leadIntervalIsValid( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Lead times
         LeadTimeInterval leadTimes = declaration.leadTimes();
         if ( Objects.nonNull( leadTimes )
              && Objects.nonNull( leadTimes.minimum() )
@@ -967,6 +987,176 @@ public class DeclarationValidator
                                                              + "Please adjust the 'minimum' to occur before the "
                                                              + "'maximum', or at the same time, and try again. " )
                                            .build();
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the time intervals are overlapping, after accounting for lead durations, as appropriate.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> timeIntervalsAreConsistent( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Check the reference times and valid times
+        TimeInterval referenceDates = declaration.referenceDates();
+        TimeInterval validDates = declaration.validDates();
+        LeadTimeInterval leadTimes = declaration.leadTimes();
+
+        // Reference dates and valid dates and lead times are all present. Potential error if no overlaps
+        if ( Objects.nonNull( referenceDates )
+             && Objects.nonNull( validDates )
+             && Objects.nonNull( leadTimes ) )
+        {
+            List<EvaluationStatusEvent> leadTimesPresent =
+                    DeclarationValidator.timeIntervalsAreConsistentWithLeadTimes( declaration );
+            events.addAll( leadTimesPresent );
+        }
+        // Reference dates and valid dates are present, but no lead times. Can only warn in this situation
+        else if ( Objects.nonNull( referenceDates )
+                  && Objects.nonNull( validDates )
+                  && ( referenceDates.minimum()
+                                     .isAfter( validDates.maximum() )
+                       || referenceDates.maximum()
+                                        .isBefore( validDates.minimum() ) ) )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( "The 'reference_dates' and 'valid_dates' do not "
+                                                             + "overlap. This is unusual, but is allowed. No "
+                                                             + "'lead_times' were provided to further validate "
+                                                             + "this declaration. However, if no data is "
+                                                             + "subsequently found, you should consider adjusting "
+                                                             + "the 'reference_dates' and/or 'valid_dates' so that "
+                                                             + "they overlap." )
+                                           .build();
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the time intervals are overlapping, after accounting for lead durations, as appropriate.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> timeIntervalsAreConsistentWithLeadTimes( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Check the reference times and valid times
+        TimeInterval referenceDates = declaration.referenceDates();
+        TimeInterval validDates = declaration.validDates();
+        LeadTimeInterval leadTimes = declaration.leadTimes();
+
+        Instant refMinimum = referenceDates.minimum();
+        Instant refMaximum = referenceDates.maximum();
+
+        if ( Objects.nonNull( leadTimes.minimum() )
+             && !refMinimum.equals( Instant.MIN )
+             && !refMinimum.equals( Instant.MAX ) )
+        {
+            refMinimum = refMinimum.plus( leadTimes.minimum() );
+        }
+
+        if ( Objects.nonNull( leadTimes.maximum() )
+             && !refMaximum.equals( Instant.MIN )
+             && !refMaximum.equals( Instant.MAX ) )
+        {
+            refMaximum = refMaximum.plus( leadTimes.maximum() );
+        }
+
+        if ( refMinimum.isAfter( validDates.maximum() ) )
+        {
+            EvaluationStatusEvent event;
+
+            if ( Objects.nonNull( leadTimes.minimum() ) )
+            {
+                event = EvaluationStatusEvent.newBuilder()
+                                             .setStatusLevel( StatusLevel.ERROR )
+                                             .setEventMessage( "The 'minimum' value of the 'reference_dates' is "
+                                                               + referenceDates.minimum()
+                                                               + " and the 'minimum' value of the 'lead_times' "
+                                                               + "is "
+                                                               + leadTimes.minimum()
+                                                               + ", but the 'maximum' value of the 'valid_dates' "
+                                                               + "is "
+                                                               + validDates.maximum()
+                                                               + ". This will not select any data for evaluation "
+                                                               + "and is not, therefore, allowed. Please adjust "
+                                                               + "one or more of these times to ensure that "
+                                                               + "data will be selected for evaluation." )
+                                             .build();
+            }
+            else
+            {
+                event = EvaluationStatusEvent.newBuilder()
+                                             .setStatusLevel( StatusLevel.WARN )
+                                             .setEventMessage( "The 'minimum' value of the 'reference_dates' is "
+                                                               + referenceDates.minimum()
+                                                               + ", but the 'maximum' value of the 'valid_dates' "
+                                                               + "is "
+                                                               + validDates.maximum()
+                                                               + ". This may not select any data for evaluation. "
+                                                               + "However, a 'minimum' value for the "
+                                                               + "'lead_times' was not discovered, which could "
+                                                               + "further clarify. If no data is found "
+                                                               + "subsequently, you should consider adjusting "
+                                                               + "one or more of these time intervals to ensure "
+                                                               + "that data is selected." )
+                                             .build();
+            }
+
+            events.add( event );
+        }
+
+        if ( refMaximum.isBefore( validDates.minimum() ) )
+        {
+            EvaluationStatusEvent event;
+
+            if ( Objects.nonNull( leadTimes.maximum() ) )
+            {
+                event = EvaluationStatusEvent.newBuilder()
+                                             .setStatusLevel( StatusLevel.ERROR )
+                                             .setEventMessage( "The 'maximum' value of the 'reference_dates' is "
+                                                               + referenceDates.maximum()
+                                                               + " and the 'maximum' value of the 'lead_times' "
+                                                               + "is "
+                                                               + leadTimes.maximum()
+                                                               + ", but the 'minimum' value of the 'valid_dates' "
+                                                               + "is "
+                                                               + validDates.minimum()
+                                                               + ". This will not select any data for evaluation "
+                                                               + "and is not, therefore, allowed. Please adjust "
+                                                               + "one or more of these times to ensure that "
+                                                               + "data will be selected for evaluation." )
+                                             .build();
+            }
+            else
+            {
+                event = EvaluationStatusEvent.newBuilder()
+                                             .setStatusLevel( StatusLevel.WARN )
+                                             .setEventMessage( "The 'maximum' value of the 'reference_dates' is "
+                                                               + referenceDates.maximum()
+                                                               + ", but the 'minimum' value of the 'valid_dates' "
+                                                               + "is "
+                                                               + validDates.minimum()
+                                                               + ". This may not select any data for evaluation. "
+                                                               + "However, a 'maximum' value for the "
+                                                               + "'lead_times' was not discovered, which could "
+                                                               + "further clarify. If no data is found "
+                                                               + "subsequently, you should consider adjusting "
+                                                               + "one or more of these time intervals to ensure "
+                                                               + "that data is selected." )
+                                             .build();
+            }
+
             events.add( event );
         }
 
@@ -1588,7 +1778,7 @@ public class DeclarationValidator
                                                       .filter( filter )
                                                       .collect( Collectors.toSet() );
 
-            if ( Objects.nonNull( declaration.validDatePools() ) && ! metrics.isEmpty() )
+            if ( Objects.nonNull( declaration.validDatePools() ) && !metrics.isEmpty() )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
@@ -1604,7 +1794,7 @@ public class DeclarationValidator
                 events.add( event );
             }
 
-            if ( Objects.nonNull( declaration.referenceDatePools() ) && ! metrics.isEmpty() )
+            if ( Objects.nonNull( declaration.referenceDatePools() ) && !metrics.isEmpty() )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
