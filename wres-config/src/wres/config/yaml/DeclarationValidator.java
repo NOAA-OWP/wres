@@ -35,7 +35,6 @@ import wres.config.yaml.components.MetricParameters;
 import wres.config.yaml.components.Season;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceInterface;
-import wres.config.yaml.components.SpatialMask;
 import wres.config.yaml.components.Threshold;
 import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.ThresholdType;
@@ -51,10 +50,6 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.GeometryTuple;
-
-import org.locationtech.jts.io.ParseException;
-import org.locationtech.jts.io.WKTReader;
-import org.locationtech.jts.geom.Geometry;
 
 /**
  * <p>Validates a declared evaluation. In general, there are three levels of validation, namely:
@@ -228,9 +223,6 @@ public class DeclarationValidator
         // Check that the time pools are valid
         List<EvaluationStatusEvent> pools = DeclarationValidator.timePoolsAreValid( declaration );
         events.addAll( pools );
-        // Check that the spatial mask is valid
-        List<EvaluationStatusEvent> mask = DeclarationValidator.spatialMaskIsValid( declaration );
-        events.addAll( mask );
         // Check that the feature declaration is valid in all contexts
         List<EvaluationStatusEvent> features = DeclarationValidator.featuresAreValid( declaration );
         events.addAll( features );
@@ -1229,42 +1221,6 @@ public class DeclarationValidator
                 DeclarationValidator.leadTimePoolIsValid( declaration.leadTimePools(),
                                                           declaration.leadTimes() );
         events.addAll( leadTimePools );
-
-        return Collections.unmodifiableList( events );
-    }
-
-    /**
-     * Checks that the spatial mask is valid.
-     * @param declaration the evaluation declaration
-     * @return the validation events encountered
-     */
-    private static List<EvaluationStatusEvent> spatialMaskIsValid( EvaluationDeclaration declaration )
-    {
-        List<EvaluationStatusEvent> events = new ArrayList<>();
-
-        SpatialMask mask = declaration.spatialMask();
-        if ( Objects.nonNull( mask ) && Objects.nonNull( mask.wkt() ) )
-        {
-            WKTReader reader = new WKTReader();
-            String wkt = mask.wkt();
-
-            try
-            {
-                Geometry geometry = reader.read( wkt );
-                LOGGER.debug( "Read the wkt string {} into a geometry, {}.", wkt, geometry );
-            }
-            catch ( ParseException | IllegalArgumentException e )
-            {
-                EvaluationStatusEvent event
-                        = EvaluationStatusEvent.newBuilder()
-                                               .setStatusLevel( StatusLevel.ERROR )
-                                               .setEventMessage( "The 'wkt' string associated with the 'spatial_mask' "
-                                                                 + "could not be parsed into a geometry. Please fix "
-                                                                 + "the 'wkt' string and try again." )
-                                               .build();
-                events.add( event );
-            }
-        }
 
         return Collections.unmodifiableList( events );
     }

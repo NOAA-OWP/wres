@@ -22,6 +22,8 @@ import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -744,7 +746,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testDeserializeWithSpatialMask() throws IOException
+    void testDeserializeWithSpatialMask() throws IOException, ParseException
     {
         String yaml = """
                 observed:
@@ -753,15 +755,16 @@ class DeclarationFactoryTest
                   - another_file.csv
                 spatial_mask:
                   name: a spatial mask!
-                  wkt: POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225))
+                  wkt: POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225, -76.825 39.225))
                   """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
 
-        SpatialMask expectedMask
-                = new SpatialMask( "a spatial mask!",
-                                   "POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225))",
-                                   null );
+
+        String wkt = "POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225, -76.825 39.225))";
+        WKTReader reader = new WKTReader();
+        org.locationtech.jts.geom.Geometry geometry = reader.read( wkt );
+        SpatialMask expectedMask = new SpatialMask( "a spatial mask!", geometry );
 
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
                                                                      .left( this.observedDataset )
@@ -2145,7 +2148,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithSpatialMask() throws IOException
+    void testSerializeWithSpatialMask() throws IOException, ParseException
     {
         String expected = """
                 observed:
@@ -2154,13 +2157,13 @@ class DeclarationFactoryTest
                   sources: another_file.csv
                 spatial_mask:
                   name: a spatial mask!
-                  wkt: "POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225))"
+                  wkt: "POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225, -76.825 39.225))"
                   """;
 
-        SpatialMask expectedMask
-                = new SpatialMask( "a spatial mask!",
-                                   "POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225))",
-                                   null );
+        WKTReader reader = new WKTReader();
+        String wkt = "POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225, -76.825 39.225))";
+        org.locationtech.jts.geom.Geometry geometry = reader.read( wkt );
+        SpatialMask expectedMask = new SpatialMask( "a spatial mask!", geometry );
 
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
                                                                        .left( this.observedDataset )

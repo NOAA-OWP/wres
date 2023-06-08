@@ -14,6 +14,8 @@ import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -384,7 +386,7 @@ class DeclarationMigratorTest
     }
 
     @Test
-    void testMigrateProjectWithPairOptions()
+    void testMigrateProjectWithPairOptions() throws ParseException
     {
         wres.config.xml.generated.FeatureService featureService =
                 new wres.config.xml.generated.FeatureService( URI.create( "https://moo" ),
@@ -479,9 +481,14 @@ class DeclarationMigratorTest
         FeatureGroups featureGroups = FeatureGroupsBuilder.builder()
                                                           .geometryGroups( groups )
                                                           .build();
+
+        String wkt = "POLYGON ((1 2, 3 4, 5 6, 1 2))";
+        WKTReader reader = new WKTReader();
+        org.locationtech.jts.geom.Geometry mask = reader.read( wkt );
+        mask.setSRID( 4326 );
+
         SpatialMask spatialMask = SpatialMaskBuilder.builder()
-                                                    .wkt( "POLYGON ((1 2, 3 4, 5 6, 1 2))" )
-                                                    .srid( 4326L )
+                                                    .geometry( mask )
                                                     .build();
         TimeScale innerTimeScale = TimeScale.newBuilder()
                                             .setFunction( TimeScale.TimeScaleFunction.MEAN )

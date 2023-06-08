@@ -27,7 +27,7 @@ import wres.io.NoDataException;
 import wres.io.data.DataProvider;
 import wres.io.database.DatabaseOperations;
 import wres.io.database.caching.DatabaseCaches;
-import wres.io.database.caching.GriddedFeatures;
+import wres.io.reading.netcdf.grid.GriddedFeatures;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
 import wres.io.ingesting.IngestException;

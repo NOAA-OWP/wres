@@ -40,7 +40,6 @@ import wres.config.yaml.components.Season;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.SourceInterface;
-import wres.config.yaml.components.SpatialMask;
 import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.ThresholdSourceBuilder;
@@ -644,23 +643,6 @@ class DeclarationValidatorTest
                                                                                 + "be produced because the 'minimum'",
                                                                         StatusLevel.ERROR ) )
         );
-    }
-
-    @Test
-    void testInvalidSpatialMaskResultsInError()
-    {
-        SpatialMask mask = new SpatialMask( null, "foo_invalid_mask", 0L );
-
-        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
-                                                                        .left( this.defaultDataset )
-                                                                        .right( this.defaultDataset )
-                                                                        .spatialMask( mask )
-                                                                        .build();
-        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
-
-        assertTrue( DeclarationValidatorTest.contains( events, "The 'wkt' string associated with the "
-                                                               + "'spatial_mask' could not be parsed into a geometry",
-                                                       StatusLevel.ERROR ) );
     }
 
     @Test
