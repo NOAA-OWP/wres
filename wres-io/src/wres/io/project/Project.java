@@ -36,7 +36,7 @@ public interface Project
     String getMeasurementUnit();
 
     /**
-     * Returns the desired time scale. In order of availability, this is:
+     * Returns the desired timescale. In order of availability, this is:
      * 
      * <ol>
      * <li>The desired time scale provided on construction;</li>
@@ -55,9 +55,8 @@ public interface Project
     TimeScaleOuter getDesiredTimeScale();
 
     /**
-     * Returns the set of {@link FeatureTuple} for the project. If none have been
-     * created yet, then it is evaluated. If there is no specification within
-     * the configuration, all locations that have been ingested are retrieved
+     * Returns the set of {@link FeatureTuple} for the project. If none have been created yet, then it is evaluated. If
+     * there is no specification within the declaration, all features that have been ingested are retrieved
      * @return a set of all feature tuples involved in the project
      * @throws DataAccessException if the features cannot be retrieved
      * @throws IllegalStateException if the features have not been set
@@ -81,15 +80,6 @@ public interface Project
      */
 
     Dataset getDeclaredDataset( DatasetOrientation orientation );
-
-    /**
-     * @param orientation the side of data
-     * @return whether there is lenient upscaling enforced for the specified side of data
-     * @throws NullPointerException if the orientation is null
-     * @throws IllegalArgumentException if the orientation is unrecognized
-     */
-
-    boolean isUpscalingLenient( DatasetOrientation orientation );
 
     /**
      * @param orientation the side of data for which the variable is required
@@ -125,6 +115,19 @@ public interface Project
     MonthDay getEndOfSeason();
 
     /**
+     * Returns unique identifier for this project data
+     * @return the project hash
+     */
+
+    String getHash();
+
+    /**
+     * @return the project identity
+     */
+
+    long getId();
+
+    /**
      * @param orientation the orientation of the data source
      * @return true if the data source uses gridded data, false otherwise
      */
@@ -132,11 +135,13 @@ public interface Project
     boolean usesGriddedData( DatasetOrientation orientation );
 
     /**
-     * Returns unique identifier for this project data
-     * @return the project hash
+     * @param orientation the side of data
+     * @return whether there is lenient upscaling enforced for the specified side of data
+     * @throws NullPointerException if the orientation is null
+     * @throws IllegalArgumentException if the orientation is unrecognized
      */
 
-    String getHash();
+    boolean isUpscalingLenient( DatasetOrientation orientation );
 
     /**
      * @return whether there is a baseline
@@ -149,12 +154,6 @@ public interface Project
      */
 
     boolean hasGeneratedBaseline();
-
-    /**
-     * @return the project identity
-     */
-
-    long getId();
 
     /**
      * @return whether the project uses probability thresholds

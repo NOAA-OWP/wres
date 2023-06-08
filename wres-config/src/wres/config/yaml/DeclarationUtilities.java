@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 
 import com.google.protobuf.Timestamp;
 import org.apache.commons.lang3.tuple.Pair;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -312,6 +314,32 @@ public class DeclarationUtilities
         }
 
         return Collections.unmodifiableSet( tuples );
+    }
+
+    /**
+     * Creates a geometry from a WKT string and optional Spatial Reference system IDentifier (SRID).
+     * @param wktString the WKT string
+     * @param srid the optional SRID
+     * @return the geometry
+     */
+    public static org.locationtech.jts.geom.Geometry getGeometry( String wktString, Long srid )
+    {
+        WKTReader reader = new WKTReader();
+        org.locationtech.jts.geom.Geometry mask;
+        try
+        {
+            mask = reader.read( wktString );
+            if( Objects.nonNull( srid ) )
+            {
+                mask.setSRID( srid.intValue() );
+            }
+        }
+        catch ( ParseException e )
+        {
+            throw new IllegalArgumentException( "Failed to parse the mask geometry: " + wktString );
+        }
+
+        return mask;
     }
 
     /**

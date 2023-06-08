@@ -6,10 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.components.EvaluationDeclaration;
-import wres.io.database.caching.GriddedFeatures;
 import wres.io.reading.csv.CsvReader;
 import wres.io.reading.datacard.DatacardReader;
 import wres.io.reading.fews.PublishedInterfaceXmlReader;
+import wres.io.reading.netcdf.grid.GriddedFeatures;
 import wres.io.reading.netcdf.nwm.NwmGridReader;
 import wres.io.reading.netcdf.nwm.NwmVectorReader;
 import wres.io.reading.waterml.WatermlReader;

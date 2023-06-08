@@ -59,6 +59,9 @@ public class InMemoryProject implements Project
     /** Time-series data. */
     private final TimeSeriesStore timeSeriesStore;
 
+    /** The overall hash for the time-series used in the project. */
+    private final String hash;
+
     /** The measurement unit. */
     private String measurementUnit = null;
 
@@ -67,9 +70,6 @@ public class InMemoryProject implements Project
 
     /** The feature groups related to the project. */
     private Set<FeatureGroup> featureGroups;
-
-    /** The overall hash for the time-series used in the project. */
-    private final String hash;
 
     /** Whether the left data is gridded. */
     private boolean leftUsesGriddedData = false;
@@ -783,12 +783,30 @@ public class InMemoryProject implements Project
                                                                           rightFeaturesWithData,
                                                                           baselineFeaturesWithData );
 
-            this.featureGroups = ProjectUtilities.getFeatureGroups( singletons,
-                                                                    groupedTuples,
-                                                                    innerDeclaration,
-                                                                    this.getId() );
+            // Filter the singleton features against any spatial mask, unless there is gridded data, which is masked
+            // upfront. Do this before forming the groups, which include singleton groups
+            if ( !this.usesGriddedData( DatasetOrientation.RIGHT ) )
+            {
+                singletons = ProjectUtilities.filterFeatures( singletons, this.getDeclaration()
+                                                                              .spatialMask() );
+            }
 
+            Set<FeatureGroup> innerFeatureGroups = ProjectUtilities.getFeatureGroups( singletons,
+                                                                                      groupedTuples,
+                                                                                      innerDeclaration,
+                                                                                      this.getId() );
+
+            // Filter the multi-group features against any spatial mask, unless there is gridded data, which is masked
+            // upfront
+            if ( !this.usesGriddedData( DatasetOrientation.RIGHT ) )
+            {
+                innerFeatureGroups = ProjectUtilities.filterFeatureGroups( innerFeatureGroups, this.getDeclaration()
+                                                                                                   .spatialMask() );
+            }
+
+            // Filter the features and feature groups against any spatial mask
             this.features = Collections.unmodifiableSet( singletons );
+            this.featureGroups = Collections.unmodifiableSet( innerFeatureGroups );
 
             LOGGER.debug( "Finished setting the feature groups for project {}. Discovered {} feature groups: {}.",
                           this.getId(),

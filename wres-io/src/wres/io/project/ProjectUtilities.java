@@ -2,11 +2,16 @@ package wres.io.project;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,11 +20,13 @@ import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.SpatialMask;
 import wres.config.yaml.components.TimeScale;
 import wres.config.yaml.components.TimeScaleLenience;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
+import wres.io.retrieving.DataAccessException;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.GeometryGroup;
 
@@ -321,6 +328,275 @@ class ProjectUtilities
                     case RIGHT_AND_BASELINE -> orientation == DatasetOrientation.RIGHT
                                                || orientation == DatasetOrientation.BASELINE;
                 };
+    }
+
+    /**
+     * Filters the supplied features against a spatial mask, returning features that are contained within the mask
+     * region.
+     *
+     * @param features the features to filter
+     * @param spatialMask the spatial mask to use
+     * @return the filtered features
+     */
+
+    static Set<FeatureTuple> filterFeatures( Set<FeatureTuple> features,
+                                             SpatialMask spatialMask )
+    {
+        if ( Objects.isNull( spatialMask ) )
+        {
+            LOGGER.debug( "No spatial mask was found, returning the unfiltered features." );
+            return features;
+        }
+
+        // Warn about any features that are not geospatial
+        if ( LOGGER.isWarnEnabled() )
+        {
+            Set<FeatureTuple> notGeospatial
+                    = features.stream()
+                              .filter( a -> ProjectUtilities.isNotGeospatial( a.getGeometryTuple() ) )
+                              .collect( Collectors.toSet() );
+            if ( !notGeospatial.isEmpty() )
+            {
+                LOGGER.warn( "Discovered a spatial mask to filter geospatial features, but {} of the declared features "
+                             + "did not have any geospatial information present and cannot be filtered. These features "
+                             + "are: {}.",
+                             notGeospatial.size(),
+                             notGeospatial );
+            }
+        }
+
+        Geometry maskGeometry = spatialMask.geometry();
+
+        Set<FeatureTuple> inside = new TreeSet<>();
+        Set<FeatureTuple> outside = new TreeSet<>();
+
+        WKTReader reader = new WKTReader();
+
+        for ( FeatureTuple tuple : features )
+        {
+            GeometryTuple nextGeom = tuple.getGeometryTuple();
+            boolean include = ProjectUtilities.isContained( nextGeom, maskGeometry, reader );
+
+            // Contained?
+            if ( include )
+            {
+                inside.add( tuple );
+            }
+            else
+            {
+                outside.add( tuple );
+            }
+        }
+
+        // Warn if features were removed
+        if ( !outside.isEmpty()
+             && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "When filtering features against the declared 'spatial_mask', encountered {} feature(s) "
+                         + "outside the mask area, which will not be included in the evaluation: {}.",
+                         outside.size(),
+                         outside );
+        }
+
+        return Collections.unmodifiableSet( inside );
+    }
+
+    /**
+     * Filters the features within the supplied feature groups against a spatial mask, removing any features that are
+     * not contained within the mask region.
+     *
+     * @param featureGroups the feature groups to filter
+     * @param spatialMask the spatial mask to use
+     * @return the filtered feature groups
+     */
+
+    static Set<FeatureGroup> filterFeatureGroups( Set<FeatureGroup> featureGroups,
+                                                  SpatialMask spatialMask )
+    {
+        if ( Objects.isNull( spatialMask ) )
+        {
+            LOGGER.debug( "No spatial mask was found, returning the unfiltered feature groups." );
+            return featureGroups;
+        }
+
+        Geometry maskGeometry = spatialMask.geometry();
+
+        // All groups after filtering
+        Set<FeatureGroup> all = new TreeSet<>();
+        // Groups that were adjusted but retained
+        Set<FeatureGroup> adjusted = new TreeSet<>();
+        // Groups that had no features left
+        Set<FeatureGroup> removed = new TreeSet<>();
+
+        WKTReader reader = new WKTReader();
+
+        for ( FeatureGroup group : featureGroups )
+        {
+            GeometryGroup nextGroup = group.getGeometryGroup();
+            GeometryGroup adjustedGroup = ProjectUtilities.adjustForContainment( nextGroup, maskGeometry, reader );
+
+            // Removed
+            if ( adjustedGroup.getGeometryTuplesList()
+                              .isEmpty() )
+            {
+                removed.add( group );
+            }
+            // Adjusted, but retained
+            else if ( !adjustedGroup.equals( nextGroup ) )
+            {
+                FeatureGroup adjustedFeatureGroup = FeatureGroup.of( adjustedGroup );
+                adjusted.add( adjustedFeatureGroup );
+                all.add( adjustedFeatureGroup );
+            }
+            // Unadjusted
+            else
+            {
+                FeatureGroup adjustedFeatureGroup = FeatureGroup.of( adjustedGroup );
+                all.add( adjustedFeatureGroup );
+            }
+        }
+
+        // Warn if feature groups were adjusted
+        if ( !adjusted.isEmpty()
+             && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "When filtering feature groups against the declared 'spatial_mask', encountered {} feature "
+                         + "group(s) with one or more features outside the mask area. These feature groups have been "
+                         + "adjusted to remove the features outside the mask area. The adjusted feature groups are: "
+                         + "{}.",
+                         adjusted.size(),
+                         adjusted );
+        }
+
+        // Warn if feature groups were removed
+        if ( !removed.isEmpty()
+             && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "When filtering feature groups against the declared 'spatial_mask', encountered {} feature "
+                         + "group(s) whose features were all outside the mask area. These feature groups have been "
+                         + "removed from the evaluation. The removed feature groups are: "
+                         + "{}.",
+                         removed.size(),
+                         removed );
+        }
+
+        // Warn about any features that are not geospatial
+        if ( LOGGER.isWarnEnabled() )
+        {
+            Set<FeatureTuple> notGeospatial
+                    = featureGroups.stream()
+                                   .flatMap( a -> a.getFeatures().stream() )
+                                   .filter( a -> ProjectUtilities.isNotGeospatial( a.getGeometryTuple() ) )
+                                   .collect( Collectors.toSet() );
+            if ( !notGeospatial.isEmpty() )
+            {
+                LOGGER.warn( "Discovered a spatial mask to filter geospatial feature groups, but {} of the features "
+                             + "contained within the declared feature groups did not have any geospatial information "
+                             + "present and cannot be filtered. These features are: {}.",
+                             notGeospatial.size(),
+                             notGeospatial );
+            }
+        }
+
+        return Collections.unmodifiableSet( all );
+    }
+
+    /**
+     * Adjusted the supplied feature group, removing any features that are not contained within the mask area.
+     *
+     * @param group the feature group to adjust
+     * @param spatialMask the spatial mask to use
+     * @param reader the WKT string reader
+     * @return the adjusted group, which may contain no features
+     */
+
+    private static GeometryGroup adjustForContainment( GeometryGroup group, Geometry spatialMask, WKTReader reader )
+    {
+        GeometryGroup.Builder builder = group.toBuilder()
+                                             .clearGeometryTuples();
+
+        List<GeometryTuple> features = group.getGeometryTuplesList()
+                                            .stream()
+                                            .filter( g -> ProjectUtilities.isContained( g, spatialMask, reader ) )
+                                            .toList();
+
+        return builder.addAllGeometryTuples( features )
+                      .build();
+    }
+
+    /**
+     * Checks the supplied geometry for containment within the mask.
+     * @param nextGeom the geometry to check for containment
+     * @param maskGeometry the mask geometry
+     * @param reader the WKT string reader
+     * @return whether the geometry is contained in the mask region
+     */
+    private static boolean isContained( GeometryTuple nextGeom, Geometry maskGeometry, WKTReader reader )
+    {
+        boolean include = true;
+        String lastWkt = "";
+
+        try
+        {
+            // Left present and inside?
+            if ( nextGeom.hasLeft()
+                 && ProjectUtilities.isGeospatial( nextGeom.getLeft() ) )
+            {
+                lastWkt = nextGeom.getLeft()
+                                  .getWkt();
+                Geometry geometry = reader.read( lastWkt );
+                include = maskGeometry.covers( geometry );
+            }
+
+            // Right present and inside?
+            if ( nextGeom.hasRight()
+                 && ProjectUtilities.isGeospatial( nextGeom.getRight() ) )
+            {
+                lastWkt = nextGeom.getRight()
+                                  .getWkt();
+                Geometry geometry = reader.read( lastWkt );
+                include = include && maskGeometry.covers( geometry );
+            }
+
+            // Baseline present and inside?
+            if ( nextGeom.hasBaseline()
+                 && ProjectUtilities.isGeospatial( nextGeom.getBaseline() ) )
+            {
+                lastWkt = nextGeom.getBaseline()
+                                  .getWkt();
+                Geometry geometry = reader.read( lastWkt );
+                include = include && maskGeometry.covers( geometry );
+            }
+        }
+        catch ( ParseException e )
+        {
+            throw new DataAccessException( "Failed to pass a WKT geometry string into a geometry: " + lastWkt );
+        }
+
+        return include;
+    }
+
+    /**
+     * @param geometryTuple the geometry tuple to test
+     * @return whether the geometry tuple has no geospatial information for any available side of data
+     */
+
+    private static boolean isNotGeospatial( GeometryTuple geometryTuple )
+    {
+        return ( !geometryTuple.hasLeft() || !ProjectUtilities.isGeospatial( geometryTuple.getLeft() ) )
+               && ( !geometryTuple.hasRight() || !ProjectUtilities.isGeospatial( geometryTuple.getRight() ) )
+               && ( !geometryTuple.hasBaseline() || !ProjectUtilities.isGeospatial( geometryTuple.getBaseline() ) );
+    }
+
+    /**
+     * @param geometry the geometry to test
+     * @return whether the geometry has geospatial information present
+     */
+
+    private static boolean isGeospatial( wres.statistics.generated.Geometry geometry )
+    {
+        return !geometry.getWkt()
+                        .isBlank();
     }
 
     /**

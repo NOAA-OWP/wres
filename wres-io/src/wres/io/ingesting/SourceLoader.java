@@ -37,12 +37,13 @@ import org.slf4j.LoggerFactory;
 import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFiles;
 
+import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.Source;
-import wres.io.database.caching.GriddedFeatures;
+import wres.io.reading.netcdf.grid.GriddedFeatures;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.DataSource.DataDisposition;
@@ -312,6 +313,17 @@ public class SourceLoader
         // #51232 is resolved
         if ( source.getDisposition() == DataDisposition.NETCDF_GRIDDED )
         {
+            // It has now been established that a gridded evaluation is required. Gridded evaluations require a spatial
+            // mask to determine the features to evaluate. Check that now.
+            if ( Objects.isNull( this.getDeclaration()
+                                     .spatialMask() ) )
+            {
+                throw new DeclarationException( "Discovered gridded data, but the declaration does not include a "
+                                                + "'spatial_mask'. Gridded evaluations with an unbounded selection "
+                                                + "are not currently supported. Please add a 'spatial_mask' to the "
+                                                + "declaration and try again." );
+            }
+
             Supplier<List<IngestResult>> fakeResult = this.ingestGriddedFeatures( source );
             CompletableFuture<List<IngestResult>> future = CompletableFuture.supplyAsync( fakeResult,
                                                                                           this.getReadingExecutor() );
@@ -322,14 +334,14 @@ public class SourceLoader
             }
             catch ( ExecutionException e )
             {
-                throw new ReadException( "Could not read the gridded features." );
+                throw new ReadException( "Could not read the gridded features.", e );
             }
             catch ( InterruptedException e )
             {
                 Thread.currentThread()
                       .interrupt();
 
-                throw new ReadException( "Could not read the gridded features." );
+                throw new ReadException( "Could not read the gridded features.", e );
             }
         }
 
@@ -676,6 +688,7 @@ public class SourceLoader
         }
 
         // Walk the tree and find sources that match a pattern or none
+        List<File> unmatchedByPattern = new ArrayList<>();
         try ( Stream<Path> files = Files.walk( sourcePath ) )
         {
             files.forEach( path -> {
@@ -702,14 +715,13 @@ public class SourceLoader
                                      path );
                     }
                 }
-                // Skip and log a warning if this is a normal file (e.g. not a directory) 
-                else if ( testFile.isFile() )
+                // Skip and log a warning if this is a normal file (e.g., not a directory)
+                else if ( testFile.isFile() && LOGGER.isWarnEnabled() )
                 {
-                    LOGGER.warn( "Skipping {} because it does not match pattern \"{}\".",
-                                 path,
-                                 pattern );
+                    unmatchedByPattern.add( testFile );
                 }
             } );
+
         }
         catch ( IOException e )
         {
@@ -718,6 +730,8 @@ public class SourceLoader
                                           + "':",
                                           e );
         }
+
+        SourceLoader.logUnmatchedSources( unmatchedByPattern, pattern, dataSource.getDatasetOrientation() );
 
         //If the results are empty, then there were either no files in the specified source or pattern matched 
         //none of the files.  
@@ -729,6 +743,28 @@ public class SourceLoader
         }
 
         return Collections.unmodifiableSet( returnMe );
+    }
+
+    /**
+     * Logds the sources unmatched by a source pattern, when required.
+     * @param unmatchedByPattern the sources unmatched by a pattern
+     * @param pattern the pattern
+     * @param orientation the data orientation
+     */
+
+    private static void logUnmatchedSources( List<File> unmatchedByPattern,
+                                             String pattern,
+                                             DatasetOrientation orientation )
+    {
+        if ( LOGGER.isWarnEnabled() && !unmatchedByPattern.isEmpty() )
+        {
+            LOGGER.warn( "Skipping {} '{}' sources because they do not match pattern \"{}\". The skipped sources are: "
+                         + "{}",
+                         unmatchedByPattern.size(),
+                         orientation,
+                         pattern,
+                         unmatchedByPattern );
+        }
     }
 
     /**

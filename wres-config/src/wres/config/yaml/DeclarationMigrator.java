@@ -338,11 +338,13 @@ public class DeclarationMigrator
         {
             Pair<String, Long> maskComponents = DeclarationMigrator.migrateSpatialMask( mask );
             SpatialMask spatialMask = null;
-            if ( Objects.nonNull( maskComponents ) && Objects.nonNull( maskComponents.getLeft() ) )
+            if ( Objects.nonNull( maskComponents )
+                 && Objects.nonNull( maskComponents.getLeft() ) )
             {
+                org.locationtech.jts.geom.Geometry maskGeometry =
+                        DeclarationUtilities.getGeometry( maskComponents.getLeft(), maskComponents.getRight() );
                 spatialMask = SpatialMaskBuilder.builder()
-                                                .wkt( maskComponents.getLeft() )
-                                                .srid( maskComponents.getRight() )
+                                                .geometry( maskGeometry )
                                                 .build();
             }
 
