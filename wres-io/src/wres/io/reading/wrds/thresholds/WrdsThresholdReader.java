@@ -688,6 +688,7 @@ public class WrdsThresholdReader implements ThresholdReader
         Set<String> thresholdFeatureNames =
                 thresholdFeatures.stream()
                                  .map( n -> Location.getNameForAuthority( featureAuthority, n ) )
+                                 .filter( Objects::nonNull )
                                  .collect( Collectors.toSet() );
 
         Set<String> featureNamesWithThresholds = new TreeSet<>( featureNames.keySet() );
