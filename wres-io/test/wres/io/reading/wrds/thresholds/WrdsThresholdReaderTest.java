@@ -1134,6 +1134,127 @@ class WrdsThresholdReaderTest
     }
 
     @Test
+    void testReadThresholdsFromMockedServiceWithChunksAndDuplicates()
+    {
+        URI fakeUri = URI.create( "http://localhost:"
+                                  + this.mockServer.getLocalPort()
+                                  + "/redacted/api/location/v3.0/nws_threshold/" );
+
+        String expectedPathOne = "/redacted/api/location/v3.0/nws_threshold/nws_lid/BLOF1/";
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( expectedPathOne )
+                                         .withMethod( "GET" ) )
+                       .respond( HttpResponse.response( ANOTHER_RESPONSE ) );
+
+        String expectedPathTwo = "/redacted/api/location/v3.0/nws_threshold/nws_lid/CEDG1/";
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( expectedPathTwo )
+                                         .withMethod( "GET" ) )
+                       .respond( HttpResponse.response( ANOTHER_RESPONSE ) );
+
+        ThresholdSource service
+                = ThresholdSourceBuilder.builder()
+                                        .uri( fakeUri )
+                                        .featureNameFrom( DatasetOrientation.LEFT )
+                                        .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                        .parameter( "stage" )
+                                        .provider( "NWS-NRLDB" )
+                                        .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                        .build();
+
+        WrdsThresholdReader chunkedReader = WrdsThresholdReader.of( 1 );
+
+        Set<wres.config.yaml.components.Threshold> actual =
+                chunkedReader.read( service,
+                                    this.stageMapper,
+                                    Set.of( "BLOF1", "CEDG1" ),
+                                    FeatureAuthority.NWS_LID );
+
+        Threshold firstOne = Threshold.newBuilder()
+                                      .setOperator( Threshold.ThresholdOperator.GREATER )
+                                      .setLeftThresholdValue( DoubleValue.of( 0.0 ) )
+                                      .setThresholdValueUnits( FT )
+                                      .setName( "low" )
+                                      .build();
+        Threshold firstTwo = Threshold.newBuilder()
+                                      .setOperator( Threshold.ThresholdOperator.GREATER )
+                                      .setLeftThresholdValue( DoubleValue.of( 14.29 ) )
+                                      .setThresholdValueUnits( FT )
+                                      .setName( "record" )
+                                      .build();
+
+        Set<Threshold> firstExpectedInner = Set.of( firstOne,
+                                                    firstTwo );
+
+        Set<wres.config.yaml.components.Threshold> firstExpected =
+                WrdsThresholdReaderTest.createThresholds( firstExpectedInner,
+                                                          "CEDG1" );
+
+        Set<wres.config.yaml.components.Threshold> firstActual = WrdsThresholdReaderTest.filter( actual, "CEDG1" );
+
+        assertEquals( firstExpected, firstActual );
+
+        Threshold secondOne = Threshold.newBuilder()
+                                       .setOperator( Threshold.ThresholdOperator.GREATER )
+                                       .setLeftThresholdValue( DoubleValue.of( 13.0 ) )
+                                       .setThresholdValueUnits( FT )
+                                       .setName( "action" )
+                                       .build();
+        Threshold secondTwo = Threshold.newBuilder()
+                                       .setOperator( Threshold.ThresholdOperator.GREATER )
+                                       .setLeftThresholdValue( DoubleValue.of( 15.0 ) )
+                                       .setThresholdValueUnits( FT )
+                                       .setName( "bankfull" )
+                                       .build();
+        Threshold secondThree = Threshold.newBuilder()
+                                         .setOperator( Threshold.ThresholdOperator.GREATER )
+                                         .setLeftThresholdValue( DoubleValue.of( 17.0 ) )
+                                         .setThresholdValueUnits( FT )
+                                         .setName( "flood" )
+                                         .build();
+        Threshold secondFour = Threshold.newBuilder()
+                                        .setOperator( Threshold.ThresholdOperator.GREATER )
+                                        .setLeftThresholdValue( DoubleValue.of( 17.0 ) )
+                                        .setThresholdValueUnits( FT )
+                                        .setName( "minor" )
+                                        .build();
+        Threshold secondFive = Threshold.newBuilder()
+                                        .setOperator( Threshold.ThresholdOperator.GREATER )
+                                        .setLeftThresholdValue( DoubleValue.of( 23.5 ) )
+                                        .setThresholdValueUnits( FT )
+                                        .setName( "moderate" )
+                                        .build();
+        Threshold secondSix = Threshold.newBuilder()
+                                       .setOperator( Threshold.ThresholdOperator.GREATER )
+                                       .setLeftThresholdValue( DoubleValue.of( 26.0 ) )
+                                       .setThresholdValueUnits( FT )
+                                       .setName( "major" )
+                                       .build();
+        Threshold secondSeven = Threshold.newBuilder()
+                                         .setOperator( Threshold.ThresholdOperator.GREATER )
+                                         .setLeftThresholdValue( DoubleValue.of( 28.6 ) )
+                                         .setThresholdValueUnits( FT )
+                                         .setName( "record" )
+                                         .build();
+
+        Set<Threshold> secondExpectedInner = Set.of( secondOne,
+                                                     secondTwo,
+                                                     secondThree,
+                                                     secondFour,
+                                                     secondFive,
+                                                     secondSix,
+                                                     secondSeven );
+
+        Set<wres.config.yaml.components.Threshold> secondExpected =
+                WrdsThresholdReaderTest.createThresholds( secondExpectedInner,
+                                                          "BLOF1" );
+
+        Set<wres.config.yaml.components.Threshold> secondActual = WrdsThresholdReaderTest.filter( actual, "BLOF1" );
+
+        assertEquals( secondExpected, secondActual );
+    }
+
+    @Test
     void testReadThresholdsFromFileSystem() throws IOException
     {
         try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
