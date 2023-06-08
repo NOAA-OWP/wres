@@ -699,7 +699,7 @@ project(':wres-vis')
         {
             version = versionOfDependencies
 
-            println("Set version: " + project.version )
+            println("Set wres-vis version: " + project.version )
 
             if ( !grgit.status().isClean() )
             {
@@ -1021,6 +1021,35 @@ project(':wres-messages')
 
 project(':wres-worker')
 {
+
+    // Check if the dependency modules version is later. If so, update this
+    // module to that later version.
+    def gitCommitOfDependencies = grgit.log(paths: ['wres-messages'], maxCommits:1).find()
+
+    // Null check in case there is a new module with no history
+    if( gitCommitOfDependencies != null )
+    {
+        def gitCommitIdOfDependencies = gitCommitOfDependencies.id;
+        def gitCommitDateOfDependencies = gitCommitOfDependencies.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+
+        def gitCommitOfThisModule = grgit.log( paths: [project.name, 'build.gradle'], maxCommits:1 ).find()
+        def gitCommitDateOfThisModule = gitCommitOfThisModule.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+
+        def versionOfDependencies = gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies[0..6]
+
+        if ( gitCommitDateOfDependencies.isAfter( gitCommitDateOfThisModule ) )
+        {
+            version = versionOfDependencies
+
+            println("Set wres-worker version: " + project.version )
+
+            if ( !grgit.status().isClean() )
+            {
+                version = version + '-dev'
+            }
+        }
+    }
+
     dependencies
     {
         implementation project( ':wres-messages' )
@@ -1065,32 +1094,6 @@ project(':wres-worker')
                     // Note: see lengthy note in main application below
                     ['dist']
                 }
-            }
-        }
-    }
-
-    // Check if the dependency modules version is later. If so, update this
-    // module to that later version.
-    def gitCommitOfDependencies = grgit.log(paths: ['wres-messages'], maxCommits:1).find()
-
-    // Null check in case there is a new module with no history
-    if( gitCommitOfDependencies != null )
-    {
-        def gitCommitIdOfDependencies = gitCommitOfDependencies.id;
-        def gitCommitDateOfDependencies = gitCommitOfDependencies.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
-
-        def gitCommitOfThisModule = grgit.log( paths: [project.name, 'build.gradle'], maxCommits:1 ).find()
-        def gitCommitDateOfThisModule = gitCommitOfThisModule.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
-
-        def versionOfDependencies = gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies[0..6]
-
-        if ( gitCommitDateOfDependencies.isAfter( gitCommitDateOfThisModule ) )
-        {
-            version = versionOfDependencies
-
-            if ( !grgit.status().isClean() )
-            {
-                version = version + '-dev'
             }
         }
     }
@@ -1146,6 +1149,37 @@ project(':wres-worker')
 
 project(':wres-tasker')
 {
+
+    // Check if the dependency modules version is later. If so, update this
+    // module to that later version. See #105526 for why this was moved up. 
+    //Order matters.
+    def gitCommitOfDependencies = grgit.log(paths: ['wres-messages',
+                                                    'wres-config'], maxCommits:1).find()
+
+    // Null check in case there is a new module with no history
+    if( gitCommitOfDependencies != null )
+    {
+        def gitCommitIdOfDependencies = gitCommitOfDependencies.id;
+        def gitCommitDateOfDependencies = gitCommitOfDependencies.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+
+        def gitCommitOfThisModule = grgit.log( paths: [project.name,'build.gradle','gradle'], maxCommits:1 ).find()
+        def gitCommitDateOfThisModule = gitCommitOfThisModule.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+
+        def versionOfDependencies = gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies[0..6]
+
+        if ( gitCommitDateOfDependencies.isAfter( gitCommitDateOfThisModule ) )
+        {
+            version = versionOfDependencies
+
+            println("Set wres-tasker version: " + project.version )
+
+            if ( !grgit.status().isClean() )
+            {
+                version = version + '-dev'
+            }
+        }
+    }
+
     configurations
     {
         // This separate configuration keeps swagger jars out of the zip.
@@ -1279,32 +1313,6 @@ project(':wres-tasker')
                 }
                 // Because this is appended directly to the API docs
                 exclude '**/wres_api_info.yaml'
-            }
-        }
-    }
-
-    // Check if the dependency modules version is later. If so, update this
-    // module to that later version.
-    def gitCommitOfDependencies = grgit.log(paths: ['wres-messages'], maxCommits:1).find()
-
-    // Null check in case there is a new module with no history
-    if( gitCommitOfDependencies != null )
-    {
-        def gitCommitIdOfDependencies = gitCommitOfDependencies.id;
-        def gitCommitDateOfDependencies = gitCommitOfDependencies.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
-
-        def gitCommitOfThisModule = grgit.log( paths: [project.name,'build.gradle','gradle'], maxCommits:1 ).find()
-        def gitCommitDateOfThisModule = gitCommitOfThisModule.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
-
-        def versionOfDependencies = gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies[0..6]
-
-        if ( gitCommitDateOfDependencies.isAfter( gitCommitDateOfThisModule ) )
-        {
-            version = versionOfDependencies
-
-            if ( !grgit.status().isClean() )
-            {
-                version = version + '-dev'
             }
         }
     }
