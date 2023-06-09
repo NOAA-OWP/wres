@@ -613,6 +613,58 @@ class WrdsThresholdReaderTest
                                 "interpolation_description": "logarithmic"
                             }
                         }
+                    },
+                    {
+                        "metadata": {
+                            "data_type": "NWS Stream Thresholds",
+                            "nws_lid": null,
+                            "usgs_site_code": null,
+                            "nwm_feature_id": null,
+                            "threshold_type": "all (stage,flow)",
+                            "stage_units": "FT",
+                            "flow_units": "CFS",
+                            "calc_flow_units": "CFS",
+                            "threshold_source": "NWS-NRLDB",
+                            "threshold_source_description": "Fake location with null feature names. See issue #117090."
+                        },
+                        "stage_values": {
+                            "low": 0.0,
+                            "bankfull": null,
+                            "action": null,
+                            "flood": null,
+                            "minor": null,
+                            "moderate": null,
+                            "major": null,
+                            "record": null
+                        },
+                        "flow_values": {
+                            "low": 0.0,
+                            "bankfull": null,
+                            "action": null,
+                            "flood": null,
+                            "minor": null,
+                            "moderate": null,
+                            "major": null,
+                            "record": null
+                        },
+                        "calc_flow_values": {
+                            "low": null,
+                            "bankfull": null,
+                            "action": null,
+                            "flood": null,
+                            "minor": null,
+                            "moderate": null,
+                            "major": null,
+                            "record": null,
+                            "rating_curve": {
+                                "location_id": "PTSA1",
+                                "id_type": "NWS Station",
+                                "source": "NRLDB",
+                                "description": "National Weather Service - National River Location Database",
+                                "interpolation_method": null,
+                                "interpolation_description": null
+                            }
+                        }
                     }
                 ]
             }
