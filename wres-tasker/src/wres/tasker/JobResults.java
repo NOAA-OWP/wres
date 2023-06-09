@@ -3,23 +3,15 @@ package wres.tasker;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.io.UncheckedIOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.SecureRandom;
 import java.time.Duration;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Random;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.StringJoiner;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -35,6 +27,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -103,7 +96,7 @@ class JobResults
     private final int NUMBER_OF_THREADS = 400;
 
     /**
-     * An executor service that consumes job results and stores them in JOB_RESULTS_BY_ID. 
+     * An executor service that consumes job results and stores them in JOB_RESULTS_BY_ID.
      * Initialized in the constructor.
      */
     private final ExecutorService executor;
@@ -116,6 +109,10 @@ class JobResults
 
     /** The lock to guard connection when init fails on construction */
     private final Object CONNECTION_LOCK = new Object();
+
+    private static final String TMP_DRIVE = System.getProperty( "java.io.tmpdir" );
+
+    private static final double DEFAULT_THRESHOLD_DISK_SPACE = 90.0;
 
     JobResults( ConnectionFactory connectionFactory,
                 RedissonClient redissonClient )
@@ -463,15 +460,28 @@ class JobResults
             if ( resultValue == 0 )
             {
                 sharedData.setJobState( JobMetadata.JobState.COMPLETED_REPORTED_SUCCESS );
+                LOGGER.debug( "Shared metadata after setting job state: {}",
+                              jobMetadata );
+                JobResults.deleteInputs( jobMetadata );
             }
             else
             {
                 sharedData.setJobState( JobMetadata.JobState.COMPLETED_REPORTED_FAILURE );
+                LOGGER.debug( "Shared metadata after setting job state: {}",
+                              jobMetadata );
+                double diskThreshold = decideThreshold();
+                if ( JobResults.storageThresholdExceeded( diskThreshold ) )
+                {
+                    LOGGER.info( "Disk space has reached threshold... attempting to make space" );
+                    List<Path> files = JobResults.getFilesInDirectory( Path.of( TMP_DRIVE ) );
+                    JobResults.sortFilesByLastModified( files );
+                    while ( JobResults.storageThresholdExceeded( diskThreshold ) && !files.isEmpty() )
+                    {
+                        Path fileToDelete = files.remove( 0 );
+                        JobResults.deleteFile( fileToDelete );
+                    }
+                }
             }
-
-            LOGGER.debug( "Shared metadata after setting job state: {}",
-                          jobMetadata );
-            JobResults.deleteInputs( jobMetadata );
             return resultValue;
         }
 
@@ -486,6 +496,119 @@ class JobResults
         }
     }
 
+    /**
+     * Calculates if the storage threshold set is exceeded. The value is an arbitrary
+     * value chosen and is currently set to 90% of disk space
+     * @param diskThreshold which holds the either a user defined percentage threshold or the default value
+     * @return A boolean value of if the space left on the disk is above the % threshold value set
+     * @throws IOException When the path to the directory is not found
+     */
+    private static boolean storageThresholdExceeded( double diskThreshold ) throws IOException
+    {
+        Path path = Path.of( TMP_DRIVE );
+
+        FileStore fileStore = Files.getFileStore( path );
+
+        long totalSpace = fileStore.getTotalSpace();
+        long usableSpace = fileStore.getUsableSpace();
+        long usedSpace = totalSpace - usableSpace;
+
+
+        double percentageUsed = ( ( ( double ) usedSpace / totalSpace ) * 100 );
+
+        return percentageUsed >= diskThreshold;
+    }
+
+    /**
+     * To retrieve a list of all the files in input data directory
+     * @param path A string of a path to the input data path
+     * @return A list of path's of all the files found in that directory
+     * @throws IOException When the path to the directory is not found
+     */
+    public static List<Path> getFilesInDirectory( Path path ) throws IOException
+    {
+        try ( Stream<Path> paths = Files.list( path ) )
+        {
+            return paths.toList();
+        }
+    }
+
+    /**
+     * To sort the list of files found from the oldest modified being at
+     * the start of the list to the most recent modified being at the end of the list
+     * @param files The list of file paths to sort
+     */
+    public static void sortFilesByLastModified( List<Path> files )
+    {
+        files.sort( Comparator.comparingLong( path -> {
+            try
+            {
+                return getFileLastModified( path );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( "Error when trying to sort the files by last modified", e );
+            }
+        } ) );
+    }
+
+    /**
+     * A utility method to be able to get the files last modified time in milliseconds
+     * @param file A specific file path to retrieve its last modified time
+     * @return A Long of last modified time in milliseconds
+     * @throws IOException If the file path is not found
+     */
+    public static long getFileLastModified( Path file ) throws IOException
+    {
+        BasicFileAttributes attributes = Files.readAttributes( file, BasicFileAttributes.class );
+        return attributes.lastModifiedTime()
+                         .toMillis();
+    }
+
+    /**
+     * To delete a given file path
+     * @param file A path to the file wanting to be deleted
+     * @throws IOException If the file path is not found
+     */
+    public static void deleteFile( Path file ) throws IOException
+    {
+        Files.delete( file );
+    }
+
+    public static double decideThreshold()
+    {
+        String userThreshold = System.getProperty( "wres.dataDirectDiskThreshold" );
+        if ( Objects.nonNull( userThreshold ) )
+        {
+            try
+            {
+                double provisionalThreshold = Double.parseDouble( userThreshold );
+                if ( provisionalThreshold > 0.0 && provisionalThreshold < 100.0 )
+                {
+                    LOGGER.info( "Discovered a user-defined data direct disk threshold in the system property "
+                                 + "override, 'wres.dataDirectDiskThreshold'. The threshold is: {}.",
+                                 provisionalThreshold );
+                    return provisionalThreshold;
+                }
+                else if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( "Discovered an invalid 'wres.dataDirectDiskThreshold'. Expected a number that is "
+                                 + "greater than 0 and less than 100, representing a percentage. but got: {}. Will "
+                                 + "use the default threshold instead: {}.",
+                                 provisionalThreshold,
+                                 DEFAULT_THRESHOLD_DISK_SPACE );
+                }
+            }
+            catch ( NumberFormatException e )
+            {
+                LOGGER.warn( "Discovered an invalid 'wres.dataDirectDiskThreshold'. Expected a number, but got: "
+                             + " {}. Will use the default threshold instead: {}.",
+                             userThreshold,
+                             DEFAULT_THRESHOLD_DISK_SPACE );
+            }
+        }
+        return DEFAULT_THRESHOLD_DISK_SPACE;
+    }
 
     /**
      * Watches for the stdout|stderr of a job regardless of if anyone actually
