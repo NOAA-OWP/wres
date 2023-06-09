@@ -192,6 +192,8 @@ class CsvThresholdReaderTest
             UnitMapper unitMapper = Mockito.mock( UnitMapper.class );
             Mockito.when( unitMapper.getUnitMapper( Mockito.anyString() ) )
                    .thenReturn( d -> d );
+            Mockito.when( unitMapper.getDesiredMeasurementUnitName() )
+                   .thenReturn( UNIT_STRING );
             CsvThresholdReader reader = CsvThresholdReader.of();
             Set<wres.config.yaml.components.Threshold> actual = reader.read( source,
                                                                              unitMapper,
@@ -439,6 +441,8 @@ class CsvThresholdReaderTest
             UnitMapper unitMapper = Mockito.mock( UnitMapper.class );
             Mockito.when( unitMapper.getUnitMapper( Mockito.anyString() ) )
                    .thenReturn( d -> d );
+            Mockito.when( unitMapper.getDesiredMeasurementUnitName() )
+                   .thenReturn( UNIT_STRING );
             CsvThresholdReader reader = CsvThresholdReader.of();
             Set<wres.config.yaml.components.Threshold> actual = reader.read( source,
                                                                              unitMapper,
@@ -533,6 +537,78 @@ class CsvThresholdReaderTest
     }
 
     @Test
+    void testValueThresholdsWithMeasurementUnitChange() throws IOException
+    {
+        try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
+        {
+            // Write a new csv file to an in-memory file system
+            Path directory = fileSystem.getPath( TEST );
+            Files.createDirectory( directory );
+            Path pathToStore = fileSystem.getPath( TEST, TEST_CSV );
+            Path csvPath = Files.createFile( pathToStore );
+
+            try ( BufferedWriter writer = Files.newBufferedWriter( csvPath ) )
+            {
+                writer.append( "DRRC2, 3.0\n" );
+            }
+
+            URI uri = csvPath.toUri();
+
+            ThresholdSource source = ThresholdSourceBuilder.builder()
+                                                           .uri( uri )
+                                                           .missingValue( -999.0 )
+                                                           .unit( UNIT_STRING )
+                                                           .featureNameFrom( DatasetOrientation.LEFT )
+                                                           .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                                           .applyTo( ThresholdOrientation.LEFT )
+                                                           .operator( wres.config.yaml.components.ThresholdOperator.GREATER )
+                                                           .build();
+
+            UnitMapper unitMapper = Mockito.mock( UnitMapper.class );
+            Mockito.when( unitMapper.getUnitMapper( UNIT_STRING ) )
+                   .thenReturn( d -> d * 2 );
+            Mockito.when( unitMapper.getDesiredMeasurementUnitName() )
+                    .thenReturn( "BANANAS" );
+            CsvThresholdReader reader = CsvThresholdReader.of();
+            Set<wres.config.yaml.components.Threshold> actual = reader.read( source,
+                                                                             unitMapper,
+                                                                             Set.of( "DRRC2" ),
+                                                                             null );
+
+            // Build the expectation
+            Threshold one = Threshold.newBuilder()
+                                     .setLeftThresholdValue( DoubleValue.of( 6.0 ) )
+                                     .setOperator( Threshold.ThresholdOperator.GREATER )
+                                     .setDataType( Threshold.ThresholdDataType.LEFT )
+                                     .setThresholdValueUnits( "BANANAS" )
+                                     .build();
+
+            Geometry expectedFeatureOne = Geometry.newBuilder()
+                                                  .setName( "DRRC2" )
+                                                  .build();
+
+            wres.config.yaml.components.Threshold oneWrapped =
+                    ThresholdBuilder.builder()
+                                    .threshold( one )
+                                    .featureNameFrom( DatasetOrientation.LEFT )
+                                    .feature( expectedFeatureOne )
+                                    .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                    .build();
+
+            Set<wres.config.yaml.components.Threshold> expected = Set.of( oneWrapped );
+
+            // Compare
+            Assertions.assertEquals( expected, actual );
+
+            // Clean up
+            if ( Files.exists( csvPath ) )
+            {
+                Files.delete( csvPath );
+            }
+        }
+    }
+
+    @Test
     void testValueThresholdsWithoutLabelsWithMissings() throws IOException
     {
         try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
@@ -564,6 +640,8 @@ class CsvThresholdReaderTest
             UnitMapper unitMapper = Mockito.mock( UnitMapper.class );
             Mockito.when( unitMapper.getUnitMapper( Mockito.anyString() ) )
                    .thenReturn( d -> d );
+            Mockito.when( unitMapper.getDesiredMeasurementUnitName() )
+                   .thenReturn( UNIT_STRING );
             CsvThresholdReader reader = CsvThresholdReader.of();
             Set<wres.config.yaml.components.Threshold> actual = reader.read( source,
                                                                              unitMapper,

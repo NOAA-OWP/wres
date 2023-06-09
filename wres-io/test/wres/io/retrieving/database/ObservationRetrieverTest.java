@@ -59,8 +59,8 @@ import wres.statistics.MessageFactory;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeWindow;
-import wres.system.DatabaseLockManager;
-import wres.system.DatabaseLockManagerNoop;
+import wres.io.database.locking.DatabaseLockManager;
+import wres.io.database.locking.DatabaseLockManagerNoop;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 

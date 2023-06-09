@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,11 +52,21 @@ public class MetricsDeserializer extends JsonDeserializer<Set<Metric>>
         {
             return this.getMetricsFromArray( arrayNode, reader );
         }
+        // Singleton without parameters
+        else if( node instanceof TextNode textNode )
+        {
+            String nameString = DeclarationUtilities.toEnumName( textNode.asText() );
+            MetricConstants metricName = MetricConstants.valueOf( nameString );
+            LOGGER.debug( "Discovered a singleton metric without parameters: {}. ", nameString );
+            Metric metric = new Metric( metricName, null );
+            return Collections.singleton( metric );
+        }
         else
         {
             throw new IOException( "When reading the '" + jp.currentName()
-                                   + "' declaration of 'metrics', discovered an unrecognized data type. Please "
-                                   + "fix this declaration and try again." );
+                                   + "' declaration of 'metrics', discovered an unrecognized data type: "
+                                   + node.getClass()
+                                   +". Please fix this declaration and try again." );
         }
     }
 

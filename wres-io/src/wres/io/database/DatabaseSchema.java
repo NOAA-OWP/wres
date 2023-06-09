@@ -18,8 +18,8 @@ import liquibase.resource.ClassLoaderResourceAccessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.system.DatabaseLockFailed;
-import wres.system.DatabaseLockManager;
+import wres.io.database.locking.DatabaseLockFailed;
+import wres.io.database.locking.DatabaseLockManager;
 import wres.system.DatabaseType;
 
 class DatabaseSchema implements Closeable

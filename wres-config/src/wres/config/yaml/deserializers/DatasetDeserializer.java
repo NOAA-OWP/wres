@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import org.slf4j.Logger;
@@ -87,6 +88,12 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
             else if( sourcesNode instanceof TextNode textNode )
             {
                 sources = this.getSingletonSource( textNode );
+            }
+            // Data direct
+            else if( sourcesNode instanceof NullNode || Objects.isNull( sourcesNode ) )
+            {
+                LOGGER.debug( "Discovered a null sources node, which is allowed with data direct." );
+                sources = Collections.emptyList();
             }
             else
             {

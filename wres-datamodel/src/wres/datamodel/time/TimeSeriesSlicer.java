@@ -1165,15 +1165,16 @@ public final class TimeSeriesSlicer
         // Singleton series
         else if ( collectedSeries.size() == 1 )
         {
-            return collectedSeries.iterator().next();
+            return collectedSeries.iterator()
+                                  .next();
         }
 
         TimeSeries.Builder<T> builder = new TimeSeries.Builder<>();
 
         for ( TimeSeries<T> next : collectedSeries )
         {
-            builder.addEvents( next.getEvents() );
             builder.setMetadata( next.getMetadata() );
+            builder.addEvents( next.getEvents() );
         }
 
         return builder.build();

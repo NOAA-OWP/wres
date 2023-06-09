@@ -1,4 +1,4 @@
-package wres.system;
+package wres.io.database.locking;
 
 import org.junit.Test;
 

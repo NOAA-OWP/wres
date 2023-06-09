@@ -1,14 +1,14 @@
 package wres.datamodel.time.generators;
 
-import static org.junit.Assert.assertEquals;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
@@ -25,11 +25,11 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Tests the {@link PersistenceGenerator}.
- * 
+ *
  * @author James Brown
  */
 
-public class PersistenceGeneratorTest
+class PersistenceGeneratorTest
 {
 
     private static final String STREAMFLOW = "STREAMFLOW";
@@ -152,7 +152,7 @@ public class PersistenceGeneratorTest
     /** A persistence generator. */
     private PersistenceGenerator<Double> generator;
 
-    @Before
+    @BeforeEach
     public void runBeforeEachTest()
     {
 
@@ -355,7 +355,7 @@ public class PersistenceGeneratorTest
      */
 
     @Test
-    public void testApplyReturnsOnePersistenceForecastWithElevenValuesForForecastOneFromSystemTestScenario504()
+    void testApplyReturnsOnePersistenceForecastWithElevenValuesForForecastOneFromSystemTestScenario504()
     {
 
         // Create the persistence forecast using 25510317T12_FAKE2_forecast.xml
@@ -392,7 +392,7 @@ public class PersistenceGeneratorTest
      */
 
     @Test
-    public void testApplyReturnsOnePersistenceForecastWithElevenValuesForForecastTwoFromSystemTestScenario504()
+    void testApplyReturnsOnePersistenceForecastWithElevenValuesForForecastTwoFromSystemTestScenario504()
     {
         // Create the persistence forecast using 25510318T00_FAKE2_forecast.xml
         TimeSeries<Double> actual = this.generator.apply( this.forecastTwo );
@@ -428,7 +428,7 @@ public class PersistenceGeneratorTest
      */
 
     @Test
-    public void testApplyReturnsOnePersistenceForecastWithElevenValuesForForecastThreeFromSystemTestScenario504()
+    void testApplyReturnsOnePersistenceForecastWithElevenValuesForForecastThreeFromSystemTestScenario504()
     {
         // Create the persistence forecast using 25510318T12_FAKE2_forecast.xml
         TimeSeries<Double> actual = this.generator.apply( this.forecastThree );
@@ -464,7 +464,7 @@ public class PersistenceGeneratorTest
      */
 
     @Test
-    public void testApplyReturnsOnePersistenceForecastWithElevenValuesForForecastFourFromSystemTestScenario504()
+    void testApplyReturnsOnePersistenceForecastWithElevenValuesForForecastFourFromSystemTestScenario504()
     {
         // Create the persistence forecast using 25510319T00_FAKE2_forecast.xml
         TimeSeries<Double> actual = this.generator.apply( this.forecastFour );
@@ -495,7 +495,7 @@ public class PersistenceGeneratorTest
     }
 
     @Test
-    public void testGetForSimulations()
+    void testGetForSimulations()
     {
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
                                                              TIMESCALE,
@@ -544,7 +544,7 @@ public class PersistenceGeneratorTest
      */
 
     @Test
-    public void testApplyToSimulationsWithNoExactMatches()
+    void testApplyToSimulationsWithNoExactMatches()
     {
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
                                                              TIMESCALE,
@@ -602,7 +602,7 @@ public class PersistenceGeneratorTest
     }
 
     @Test
-    public void testApplyToForecastsWithoutUpscaling()
+    void testApplyToForecastsWithoutUpscaling()
     {
         TimeSeriesMetadata forecastMetadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
                                                                              T2551_03_18T12_00_00Z ),
@@ -650,7 +650,7 @@ public class PersistenceGeneratorTest
     }
 
     @Test
-    public void testApplyToSimulationsWithUpscaling()
+    void testApplyToSimulationsWithUpscaling()
     {
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
                                                              TimeScaleOuter.of( Duration.ofHours( 1 ),
@@ -699,7 +699,7 @@ public class PersistenceGeneratorTest
     }
 
     @Test
-    public void testApplyToSimulationsWithUpscalingToPT2HFromPT1HTimeseries()
+    void testApplyToSimulationsWithUpscalingToPT2HFromPT1HTimeseries()
     {
         TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
                                                              TimeScaleOuter.of( Duration.ofHours( 1 ),
@@ -758,7 +758,7 @@ public class PersistenceGeneratorTest
     }
 
     @Test
-    public void testApplyToSimulationsWithUpscalingToFixedMonthDaysAndEventBeforeEndMonthDay()
+    void testApplyToSimulationsWithUpscalingToFixedMonthDaysAndEventBeforeEndMonthDay()
     {
         TimeSeriesMetadata fooMetadata = TimeSeriesMetadata.of( Map.of(),
                                                                 TimeScaleOuter.of(),
@@ -807,7 +807,7 @@ public class PersistenceGeneratorTest
     }
 
     @Test
-    public void testApplyToSimulationsWithUpscalingToFixedMonthDaysAndEventAfterEndMonthDay()
+    void testApplyToSimulationsWithUpscalingToFixedMonthDaysAndEventAfterEndMonthDay()
     {
         TimeSeriesMetadata fooMetadata = TimeSeriesMetadata.of( Map.of(),
                                                                 TimeScaleOuter.of(),
@@ -856,7 +856,7 @@ public class PersistenceGeneratorTest
     }
 
     @Test
-    public void testApplyToSimulationsWithUpscalingToFixedMonthDaysAndEventFallsWithinMonthDayInterval()
+    void testApplyToSimulationsWithUpscalingToFixedMonthDaysAndEventFallsWithinMonthDayInterval()
     {
         TimeSeriesMetadata fooMetadata = TimeSeriesMetadata.of( Map.of(),
                                                                 TimeScaleOuter.of(),
@@ -911,7 +911,7 @@ public class PersistenceGeneratorTest
     }
 
     @Test
-    public void testApplyToSimulationsWithUpscalingToFixedMonthDaysAndEventAfterEndMonthDayAndLagTwo()
+    void testApplyToSimulationsWithUpscalingToFixedMonthDaysAndEventAfterEndMonthDayAndLagTwo()
     {
         TimeSeriesMetadata fooMetadata = TimeSeriesMetadata.of( Map.of(),
                                                                 TimeScaleOuter.of(),
@@ -961,7 +961,7 @@ public class PersistenceGeneratorTest
     }
 
     @Test
-    public void testApplyToForecastsWithUpscalingToFixedMonthDays()
+    void testApplyToForecastsWithUpscalingToFixedMonthDays()
     {
         TimeSeriesMetadata fooMetadata = TimeSeriesMetadata.of( Map.of(),
                                                                 TimeScaleOuter.of(),
@@ -1017,7 +1017,7 @@ public class PersistenceGeneratorTest
     }
 
     @Test
-    public void testApplyToForecastsWithUpscalingToFixedMonthDaysUsingLag3Persistence()
+    void testApplyToForecastsWithUpscalingToFixedMonthDaysUsingLag3Persistence()
     {
         TimeSeriesMetadata fooMetadata = TimeSeriesMetadata.of( Map.of(),
                                                                 TimeScaleOuter.of(),
@@ -1084,4 +1084,71 @@ public class PersistenceGeneratorTest
         assertEquals( expected, actual );
     }
 
+    /**
+     * Redmine issue #116680.
+     */
+
+    @Test
+    void testDuplicateEventsAllowedWhenCreatingPersistenceAndWillChooseFirst()
+    {
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
+                                                             TimeScaleOuter.of( Duration.ofHours( 1 ),
+                                                                                TimeScaleFunction.MEAN ),
+                                                             DISCHARGE,
+                                                             FAKE2,
+                                                             CMS );
+        TimeSeries<Double> observed =
+                new Builder<Double>().addEvent( Event.of( T2551_03_17T00_00_00Z, 6.0 ) )
+                                     .addEvent( Event.of( T2551_03_17T01_00_00Z, 7.0 ) )
+                                     .addEvent( Event.of( T2551_03_17T02_00_00Z, 8.0 ) )
+                                     .addEvent( Event.of( T2551_03_17T03_00_00Z, 9.0 ) )
+                                     .addEvent( Event.of( T2551_03_17T04_00_00Z, 10.0 ) )
+                                     .setMetadata( metadata )
+                                     .build();
+
+        TimeSeries<Double> duplicated =
+                new Builder<Double>().addEvent( Event.of( T2551_03_17T00_00_00Z, 1.0 ) )
+                                     .addEvent( Event.of( T2551_03_17T01_00_00Z, 2.0 ) )
+                                     .addEvent( Event.of( T2551_03_17T02_00_00Z, 3.0 ) )
+                                     .addEvent( Event.of( T2551_03_17T03_00_00Z, 4.0 ) )
+                                     .addEvent( Event.of( T2551_03_17T04_00_00Z, 5.0 ) )
+                                     .setMetadata( metadata )
+                                     .build();
+
+        // Forecast time scale
+        TimeScaleOuter existingTimeScale = TimeScaleOuter.of( Duration.ofHours( 1 ), TimeScaleFunction.MEAN );
+        TimeSeriesMetadata metadataOne = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
+                                                                        T2551_03_17T01_00_00Z ),
+                                                                existingTimeScale,
+                                                                STREAMFLOW,
+                                                                FAKE2,
+                                                                CMS );
+
+        TimeSeries<Double> forecast =
+                new Builder<Double>().addEvent( Event.of( T2551_03_17T02_00_00Z, 73.0 ) )
+                                     .addEvent( Event.of( T2551_03_17T03_00_00Z, 79.0 ) )
+                                     .addEvent( Event.of( T2551_03_17T04_00_00Z, 83.0 ) )
+                                     .addEvent( Event.of( T2551_03_17T05_00_00Z, 89.0 ) )
+                                     .addEvent( Event.of( T2551_03_17T06_00_00Z, 97.0 ) )
+                                     .setMetadata( metadataOne )
+                                     .build();
+
+        PersistenceGenerator<Double> duplicateGenerator = PersistenceGenerator.of( () -> Stream.of( observed, duplicated ),
+                                                                           TimeSeriesOfDoubleUpscaler.of(),
+                                                                           Double::isFinite,
+                                                                           CMS );
+
+        TimeSeries<Double> actual = duplicateGenerator.apply( forecast );
+
+        TimeSeries<Double> expected =
+                new Builder<Double>().addEvent( Event.of( T2551_03_17T02_00_00Z, 6.0 ) )
+                                     .addEvent( Event.of( T2551_03_17T03_00_00Z, 6.0 ) )
+                                     .addEvent( Event.of( T2551_03_17T04_00_00Z, 6.0 ) )
+                                     .addEvent( Event.of( T2551_03_17T05_00_00Z, 6.0 ) )
+                                     .addEvent( Event.of( T2551_03_17T06_00_00Z, 6.0 ) )
+                                     .setMetadata( metadataOne )
+                                     .build();
+
+        assertEquals( expected, actual );
+    }
 }

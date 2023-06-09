@@ -34,7 +34,7 @@ import wres.io.NoDataException;
 import wres.io.data.DataProvider;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.Features;
-import wres.io.database.caching.GriddedFeatures;
+import wres.io.reading.netcdf.grid.GriddedFeatures;
 import wres.io.database.caching.Variables;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
@@ -64,6 +64,9 @@ public class DatabaseProject implements Project
     private final DatabaseCaches caches;
     private final GriddedFeatures griddedFeatures;
 
+    /** The overall hash for the data sources used in the project. */
+    private final String hash;
+
     private long projectId;
 
     /**
@@ -89,11 +92,6 @@ public class DatabaseProject implements Project
      * Indicates whether this project was inserted on upon this execution of the project
      */
     private boolean performedInsert;
-
-    /**
-     * The overall hash for the data sources used in the project
-     */
-    private final String hash;
 
     private Boolean leftUsesGriddedData = null;
     private Boolean rightUsesGriddedData = null;
@@ -1105,11 +1103,27 @@ public class DatabaseProject implements Project
             }
         }
 
+        // Filter the singleton features against any spatial mask, unless there is gridded data, which is masked upfront
+        // Do this before forming the groups, which include singleton groups
+        if ( !this.usesGriddedData( DatasetOrientation.RIGHT ) )
+        {
+            singletons = ProjectUtilities.filterFeatures( singletons, this.getDeclaration()
+                                                                          .spatialMask() );
+        }
+
         // Combine the singletons and feature groups into groups that contain one or more tuples
         Set<FeatureGroup> groups = ProjectUtilities.getFeatureGroups( Collections.unmodifiableSet( singletons ),
                                                                       Collections.unmodifiableSet( grouped ),
                                                                       this.getDeclaration(),
                                                                       this.getId() );
+
+        // Filter the multi-group features against any spatial mask, unless there is gridded data, which is masked
+        // upfront
+        if ( !this.usesGriddedData( DatasetOrientation.RIGHT ) )
+        {
+            groups = ProjectUtilities.filterFeatureGroups( groups, this.getDeclaration()
+                                                                       .spatialMask() );
+        }
 
         return Pair.of( Collections.unmodifiableSet( singletons ), groups );
     }

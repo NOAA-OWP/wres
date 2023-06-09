@@ -25,8 +25,9 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.io.NoDataException;
 import wres.io.data.DataProvider;
+import wres.io.database.DatabaseOperations;
 import wres.io.database.caching.DatabaseCaches;
-import wres.io.database.caching.GriddedFeatures;
+import wres.io.reading.netcdf.grid.GriddedFeatures;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
 import wres.io.ingesting.IngestException;
@@ -284,7 +285,7 @@ public class Projects
 
             // The first two columns are numbers, last one is char.
             boolean[] charColumns = { false, false, true };
-            database.copy( tableName, columnNames, values, charColumns );
+            DatabaseOperations.insertIntoDatabase( database, tableName, columnNames, values, charColumns );
         }
         else
         {

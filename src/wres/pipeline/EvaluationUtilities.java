@@ -49,7 +49,7 @@ import wres.events.subscribe.ConsumerFactory;
 import wres.events.subscribe.EvaluationSubscriber;
 import wres.events.subscribe.SubscriberApprover;
 import wres.io.database.caching.DatabaseCaches;
-import wres.io.database.caching.GriddedFeatures;
+import wres.io.reading.netcdf.grid.GriddedFeatures;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.SourceLoader;
 import wres.io.ingesting.TimeSeriesIngester;
@@ -458,10 +458,11 @@ class EvaluationUtilities
 
             // Update the small bag-o-state
             evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
-                                                                           .declaration( declarationWithFeatures )
+                                                                           .declaration( declarationWithFeaturesAndThresholds )
                                                                            .build();
-            // Get the features. These are the features as described in the ingested time-series data, which may differ
-            // in some details from the declared features
+            // Get the features, as described in the ingested time-series data, which may differ in number and details
+            // from the declared features. For example, they are filtered for data availability, spatial mask etc. and
+            // may include extra descriptive information, such as a geometry or location description.
             Set<FeatureTuple> features = project.getFeatures();
             Set<GeometryTuple> unwrappedFeatures = features.stream()
                                                            .map( FeatureTuple::getGeometryTuple )
@@ -1421,9 +1422,7 @@ class EvaluationUtilities
 
         if ( Objects.nonNull( declaration.spatialMask() ) )
         {
-            String mask = declaration.spatialMask()
-                                     .wkt();
-            griddedFeatures = new GriddedFeatures.Builder( mask );
+            griddedFeatures = new GriddedFeatures.Builder( declaration.spatialMask() );
         }
 
         return griddedFeatures;

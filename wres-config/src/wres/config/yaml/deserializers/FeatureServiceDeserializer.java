@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.node.TextNode;
 
 import wres.config.yaml.components.FeatureService;
 import wres.config.yaml.components.FeatureServiceGroup;
@@ -36,11 +37,18 @@ public class FeatureServiceDeserializer extends JsonDeserializer<FeatureService>
         Set<FeatureServiceGroup> groups = new LinkedHashSet<>();
         URI uri = null;
 
-        if ( node.has( "uri" ) )
+        // Implicit URI
+        if( node instanceof TextNode textNode )
+        {
+            String uriString = textNode.asText();
+            uri = UriDeserializer.deserializeUri( uriString );
+        }
+        // Explicit URI
+        else if ( node.has( "uri" ) )
         {
             String uriString = node.get( "uri" )
                                    .asText();
-            uri = URI.create( uriString );
+            uri = UriDeserializer.deserializeUri( uriString );
         }
 
         // Explicit groups

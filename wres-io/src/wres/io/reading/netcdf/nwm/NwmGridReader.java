@@ -26,7 +26,7 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.reading.netcdf.grid.GridRequest;
 import wres.io.reading.netcdf.grid.GridReader;
-import wres.io.database.caching.GriddedFeatures;
+import wres.io.reading.netcdf.grid.GriddedFeatures;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
 import wres.io.reading.ReaderUtilities;

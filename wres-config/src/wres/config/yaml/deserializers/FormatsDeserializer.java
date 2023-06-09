@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.node.TextNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,9 +38,20 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
 
         Outputs.Builder builder = Outputs.newBuilder();
 
+        // Singleton
+        if ( node instanceof TextNode textNode )
+        {
+            this.addFormat( textNode, builder );
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Discovered a singleton format: {}", textNode.asText() );
+            }
+            return new Formats( builder.build() );
+        }
+
         int nodeCount = node.size();
 
-        if( nodeCount == 0 )
+        if ( nodeCount == 0 )
         {
             LOGGER.debug( "No formats were declared, nothing to deserialize." );
             return null;
@@ -120,21 +132,21 @@ public class FormatsDeserializer extends JsonDeserializer<Formats>
             case PNG ->
             {
                 Outputs.GraphicFormat.Builder graphicFormatBuilder = Formats.PNG_FORMAT.getOptions()
-                                                                               .toBuilder();
+                                                                                       .toBuilder();
                 this.addGraphicOptions( graphicFormatBuilder, node );
                 Outputs.PngFormat pngFormat = Formats.PNG_FORMAT.toBuilder()
-                                                        .setOptions( graphicFormatBuilder )
-                                                        .build();
+                                                                .setOptions( graphicFormatBuilder )
+                                                                .build();
                 builder.setPng( pngFormat );
             }
             case SVG ->
             {
                 Outputs.GraphicFormat.Builder graphicFormatBuilder = Formats.SVG_FORMAT.getOptions()
-                                                                               .toBuilder();
+                                                                                       .toBuilder();
                 this.addGraphicOptions( graphicFormatBuilder, node );
                 Outputs.SvgFormat svgFormat = Formats.SVG_FORMAT.toBuilder()
-                                                        .setOptions( graphicFormatBuilder )
-                                                        .build();
+                                                                .setOptions( graphicFormatBuilder )
+                                                                .build();
                 builder.setSvg( svgFormat );
             }
             case NETCDF ->

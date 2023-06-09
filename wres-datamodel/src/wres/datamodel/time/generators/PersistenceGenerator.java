@@ -4,7 +4,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -956,7 +958,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         {
             Feature nextFeature = nextEntry.getKey();
             List<TimeSeries<T>> series = nextEntry.getValue();
-            TimeSeries<T> nextConsolidated = TimeSeriesSlicer.consolidate( series );
+            TimeSeries<T> nextConsolidated = this.consolidate( series, nextFeature.getName() );
             consolidated.put( nextFeature, nextConsolidated );
         }
 
@@ -992,6 +994,56 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         }
 
         LOGGER.debug( "Created a persistence generator for lagged persistence of order {}.", this.order );
+    }
+
+    /**
+     * Consolidate the time-series and emit a warning if duplicates are encountered. Unlike
+     * {@link TimeSeriesSlicer#consolidate(Collection)}, this method admits duplicates.
+     *
+     * @param toConsolidate the time-series to consolidate
+     * @param featureName the feature name to help with messaging
+     * @return the consolidated time-series
+     */
+
+    private TimeSeries<T> consolidate( List<TimeSeries<T>> toConsolidate, String featureName )
+    {
+        SortedSet<Event<T>> events =
+                new TreeSet<>( Comparator.comparing( Event::getTime ) );
+
+        Set<Instant> duplicates = new TreeSet<>();
+        TimeSeries.Builder<T> builder = new TimeSeries.Builder<>();
+        for ( TimeSeries<T> nextSeries : toConsolidate )
+        {
+            builder.setMetadata( nextSeries.getMetadata() );
+            SortedSet<Event<T>> nextEvents = nextSeries.getEvents();
+            for ( Event<T> nextEvent : nextEvents )
+            {
+                boolean added = events.add( nextEvent );
+                if ( !added )
+                {
+                    duplicates.add( nextEvent.getTime() );
+                }
+            }
+        }
+
+        TimeSeries<T> consolidated = builder.setEvents( events )
+                                            .build();
+
+        if ( !duplicates.isEmpty() && LOGGER.isWarnEnabled() )
+        {
+            LOGGER.warn( "While generating a persistence baseline for feature '{}', encountered duplicate events in "
+                         + "the source data at {} valid times. Using only the first event encountered at each "
+                         + "duplicated time. If this is unintended, please de-duplicate the persistence data before "
+                         + "creating a persistence baseline. The common time-series metadata for the time-series that "
+                         + "contained duplicate events was: {}. The first duplicate time was: {}.",
+                         featureName,
+                         duplicates.size(),
+                         consolidated.getMetadata(),
+                         duplicates.iterator()
+                                   .next() );
+        }
+
+        return consolidated;
     }
 
 }

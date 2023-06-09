@@ -12,7 +12,7 @@
             <source>data/abrfcExample/LGNN5_hefs_flow_1yr.tgz</source>
             <variable>QINE</variable>
         </right>
-        <baseline label="ESP" >
+        <baseline label="ESP" separateMetrics="true">
             <type>ensemble forecasts</type>
             <source>data/abrfcExample/LGNN5_hefs-mefp_flow_1yr.tgz</source>
             <variable>QINE</variable>

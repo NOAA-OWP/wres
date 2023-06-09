@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
 import wres.config.yaml.deserializers.FeatureServiceDeserializer;
+import wres.config.yaml.deserializers.UriDeserializer;
 import wres.config.yaml.serializers.FeatureServiceSerializer;
 
 /**
@@ -21,7 +22,8 @@ import wres.config.yaml.serializers.FeatureServiceSerializer;
 @RecordBuilder
 @JsonSerialize( using = FeatureServiceSerializer.class )
 @JsonDeserialize( using = FeatureServiceDeserializer.class )
-public record FeatureService( URI uri,
+public record FeatureService( @JsonDeserialize( using = UriDeserializer.class )
+                              URI uri,
                               Set<FeatureServiceGroup> featureGroups )
 {
     /**

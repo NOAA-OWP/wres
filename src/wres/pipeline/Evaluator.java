@@ -30,8 +30,8 @@ import wres.config.yaml.DeclarationException;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.io.database.Database;
-import wres.system.DatabaseLockManager;
-import wres.system.DatabaseLockManagerNoop;
+import wres.io.database.locking.DatabaseLockManager;
+import wres.io.database.locking.DatabaseLockManagerNoop;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
