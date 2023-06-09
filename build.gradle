@@ -1233,6 +1233,9 @@ project(':wres-tasker')
         runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.1'
 
         testImplementation 'junit:junit:4.13.2'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.9.2'
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.2'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.2'
 
         // To generate fake certificates and keys for testing
         testImplementation 'org.bouncycastle:bcpkix-jdk15on:1.70'
@@ -1243,6 +1246,7 @@ project(':wres-tasker')
         // Provides support for both 0-8 and 0-9-1
         testImplementation 'org.apache.qpid:qpid-broker-plugins-amqp-0-8-protocol:9.0.0'
         testImplementation 'org.apache.qpid:qpid-broker-plugins-memory-store:9.0.0'
+        testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.2'
 
         // To generate swagger's openapi.json at build time.
         docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.2.9'
@@ -1340,6 +1344,9 @@ project(':wres-tasker')
     {
         from ( fileTree( swaggerDocsBaseDir ) )
         into new File( buildDir, "swaggerDist" )
+    }
+    test {
+        useJUnitPlatform()
     }
 }
 
