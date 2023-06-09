@@ -590,7 +590,8 @@ public class WrdsThresholdReader implements ThresholdReader
 
             String featureName = Location.getNameForAuthority( featureAuthority, location );
 
-            if ( featureNames.containsKey( featureName ) )
+            if ( Objects.nonNull( featureName )
+                 && featureNames.containsKey( featureName ) )
             {
                 String originalFeatureName = featureNames.get( featureName );
 
@@ -610,7 +611,14 @@ public class WrdsThresholdReader implements ThresholdReader
             }
             else if ( LOGGER.isDebugEnabled() )
             {
-                featuresNotRequired.add( featureName );
+                if( Objects.isNull( featureName ) )
+                {
+                    featuresNotRequired.add( location.toString() );
+                }
+                else
+                {
+                    featuresNotRequired.add( featureName );
+                }
             }
         }
 
