@@ -1,4 +1,4 @@
-package wres.io.database.caching;
+package wres.io.reading.netcdf.grid;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -15,8 +15,6 @@ import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateXY;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.io.ParseException;
-import org.locationtech.jts.io.WKTReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +28,8 @@ import ucar.nc2.dataset.NetcdfDatasets;
 import ucar.nc2.dt.GridCoordSystem;
 import ucar.nc2.dt.grid.GridDataset;
 import ucar.unidata.geoloc.LatLonPoint;
+
+import wres.config.yaml.components.SpatialMask;
 import wres.datamodel.space.Feature;
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.Geometry;
@@ -89,7 +89,7 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
          * The spatial mask.
          */
 
-        private final String wktMask;
+        private final org.locationtech.jts.geom.Geometry spatialMask;
 
         /**
          * Cache of metadatas to check, guarded by the {@link #metadataGuard}.
@@ -140,7 +140,7 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
                 }
             }
 
-            Set<Feature> innerFeatures = GriddedFeatures.readFeaturesAndFilterThem( source, this.wktMask );
+            Set<Feature> innerFeatures = GriddedFeatures.readFeaturesAndFilterThem( source, this.spatialMask );
             this.features.addAll( innerFeatures );
 
             return this;
@@ -148,52 +148,34 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
 
         /**
          * Creates an instance.
-         * @param wktMask the mask in Well Known Text (WKT) format
+         * @param spatialMask the spatial mask
          * @throws NullPointerException if the filters is null
          * @throws IllegalArgumentException if there are no filters
          */
 
-        public Builder( String wktMask )
+        public Builder( SpatialMask spatialMask )
         {
-            Objects.requireNonNull( wktMask );
-
-            if ( wktMask.isBlank() )
-            {
-                throw new IllegalArgumentException( "Cannot determine gridded features without a grid selection. An "
-                                                    + "unbounded selection is not currently supported. Please declare "
-                                                    + "a grid selection and try again." );
-            }
-
-            this.wktMask = wktMask;
+            Objects.requireNonNull( spatialMask );
+            this.spatialMask = spatialMask.geometry();
         }
     }
 
     /**
      * @param source the grid
-     * @param wktMask the wktMask
+     * @param spatialMask the spatial mask
      * @return the features
      * @throws IOException if the source could not be read for any reason
      * @throws NullPointerException if any input is null
      */
 
-    private static Set<Feature> readFeaturesAndFilterThem( NetcdfFile source, String wktMask )
+    private static Set<Feature> readFeaturesAndFilterThem( NetcdfFile source,
+                                                           org.locationtech.jts.geom.Geometry spatialMask )
             throws IOException
     {
         Objects.requireNonNull( source );
-        Objects.requireNonNull( wktMask );
+        Objects.requireNonNull( spatialMask );
 
         // Read the mask into a geometry
-        WKTReader reader = new WKTReader();
-        org.locationtech.jts.geom.Geometry mask;
-        try
-        {
-            mask = reader.read( wktMask );
-        }
-        catch ( ParseException e )
-        {
-            throw new IllegalArgumentException( "Failed to parse the mask geometry: " + wktMask );
-        }
-
         Set<Feature> innerFeatures = new HashSet<>();
 
         GeometryFactory geoFactory = new GeometryFactory();
@@ -201,7 +183,9 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
         try ( NetcdfDataset ncd = NetcdfDatasets.openDataset( source.getLocation() );
               GridDataset grid = new GridDataset( ncd ) )
         {
-            GridCoordSystem coordinateSystem = grid.getGrids().get( 0 ).getCoordinateSystem();
+            GridCoordSystem coordinateSystem = grid.getGrids()
+                                                   .get( 0 )
+                                                   .getCoordinateSystem();
 
             Variable xCoordinates = Netcdf.getVariable( source, "x" );
             Variable yCoordinates = Netcdf.getVariable( source, "y" );
@@ -214,8 +198,8 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
                     Coordinate coordinate = new CoordinateXY( point.getLongitude(), point.getLatitude() );
                     Point geoPoint = geoFactory.createPoint( coordinate );
 
-                    // Within the filter boundaries?
-                    if ( mask.contains( geoPoint ) )
+                    // Within the filter boundaries, including the boundaries?
+                    if ( spatialMask.covers( geoPoint ) )
                     {
                         Feature tuple = GriddedFeatures.getFeatureFromCoordinate( point );
                         innerFeatures.add( tuple );
@@ -469,6 +453,4 @@ public class GriddedFeatures implements Supplier<Set<Feature>>
                                                                                 .toString();
         }
     }
-
-
 }

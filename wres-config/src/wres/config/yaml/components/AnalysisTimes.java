@@ -10,11 +10,11 @@ import wres.config.yaml.serializers.AnalysisDurationIntervalSerializer;
 
 /**
  * Analysis durations.
- * @param minimumExclusive the earliest analysis duration, exclusive
- * @param maximum the latest analysis duration
+ * @param minimum the minimum analysis duration
+ * @param maximum the maximum analysis duration
  */
 @RecordBuilder
 @JsonSerialize( using = AnalysisDurationIntervalSerializer.class )
 @JsonDeserialize( using = AnalysisDurationIntervalDeserializer.class )
-public record AnalysisDurations( Duration minimumExclusive,
-                                 Duration maximum ) {}
+public record AnalysisTimes( Duration minimum,
+                             Duration maximum ) {}

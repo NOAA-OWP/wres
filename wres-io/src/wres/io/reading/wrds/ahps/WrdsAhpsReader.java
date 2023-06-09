@@ -143,6 +143,14 @@ public class WrdsAhpsReader implements TimeSeriesReader
 
         LOGGER.debug( "Preparing a request to WRDS for AHPS time-series without any chunking of the data." );
         InputStream stream = WrdsAhpsReader.getByteStreamFromUri( dataSource.getUri() );
+
+        if ( Objects.isNull( stream ) )
+        {
+            LOGGER.warn( "Failed to obtain time-series data from {}. Returning an empty stream.", dataSource.getUri() );
+
+            return Stream.of();
+        }
+
         return this.read( dataSource, stream );
     }
 
@@ -395,7 +403,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
      * Returns a byte stream from a file or web source.
      *
      * @param uri the uri
-     * @return the byte stream
+     * @return the byte stream or null if an http error is encountered between 400 inclusive and 500 exclusive
      * @throws UnsupportedOperationException if the uri scheme is not one of http(s) or file
      * @throws ReadException if the stream could not be created for any other reason
      */
@@ -412,11 +420,18 @@ public class WrdsAhpsReader implements TimeSeriesReader
                 WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri );
                 int httpStatus = response.getStatusCode();
 
+                // Is this too broad? Perhaps a 404 only, else a read exception. The problem is that "no data" is
+                // routine from the perspective of WRES, but apparently not WRDS, so we get a 404, not a 200. See
+                // Redmine issue #116808. The difficulty with such a broad range is that we potentially aggregate
+                // buggy requests with no data responses.
                 if ( httpStatus >= 400 && httpStatus < 500 )
                 {
                     LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}.",
                                  httpStatus,
                                  uri );
+
+                    // Flag to the caller as no data
+                    return null;
                 }
 
                 return response.getResponse();
@@ -502,7 +517,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
     private URI getUriForChunk( URI baseUri,
                                 Pair<Instant, Instant> range,
                                 String nwsLocationId,
-                                Map<String,String> additionalParameters,
+                                Map<String, String> additionalParameters,
                                 boolean observed )
     {
         String basePath = baseUri.getPath();
@@ -555,7 +570,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
      */
 
     private Map<String, String> createWrdsAhpsUrlParameters( Pair<Instant, Instant> dateRange,
-                                                             Map<String,String> additionalParameters,
+                                                             Map<String, String> additionalParameters,
                                                              boolean observed )
     {
         Map<String, String> urlParameters = new HashMap<>( 2 );
@@ -619,7 +634,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
                                                     .maximum() ) ) )
             {
                 throw new DeclarationException( WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE
-                                                  + "both the 'minimum' and 'maximum' values of the 'reference_dates'." );
+                                                + "both the 'minimum' and 'maximum' values of the 'reference_dates'." );
             }
 
             LOGGER.debug( "When building a reader for AHPS time-series data from the WRDS, received a complete "

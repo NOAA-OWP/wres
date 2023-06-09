@@ -1,17 +1,15 @@
 observed:
-  sources:
-    - smalldata/25510317T00_FAKE2_observations.xml
-    - smalldata/25510317T00_FAKE3_observations.xml
+  - smalldata/25510317T00_FAKE2_observations.xml
+  - smalldata/25510317T00_FAKE3_observations.xml
 predicted:
-  sources:
-    - smalldata/25510317T12_FAKE2_forecast.xml
-    - smalldata/25510318T00_FAKE2_forecast.xml
-    - smalldata/25510318T12_FAKE2_forecast.xml
-    - smalldata/25510319T00_FAKE2_forecast.xml
-    - smalldata/25510317T12_FAKE3_forecast.xml
-    - smalldata/25510318T00_FAKE3_forecast.xml
-    - smalldata/25510318T12_FAKE3_forecast.xml
-    - smalldata/25510319T00_FAKE3_forecast.xml
+  - smalldata/25510317T12_FAKE2_forecast.xml
+  - smalldata/25510318T00_FAKE2_forecast.xml
+  - smalldata/25510318T12_FAKE2_forecast.xml
+  - smalldata/25510319T00_FAKE2_forecast.xml
+  - smalldata/25510317T12_FAKE3_forecast.xml
+  - smalldata/25510318T00_FAKE3_forecast.xml
+  - smalldata/25510318T12_FAKE3_forecast.xml
+  - smalldata/25510319T00_FAKE3_forecast.xml
 features:
   - {observed: FAKE3, predicted: FAKE3}
   - {observed: FAKE2, predicted: FAKE2}

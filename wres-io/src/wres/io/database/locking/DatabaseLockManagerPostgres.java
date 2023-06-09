@@ -1,4 +1,4 @@
-package wres.system;
+package wres.io.database.locking;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
-import static wres.system.DatabaseLockFailed.Operation.*;
+import static wres.io.database.locking.DatabaseLockFailed.Operation.*;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,10 +27,10 @@ import net.jcip.annotations.ThreadSafe;
 
 
 /**
- * Manages application-level locks on PostgreSQL database objects.
+ * <p>Manages application-level locks on PostgreSQL database objects.
  *
- * Each semantic lock (caller-provided lock name) is a positive {@link Integer}. The opposite of the Integer is used on 
- * the second {@link Connection} managed by this class.
+ * <p>Each semantic lock (caller-provided lock name) is a positive {@link Integer}. The opposite of the Integer is used
+ * on the second {@link Connection} managed by this class.
  */
 
 @ThreadSafe
@@ -81,13 +81,13 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
 
     /**
      * Internal lock to manage access to connectionOne
-     * @Guards connectionOne
+     * Guards connectionOne
      */
     private final ReentrantLock lockOne;
 
     /**
      * Internal lock to manage access to connectionTwo
-     * @Guards connectionTwo
+     * Guards connectionTwo
      */
     private final ReentrantLock lockTwo;
 
@@ -1125,8 +1125,7 @@ public class DatabaseLockManagerPostgres implements DatabaseLockManager
                          " About to send a query that will fail, to cause the ",
                          "error log on database-side to print time of query." );
             String query = "It is now " + Instant.now()
-                                                 .atOffset( ZoneOffset.UTC )
-                                                 .toString();
+                                                 .atOffset( ZoneOffset.UTC );
             try ( Statement statement = connection.createStatement();
                   ResultSet resultSet = statement.executeQuery( query ) )
             {

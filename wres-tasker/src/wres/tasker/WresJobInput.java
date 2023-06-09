@@ -116,7 +116,7 @@ public class WresJobInput
         try
         {
             // Content type detection is done in core WRES, not based on name.
-            if ( Objects.nonNull( posixAttributes  ) )
+            if ( Objects.nonNull( posixAttributes ) )
             {
                 temp = Files.createTempFile( jobId + "_", "", posixAttributes );
             }
@@ -133,12 +133,12 @@ public class WresJobInput
             {
                 Files.setPosixFilePermissions( temp, permissions );
             }
-            
+
             //I'm going to compute the md5 within the same try, since the inability
             //to compute the md5 is likely a sign that the file was not put in
             //place properly, so the catch, below, is appropriate.
             InputStream is = Files.newInputStream( temp );
-            md5 = DigestUtils.md5Hex(is);
+            md5 = DigestUtils.md5Hex( is );
 
             LOGGER.info( "Data successfully posted to {} (md5 = {}, bytes = {})", temp, md5, bytesWritten );
         }
@@ -220,7 +220,8 @@ public class WresJobInput
         }
         if ( !postInputDone )
         {
-            LOGGER.info( "User posted postInputDone for job {} indicating Inputs have not yet been fully posted.", jobId );
+            LOGGER.info( "User posted postInputDone for job {} indicating Inputs have not yet been fully posted.",
+                         jobId );
             return Response.status( Response.Status.OK )
                            .build();
         }
@@ -249,6 +250,14 @@ public class WresJobInput
         }
 
         String declaration = jobMessage.getProjectConfig();
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Encountered the following declaration string to which posted sources will be added:{}{}",
+                          System.lineSeparator(),
+                          declaration );
+        }
+
         List<URI> leftUris = sharedJobResults.getLeftInputs( jobId );
         List<URI> rightUris = sharedJobResults.getRightInputs( jobId );
         List<URI> baselineUris = sharedJobResults.getBaselineInputs( jobId );
@@ -264,20 +273,24 @@ public class WresJobInput
 
             // Add the data sources
             EvaluationDeclaration adjusted = DeclarationUtilities.addDataSources( oldDeclaration,
-                                                                         leftUris,
-                                                                         rightUris,
-                                                                         baselineUris );
+                                                                                  leftUris,
+                                                                                  rightUris,
+                                                                                  baselineUris );
 
             // Serialize the adjusted declaration
             newDeclaration = DeclarationFactory.from( adjusted );
 
-            LOGGER.debug( "Created new project declaration:\n{}",
-                          newDeclaration );
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Created a new project declaration string that includes the posted sources:{}{}",
+                              System.lineSeparator(),
+                              newDeclaration );
+            }
         }
         catch ( DeclarationException e )
         {
             LOGGER.warn( "Failed to add inputs to posted declaration for job {}:{}{}",
-                         jobId, declaration,"\n", e );
+                         jobId, declaration, "\n", e );
             sharedJobResults.setFailedBeforeInQueue( jobId );
             sharedJobResults.deleteInputs( jobId );
             return Response.status( Response.Status.BAD_REQUEST )
@@ -312,7 +325,7 @@ public class WresJobInput
         try
         {
             LOGGER.info( "For job {}, new declaration was prepared for posted input, "
-                    + "and job declaration being sent to broker.", jobId );
+                         + "and job declaration being sent to broker.", jobId );
             // Send the new job. The priority is fixed to 0, because its not
             // an admin task, which has priority 1.
             WresJob.sendDeclarationMessage( jobId, newJob.toByteArray(), 0 );
@@ -323,8 +336,9 @@ public class WresJobInput
             // Don't change the job state to a terminal state because it might
             // succeed on the next attempt.
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
-                           .entity( "Failed to send declaration, this could a be temporary condition, try again in a moment: "
-                                    + e.getMessage() )
+                           .entity(
+                                   "Failed to send declaration, this could a be temporary condition, try again in a moment: "
+                                   + e.getMessage() )
                            .build();
         }
 

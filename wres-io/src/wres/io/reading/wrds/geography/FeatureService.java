@@ -2,11 +2,11 @@ package wres.io.reading.wrds.geography;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,6 +20,7 @@ import java.util.StringJoiner;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
 
+import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,7 @@ import wres.config.yaml.DeclarationException;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.io.ingesting.PreIngestException;
+import wres.io.reading.ReadException;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.web.WebClient;
 
@@ -46,7 +48,7 @@ import wres.io.reading.web.WebClient;
  * @author James Brown
  */
 
-class WrdsFeatureService
+class FeatureService
 {
     private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
     private static final String AND_MISSING = " and missing ";
@@ -71,7 +73,7 @@ class WrdsFeatureService
 
     protected static final String CROSSWALK_ONLY_FLAG = "?identifiers=true";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger( WrdsFeatureService.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( FeatureService.class );
 
     private static final String EXPLANATION_OF_WHY_AND_WHAT_TO_DO = "By declaring a feature, WRES interprets it as an "
                                                                     + "intent to use that feature in the evaluation. "
@@ -99,8 +101,8 @@ class WrdsFeatureService
      * @param featureNames The names in the "from" dimension to look for in "to"
      * @return The Set of name pairs: "from" as key, "to" as value.
      * @throws DeclarationException When a feature service was needed but null
-     * @throws PreIngestException When the count of features in response differs from the count of feature names
-     *                            requested, or when the requested "to" was not found in the response.
+     * @throws ReadException When the count of features in response differs from the count of feature names
+     *                       requested, or when the requested "to" was not found in the response.
      * @throws UnsupportedOperationException When unknown "from" or "to" given or the API version is insupported
      * @throws NullPointerException When projectConfig or featureNames is null.
      */
@@ -192,10 +194,10 @@ class WrdsFeatureService
             // At this point there are more features to go, but we hit the safe
             // URL length limit.
             Map<String, String> batchOfResults =
-                    WrdsFeatureService.getBatchOfFeatures( from,
-                                                           to,
-                                                           featureServiceBaseUri,
-                                                           batchOfFeatureNames );
+                    FeatureService.getBatchOfFeatures( from,
+                                                       to,
+                                                       featureServiceBaseUri,
+                                                       batchOfFeatureNames );
             locations.putAll( batchOfResults );
             batchOfFeatureNames = new HashSet<>();
             totalLength = baseLength;
@@ -205,10 +207,10 @@ class WrdsFeatureService
                       batchOfFeatureNames );
         // Get the remaining features.
         Map<String, String> batchOfResults =
-                WrdsFeatureService.getBatchOfFeatures( from,
-                                                       to,
-                                                       featureServiceBaseUri,
-                                                       batchOfFeatureNames );
+                FeatureService.getBatchOfFeatures( from,
+                                                   to,
+                                                   featureServiceBaseUri,
+                                                   batchOfFeatureNames );
         locations.putAll( batchOfResults );
 
         LOGGER.debug( "For from={} and to={}, found these: {}",
@@ -226,7 +228,7 @@ class WrdsFeatureService
 
     static List<Location> read( URI uri )
     {
-        byte[] rawResponseBytes = WrdsFeatureService.getRawResponseBytes( uri );
+        byte[] rawResponseBytes = FeatureService.getRawResponseBytes( uri );
 
         //Get the version information
         if ( LOGGER.isDebugEnabled() )
@@ -261,8 +263,8 @@ class WrdsFeatureService
         }
         catch ( IOException ioe )
         {
-            throw new PreIngestException( "Failed to parse location information from document from "
-                                          + uri );
+            throw new ReadException( "Failed to parse location information from document from "
+                                     + uri, ioe );
         }
     }
 
@@ -274,8 +276,8 @@ class WrdsFeatureService
      * @param featureServiceBaseUri The base URI from which to build a full URI.
      * @param featureNames The names in the "from" dimension to look for in "to"
      * @return The Set of name pairs: "from" as key, "to" as value.
-     * @throws PreIngestException When the count of features in response differs from the count of feature names
-     *                            requested, or when the requested "to" was not found in the response.
+     * @throws ReadException When the count of features in response differs from the count of feature names
+     *                       requested, or when the requested "to" was not found in the response.
      * @throws NullPointerException When any argument is null.
      * @throws UnsupportedOperationException When unknown "from" or "to" given.
      * @throws IllegalArgumentException When any arg is null.
@@ -313,19 +315,19 @@ class WrdsFeatureService
                                        .normalize();
 
         //Read features from either V3 or the older API.
-        List<Location> locations = WrdsFeatureService.read( uri );
+        List<Location> locations = FeatureService.read( uri );
         int countOfLocations = locations.size();
 
         if ( countOfLocations != featureNames.size() )
         {
-            throw new PreIngestException( "Response from WRDS at " + uri
-                                          + " did not include exactly "
-                                          + featureNames.size()
-                                          + " locations, "
-                                          + " but had "
-                                          + countOfLocations
-                                          + ". "
-                                          + EXPLANATION_OF_WHY_AND_WHAT_TO_DO );
+            throw new ReadException( "Response from WRDS at " + uri
+                                     + " did not include exactly "
+                                     + featureNames.size()
+                                     + " locations, "
+                                     + " but had "
+                                     + countOfLocations
+                                     + ". "
+                                     + EXPLANATION_OF_WHY_AND_WHAT_TO_DO );
         }
 
         List<Location> fromWasNullOrBlank = new ArrayList<>( 2 );
@@ -333,28 +335,28 @@ class WrdsFeatureService
 
         for ( Location location : locations )
         {
-            String original = WrdsFeatureService.getFeatureNameFromAuthority( from, location, fromWasNullOrBlank );
-            String found = WrdsFeatureService.getFeatureNameFromAuthority( to, location, toWasNullOrBlank );
+            String original = FeatureService.getFeatureNameFromAuthority( from, location, fromWasNullOrBlank );
+            String found = FeatureService.getFeatureNameFromAuthority( to, location, toWasNullOrBlank );
             batchOfLocations.put( original, found );
         }
 
         if ( !fromWasNullOrBlank.isEmpty()
              || !toWasNullOrBlank.isEmpty() )
         {
-            throw new PreIngestException( "From the response at " + uri
-                                          + " the following were missing "
-                                          + from.name()
-                                                .toLowerCase()
-                                          + " (from) values: "
-                                          + fromWasNullOrBlank
-                                          + " and/or "
-                                          + "the following were missing "
-                                          + to.name()
-                                              .toLowerCase()
-                                          + " (to) values: "
-                                          + toWasNullOrBlank
-                                          + ". "
-                                          + EXPLANATION_OF_WHY_AND_WHAT_TO_DO );
+            throw new ReadException( "From the response at " + uri
+                                     + " the following were missing "
+                                     + from.name()
+                                           .toLowerCase()
+                                     + " (from) values: "
+                                     + fromWasNullOrBlank
+                                     + " and/or "
+                                     + "the following were missing "
+                                     + to.name()
+                                         .toLowerCase()
+                                     + " (to) values: "
+                                     + toWasNullOrBlank
+                                     + ". "
+                                     + EXPLANATION_OF_WHY_AND_WHAT_TO_DO );
         }
 
         return Collections.unmodifiableMap( batchOfLocations );
@@ -436,14 +438,13 @@ class WrdsFeatureService
         LOGGER.info( " Getting location data from {}", uri );
         byte[] rawResponseBytes;
 
-        if ( uri.getScheme()
-                .equalsIgnoreCase( "file" ) )
+        if ( ReaderUtilities.isWebSource( uri ) )
         {
-            rawResponseBytes = WrdsFeatureService.readFromFile( uri );
+            rawResponseBytes = FeatureService.readFromWeb( uri );
         }
         else
         {
-            rawResponseBytes = WrdsFeatureService.readFromWeb( uri );
+            rawResponseBytes = FeatureService.readFromFile( uri );
         }
 
         if ( LOGGER.isDebugEnabled() )
@@ -455,16 +456,22 @@ class WrdsFeatureService
         return rawResponseBytes;
     }
 
+    /**
+     * Read a response from the web.
+     * @param uri the URI
+     * @return the response bytes
+     */
+
     private static byte[] readFromWeb( URI uri )
     {
         try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri ) )
         {
             if ( response.getStatusCode() != 200 )
             {
-                throw new PreIngestException( "Failed to read location data from "
-                                              + uri
-                                              + " due to HTTP status "
-                                              + response.getStatusCode() );
+                throw new ReadException( "Failed to read location data from "
+                                         + uri
+                                         + " due to HTTP status "
+                                         + response.getStatusCode() );
             }
 
             return response.getResponse()
@@ -472,27 +479,33 @@ class WrdsFeatureService
         }
         catch ( IOException ioe )
         {
-            throw new PreIngestException( "Unable to read location data from web at "
-                                          + uri,
-                                          ioe );
+            throw new ReadException( "Unable to read location data from web at "
+                                     + uri,
+                                     ioe );
         }
     }
+
+    /**
+     * Read a response from a file on the default filesystem.
+     * @param uri the URI
+     * @return the response bytes
+     */
 
     private static byte[] readFromFile( URI uri )
     {
-        try ( InputStream response = new FileInputStream( new File( uri ) ) )
+        try ( InputStream data = Files.newInputStream( Paths.get( uri ) ) )
         {
-            return response.readAllBytes();
+            return IOUtils.toByteArray( data );
         }
         catch ( IOException ioe )
         {
-            throw new PreIngestException( "Unable to read location data from file at "
-                                          + uri,
-                                          ioe );
+            throw new ReadException( "Unable to read location data from file at "
+                                     + uri,
+                                     ioe );
         }
     }
 
-    private WrdsFeatureService()
+    private FeatureService()
     {
         // Do not construct
     }

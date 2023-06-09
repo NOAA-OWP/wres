@@ -29,7 +29,9 @@ public class TimeScaleDeserializer extends JsonDeserializer<wres.config.yaml.com
         ObjectReader mapper = ( ObjectReader ) jp.getCodec();
         JsonNode node = mapper.readTree( jp );
 
-        TimeScale.Builder builder = TimeScale.newBuilder();
+        TimeScale.Builder builder = TimeScale.newBuilder()
+                                             // Default function
+                                             .setFunction( TimeScaleFunction.MEAN );
 
         if ( node.has( "function" ) )
         {

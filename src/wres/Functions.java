@@ -35,7 +35,7 @@ import wres.config.yaml.DeclarationMigrator;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.io.database.caching.DatabaseCaches;
-import wres.io.database.caching.GriddedFeatures;
+import wres.io.reading.netcdf.grid.GriddedFeatures;
 import wres.io.database.Database;
 import wres.io.database.DatabaseOperations;
 import wres.io.ingesting.PreIngestException;
@@ -46,7 +46,7 @@ import wres.io.writing.netcdf.NetCDFCopier;
 import wres.pipeline.Evaluator;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
-import wres.system.DatabaseLockManager;
+import wres.io.database.locking.DatabaseLockManager;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
@@ -469,9 +469,7 @@ final class Functions
 
                 if ( Objects.nonNull( declaration.spatialMask() ) )
                 {
-                    String mask = declaration.spatialMask()
-                                             .wkt();
-                    griddedFeatures = new GriddedFeatures.Builder( mask );
+                    griddedFeatures = new GriddedFeatures.Builder( declaration.spatialMask() );
                 }
 
                 SourceLoader.load( timeSeriesIngester,

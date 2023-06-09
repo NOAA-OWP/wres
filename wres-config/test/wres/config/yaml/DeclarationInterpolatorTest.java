@@ -24,8 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.config.MetricConstants;
 import wres.config.xml.generated.DataSourceConfig;
-import wres.config.yaml.components.AnalysisDurations;
-import wres.config.yaml.components.AnalysisDurationsBuilder;
+import wres.config.yaml.components.AnalysisTimes;
+import wres.config.yaml.components.AnalysisTimesBuilder;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.DataType;
@@ -1088,16 +1088,16 @@ class DeclarationInterpolatorTest
     @Test
     void testInterpolateDataTypesWhenUndeclaredAndTypeInferredFromDeclarationDoesNotMatchIngestTypesButMismatchDisallowed()
     {
-        AnalysisDurations analysisDurations = AnalysisDurationsBuilder.builder()
-                                                                      .minimumExclusive( Duration.ofHours( 1 ) )
-                                                                      .maximum( Duration.ofHours( 2 ) )
-                                                                      .build();
+        AnalysisTimes analysisTimes = AnalysisTimesBuilder.builder()
+                                                          .minimum( Duration.ofHours( 1 ) )
+                                                          .maximum( Duration.ofHours( 2 ) )
+                                                          .build();
         EvaluationDeclaration evaluation =
                 EvaluationDeclarationBuilder.builder()
                                             .left( this.observedDataset )
                                             .right( this.predictedDataset )
                                             // Inferred as single-valued forecasts because no ensemble declaration
-                                            .analysisDurations( analysisDurations )
+                                            .analysisTimes( analysisTimes )
                                             .build();
 
         DeclarationException expected =
@@ -1295,8 +1295,8 @@ class DeclarationInterpolatorTest
                   - some_file.csv
                 predicted:
                   - another_file.csv
-                analysis_durations:
-                  minimum_exclusive: 0
+                analysis_times:
+                  minimum: 0
                   maximum: 0
                   unit: hours
                   """;

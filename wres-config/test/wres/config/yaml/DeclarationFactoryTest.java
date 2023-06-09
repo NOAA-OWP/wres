@@ -22,18 +22,22 @@ import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import wres.config.MetricConstants;
-import wres.config.yaml.components.AnalysisDurations;
+import wres.config.yaml.components.AnalysisTimes;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.CrossPair;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.DecimalFormatPretty;
+import wres.config.yaml.components.EnsembleFilter;
+import wres.config.yaml.components.EnsembleFilterBuilder;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.FeatureGroupsBuilder;
@@ -101,8 +105,8 @@ class DeclarationFactoryTest
 
         URI predictedUri = URI.create( "another_file.csv" );
         Source predictedSource = SourceBuilder.builder()
-                                            .uri( predictedUri )
-                                            .build();
+                                              .uri( predictedUri )
+                                              .build();
 
         List<Source> observedSources = List.of( observedSource );
         this.observedDataset = DatasetBuilder.builder()
@@ -184,6 +188,66 @@ class DeclarationFactoryTest
                                                                      .left( left )
                                                                      .right( this.predictedDataset )
                                                                      .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithNoPredictedDatasetToSupportDataDirect() throws IOException
+    {
+        String yaml = """
+                observed: some_file.csv
+                predicted:
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithNoPredictedSourcesToSupportDataDirect() throws IOException
+    {
+        String yaml = """
+                observed: some_file.csv
+                predicted:
+                  sources:
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( DatasetBuilder.builder().build() )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithNoPredictedSourcesAndSomeParametersToSupportDataDirect() throws IOException
+    {
+        String yaml = """
+                observed: some_file.csv
+                predicted:
+                  label: "foo"
+                  variable: "bar"
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        EvaluationDeclaration expected =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( DatasetBuilder.builder()
+                                                                  .label( "foo" )
+                                                                  .variable( new Variable( "bar", null ) )
+                                                                  .build() )
+                                            .build();
 
         assertEquals( expected, actual );
     }
@@ -340,6 +404,33 @@ class DeclarationFactoryTest
         assertAll( () -> assertEquals( observedDataset, actual.left() ),
                    () -> assertEquals( predictedDataset, actual.right() )
         );
+    }
+
+    @Test
+    void testDeserializeWithSingletonMetric() throws IOException
+    {
+        String declaration = """
+                observed: some_file.csv
+                predicted: another_file.csv
+                metrics: pearson correlation coefficient
+                  """;
+
+        Metric metric = MetricBuilder.builder()
+                                     .name( MetricConstants.PEARSON_CORRELATION_COEFFICIENT )
+                                     .build();
+
+        // Insertion order
+        Set<Metric> metrics = Set.of( metric );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .metrics( metrics )
+                                                                     .build();
+
+        EvaluationDeclaration actual = DeclarationFactory.from( declaration );
+
+        assertEquals( expected, actual );
     }
 
     @Test
@@ -552,6 +643,30 @@ class DeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeWithFeatureServiceAndImplicitUri() throws IOException
+    {
+        String yaml = """
+                observed: some_file.csv
+                predicted: another_file.csv
+                feature_service: https://foo.service
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        FeatureService featureService = FeatureServiceBuilder.builder()
+                                                             .uri( URI.create( "https://foo.service" ) )
+                                                             .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .featureService( featureService )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDeserializeWithFeatureServiceAndSingletonGroup() throws IOException
     {
         String yaml = """
@@ -631,7 +746,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testDeserializeWithSpatialMask() throws IOException
+    void testDeserializeWithSpatialMask() throws IOException, ParseException
     {
         String yaml = """
                 observed:
@@ -640,15 +755,16 @@ class DeclarationFactoryTest
                   - another_file.csv
                 spatial_mask:
                   name: a spatial mask!
-                  wkt: POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225))
+                  wkt: POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225, -76.825 39.225))
                   """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
 
-        SpatialMask expectedMask
-                = new SpatialMask( "a spatial mask!",
-                                   "POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225))",
-                                   null );
+
+        String wkt = "POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225, -76.825 39.225))";
+        WKTReader reader = new WKTReader();
+        org.locationtech.jts.geom.Geometry geometry = reader.read( wkt );
+        SpatialMask expectedMask = new SpatialMask( "a spatial mask!", geometry );
 
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
                                                                      .left( this.observedDataset )
@@ -656,6 +772,31 @@ class DeclarationFactoryTest
                                                                      .spatialMask( expectedMask )
                                                                      .build();
 
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithEnsembleFilter() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  sources: another_file.csv
+                  ensemble_filter:
+                    members: 23
+                    exclude: true
+                  """;
+
+        EvaluationDeclaration deserialized = DeclarationFactory.from( yaml );
+
+        EnsembleFilter actual = deserialized.right()
+                                            .ensembleFilter();
+
+        EnsembleFilter expected = EnsembleFilterBuilder.builder()
+                                                       .members( Set.of( "23" ) )
+                                                       .exclude( true )
+                                                       .build();
         assertEquals( expected, actual );
     }
 
@@ -689,8 +830,8 @@ class DeclarationFactoryTest
                   period: 23
                   frequency: 17
                   unit: hours
-                analysis_durations:
-                  minimum_exclusive: 0
+                analysis_times:
+                  minimum: 0
                   maximum: 1
                   unit: hours
                   """;
@@ -714,8 +855,8 @@ class DeclarationFactoryTest
         TimePools leadTimePools = new TimePools( java.time.Duration.ofHours( 23 ),
                                                  java.time.Duration.ofHours( 17 ) );
 
-        AnalysisDurations analysisDurations = new AnalysisDurations( java.time.Duration.ZERO,
-                                                                     java.time.Duration.ofHours( 1 ) );
+        AnalysisTimes analysisTimes = new AnalysisTimes( java.time.Duration.ZERO,
+                                                         java.time.Duration.ofHours( 1 ) );
 
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
                                                                      .left( this.observedDataset )
@@ -726,7 +867,7 @@ class DeclarationFactoryTest
                                                                      .validDatePools( validDatePools )
                                                                      .leadTimes( leadTimeInterval )
                                                                      .leadTimePools( leadTimePools )
-                                                                     .analysisDurations( analysisDurations )
+                                                                     .analysisTimes( analysisTimes )
                                                                      .build();
 
         assertEquals( expected, actual );
@@ -1006,6 +1147,30 @@ class DeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeWithSingletonOutputFormat() throws IOException
+    {
+        String yaml = """
+                observed: some_file.csv
+                predicted: another_file.csv
+                output_formats: netcdf2
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        Outputs formats = Outputs.newBuilder()
+                                 .setNetcdf2( Outputs.Netcdf2Format.getDefaultInstance() )
+                                 .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .formats( new Formats( formats ) )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDeserializeWithFeaturefulThresholds() throws IOException
     {
         String yaml = """
@@ -1272,6 +1437,43 @@ class DeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeWithSingletonProbabilityThresholdAndOperator() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                probability_thresholds:
+                  values: 0.5
+                  operator: greater equal
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        Threshold vOne =
+                DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder()
+                                                              .setLeftThresholdProbability( DoubleValue.of( 0.5 ) )
+                                                              .setOperator( Threshold.ThresholdOperator.GREATER_EQUAL )
+                                                              .build();
+
+        wres.config.yaml.components.Threshold vOneWrapped = ThresholdBuilder.builder()
+                                                                            .threshold( vOne )
+                                                                            .type( ThresholdType.PROBABILITY )
+                                                                            .build();
+
+        Set<wres.config.yaml.components.Threshold> thresholds = Set.of( vOneWrapped );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .probabilityThresholds( thresholds )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDeserializeTimeToPeakError() throws IOException
     {
         String yaml = """
@@ -1492,16 +1694,16 @@ class DeclarationFactoryTest
         Set<ThresholdSource> actual = actualEvaluation.thresholdSources();
 
         ThresholdSource thresholdSourceOne = ThresholdSourceBuilder.builder()
-                                                                .uri( URI.create( "https://foo" ) )
-                                                                .build();
+                                                                   .uri( URI.create( "https://foo" ) )
+                                                                   .build();
 
         ThresholdSource thresholdSourceTwo = ThresholdSourceBuilder.builder()
                                                                    .uri( URI.create( "https://bar" ) )
                                                                    .build();
 
         ThresholdSource thresholdSourceThree = ThresholdSourceBuilder.builder()
-                                                                   .uri( URI.create( "https://baz" ) )
-                                                                   .build();
+                                                                     .uri( URI.create( "https://baz" ) )
+                                                                     .build();
 
         Set<ThresholdSource> expected = Set.of( thresholdSourceOne, thresholdSourceTwo, thresholdSourceThree );
 
@@ -1946,7 +2148,7 @@ class DeclarationFactoryTest
     }
 
     @Test
-    void testSerializeWithSpatialMask() throws IOException
+    void testSerializeWithSpatialMask() throws IOException, ParseException
     {
         String expected = """
                 observed:
@@ -1955,13 +2157,13 @@ class DeclarationFactoryTest
                   sources: another_file.csv
                 spatial_mask:
                   name: a spatial mask!
-                  wkt: "POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225))"
+                  wkt: "POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225, -76.825 39.225))"
                   """;
 
-        SpatialMask expectedMask
-                = new SpatialMask( "a spatial mask!",
-                                   "POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225))",
-                                   null );
+        WKTReader reader = new WKTReader();
+        String wkt = "POLYGON ((-76.825 39.225, -76.825 39.275, -76.775 39.275, -76.775 39.225, -76.825 39.225))";
+        org.locationtech.jts.geom.Geometry geometry = reader.read( wkt );
+        SpatialMask expectedMask = new SpatialMask( "a spatial mask!", geometry );
 
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
                                                                        .left( this.observedDataset )
@@ -2004,8 +2206,8 @@ class DeclarationFactoryTest
                   period: 23
                   frequency: 17
                   unit: hours
-                analysis_durations:
-                  minimum_exclusive: 0
+                analysis_times:
+                  minimum: 0
                   maximum: 1
                   unit: hours
                 pair_frequency:
@@ -2030,8 +2232,8 @@ class DeclarationFactoryTest
         TimePools leadTimePools = new TimePools( java.time.Duration.ofHours( 23 ),
                                                  java.time.Duration.ofHours( 17 ) );
 
-        AnalysisDurations analysisDurations = new AnalysisDurations( java.time.Duration.ZERO,
-                                                                     java.time.Duration.ofHours( 1 ) );
+        AnalysisTimes analysisTimes = new AnalysisTimes( java.time.Duration.ZERO,
+                                                         java.time.Duration.ofHours( 1 ) );
 
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
                                                                        .left( this.observedDataset )
@@ -2042,7 +2244,7 @@ class DeclarationFactoryTest
                                                                        .validDatePools( validDatePools )
                                                                        .leadTimes( leadTimeInterval )
                                                                        .leadTimePools( leadTimePools )
-                                                                       .analysisDurations( analysisDurations )
+                                                                       .analysisTimes( analysisTimes )
                                                                        .pairFrequency( java.time.Duration.ofHours( 3 ) )
                                                                        .build();
 

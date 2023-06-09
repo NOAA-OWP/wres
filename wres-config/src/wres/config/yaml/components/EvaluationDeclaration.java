@@ -47,7 +47,7 @@ import wres.statistics.generated.Pool;
  * @param validDates valid dates
  * @param validDatePools valid date pools
  * @param leadTimes lead times
- * @param analysisDurations analysis durations
+ * @param analysisTimes analysis durations
  * @param leadTimePools lead time pools
  * @param timeScale the evaluation timescale
  * @param rescaleLenience whether rescaling should admit periods with missing values
@@ -85,7 +85,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonProperty( "valid_date_pools" ) TimePools validDatePools,
                                      @JsonProperty( "lead_times" ) LeadTimeInterval leadTimes,
                                      @JsonProperty( "lead_time_pools" ) TimePools leadTimePools,
-                                     @JsonProperty( "analysis_durations" ) AnalysisDurations analysisDurations,
+                                     @JsonProperty( "analysis_times" ) AnalysisTimes analysisTimes,
                                      @JsonProperty( "time_scale" ) TimeScale timeScale,
                                      @JsonProperty( "rescale_lenience" ) TimeScaleLenience rescaleLenience,
                                      @JsonSerialize( using = DurationSerializer.class )
@@ -140,7 +140,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
      * @param validDates valid dates
      * @param validDatePools valid date pools
      * @param leadTimes lead times
-     * @param analysisDurations analysis durations
+     * @param analysisTimes analysis durations
      * @param leadTimePools lead time pools
      * @param timeScale the evaluation timescale
      * @param rescaleLenience whether rescaling should admit periods with missing values

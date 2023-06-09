@@ -8,25 +8,25 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.config.yaml.components.AnalysisDurations;
+import wres.config.yaml.components.AnalysisTimes;
 
 /**
- * Custom deserializer for a {@link AnalysisDurations}.
+ * Custom deserializer for a {@link AnalysisTimes}.
  *
  * @author James Brown
  */
-public class AnalysisDurationIntervalDeserializer extends JsonDeserializer<AnalysisDurations>
+public class AnalysisDurationIntervalDeserializer extends JsonDeserializer<AnalysisTimes>
 {
     /** The underlying deserializer. */
     private static final DurationIntervalDeserializer DURATION_INTERVAL_DESERIALIZER =
-            new DurationIntervalDeserializer( "minimum_exclusive", "maximum" );
+            new DurationIntervalDeserializer( "minimum", "maximum" );
 
     @Override
-    public AnalysisDurations deserialize( JsonParser jp, DeserializationContext context )
+    public AnalysisTimes deserialize( JsonParser jp, DeserializationContext context )
             throws IOException
     {
         Pair<Duration, Duration> pair = DURATION_INTERVAL_DESERIALIZER.deserialize( jp, context );
-        return new AnalysisDurations( pair.getLeft(), pair.getRight() );
+        return new AnalysisTimes( pair.getLeft(), pair.getRight() );
     }
 }
 

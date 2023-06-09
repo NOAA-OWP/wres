@@ -34,7 +34,10 @@ shopt -s extglob
 for directory in wres-*([a-z])
 do
     # For those with zips, we want to change versions when dependencies change.
-    if [[ "$directory" == "wres-tasker" || "$directory" == "wres-worker" ]]
+    if [[ "$directory" == "wres-tasker" ]]
+    then
+        version=$( get_ver ${directory} "wres-messages" "wres-config" )
+    elif [[ "$directory" == "wres-worker" ]]
     then
         version=$( get_ver ${directory} "wres-messages" )
     elif [[ "$directory" == "wres-vis" ]]

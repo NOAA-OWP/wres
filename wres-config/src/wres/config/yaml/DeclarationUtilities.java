@@ -24,12 +24,13 @@ import java.util.stream.Collectors;
 
 import com.google.protobuf.Timestamp;
 import org.apache.commons.lang3.tuple.Pair;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConstants;
-import wres.config.xml.ProjectConfigException;
-import wres.config.yaml.components.AnalysisDurations;
+import wres.config.yaml.components.AnalysisTimes;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.DataType;
@@ -94,7 +95,8 @@ public class DeclarationUtilities
         TimePools validDatesPools = declaration.validDatePools();
 
         // Has explicit pooling windows
-        if ( Objects.nonNull( leadDurationPools ) || Objects.nonNull( referenceDatesPools )
+        if ( Objects.nonNull( leadDurationPools )
+             || Objects.nonNull( referenceDatesPools )
              || Objects.nonNull( validDatesPools ) )
         {
             // All dimensions
@@ -315,6 +317,32 @@ public class DeclarationUtilities
     }
 
     /**
+     * Creates a geometry from a WKT string and optional Spatial Reference system IDentifier (SRID).
+     * @param wktString the WKT string
+     * @param srid the optional SRID
+     * @return the geometry
+     */
+    public static org.locationtech.jts.geom.Geometry getGeometry( String wktString, Long srid )
+    {
+        WKTReader reader = new WKTReader();
+        org.locationtech.jts.geom.Geometry mask;
+        try
+        {
+            mask = reader.read( wktString );
+            if( Objects.nonNull( srid ) )
+            {
+                mask.setSRID( srid.intValue() );
+            }
+        }
+        catch ( ParseException e )
+        {
+            throw new IllegalArgumentException( "Failed to parse the mask geometry: " + wktString );
+        }
+
+        return mask;
+    }
+
+    /**
      * Returns the thresholds from all contexts in the declaration.
      * @param declaration the declaration
      * @return the features from all contexts
@@ -431,10 +459,10 @@ public class DeclarationUtilities
 
         Duration returnMe = null;
 
-        if ( Objects.nonNull( declaration.analysisDurations() ) )
+        if ( Objects.nonNull( declaration.analysisTimes() ) )
         {
-            AnalysisDurations durations = declaration.analysisDurations();
-            returnMe = durations.minimumExclusive();
+            AnalysisTimes durations = declaration.analysisTimes();
+            returnMe = durations.minimum();
         }
 
         if ( Objects.isNull( returnMe ) )
@@ -459,9 +487,9 @@ public class DeclarationUtilities
 
         Duration returnMe = null;
 
-        if ( Objects.nonNull( declaration.analysisDurations() ) )
+        if ( Objects.nonNull( declaration.analysisTimes() ) )
         {
-            AnalysisDurations durations = declaration.analysisDurations();
+            AnalysisTimes durations = declaration.analysisTimes();
             returnMe = durations.maximum();
         }
 
@@ -842,12 +870,20 @@ public class DeclarationUtilities
         Objects.requireNonNull( leftSources );
         Objects.requireNonNull( rightSources );
         Objects.requireNonNull( baselineSources );
-        Objects.requireNonNull( evaluation.left() );
-        Objects.requireNonNull( evaluation.right() );
 
         EvaluationDeclarationBuilder builder = EvaluationDeclarationBuilder.builder( evaluation );
-        DatasetBuilder leftBuilder = DatasetBuilder.builder( evaluation.left() );
-        DatasetBuilder rightBuilder = DatasetBuilder.builder( evaluation.right() );
+        DatasetBuilder leftBuilder = DatasetBuilder.builder();
+        DatasetBuilder rightBuilder = DatasetBuilder.builder();
+
+        // Datasets present?
+        if ( Objects.nonNull( builder.left() ) )
+        {
+            leftBuilder = DatasetBuilder.builder( evaluation.left() );
+        }
+        if ( Objects.nonNull( builder.right() ) )
+        {
+            rightBuilder = DatasetBuilder.builder( evaluation.right() );
+        }
 
         // Adjust the left and right datasets
         DeclarationUtilities.addDataSources( leftBuilder, leftSources, DatasetOrientation.LEFT );
@@ -857,13 +893,28 @@ public class DeclarationUtilities
         builder.left( leftBuilder.build() )
                .right( rightBuilder.build() );
 
-        // Baseline?
-        if ( DeclarationUtilities.hasBaseline( evaluation ) )
+        // Baseline sources to add?
+        if ( !baselineSources.isEmpty() )
         {
+            DatasetBuilder baselineBuilder = DatasetBuilder.builder();
             BaselineDataset baseline = evaluation.baseline();
-            DatasetBuilder baselineBuilder = DatasetBuilder.builder( baseline.dataset() );
+
+            // Existing baseline?
+            if ( DeclarationUtilities.hasBaseline( evaluation )
+                 && Objects.nonNull( baseline.dataset() ) )
+            {
+                baselineBuilder = DatasetBuilder.builder( baseline.dataset() );
+            }
+            // No, so set an empty one
+            else
+            {
+                baseline = BaselineDatasetBuilder.builder()
+                                                 .dataset( baselineBuilder.build() )
+                                                 .build();
+            }
+
             DeclarationUtilities.addDataSources( baselineBuilder, baselineSources, DatasetOrientation.BASELINE );
-            BaselineDataset adjustedBaseline = BaselineDatasetBuilder.builder( baseline )
+            BaselineDataset adjustedBaseline = BaselineDatasetBuilder.builder( baseline ) // Existing, if any
                                                                      .dataset( baselineBuilder.build() )
                                                                      .build();
             builder.baseline( adjustedBaseline );
@@ -969,23 +1020,30 @@ public class DeclarationUtilities
                                                                                .getName() )
                                                                    .collect( Collectors.toSet() );
 
-        // Create a filter
+        // Create a filter. Only filter when the above sets contain some features
         Predicate<GeometryTuple> retain = geoTuple ->
         {
-            if ( geoTuple.hasLeft() && !leftFeatureNamesWithThresholds.contains( geoTuple.getLeft()
-                                                                                         .getName() ) )
+            if ( geoTuple.hasLeft()
+                 && !leftFeatureNamesWithThresholds.isEmpty()
+                 && !leftFeatureNamesWithThresholds.contains( geoTuple.getLeft()
+                                                                      .getName() ) )
             {
                 return false;
             }
 
-            if ( geoTuple.hasRight() && !rightFeatureNamesWithThresholds.contains( geoTuple.getRight()
-                                                                                           .getName() ) )
+            if ( geoTuple.hasRight()
+                 && !rightFeatureNamesWithThresholds.isEmpty()
+                 && !rightFeatureNamesWithThresholds.contains( geoTuple.getRight()
+                                                                       .getName() ) )
             {
                 return false;
             }
 
-            return !geoTuple.hasBaseline() || baselineFeatureNamesWithThresholds.contains( geoTuple.getBaseline()
-                                                                                                   .getName() );
+            return !DeclarationUtilities.hasBaseline( declaration )
+                   || !geoTuple.hasBaseline()
+                   || baselineFeatureNamesWithThresholds.isEmpty()
+                   || baselineFeatureNamesWithThresholds.contains( geoTuple.getBaseline()
+                                                                           .getName() );
         };
 
         // Remove the features in all contexts
@@ -1064,9 +1122,11 @@ public class DeclarationUtilities
 
     static boolean hasAnalysisDurations( EvaluationDeclarationBuilder builder )
     {
-        return Objects.nonNull( builder.analysisDurations() ) && (
-                Objects.nonNull( builder.analysisDurations().minimumExclusive() )
-                || Objects.nonNull( builder.analysisDurations().maximum() ) );
+        return Objects.nonNull( builder.analysisTimes() ) && (
+                Objects.nonNull( builder.analysisTimes()
+                                        .minimum() )
+                || Objects.nonNull( builder.analysisTimes()
+                                           .maximum() ) );
     }
 
     /**
@@ -1136,9 +1196,9 @@ public class DeclarationUtilities
         Set<String> ensembleInterfaces = DeclarationUtilities.getSourcesWithEnsembleInterface( builder );
         if ( !ensembleInterfaces.isEmpty() )
         {
-            ensembleDeclaration.add(
-                    "Discovered one or more data sources whose interfaces are ensemble-like: " + ensembleInterfaces
-                    + "." );
+            ensembleDeclaration.add( "Discovered one or more data sources whose interfaces are ensemble-like: "
+                                     + ensembleInterfaces
+                                     + "." );
         }
 
         // Ensemble average declared?
@@ -1394,8 +1454,8 @@ public class DeclarationUtilities
         }
 
         // No existing sources to correlate
-        if ( builder.sources()
-                    .isEmpty() )
+        if ( Objects.isNull( builder.sources() ) || builder.sources()
+                                                           .isEmpty() )
         {
             List<Source> newSources = sources.stream()
                                              .map( uri -> SourceBuilder.builder()
@@ -1428,11 +1488,8 @@ public class DeclarationUtilities
             // If there are matches, add them, preserving the existing source information
             if ( !matched.isEmpty() )
             {
-                if ( LOGGER.isDebugEnabled() )
-                {
-                    LOGGER.debug( "While inspecting URI {}, discovered the following correlated URIs among the "
-                                  + "existing sources: {}", uri, matched );
-                }
+                LOGGER.debug( "While inspecting URI {}, discovered the following correlated URIs among the "
+                              + "existing sources: {}", uri, matched );
 
                 matched.forEach( next -> newSources.add( SourceBuilder.builder( next )
                                                                       .uri( uri )
@@ -1441,11 +1498,8 @@ public class DeclarationUtilities
             // Otherwise add the new source with the unmatched URI
             else
             {
-                if ( LOGGER.isDebugEnabled() )
-                {
-                    LOGGER.debug( "While inspecting URI {}, discovered no correlated URIs among the existing "
-                                  + "sources.", uri );
-                }
+                LOGGER.debug( "While inspecting URI {}, discovered no correlated URIs among the existing "
+                              + "sources.", uri );
 
                 Source newSource = SourceBuilder.builder()
                                                 .uri( uri )
@@ -1453,13 +1507,35 @@ public class DeclarationUtilities
                 newSources.add( newSource );
             }
         }
+
         LOGGER.debug( "Added the following new sources for the {} data: {}. The new sources were added to the "
                       + "following existing sources {}.",
                       orientation,
                       newSources,
                       existingSources );
 
-        builder.sources( newSources );
+        // Add back existing sources that are uncorrelated with new sources
+        List<Source> existingSourcesToAdd = new ArrayList<>();
+        for ( Source existingSource : existingSources )
+        {
+            boolean match = newSources.stream()
+                                      .anyMatch( next -> next.uri()
+                                                             .getPath()
+                                                             .endsWith( existingSource.uri()
+                                                                                      .getPath() ) );
+
+            if ( !match )
+            {
+                existingSourcesToAdd.add( existingSource );
+            }
+        }
+
+        LOGGER.debug( "Retained the following existing sources that were uncorrelated with new sources: {}.",
+                      existingSourcesToAdd );
+        List<Source> combinedSources = new ArrayList<>( existingSourcesToAdd );
+        combinedSources.addAll( newSources );
+
+        builder.sources( combinedSources );
     }
 
     /**
@@ -1470,7 +1546,6 @@ public class DeclarationUtilities
      * @param declaration the declaration
      * @return the set of lead duration time windows
      * @throws NullPointerException if any required input is null
-     * @throws ProjectConfigException if the time windows cannot be determined
      */
 
     private static Set<TimeWindow> getLeadDurationTimeWindows( EvaluationDeclaration declaration )
@@ -1639,7 +1714,6 @@ public class DeclarationUtilities
      * @param areReferenceTimes is true if the dates are reference dates, false for valid dates
      * @return the set of reference time windows
      * @throws NullPointerException if any input is null
-     * @throws ProjectConfigException if the time windows cannot be determined for any reason
      */
 
     private static Set<TimeWindow> getTimeWindowsForDateSequence( TimeInterval dates,
@@ -2004,6 +2078,7 @@ public class DeclarationUtilities
             Set<GeometryGroup> originalGroups = builder.featureGroups()
                                                        .geometryGroups();
             Set<GeometryGroup> adjustedGroups = new HashSet<>();
+            Set<GeometryGroup> groupsWithAdjustments = new HashSet<>();
 
             // Iterate the groups and adjust as needed
             for ( GeometryGroup nextGroup : originalGroups )
@@ -2021,6 +2096,7 @@ public class DeclarationUtilities
                                                            .addAllGeometryTuples( adjusted )
                                                            .build();
                     adjustedGroups.add( adjustedGroup );
+                    groupsWithAdjustments.add( adjustedGroup );
                 }
                 else
                 {
@@ -2028,18 +2104,15 @@ public class DeclarationUtilities
                 }
             }
 
-            if ( LOGGER.isWarnEnabled() && !adjustedGroups.isEmpty() )
+            if ( LOGGER.isWarnEnabled() && !groupsWithAdjustments.isEmpty() )
             {
-                Set<GeometryGroup> copy = new HashSet<>( originalGroups );
-                copy.removeAll( adjustedGroups );
-
                 LOGGER.warn( "Discovered {} feature group(s) where thresholds were not available for one or more of "
                              + "their component features. These features have been removed from the evaluation. "
                              + "Features were removed from the following feature groups: {}.",
-                             copy.size(),
-                             copy.stream()
-                                 .map( GeometryGroup::getRegionName )
-                                 .toList() );
+                             groupsWithAdjustments.size(),
+                             groupsWithAdjustments.stream()
+                                                  .map( GeometryGroup::getRegionName )
+                                                  .toList() );
             }
 
             FeatureGroups finalFeatureGroups = new FeatureGroups( adjustedGroups );

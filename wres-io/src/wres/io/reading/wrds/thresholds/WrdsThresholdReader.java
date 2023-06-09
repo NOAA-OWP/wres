@@ -16,6 +16,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.net.ssl.SSLContext;
@@ -58,7 +59,7 @@ import wres.statistics.generated.Threshold;
 public class WrdsThresholdReader implements ThresholdReader
 {
     /** The number of location requests." */
-    static final int LOCATION_REQUEST_COUNT = 20;
+    private static final int DEFAULT_LOCATION_REQUEST_COUNT = 20;
 
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( WrdsThresholdReader.class );
@@ -91,6 +92,9 @@ public class WrdsThresholdReader implements ThresholdReader
     /** Client for web connections. */
     private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT, true );
 
+    /** Location request count, i.e., chunk size. */
+    private final int locationRequestCount;
+
     /**
      * Creates an instance.
      * @return an instance
@@ -98,7 +102,20 @@ public class WrdsThresholdReader implements ThresholdReader
 
     public static WrdsThresholdReader of()
     {
-        return new WrdsThresholdReader();
+        return new WrdsThresholdReader( DEFAULT_LOCATION_REQUEST_COUNT );
+    }
+
+    /**
+     * Creates an instance with a specified chunk size, corresponding to the number of locations whose thresholds are
+     * requested at once.
+     * @param locationRequestCount the location request count, greater than zero
+     * @return an instance
+     * @throws IllegalArgumentException if the locationRequestCount is invalid
+     */
+
+    public static WrdsThresholdReader of( int locationRequestCount )
+    {
+        return new WrdsThresholdReader( locationRequestCount );
     }
 
     /**
@@ -119,7 +136,7 @@ public class WrdsThresholdReader implements ThresholdReader
         Objects.requireNonNull( featureNames );
 
         URI serviceUri = thresholdSource.uri();
-        if( Objects.isNull( serviceUri ) )
+        if ( Objects.isNull( serviceUri ) )
         {
             throw new ThresholdReadingException( "Cannot read from a threshold source with a missing URI. Please "
                                                  + "add a URI for each threshold source that should be read." );
@@ -255,6 +272,14 @@ public class WrdsThresholdReader implements ThresholdReader
     {
         Map<Location, Set<Threshold>> thresholdMapping;
 
+        // Function to handle duplicate locations across responses: see Redmine issue #117009
+        BinaryOperator<Set<Threshold>> merger = ( a, b ) ->
+        {
+            Set<Threshold> merged = new HashSet<>( a );
+            merged.addAll( b );
+            return Collections.unmodifiableSet( merged );
+        };
+
         // Get the non-null responses for the addresses, extract the thresholds,
         // and collect them into a map.
         thresholdMapping = addresses.parallelStream()
@@ -266,7 +291,7 @@ public class WrdsThresholdReader implements ThresholdReader
                                                                              warnings ) )
                                     .flatMap( map -> map.entrySet()
                                                         .stream() )
-                                    .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+                                    .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue, merger ) );
 
         // Filter out locations that only have all data
         thresholdMapping = thresholdMapping
@@ -363,7 +388,7 @@ public class WrdsThresholdReader implements ThresholdReader
 
     /**
      * @param features the features to group
-     * @return the delimited features chunked by {@link #LOCATION_REQUEST_COUNT}
+     * @return the delimited features chunked by {@link #locationRequestCount}
      */
     private Set<String> chunkFeatures( Set<String> features )
     {
@@ -373,9 +398,10 @@ public class WrdsThresholdReader implements ThresholdReader
 
         // Use a predictable iteration order
         Set<String> orderedFeatures = new TreeSet<>( features );
+        int chunkSize = this.getLocationRequestCount();
         for ( String feature : orderedFeatures )
         {
-            if ( counter % LOCATION_REQUEST_COUNT == 0 && locationJoiner.length() > 0 )
+            if ( counter % chunkSize == 0 && locationJoiner.length() > 0 )
             {
                 locationGroups.add( locationJoiner.toString() );
                 locationJoiner = new StringJoiner( "," );
@@ -392,6 +418,14 @@ public class WrdsThresholdReader implements ThresholdReader
         }
 
         return locationGroups;
+    }
+
+    /**
+     * @return the location chunk size for threshold requests
+     */
+    private int getLocationRequestCount()
+    {
+        return this.locationRequestCount;
     }
 
     /**
@@ -548,27 +582,51 @@ public class WrdsThresholdReader implements ThresholdReader
         // Ordered, mapped thresholds
         Set<wres.config.yaml.components.Threshold> mappedThresholds = new HashSet<>();
 
+        Set<String> featuresNotRequired = new HashSet<>();
         for ( Map.Entry<Location, Set<Threshold>> nextEntry : thresholds.entrySet() )
         {
             Location location = nextEntry.getKey();
             Set<Threshold> nextThresholds = nextEntry.getValue();
 
             String featureName = Location.getNameForAuthority( featureAuthority, location );
-            String originalFeatureName = featureNames.get( featureName );
 
-            Geometry feature = Geometry.newBuilder()
-                                       .setName( originalFeatureName )
-                                       .build();
-            Set<wres.config.yaml.components.Threshold> nextMappedThresholds =
-                    nextThresholds.stream()
-                                  .map( next -> ThresholdBuilder.builder()
-                                                                .threshold( next )
-                                                                .type( wres.config.yaml.components.ThresholdType.VALUE )
-                                                                .feature( feature )
-                                                                .featureNameFrom( orientation )
-                                                                .build() )
-                                  .collect( Collectors.toSet() );
-            mappedThresholds.addAll( nextMappedThresholds );
+            if ( Objects.nonNull( featureName )
+                 && featureNames.containsKey( featureName ) )
+            {
+                String originalFeatureName = featureNames.get( featureName );
+
+                Geometry feature = Geometry.newBuilder()
+                                           .setName( originalFeatureName )
+                                           .build();
+                Set<wres.config.yaml.components.Threshold> nextMappedThresholds =
+                        nextThresholds.stream()
+                                      .map( next -> ThresholdBuilder.builder()
+                                                                    .threshold( next )
+                                                                    .type( wres.config.yaml.components.ThresholdType.VALUE )
+                                                                    .feature( feature )
+                                                                    .featureNameFrom( orientation )
+                                                                    .build() )
+                                      .collect( Collectors.toSet() );
+                mappedThresholds.addAll( nextMappedThresholds );
+            }
+            else if ( LOGGER.isDebugEnabled() )
+            {
+                if( Objects.isNull( featureName ) )
+                {
+                    featuresNotRequired.add( location.toString() );
+                }
+                else
+                {
+                    featuresNotRequired.add( featureName );
+                }
+            }
+        }
+
+        if ( LOGGER.isDebugEnabled() && !featuresNotRequired.isEmpty() )
+        {
+            LOGGER.debug( "Thresholds were discovered for the following features whose thresholds were not "
+                          + "required: {}",
+                          featuresNotRequired );
         }
 
         return Collections.unmodifiableSet( mappedThresholds );
@@ -594,13 +652,14 @@ public class WrdsThresholdReader implements ThresholdReader
         if ( featureAuthority == FeatureAuthority.NWS_LID && ReaderUtilities.isWebSource( serviceUri ) )
         {
             names = originalNames.stream()
-                            .collect( Collectors.toUnmodifiableMap( n -> n.substring( 0, Math.min( n.length(), 5 ) ),
-                                                                    Function.identity() ) );
+                                 .collect( Collectors.toUnmodifiableMap( n -> n.substring( 0,
+                                                                                           Math.min( n.length(), 5 ) ),
+                                                                         Function.identity() ) );
         }
         else
         {
             names = originalNames.stream()
-                            .collect( Collectors.toUnmodifiableMap( Function.identity(), Function.identity() ) );
+                                 .collect( Collectors.toUnmodifiableMap( Function.identity(), Function.identity() ) );
         }
 
         return names;
@@ -637,6 +696,7 @@ public class WrdsThresholdReader implements ThresholdReader
         Set<String> thresholdFeatureNames =
                 thresholdFeatures.stream()
                                  .map( n -> Location.getNameForAuthority( featureAuthority, n ) )
+                                 .filter( Objects::nonNull )
                                  .collect( Collectors.toSet() );
 
         Set<String> featureNamesWithThresholds = new TreeSet<>( featureNames.keySet() );
@@ -698,8 +758,18 @@ public class WrdsThresholdReader implements ThresholdReader
     /**
      * Hidden constructor.
      */
-    private WrdsThresholdReader()
+    private WrdsThresholdReader( int locationRequestCount )
     {
+        if ( locationRequestCount < 1 )
+        {
+            throw new IllegalArgumentException( "Cannot create a WRDS threshold reader with a location chunk size of "
+                                                + locationRequestCount
+                                                + ". Increase the location chunk size to 1 or more locations." );
+        }
+
+        LOGGER.debug( "Creating a WRDS threshold reader with a chunk size of {} locations.", locationRequestCount );
+
+        this.locationRequestCount = locationRequestCount;
     }
 }
 

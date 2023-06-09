@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockserver.model.HttpRequest.request;
 
+import java.io.InputStream;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Collections;

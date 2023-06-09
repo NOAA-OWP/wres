@@ -45,7 +45,7 @@ echo "We are using the $env_suffix environment in this example."
 # server will send. When making client requests to the server, we instruct the
 # client to trust a ca for this request explicitly, referencing a file that
 # contains the certificate of the server. The file may be retrieved at
-# https://***REMOVED***/redmine/projects/wres-user-support/wiki/Import_Certificate_Authority_in_Browser_for_Access_to_WRES_Web_Front-End
+# https://removed.gov/redmine/projects/wres-user-support/wiki/Import_Certificate_Authority_in_Browser_for_Access_to_WRES_Web_Front-End
 
 wres_ca_file=../wres_ca_x509_cert.pem
 

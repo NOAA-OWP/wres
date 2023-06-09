@@ -38,6 +38,8 @@ definitions:
           - type: string
             minLength: 1
             maxLength: 2083
+          # To support data direct
+          - type: "null"
       predicted:
         description: "The 'predicted' or 'right' data generally contains the 
         predictions to evaluate."
@@ -52,6 +54,8 @@ definitions:
           - type: string
             minLength: 1
             maxLength: 2083
+          # To support data direct
+          - type: "null"
       baseline:
         description: "The 'baseline' dataset contains the baseline against 
         which the predictions will be compared when calculating skill scores."
@@ -66,6 +70,8 @@ definitions:
           - type: string
             minLength: 1
             maxLength: 2083
+          # To support data direct
+          - type: "null"
       features:
         type: array
         items:
@@ -77,7 +83,11 @@ definitions:
           "$ref": "#/definitions/FeatureGroup"
         uniqueItems: true
       feature_service:
-        "$ref": "#/definitions/FeatureService"
+        anyOf:
+          - "$ref": "#/definitions/FeatureService"
+          - type: string
+            minLength: 1
+            maxLength: 2083
       spatial_mask:
         "$ref": "#/definitions/SpatialMask"
       reference_dates:
@@ -92,8 +102,8 @@ definitions:
         "$ref": "#/definitions/LeadTimes"
       lead_time_pools:
         "$ref": "#/definitions/TimePools"
-      analysis_durations:
-        "$ref": "#/definitions/AnalysisDurations"
+      analysis_times:
+        "$ref": "#/definitions/AnalysisTimes"
       time_scale:
         description: "The time-scale in this context is the time-scale at which 
         pairs should be created."
@@ -166,20 +176,27 @@ definitions:
         type: integer
         minimum: 1
       metrics:
-        type: array
-        items:
-          # A simple name or a parameterized type
-          anyOf:
-            - "$ref": "#/definitions/MetricEnum"
-            - "$ref": "#/definitions/CategoricalMetricEnum"
-            - "$ref": "#/definitions/SingleValuedMetricEnum"
-            - "$ref": "#/definitions/TimeSeriesMetricEnum"
-            - "$ref": "#/definitions/MetricWithParameters"
-            - "$ref": "#/definitions/CategoricalMetricWithParameters"
-            - "$ref": "#/definitions/SingleValuedMetricWithParameters"
-            - "$ref": "#/definitions/TimeSeriesMetricWithParameters"
-        minItems: 1
-        uniqueItems: true
+        anyOf:
+          # Singleton without parameters
+          - "$ref": "#/definitions/MetricEnum"
+          - "$ref": "#/definitions/CategoricalMetricEnum"
+          - "$ref": "#/definitions/SingleValuedMetricEnum"
+          - "$ref": "#/definitions/TimeSeriesMetricEnum"
+          # Tuple
+          - type: array
+            items:
+            # A simple name or a parameterized type
+              anyOf:
+                - "$ref": "#/definitions/MetricEnum"
+                - "$ref": "#/definitions/CategoricalMetricEnum"
+                - "$ref": "#/definitions/SingleValuedMetricEnum"
+                - "$ref": "#/definitions/TimeSeriesMetricEnum"
+                - "$ref": "#/definitions/MetricWithParameters"
+                - "$ref": "#/definitions/CategoricalMetricWithParameters"
+                - "$ref": "#/definitions/SingleValuedMetricWithParameters"
+                - "$ref": "#/definitions/TimeSeriesMetricWithParameters"
+            minItems: 1
+            uniqueItems: true
       duration_format:
         "$ref": "#/definitions/DurationEnum"
       decimal_format:
@@ -187,17 +204,21 @@ definitions:
         minLength: 1
         maxLength: 2083
       output_formats:
-        type: array
-        items:
-          # A simple name or a parameterized type
-          anyOf:
-            - "$ref": "#/definitions/FormatEnum"
-            - "$ref": "#/definitions/GraphicFormatEnum"
-            - "$ref": "#/definitions/FormatWithoutParameters"
-            - "$ref": "#/definitions/GraphicFormatWithParameters"
-            - "$ref": "#/definitions/NetcdfFormatWithParameters"
-        minItems: 1
-        uniqueItems: true
+        anyOf:
+          # Singleton without parameters
+          - "$ref": "#/definitions/FormatEnum"
+          # Tuple of formats
+          - type: array
+            items:
+              # A simple name or a parameterized type
+              anyOf:
+                - "$ref": "#/definitions/FormatEnum"
+                - "$ref": "#/definitions/GraphicFormatEnum"
+                - "$ref": "#/definitions/FormatWithoutParameters"
+                - "$ref": "#/definitions/GraphicFormatWithParameters"
+                - "$ref": "#/definitions/NetcdfFormatWithParameters"
+            minItems: 1
+            uniqueItems: true
       # An optional label or name for the evaluation
       label:
         type: string
@@ -224,6 +245,8 @@ definitions:
           - type: string
             minLength: 1
             maxLength: 2083
+          # To support data direct
+          - type: "null"
       variable:
         anyOf:
           - "$ref": "#/definitions/Variable"
@@ -262,8 +285,6 @@ definitions:
             minLength: 1
             maxLength: 6
           - type: integer
-    required:
-      - sources
 
   # Should be possible to re-use ObservedOrPredicted by adding a persistence
   # property within an allOf block, but this does not work in practice while
@@ -289,6 +310,8 @@ definitions:
           - type: string
             minLength: 1
             maxLength: 2083
+          # To support data direct
+          - type: "null"
       feature_authority:
         "$ref": "#/definitions/FeatureAuthorityEnum"
       variable:
@@ -347,8 +370,6 @@ definitions:
         type: boolean
       type:
         "$ref": "#/definitions/DataTypeEnum"
-    required:
-      - sources
 
   Source:
     title: A data source.
@@ -474,8 +495,6 @@ definitions:
       # resulting validation does not produce intelligible errors, so a balance
       # is needed between schema-level validation (fail early) and application-
       # level validation (fail later, but better).
-    required:
-      - function
 
   TimeShift:
     title: A timeshift to apply to a dataset.
@@ -589,7 +608,6 @@ definitions:
     properties:
       uri:
         type: string
-        format: uri
         minLength: 1
         maxLength: 2083
       group:
@@ -614,7 +632,6 @@ definitions:
     properties:
       uri:
         type: string
-        format: uri
         minLength: 1
         maxLength: 2083
       groups:
@@ -690,12 +707,12 @@ definitions:
     required:
       - wkt
 
-  AnalysisDurations:
+  AnalysisTimes:
     title: The durations to consider when evaluating model analyses.
     type: object
     additionalProperties: false
     properties:
-      minimum_exclusive:
+      minimum:
         type: integer
       maximum:
         type: integer
@@ -805,14 +822,19 @@ definitions:
     additionalProperties: false
     properties:
       members:
-        type: array
-        items:
-          anyOf:
-            - type: string
-              minLength: 1
-              maxLength: 72
-            - type: integer
-        minItems: 1
+        anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 72
+          - type: integer
+          - type: array
+            items:
+              anyOf:
+                - type: string
+                  minLength: 1
+                  maxLength: 72
+                - type: integer
+            minItems: 1
       exclude:
         type: boolean
     required:
@@ -886,10 +908,12 @@ definitions:
     additionalProperties: false
     properties:
       values:
-        type: array
-        items:
-          "$ref": "#/definitions/Threshold"
-        minItems: 1
+        anyOf:
+          - type: array
+            items:
+              "$ref": "#/definitions/Threshold"
+            minItems: 1
+          - type: number
       operator:
         "$ref": "#/definitions/ThresholdOperatorEnum"
       apply_to:
@@ -956,10 +980,14 @@ definitions:
     additionalProperties: false
     properties:
       values:
-        type: array
-        items:
-          "$ref": "#/definitions/ProbabilityThreshold"
-        minItems: 1
+        anyOf:
+          - type: array
+            items:
+              "$ref": "#/definitions/ProbabilityThreshold"
+            minItems: 1
+          - type: number
+            minimum: 0.0
+            maximum: 1.0
       operator:
         "$ref": "#/definitions/ThresholdOperatorEnum"
       apply_to:

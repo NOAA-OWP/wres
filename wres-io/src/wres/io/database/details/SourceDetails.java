@@ -238,9 +238,11 @@ public class SourceDetails extends CachedDetail<SourceDetails, String>
 
         script.setHighPriority( true );
 
-        script.addLine(
-                "INSERT INTO wres.Source ( path, lead, hash, is_point_data, feature_id, timescale_id, measurementunit_id, variable_name )" );
-        script.addTab().addLine( "SELECT ?, ?, ?, ?, ?, ?, ?, ?" );
+        String insertStatement =
+                "INSERT INTO wres.Source ( path, lead, hash, is_point_data, feature_id, timescale_id, measurementunit_id, variable_name )";
+        script.addLine( insertStatement );
+        script.addTab()
+              .addLine( "SELECT ?, ?, ?, ?, ?, ?, ?, ?" );
 
         if ( this.getSourcePath() != null )
         {
@@ -262,9 +264,12 @@ public class SourceDetails extends CachedDetail<SourceDetails, String>
 
         script.addTab().addLine( "WHERE NOT EXISTS" );
         script.addTab().addLine( "(" );
-        script.addTab( 2 ).addLine( "SELECT 1" );
-        script.addTab( 2 ).addLine( "FROM wres.Source" );
-        script.addTab( 2 ).addLine( "WHERE hash = ?" );
+        script.addTab( 2 )
+              .addLine( "SELECT 1" );
+        script.addTab( 2 )
+              .addLine( "FROM wres.Source" );
+        script.addTab( 2 )
+              .addLine( "WHERE hash = ?" );
 
         script.addArgument( this.getHash() );
 
@@ -295,7 +300,8 @@ public class SourceDetails extends CachedDetail<SourceDetails, String>
             DataScripter scriptWithId = new DataScripter( database );
             scriptWithId.setHighPriority( true );
             scriptWithId.setUseTransaction( false );
-            scriptWithId.add( "SELECT " ).addLine( this.getIDName() );
+            scriptWithId.add( "SELECT " )
+                        .addLine( this.getIDName() );
             scriptWithId.addLine( "FROM wres.Source" );
             scriptWithId.addLine( "WHERE hash = ? " );
             scriptWithId.addArgument( this.hash );
@@ -303,7 +309,17 @@ public class SourceDetails extends CachedDetail<SourceDetails, String>
 
             try ( DataProvider data = scriptWithId.getData() )
             {
-                this.sourceId = data.getLong( this.getIDName() );
+                if ( !data.isEmpty() )
+                {
+                    this.sourceId = data.getLong( this.getIDName() );
+                }
+                else if ( LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( "Failed to acquire a time-series source_id for time-series {}. This may be because "
+                                 + "the source was deleted by another thread while attempting to insert it in "
+                                 + "this thread, '{}'.", this.hash, Thread.currentThread()
+                                                                          .getName() );
+                }
             }
         }
 
