@@ -554,7 +554,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         Map<FeatureTuple, Set<ThresholdOuter>> unique =
                 ThresholdSlicer.filter( withQuantiles, ThresholdSlicer::filter );
 
-        // Decompose the thresholds by common type across features
+        // Decompose the thresholds into groups whereby each group contains one "logical" threshold per feature. For
+        // example, a logical threshold is a threshold that is consistently named "banana" across all features
         List<Map<FeatureTuple, ThresholdOuter>> decomposedThresholds = ThresholdSlicer.decompose( unique );
 
         // Iterate the thresholds
@@ -702,7 +703,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         Map<FeatureTuple, Set<ThresholdOuter>> unique =
                 ThresholdSlicer.filter( withQuantiles, ThresholdSlicer::filter );
 
-        // Decompose the thresholds by common type across features
+        // Decompose the thresholds into groups whereby each group contains one "logical" threshold per feature. For
+        // example, a logical threshold is a threshold that is consistently named "banana" across all features
         List<Map<FeatureTuple, ThresholdOuter>> decomposedThresholds = ThresholdSlicer.decompose( unique );
 
         //Define a mapper to convert the single-valued pairs to dichotomous pairs
@@ -898,7 +900,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         Map<FeatureTuple, Set<ThresholdOuter>> unique =
                 ThresholdSlicer.filter( withQuantiles, ThresholdSlicer::filter );
 
-        // Decompose the thresholds by common type across features
+        // Decompose the thresholds into groups whereby each group contains one "logical" threshold per feature. For
+        // example, a logical threshold is a threshold that is consistently named "banana" across all features
         List<Map<FeatureTuple, ThresholdOuter>> decomposedThresholds = ThresholdSlicer.decompose( unique );
 
         // Define a mapper to convert the single-valued pairs to dichotomous pairs

@@ -130,6 +130,72 @@ class ThresholdSlicerTest
     }
 
     @Test
+    void testDecomposeWithDuplicates()
+    {
+        ThresholdOuter oneThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( 1.0 ),
+                                                         ThresholdOperator.GREATER,
+                                                         ThresholdOrientation.LEFT,
+                                                         "ACTION",
+                                                         MeasurementUnit.of( CMS ) );
+
+        ThresholdOuter anotherThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( 2.0 ),
+                                                             ThresholdOperator.GREATER,
+                                                             ThresholdOrientation.LEFT,
+                                                             FLOOD,
+                                                             MeasurementUnit.of( CMS ) );
+
+        Set<ThresholdOuter> someThresholds = Set.of( oneThreshold, anotherThreshold );
+
+        ThresholdOuter oneMoreThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( 3.0 ),
+                                                             ThresholdOperator.GREATER,
+                                                             ThresholdOrientation.LEFT,
+                                                             "ACTION",
+                                                             MeasurementUnit.of( CMS ) );
+
+        ThresholdOuter yetAnotherThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( 4.0 ),
+                                                                ThresholdOperator.GREATER,
+                                                                ThresholdOrientation.LEFT,
+                                                                FLOOD,
+                                                                MeasurementUnit.of( CMS ) );
+
+        ThresholdOuter duplicateOfYetAnotherThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( 5.0 ),
+                                                                           ThresholdOperator.GREATER,
+                                                                           ThresholdOrientation.LEFT,
+                                                                           FLOOD,
+                                                                           MeasurementUnit.of( CMS ) );
+
+        Set<ThresholdOuter> someMoreThresholds = Set.of( oneMoreThreshold,
+                                                         yetAnotherThreshold,
+                                                         duplicateOfYetAnotherThreshold );
+
+        Map<FeatureTuple, Set<ThresholdOuter>> mapOfThresholds = new HashMap<>();
+
+        mapOfThresholds.put( this.featureTuple, someThresholds );
+        mapOfThresholds.put( this.anotherFeatureTuple, someMoreThresholds );
+
+        List<Map<FeatureTuple, ThresholdOuter>> actual = ThresholdSlicer.decompose( mapOfThresholds );
+
+        List<Map<FeatureTuple, ThresholdOuter>> expected = new ArrayList<>();
+
+        Map<FeatureTuple, ThresholdOuter> aMap = new HashMap<>();
+        aMap.put( this.featureTuple, oneThreshold );
+        aMap.put( this.anotherFeatureTuple, oneMoreThreshold );
+
+        Map<FeatureTuple, ThresholdOuter> anotherMap = new HashMap<>();
+        anotherMap.put( this.featureTuple, anotherThreshold );
+        anotherMap.put( this.anotherFeatureTuple, yetAnotherThreshold );
+
+        Map<FeatureTuple, ThresholdOuter> yetAnotherMap = new HashMap<>();
+        yetAnotherMap.put( this.anotherFeatureTuple, duplicateOfYetAnotherThreshold );
+
+        expected.add( aMap );
+        expected.add( anotherMap );
+        expected.add( yetAnotherMap );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testAddQuantiles()
     {
         Geometry geometry = Geometry.newBuilder()
@@ -641,11 +707,11 @@ class ThresholdSlicerTest
         ThresholdOuter expectedThresholdTwo = ThresholdOuter.of( thresholdTwo.threshold(), ThresholdType.PROBABILITY );
 
         Map<FeatureTuple, Set<ThresholdOuter>> expectedThresholds = Map.of( tupleOne,
-                                                                               Set.of( expectedThresholdOne,
-                                                                                       expectedThresholdTwo ),
-                                                                               tupleTwo,
-                                                                               Set.of( expectedThresholdOne,
-                                                                                       expectedThresholdTwo ) );
+                                                                            Set.of( expectedThresholdOne,
+                                                                                    expectedThresholdTwo ),
+                                                                            tupleTwo,
+                                                                            Set.of( expectedThresholdOne,
+                                                                                    expectedThresholdTwo ) );
 
 
         MetricsAndThresholds firstExpected = new MetricsAndThresholds( Set.of( MetricConstants.MEAN_ABSOLUTE_ERROR ),

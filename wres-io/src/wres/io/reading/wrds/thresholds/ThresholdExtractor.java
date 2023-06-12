@@ -104,9 +104,9 @@ class ThresholdExtractor
 
         for ( ThresholdDefinition definition : thresholdDefinitions )
         {
-            // If the user specifies a threshold provider then it must match that found in the threshold for it
-            // to be used.  If the user specifies a rating curve provider, then that must match as well.
-            // If either is unspecified (i.e., null), then it is not used to determine if a threshold is used.
+            // If the user specifies a threshold provider, then it must match the provider found in the threshold for
+            // it to be used. If the user specifies a rating curve provider, then that must match too. If either is
+            // unspecified (i.e., null), then the thresholds are not filtered with respect to that attribute.
             if ( ( ( this.provider == null ) || this.provider.equals( definition.getThresholdProvider() ) )
                  && ( this.ratingProvider == null || this.ratingProvider.equals( definition.getRatingProvider() ) ) )
             {

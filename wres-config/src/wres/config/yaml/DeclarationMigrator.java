@@ -2098,12 +2098,19 @@ public class DeclarationMigrator
             missingValue = Double.parseDouble( thresholdSource.getMissingValue() );
         }
 
+        String thresholdUnit = null;
+        String existingUnit = thresholdSource.getUnit();
+        if( Objects.nonNull( existingUnit ) && ! existingUnit.isBlank() )
+        {
+            thresholdUnit = existingUnit;
+        }
+
         return ThresholdSourceBuilder.builder()
                                      .uri( thresholdSource.getValue() )
                                      .type( canonicalType )
                                      .operator( operator )
                                      .applyTo( applyTo )
-                                     .unit( thresholdSource.getUnit() )
+                                     .unit( thresholdUnit )
                                      .featureNameFrom( featureNameFrom )
                                      .missingValue( missingValue )
                                      .parameter( thresholdSource.getParameterToMeasure() )
