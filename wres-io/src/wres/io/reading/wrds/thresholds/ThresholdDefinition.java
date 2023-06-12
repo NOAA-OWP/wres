@@ -191,11 +191,10 @@ class ThresholdDefinition implements Serializable
      *
      * @param thresholdType the threshold type
      * @param thresholdOperator the threshold operator
-     * @param dataType the data type
-     * otherwise the original flow thresholds are used.  This flag is ignored for all other thresholds.
+     * @param dataType the data type otherwise the original flow thresholds are used. This flag is ignored for all
+     *                 other thresholds.
      * @param desiredUnitMapper the unit mapper
-     * @return a map of thresholds by location.  This is a singleton map: only one location will be
-     * returned at most.  
+     * @return a map of thresholds by location. This is a singleton map: only one location will be returned at most.
      */
     Map<Location, Set<Threshold>> getThresholds( ThresholdType thresholdType,
                                                  ThresholdOperator thresholdOperator,
@@ -203,21 +202,21 @@ class ThresholdDefinition implements Serializable
                                                  UnitMapper desiredUnitMapper )
     {
         Location location = this.getLocation();
-        Map<String, Threshold> thresholdMap = new HashMap<>();
 
-        //If either of these is null, then it is not used. 
-        //Be sure to check for null before attempting to use.
+        // If either of these is null, then it is not used.
+        // Be sure to check for null before attempting to use.
         Map<String, Double> calculatedThresholds = null;
         Map<String, Double> originalThresholds = null;
 
-        //These are the measurement unit operators based on a desired unit,
-        //passed in, and the String units associated with the threshold.
+        // These are the measurement unit operators based on a desired unit,
+        // passed in, and the String units associated with the threshold.
         DoubleUnaryOperator originalUnitConversionOperator = null;
         DoubleUnaryOperator calculatedUnitConversionOperator = null;
 
-        //Point the two maps and identify the unit operator appropriately.
-        //Unified schema values takes precedence over all others.
-        if ( this.getValues() != null && !this.getValues().getThresholdValues()
+        // Point the two maps and identify the unit operator appropriately.
+        // Unified schema values takes precedence over all others.
+        if ( this.getValues() != null && !this.getValues()
+                                              .getThresholdValues()
                                               .isEmpty() )
         {
             originalThresholds = getValues().getThresholdValues();
@@ -227,9 +226,9 @@ class ThresholdDefinition implements Serializable
                                                                     .getUnit() );
         }
 
-        //When values is not used, then we are looking at NWS thresholds,
-        //which come with stage, flow, and calculated flow options. Select
-        //based on provided threshold type.
+        // When values is not used, then we are looking at NWS thresholds,
+        // which come with stage, flow, and calculated flow options. Select
+        // based on provided threshold type.
         else if ( thresholdType.equals( ThresholdType.STAGE ) )
         {
             if ( this.getStageValues() != null )
@@ -262,6 +261,9 @@ class ThresholdDefinition implements Serializable
                                                                         .getUnit() );
             }
         }
+
+        // Create the threshold map
+        Map<String, Threshold> thresholdMap = new HashMap<>();
 
         // First, the original thresholds go into the map.
         this.addOriginalThresholds( originalThresholds,
@@ -298,7 +300,7 @@ class ThresholdDefinition implements Serializable
                                         UnitMapper desiredUnitMapper,
                                         Map<String, Threshold> thresholdMap )
     {
-        //First, the original thresholds go into the map.
+        // First, the original thresholds go into the map.
         if ( originalThresholds != null )
         {
             for ( Entry<String, Double> threshold : originalThresholds.entrySet() )
@@ -318,7 +320,7 @@ class ThresholdDefinition implements Serializable
     }
 
     /**
-     * Adds the original thresholds to the prescribed map.
+     * Adds the calculated thresholds to the prescribed map.
      * @param calculatedThresholds the calculated thresholds
      * @param calculatedUnitConversionOperator the calculated threshold unit conversion operator
      * @param thresholdOperator the threshold operator
@@ -339,8 +341,8 @@ class ThresholdDefinition implements Serializable
             {
                 if ( threshold.getValue() != null )
                 {
-                    //Build the label.  It will be the threshold key unless that's already used.
-                    //If it is already used, then the rating curve source will be added.
+                    // Build the label. It will be the threshold key unless that's already used.
+                    // If it is already used, then the rating curve source will be added.
                     String label = this.getCalcFlowValues()
                                        .getRatingCurve()
                                        .getSource()

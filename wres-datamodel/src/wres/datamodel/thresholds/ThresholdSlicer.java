@@ -9,7 +9,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
@@ -200,7 +199,7 @@ public class ThresholdSlicer
     /**
      * <p>Decomposes a map of thresholds into N collections, each of which contains one logical threshold for each of 
      * the available keys. Thresholds are logically equivalent if they are equal according to 
-     * {@link #getLogicalThresholdComparator()}.
+     * {@link #getLogicalThresholdComparator()}. Allows for duplicates: see #117102.
      *
      * @param <T> the type of key
      * @param thresholds the thresholds to decompose
@@ -211,7 +210,10 @@ public class ThresholdSlicer
     {
         Objects.requireNonNull( thresholds );
 
-        // Decompose into logical thresholds. There will be as many maps returned as logical thresholds
+        // Decompose into logical thresholds. There will be as many maps returned as logical thresholds where each
+        // duplicate counts as a separate logical threshold. For example, if there are two thresholds named "banana"
+        // for the same key of T=t and the logical comparator looks at threshold name only, then there will be two
+        // separate "banana" thresholds at T=t.
         Comparator<ThresholdOuter> comparator =
                 ( one, two ) -> ThresholdSlicer.getLogicalThresholdComparator()
                                                .compare( OneOrTwoThresholds.of( one ), OneOrTwoThresholds.of( two ) );
@@ -225,26 +227,36 @@ public class ThresholdSlicer
 
         for ( ThresholdOuter nextThreshold : logicalThresholds )
         {
-            Map<T, ThresholdOuter> nextMap = new HashMap<>();
-
+            // As many maps as duplicate logical thresholds
+            List<Map<T, ThresholdOuter>> nextMaps = new ArrayList<>();
             for ( Map.Entry<T, Set<ThresholdOuter>> nextEntry : thresholds.entrySet() )
             {
                 T nextKey = nextEntry.getKey();
                 Set<ThresholdOuter> nextThresholds = nextEntry.getValue();
-                Optional<ThresholdOuter> aMatchingThreshold =
+                // Sorted set of matching thresholds: insofar as the duplicates are ordered, this will maintain the
+                // relative positions of the duplicates
+                Set<ThresholdOuter> matchingThresholds =
                         nextThresholds.stream()
                                       .filter( next -> comparator.compare( next, nextThreshold ) == 0 )
-                                      .findAny();
+                                              .collect( Collectors.toCollection( TreeSet::new ) );
 
-                // Add to the map
-                aMatchingThreshold.ifPresent( thresholdOuter -> nextMap.put( nextKey, thresholdOuter ) );
+                int count = 0;
+                for( ThresholdOuter nextDuplicate : matchingThresholds )
+                {
+                    if( count >= nextMaps.size() )
+                    {
+                        Map<T,ThresholdOuter> nextMap = new HashMap<>();
+                        nextMaps.add( nextMap );
+                    }
+
+                    Map<T,ThresholdOuter> nextMap = nextMaps.get( count );
+                    nextMap.put( nextKey, nextDuplicate );
+                    count++;
+                }
             }
 
             // Add to the list
-            if ( !nextMap.isEmpty() )
-            {
-                returnMe.add( Collections.unmodifiableMap( nextMap ) );
-            }
+            returnMe.addAll( nextMaps );
         }
 
         return Collections.unmodifiableList( returnMe );

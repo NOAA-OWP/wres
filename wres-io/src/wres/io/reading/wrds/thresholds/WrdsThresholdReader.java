@@ -126,6 +126,7 @@ public class WrdsThresholdReader implements ThresholdReader
      * @param featureAuthority the feature authority associated with the feature names
      * @return the thresholds mapped against features
      */
+    @Override
     public Set<wres.config.yaml.components.Threshold> read( ThresholdSource thresholdSource,
                                                             UnitMapper unitMapper,
                                                             Set<String> featureNames,
