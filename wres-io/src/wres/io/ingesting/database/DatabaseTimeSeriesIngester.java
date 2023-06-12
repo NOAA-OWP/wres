@@ -319,7 +319,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
 
     private <T> TimeSeries<T> checkForEmptySeriesAndAddReferenceTimeIfRequired( TimeSeries<T> timeSeries, URI uri )
     {
-        if ( !timeSeries.getReferenceTimes().isEmpty() )
+        if ( !timeSeries.getReferenceTimes()
+                        .isEmpty() )
         {
             return timeSeries;
         }

@@ -192,7 +192,8 @@ public class SourceLoader
         // Are there any sources that need to be retried? If so, that is exceptional, because retries happen in-band to
         // ingest. In practice, this scenario is unlikely because ingest should throw an exception once all retries are
         // exhausted: #89229
-        if ( projectSources.stream().anyMatch( IngestResult::requiresRetry ) )
+        if ( projectSources.stream()
+                           .anyMatch( IngestResult::requiresRetry ) )
         {
             throw new IngestException( "Discovered one or more time-series that had not been ingested after all "
                                        + "retries were exhausted." );
