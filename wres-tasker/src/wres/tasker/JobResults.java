@@ -475,10 +475,12 @@ class JobResults
                     LOGGER.info( "Disk space has reached threshold... attempting to make space" );
                     List<Path> files = JobResults.getFilesInDirectory( Path.of( TMP_DRIVE ) );
                     JobResults.sortFilesByLastModified( files );
+                    LOGGER.info( "There are currently this many files on the list: {}", files.size() );
                     while ( JobResults.storageThresholdExceeded( diskThreshold ) && !files.isEmpty() )
                     {
                         Path fileToDelete = files.remove( 0 );
                         JobResults.deleteFile( fileToDelete );
+                        LOGGER.info( "Deleted this current file: {}", fileToDelete );
                     }
                 }
             }
@@ -572,7 +574,7 @@ class JobResults
      */
     public static void deleteFile( Path file ) throws IOException
     {
-        Files.delete( file );
+        Files.deleteIfExists( file );
     }
 
     public static double decideThreshold()
