@@ -4,6 +4,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.MonthDay;
 import java.time.ZoneOffset;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -401,7 +403,7 @@ class DeclarationValidatorTest
     }
 
     @Test
-    void testDatasetTimeScaleIsValidResultsinError()
+    void testEvaluateDatasetTimeScaleIsValidResultsinError()
     {
         TimeScale timeScaleInner = TimeScale.newBuilder()
                                             .setStartDay( 1 )
@@ -1410,6 +1412,33 @@ class DeclarationValidatorTest
         assertTrue( DeclarationValidatorTest.contains( events,
                                                        "The 'minimum' value of the 'reference_dates' is",
                                                        StatusLevel.WARN ) );
+    }
+
+    /**
+     * Redmine issue #117149.
+     */
+
+    @Test
+    void testTimeScaleSeasonWithoutPeriodProducesNoErrorsOrWarnings()
+    {
+        wres.config.yaml.components.TimeScale timeScale =
+                TimeScaleBuilder.TimeScale( TimeScale.newBuilder()
+                                                     .setStartDay( 1 )
+                                                     .setStartMonth( 1 )
+                                                     .setEndDay( 31 )
+                                                     .setEndMonth( 5 )
+                                                     .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                                     .build() );
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .timeScale( timeScale )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertEquals( Collections.emptyList(), events );
     }
 
     @Test

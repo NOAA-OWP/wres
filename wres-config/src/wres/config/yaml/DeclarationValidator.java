@@ -2638,7 +2638,8 @@ public class DeclarationValidator
         }
 
         // If the season is fully defined, the period cannot be defined
-        if ( Math.min( timeScaleInner.getStartDay(), timeScaleInner.getStartMonth() ) > 0
+        if ( timeScaleInner.hasPeriod()
+             && Math.min( timeScaleInner.getStartDay(), timeScaleInner.getStartMonth() ) > 0
              && Math.max( timeScaleInner.getEndDay(), timeScaleInner.getEndMonth() ) > 0 )
         {
             EvaluationStatusEvent event
@@ -2648,7 +2649,7 @@ public class DeclarationValidator
                                                              + orientation
                                                              + " is not properly declared. The period cannot be "
                                                              + "declared alongside a fully defined season. Please "
-                                                             + "remove the 'period' and 'unit' or remove the  time "
+                                                             + "remove the 'period' and 'unit' or remove the time "
                                                              + "scale season and try again." )
                                            .build();
             events.add( event );
