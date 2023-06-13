@@ -110,4 +110,35 @@ class JobResultsTest
 
         assertFalse( Files.exists( file ) );
     }
+
+    @Test
+    void testSortFilesByLastModifiedUsingGetFilesInDirectory() throws IOException
+    {
+        Path file1 = testingDirectory.resolve( "testFile1.txt" );
+        Path file2 = testingDirectory.resolve( "testFile2.txt" );
+        Path file3 = testingDirectory.resolve( "testFile3.txt" );
+
+        Files.createFile( file1 );
+        Files.createFile( file2 );
+        Files.createFile( file3 );
+
+        Instant modifiedTime1 = Instant.parse( "2023-03-07T12:00:00Z" );
+        Instant modifiedTime2 = Instant.parse( "2023-03-08T12:00:00Z" );
+        Instant modifiedTime3 = Instant.parse( "2023-03-09T12:00:00Z" );
+
+        Files.setLastModifiedTime( file1, FileTime.from( modifiedTime1 ) );
+        Files.setLastModifiedTime( file2, FileTime.from( modifiedTime2 ) );
+        Files.setLastModifiedTime( file3, FileTime.from( modifiedTime3 ) );
+
+        List<Path> files = new ArrayList<>( JobResults.getFilesInDirectory( testingDirectory ) );
+
+
+        Collections.shuffle( files );
+
+        JobResults.sortFilesByLastModified( files );
+
+        assertEquals( file1, files.get( 0 ) );
+        assertEquals( file2, files.get( 1 ) );
+        assertEquals( file3, files.get( 2 ) );
+    }
 }
