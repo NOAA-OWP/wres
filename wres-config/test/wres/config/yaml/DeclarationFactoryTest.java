@@ -1810,7 +1810,9 @@ class DeclarationFactoryTest
                       interface: usgs nwis
                       parameters:
                         foo: bar
-                  variable: foo
+                  variable:
+                    name: foo
+                    label: fooest
                   type: observations
                   time_scale:
                     function: mean
@@ -1869,7 +1871,7 @@ class DeclarationFactoryTest
         Dataset observedDataset = DatasetBuilder.builder()
                                                 .sources( observedSources )
                                                 .type( DataType.OBSERVATIONS )
-                                                .variable( new Variable( "foo", null ) )
+                                                .variable( new Variable( "foo", "fooest" ) )
                                                 .timeScale( outerTimeScale )
                                                 .build();
 
