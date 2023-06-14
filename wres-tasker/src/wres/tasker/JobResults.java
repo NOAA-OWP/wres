@@ -479,6 +479,7 @@ class JobResults
                     {
                         Path fileToDelete = files.remove( 0 );
                         JobResults.deleteFile( fileToDelete );
+                        LOGGER.info( "File that was deleted: {}", fileToDelete);
                     }
                 }
             }
