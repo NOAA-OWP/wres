@@ -382,7 +382,8 @@ public interface DataProvider extends AutoCloseable
         // Until we can figure out how to get exceptions to propagate from
         // submitting to the Database executor, run synchronously in caller's
         // Thread.
-        DatabaseOperations.insertIntoDatabase( database, table,
+        DatabaseOperations.insertIntoDatabase( database,
+                                               table,
                                                columnNames,
                                                values,
                                                charColumns );
