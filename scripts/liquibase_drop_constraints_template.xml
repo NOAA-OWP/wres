@@ -1,0 +1,12 @@
+    <changeSet id="wres.TimeSeriesValue_NAMEHERE - remove constraints on parent table for NAMEHERE"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_NAMEHERE"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_NAMEHERE DROP CONSTRAINT TimeSeriesValue_NAMEHERE_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_NAMEHERE DROP CONSTRAINT timeseriesvalue_NAMEHERE_lead_check;
+        </sql>
+    </changeSet>

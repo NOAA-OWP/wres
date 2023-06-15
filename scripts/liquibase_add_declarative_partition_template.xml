@@ -1,0 +1,15 @@
+    <changeSet id="wres.TimeSeriesValue_NAMEHERE - Set NAMEHERE as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_NAMEHERE"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_NAMEHERE NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_NAMEHERE
+                FOR VALUES FROM ( LOW_CHECK_HERE ) to ( HIGH_CHECK_HERE );
+        </sql>
+    </changeSet>

@@ -2,7 +2,6 @@ package wres.io.ingesting.database;
 
 import java.sql.SQLException;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -292,29 +291,24 @@ public class IncompleteIngest
                          + "will now be removed to ensure that all data operated "
                          + "upon is valid." );
 
-            Set<String> partitionTables = database.getPartitionTables();
-
             // We aren't actually going to collect the results so raw types are fine.
             FutureQueue removalQueue = new FutureQueue();
 
-            for ( String partition : partitionTables )
-            {
-                DataScripter valueRemover = new DataScripter( database );
-                valueRemover.setHighPriority( false );
-                valueRemover.addLine( "DELETE FROM ", partition, " P" );
-                valueRemover.addLine( WHERE_NOT_EXISTS );
-                valueRemover.addTab().addLine( SELECT_1 );
-                valueRemover.addTab().addLine( "FROM wres.TimeSeries TS" );
-                valueRemover.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
-                valueRemover.addTab( 2 ).addLine( "ON PS.source_id = TS.source_id" );
-                valueRemover.addTab().addLine( "WHERE TS.timeseries_id = P.timeseries_id" );
-                valueRemover.addLine( ");" );
+            DataScripter valueRemover = new DataScripter( database );
+            valueRemover.setHighPriority( false );
+            valueRemover.addLine( "DELETE FROM wres.TimeSeriesValue P" );
+            valueRemover.addLine( WHERE_NOT_EXISTS );
+            valueRemover.addTab().addLine( SELECT_1 );
+            valueRemover.addTab().addLine( "FROM wres.TimeSeries TS" );
+            valueRemover.addTab().addLine( "INNER JOIN wres.ProjectSource PS" );
+            valueRemover.addTab( 2 ).addLine( "ON PS.source_id = TS.source_id" );
+            valueRemover.addTab().addLine( "WHERE TS.timeseries_id = P.timeseries_id" );
+            valueRemover.addLine( ");" );
 
-                Future<?> timeSeriesValueRemoval = valueRemover.issue();
-                removalQueue.add( timeSeriesValueRemoval );
+            Future<?> timeSeriesValueRemoval = valueRemover.issue();
+            removalQueue.add( timeSeriesValueRemoval );
 
-                LOGGER.debug( "Started task to remove orphaned values in {}...", partition );
-            }
+            LOGGER.debug( "Started task to remove orphaned values in wres.TimeSeriesValue" );
 
             IncompleteIngest.loop( removalQueue,
                                    "Orphaned observed and forecasted values could not be removed." );

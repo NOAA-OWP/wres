@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.TimeSeriesValuePart - Drop old TimeSeriesValue table from postgres."
+               author="Evan Pagryzinski"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue" schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart" schemaName="wres" />
+        </preConditions>
+        <sql>
+            DROP TABLE wres.TimeSeriesValue CASCADE;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValuePart - Change wres.TimeSeriesValuePart to TimeSeriesValue in postgres"
+               author="Evan Pagryzinski"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValuePart" schemaName="wres" />
+            <not>
+                <tableExists tableName="TimeSeriesValue" schemaName="wres" />
+            </not>
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValuePart RENAME TO TimeSeriesValue;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue -  Add timeseries_id,lead index for postgres declarative partitions."
+               author="Evan Pagryzinski"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists tableName="TimeSeriesValue"
+                             schemaName="wres"
+                             indexName="TimeSeriesValue_timeseries_lead_key" />
+            </not>
+        </preConditions>
+        <sql>
+            CREATE INDEX TimeSeriesValue_timeseries_lead_key ON wres.TimeSeriesValue ( timeseries_id, lead );
+        </sql>
+    </changeSet>
+</databaseChangeLog>

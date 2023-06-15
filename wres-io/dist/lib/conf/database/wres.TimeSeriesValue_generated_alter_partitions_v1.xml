@@ -1,0 +1,2451 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.TimeSeriesValue_lead_1 - Set lead_1 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_1"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_1 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_1
+                FOR VALUES FROM ( 1200 ) to ( 2400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_2 - Set lead_2 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_2"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_2 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_2
+                FOR VALUES FROM ( 2400 ) to ( 3600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_3 - Set lead_3 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_3"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_3 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_3
+                FOR VALUES FROM ( 3600 ) to ( 4800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_4 - Set lead_4 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_4"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_4 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_4
+                FOR VALUES FROM ( 4800 ) to ( 6000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_5 - Set lead_5 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_5"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_5 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_5
+                FOR VALUES FROM ( 6000 ) to ( 7200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_6 - Set lead_6 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_6"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_6 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_6
+                FOR VALUES FROM ( 7200 ) to ( 8400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_7 - Set lead_7 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_7"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_7 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_7
+                FOR VALUES FROM ( 8400 ) to ( 9600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_8 - Set lead_8 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_8"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_8 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_8
+                FOR VALUES FROM ( 9600 ) to ( 10800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_9 - Set lead_9 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_9"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_9 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_9
+                FOR VALUES FROM ( 10800 ) to ( 12000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_10 - Set lead_10 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_10"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_10 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_10
+                FOR VALUES FROM ( 12000 ) to ( 13200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_11 - Set lead_11 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_11"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_11 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_11
+                FOR VALUES FROM ( 13200 ) to ( 14400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_12 - Set lead_12 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_12"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_12 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_12
+                FOR VALUES FROM ( 14400 ) to ( 15600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_13 - Set lead_13 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_13"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_13 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_13
+                FOR VALUES FROM ( 15600 ) to ( 16800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_14 - Set lead_14 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_14"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_14 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_14
+                FOR VALUES FROM ( 16800 ) to ( 18000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_15 - Set lead_15 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_15"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_15 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_15
+                FOR VALUES FROM ( 18000 ) to ( 19200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_16 - Set lead_16 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_16"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_16 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_16
+                FOR VALUES FROM ( 19200 ) to ( 20400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_17 - Set lead_17 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_17"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_17 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_17
+                FOR VALUES FROM ( 20400 ) to ( 21600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_18 - Set lead_18 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_18"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_18 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_18
+                FOR VALUES FROM ( 21600 ) to ( 22800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_19 - Set lead_19 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_19"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_19 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_19
+                FOR VALUES FROM ( 22800 ) to ( 24000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_20 - Set lead_20 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_20"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_20 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_20
+                FOR VALUES FROM ( 24000 ) to ( 25200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_21 - Set lead_21 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_21"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_21 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_21
+                FOR VALUES FROM ( 25200 ) to ( 26400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_22 - Set lead_22 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_22"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_22 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_22
+                FOR VALUES FROM ( 26400 ) to ( 27600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_23 - Set lead_23 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_23"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_23 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_23
+                FOR VALUES FROM ( 27600 ) to ( 28800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_24 - Set lead_24 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_24"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_24 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_24
+                FOR VALUES FROM ( 28800 ) to ( 30000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_25 - Set lead_25 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_25"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_25 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_25
+                FOR VALUES FROM ( 30000 ) to ( 31200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_26 - Set lead_26 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_26"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_26 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_26
+                FOR VALUES FROM ( 31200 ) to ( 32400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_27 - Set lead_27 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_27"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_27 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_27
+                FOR VALUES FROM ( 32400 ) to ( 33600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_28 - Set lead_28 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_28"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_28 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_28
+                FOR VALUES FROM ( 33600 ) to ( 34800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_29 - Set lead_29 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_29"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_29 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_29
+                FOR VALUES FROM ( 34800 ) to ( 36000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_30 - Set lead_30 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_30"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_30 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_30
+                FOR VALUES FROM ( 36000 ) to ( 37200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_31 - Set lead_31 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_31"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_31 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_31
+                FOR VALUES FROM ( 37200 ) to ( 38400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_32 - Set lead_32 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_32"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_32 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_32
+                FOR VALUES FROM ( 38400 ) to ( 39600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_33 - Set lead_33 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_33"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_33 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_33
+                FOR VALUES FROM ( 39600 ) to ( 40800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_34 - Set lead_34 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_34"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_34 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_34
+                FOR VALUES FROM ( 40800 ) to ( 42000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_35 - Set lead_35 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_35"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_35 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_35
+                FOR VALUES FROM ( 42000 ) to ( 43200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_36 - Set lead_36 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_36"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_36 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_36
+                FOR VALUES FROM ( 43200 ) to ( 44400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_37 - Set lead_37 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_37"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_37 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_37
+                FOR VALUES FROM ( 44400 ) to ( 45600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_38 - Set lead_38 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_38"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_38 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_38
+                FOR VALUES FROM ( 45600 ) to ( 46800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_39 - Set lead_39 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_39"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_39 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_39
+                FOR VALUES FROM ( 46800 ) to ( 48000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_40 - Set lead_40 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_40"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_40 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_40
+                FOR VALUES FROM ( 48000 ) to ( 49200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_41 - Set lead_41 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_41"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_41 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_41
+                FOR VALUES FROM ( 49200 ) to ( 50400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_42 - Set lead_42 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_42"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_42 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_42
+                FOR VALUES FROM ( 50400 ) to ( 51600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_43 - Set lead_43 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_43"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_43 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_43
+                FOR VALUES FROM ( 51600 ) to ( 52800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_44 - Set lead_44 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_44"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_44 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_44
+                FOR VALUES FROM ( 52800 ) to ( 54000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_45 - Set lead_45 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_45"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_45 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_45
+                FOR VALUES FROM ( 54000 ) to ( 55200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_46 - Set lead_46 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_46"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_46 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_46
+                FOR VALUES FROM ( 55200 ) to ( 56400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_47 - Set lead_47 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_47"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_47 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_47
+                FOR VALUES FROM ( 56400 ) to ( 57600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_48 - Set lead_48 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_48"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_48 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_48
+                FOR VALUES FROM ( 57600 ) to ( 58800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_49 - Set lead_49 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_49"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_49 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_49
+                FOR VALUES FROM ( 58800 ) to ( 60000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_50 - Set lead_50 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_50"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_50 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_50
+                FOR VALUES FROM ( 60000 ) to ( 61200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_51 - Set lead_51 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_51"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_51 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_51
+                FOR VALUES FROM ( 61200 ) to ( 62400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_52 - Set lead_52 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_52"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_52 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_52
+                FOR VALUES FROM ( 62400 ) to ( 63600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_53 - Set lead_53 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_53"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_53 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_53
+                FOR VALUES FROM ( 63600 ) to ( 64800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_54 - Set lead_54 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_54"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_54 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_54
+                FOR VALUES FROM ( 64800 ) to ( 66000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_55 - Set lead_55 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_55"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_55 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_55
+                FOR VALUES FROM ( 66000 ) to ( 67200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_56 - Set lead_56 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_56"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_56 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_56
+                FOR VALUES FROM ( 67200 ) to ( 68400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_57 - Set lead_57 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_57"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_57 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_57
+                FOR VALUES FROM ( 68400 ) to ( 69600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_58 - Set lead_58 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_58"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_58 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_58
+                FOR VALUES FROM ( 69600 ) to ( 70800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_59 - Set lead_59 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_59"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_59 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_59
+                FOR VALUES FROM ( 70800 ) to ( 72000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_60 - Set lead_60 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_60"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_60 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_60
+                FOR VALUES FROM ( 72000 ) to ( 73200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_61 - Set lead_61 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_61"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_61 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_61
+                FOR VALUES FROM ( 73200 ) to ( 74400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_62 - Set lead_62 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_62"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_62 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_62
+                FOR VALUES FROM ( 74400 ) to ( 75600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_63 - Set lead_63 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_63"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_63 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_63
+                FOR VALUES FROM ( 75600 ) to ( 76800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_64 - Set lead_64 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_64"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_64 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_64
+                FOR VALUES FROM ( 76800 ) to ( 78000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_65 - Set lead_65 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_65"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_65 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_65
+                FOR VALUES FROM ( 78000 ) to ( 79200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_66 - Set lead_66 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_66"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_66 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_66
+                FOR VALUES FROM ( 79200 ) to ( 80400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_67 - Set lead_67 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_67"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_67 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_67
+                FOR VALUES FROM ( 80400 ) to ( 81600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_68 - Set lead_68 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_68"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_68 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_68
+                FOR VALUES FROM ( 81600 ) to ( 82800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_69 - Set lead_69 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_69"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_69 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_69
+                FOR VALUES FROM ( 82800 ) to ( 84000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_70 - Set lead_70 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_70"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_70 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_70
+                FOR VALUES FROM ( 84000 ) to ( 85200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_71 - Set lead_71 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_71"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_71 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_71
+                FOR VALUES FROM ( 85200 ) to ( 86400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_72 - Set lead_72 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_72"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_72 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_72
+                FOR VALUES FROM ( 86400 ) to ( 87600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_73 - Set lead_73 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_73"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_73 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_73
+                FOR VALUES FROM ( 87600 ) to ( 88800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_74 - Set lead_74 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_74"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_74 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_74
+                FOR VALUES FROM ( 88800 ) to ( 90000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_75 - Set lead_75 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_75"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_75 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_75
+                FOR VALUES FROM ( 90000 ) to ( 91200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_76 - Set lead_76 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_76"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_76 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_76
+                FOR VALUES FROM ( 91200 ) to ( 92400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_77 - Set lead_77 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_77"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_77 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_77
+                FOR VALUES FROM ( 92400 ) to ( 93600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_78 - Set lead_78 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_78"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_78 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_78
+                FOR VALUES FROM ( 93600 ) to ( 94800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_79 - Set lead_79 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_79"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_79 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_79
+                FOR VALUES FROM ( 94800 ) to ( 96000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_80 - Set lead_80 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_80"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_80 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_80
+                FOR VALUES FROM ( 96000 ) to ( 97200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_81 - Set lead_81 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_81"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_81 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_81
+                FOR VALUES FROM ( 97200 ) to ( 98400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_82 - Set lead_82 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_82"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_82 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_82
+                FOR VALUES FROM ( 98400 ) to ( 99600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_83 - Set lead_83 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_83"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_83 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_83
+                FOR VALUES FROM ( 99600 ) to ( 100800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_84 - Set lead_84 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_84"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_84 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_84
+                FOR VALUES FROM ( 100800 ) to ( 102000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_85 - Set lead_85 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_85"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_85 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_85
+                FOR VALUES FROM ( 102000 ) to ( 103200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_86 - Set lead_86 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_86"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_86 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_86
+                FOR VALUES FROM ( 103200 ) to ( 104400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_87 - Set lead_87 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_87"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_87 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_87
+                FOR VALUES FROM ( 104400 ) to ( 105600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_88 - Set lead_88 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_88"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_88 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_88
+                FOR VALUES FROM ( 105600 ) to ( 106800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_89 - Set lead_89 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_89"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_89 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_89
+                FOR VALUES FROM ( 106800 ) to ( 108000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_90 - Set lead_90 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_90"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_90 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_90
+                FOR VALUES FROM ( 108000 ) to ( 109200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_91 - Set lead_91 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_91"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_91 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_91
+                FOR VALUES FROM ( 109200 ) to ( 110400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_92 - Set lead_92 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_92"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_92 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_92
+                FOR VALUES FROM ( 110400 ) to ( 111600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_93 - Set lead_93 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_93"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_93 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_93
+                FOR VALUES FROM ( 111600 ) to ( 112800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_94 - Set lead_94 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_94"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_94 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_94
+                FOR VALUES FROM ( 112800 ) to ( 114000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_95 - Set lead_95 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_95"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_95 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_95
+                FOR VALUES FROM ( 114000 ) to ( 115200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_96 - Set lead_96 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_96"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_96 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_96
+                FOR VALUES FROM ( 115200 ) to ( 116400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_97 - Set lead_97 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_97"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_97 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_97
+                FOR VALUES FROM ( 116400 ) to ( 117600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_98 - Set lead_98 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_98"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_98 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_98
+                FOR VALUES FROM ( 117600 ) to ( 118800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_99 - Set lead_99 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_99"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_99 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_99
+                FOR VALUES FROM ( 118800 ) to ( 120000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_100 - Set lead_100 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_100"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_100 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_100
+                FOR VALUES FROM ( 120000 ) to ( 121200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_101 - Set lead_101 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_101"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_101 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_101
+                FOR VALUES FROM ( 121200 ) to ( 122400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_102 - Set lead_102 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_102"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_102 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_102
+                FOR VALUES FROM ( 122400 ) to ( 123600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_103 - Set lead_103 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_103"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_103 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_103
+                FOR VALUES FROM ( 123600 ) to ( 124800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_104 - Set lead_104 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_104"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_104 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_104
+                FOR VALUES FROM ( 124800 ) to ( 126000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_105 - Set lead_105 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_105"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_105 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_105
+                FOR VALUES FROM ( 126000 ) to ( 127200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_106 - Set lead_106 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_106"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_106 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_106
+                FOR VALUES FROM ( 127200 ) to ( 128400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_107 - Set lead_107 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_107"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_107 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_107
+                FOR VALUES FROM ( 128400 ) to ( 129600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_108 - Set lead_108 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_108"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_108 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_108
+                FOR VALUES FROM ( 129600 ) to ( 130800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_109 - Set lead_109 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_109"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_109 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_109
+                FOR VALUES FROM ( 130800 ) to ( 132000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_110 - Set lead_110 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_110"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_110 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_110
+                FOR VALUES FROM ( 132000 ) to ( 133200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_111 - Set lead_111 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_111"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_111 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_111
+                FOR VALUES FROM ( 133200 ) to ( 134400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_112 - Set lead_112 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_112"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_112 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_112
+                FOR VALUES FROM ( 134400 ) to ( 135600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_113 - Set lead_113 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_113"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_113 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_113
+                FOR VALUES FROM ( 135600 ) to ( 136800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_114 - Set lead_114 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_114"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_114 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_114
+                FOR VALUES FROM ( 136800 ) to ( 138000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_115 - Set lead_115 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_115"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_115 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_115
+                FOR VALUES FROM ( 138000 ) to ( 139200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_116 - Set lead_116 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_116"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_116 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_116
+                FOR VALUES FROM ( 139200 ) to ( 140400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_117 - Set lead_117 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_117"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_117 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_117
+                FOR VALUES FROM ( 140400 ) to ( 141600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_118 - Set lead_118 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_118"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_118 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_118
+                FOR VALUES FROM ( 141600 ) to ( 142800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_119 - Set lead_119 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_119"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_119 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_119
+                FOR VALUES FROM ( 142800 ) to ( 144000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_120 - Set lead_120 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_120"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_120 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_120
+                FOR VALUES FROM ( 144000 ) to ( 145200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_121 - Set lead_121 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_121"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_121 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_121
+                FOR VALUES FROM ( 145200 ) to ( 146400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_122 - Set lead_122 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_122"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_122 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_122
+                FOR VALUES FROM ( 146400 ) to ( 147600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_123 - Set lead_123 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_123"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_123 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_123
+                FOR VALUES FROM ( 147600 ) to ( 148800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_124 - Set lead_124 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_124"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_124 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_124
+                FOR VALUES FROM ( 148800 ) to ( 150000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_125 - Set lead_125 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_125"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_125 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_125
+                FOR VALUES FROM ( 150000 ) to ( 151200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_126 - Set lead_126 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_126"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_126 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_126
+                FOR VALUES FROM ( 151200 ) to ( 152400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_127 - Set lead_127 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_127"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_127 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_127
+                FOR VALUES FROM ( 152400 ) to ( 153600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_128 - Set lead_128 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_128"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_128 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_128
+                FOR VALUES FROM ( 153600 ) to ( 154800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_129 - Set lead_129 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_129"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_129 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_129
+                FOR VALUES FROM ( 154800 ) to ( 156000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_130 - Set lead_130 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_130"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_130 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_130
+                FOR VALUES FROM ( 156000 ) to ( 157200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_131 - Set lead_131 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_131"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_131 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_131
+                FOR VALUES FROM ( 157200 ) to ( 158400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_132 - Set lead_132 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_132"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_132 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_132
+                FOR VALUES FROM ( 158400 ) to ( 159600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_133 - Set lead_133 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_133"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_133 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_133
+                FOR VALUES FROM ( 159600 ) to ( 160800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_134 - Set lead_134 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_134"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_134 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_134
+                FOR VALUES FROM ( 160800 ) to ( 162000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_135 - Set lead_135 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_135"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_135 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_135
+                FOR VALUES FROM ( 162000 ) to ( 163200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_136 - Set lead_136 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_136"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_136 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_136
+                FOR VALUES FROM ( 163200 ) to ( 164400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_137 - Set lead_137 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_137"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_137 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_137
+                FOR VALUES FROM ( 164400 ) to ( 165600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_138 - Set lead_138 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_138"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_138 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_138
+                FOR VALUES FROM ( 165600 ) to ( 166800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_139 - Set lead_139 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_139"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_139 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_139
+                FOR VALUES FROM ( 166800 ) to ( 168000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_140 - Set lead_140 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_140"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_140 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_140
+                FOR VALUES FROM ( 168000 ) to ( 169200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_141 - Set lead_141 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_141"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_141 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_141
+                FOR VALUES FROM ( 169200 ) to ( 170400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_142 - Set lead_142 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_142"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_142 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_142
+                FOR VALUES FROM ( 170400 ) to ( 171600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_143 - Set lead_143 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_143"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_143 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_143
+                FOR VALUES FROM ( 171600 ) to ( 172800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_144 - Set lead_144 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_144"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_144 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_144
+                FOR VALUES FROM ( 172800 ) to ( 174000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_145 - Set lead_145 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_145"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_145 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_145
+                FOR VALUES FROM ( 174000 ) to ( 175200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_146 - Set lead_146 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_146"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_146 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_146
+                FOR VALUES FROM ( 175200 ) to ( 176400 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_147 - Set lead_147 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_147"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_147 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_147
+                FOR VALUES FROM ( 176400 ) to ( 177600 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_148 - Set lead_148 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_148"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_148 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_148
+                FOR VALUES FROM ( 177600 ) to ( 178800 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_149 - Set lead_149 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_149"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_149 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_149
+                FOR VALUES FROM ( 178800 ) to ( 180000 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_150 - Set lead_150 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_150"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_150 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_150
+                FOR VALUES FROM ( 180000 ) to ( 181200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_1 - Set lead_Negative_1 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Negative_1"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_1 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_Negative_1
+                FOR VALUES FROM ( -2399 ) to ( -1199 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_2 - Set lead_Negative_2 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Negative_2"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_2 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_Negative_2
+                FOR VALUES FROM ( -3599 ) to ( -2399 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_3 - Set lead_Negative_3 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Negative_3"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_3 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_Negative_3
+                FOR VALUES FROM ( -4799 ) to ( -3599 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_4 - Set lead_Negative_4 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Negative_4"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_4 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_Negative_4
+                FOR VALUES FROM ( -5999 ) to ( -4799 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_5 - Set lead_Negative_5 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Negative_5"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_5 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_Negative_5
+                FOR VALUES FROM ( -7199 ) to ( -5999 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_6 - Set lead_Negative_6 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Negative_6"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_6 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_Negative_6
+                FOR VALUES FROM ( -8399 ) to ( -7199 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_7 - Set lead_Negative_7 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Negative_7"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_7 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_Negative_7
+                FOR VALUES FROM ( -9599 ) to ( -8399 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_8 - Set lead_Negative_8 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Negative_8"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_8 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_Negative_8
+                FOR VALUES FROM ( -10799 ) to ( -9599 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_9 - Set lead_Negative_9 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Negative_9"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_9 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_Negative_9
+                FOR VALUES FROM ( -11999 ) to ( -10799 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_10 - Set lead_Negative_10 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Negative_10"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_10 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_Negative_10
+                FOR VALUES FROM ( -13199 ) to ( -11999 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_0 - Set lead_0 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_0"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_0 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_0
+                FOR VALUES FROM ( -1199 ) to ( 1200 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Below_Negative_10 - Set lead_Below_Negative_10 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Below_Negative_10"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Below_Negative_10 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_Below_Negative_10
+                FOR VALUES FROM ( -2147483648 ) to ( -13199 );
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Above_150 - Set lead_Above_150 as a partition of wres.TimeSeriesValuePart"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Above_150"
+                         schemaName="wres" />
+            <tableExists tableName="TimeSeriesValuePart"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Above_150 NO INHERIT wres.TimeSeriesValue;
+            ALTER TABLE wres.TimeSeriesValuePart ATTACH PARTITION wres.TimeSeriesValue_lead_Above_150
+                FOR VALUES FROM ( 181200 ) to ( 2147483647 );
+        </sql>
+    </changeSet>
+</databaseChangeLog>
