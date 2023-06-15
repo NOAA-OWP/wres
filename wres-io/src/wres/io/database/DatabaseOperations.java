@@ -537,7 +537,6 @@ public class DatabaseOperations
     private static void clean( Database database ) throws SQLException
     {
         StringJoiner builder;
-        Set<String> partitions = database.getPartitionTables();
 
         if ( database.getType() == DatabaseType.H2 )
         {
@@ -552,13 +551,9 @@ public class DatabaseOperations
             builder = new StringJoiner( System.lineSeparator() );
         }
 
-        for ( String partition : partitions )
-        {
-            builder.add( TRUNCATE_TABLE + partition + ";" );
-        }
-
         List<String> tables = List.of( "wres.Source",
                                        "wres.TimeSeries",
+                                       "wres.TimeSeriesValue",
                                        "wres.Ensemble",
                                        "wres.Project",
                                        "wres.ProjectSource",

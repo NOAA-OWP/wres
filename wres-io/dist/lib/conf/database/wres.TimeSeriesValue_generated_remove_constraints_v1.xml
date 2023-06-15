@@ -1,0 +1,1962 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.6.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.TimeSeriesValue_lead_1 - remove constraints on parent table for lead_1"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_1"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_1 DROP CONSTRAINT TimeSeriesValue_lead_1_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_1 DROP CONSTRAINT timeseriesvalue_lead_1_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_2 - remove constraints on parent table for lead_2"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_2"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_2 DROP CONSTRAINT TimeSeriesValue_lead_2_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_2 DROP CONSTRAINT timeseriesvalue_lead_2_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_3 - remove constraints on parent table for lead_3"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_3"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_3 DROP CONSTRAINT TimeSeriesValue_lead_3_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_3 DROP CONSTRAINT timeseriesvalue_lead_3_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_4 - remove constraints on parent table for lead_4"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_4"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_4 DROP CONSTRAINT TimeSeriesValue_lead_4_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_4 DROP CONSTRAINT timeseriesvalue_lead_4_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_5 - remove constraints on parent table for lead_5"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_5"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_5 DROP CONSTRAINT TimeSeriesValue_lead_5_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_5 DROP CONSTRAINT timeseriesvalue_lead_5_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_6 - remove constraints on parent table for lead_6"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_6"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_6 DROP CONSTRAINT TimeSeriesValue_lead_6_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_6 DROP CONSTRAINT timeseriesvalue_lead_6_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_7 - remove constraints on parent table for lead_7"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_7"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_7 DROP CONSTRAINT TimeSeriesValue_lead_7_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_7 DROP CONSTRAINT timeseriesvalue_lead_7_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_8 - remove constraints on parent table for lead_8"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_8"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_8 DROP CONSTRAINT TimeSeriesValue_lead_8_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_8 DROP CONSTRAINT timeseriesvalue_lead_8_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_9 - remove constraints on parent table for lead_9"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_9"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_9 DROP CONSTRAINT TimeSeriesValue_lead_9_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_9 DROP CONSTRAINT timeseriesvalue_lead_9_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_10 - remove constraints on parent table for lead_10"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_10"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_10 DROP CONSTRAINT TimeSeriesValue_lead_10_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_10 DROP CONSTRAINT timeseriesvalue_lead_10_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_11 - remove constraints on parent table for lead_11"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_11"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_11 DROP CONSTRAINT TimeSeriesValue_lead_11_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_11 DROP CONSTRAINT timeseriesvalue_lead_11_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_12 - remove constraints on parent table for lead_12"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_12"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_12 DROP CONSTRAINT TimeSeriesValue_lead_12_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_12 DROP CONSTRAINT timeseriesvalue_lead_12_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_13 - remove constraints on parent table for lead_13"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_13"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_13 DROP CONSTRAINT TimeSeriesValue_lead_13_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_13 DROP CONSTRAINT timeseriesvalue_lead_13_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_14 - remove constraints on parent table for lead_14"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_14"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_14 DROP CONSTRAINT TimeSeriesValue_lead_14_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_14 DROP CONSTRAINT timeseriesvalue_lead_14_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_15 - remove constraints on parent table for lead_15"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_15"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_15 DROP CONSTRAINT TimeSeriesValue_lead_15_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_15 DROP CONSTRAINT timeseriesvalue_lead_15_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_16 - remove constraints on parent table for lead_16"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_16"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_16 DROP CONSTRAINT TimeSeriesValue_lead_16_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_16 DROP CONSTRAINT timeseriesvalue_lead_16_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_17 - remove constraints on parent table for lead_17"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_17"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_17 DROP CONSTRAINT TimeSeriesValue_lead_17_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_17 DROP CONSTRAINT timeseriesvalue_lead_17_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_18 - remove constraints on parent table for lead_18"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_18"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_18 DROP CONSTRAINT TimeSeriesValue_lead_18_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_18 DROP CONSTRAINT timeseriesvalue_lead_18_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_19 - remove constraints on parent table for lead_19"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_19"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_19 DROP CONSTRAINT TimeSeriesValue_lead_19_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_19 DROP CONSTRAINT timeseriesvalue_lead_19_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_20 - remove constraints on parent table for lead_20"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_20"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_20 DROP CONSTRAINT TimeSeriesValue_lead_20_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_20 DROP CONSTRAINT timeseriesvalue_lead_20_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_21 - remove constraints on parent table for lead_21"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_21"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_21 DROP CONSTRAINT TimeSeriesValue_lead_21_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_21 DROP CONSTRAINT timeseriesvalue_lead_21_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_22 - remove constraints on parent table for lead_22"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_22"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_22 DROP CONSTRAINT TimeSeriesValue_lead_22_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_22 DROP CONSTRAINT timeseriesvalue_lead_22_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_23 - remove constraints on parent table for lead_23"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_23"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_23 DROP CONSTRAINT TimeSeriesValue_lead_23_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_23 DROP CONSTRAINT timeseriesvalue_lead_23_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_24 - remove constraints on parent table for lead_24"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_24"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_24 DROP CONSTRAINT TimeSeriesValue_lead_24_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_24 DROP CONSTRAINT timeseriesvalue_lead_24_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_25 - remove constraints on parent table for lead_25"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_25"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_25 DROP CONSTRAINT TimeSeriesValue_lead_25_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_25 DROP CONSTRAINT timeseriesvalue_lead_25_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_26 - remove constraints on parent table for lead_26"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_26"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_26 DROP CONSTRAINT TimeSeriesValue_lead_26_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_26 DROP CONSTRAINT timeseriesvalue_lead_26_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_27 - remove constraints on parent table for lead_27"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_27"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_27 DROP CONSTRAINT TimeSeriesValue_lead_27_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_27 DROP CONSTRAINT timeseriesvalue_lead_27_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_28 - remove constraints on parent table for lead_28"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_28"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_28 DROP CONSTRAINT TimeSeriesValue_lead_28_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_28 DROP CONSTRAINT timeseriesvalue_lead_28_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_29 - remove constraints on parent table for lead_29"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_29"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_29 DROP CONSTRAINT TimeSeriesValue_lead_29_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_29 DROP CONSTRAINT timeseriesvalue_lead_29_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_30 - remove constraints on parent table for lead_30"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_30"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_30 DROP CONSTRAINT TimeSeriesValue_lead_30_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_30 DROP CONSTRAINT timeseriesvalue_lead_30_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_31 - remove constraints on parent table for lead_31"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_31"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_31 DROP CONSTRAINT TimeSeriesValue_lead_31_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_31 DROP CONSTRAINT timeseriesvalue_lead_31_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_32 - remove constraints on parent table for lead_32"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_32"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_32 DROP CONSTRAINT TimeSeriesValue_lead_32_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_32 DROP CONSTRAINT timeseriesvalue_lead_32_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_33 - remove constraints on parent table for lead_33"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_33"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_33 DROP CONSTRAINT TimeSeriesValue_lead_33_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_33 DROP CONSTRAINT timeseriesvalue_lead_33_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_34 - remove constraints on parent table for lead_34"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_34"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_34 DROP CONSTRAINT TimeSeriesValue_lead_34_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_34 DROP CONSTRAINT timeseriesvalue_lead_34_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_35 - remove constraints on parent table for lead_35"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_35"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_35 DROP CONSTRAINT TimeSeriesValue_lead_35_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_35 DROP CONSTRAINT timeseriesvalue_lead_35_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_36 - remove constraints on parent table for lead_36"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_36"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_36 DROP CONSTRAINT TimeSeriesValue_lead_36_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_36 DROP CONSTRAINT timeseriesvalue_lead_36_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_37 - remove constraints on parent table for lead_37"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_37"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_37 DROP CONSTRAINT TimeSeriesValue_lead_37_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_37 DROP CONSTRAINT timeseriesvalue_lead_37_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_38 - remove constraints on parent table for lead_38"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_38"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_38 DROP CONSTRAINT TimeSeriesValue_lead_38_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_38 DROP CONSTRAINT timeseriesvalue_lead_38_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_39 - remove constraints on parent table for lead_39"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_39"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_39 DROP CONSTRAINT TimeSeriesValue_lead_39_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_39 DROP CONSTRAINT timeseriesvalue_lead_39_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_40 - remove constraints on parent table for lead_40"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_40"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_40 DROP CONSTRAINT TimeSeriesValue_lead_40_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_40 DROP CONSTRAINT timeseriesvalue_lead_40_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_41 - remove constraints on parent table for lead_41"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_41"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_41 DROP CONSTRAINT TimeSeriesValue_lead_41_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_41 DROP CONSTRAINT timeseriesvalue_lead_41_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_42 - remove constraints on parent table for lead_42"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_42"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_42 DROP CONSTRAINT TimeSeriesValue_lead_42_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_42 DROP CONSTRAINT timeseriesvalue_lead_42_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_43 - remove constraints on parent table for lead_43"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_43"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_43 DROP CONSTRAINT TimeSeriesValue_lead_43_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_43 DROP CONSTRAINT timeseriesvalue_lead_43_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_44 - remove constraints on parent table for lead_44"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_44"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_44 DROP CONSTRAINT TimeSeriesValue_lead_44_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_44 DROP CONSTRAINT timeseriesvalue_lead_44_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_45 - remove constraints on parent table for lead_45"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_45"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_45 DROP CONSTRAINT TimeSeriesValue_lead_45_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_45 DROP CONSTRAINT timeseriesvalue_lead_45_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_46 - remove constraints on parent table for lead_46"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_46"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_46 DROP CONSTRAINT TimeSeriesValue_lead_46_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_46 DROP CONSTRAINT timeseriesvalue_lead_46_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_47 - remove constraints on parent table for lead_47"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_47"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_47 DROP CONSTRAINT TimeSeriesValue_lead_47_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_47 DROP CONSTRAINT timeseriesvalue_lead_47_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_48 - remove constraints on parent table for lead_48"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_48"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_48 DROP CONSTRAINT TimeSeriesValue_lead_48_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_48 DROP CONSTRAINT timeseriesvalue_lead_48_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_49 - remove constraints on parent table for lead_49"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_49"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_49 DROP CONSTRAINT TimeSeriesValue_lead_49_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_49 DROP CONSTRAINT timeseriesvalue_lead_49_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_50 - remove constraints on parent table for lead_50"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_50"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_50 DROP CONSTRAINT TimeSeriesValue_lead_50_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_50 DROP CONSTRAINT timeseriesvalue_lead_50_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_51 - remove constraints on parent table for lead_51"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_51"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_51 DROP CONSTRAINT TimeSeriesValue_lead_51_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_51 DROP CONSTRAINT timeseriesvalue_lead_51_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_52 - remove constraints on parent table for lead_52"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_52"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_52 DROP CONSTRAINT TimeSeriesValue_lead_52_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_52 DROP CONSTRAINT timeseriesvalue_lead_52_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_53 - remove constraints on parent table for lead_53"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_53"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_53 DROP CONSTRAINT TimeSeriesValue_lead_53_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_53 DROP CONSTRAINT timeseriesvalue_lead_53_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_54 - remove constraints on parent table for lead_54"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_54"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_54 DROP CONSTRAINT TimeSeriesValue_lead_54_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_54 DROP CONSTRAINT timeseriesvalue_lead_54_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_55 - remove constraints on parent table for lead_55"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_55"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_55 DROP CONSTRAINT TimeSeriesValue_lead_55_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_55 DROP CONSTRAINT timeseriesvalue_lead_55_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_56 - remove constraints on parent table for lead_56"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_56"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_56 DROP CONSTRAINT TimeSeriesValue_lead_56_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_56 DROP CONSTRAINT timeseriesvalue_lead_56_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_57 - remove constraints on parent table for lead_57"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_57"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_57 DROP CONSTRAINT TimeSeriesValue_lead_57_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_57 DROP CONSTRAINT timeseriesvalue_lead_57_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_58 - remove constraints on parent table for lead_58"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_58"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_58 DROP CONSTRAINT TimeSeriesValue_lead_58_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_58 DROP CONSTRAINT timeseriesvalue_lead_58_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_59 - remove constraints on parent table for lead_59"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_59"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_59 DROP CONSTRAINT TimeSeriesValue_lead_59_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_59 DROP CONSTRAINT timeseriesvalue_lead_59_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_60 - remove constraints on parent table for lead_60"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_60"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_60 DROP CONSTRAINT TimeSeriesValue_lead_60_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_60 DROP CONSTRAINT timeseriesvalue_lead_60_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_61 - remove constraints on parent table for lead_61"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_61"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_61 DROP CONSTRAINT TimeSeriesValue_lead_61_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_61 DROP CONSTRAINT timeseriesvalue_lead_61_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_62 - remove constraints on parent table for lead_62"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_62"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_62 DROP CONSTRAINT TimeSeriesValue_lead_62_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_62 DROP CONSTRAINT timeseriesvalue_lead_62_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_63 - remove constraints on parent table for lead_63"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_63"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_63 DROP CONSTRAINT TimeSeriesValue_lead_63_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_63 DROP CONSTRAINT timeseriesvalue_lead_63_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_64 - remove constraints on parent table for lead_64"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_64"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_64 DROP CONSTRAINT TimeSeriesValue_lead_64_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_64 DROP CONSTRAINT timeseriesvalue_lead_64_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_65 - remove constraints on parent table for lead_65"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_65"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_65 DROP CONSTRAINT TimeSeriesValue_lead_65_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_65 DROP CONSTRAINT timeseriesvalue_lead_65_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_66 - remove constraints on parent table for lead_66"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_66"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_66 DROP CONSTRAINT TimeSeriesValue_lead_66_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_66 DROP CONSTRAINT timeseriesvalue_lead_66_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_67 - remove constraints on parent table for lead_67"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_67"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_67 DROP CONSTRAINT TimeSeriesValue_lead_67_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_67 DROP CONSTRAINT timeseriesvalue_lead_67_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_68 - remove constraints on parent table for lead_68"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_68"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_68 DROP CONSTRAINT TimeSeriesValue_lead_68_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_68 DROP CONSTRAINT timeseriesvalue_lead_68_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_69 - remove constraints on parent table for lead_69"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_69"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_69 DROP CONSTRAINT TimeSeriesValue_lead_69_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_69 DROP CONSTRAINT timeseriesvalue_lead_69_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_70 - remove constraints on parent table for lead_70"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_70"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_70 DROP CONSTRAINT TimeSeriesValue_lead_70_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_70 DROP CONSTRAINT timeseriesvalue_lead_70_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_71 - remove constraints on parent table for lead_71"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_71"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_71 DROP CONSTRAINT TimeSeriesValue_lead_71_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_71 DROP CONSTRAINT timeseriesvalue_lead_71_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_72 - remove constraints on parent table for lead_72"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_72"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_72 DROP CONSTRAINT TimeSeriesValue_lead_72_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_72 DROP CONSTRAINT timeseriesvalue_lead_72_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_73 - remove constraints on parent table for lead_73"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_73"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_73 DROP CONSTRAINT TimeSeriesValue_lead_73_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_73 DROP CONSTRAINT timeseriesvalue_lead_73_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_74 - remove constraints on parent table for lead_74"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_74"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_74 DROP CONSTRAINT TimeSeriesValue_lead_74_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_74 DROP CONSTRAINT timeseriesvalue_lead_74_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_75 - remove constraints on parent table for lead_75"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_75"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_75 DROP CONSTRAINT TimeSeriesValue_lead_75_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_75 DROP CONSTRAINT timeseriesvalue_lead_75_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_76 - remove constraints on parent table for lead_76"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_76"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_76 DROP CONSTRAINT TimeSeriesValue_lead_76_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_76 DROP CONSTRAINT timeseriesvalue_lead_76_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_77 - remove constraints on parent table for lead_77"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_77"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_77 DROP CONSTRAINT TimeSeriesValue_lead_77_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_77 DROP CONSTRAINT timeseriesvalue_lead_77_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_78 - remove constraints on parent table for lead_78"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_78"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_78 DROP CONSTRAINT TimeSeriesValue_lead_78_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_78 DROP CONSTRAINT timeseriesvalue_lead_78_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_79 - remove constraints on parent table for lead_79"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_79"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_79 DROP CONSTRAINT TimeSeriesValue_lead_79_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_79 DROP CONSTRAINT timeseriesvalue_lead_79_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_80 - remove constraints on parent table for lead_80"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_80"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_80 DROP CONSTRAINT TimeSeriesValue_lead_80_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_80 DROP CONSTRAINT timeseriesvalue_lead_80_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_81 - remove constraints on parent table for lead_81"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_81"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_81 DROP CONSTRAINT TimeSeriesValue_lead_81_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_81 DROP CONSTRAINT timeseriesvalue_lead_81_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_82 - remove constraints on parent table for lead_82"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_82"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_82 DROP CONSTRAINT TimeSeriesValue_lead_82_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_82 DROP CONSTRAINT timeseriesvalue_lead_82_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_83 - remove constraints on parent table for lead_83"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_83"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_83 DROP CONSTRAINT TimeSeriesValue_lead_83_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_83 DROP CONSTRAINT timeseriesvalue_lead_83_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_84 - remove constraints on parent table for lead_84"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_84"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_84 DROP CONSTRAINT TimeSeriesValue_lead_84_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_84 DROP CONSTRAINT timeseriesvalue_lead_84_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_85 - remove constraints on parent table for lead_85"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_85"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_85 DROP CONSTRAINT TimeSeriesValue_lead_85_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_85 DROP CONSTRAINT timeseriesvalue_lead_85_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_86 - remove constraints on parent table for lead_86"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_86"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_86 DROP CONSTRAINT TimeSeriesValue_lead_86_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_86 DROP CONSTRAINT timeseriesvalue_lead_86_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_87 - remove constraints on parent table for lead_87"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_87"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_87 DROP CONSTRAINT TimeSeriesValue_lead_87_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_87 DROP CONSTRAINT timeseriesvalue_lead_87_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_88 - remove constraints on parent table for lead_88"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_88"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_88 DROP CONSTRAINT TimeSeriesValue_lead_88_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_88 DROP CONSTRAINT timeseriesvalue_lead_88_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_89 - remove constraints on parent table for lead_89"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_89"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_89 DROP CONSTRAINT TimeSeriesValue_lead_89_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_89 DROP CONSTRAINT timeseriesvalue_lead_89_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_90 - remove constraints on parent table for lead_90"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_90"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_90 DROP CONSTRAINT TimeSeriesValue_lead_90_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_90 DROP CONSTRAINT timeseriesvalue_lead_90_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_91 - remove constraints on parent table for lead_91"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_91"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_91 DROP CONSTRAINT TimeSeriesValue_lead_91_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_91 DROP CONSTRAINT timeseriesvalue_lead_91_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_92 - remove constraints on parent table for lead_92"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_92"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_92 DROP CONSTRAINT TimeSeriesValue_lead_92_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_92 DROP CONSTRAINT timeseriesvalue_lead_92_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_93 - remove constraints on parent table for lead_93"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_93"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_93 DROP CONSTRAINT TimeSeriesValue_lead_93_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_93 DROP CONSTRAINT timeseriesvalue_lead_93_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_94 - remove constraints on parent table for lead_94"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_94"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_94 DROP CONSTRAINT TimeSeriesValue_lead_94_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_94 DROP CONSTRAINT timeseriesvalue_lead_94_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_95 - remove constraints on parent table for lead_95"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_95"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_95 DROP CONSTRAINT TimeSeriesValue_lead_95_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_95 DROP CONSTRAINT timeseriesvalue_lead_95_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_96 - remove constraints on parent table for lead_96"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_96"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_96 DROP CONSTRAINT TimeSeriesValue_lead_96_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_96 DROP CONSTRAINT timeseriesvalue_lead_96_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_97 - remove constraints on parent table for lead_97"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_97"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_97 DROP CONSTRAINT TimeSeriesValue_lead_97_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_97 DROP CONSTRAINT timeseriesvalue_lead_97_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_98 - remove constraints on parent table for lead_98"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_98"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_98 DROP CONSTRAINT TimeSeriesValue_lead_98_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_98 DROP CONSTRAINT timeseriesvalue_lead_98_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_99 - remove constraints on parent table for lead_99"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_99"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_99 DROP CONSTRAINT TimeSeriesValue_lead_99_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_99 DROP CONSTRAINT timeseriesvalue_lead_99_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_100 - remove constraints on parent table for lead_100"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_100"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_100 DROP CONSTRAINT TimeSeriesValue_lead_100_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_100 DROP CONSTRAINT timeseriesvalue_lead_100_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_101 - remove constraints on parent table for lead_101"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_101"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_101 DROP CONSTRAINT TimeSeriesValue_lead_101_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_101 DROP CONSTRAINT timeseriesvalue_lead_101_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_102 - remove constraints on parent table for lead_102"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_102"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_102 DROP CONSTRAINT TimeSeriesValue_lead_102_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_102 DROP CONSTRAINT timeseriesvalue_lead_102_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_103 - remove constraints on parent table for lead_103"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_103"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_103 DROP CONSTRAINT TimeSeriesValue_lead_103_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_103 DROP CONSTRAINT timeseriesvalue_lead_103_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_104 - remove constraints on parent table for lead_104"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_104"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_104 DROP CONSTRAINT TimeSeriesValue_lead_104_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_104 DROP CONSTRAINT timeseriesvalue_lead_104_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_105 - remove constraints on parent table for lead_105"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_105"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_105 DROP CONSTRAINT TimeSeriesValue_lead_105_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_105 DROP CONSTRAINT timeseriesvalue_lead_105_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_106 - remove constraints on parent table for lead_106"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_106"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_106 DROP CONSTRAINT TimeSeriesValue_lead_106_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_106 DROP CONSTRAINT timeseriesvalue_lead_106_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_107 - remove constraints on parent table for lead_107"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_107"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_107 DROP CONSTRAINT TimeSeriesValue_lead_107_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_107 DROP CONSTRAINT timeseriesvalue_lead_107_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_108 - remove constraints on parent table for lead_108"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_108"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_108 DROP CONSTRAINT TimeSeriesValue_lead_108_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_108 DROP CONSTRAINT timeseriesvalue_lead_108_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_109 - remove constraints on parent table for lead_109"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_109"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_109 DROP CONSTRAINT TimeSeriesValue_lead_109_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_109 DROP CONSTRAINT timeseriesvalue_lead_109_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_110 - remove constraints on parent table for lead_110"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_110"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_110 DROP CONSTRAINT TimeSeriesValue_lead_110_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_110 DROP CONSTRAINT timeseriesvalue_lead_110_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_111 - remove constraints on parent table for lead_111"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_111"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_111 DROP CONSTRAINT TimeSeriesValue_lead_111_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_111 DROP CONSTRAINT timeseriesvalue_lead_111_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_112 - remove constraints on parent table for lead_112"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_112"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_112 DROP CONSTRAINT TimeSeriesValue_lead_112_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_112 DROP CONSTRAINT timeseriesvalue_lead_112_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_113 - remove constraints on parent table for lead_113"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_113"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_113 DROP CONSTRAINT TimeSeriesValue_lead_113_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_113 DROP CONSTRAINT timeseriesvalue_lead_113_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_114 - remove constraints on parent table for lead_114"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_114"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_114 DROP CONSTRAINT TimeSeriesValue_lead_114_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_114 DROP CONSTRAINT timeseriesvalue_lead_114_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_115 - remove constraints on parent table for lead_115"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_115"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_115 DROP CONSTRAINT TimeSeriesValue_lead_115_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_115 DROP CONSTRAINT timeseriesvalue_lead_115_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_116 - remove constraints on parent table for lead_116"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_116"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_116 DROP CONSTRAINT TimeSeriesValue_lead_116_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_116 DROP CONSTRAINT timeseriesvalue_lead_116_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_117 - remove constraints on parent table for lead_117"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_117"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_117 DROP CONSTRAINT TimeSeriesValue_lead_117_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_117 DROP CONSTRAINT timeseriesvalue_lead_117_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_118 - remove constraints on parent table for lead_118"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_118"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_118 DROP CONSTRAINT TimeSeriesValue_lead_118_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_118 DROP CONSTRAINT timeseriesvalue_lead_118_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_119 - remove constraints on parent table for lead_119"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_119"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_119 DROP CONSTRAINT TimeSeriesValue_lead_119_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_119 DROP CONSTRAINT timeseriesvalue_lead_119_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_120 - remove constraints on parent table for lead_120"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_120"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_120 DROP CONSTRAINT TimeSeriesValue_lead_120_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_120 DROP CONSTRAINT timeseriesvalue_lead_120_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_121 - remove constraints on parent table for lead_121"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_121"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_121 DROP CONSTRAINT TimeSeriesValue_lead_121_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_121 DROP CONSTRAINT timeseriesvalue_lead_121_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_122 - remove constraints on parent table for lead_122"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_122"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_122 DROP CONSTRAINT TimeSeriesValue_lead_122_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_122 DROP CONSTRAINT timeseriesvalue_lead_122_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_123 - remove constraints on parent table for lead_123"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_123"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_123 DROP CONSTRAINT TimeSeriesValue_lead_123_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_123 DROP CONSTRAINT timeseriesvalue_lead_123_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_124 - remove constraints on parent table for lead_124"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_124"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_124 DROP CONSTRAINT TimeSeriesValue_lead_124_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_124 DROP CONSTRAINT timeseriesvalue_lead_124_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_125 - remove constraints on parent table for lead_125"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_125"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_125 DROP CONSTRAINT TimeSeriesValue_lead_125_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_125 DROP CONSTRAINT timeseriesvalue_lead_125_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_126 - remove constraints on parent table for lead_126"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_126"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_126 DROP CONSTRAINT TimeSeriesValue_lead_126_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_126 DROP CONSTRAINT timeseriesvalue_lead_126_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_127 - remove constraints on parent table for lead_127"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_127"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_127 DROP CONSTRAINT TimeSeriesValue_lead_127_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_127 DROP CONSTRAINT timeseriesvalue_lead_127_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_128 - remove constraints on parent table for lead_128"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_128"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_128 DROP CONSTRAINT TimeSeriesValue_lead_128_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_128 DROP CONSTRAINT timeseriesvalue_lead_128_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_129 - remove constraints on parent table for lead_129"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_129"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_129 DROP CONSTRAINT TimeSeriesValue_lead_129_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_129 DROP CONSTRAINT timeseriesvalue_lead_129_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_130 - remove constraints on parent table for lead_130"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_130"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_130 DROP CONSTRAINT TimeSeriesValue_lead_130_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_130 DROP CONSTRAINT timeseriesvalue_lead_130_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_131 - remove constraints on parent table for lead_131"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_131"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_131 DROP CONSTRAINT TimeSeriesValue_lead_131_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_131 DROP CONSTRAINT timeseriesvalue_lead_131_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_132 - remove constraints on parent table for lead_132"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_132"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_132 DROP CONSTRAINT TimeSeriesValue_lead_132_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_132 DROP CONSTRAINT timeseriesvalue_lead_132_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_133 - remove constraints on parent table for lead_133"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_133"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_133 DROP CONSTRAINT TimeSeriesValue_lead_133_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_133 DROP CONSTRAINT timeseriesvalue_lead_133_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_134 - remove constraints on parent table for lead_134"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_134"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_134 DROP CONSTRAINT TimeSeriesValue_lead_134_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_134 DROP CONSTRAINT timeseriesvalue_lead_134_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_135 - remove constraints on parent table for lead_135"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_135"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_135 DROP CONSTRAINT TimeSeriesValue_lead_135_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_135 DROP CONSTRAINT timeseriesvalue_lead_135_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_136 - remove constraints on parent table for lead_136"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_136"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_136 DROP CONSTRAINT TimeSeriesValue_lead_136_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_136 DROP CONSTRAINT timeseriesvalue_lead_136_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_137 - remove constraints on parent table for lead_137"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_137"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_137 DROP CONSTRAINT TimeSeriesValue_lead_137_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_137 DROP CONSTRAINT timeseriesvalue_lead_137_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_138 - remove constraints on parent table for lead_138"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_138"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_138 DROP CONSTRAINT TimeSeriesValue_lead_138_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_138 DROP CONSTRAINT timeseriesvalue_lead_138_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_139 - remove constraints on parent table for lead_139"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_139"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_139 DROP CONSTRAINT TimeSeriesValue_lead_139_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_139 DROP CONSTRAINT timeseriesvalue_lead_139_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_140 - remove constraints on parent table for lead_140"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_140"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_140 DROP CONSTRAINT TimeSeriesValue_lead_140_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_140 DROP CONSTRAINT timeseriesvalue_lead_140_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_141 - remove constraints on parent table for lead_141"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_141"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_141 DROP CONSTRAINT TimeSeriesValue_lead_141_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_141 DROP CONSTRAINT timeseriesvalue_lead_141_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_142 - remove constraints on parent table for lead_142"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_142"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_142 DROP CONSTRAINT TimeSeriesValue_lead_142_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_142 DROP CONSTRAINT timeseriesvalue_lead_142_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_143 - remove constraints on parent table for lead_143"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_143"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_143 DROP CONSTRAINT TimeSeriesValue_lead_143_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_143 DROP CONSTRAINT timeseriesvalue_lead_143_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_144 - remove constraints on parent table for lead_144"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_144"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_144 DROP CONSTRAINT TimeSeriesValue_lead_144_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_144 DROP CONSTRAINT timeseriesvalue_lead_144_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_145 - remove constraints on parent table for lead_145"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_145"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_145 DROP CONSTRAINT TimeSeriesValue_lead_145_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_145 DROP CONSTRAINT timeseriesvalue_lead_145_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_146 - remove constraints on parent table for lead_146"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_146"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_146 DROP CONSTRAINT TimeSeriesValue_lead_146_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_146 DROP CONSTRAINT timeseriesvalue_lead_146_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_147 - remove constraints on parent table for lead_147"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_147"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_147 DROP CONSTRAINT TimeSeriesValue_lead_147_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_147 DROP CONSTRAINT timeseriesvalue_lead_147_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_148 - remove constraints on parent table for lead_148"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_148"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_148 DROP CONSTRAINT TimeSeriesValue_lead_148_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_148 DROP CONSTRAINT timeseriesvalue_lead_148_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_149 - remove constraints on parent table for lead_149"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_149"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_149 DROP CONSTRAINT TimeSeriesValue_lead_149_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_149 DROP CONSTRAINT timeseriesvalue_lead_149_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_150 - remove constraints on parent table for lead_150"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_150"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_150 DROP CONSTRAINT TimeSeriesValue_lead_150_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_150 DROP CONSTRAINT timeseriesvalue_lead_150_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_1 - remove constraints on parent table for lead_Negative_1"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Negative_1"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_1 DROP CONSTRAINT TimeSeriesValue_lead_Negative_1_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_1 DROP CONSTRAINT timeseriesvalue_lead_Negative_1_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_2 - remove constraints on parent table for lead_Negative_2"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Negative_2"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_2 DROP CONSTRAINT TimeSeriesValue_lead_Negative_2_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_2 DROP CONSTRAINT timeseriesvalue_lead_Negative_2_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_3 - remove constraints on parent table for lead_Negative_3"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Negative_3"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_3 DROP CONSTRAINT TimeSeriesValue_lead_Negative_3_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_3 DROP CONSTRAINT timeseriesvalue_lead_Negative_3_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_4 - remove constraints on parent table for lead_Negative_4"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Negative_4"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_4 DROP CONSTRAINT TimeSeriesValue_lead_Negative_4_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_4 DROP CONSTRAINT timeseriesvalue_lead_Negative_4_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_5 - remove constraints on parent table for lead_Negative_5"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Negative_5"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_5 DROP CONSTRAINT TimeSeriesValue_lead_Negative_5_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_5 DROP CONSTRAINT timeseriesvalue_lead_Negative_5_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_6 - remove constraints on parent table for lead_Negative_6"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Negative_6"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_6 DROP CONSTRAINT TimeSeriesValue_lead_Negative_6_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_6 DROP CONSTRAINT timeseriesvalue_lead_Negative_6_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_7 - remove constraints on parent table for lead_Negative_7"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Negative_7"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_7 DROP CONSTRAINT TimeSeriesValue_lead_Negative_7_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_7 DROP CONSTRAINT timeseriesvalue_lead_Negative_7_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_8 - remove constraints on parent table for lead_Negative_8"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Negative_8"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_8 DROP CONSTRAINT TimeSeriesValue_lead_Negative_8_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_8 DROP CONSTRAINT timeseriesvalue_lead_Negative_8_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_9 - remove constraints on parent table for lead_Negative_9"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Negative_9"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_9 DROP CONSTRAINT TimeSeriesValue_lead_Negative_9_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_9 DROP CONSTRAINT timeseriesvalue_lead_Negative_9_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Negative_10 - remove constraints on parent table for lead_Negative_10"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Negative_10"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_10 DROP CONSTRAINT TimeSeriesValue_lead_Negative_10_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_Negative_10 DROP CONSTRAINT timeseriesvalue_lead_Negative_10_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_0 - remove constraints on parent table for lead_0"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_0"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_0 DROP CONSTRAINT TimeSeriesValue_lead_0_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_0 DROP CONSTRAINT timeseriesvalue_lead_0_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Below_Negative_10 - remove constraints on parent table for lead_Below_Negative_10"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Below_Negative_10"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Below_Negative_10 DROP CONSTRAINT TimeSeriesValue_lead_Below_Negative_10_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_Below_Negative_10 DROP CONSTRAINT timeseriesvalue_lead_Below_Negative_10_lead_check;
+        </sql>
+    </changeSet>
+    <changeSet id="wres.TimeSeriesValue_lead_Above_150 - remove constraints on parent table for lead_Above_150"
+               author="generate_partitions_changesets.sh"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="TimeSeriesValue_lead_Above_150"
+                         schemaName="wres" />
+        </preConditions>
+        <sql>
+            ALTER TABLE wres.TimeSeriesValue_lead_Above_150 DROP CONSTRAINT TimeSeriesValue_lead_Above_150_timeseries_lead_key;
+            ALTER TABLE wres.TimeSeriesValue_lead_Above_150 DROP CONSTRAINT timeseriesvalue_lead_Above_150_lead_check;
+        </sql>
+    </changeSet>
+</databaseChangeLog>

@@ -29,14 +29,17 @@ public final class IngestedValues
 
     // Key = partition name, i.e. "partitions.forecastvalue_lead_0"
     // Value = List of values to save to the partition
-    private static final ConcurrentMap<String, DataBuilder> VALUES_TO_SAVE = new ConcurrentHashMap<>(  );
+    private static final ConcurrentMap<String, DataBuilder> VALUES_TO_SAVE = new ConcurrentHashMap<>();
 
-    private static final ConcurrentMap<String, Pair<CountDownLatch,CountDownLatch>> VALUES_SAVED_LATCHES = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, Pair<CountDownLatch, CountDownLatch>> VALUES_SAVED_LATCHES =
+            new ConcurrentHashMap<>();
 
     /** Guards VALUES_TO_SAVE and VALUES_SAVED_LATCHES and DataBuilders */
     private static final Object VALUES_TO_SAVE_LOCK = new Object();
 
-    private static final String[] TIMESERIES_COLUMN_NAMES = {"timeseries_id", "lead", "series_value"};
+    private static final String[] TIMESERIES_COLUMN_NAMES = { "timeseries_id", "lead", "series_value" };
+
+    private static final String TABLE_NAME = "wres.TimeSeriesValue";
 
     /**
      * Stores a time series value so that it may be copied to the database,
@@ -51,15 +54,13 @@ public final class IngestedValues
      * @throws IngestException when the proper partition could not be retrieved
      *                         or when the ingest fails.
      */
-    public static Pair<CountDownLatch,CountDownLatch> addTimeSeriesValue( SystemSettings systemSettings,
-                                                                          Database database,
-                                                                          long timeSeriesID,
-                                                                          int lead,
-                                                                          Double value )
+    public static Pair<CountDownLatch, CountDownLatch> addTimeSeriesValue( SystemSettings systemSettings,
+                                                                           Database database,
+                                                                           long timeSeriesID,
+                                                                           int lead,
+                                                                           Double value )
             throws IngestException
     {
-        String partitionName = database.getTimeSeriesValuePartition( lead );
-
         DataBuilder freshDataBuilder = DataBuilder.with( IngestedValues.TIMESERIES_COLUMN_NAMES );
 
         // The data builder to add to, whether existing or fresh.
@@ -75,14 +76,14 @@ public final class IngestedValues
         // this function to save the data earlier than it would have otherwise.
         CountDownLatch taskWaitingLatch = new CountDownLatch( 1 );
         CountDownLatch wasSavedLatch = new CountDownLatch( 1 );
-        Pair<CountDownLatch,CountDownLatch> freshLatches = Pair.of( taskWaitingLatch,
-                                                                    wasSavedLatch );
+        Pair<CountDownLatch, CountDownLatch> freshLatches = Pair.of( taskWaitingLatch,
+                                                                     wasSavedLatch );
 
         // The existing latches to be got from the collection when put fails.
-        Pair<CountDownLatch,CountDownLatch> latchesToUse = null;
+        Pair<CountDownLatch, CountDownLatch> latchesToUse = null;
 
         // When save is needed, removedLatches will be set.
-        Pair<CountDownLatch,CountDownLatch> removedLatches = null;
+        Pair<CountDownLatch, CountDownLatch> removedLatches = null;
 
         boolean doSave = false;
 
@@ -93,7 +94,7 @@ public final class IngestedValues
         synchronized ( VALUES_TO_SAVE_LOCK )
         {
             // Add a list for the values if it isn't present
-            dataBuilderToUse = VALUES_TO_SAVE.putIfAbsent( partitionName,
+            dataBuilderToUse = VALUES_TO_SAVE.putIfAbsent( TABLE_NAME,
                                                            freshDataBuilder );
 
             // When putIfAbsent returns null, it means it successfully put.
@@ -106,7 +107,7 @@ public final class IngestedValues
             dataBuilderToUse.addRow( timeSeriesID, lead, value );
 
             // Add latches for the values if not present
-            latchesToUse = VALUES_SAVED_LATCHES.putIfAbsent( partitionName,
+            latchesToUse = VALUES_SAVED_LATCHES.putIfAbsent( TABLE_NAME,
                                                              freshLatches );
 
             // When putIfAbsent returns null, it means it successfully put.
@@ -123,7 +124,7 @@ public final class IngestedValues
             if ( rowCount >= maximumCount )
             {
                 LOGGER.trace( "Row count for partition {} is {}, larger than system setting {}",
-                              partitionName, rowCount, maximumCount );
+                              TABLE_NAME, rowCount, maximumCount );
                 doSave = true;
             }
 
@@ -133,7 +134,7 @@ public final class IngestedValues
             if ( !latchesToUse.equals( freshLatches ) )
             {
                 LOGGER.trace( "An existing latches object {} was found for partition {}, looking for waiting tasks.",
-                              latchesToUse, partitionName );
+                              latchesToUse, TABLE_NAME );
                 try
                 {
                     // We could use getCount() <= 0, however, the documentation
@@ -141,23 +142,26 @@ public final class IngestedValues
                     if ( latchesToUse.getLeft()
                                      .await( 0, TimeUnit.MICROSECONDS ) )
                     {
-                        LOGGER.debug( "At least one task signaled it is waiting for ingest on {}, will ingest {} rows to {}.",
-                                      latchesToUse, rowCount, partitionName );
+                        LOGGER.debug(
+                                "At least one task signaled it is waiting for ingest on {}, will ingest {} rows to {}.",
+                                latchesToUse,
+                                rowCount,
+                                TABLE_NAME );
                         doSave = true;
                     }
                 }
                 catch ( InterruptedException ie )
                 {
                     LOGGER.debug( "Interrupted while awaiting signal from ingester",
-                                 ie );
+                                  ie );
                     Thread.currentThread().interrupt();
                 }
             }
 
             if ( doSave )
             {
-                removedLatches = VALUES_SAVED_LATCHES.remove( partitionName );
-                removedDataBuilder = VALUES_TO_SAVE.remove( partitionName );
+                removedLatches = VALUES_SAVED_LATCHES.remove( TABLE_NAME );
+                removedDataBuilder = VALUES_TO_SAVE.remove( TABLE_NAME );
                 // It is understood that another Thread will put fresh values.
             }
         }
@@ -170,7 +174,7 @@ public final class IngestedValues
         if ( doSave )
         {
             LOGGER.debug( "Attempting to ingest values for {} to {}",
-                          removedLatches, partitionName );
+                          removedLatches, TABLE_NAME );
 
             try
             {
@@ -182,12 +186,12 @@ public final class IngestedValues
                 // leave Thread C to do other things. Even better might be to
                 // let Thread A do the ingest since it is the one waiting.
                 removedDataBuilder.build()
-                                  .copy( database, partitionName );
+                                  .copy( database, TABLE_NAME );
             }
-            catch( IngestException ce )
+            catch ( IngestException ce )
             {
                 throw new IngestException( "Ingest of values to "
-                                           + partitionName + " failed.", ce );
+                                           + TABLE_NAME + " failed.", ce );
             }
 
             // Now that data has been copied, the associated latch should be
@@ -204,7 +208,7 @@ public final class IngestedValues
         else
         {
             LOGGER.trace( "Did not ingest values for partition {}, returning {}",
-                          partitionName, latchesToUse );
+                          TABLE_NAME, latchesToUse );
             // Because ingest did not happen for this partitionName, return the
             // latches associated with it.
             return latchesToUse;
@@ -221,7 +225,7 @@ public final class IngestedValues
      *                     representing a superset of data the ingester sent.
      */
     static boolean flush( Database database,
-                          Pair<CountDownLatch,CountDownLatch> synchronizer )
+                          Pair<CountDownLatch, CountDownLatch> synchronizer )
             throws IngestException
     {
         LOGGER.trace( "Began flush for synchronizer {}...", synchronizer );
@@ -230,33 +234,34 @@ public final class IngestedValues
         DataBuilder removedDataBuilder = null;
 
         // When save is needed, removedLatches will be set.
-        Pair<CountDownLatch,CountDownLatch> removedLatches = null;
+        Pair<CountDownLatch, CountDownLatch> removedLatches = null;
 
-        String partitionName = null;
+        String tableName = null;
 
         synchronized ( VALUES_TO_SAVE_LOCK )
         {
-            for ( Map.Entry<String,Pair<CountDownLatch,CountDownLatch>> latchPair : VALUES_SAVED_LATCHES.entrySet() )
+            for ( Map.Entry<String, Pair<CountDownLatch, CountDownLatch>> latchPair : VALUES_SAVED_LATCHES.entrySet() )
             {
                 // "synchronizer" was an arg to this method
                 if ( latchPair.getValue().equals( synchronizer ) )
                 {
-                    partitionName = latchPair.getKey();
+                    tableName = latchPair.getKey();
                 }
             }
 
             // This means it was found, remove associated builder, latches.
-            if ( partitionName != null )
+            if ( tableName != null )
             {
-                removedLatches = VALUES_SAVED_LATCHES.remove( partitionName );
-                removedDataBuilder = VALUES_TO_SAVE.remove( partitionName );
+                removedLatches = VALUES_SAVED_LATCHES.remove( tableName );
+                removedDataBuilder = VALUES_TO_SAVE.remove( tableName );
             }
         }
 
-        if ( partitionName == null )
+        if ( tableName == null )
         {
-            LOGGER.debug( "Unable to find the synchronizer {} in the current lists (another task is saving, no need to flush here)",
-                         synchronizer );
+            LOGGER.debug(
+                    "Unable to find the synchronizer {} in the current lists (another task is saving, no need to flush here)",
+                    synchronizer );
             return false;
         }
 
@@ -264,7 +269,7 @@ public final class IngestedValues
         // these objects will not be visible to Threads that were waiting to
         // enter the above synchronized block.
         LOGGER.trace( "Attempting to flush values for partition {} with {}",
-                      partitionName, removedDataBuilder );
+                      tableName, removedDataBuilder );
 
         try
         {
@@ -276,12 +281,12 @@ public final class IngestedValues
             // leave Thread C to do other things. Even better might be to
             // let Thread A do the ingest since it is the one waiting.
             removedDataBuilder.build()
-                              .copy( database, partitionName );
+                              .copy( database, tableName );
         }
-        catch( IngestException ce )
+        catch ( IngestException ce )
         {
             throw new IngestException( "Ingest of values to "
-                                       + partitionName + " failed.", ce );
+                                       + tableName + " failed.", ce );
         }
 
         // If these latches are not the same as what was passed, something went
@@ -290,7 +295,7 @@ public final class IngestedValues
         {
             throw new IllegalStateException( "Issue when saving data: "
                                              + synchronizer + " was passed but "
-                                             + removedLatches + " was removed.");
+                                             + removedLatches + " was removed." );
         }
 
         // Now that data has been copied, the associated latch should be

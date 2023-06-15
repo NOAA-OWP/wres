@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd"
+                   objectQuotingStrategy="QUOTE_ONLY_RESERVED_WORDS">
+    <changeSet id="wres.TimeSeriesValuePart - Partitioned TimeSeriesValue table for postgres."
+               author="Evan Pagryzinski"
+               dbms="PostgreSQL">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="TimeSeriesValuePart" schemaName="wres" />
+            </not>
+        </preConditions>
+        <comment>
+            Partitions version of wres.TimeSeriesValue for postgres
+        </comment>
+        <sql>
+            CREATE TABLE wres.TimeSeriesValuePart (
+                timeseries_id integer not null,
+                lead integer not null,
+                series_value double precision
+            ) PARTITION BY RANGE ( lead );
+            COMMENT ON TABLE wres.TimeSeriesValuePart IS 'Each row represents a value in a single timeseries trace.';
+            COMMENT ON COLUMN wres.TimeSeriesValuePart.lead IS 'The count of minutes between a single reference datetime type chosen at ingest time and resolved to a reference datetime at ingest time and the valid datetime of this value.';
+            COMMENT ON COLUMN wres.TimeSeriesValuePart.series_value IS 'Textual description of the original location of the data.';
+        </sql>
+    </changeSet>
+</databaseChangeLog>
