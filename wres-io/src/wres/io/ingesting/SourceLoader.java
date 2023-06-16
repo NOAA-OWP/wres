@@ -747,7 +747,7 @@ public class SourceLoader
     }
 
     /**
-     * Logds the sources unmatched by a source pattern, when required.
+     * Logs up to the first one hundred sources unmatched by a source pattern, when required.
      * @param unmatchedByPattern the sources unmatched by a pattern
      * @param pattern the pattern
      * @param orientation the data orientation
@@ -759,12 +759,20 @@ public class SourceLoader
     {
         if ( LOGGER.isWarnEnabled() && !unmatchedByPattern.isEmpty() )
         {
-            LOGGER.warn( "Skipping {} '{}' sources because they do not match pattern \"{}\". The skipped sources are: "
-                         + "{}",
+            String start = "The skipped sources are: ";
+            List<File> logMe = unmatchedByPattern;
+            if( unmatchedByPattern.size() > 100 )
+            {
+                start = "The first 100 skipped sources are: ";
+                logMe = unmatchedByPattern.subList( 0, 100 );
+            }
+
+            LOGGER.warn( "Skipping {} '{}' sources because they do not match pattern \"{}\". {}{}",
                          unmatchedByPattern.size(),
                          orientation,
                          pattern,
-                         unmatchedByPattern );
+                         start,
+                         logMe );
         }
     }
 

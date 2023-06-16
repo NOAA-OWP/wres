@@ -17,12 +17,12 @@ import wres.io.database.DataScripter;
 import wres.io.database.Database;
 
 /**
- * Deals with partial/orphaned/incomplete ingested data, both detection and removal. Locking semantics should be 
+ * <p>Deals with partial/orphaned/incomplete ingested data, both detection and removal. Locking semantics should be
  * handled by the caller.
  * 
- * TODO: consider adding a guard to the script that remove incomplete data to select only those rows where the source 
- * is marked complete because completed sources are, by definition, not within the scope of incomplete ingest and no 
- * guards in code are as good as a guard within the select that chooses rows to delete.
+ * <p>TODO: consider adding a guard to the script that remove incomplete data to select only those rows where the
+ * source is marked complete because completed sources are, by definition, not within the scope of incomplete ingest
+ * and no guards in code are as good as a guard within the select that chooses rows to delete.
  */
 
 public class IncompleteIngest
