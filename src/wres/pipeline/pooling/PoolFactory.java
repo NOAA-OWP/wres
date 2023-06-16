@@ -69,7 +69,7 @@ import wres.datamodel.time.TimeSeriesPairerByExactTime;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
-import wres.datamodel.time.generators.PersistenceGenerator;
+import wres.datamodel.baselines.PersistenceGenerator;
 import wres.io.project.Project;
 import wres.io.retrieving.CachingSupplier;
 import wres.io.retrieving.RetrieverFactory;

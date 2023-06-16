@@ -1,4 +1,4 @@
-package wres.datamodel.time.generators;
+package wres.datamodel.baselines;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -88,7 +88,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * @param <T> the type of time-series event value
      * @param persistenceSource the persistence data source, required
      * @param upscaler the temporal upscaler, which is required if the template series has a larger scale than the 
-     *            persistenceSource, optional
+     *                 persistenceSource
      * @param admissibleValue an optional constraint on values that should be persisted
      * @param desiredUnit the desired measurement unit, required
      * @return an instance
@@ -141,7 +141,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * @param template the template time-series for which persistence values will be generated
      * @return a time-series with the lagged value at every time-step
      * @throws NullPointerException if the input is null
-     * @throws TimeSeriesGeneratorException if the persistence value could not be generated
+     * @throws BaselineGeneratorException if the persistence value could not be generated
      */
 
     @Override
@@ -686,15 +686,15 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
     {
         if ( Objects.isNull( this.upscaler ) )
         {
-            throw new TimeSeriesGeneratorException( "While generating a persistence time-series using input series "
-                                                    + template.hashCode()
-                                                    + ", discovered that the input series had a desired time scale "
-                                                    + "of "
-                                                    + template.getTimeScale()
-                                                    + ", but the "
-                                                    + "persistence source had a desired time scale of "
-                                                    + this.getSourceTimeScale()
-                                                    + " and no temporal upscaler was supplied on construction." );
+            throw new BaselineGeneratorException( "While generating a persistence time-series using input series "
+                                                  + template.hashCode()
+                                                  + ", discovered that the input series had a desired time scale "
+                                                  + "of "
+                                                  + template.getTimeScale()
+                                                  + ", but the "
+                                                  + "persistence source had a desired time scale of "
+                                                  + this.getSourceTimeScale()
+                                                  + " and no temporal upscaler was supplied on construction." );
         }
 
         TimeSeries<T> upscaled = this.upscaler.upscale( seriesToUpscale,
@@ -880,12 +880,12 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
                                                                 .map( next -> next.getMetadata().getFeature() )
                                                                 .collect( Collectors.toSet() );
 
-            throw new TimeSeriesGeneratorException( "When building a persistence baseline, failed to discover a "
-                                                    + "source time-series for the template time-series with feature: "
-                                                    + templateFeature
-                                                    + ". Source time-series were available for features: "
-                                                    + sourceFeatures
-                                                    + "." );
+            throw new BaselineGeneratorException( "When building a persistence baseline, failed to discover a "
+                                                  + "source time-series for the template time-series with feature: "
+                                                  + templateFeature
+                                                  + ". Source time-series were available for features: "
+                                                  + sourceFeatures
+                                                  + "." );
         }
 
         return this.persistenceSource.get( templateFeature );
@@ -901,7 +901,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * @param admissibleValue an optional constrain on each admissible values to persist
      * @param desiredUnit the desired measurement unit, not null
      * @throws NullPointerException if any required input is null
-     * @throws TimeSeriesGeneratorException if the generator could not be created
+     * @throws BaselineGeneratorException if the generator could not be created
      */
 
     private PersistenceGenerator( int order,
@@ -915,7 +915,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
         if ( order < 0 )
         {
-            throw new TimeSeriesGeneratorException( "A positive order of persistence is required: " + order );
+            throw new BaselineGeneratorException( "A positive order of persistence is required: " + order );
         }
 
         this.order = order;
@@ -927,8 +927,8 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         // The persistence source cannot be empty
         if ( source.isEmpty() )
         {
-            throw new TimeSeriesGeneratorException( "Cannot generate a persistence baseline without a time-series. The "
-                                                    + "persistence source was empty." );
+            throw new BaselineGeneratorException( "Cannot generate a persistence baseline without a time-series. The "
+                                                  + "persistence source was empty." );
         }
 
         // The persistence source cannot contain forecast-like time-series
@@ -936,12 +936,12 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
                    .anyMatch( next -> next.getReferenceTimes()
                                           .containsKey( ReferenceTimeType.T0 ) ) )
         {
-            throw new TimeSeriesGeneratorException( "When attempting to generate a persistence baseline, discovered "
-                                                    + "one or more time-series that contained a reference time with "
-                                                    + "type 'T0', which is indicative of a forecast. Forecast-like "
-                                                    + "time-series are not valid as the data source for a persistence "
-                                                    + "baseline. Instead, declare observation-like time-series as the "
-                                                    + "baseline data source." );
+            throw new BaselineGeneratorException( "When attempting to generate a persistence baseline, discovered "
+                                                  + "one or more time-series that contained a reference time with "
+                                                  + "type 'T0', which is indicative of a forecast. Forecast-like "
+                                                  + "time-series are not valid as the data source for a persistence "
+                                                  + "baseline. Instead, declare observation-like time-series as the "
+                                                  + "baseline data source." );
         }
 
         // Perform the consolidation all at once rather than for each pair of time-series. See #111801
@@ -966,14 +966,14 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
         if ( this.persistenceSource.isEmpty() )
         {
-            throw new TimeSeriesGeneratorException( "Could not create a persistence source from the time-series "
-                                                    + "supplier: at least one time-series that contains "
-                                                    + order
-                                                    + " event values is "
-                                                    + "required to generate a persistence time-series of order "
-                                                    + order
-                                                    + " but the supplier contained no time-series that match this "
-                                                    + "requirement. " );
+            throw new BaselineGeneratorException( "Could not create a persistence source from the time-series "
+                                                  + "supplier: at least one time-series that contains "
+                                                  + order
+                                                  + " event values is "
+                                                  + "required to generate a persistence time-series of order "
+                                                  + order
+                                                  + " but the supplier contained no time-series that match this "
+                                                  + "requirement. " );
         }
 
         this.upscaler = upscaler;

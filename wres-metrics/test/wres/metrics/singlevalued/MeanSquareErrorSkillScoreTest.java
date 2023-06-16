@@ -8,7 +8,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -34,7 +33,7 @@ import wres.datamodel.time.TimeSeriesOfDoubleUpscaler;
 import wres.datamodel.time.TimeSeriesPairerByExactTime;
 import wres.datamodel.time.TimeSeries.Builder;
 import wres.datamodel.time.TimeSeriesCrossPairer;
-import wres.datamodel.time.generators.PersistenceGenerator;
+import wres.datamodel.baselines.PersistenceGenerator;
 import wres.metrics.MetricTestDataFactory;
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -133,7 +132,7 @@ public final class MeanSquareErrorSkillScoreTest
     {
         // Generate empty data
         Pool<Pair<Double, Double>> input =
-                Pool.of( Arrays.asList(), PoolMetadata.of() );
+                Pool.of( List.of(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = this.msess.apply( input );
 

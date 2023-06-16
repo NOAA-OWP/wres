@@ -1,4 +1,4 @@
-package wres.datamodel.time.generators;
+package wres.datamodel.baselines;
 
 import java.time.Duration;
 import java.time.Instant;
