@@ -156,8 +156,8 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         {
             LOGGER.trace( WHILE_GENERATING_A_PERSISTENCE_TIME_SERIES_USING_INPUT_SERIES,
                           template.hashCode(),
-                          ", discovered that the input series had no events (i.e., was empty). Returning the same, "
-                          + "empty, series." );
+                          ", discovered that the input series had no events (i.e., was empty). Returning the empty "
+                          + "time-series." );
 
             return template;
         }
@@ -219,7 +219,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
         // Put the persistence values into a list. There are at least N+1 values in the list, established at 
         // construction
-        TimeSeries<T> persistenceSeries = getPersistenceSeriesForTemplate( template );
+        TimeSeries<T> persistenceSeries = this.getPersistenceSourceForTemplate( template );
         List<Event<T>> eventsToSearch = persistenceSeries.getEvents()
                                                          .stream()
                                                          .toList();
@@ -289,7 +289,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         }
 
         TimeScaleOuter timeScale = template.getTimeScale();
-        TimeSeries<T> persistenceSeries = getPersistenceSeriesForTemplate( template );
+        TimeSeries<T> persistenceSeries = getPersistenceSourceForTemplate( template );
 
         // The rescaled periods start and/or end at a precise month-day
         if ( timeScale.hasMonthDays() )
@@ -462,7 +462,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
         // Put the persistence values into a list. There are at least N+1 values in the list, established at 
         // construction
-        TimeSeries<T> persistenceSeries = getPersistenceSeriesForTemplate( template );
+        TimeSeries<T> persistenceSeries = getPersistenceSourceForTemplate( template );
         List<Event<T>> eventsToSearch = persistenceSeries.getEvents()
                                                          .stream()
                                                          .toList();
@@ -511,7 +511,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         LOGGER.trace( "Generating persistence for multiple valid times where upscaling is required." );
 
         TimeScaleOuter timeScale = template.getTimeScale();
-        TimeSeries<T> persistenceSeries = getPersistenceSeriesForTemplate( template );
+        TimeSeries<T> persistenceSeries = getPersistenceSourceForTemplate( template );
 
         // The rescaled periods start and/or end at a precise month-day
         if ( timeScale.hasMonthDays() )
@@ -863,10 +863,10 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
     }
 
     /**
-     * @return the time-series from the persistence source whose feature name matches template series
+     * @return the time-series from the persistence source whose feature name matches the template series feature name
      */
 
-    private TimeSeries<T> getPersistenceSeriesForTemplate( TimeSeries<T> template )
+    private TimeSeries<T> getPersistenceSourceForTemplate( TimeSeries<T> template )
     {
         // Feature correlation assumes that the template feature is right-ish and the source feature is baseline-ish
         // If this is no longer a safe assumption, then the orientation should be declared on construction
@@ -883,7 +883,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
             throw new BaselineGeneratorException( "When building a persistence baseline, failed to discover a "
                                                   + "source time-series for the template time-series with feature: "
                                                   + templateFeature
-                                                  + ". Source time-series were available for features: "
+                                                  + ". Source time-series were only available for features: "
                                                   + sourceFeatures
                                                   + "." );
         }
