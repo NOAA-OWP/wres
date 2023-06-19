@@ -407,6 +407,42 @@ class DeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeWithPersistenceBaseline() throws IOException
+    {
+        String declaration = """
+                observed: some_file.csv
+                predicted: another_file.csv
+                baseline:
+                  sources: yet_another_file.csv
+                  persistence: 1
+                  """;
+
+        URI baselineUri = URI.create( "yet_another_file.csv" );
+        Source baselineSource = SourceBuilder.builder()
+                                             .uri( baselineUri )
+                                             .build();
+
+        List<Source> baselineSources = List.of( baselineSource );
+        Dataset baselineDataset = DatasetBuilder.builder()
+                                                .sources( baselineSources )
+                                                .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( baselineDataset )
+                                                         .persistence( 1 )
+                                                         .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .baseline( baseline )
+                                                                     .build();
+
+        EvaluationDeclaration actual = DeclarationFactory.from( declaration );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDeserializeWithSingletonMetric() throws IOException
     {
         String declaration = """
@@ -1789,6 +1825,44 @@ class DeclarationFactoryTest
                                                                        .right( this.predictedDataset )
                                                                        .baseline( finalBaselineDataset )
                                                                        .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithPersistenceBaseline() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                baseline:
+                  sources: yet_another_file.csv
+                  persistence: 1
+                  """;
+
+        URI baselineUri = URI.create( "yet_another_file.csv" );
+        Source baselineSource = SourceBuilder.builder()
+                                             .uri( baselineUri )
+                                             .build();
+
+        List<Source> baselineSources = List.of( baselineSource );
+        Dataset baselineDataset = DatasetBuilder.builder()
+                                                .sources( baselineSources )
+                                                .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( baselineDataset )
+                                                         .persistence( 1 )
+                                                         .build();
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .baseline( baseline )
+                                                                     .build();
 
         String actual = DeclarationFactory.from( evaluation );
 
