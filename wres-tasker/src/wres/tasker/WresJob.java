@@ -203,28 +203,64 @@ public class WresJob
         //three calls of a generic static method.
         if ( REDISSON_CLIENT != null )
         {
-            RBucket<String> bucket = REDISSON_CLIENT.getBucket( "databaseName" );
-            if ( bucket.get() != null && !bucket.get().isBlank() )
+            RBucket<Object> bucket = REDISSON_CLIENT.getBucket( "databaseName" );
+            Object bucketValue = bucket.get();
+            if ( bucketValue != null )
             {
-                WresJob.activeDatabaseName = bucket.get();
+                if ( bucketValue instanceof String stringBucketValue && ( !stringBucketValue.isBlank() ) )
+                {
+                    WresJob.activeDatabaseName = stringBucketValue;
+                }
+                else
+                {
+                    String stringBucketValue = String.valueOf( bucketValue );
+                    if ( !stringBucketValue.isBlank() )
+                    {
+                        WresJob.activeDatabaseName = stringBucketValue;
+                    }
+                }
             }
             else
             {
                 bucket.set( activeDatabaseName );
             }
-            RBucket<String> hostBucket = REDISSON_CLIENT.getBucket( "databaseHost" );
-            if ( hostBucket.get() != null && !hostBucket.get().isBlank() )
+            RBucket<Object> hostBucket = REDISSON_CLIENT.getBucket( "databaseHost" );
+            Object hostBucketValue = bucket.get();
+            if ( hostBucketValue != null )
             {
-                WresJob.activeDatabaseHost = hostBucket.get();
+                if ( hostBucketValue instanceof String stringHostBucketValue && ( !stringHostBucketValue.isBlank() ) )
+                {
+                    WresJob.activeDatabaseHost = stringHostBucketValue;
+                }
+                else
+                {
+                    String stringHostBucketValue = String.valueOf( hostBucketValue );
+                    if ( !stringHostBucketValue.isBlank() )
+                    {
+                        WresJob.activeDatabaseHost = stringHostBucketValue;
+                    }
+                }
             }
             else
             {
                 hostBucket.set( activeDatabaseHost );
             }
-            RBucket<String> portBucket = REDISSON_CLIENT.getBucket( "databasePort" );
-            if ( portBucket.get() != null && !portBucket.get().isBlank() )
+            RBucket<Object> portBucket = REDISSON_CLIENT.getBucket( "databasePort" );
+            Object portBucketValue = bucket.get();
+            if ( portBucketValue != null )
             {
-                activeDatabasePort = portBucket.get();
+                if ( portBucketValue instanceof String stringPortBucketValue && ( !stringPortBucketValue.isBlank() ) )
+                {
+                    activeDatabasePort = stringPortBucketValue;
+                }
+                else
+                {
+                    String stringPortBucketValue = String.valueOf( portBucketValue );
+                    if ( !stringPortBucketValue.isBlank() )
+                    {
+                        activeDatabasePort = stringPortBucketValue;
+                    }
+                }
             }
             else
             {
@@ -743,11 +779,11 @@ public class WresJob
             String jobStatusExchange = JobResults.getJobStatusExchangeName();
             AMQP.BasicProperties properties =
                     new AMQP.BasicProperties.Builder()
-                                                      .replyTo( jobStatusExchange )
-                                                      .correlationId( jobId )
-                                                      .deliveryMode( 2 )
-                                                      .priority( priority )
-                                                      .build();
+                            .replyTo( jobStatusExchange )
+                            .correlationId( jobId )
+                            .deliveryMode( 2 )
+                            .priority( priority )
+                            .build();
 
             // Inform the JobResults class to start looking for correlationId.
             // Share a connection, but not a channel, aim for channel-per-thread.
@@ -840,18 +876,20 @@ public class WresJob
     private static Response internalServerError( String message )
     {
         return Response.serverError()
-                       .entity( "<!DOCTYPE html><html><head><title>Our mistake</title></head><body><h1>Internal Server Error</h1><p>"
-                                + message
-                                + P_BODY_HTML )
+                       .entity(
+                               "<!DOCTYPE html><html><head><title>Our mistake</title></head><body><h1>Internal Server Error</h1><p>"
+                               + message
+                               + P_BODY_HTML )
                        .build();
     }
 
     private static Response serviceUnavailable( String message )
     {
         return Response.status( Response.Status.SERVICE_UNAVAILABLE )
-                       .entity( "<!DOCTYPE html><html><head><title>Service temporarily unavailable</title></head><body><h1>Service Unavailable</h1><p>"
-                                + message
-                                + P_BODY_HTML )
+                       .entity(
+                               "<!DOCTYPE html><html><head><title>Service temporarily unavailable</title></head><body><h1>Service Unavailable</h1><p>"
+                               + message
+                               + P_BODY_HTML )
                        .build();
     }
 
@@ -867,18 +905,20 @@ public class WresJob
     private static Response badRequest( String message )
     {
         return Response.status( Response.Status.BAD_REQUEST )
-                       .entity( "<!DOCTYPE html><html><head><title>Bad Request</title></head><body><h1>Bad Request</h1><p>"
-                                + message
-                                + P_BODY_HTML )
+                       .entity(
+                               "<!DOCTYPE html><html><head><title>Bad Request</title></head><body><h1>Bad Request</h1><p>"
+                               + message
+                               + P_BODY_HTML )
                        .build();
     }
 
     private static Response unauthorized( String message )
     {
         return Response.status( Response.Status.UNAUTHORIZED )
-                       .entity( "<!DOCTYPE html><html><head><title>Unauthorized</title></head><body><h1>Unauthorized</h1><p>"
-                                + message
-                                + P_BODY_HTML )
+                       .entity(
+                               "<!DOCTYPE html><html><head><title>Unauthorized</title></head><body><h1>Unauthorized</h1><p>"
+                               + message
+                               + P_BODY_HTML )
                        .build();
     }
 
