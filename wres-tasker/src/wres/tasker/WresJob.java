@@ -36,7 +36,6 @@ import org.redisson.Redisson;
 import org.redisson.api.RBucket;
 import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RedissonClient;
-import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.MarshallingCodec;
 import org.redisson.config.Config;
 import org.slf4j.Logger;
@@ -168,7 +167,7 @@ public class WresJob
                           .setPingConnectionInterval( 3000 )
                           // Set SO_KEEPALIVE for what it's worth:
                           .setKeepAlive( true );
-            //redissonConfig.setCodec( new MarshallingCodec() );
+            redissonConfig.setCodec( new MarshallingCodec() );
             // The reasoning here is any server thread can cause access of an
             // object in redis (e.g. output, stdout, etc), regardless of whether
             // the job is currently active. So at least that number. Then there
@@ -190,7 +189,7 @@ public class WresJob
         //three calls of a generic static method.
         if ( REDISSON_CLIENT != null )
         {
-            RBucket<String> bucket = REDISSON_CLIENT.getBucket( "databaseName", StringCodec.INSTANCE );
+            RBucket<String> bucket = REDISSON_CLIENT.getBucket( "databaseName" );
             if ( bucket.get() != null && !bucket.get().isBlank() )
             {
                 WresJob.activeDatabaseName = bucket.get();
@@ -199,7 +198,7 @@ public class WresJob
             {
                 bucket.set( activeDatabaseName );
             }
-            RBucket<String> hostBucket = REDISSON_CLIENT.getBucket( "databaseHost", StringCodec.INSTANCE );
+            RBucket<String> hostBucket = REDISSON_CLIENT.getBucket( "databaseHost" );
             if ( hostBucket.get() != null && !hostBucket.get().isBlank() )
             {
                 WresJob.activeDatabaseHost = hostBucket.get();
@@ -208,7 +207,7 @@ public class WresJob
             {
                 hostBucket.set( activeDatabaseHost );
             }
-            RBucket<String> portBucket = REDISSON_CLIENT.getBucket( "databasePort", StringCodec.INSTANCE );
+            RBucket<String> portBucket = REDISSON_CLIENT.getBucket( "databasePort" );
             if ( portBucket.get() != null && !portBucket.get().isBlank() )
             {
                 activeDatabasePort = portBucket.get();
