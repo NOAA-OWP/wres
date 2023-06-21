@@ -12,6 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import wres.config.yaml.components.GeneratedBaseline;
+import wres.config.yaml.components.GeneratedBaselineBuilder;
 import wres.datamodel.Ensemble;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
@@ -25,10 +27,10 @@ import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.TimeScale;
 
 /**
- * Tests the {@link EnsembleClimatologyGenerator}.
+ * Tests the {@link ClimatologyGenerator}.
  * @author James Brown
  */
-class EnsembleClimatologyGeneratorTest
+class ClimatologyGeneratorTest
 {
     // Times used
     private static final Instant T1980_01_01T12_00_00Z = Instant.parse( "1980-01-01T12:00:00Z" );
@@ -49,7 +51,7 @@ class EnsembleClimatologyGeneratorTest
     /** A climatological time-series. */
     private TimeSeries<Double> climatology;
     /** A climatology generator. */
-    private EnsembleClimatologyGenerator generator;
+    private ClimatologyGenerator generator;
     /** variable name. */
     private static final String STREAMFLOW = "STREAMFLOW";
     /** Measurement unit. */
@@ -80,9 +82,9 @@ class EnsembleClimatologyGeneratorTest
                                                 .setMetadata( metadata )
                                                 .build();
 
-        this.generator = EnsembleClimatologyGenerator.of( () -> Stream.of( this.climatology ),
-                                                          TimeSeriesOfDoubleUpscaler.of(),
-                                                          CMS );
+        this.generator = ClimatologyGenerator.of( () -> Stream.of( this.climatology ),
+                                                  TimeSeriesOfDoubleUpscaler.of(),
+                                                  CMS );
     }
 
     @Test
@@ -121,6 +123,49 @@ class EnsembleClimatologyGeneratorTest
                                                   .addEvent( Event.of( T1983_01_01T18_00_00Z, second ) )
                                                   .addEvent( Event.of( T1983_01_02T00_00_00Z, third ) )
                                                   .setMetadata( metadataOne )
+                                                  .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testApplyWithUnitChange()
+    {
+        // Create template metadata with a different unit than the source metadata
+        TimeScaleOuter existingTimeScale =
+                TimeScaleOuter.of( Duration.ofSeconds( 1 ), TimeScale.TimeScaleFunction.MEAN );
+        TimeSeriesMetadata metadataOne = TimeSeriesMetadata.of( Map.of( ReferenceTime.ReferenceTimeType.UNKNOWN,
+                                                                        T1983_01_01T06_00_00Z ),
+                                                                existingTimeScale,
+                                                                STREAMFLOW,
+                                                                FAKE,
+                                                                "CFS" );
+
+        // Forecast, which does not overlap with climatology
+        TimeSeries<Ensemble> forecast =
+                new TimeSeries.Builder<Ensemble>().addEvent( Event.of( T1983_01_01T12_00_00Z, Ensemble.of( 1.0 ) ) )
+                                                  .addEvent( Event.of( T1983_01_01T18_00_00Z, Ensemble.of( 2.0 ) ) )
+                                                  .addEvent( Event.of( T1983_01_02T00_00_00Z, Ensemble.of( 3.0 ) ) )
+                                                  .setMetadata( metadataOne )
+                                                  .build();
+
+        TimeSeries<Ensemble> actual = this.generator.apply( forecast );
+
+        Ensemble.Labels labelStrings = Ensemble.Labels.of( "1980", "1981", "1982" );
+        double[] one = new double[] { 313.0, 347.0, 359.0 };
+        Ensemble first = Ensemble.of( one, labelStrings );
+        double[] two = new double[] { 317.0, 349.0, 367.0 };
+        Ensemble second = Ensemble.of( two, labelStrings );
+        double[] three = new double[] { 331.0, 353.0, 373.0 };
+        Ensemble third = Ensemble.of( three, labelStrings );
+
+        TimeSeriesMetadata expectedMetadata = new TimeSeriesMetadata.Builder( metadataOne ).setUnit( CMS )
+                                                                                           .build();
+        TimeSeries<Ensemble> expected =
+                new TimeSeries.Builder<Ensemble>().addEvent( Event.of( T1983_01_01T12_00_00Z, first ) )
+                                                  .addEvent( Event.of( T1983_01_01T18_00_00Z, second ) )
+                                                  .addEvent( Event.of( T1983_01_02T00_00_00Z, third ) )
+                                                  .setMetadata( expectedMetadata )
                                                   .build();
 
         assertEquals( expected, actual );
@@ -189,11 +234,15 @@ class EnsembleClimatologyGeneratorTest
                                                   .build();
 
         // Generator with explicit interval
-        EnsembleClimatologyGenerator restricted = EnsembleClimatologyGenerator.of( () -> Stream.of( this.climatology ),
-                                                                                   TimeSeriesOfDoubleUpscaler.of(),
-                                                                                   CMS,
-                                                                                   T1981_01_01T06_00_00Z,
-                                                                                   T1983_01_02T00_00_00Z );
+        GeneratedBaseline generated = GeneratedBaselineBuilder.builder()
+                                                              .minimumDate( T1981_01_01T06_00_00Z )
+                                                              .maximumDate( T1983_01_02T00_00_00Z )
+                                                              .build();
+
+        ClimatologyGenerator restricted = ClimatologyGenerator.of( () -> Stream.of( this.climatology ),
+                                                                   TimeSeriesOfDoubleUpscaler.of(),
+                                                                   CMS,
+                                                                   generated );
 
         TimeSeries<Ensemble> actual = restricted.apply( forecast );
 
@@ -253,13 +302,16 @@ class EnsembleClimatologyGeneratorTest
     {
         Stream<TimeSeries<Double>> data = Stream.of( this.climatology );
         TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleUpscaler.of();
+        GeneratedBaseline generated = GeneratedBaselineBuilder.builder()
+                                                              .minimumDate( T1983_01_01T06_00_00Z )
+                                                              .maximumDate( T1981_01_02T00_00_00Z )
+                                                              .build();
         BaselineGeneratorException actual =
                 assertThrows( BaselineGeneratorException.class,
-                              () -> EnsembleClimatologyGenerator.of( () -> data,
-                                                                     upscaler,
-                                                                     CMS,
-                                                                     T1983_01_01T06_00_00Z,
-                                                                     T1981_01_02T00_00_00Z ) );
+                              () -> ClimatologyGenerator.of( () -> data,
+                                                             upscaler,
+                                                             CMS,
+                                                             generated ) );
 
         assertTrue( actual.getMessage()
                           .contains( "The climatology period is invalid" ) );
@@ -272,9 +324,9 @@ class EnsembleClimatologyGeneratorTest
         TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleUpscaler.of();
         BaselineGeneratorException actual =
                 assertThrows( BaselineGeneratorException.class,
-                              () -> EnsembleClimatologyGenerator.of( () -> data,
-                                                                     upscaler,
-                                                                     CMS ) );
+                              () -> ClimatologyGenerator.of( () -> data,
+                                                             upscaler,
+                                                             CMS ) );
 
         assertTrue( actual.getMessage().contains( "Cannot create a climatology time-series without one or more" ) );
     }
@@ -290,9 +342,9 @@ class EnsembleClimatologyGeneratorTest
         TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleUpscaler.of();
         BaselineGeneratorException actual =
                 assertThrows( BaselineGeneratorException.class,
-                              () -> EnsembleClimatologyGenerator.of( () -> data,
-                                                                     upscaler,
-                                                                     CMS ) );
+                              () -> ClimatologyGenerator.of( () -> data,
+                                                             upscaler,
+                                                             CMS ) );
 
         assertTrue( actual.getMessage()
                           .contains( "Cannot create a climatology time-series without one or more" ) );
@@ -318,9 +370,9 @@ class EnsembleClimatologyGeneratorTest
         TimeSeriesUpscaler<Double> upscaler = TimeSeriesOfDoubleUpscaler.of();
         BaselineGeneratorException actual =
                 assertThrows( BaselineGeneratorException.class,
-                              () -> EnsembleClimatologyGenerator.of( () -> data,
-                                                                     upscaler,
-                                                                     CMS ) );
+                              () -> ClimatologyGenerator.of( () -> data,
+                                                             upscaler,
+                                                             CMS ) );
 
         assertTrue( actual.getMessage()
                           .contains( "discovered one or more time-series that contained a reference time" ) );

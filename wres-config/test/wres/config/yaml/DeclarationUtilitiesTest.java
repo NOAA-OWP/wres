@@ -42,6 +42,9 @@ import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.FeatureGroupsBuilder;
 import wres.config.yaml.components.Features;
+import wres.config.yaml.components.GeneratedBaseline;
+import wres.config.yaml.components.GeneratedBaselineBuilder;
+import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.LeadTimeIntervalBuilder;
 import wres.config.yaml.components.Metric;
@@ -1887,6 +1890,9 @@ class DeclarationUtilitiesTest
                                             .setFunction( TimeScale.TimeScaleFunction.MEAN )
                                             .build();
         wres.config.yaml.components.TimeScale timeScale = new wres.config.yaml.components.TimeScale( timeScaleInner );
+        GeneratedBaseline persistence = GeneratedBaselineBuilder.builder()
+                                                                .method( GeneratedBaselines.PERSISTENCE )
+                                                                .build();
         BaselineDataset baseline =
                 BaselineDatasetBuilder.builder()
                                       .dataset( DatasetBuilder.builder()
@@ -1896,7 +1902,7 @@ class DeclarationUtilitiesTest
                                                               .timeZoneOffset( ZoneOffset.ofHours( -6 ) )
                                                               .timeScale( timeScale )
                                                               .build() )
-                                      .persistence( 1 )
+                                      .generatedBaseline( persistence )
                                       .build();
 
         EvaluationDeclaration evaluationDeclaration = EvaluationDeclarationBuilder.builder()
@@ -1967,7 +1973,7 @@ class DeclarationUtilitiesTest
         BaselineDataset expected =
                 BaselineDatasetBuilder.builder()
                                       .dataset( baselineDatasetExpected )
-                                      .persistence( 1 )
+                                      .generatedBaseline( persistence )
                                       .build();
 
         BaselineDataset actual = actualEvaluation.baseline();
@@ -2214,8 +2220,11 @@ class DeclarationUtilitiesTest
     {
         Dataset dataset = DatasetBuilder.builder()
                                         .build();
+        GeneratedBaseline persistence = GeneratedBaselineBuilder.builder()
+                                                                .method( GeneratedBaselines.PERSISTENCE )
+                                                                .build();
         BaselineDataset baselineDataset = BaselineDatasetBuilder.builder().dataset( dataset )
-                                                                .persistence( 1 )
+                                                                .generatedBaseline( persistence )
                                                                 .build();
         BaselineDataset anotherBaselineDataset = BaselineDatasetBuilder.builder()
                                                                        .dataset( dataset )

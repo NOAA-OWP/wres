@@ -1,10 +1,8 @@
 observed:
-  sources:
-    - data/DOSC1_QIN.xml
+  sources: data/DOSC1_QIN.xml
   variable: QIN
 predicted:
-  sources:
-    - data/DOSC1_SQIN.xml
+  sources: data/DOSC1_SQIN.xml
   variable: SQIN
   label: HEFS
 features:

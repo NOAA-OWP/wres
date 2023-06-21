@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import wres.config.yaml.components.GeneratedBaseline;
+import wres.config.yaml.components.GeneratedBaselineBuilder;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
@@ -943,10 +945,13 @@ class PersistenceGeneratorTest
                                                 .setMetadata( metadata )
                                                 .build();
 
+        GeneratedBaseline persistence = GeneratedBaselineBuilder.builder()
+                                                                .order( 2 )
+                                                                .build();
         PersistenceGenerator<Double> generator = PersistenceGenerator.of( () -> Stream.of( fooSeries ),
                                                                           TimeSeriesOfDoubleUpscaler.of(),
                                                                           Double::isFinite,
-                                                                          2,
+                                                                          persistence,
                                                                           CMS );
 
         TimeSeries<Double> actual = generator.apply( fooTemplateSeries );
@@ -1063,10 +1068,13 @@ class PersistenceGeneratorTest
                                                 .build();
 
         // Lag-3 persistence
+        GeneratedBaseline persistence = GeneratedBaselineBuilder.builder()
+                                                                .order( 3 )
+                                                                .build();
         PersistenceGenerator<Double> generator = PersistenceGenerator.of( () -> Stream.of( fooSeries ),
                                                                           TimeSeriesOfDoubleUpscaler.of(),
                                                                           Double::isFinite,
-                                                                          3,
+                                                                          persistence,
                                                                           CMS );
 
         TimeSeries<Double> actual = generator.apply( fooTemplateSeries );

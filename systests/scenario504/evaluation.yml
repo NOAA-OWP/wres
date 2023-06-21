@@ -13,7 +13,7 @@ baseline:
   sources:
     - smalldata/25510317T00_FAKE2_observations.xml
   variable: DISCHARGE
-  persistence: 1
+  method: persistence
 features:
   - {observed: FAKE2, predicted: FAKE2, baseline: FAKE2}
 unit: CMS

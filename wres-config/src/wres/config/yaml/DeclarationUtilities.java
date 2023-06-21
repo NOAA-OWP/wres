@@ -618,7 +618,7 @@ public class DeclarationUtilities
     public static boolean hasGeneratedBaseline( BaselineDataset baselineDataset )
     {
         return Objects.nonNull( baselineDataset )
-               && Objects.nonNull( baselineDataset.persistence() );
+               && Objects.nonNull( baselineDataset.generatedBaseline() );
     }
 
     /**

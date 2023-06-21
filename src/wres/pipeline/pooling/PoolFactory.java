@@ -20,6 +20,7 @@ import java.util.function.Function;
 import java.util.function.LongUnaryOperator;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.function.ToDoubleFunction;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -35,17 +36,20 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 
 import wres.config.yaml.components.CrossPair;
 import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.GeneratedBaseline;
+import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.Season;
 import wres.config.yaml.components.Values;
 import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.MissingValues;
+import wres.datamodel.Slicer;
+import wres.datamodel.baselines.ClimatologyGenerator;
 import wres.datamodel.units.UnitMapper;
 import wres.datamodel.units.Units;
 import wres.datamodel.messages.MessageFactory;
@@ -405,14 +409,36 @@ public class PoolFactory
         // Generated baseline declared?
         if ( project.hasGeneratedBaseline() )
         {
+            GeneratedBaseline declaredGenerator = declaration.baseline()
+                                                             .generatedBaseline();
+            GeneratedBaselines method = declaredGenerator.method();
             LOGGER.debug( "While creating pools for project '{}', discovered a baseline "
-                          + "to generate from a data source.",
-                          projectId );
+                          + "to generate using method '{}' for data source: {}.",
+                          projectId,
+                          method,
+                          declaration.baseline() );
 
-            baselineGenerator = this.getGeneratedBaseline( declaration.baseline(),
-                                                           retrieverFactory,
-                                                           rightUpscaler,
-                                                           Double::isFinite );
+            if ( method == GeneratedBaselines.PERSISTENCE )
+            {
+                baselineGenerator = this.getPersistenceBaseline( declaredGenerator,
+                                                                 retrieverFactory,
+                                                                 rightUpscaler,
+                                                                 Double::isFinite );
+            }
+            else if ( method == GeneratedBaselines.CLIMATOLOGY )
+            {
+                ToDoubleFunction<Ensemble> mapper = Slicer.getEnsembleAverageFunction( declaredGenerator.average() );
+                baselineGenerator = this.getClimatologyBaseline( declaredGenerator,
+                                                                 retrieverFactory,
+                                                                 rightUpscaler,
+                                                                 mapper );
+            }
+            else
+            {
+                throw new UnsupportedOperationException( "While attempting to generate a baseline, encountered an "
+                                                         + "unrecognized type of baseline to generate: "
+                                                         + method );
+            }
         }
 
         // Create any required transformers for value constraints and units
@@ -1219,66 +1245,87 @@ public class PoolFactory
     }
 
     /**
-     * Creates a feature-specific baseline generator, if required. Pay close attention to the sided-ness of the feature
-     * names in this context because there are two different sources of data: 1) the source data from which the 
-     * baseline is generated; and 2) the template time-series data that is mimicked. For example, when generating a 
-     * persistence baseline, the former is a source of observation-like data and the latter may be a source of forecast-
-     * like data, each of which has a different feature name.
+     * Creates a feature-specific persistence baseline generator. Pay close attention to the sided-ness of the feature
+     * names in this context because there are two different sources of data: 1) the source data from which the
+     * baseline is generated; and 2) the template time-series data that is mimicked. The former is a source of
+     * observation-like data and the latter may be a source of forecast-like data, each of which has a different
+     * feature name.
      *
-     * @param baseline the baseline declaration
+     * @param parameters the persistence parameters
      * @param retrieverFactory the factory to acquire a data source for a generated baseline
      * @param upscaler an upscaler, which is optional unless the generated series requires upscaling
      * @param admissibleValue a guard for admissible values of the generated baseline
      * @return a function that takes a set of features and returns a unary operator that generates a baseline
      */
 
-    private <L, R> Function<Set<Feature>, UnaryOperator<TimeSeries<R>>> getGeneratedBaseline( BaselineDataset baseline,
-                                                                                              RetrieverFactory<L, R> retrieverFactory,
-                                                                                              TimeSeriesUpscaler<R> upscaler,
-                                                                                              Predicate<R> admissibleValue )
+    private Function<Set<Feature>, UnaryOperator<TimeSeries<Double>>> getPersistenceBaseline( GeneratedBaseline parameters,
+                                                                                              RetrieverFactory<Double, Double> retrieverFactory,
+                                                                                              TimeSeriesUpscaler<Double> upscaler,
+                                                                                              Predicate<Double> admissibleValue )
     {
-        Objects.requireNonNull( baseline );
         Objects.requireNonNull( retrieverFactory );
 
-        // Has a generated baseline, only one supported for now: persistence
-        if ( DeclarationUtilities.hasGeneratedBaseline( baseline ) )
-        {
-            LOGGER.trace( "Creating a persistence generator for data source {}.", baseline );
+        // Here the feature names supplied must be consistent with the source data from which the baseline is
+        // generated, not the template time-series that is mimicked
+        return features -> {
 
-            // Default lag of 1
-            int lag = 1;
+            Supplier<Stream<TimeSeries<Double>>> source = () -> retrieverFactory.getBaselineRetriever( features )
+                                                                                .get();
 
-            if ( Objects.nonNull( baseline.persistence() ) )
-            {
-                lag = baseline.persistence();
-                LOGGER.debug( "Discovered a persistence baseline with a lag of {}.", lag );
-            }
+            String unit = this.getProject()
+                              .getMeasurementUnit();
 
-            // Map from the input data type to the required type
-            int finalLag = lag;
+            return PersistenceGenerator.of( source,
+                                            upscaler,
+                                            admissibleValue,
+                                            parameters,
+                                            unit );
+        };
+    }
 
-            // Here the feature names supplied must be consistent with the source data from which the baseline is 
-            // generated, not the template time-series that is mimicked
-            return features -> {
+    /**
+     * Creates a feature-specific climatology baseline generator. Pay close attention to the sided-ness of the feature
+     * names in this context because there are two different sources of data: 1) the source data from which the
+     * baseline is generated; and 2) the template time-series data that is mimicked. The former is a source of
+     * observation-like data and the latter may be a source of forecast-like data, each of which has a different
+     * feature name.
+     *
+     * @param parameters the persistence parameters
+     * @param retrieverFactory the factory to acquire a data source for a generated baseline
+     * @param upscaler an upscaler, which is optional unless the generated series requires upscaling
+     * @param mapper the function to generate a single value from the climatological ensemble
+     * @return a function that takes a set of features and returns a unary operator that generates a baseline
+     */
 
-                Supplier<Stream<TimeSeries<R>>> persistenceSource =
-                        () -> retrieverFactory.getBaselineRetriever( features )
-                                              .get();
+    private Function<Set<Feature>, UnaryOperator<TimeSeries<Double>>> getClimatologyBaseline( GeneratedBaseline parameters,
+                                                                                              RetrieverFactory<Double, Double> retrieverFactory,
+                                                                                              TimeSeriesUpscaler<Double> upscaler,
+                                                                                              ToDoubleFunction<Ensemble> mapper )
+    {
+        Objects.requireNonNull( retrieverFactory );
 
-                return PersistenceGenerator.of( persistenceSource,
-                                                upscaler,
-                                                admissibleValue,
-                                                finalLag,
-                                                this.getProject()
-                                                    .getMeasurementUnit() );
-            };
-        }
-        // Other types are not supported
-        else
-        {
-            throw new UnsupportedOperationException( "While attempting to generate a baseline: unrecognized "
-                                                     + "type of baseline to generate." );
-        }
+        // Here the feature names supplied must be consistent with the source data from which the baseline is
+        // generated, not the template time-series that is mimicked
+        return features -> {
+            Supplier<Stream<TimeSeries<Double>>> source = () -> retrieverFactory.getBaselineRetriever( features )
+                                                                                .get();
+
+            String unit = this.getProject()
+                              .getMeasurementUnit();
+
+            ClimatologyGenerator generator = ClimatologyGenerator.of( source,
+                                                                      upscaler,
+                                                                      unit,
+                                                                      parameters );
+
+            // Compose the missing value transformer and the ensemble-to-single-valued transformer
+            UnaryOperator<Ensemble> removeMissings = Slicer.eachOfRight( MissingValues::isNotMissingValue );
+            ToDoubleFunction<Ensemble> composed = in -> mapper.applyAsDouble( removeMissings.apply( in ) );
+            Function<TimeSeries<Ensemble>, TimeSeries<Double>> transformer =
+                    in -> TimeSeriesSlicer.transform( in, composed::applyAsDouble, m -> m );
+
+            return in -> transformer.apply( generator.apply( in ) );
+        };
     }
 
     /**

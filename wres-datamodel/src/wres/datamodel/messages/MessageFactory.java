@@ -80,9 +80,6 @@ public class MessageFactory
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( MessageFactory.class );
 
-    /** Persistence baseline string. */
-    private static final String PERSISTENCE = "PERSISTENCE";
-
     /** Re-used string. */
     private static final String SET_THE_BASELINE_DATASET_NAME_TO = "Set the baseline dataset name to {}.";
 
@@ -1167,10 +1164,13 @@ public class MessageFactory
                 builder.setBaselineDataName( baselineDataName );
                 LOGGER.debug( SET_THE_BASELINE_DATASET_NAME_TO, baselineDataName );
             }
-            else if ( Objects.nonNull( baseline.persistence() ) )
+            else if ( Objects.nonNull( baseline.generatedBaseline() ) )
             {
-                builder.setBaselineDataName( MessageFactory.PERSISTENCE );
-                LOGGER.debug( SET_THE_BASELINE_DATASET_NAME_TO, MessageFactory.PERSISTENCE );
+                String methodName = baseline.generatedBaseline()
+                                              .method()
+                                              .name();
+                builder.setBaselineDataName( methodName );
+                LOGGER.debug( SET_THE_BASELINE_DATASET_NAME_TO, methodName );
             }
 
             // Variable name

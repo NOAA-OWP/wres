@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,22 +55,17 @@ import wres.config.yaml.components.ThresholdType;
 
 public final class Slicer
 {
-
-    /**
-     * Logger.
-     */
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( Slicer.class );
 
-    /**
-     * Null input error message.
-     */
+    /** Null input error message. */
     private static final String NULL_INPUT_EXCEPTION = "Specify a non-null input.";
 
-    /**
-     * Failure to supply a non-null predicate.
-     */
-
+    /** Failure to supply a non-null predicate. */
     private static final String NULL_PREDICATE_EXCEPTION = "Specify a non-null predicate.";
+
+    /** Median function. */
+    private static final Median MEDIAN = new Median();
 
     /**
      * <p>Composes the input predicate as applying to the left side of a pair. 
@@ -245,16 +241,35 @@ public final class Slicer
     public static UnaryOperator<Pair<Double, Ensemble>> leftAndEachOfRight( DoublePredicate predicate )
     {
         return pair -> {
-
             // Left fails condition
             if ( !predicate.test( pair.getLeft() ) )
             {
                 return null;
             }
 
-            Pair<Double, Ensemble> returnMe = null;
+            Ensemble ensemble = Slicer.eachOfRight( predicate )
+                                      .apply( pair.getRight() );
 
-            Ensemble ensemble = pair.getRight();
+            if( ensemble.size() == 0 )
+            {
+                return null;
+            }
+
+            return Pair.of( pair.getLeft(), ensemble );
+        };
+    }
+
+    /**
+     * A transformer that applies a predicate to the left and each of the right separately, returning a transformed
+     * pair or null if the left and none of the right meet the condition.
+     *
+     * @param predicate the input predicate
+     * @return a composed function
+     */
+
+    public static UnaryOperator<Ensemble> eachOfRight( DoublePredicate predicate )
+    {
+        return ensemble -> {
             double[] members = ensemble.getMembers();
             Labels labels = ensemble.getLabels();
             String[] labelValues = labels.getLabels();
@@ -282,14 +297,16 @@ public final class Slicer
 
             String[] filteredLabelArray = filteredLabels.toArray( new String[0] );
 
-            //One or more of right meets condition
+            // One or more of right meets condition
             if ( filteredMemberArray.length > 0 )
             {
                 Labels fLabels = Labels.of( filteredLabelArray );
-                returnMe = Pair.of( pair.getLeft(), Ensemble.of( filteredMemberArray, fLabels ) );
+                return Ensemble.of( filteredMemberArray, fLabels );
             }
-
-            return returnMe;
+            else
+            {
+                return Ensemble.of();
+            }
         };
     }
 
@@ -802,6 +819,28 @@ public final class Slicer
         finally
         {
             combined.close();
+        }
+    }
+
+
+    /**
+     * Creates an averaging function that converts an {@link Ensemble} to a single value.
+     * @param ensembleAverageType the averaging type, not null
+     * @return the transformer
+     */
+    public static ToDoubleFunction<Ensemble> getEnsembleAverageFunction( wres.statistics.generated.Pool.EnsembleAverageType ensembleAverageType )
+    {
+        Objects.requireNonNull( ensembleAverageType );
+
+        if ( ensembleAverageType == wres.statistics.generated.Pool.EnsembleAverageType.MEDIAN )
+        {
+            return ensemble -> Slicer.MEDIAN.evaluate( ensemble.getMembers() );
+        }
+        else
+        {
+            return ensemble -> Arrays.stream( ensemble.getMembers() )
+                                     .average()
+                                     .orElse( MissingValues.DOUBLE );
         }
     }
 

@@ -48,6 +48,9 @@ import wres.config.yaml.components.FeatureServiceGroupBuilder;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.Formats;
+import wres.config.yaml.components.GeneratedBaseline;
+import wres.config.yaml.components.GeneratedBaselineBuilder;
+import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricParameters;
@@ -414,7 +417,7 @@ class DeclarationFactoryTest
                 predicted: another_file.csv
                 baseline:
                   sources: yet_another_file.csv
-                  persistence: 1
+                  method: persistence
                   """;
 
         URI baselineUri = URI.create( "yet_another_file.csv" );
@@ -426,9 +429,56 @@ class DeclarationFactoryTest
         Dataset baselineDataset = DatasetBuilder.builder()
                                                 .sources( baselineSources )
                                                 .build();
+        GeneratedBaseline persistence = GeneratedBaselineBuilder.builder()
+                                                                .method( GeneratedBaselines.PERSISTENCE )
+                                                                .build();
         BaselineDataset baseline = BaselineDatasetBuilder.builder()
                                                          .dataset( baselineDataset )
-                                                         .persistence( 1 )
+                                                         .generatedBaseline( persistence )
+                                                         .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .baseline( baseline )
+                                                                     .build();
+
+        EvaluationDeclaration actual = DeclarationFactory.from( declaration );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithClimatologyBaselineAndParameters() throws IOException
+    {
+        String declaration = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                baseline:
+                  sources: yet_another_file.csv
+                  method:
+                    name: climatology
+                    average: median
+                  """;
+
+        URI baselineUri = URI.create( "yet_another_file.csv" );
+        Source baselineSource = SourceBuilder.builder()
+                                             .uri( baselineUri )
+                                             .build();
+
+        List<Source> baselineSources = List.of( baselineSource );
+        Dataset baselineDataset = DatasetBuilder.builder()
+                                                .sources( baselineSources )
+                                                .build();
+        GeneratedBaseline persistence = GeneratedBaselineBuilder.builder()
+                                                                .method( GeneratedBaselines.CLIMATOLOGY )
+                                                                .average( Pool.EnsembleAverageType.MEDIAN )
+                                                                .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( baselineDataset )
+                                                         .generatedBaseline( persistence )
                                                          .build();
 
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
@@ -1841,7 +1891,7 @@ class DeclarationFactoryTest
                   sources: another_file.csv
                 baseline:
                   sources: yet_another_file.csv
-                  persistence: 1
+                  method: persistence
                   """;
 
         URI baselineUri = URI.create( "yet_another_file.csv" );
@@ -1853,16 +1903,63 @@ class DeclarationFactoryTest
         Dataset baselineDataset = DatasetBuilder.builder()
                                                 .sources( baselineSources )
                                                 .build();
+        GeneratedBaseline persistence = GeneratedBaselineBuilder.builder()
+                                                                .method( GeneratedBaselines.PERSISTENCE )
+                                                                .build();
         BaselineDataset baseline = BaselineDatasetBuilder.builder()
                                                          .dataset( baselineDataset )
-                                                         .persistence( 1 )
+                                                         .generatedBaseline( persistence )
                                                          .build();
 
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
-                                                                     .left( this.observedDataset )
-                                                                     .right( this.predictedDataset )
-                                                                     .baseline( baseline )
-                                                                     .build();
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .baseline( baseline )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithClimatologyBaselineAndParameters() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                baseline:
+                  sources: yet_another_file.csv
+                  method:
+                    name: climatology
+                    average: median
+                  """;
+
+        URI baselineUri = URI.create( "yet_another_file.csv" );
+        Source baselineSource = SourceBuilder.builder()
+                                             .uri( baselineUri )
+                                             .build();
+
+        List<Source> baselineSources = List.of( baselineSource );
+        Dataset baselineDataset = DatasetBuilder.builder()
+                                                .sources( baselineSources )
+                                                .build();
+        GeneratedBaseline persistence = GeneratedBaselineBuilder.builder()
+                                                                .method( GeneratedBaselines.CLIMATOLOGY )
+                                                                .average( Pool.EnsembleAverageType.MEDIAN )
+                                                                .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( baselineDataset )
+                                                         .generatedBaseline( persistence )
+                                                         .build();
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .baseline( baseline )
+                                                                       .build();
 
         String actual = DeclarationFactory.from( evaluation );
 

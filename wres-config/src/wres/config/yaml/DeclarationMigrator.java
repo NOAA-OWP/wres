@@ -86,6 +86,9 @@ import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.Format;
 import wres.config.yaml.components.Formats;
+import wres.config.yaml.components.GeneratedBaseline;
+import wres.config.yaml.components.GeneratedBaselineBuilder;
+import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricBuilder;
@@ -244,10 +247,14 @@ public class DeclarationMigrator
             {
                 LOGGER.debug( "Adding persistence of order {} to the baseline dataset.",
                               baselineConfig.getPersistence() );
-                baselineBuilder.persistence( baselineConfig.getPersistence() );
+                GeneratedBaseline persistence = GeneratedBaselineBuilder.builder()
+                                                                        .method( GeneratedBaselines.PERSISTENCE )
+                                                                        .order( baselineConfig.getPersistence() )
+                                                                        .build();
+                baselineBuilder.generatedBaseline( persistence );
             }
 
-            // Old style declaration
+            // Old style persistence declaration
             if ( Objects.nonNull( baselineConfig.getTransformation() )
                  && "persistence".equals( baselineConfig.getTransformation()
                                                         .value() ) )
@@ -255,7 +262,11 @@ public class DeclarationMigrator
             {
                 LOGGER.debug( "Discovered an old-style persistence declaration. Adding persistence of order 1 to the "
                               + "baseline dataset." );
-                baselineBuilder.persistence( 1 );
+                GeneratedBaseline persistence = GeneratedBaselineBuilder.builder()
+                                                                        .method( GeneratedBaselines.PERSISTENCE )
+                                                                        .order( 1 )
+                                                                        .build();
+                baselineBuilder.generatedBaseline( persistence );
             }
 
             // Separate metrics?
@@ -2100,7 +2111,7 @@ public class DeclarationMigrator
 
         String thresholdUnit = null;
         String existingUnit = thresholdSource.getUnit();
-        if( Objects.nonNull( existingUnit ) && ! existingUnit.isBlank() )
+        if ( Objects.nonNull( existingUnit ) && !existingUnit.isBlank() )
         {
             thresholdUnit = existingUnit;
         }

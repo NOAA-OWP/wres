@@ -140,7 +140,7 @@ definitions:
       classifier_thresholds:
         "$ref": "#/definitions/ProbabilityThresholds"
       threshold_sources:
-         anyOf:
+        anyOf:
           # One or more
           - type: array
             items:
@@ -185,7 +185,7 @@ definitions:
           # Tuple
           - type: array
             items:
-            # A simple name or a parameterized type
+              # A simple name or a parameterized type
               anyOf:
                 - "$ref": "#/definitions/MetricEnum"
                 - "$ref": "#/definitions/CategoricalMetricEnum"
@@ -346,19 +346,11 @@ definitions:
             minLength: 1
             maxLength: 6
           - type: integer
-      persistence:
-        description: "Creates a baseline by persisting each source forwards in 
-        time with a specified order or 'lag', which must be greater than or 
-        equal to zero. For non-forecast sources, the lag is applied to the 
-        valid time. For example, a lag of 1 means that the persisted value is 
-        the value from the persistence source that is one time step prior to 
-        the current valid time. For a forecast source, the lag is applied to 
-        the forecast reference time, or the first reference time if there are 
-        many. In this context, a lag of 3 means that the persisted value at all 
-        forecast valid times is the value from the persistence source that is 3 
-        steps prior to the forecast reference time."
-        type: integer
-        minimum: 0
+      method:
+        anyOf:
+          - "$ref": "#/definitions/GeneratedBaselineEnum"
+          - "$ref": "#/definitions/Persistence"
+          - "$ref": "#/definitions/Climatology"
       separate_metrics:
         description: "When declaring separate_metrics as 'true', all possible 
         metrics will be computed for the baseline pairs, as well as the 
@@ -370,6 +362,50 @@ definitions:
         type: boolean
       type:
         "$ref": "#/definitions/DataTypeEnum"
+
+  Persistence:
+    title: A persistence baseline
+    description: "Creates a baseline by persisting each source forwards in time 
+    with a specified order or 'lag', which must be greater than or equal to 
+    zero. For non-forecast sources, the lag is applied to the valid time. For 
+    example, a lag of 1 means that the persisted value is the value from the 
+    persistence source that is one time step prior to the current valid time. 
+    For a forecast source, the lag is applied to the forecast reference time, 
+    or the first reference time if there are many. In this context, a lag of 3 
+    means that the persisted value at all forecast valid times is the value 
+    from the persistence source that is 3 steps prior to the forecast reference 
+    time."
+    name:
+      const: "persistence"
+    order:
+      type: integer
+      minimum: 0
+    required:
+      - name
+
+  Climatology:
+    title: A climatology baseline
+    description: "Creates a baseline for a given valid time by collecting a 
+    value at the same time from every historical year of record other than the 
+    year of the given valid time. This is equivalent to the 'Ensemble Streamflow 
+    Prediction' method used by the U.S. National Weather Service, but omits 
+    the 'verifying observation' when the requested valid time(s) overlap the 
+    valid time(s) in the source data."
+    type: object
+    additionalProperties: false
+    properties:
+      name:
+        const: "climatology"
+      minimum_date:
+        type: string
+        format: date-time
+      maximum_date:
+        type: string
+        format: date-time
+      average:
+        "$ref": "#/definitions/EnsembleAverageEnum"
+    required:
+      - name
 
   Source:
     title: A data source.
@@ -1338,6 +1374,15 @@ definitions:
     enum:
       - mean
       - median
+
+  GeneratedBaselineEnum:
+    title: The options for generated baselines.
+    description: "The name of a baseline that can be generated automatically by 
+    the software."
+    type: string
+    enum:
+      - persistence
+      - climatology
 
   MetricEnum:
     title: A big bucket of metrics that all accept the same parameters.

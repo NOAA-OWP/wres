@@ -23,7 +23,7 @@ baseline:
     unit: seconds
   variable: QINE
   type: observations
-  persistence: 1
+  method: persistence
 features:
   - observed: GLOO2X
     predicted: GLOO2

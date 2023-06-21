@@ -1988,11 +1988,12 @@ public class DeclarationInterpolator
                         + calculatedDataType
                         + "' to match the 'type' of the 'predicted' dataset.";
 
-        // Persistence defined? If so, observations
-        if ( Objects.nonNull( baseline.persistence() ) )
+        // Generated baseline defined? If so, observations
+        if ( Objects.nonNull( baseline.generatedBaseline() ) )
         {
             calculatedDataType = DataType.OBSERVATIONS;
-            reason = "Inferred a 'type' of 'observations' because a persistence baseline was defined.";
+            reason = "Inferred a 'type' of 'observations' because a generated baseline was defined and all "
+                     + "supported baseline types require observation-like data.";
         }
 
         // Warn

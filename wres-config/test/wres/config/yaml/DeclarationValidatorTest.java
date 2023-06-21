@@ -33,6 +33,9 @@ import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.Formats;
+import wres.config.yaml.components.GeneratedBaseline;
+import wres.config.yaml.components.GeneratedBaselineBuilder;
+import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.LeadTimeIntervalBuilder;
 import wres.config.yaml.components.Metric;
@@ -1465,6 +1468,62 @@ class DeclarationValidatorTest
         assertTrue( DeclarationValidatorTest.contains( events,
                                                        "The 'reference_dates' and 'valid_dates' do not overlap",
                                                        StatusLevel.WARN ) );
+    }
+
+    @Test
+    void testPersistenceWithEnsembleDeclarationProducesError()
+    {
+        GeneratedBaseline persistence = GeneratedBaselineBuilder.builder()
+                                                                .method( GeneratedBaselines.PERSISTENCE )
+                                                                .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( this.defaultDataset )
+                                                         .generatedBaseline( persistence )
+                                                         .build();
+
+        Dataset rightDataset = DatasetBuilder.builder( this.defaultDataset )
+                                             .type( DataType.ENSEMBLE_FORECASTS )
+                                             .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( rightDataset )
+                                            .baseline( baseline )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "Cannot declare a 'persistence' baseline",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testClimatologyWithInvalidDatesProducesError()
+    {
+        GeneratedBaseline persistence = GeneratedBaselineBuilder.builder()
+                                                                .method( GeneratedBaselines.CLIMATOLOGY )
+                                                                .maximumDate( Instant.MIN )
+                                                                .minimumDate( Instant.MAX )
+                                                                .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( this.defaultDataset )
+                                                         .generatedBaseline( persistence )
+                                                         .build();
+
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .baseline( baseline )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "Discovered a climatological baseline whose "
+                                                       + "'maximum_date'",
+                                                       StatusLevel.ERROR ) );
     }
 
     /**
