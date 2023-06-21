@@ -28,6 +28,9 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.FeaturesBuilder;
+import wres.config.yaml.components.GeneratedBaseline;
+import wres.config.yaml.components.GeneratedBaselineBuilder;
+import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.LeadTimeIntervalBuilder;
 import wres.config.yaml.components.Season;
@@ -136,9 +139,12 @@ class InMemoryProjectTest
                                                                        .name( "bat" )
                                                                        .build() )
                                              .build();
+        GeneratedBaseline persistence = GeneratedBaselineBuilder.builder()
+                                                                .method( GeneratedBaselines.PERSISTENCE )
+                                                                .build();
         BaselineDataset baseline = BaselineDatasetBuilder.builder()
                                                          .dataset( baselineDataset )
-                                                         .persistence( 1 )
+                                                         .generatedBaseline( persistence )
                                                          .build();
 
         LeadTimeInterval leadTimes = LeadTimeIntervalBuilder.builder()

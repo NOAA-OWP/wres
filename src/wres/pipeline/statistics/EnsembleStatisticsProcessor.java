@@ -16,7 +16,6 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,9 +76,6 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
     private static final ToDoubleFunction<double[]> AVERAGE = right -> Arrays.stream( right )
                                                                              .average()
                                                                              .orElse( MissingValues.DOUBLE );
-
-    /** Median function. */
-    private static final Median MEDIAN = new Median();
 
     /**
      * A {@link MetricCollection} of {@link Metric} that consume discrete probability pairs and produce
@@ -264,7 +260,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
 
         // Construct the default mapper from ensembles to single-values: this is not currently configurable
         // Handle missings here
-        ToDoubleFunction<Ensemble> ensembleMapper = this.getEnsembleAverageFunction( this.ensembleAverageType );
+        ToDoubleFunction<Ensemble> ensembleMapper = Slicer.getEnsembleAverageFunction( this.ensembleAverageType );
 
         UnaryOperator<Pair<Double, Ensemble>> missingFilter =
                 Slicer.leftAndEachOfRight( MissingValues::isNotMissingValue );
@@ -1023,27 +1019,6 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         else
         {
             return ensembleAverageType;
-        }
-    }
-
-    /**
-     * Creates an averaging function that converts an {@link Ensemble} to a single value.
-     * @param ensembleAverageType the averaging type, not null
-     * @return the transformer
-     */
-    private ToDoubleFunction<Ensemble> getEnsembleAverageFunction( EnsembleAverageType ensembleAverageType )
-    {
-        Objects.requireNonNull( ensembleAverageType );
-
-        if ( ensembleAverageType == EnsembleAverageType.MEDIAN )
-        {
-            return ensemble -> EnsembleStatisticsProcessor.MEDIAN.evaluate( ensemble.getMembers() );
-        }
-        else
-        {
-            return ensemble -> Arrays.stream( ensemble.getMembers() )
-                                     .average()
-                                     .orElse( MissingValues.DOUBLE );
         }
     }
 

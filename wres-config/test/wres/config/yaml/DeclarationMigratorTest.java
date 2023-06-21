@@ -76,6 +76,9 @@ import wres.config.yaml.components.FeatureServiceGroupBuilder;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.Formats;
+import wres.config.yaml.components.GeneratedBaseline;
+import wres.config.yaml.components.GeneratedBaselineBuilder;
+import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.LeadTimeIntervalBuilder;
 import wres.config.yaml.components.Metric;
@@ -336,9 +339,13 @@ class DeclarationMigratorTest
                                                                           .build() )
                                               .build();
 
+        GeneratedBaseline persistence = GeneratedBaselineBuilder.builder()
+                                                                .method( GeneratedBaselines.PERSISTENCE )
+                                                                .order( 2 )
+                                                                .build();
         BaselineDataset baselineLong = BaselineDatasetBuilder.builder()
                                                              .dataset( this.predictedDataset )
-                                                             .persistence( 2 )
+                                                             .generatedBaseline( persistence )
                                                              .build();
 
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()

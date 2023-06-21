@@ -15,7 +15,7 @@ import wres.config.yaml.serializers.TrueSerializer;
 /**
  * The baseline data.
  * @param dataset the dataset
- * @param persistence the order of persistence for a persistence baseline
+ * @param generatedBaseline the generated baseline, if any
  * @param separateMetrics whether to compute separate metrics for the baseline
  */
 @RecordBuilder
@@ -25,7 +25,7 @@ import wres.config.yaml.serializers.TrueSerializer;
 public record BaselineDataset( @JsonUnwrapped   // Use unwrap annotation to serialize everything on the same level
                                Dataset dataset,
                                @JsonUnwrapped
-                               @JsonProperty( "persistence" ) Integer persistence,
+                               @JsonProperty( "method" ) GeneratedBaseline generatedBaseline,
                                @JsonUnwrapped
                                // Only write the non-default/true value of "separate_metrics"
                                @JsonSerialize( using = TrueSerializer.class )
@@ -34,7 +34,7 @@ public record BaselineDataset( @JsonUnwrapped   // Use unwrap annotation to seri
     /**
      * Creates an instance.
      * @param dataset the dataset, required
-     * @param persistence the order of persistence, optional
+     * @param generatedBaseline the generated baseline, optional
      * @param separateMetrics whether to compute separate metrics for the baseline
      */
     public BaselineDataset

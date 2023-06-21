@@ -29,7 +29,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * The Mean Square Error (MSE) Skill Score (SS) measures the reduction in MSE associated with one set of predictions
  * when compared to another. The MSE-SS is equivalent to the Nash-Sutcliffe Efficiency when using the average
  * observation as the baseline. The perfect MSE-SS is 1.0.
- * 
+ *
  * @author James Brown
  */
 public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Double, Double>>>
@@ -54,16 +54,16 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Doubl
                                                                     .addComponents( MeanSquareErrorSkillScore.MAIN )
                                                                     .setName( MetricName.MEAN_SQUARE_ERROR_SKILL_SCORE )
                                                                     .build();
-    
+
     /** Instance of {@link SumOfSquareError}.*/
     private final SumOfSquareError sse;
-    
+
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( MeanSquareErrorSkillScore.class );
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -81,7 +81,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Doubl
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
-        
+
         return this.aggregate( this.getIntermediateStatistic( pool ), pool );
     }
 
@@ -121,8 +121,8 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Doubl
         if ( !pool.get().isEmpty() )
         {
             double sseInner = output.getComponent( MetricConstants.MAIN )
-                               .getData()
-                               .getValue();
+                                    .getData()
+                                    .getValue();
 
             double numerator = FunctionFactory.finiteOrMissing()
                                               .applyAsDouble( sseInner );
@@ -138,15 +138,17 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Doubl
             // Default baseline is the average observation, which results in the so-called Nash-Sutcliffe Efficiency
             else
             {
-                double meanLeft =
-                        FunctionFactory.mean().applyAsDouble( VectorOfDoubles.of( Slicer.getLeftSide( pool ) ) );
+                VectorOfDoubles left = VectorOfDoubles.of( Slicer.getLeftSide( pool ) );
+                double meanLeft = FunctionFactory.mean()
+                                                 .applyAsDouble( left );
                 for ( Pair<Double, Double> next : pool.get() )
                 {
                     denominator += Math.pow( next.getLeft() - meanLeft, 2 );
                 }
             }
-            
-            result = FunctionFactory.skill().applyAsDouble( numerator, denominator );
+
+            result = FunctionFactory.skill()
+                                    .applyAsDouble( numerator, denominator );
         }
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()

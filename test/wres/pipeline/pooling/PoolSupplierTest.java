@@ -23,6 +23,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import wres.config.yaml.components.GeneratedBaseline;
+import wres.config.yaml.components.GeneratedBaselineBuilder;
 import wres.datamodel.Climatology;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
@@ -1167,11 +1169,13 @@ class PoolSupplierTest
                                                                      .build();
 
         PoolMetadata poolOneBaselineMetadata = PoolMetadata.of( this.metadata.getEvaluation(), baselinePool );
-
+        GeneratedBaseline persistence = GeneratedBaselineBuilder.builder()
+                                                                .order( 1 )
+                                                                .build();
         UnaryOperator<TimeSeries<Double>> baselineGenerator = PersistenceGenerator.of( obsSupplier,
                                                                                        this.upscaler,
                                                                                        Double::isFinite,
-                                                                                       1,
+                                                                                       persistence,
                                                                                        UNIT );
 
         Function<Set<Feature>, UnaryOperator<TimeSeries<Double>>> featuredBaselineGenerator = in -> baselineGenerator;

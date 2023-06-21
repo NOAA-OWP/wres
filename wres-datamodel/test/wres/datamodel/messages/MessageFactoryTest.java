@@ -40,6 +40,9 @@ import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.Formats;
+import wres.config.yaml.components.GeneratedBaseline;
+import wres.config.yaml.components.GeneratedBaselineBuilder;
+import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.Season;
 import wres.config.yaml.components.SeasonBuilder;
@@ -527,8 +530,10 @@ class MessageFactoryTest
     {
         Dataset baselineDataset = DatasetBuilder.builder()
                                                 .build();
-
-        BaselineDataset baseline = new BaselineDataset( baselineDataset, 1, true );
+        GeneratedBaseline persistence = GeneratedBaselineBuilder.builder()
+                                                                .method( GeneratedBaselines.PERSISTENCE )
+                                                                .build();
+        BaselineDataset baseline = new BaselineDataset( baselineDataset, persistence, true );
         Formats formats = new Formats( Outputs.getDefaultInstance() );
 
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()

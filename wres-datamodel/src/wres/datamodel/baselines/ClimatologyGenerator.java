@@ -18,13 +18,14 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.components.GeneratedBaseline;
+import wres.config.yaml.components.GeneratedBaselineBuilder;
 import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
@@ -49,10 +50,10 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  * @author James Brown
  */
 
-public class EnsembleClimatologyGenerator implements UnaryOperator<TimeSeries<Ensemble>>
+public class ClimatologyGenerator implements Function<TimeSeries<?>, TimeSeries<Ensemble>>
 {
     /** Logger. */
-    private static final Logger LOGGER = LoggerFactory.getLogger( EnsembleClimatologyGenerator.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( ClimatologyGenerator.class );
 
     /** Re-used string. */
     private static final String WHILE_GENERATING_A_CLIMATOLOGY_TIME_SERIES_USING_INPUT_SERIES =
@@ -90,11 +91,16 @@ public class EnsembleClimatologyGenerator implements UnaryOperator<TimeSeries<En
      * @throws NullPointerException if any required input is null
      */
 
-    public static EnsembleClimatologyGenerator of( Supplier<Stream<TimeSeries<Double>>> climatologySource,
-                                                   TimeSeriesUpscaler<Double> upscaler,
-                                                   String desiredUnit )
+    public static ClimatologyGenerator of( Supplier<Stream<TimeSeries<Double>>> climatologySource,
+                                           TimeSeriesUpscaler<Double> upscaler,
+                                           String desiredUnit )
     {
-        return EnsembleClimatologyGenerator.of( climatologySource, upscaler, desiredUnit, null, null );
+        return ClimatologyGenerator.of( climatologySource,
+                                        upscaler,
+                                        desiredUnit,
+                                        // Default parameters
+                                        GeneratedBaselineBuilder.builder()
+                                                                .build() );
     }
 
     /**
@@ -104,24 +110,21 @@ public class EnsembleClimatologyGenerator implements UnaryOperator<TimeSeries<En
      * @param upscaler the temporal upscaler, which is required if the template series has a larger scale than the
      *                 climatologySource
      * @param desiredUnit the desired measurement unit, required
-     * @param minimum the optional start date for the climatological data
-     * @param maximum the optional end date for the climatological data
+     * @param parameters the parameters
      * @return an instance
      * @throws NullPointerException if any required input is null
      * @throws BaselineGeneratorException if the baseline generator could not be created for any other reason
      */
 
-    public static EnsembleClimatologyGenerator of( Supplier<Stream<TimeSeries<Double>>> climatologySource,
-                                                   TimeSeriesUpscaler<Double> upscaler,
-                                                   String desiredUnit,
-                                                   Instant minimum,
-                                                   Instant maximum )
+    public static ClimatologyGenerator of( Supplier<Stream<TimeSeries<Double>>> climatologySource,
+                                           TimeSeriesUpscaler<Double> upscaler,
+                                           String desiredUnit,
+                                           GeneratedBaseline parameters )
     {
-        return new EnsembleClimatologyGenerator( climatologySource,
-                                                 upscaler,
-                                                 desiredUnit,
-                                                 minimum,
-                                                 maximum );
+        return new ClimatologyGenerator( climatologySource,
+                                         upscaler,
+                                         desiredUnit,
+                                         parameters );
     }
 
     /**
@@ -130,11 +133,11 @@ public class EnsembleClimatologyGenerator implements UnaryOperator<TimeSeries<En
      * @param template the template time-series for which climatology values will be generated
      * @return a time-series with the lagged value at every time-step
      * @throws NullPointerException if the input is null
-     * @throws BaselineGeneratorException if the climatology value could not be generated
+     * @throws BaselineGeneratorException if the climatology series could not be generated for any reason
      */
 
     @Override
-    public TimeSeries<Ensemble> apply( TimeSeries<Ensemble> template )
+    public TimeSeries<Ensemble> apply( TimeSeries<?> template )
     {
         Objects.requireNonNull( template );
 
@@ -146,7 +149,13 @@ public class EnsembleClimatologyGenerator implements UnaryOperator<TimeSeries<En
                           ", discovered that the input series had no events (i.e., was empty). Returning the empty "
                           + "time-series." );
 
-            return template;
+            // Adjust the template metadata to use source units
+            TimeSeries<Double> source = this.getClimatologySourceForTemplate( template );
+            String sourceUnit = source.getMetadata()
+                                      .getUnit();
+            TimeSeriesMetadata adjusted = this.getAdjustedMetadata( template.getMetadata(), sourceUnit );
+
+            return TimeSeries.of( adjusted );
         }
 
         // Upscale?
@@ -169,7 +178,7 @@ public class EnsembleClimatologyGenerator implements UnaryOperator<TimeSeries<En
      * @return a climatology time-series
      */
 
-    private TimeSeries<Ensemble> getClimatologyWithoutUpscaling( TimeSeries<Ensemble> template )
+    private TimeSeries<Ensemble> getClimatologyWithoutUpscaling( TimeSeries<?> template )
     {
         LOGGER.trace( "Generating climatology for a time-series where upscaling is not required." );
 
@@ -186,10 +195,14 @@ public class EnsembleClimatologyGenerator implements UnaryOperator<TimeSeries<En
                                            .map( n -> n.get( ChronoField.YEAR ) )
                                            .collect( Collectors.toSet() );
 
-        TimeSeries.Builder<Ensemble> builder = new TimeSeries.Builder<Ensemble>().setMetadata( template.getMetadata() );
+        // Adjust the template metadata to use source units
+        String sourceUnit = source.getMetadata()
+                                  .getUnit();
+        TimeSeriesMetadata adjusted = this.getAdjustedMetadata( template.getMetadata(), sourceUnit );
+        TimeSeries.Builder<Ensemble> builder = new TimeSeries.Builder<Ensemble>().setMetadata( adjusted );
 
         // Iterate through the template events and find corresponding climatology events
-        for ( Event<Ensemble> nextEvent : template.getEvents() )
+        for ( Event<?> nextEvent : template.getEvents() )
         {
             Instant nextTime = nextEvent.getTime();
             ZonedDateTime time = nextTime.atZone( ZONE_ID );
@@ -208,6 +221,7 @@ public class EnsembleClimatologyGenerator implements UnaryOperator<TimeSeries<En
                      && this.isAdmissable( targetTime ) )
                 {
                     Event<Double> targetEvent = eventsToSearch.get( targetTime );
+
                     if ( Objects.nonNull( targetEvent ) )
                     {
                         labelStrings[count] = year + "";
@@ -239,7 +253,7 @@ public class EnsembleClimatologyGenerator implements UnaryOperator<TimeSeries<En
      * @return a climatology time-series
      */
 
-    private TimeSeries<Ensemble> getClimatologyWithUpscaling( TimeSeries<Ensemble> template )
+    private TimeSeries<Ensemble> getClimatologyWithUpscaling( TimeSeries<?> template )
     {
         LOGGER.trace( "Generating climatology for a time-series where upscaling is required." );
 
@@ -252,10 +266,15 @@ public class EnsembleClimatologyGenerator implements UnaryOperator<TimeSeries<En
                                    .map( n -> n.get( ChronoField.YEAR ) )
                                    .collect( Collectors.toSet() );
 
-        // Iterate through the template events and create an upscaled climatology event
-        TimeSeries.Builder<Ensemble> builder = new TimeSeries.Builder<Ensemble>().setMetadata( template.getMetadata() );
+        // Adjust the template metadata to use source units
+        String sourceUnit = source.getMetadata()
+                                  .getUnit();
+        TimeSeriesMetadata adjusted = this.getAdjustedMetadata( template.getMetadata(), sourceUnit );
+        TimeSeries.Builder<Ensemble> builder = new TimeSeries.Builder<Ensemble>().setMetadata( adjusted );
         List<EvaluationStatusMessage> scaleWarnings = new ArrayList<>();
-        for ( Event<Ensemble> nextEvent : template.getEvents() )
+
+        // Iterate through the template events and create an upscaled climatology event
+        for ( Event<?> nextEvent : template.getEvents() )
         {
             Instant nextTime = nextEvent.getTime();
             ZonedDateTime time = nextTime.atZone( ZONE_ID );
@@ -323,6 +342,22 @@ public class EnsembleClimatologyGenerator implements UnaryOperator<TimeSeries<En
     }
 
     /**
+     * Adjusts the supplied metadata to use the measurement unit associated with the source time-series from which the
+     * climatology is generated.
+     * @param metadata the metadata to adjust
+     * @param sourceUnit the source measurement unit
+     * @return the adjusted metadata
+     */
+
+    private TimeSeriesMetadata getAdjustedMetadata( TimeSeriesMetadata metadata,
+                                                    String sourceUnit )
+    {
+        return metadata.toBuilder()
+                       .setUnit( sourceUnit )
+                       .build();
+    }
+
+    /**
      * @return the timescale of the climatology source
      */
 
@@ -333,9 +368,10 @@ public class EnsembleClimatologyGenerator implements UnaryOperator<TimeSeries<En
 
     /**
      * @return the time-series from the climatology source whose feature name matches the template series feature name
+     * @throws BaselineGeneratorException if the template feature does not match a feature for which source data exists
      */
 
-    private TimeSeries<Double> getClimatologySourceForTemplate( TimeSeries<Ensemble> template )
+    private TimeSeries<Double> getClimatologySourceForTemplate( TimeSeries<?> template )
     {
         // Feature correlation assumes that the template feature is right-ish and the source feature is baseline-ish
         // If this is no longer a safe assumption, then the orientation should be declared on construction
@@ -367,54 +403,39 @@ public class EnsembleClimatologyGenerator implements UnaryOperator<TimeSeries<En
      * @param upscaler the temporal upscaler, which is required if the template series has a larger scale than the
      *                 climatologySource
      * @param desiredUnit the desired measurement unit, not null
-     * @param minimum the optional start date for the climatological data
-     * @param maximum the optional end date for the climatological data
+     * @param parameters the parameters
      * @throws NullPointerException if any required input is null
      * @throws BaselineGeneratorException if the generator could not be created for any other reason
      */
 
-    private EnsembleClimatologyGenerator( Supplier<Stream<TimeSeries<Double>>> climatologySource,
-                                          TimeSeriesUpscaler<Double> upscaler,
-                                          String desiredUnit,
-                                          Instant minimum,
-                                          Instant maximum )
+    private ClimatologyGenerator( Supplier<Stream<TimeSeries<Double>>> climatologySource,
+                                  TimeSeriesUpscaler<Double> upscaler,
+                                  String desiredUnit,
+                                  GeneratedBaseline parameters )
     {
+        Objects.requireNonNull( parameters );
         Objects.requireNonNull( climatologySource );
         Objects.requireNonNull( desiredUnit );
 
-        if ( Objects.nonNull( minimum ) && Objects.nonNull( maximum ) && !maximum.isAfter( minimum ) )
+        this.minimum = parameters.minimumDate();
+        this.maximum = parameters.maximumDate();
+
+        if ( Objects.nonNull( this.minimum )
+             && Objects.nonNull( this.maximum )
+             && !this.maximum.isAfter( this.minimum ) )
         {
             throw new BaselineGeneratorException( "The climatology period is invalid. The 'maximum' date must be later "
                                                   + "than the 'minimum' date, but the 'maximum' date is "
-                                                  + maximum
+                                                  + this.maximum
                                                   + " and the 'minimum' date is "
-                                                  + minimum
+                                                  + this.minimum
                                                   + ". Please declare an "
                                                   + "earlier 'minimum' or a later 'maximum' and try again." );
         }
 
-        // Set the minimum and maximum dates, falling back on the default minimum and maximum values
-        if ( Objects.nonNull( minimum ) )
-        {
-            this.minimum = minimum;
-        }
-        else
-        {
-            this.minimum = Instant.MIN;
-        }
-
-        LOGGER.debug( "When generating climatology, the minimum date used will be {}.", this.minimum );
-
-        if ( Objects.nonNull( maximum ) )
-        {
-            this.maximum = maximum;
-        }
-        else
-        {
-            this.maximum = Instant.MAX;
-        }
-
-        LOGGER.debug( "When generating climatology, the maximum date used will be {}.", this.maximum );
+        LOGGER.debug( "When generating climatology, using a minimum date of {} and a maximum date of {}.",
+                      this.minimum,
+                      this.maximum );
 
         // Retrieve the time-series on construction
         List<TimeSeries<Double>> source = climatologySource.get()

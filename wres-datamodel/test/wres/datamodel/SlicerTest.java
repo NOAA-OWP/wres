@@ -13,6 +13,7 @@ import java.util.function.DoublePredicate;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
@@ -314,7 +315,7 @@ class SlicerTest
     }
 
     @Test
-    void testTransformEnsemblePairs()
+    void testLeftAndEachOfRight()
     {
         final List<Pair<Double, Ensemble>> values = new ArrayList<>();
         values.add( Pair.of( 0.0, Ensemble.of( 1, 2, 3 ) ) );
@@ -355,6 +356,33 @@ class SlicerTest
                 PoolSlicer.transform( pairsNoBase, Slicer.leftAndEachOfRight( Double::isFinite ) );
 
         assertEquals( expectedValues, slicedNoBase.get() );
+    }
+
+    @Test
+    void testEachOfRightWithoutLabels()
+    {
+        Ensemble ensemble = Ensemble.of( Double.NaN, 2, 3, Double.NaN );
+
+        UnaryOperator<Ensemble> slicer = Slicer.eachOfRight( Double::isFinite );
+
+        Ensemble actual = slicer.apply( ensemble );
+        Ensemble expected = Ensemble.of( 2, 3 );
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testEachOfRightWithLabels()
+    {
+        Labels labels = Labels.of( "1", "2", "3", "4" );
+        Ensemble ensemble = Ensemble.of( new double[] { Double.NaN, 2, 3, Double.NaN },
+                                         labels );
+
+        UnaryOperator<Ensemble> slicer = Slicer.eachOfRight( Double::isFinite );
+
+        Ensemble actual = slicer.apply( ensemble );
+        Labels expectedLabels = Labels.of( "2", "3" );
+        Ensemble expected = Ensemble.of( new double[] { 2, 3 }, expectedLabels );
+        assertEquals( expected, actual );
     }
 
     @Test

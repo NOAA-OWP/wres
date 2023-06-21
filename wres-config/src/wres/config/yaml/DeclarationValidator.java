@@ -30,6 +30,8 @@ import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.Formats;
+import wres.config.yaml.components.GeneratedBaseline;
+import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.MetricParameters;
 import wres.config.yaml.components.Season;
@@ -344,6 +346,9 @@ public class DeclarationValidator
         // Ensembles cannot be present on both left and right sides
         List<EvaluationStatusEvent> ensembles = DeclarationValidator.ensembleOnOneSideOnly( declaration );
         events.addAll( ensembles );
+        // Generated baseline is consistent with other declaration
+        List<EvaluationStatusEvent> baseline = DeclarationValidator.generatedBaselineIsValid( declaration );
+        events.addAll( baseline );
         // Variable must be declared in some circumstances
         List<EvaluationStatusEvent> variables = DeclarationValidator.variablesDeclaredIfRequired( declaration );
         events.addAll( variables );
@@ -529,8 +534,10 @@ public class DeclarationValidator
      */
     private static List<EvaluationStatusEvent> ensembleOnOneSideOnly( EvaluationDeclaration declaration )
     {
-        if ( declaration.right().type() == DataType.ENSEMBLE_FORECASTS
-             && declaration.left().type() == DataType.ENSEMBLE_FORECASTS )
+        if ( declaration.right()
+                        .type() == DataType.ENSEMBLE_FORECASTS
+             && declaration.left()
+                           .type() == DataType.ENSEMBLE_FORECASTS )
         {
             EvaluationStatusEvent event = EvaluationStatusEvent.newBuilder()
                                                                .setStatusLevel( StatusLevel.ERROR )
@@ -545,6 +552,67 @@ public class DeclarationValidator
         }
 
         return Collections.emptyList();
+    }
+
+    /**
+     * Checks that a generated baseline is valid
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> generatedBaselineIsValid( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+        if ( DeclarationUtilities.hasGeneratedBaseline( declaration.baseline() ) )
+        {
+            GeneratedBaseline baseline = declaration.baseline()
+                                                    .generatedBaseline();
+
+            Set<String> ensembleDeclaration = DeclarationUtilities.getEnsembleDeclaration( declaration );
+
+            // Persistence not allowed for ensemble-like evaluation
+            if ( baseline.method() == GeneratedBaselines.PERSISTENCE
+                 && ( declaration.right()
+                                 .type() == DataType.ENSEMBLE_FORECASTS
+                      || !ensembleDeclaration.isEmpty() ) )
+            {
+                EvaluationStatusEvent event =
+                        EvaluationStatusEvent.newBuilder()
+                                             .setStatusLevel( StatusLevel.ERROR )
+                                             .setEventMessage( "Cannot declare a 'persistence' baseline for an "
+                                                               + "evaluation that contains ensemble forecasts. Please "
+                                                               + "remove the 'persistence' baseline or remove the "
+                                                               + "ensemble 'type' and/or ensemble declaration and try "
+                                                               + "again. The following ensemble declaration was "
+                                                               + "discovered: "
+                                                               + ensembleDeclaration )
+                                             .build();
+
+                events.add( event );
+            }
+            // Climatology dates must be consistent
+            else if ( baseline.method() == GeneratedBaselines.CLIMATOLOGY
+                      && !baseline.maximumDate()
+                                  .isAfter( baseline.minimumDate() ) )
+            {
+                EvaluationStatusEvent event =
+                        EvaluationStatusEvent.newBuilder()
+                                             .setStatusLevel( StatusLevel.ERROR )
+                                             .setEventMessage( ( "Discovered a climatological baseline whose "
+                                                                 + "'maximum_date' of "
+                                                                 + baseline.maximumDate()
+                                                                 + " is not later than the "
+                                                                 + "'minimum_date' of "
+                                                                 + baseline.minimumDate()
+                                                                 + ", which is not allowed. Please "
+                                                                 + "adjust one or both of these dates to form a valid "
+                                                                 + "interval and try again." ) )
+                                             .build();
+
+                events.add( event );
+            }
+        }
+
+        return Collections.unmodifiableList( events );
     }
 
     /**
