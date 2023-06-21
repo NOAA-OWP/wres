@@ -36,7 +36,7 @@ import org.redisson.Redisson;
 import org.redisson.api.RBucket;
 import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RedissonClient;
-import org.redisson.codec.KryoCodec;
+import org.redisson.codec.MarshallingCodec;
 import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -167,7 +167,7 @@ public class WresJob
                           .setPingConnectionInterval( 3000 )
                           // Set SO_KEEPALIVE for what it's worth:
                           .setKeepAlive( true );
-            redissonConfig.setCodec( new KryoCodec() );
+            redissonConfig.setCodec( new MarshallingCodec() );
             // The reasoning here is any server thread can cause access of an
             // object in redis (e.g. output, stdout, etc), regardless of whether
             // the job is currently active. So at least that number. Then there
