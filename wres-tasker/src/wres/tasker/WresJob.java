@@ -36,6 +36,7 @@ import org.redisson.Redisson;
 import org.redisson.api.RBucket;
 import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RedissonClient;
+import org.redisson.codec.MarshallingCodec;
 import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,12 +67,10 @@ public class WresJob
     private static final String P_BODY_HTML = "</p></body></html>";
     private static final Logger LOGGER = LoggerFactory.getLogger( WresJob.class );
     private static final String SEND_QUEUE_NAME = "wres.job";
-
     // Using a member variable fails, make it same across instances.
     private static final ConnectionFactory CONNECTION_FACTORY = new ConnectionFactory();
     private static final String REDIS_HOST_SYSTEM_PROPERTY_NAME = "wres.redisHost";
     private static final String REDIS_PORT_SYSTEM_PROPERTY_NAME = "wres.redisPort";
-
     /** To disable the queue length check, e.g. for development or testing */
     private static final String SKIP_QUEUE_LENGTH_CHECK_SYSTEM_PROPERTY_NAME =
             "wres.tasker.skipQueueLengthCheck";
@@ -79,30 +78,25 @@ public class WresJob
     private static final RedissonClient REDISSON_CLIENT;
     private static String redisHost = null;
     private static int redisPort = DEFAULT_REDIS_PORT;
-
     //Admin authentication
     private static final String ADMIN_TOKEN_SYSTEM_PROPERTY_NAME = "wres.adminToken";
     private static byte[] salt = new byte[16];
     private static byte[] adminTokenHash = null; //Empty means password not specified.
-
     /**
      * The count of evaluations combined with the maximum length below (which
      * is around 1x-2.5x the bytes) that could be handled by broker with current
      * broker memory limits minus 100MiB usually used by broker.
      */
     private static final short MAXIMUM_EVALUATION_COUNT = 50;
-
     /**
      * A maximum length less than the largest-seen successful project sent
      * to a worker-shim with the current worker-shim heap limits. E.g. no OOME.
      */
     private static final int MAXIMUM_PROJECT_DECLARATION_LENGTH = 5_000_000;
-
     /**
      * A smaller-than-minimum number of bytes expected in a project declaration.
      */
     private static final int MINIMUM_PROJECT_DECLARATION_LENGTH = 100;
-
     //Database information
     private static String activeDatabaseName = "";
     private static String activeDatabaseHost = "";
@@ -119,12 +113,10 @@ public class WresJob
                 //Create the salt
                 SecureRandom random = new SecureRandom();
                 random.nextBytes( WresJob.salt );
-
                 //Hash the token using the salt.
                 KeySpec spec = new PBEKeySpec( adminToken.toCharArray(), WresJob.salt, 65536, 128 );
                 SecretKeyFactory factory = SecretKeyFactory.getInstance( "PBKDF2WithHmacSHA1" );
                 WresJob.adminTokenHash = factory.generateSecret( spec ).getEncoded();
-
                 LOGGER.info( "Admin token read from system properties and hashed successfully." );
             }
             catch ( Exception e )
@@ -135,7 +127,6 @@ public class WresJob
                              e );
             }
         }
-
         // Determine the actual broker name, whether from -D or default
         String brokerHost = BrokerHelper.getBrokerHost();
         String brokerVhost = BrokerHelper.getBrokerVhost();
@@ -147,21 +138,17 @@ public class WresJob
         SSLContext sslContext =
                 BrokerHelper.getSSLContextWithClientCertificate( BrokerHelper.Role.TASKER );
         CONNECTION_FACTORY.useSslProtocol( sslContext );
-
         Config redissonConfig = new Config();
         String specifiedRedisHost = System.getProperty( REDIS_HOST_SYSTEM_PROPERTY_NAME );
         String specifiedRedisPortRaw = System.getProperty( REDIS_PORT_SYSTEM_PROPERTY_NAME );
-
         if ( Objects.nonNull( specifiedRedisHost ) )
         {
             WresJob.redisHost = specifiedRedisHost;
         }
-
         if ( Objects.nonNull( specifiedRedisPortRaw ) )
         {
             WresJob.redisPort = Integer.parseInt( specifiedRedisPortRaw );
         }
-
         if ( Objects.nonNull( redisHost ) )
         {
             String redisAddress = "redis://" + redisHost + ":" + redisPort;
@@ -180,7 +167,7 @@ public class WresJob
                           .setPingConnectionInterval( 3000 )
                           // Set SO_KEEPALIVE for what it's worth:
                           .setKeepAlive( true );
-
+            redissonConfig.setCodec( new MarshallingCodec() );
             // The reasoning here is any server thread can cause access of an
             // object in redis (e.g. output, stdout, etc), regardless of whether
             // the job is currently active. So at least that number. Then there
@@ -197,70 +184,33 @@ public class WresJob
             REDISSON_CLIENT = null;
             LOGGER.info( "No redis host specified, using local JVM objects." );
         }
-
         //If the redis client was created, set it up for recovering/storing
         //database information.  It might be possible to turn the below into
         //three calls of a generic static method.
         if ( REDISSON_CLIENT != null )
         {
-            RBucket<Object> bucket = REDISSON_CLIENT.getBucket( "databaseName" );
-            Object bucketValue = bucket.get();
-            if ( bucketValue != null )
+            RBucket<String> bucket = REDISSON_CLIENT.getBucket( "databaseName" );
+            if ( bucket.get() != null && !bucket.get().isBlank() )
             {
-                if ( bucketValue instanceof String stringBucketValue && ( !stringBucketValue.isBlank() ) )
-                {
-                    WresJob.activeDatabaseName = stringBucketValue;
-                }
-                else
-                {
-                    String stringBucketValue = String.valueOf( bucketValue );
-                    if ( !stringBucketValue.isBlank() )
-                    {
-                        WresJob.activeDatabaseName = stringBucketValue;
-                    }
-                }
+                WresJob.activeDatabaseName = bucket.get();
             }
             else
             {
                 bucket.set( activeDatabaseName );
             }
-            RBucket<Object> hostBucket = REDISSON_CLIENT.getBucket( "databaseHost" );
-            Object hostBucketValue = bucket.get();
-            if ( hostBucketValue != null )
+            RBucket<String> hostBucket = REDISSON_CLIENT.getBucket( "databaseHost" );
+            if ( hostBucket.get() != null && !hostBucket.get().isBlank() )
             {
-                if ( hostBucketValue instanceof String stringHostBucketValue && ( !stringHostBucketValue.isBlank() ) )
-                {
-                    WresJob.activeDatabaseHost = stringHostBucketValue;
-                }
-                else
-                {
-                    String stringHostBucketValue = String.valueOf( hostBucketValue );
-                    if ( !stringHostBucketValue.isBlank() )
-                    {
-                        WresJob.activeDatabaseHost = stringHostBucketValue;
-                    }
-                }
+                WresJob.activeDatabaseHost = hostBucket.get();
             }
             else
             {
                 hostBucket.set( activeDatabaseHost );
             }
-            RBucket<Object> portBucket = REDISSON_CLIENT.getBucket( "databasePort" );
-            Object portBucketValue = bucket.get();
-            if ( portBucketValue != null )
+            RBucket<String> portBucket = REDISSON_CLIENT.getBucket( "databasePort" );
+            if ( portBucket.get() != null && !portBucket.get().isBlank() )
             {
-                if ( portBucketValue instanceof String stringPortBucketValue && ( !stringPortBucketValue.isBlank() ) )
-                {
-                    activeDatabasePort = stringPortBucketValue;
-                }
-                else
-                {
-                    String stringPortBucketValue = String.valueOf( portBucketValue );
-                    if ( !stringPortBucketValue.isBlank() )
-                    {
-                        activeDatabasePort = stringPortBucketValue;
-                    }
-                }
+                activeDatabasePort = portBucket.get();
             }
             else
             {
@@ -272,12 +222,9 @@ public class WresJob
     /** Shared job result state, exposed below */
     private static final JobResults JOB_RESULTS = new JobResults( CONNECTION_FACTORY,
                                                                   REDISSON_CLIENT );
-
     private static Connection connection = null;
-
     /** Guards connection */
     private static final Object CONNECTION_LOCK = new Object();
-
 
     @GET
     @Produces( "text/plain; charset=utf-8" )
@@ -300,11 +247,9 @@ public class WresJob
                                              CONNECTION_FACTORY.getPort(),
                                              e );
         }
-
         if ( REDISSON_CLIENT != null )
         {
             String dummyId = "dummyObjectId" + System.currentTimeMillis();
-
             try
             {
                 RLiveObjectService liveObjectService = REDISSON_CLIENT.getLiveObjectService();
@@ -326,10 +271,8 @@ public class WresJob
                                                  re );
             }
         }
-
         return "Up";
     }
-
 
     /**
      * Post a declaration to start a new WRES job.
@@ -341,7 +284,6 @@ public class WresJob
      * @param additionalArguments Additional arguments when no projectConfig given.
      * @return HTTP 201 on success, 4XX on client error, 5XX on server error.
      */
-
     @POST
     @Consumes( APPLICATION_FORM_URLENCODED )
     @Produces( "text/html; charset=utf-8" )
@@ -357,13 +299,10 @@ public class WresJob
                      verb,
                      postInput,
                      additionalArguments );
-
         // Default priority is 0 for all tasks.
         int messagePriority = 0;
-
         // Default to execute per tradition and majority case.
         Verb actualVerb = null;
-
         // Search through allowed values
         if ( verb != null && !verb.isBlank() )
         {
@@ -378,7 +317,6 @@ public class WresJob
                     break;
                 }
             }
-
             if ( actualVerb == null )
             {
                 return WresJob.badRequest( "Verb '" + verb
@@ -390,7 +328,6 @@ public class WresJob
             // Default to "execute"
             actualVerb = Verb.EXECUTE;
         }
-
         // Check admin token if necessary.  If the admin token hash is blank, meaning no token was
         // configured via system property, then the adminToken is not necessary for any command.
         Set<Verb> verbsNeedingAdminToken = Set.of( Verb.CLEANDATABASE,
@@ -407,13 +344,11 @@ public class WresJob
                 LOGGER.warn( message );
                 return WresJob.badRequest( message );
             }
-
             try
             {
                 KeySpec spec = new PBEKeySpec( adminToken.toCharArray(), salt, 65536, 128 );
                 SecretKeyFactory factory = SecretKeyFactory.getInstance( "PBKDF2WithHmacSHA1" );
                 byte[] hash = factory.generateSecret( spec ).getEncoded();
-
                 if ( !Arrays.equals( adminTokenHash, hash ) )
                 {
                     String message = "The adminToken provided for the verb " + actualVerb
@@ -434,7 +369,6 @@ public class WresJob
                 return WresJob.unauthorized( message );
             }
         }
-
         // Check declaration if necessary.
         Set<Verb> verbsNeedingDeclaration = Set.of( Verb.EXECUTE,
                                                     Verb.INGEST,
@@ -443,7 +377,6 @@ public class WresJob
         if ( usingDeclaration )
         {
             int lengthOfProjectDeclaration = projectConfig.length();
-
             // Limit project config to avoid heap overflow in worker-shim
             if ( lengthOfProjectDeclaration > MAXIMUM_PROJECT_DECLARATION_LENGTH )
             {
@@ -473,7 +406,6 @@ public class WresJob
                                            + "re-send." );
             }
         }
-
         //For switchdatabase and cleandatabase, I need to record the database info
         //from the additional arguments.  Running clean database with no arguments
         //is fine, however.  Thus, only parse the arguments for a cleandatabase if
@@ -498,8 +430,7 @@ public class WresJob
             usedDatabasePort = additionalArguments.get( 1 );
             usedDatabaseName = additionalArguments.get( 2 );
         }
-
-        // A switchdatabase is handled completely here.  
+        // A switchdatabase is handled completely here.
         if ( actualVerb == Verb.SWITCHDATABASE )
         {
             setDatabaseHost( usedDatabaseHost );
@@ -521,8 +452,7 @@ public class WresJob
                                     + "</h1></body></html>" )
                            .build();
         }
-
-        // All other verbs are passed through to a job handled by a worker. Set up the 
+        // All other verbs are passed through to a job handled by a worker. Set up the
         // used database information based on the ACTIVE variables.  For a clean, the user
         // can override the used database information, optionally. Those were parsed
         // above.  Thus, only set the used value if its either null or blank.
@@ -540,7 +470,6 @@ public class WresJob
         {
             usedDatabaseName = activeDatabaseName;
         }
-
         // Before registering a new job, see if there are already too many.
         int queueLength = -1;
         try
@@ -558,12 +487,9 @@ public class WresJob
             LOGGER.warn( "Did not send job, returning 503.", tmeiqe );
             return WresJob.serviceUnavailable( "Too many evaluations are in the queue, try again in a moment." );
         }
-
         String jobId = JOB_RESULTS.registerNewJob();
-
         String urlCreated = "/job/" + jobId;
         URI resourceCreated;
-
         try
         {
             resourceCreated = new URI( urlCreated );
@@ -573,9 +499,7 @@ public class WresJob
             LOGGER.error( "Failed to create uri using {}", urlCreated, use );
             return WresJob.internalServerError();
         }
-
         Job.job jobMessage;
-
         // For commands EXECUTE, INGEST, VALIDATE...
         if ( usingDeclaration )
         {
@@ -597,7 +521,6 @@ public class WresJob
                                              .setDatabaseName( usedDatabaseName )
                                              .setDatabaseHost( usedDatabaseHost )
                                              .setDatabasePort( usedDatabasePort );
-
             // Additional arguments are already handled when cleaning, per above.
             // No additional arguments beyond database ones are allowed in that case.
             if ( actualVerb != Verb.CLEANDATABASE )
@@ -607,10 +530,8 @@ public class WresJob
                     builder.addAdditionalArguments( arg );
                 }
             }
-
             jobMessage = builder.build();
         }
-
         // If the caller wishes to post input data: parameter postInput=true
         if ( postInput )
         {
@@ -632,7 +553,6 @@ public class WresJob
                                     + A_P_BODY_HTML )
                            .build();
         }
-
         try
         {
             sendDeclarationMessage( jobId, jobMessage.toByteArray(), messagePriority );
@@ -647,7 +567,6 @@ public class WresJob
             LOGGER.warn( "Did not send job, returning 503.", tmeiqe );
             return WresJob.serviceUnavailable( "Too many evaluations are in the queue, try again in a moment." );
         }
-
         // Push the database info into the underlying job metadata and mark it in queue.
         JOB_RESULTS.setDatabaseName( jobId, usedDatabaseName );
         JOB_RESULTS.setDatabaseHost( jobId, usedDatabaseHost );
@@ -662,7 +581,6 @@ public class WresJob
                      usedDatabasePort,
                      usedDatabaseName,
                      queueLength );
-
         return Response.created( resourceCreated )
                        .entity( "<!DOCTYPE html><html><head><title>Evaluation job received.</title></head>"
                                 + "<body><h1>Evaluation job "
@@ -676,7 +594,6 @@ public class WresJob
                        .build();
     }
 
-
     /**
      * Provide guidance on which urls are available for evaluation information,
      * including status, output, and debug information.
@@ -689,27 +606,21 @@ public class WresJob
     public Response getWresJobInfo( @PathParam( "jobId" ) String jobId )
     {
         Integer jobResult = JOB_RESULTS.getJobResultRaw( jobId );
-
         if ( Objects.isNull( jobResult ) )
         {
             return WresJob.notFound( "Could not find job " + jobId );
         }
-
         String jobUrl = "/job/" + jobId;
-
         String statusUrl = jobUrl + "/status";
         String stdoutUrl = jobUrl + "/stdout";
         String stderrUrl = jobUrl + "/stderr";
         String outputUrl = jobUrl + "/output";
-
         // Create a list of actual job states from the enum that affords them.
         StringJoiner jobStates = new StringJoiner( ", " );
-
         for ( JobMetadata.JobState jobState : JobMetadata.JobState.values() )
         {
             jobStates.add( jobState.toString() );
         }
-
         return Response.ok( "<!DOCTYPE html><html><head><title>About job "
                             + jobId
                             + "</title></head>"
@@ -764,7 +675,6 @@ public class WresJob
     {
         // Use a shared connection across requests.
         Connection connection = WresJob.getConnection();
-
         try ( Channel channel = connection.createChannel() )
         {
             Map<String, Object> queueArgs = new HashMap<>();
@@ -774,7 +684,6 @@ public class WresJob
                                   false,
                                   false,
                                   queueArgs );
-
             // Tell the worker where to send results.
             String jobStatusExchange = JobResults.getJobStatusExchangeName();
             AMQP.BasicProperties properties =
@@ -784,13 +693,11 @@ public class WresJob
                             .deliveryMode( 2 )
                             .priority( priority )
                             .build();
-
             // Inform the JobResults class to start looking for correlationId.
             // Share a connection, but not a channel, aim for channel-per-thread.
             // I think something needs to be watching the queue or else messages
             // end up dropping on the floor, that is why this is called prior
             // to even publishing the job at all. JobResults is a bag-o-state.
-
             CountDownLatch latch = JOB_RESULTS.watchForJobFeedback( jobId,
                                                                     jobStatusExchange );
             // Block until the last listener is ready and then publish the job.
@@ -799,7 +706,6 @@ public class WresJob
                                   SEND_QUEUE_NAME,
                                   properties,
                                   message );
-
             LOGGER.info( "Sent a message to queue '{}' with properties '{}'",
                          SEND_QUEUE_NAME,
                          properties );
@@ -816,7 +722,6 @@ public class WresJob
         }
     }
 
-
     /**
      * Get the length of the job queue.
      * @return The length of the job queue, or 0 when System Property
@@ -827,14 +732,11 @@ public class WresJob
     private int getJobQueueLength() throws IOException, TimeoutException
     {
         String skipCheck = System.getProperty( SKIP_QUEUE_LENGTH_CHECK_SYSTEM_PROPERTY_NAME );
-
         if ( skipCheck != null && skipCheck.equalsIgnoreCase( "true" ) )
         {
             return 0;
         }
-
         Connection innerConnection = WresJob.getConnection();
-
         try ( Channel channel = innerConnection.createChannel() )
         {
             Map<String, Object> queueArgs = new HashMap<>();
@@ -849,13 +751,11 @@ public class WresJob
         }
     }
 
-
     /**
      * Check to see if there are too many actively worked jobs in the job queue.
      * @param queueLength The length of the queue.
      * @throws TooManyEvaluationsInQueueException When too many jobs queued.
      */
-
     private void validateQueueLength( int queueLength )
     {
         if ( queueLength > MAXIMUM_EVALUATION_COUNT )
@@ -932,7 +832,6 @@ public class WresJob
                 WresJob.connection = CONNECTION_FACTORY.newConnection();
             }
         }
-
         return WresJob.connection;
     }
 
@@ -971,17 +870,14 @@ public class WresJob
         }
     }
 
-
     /**
      * Abruptly stops all listening for job results that this class listens for,
      * and closes open connections, and only warns on exceptions thrown on
      * connection close.
      */
-
     static void shutdownNow()
     {
         JOB_RESULTS.shutdownNow();
-
         synchronized ( CONNECTION_LOCK )
         {
             if ( WresJob.connection != null )
@@ -997,7 +893,6 @@ public class WresJob
                 }
             }
         }
-
         if ( Objects.nonNull( REDISSON_CLIENT ) )
         {
             REDISSON_CLIENT.shutdown();
