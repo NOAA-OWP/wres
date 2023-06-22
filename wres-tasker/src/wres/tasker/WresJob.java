@@ -167,7 +167,6 @@ public class WresJob
                           .setPingConnectionInterval( 3000 )
                           // Set SO_KEEPALIVE for what it's worth:
                           .setKeepAlive( true );
-            redissonConfig.setCodec( new MarshallingCodec() );
             // The reasoning here is any server thread can cause access of an
             // object in redis (e.g. output, stdout, etc), regardless of whether
             // the job is currently active. So at least that number. Then there
