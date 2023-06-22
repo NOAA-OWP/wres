@@ -273,22 +273,6 @@ public class WresJob
         return "Up";
     }
 
-    @GET
-    @Path( "/queue" )
-    @Produces( "text/html; charset=utf-8" )
-    public Response getEvaluationInQueue()
-    {
-        int inQueueCount = JOB_RESULTS.getJobStatusCount( JobMetadata.JobState.IN_QUEUE );
-        int inProgressCount = JOB_RESULTS.getJobStatusCount( JobMetadata.JobState.IN_PROGRESS );
-
-        String htmlResponse = "<html><body><h1>Evaluations in Queue and In Progress</h1>"
-                              + "<p>IN_QUEUE Count: " + inQueueCount + "</p>"
-                              + "<p>IN_PROGRESS Count: " + inProgressCount + "</p>"
-                              + "</body></html>";
-
-        return Response.ok( htmlResponse ).build();
-    }
-
     /**
      * Post a declaration to start a new WRES job.
      * @param projectConfig The declaration to use in a new job.
@@ -620,6 +604,18 @@ public class WresJob
     @Produces( "text/html; charset=utf-8" )
     public Response getWresJobInfo( @PathParam( "jobId" ) String jobId )
     {
+        if ( jobId.equals( "traffic" ) )
+        {
+            int inQueueCount = JOB_RESULTS.getJobStatusCount( JobMetadata.JobState.IN_QUEUE );
+            int inProgressCount = JOB_RESULTS.getJobStatusCount( JobMetadata.JobState.IN_PROGRESS );
+
+            String htmlResponse = "<html><body><h1>Evaluations in Queue and In Progress</h1>"
+                                  + "<p>IN_QUEUE Count: " + inQueueCount + "</p>"
+                                  + "<p>IN_PROGRESS Count: " + inProgressCount + "</p>"
+                                  + "</body></html>";
+
+            return Response.ok( htmlResponse ).build();
+        }
         Integer jobResult = JOB_RESULTS.getJobResultRaw( jobId );
         if ( Objects.isNull( jobResult ) )
         {
