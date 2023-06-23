@@ -604,7 +604,7 @@ public class WresJob
     @Produces( "text/html; charset=utf-8" )
     public Response getWresJobInfo( @PathParam( "jobId" ) String jobId )
     {
-        if ( jobId.equals( "traffic" ) )
+        if ( jobId.equalsIgnoreCase( "traffic" ) )
         {
             int inQueueCount = JOB_RESULTS.getJobStatusCount( JobMetadata.JobState.IN_QUEUE );
             int inProgressCount = JOB_RESULTS.getJobStatusCount( JobMetadata.JobState.IN_PROGRESS );
