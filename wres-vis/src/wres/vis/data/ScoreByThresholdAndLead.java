@@ -22,10 +22,10 @@ import wres.datamodel.time.TimeWindowOuter;
 /**
  * <p>Creates an XY dataset for plotting a verification score component by threshold (X axis) and score value (Y axis) with
  * up to N series per dataset, each representing a distinct lead duration.
- * 
+ *
  * <p>In order to support displays of intervals, such as confidence intervals, upgrade to
  * {@link AbstractIntervalXYDataset}.
- * 
+ *
  * @author James Brown
  */
 
@@ -85,16 +85,24 @@ class ScoreByThresholdAndLead extends AbstractXYDataset
     public Number getY( int series, int item )
     {
         // Cannot allow all data (infinite) threshold
-        Double test = (Double) this.getX( series, item );
+        Double test = ( Double ) this.getX( series, item );
         if ( test.equals( Double.MIN_VALUE ) )
         {
             return null;
         }
-        return this.statistics.get( series )
-                              .getRight()
-                              .get( item )
-                              .getData()
-                              .getValue();
+
+        double statistic = this.statistics.get( series )
+                                          .getRight()
+                                          .get( item )
+                                          .getData()
+                                          .getValue();
+
+        if ( Double.isInfinite( statistic ) )
+        {
+            return null; // JFreeChart missing protocol, #103129
+        }
+
+        return statistic;
     }
 
     @Override

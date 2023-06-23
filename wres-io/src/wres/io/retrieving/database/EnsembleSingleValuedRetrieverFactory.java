@@ -1,6 +1,8 @@
 package wres.io.retrieving.database;
 
+import java.time.Duration;
 import java.time.MonthDay;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -17,26 +19,27 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.io.database.Database;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.Ensembles;
 import wres.io.database.caching.Features;
 import wres.io.database.caching.MeasurementUnits;
-import wres.io.database.Database;
 import wres.io.project.Project;
+import wres.io.retrieving.DuplicatePolicy;
 import wres.io.retrieving.RetrieverFactory;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
- * <p>A factory class that creates retrievers for the single-valued left and ensemble right datasets associated with one 
- * evaluation.
- * 
+ * <p>A factory class that creates retrievers for single-valued left datasets, ensemble right datasets and
+ * single-valued baseline datasets associated with one evaluation.
+ *
  * @author James Brown
  */
 
-public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemble, Ensemble>
+public class EnsembleSingleValuedRetrieverFactory implements RetrieverFactory<Double, Ensemble, Double>
 {
     /** Logger. */
-    private static final Logger LOGGER = LoggerFactory.getLogger( EnsembleRetrieverFactory.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( EnsembleSingleValuedRetrieverFactory.class );
 
     /** The project. */
     private final Project project;
@@ -75,11 +78,11 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
      * @throws NullPointerException if any input is null
      */
 
-    public static EnsembleRetrieverFactory of( Project project,
-                                               Database database,
-                                               DatabaseCaches caches )
+    public static EnsembleSingleValuedRetrieverFactory of( Project project,
+                                                           Database database,
+                                                           DatabaseCaches caches )
     {
-        return new EnsembleRetrieverFactory( project, database, caches );
+        return new EnsembleSingleValuedRetrieverFactory( project, database, caches );
     }
 
     @Override
@@ -111,7 +114,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                       features,
                       timeWindow );
 
-        return this.getRightRetrieverBuilder( this.rightDataset.type() )
+        return this.getEnsembleRetrieverBuilder()
                    .setEnsemblesCache( this.getEnsemblesCache() )
                    .setDatabase( this.getDatabase() )
                    .setFeaturesCache( this.getFeaturesCache() )
@@ -129,16 +132,16 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<Feature> features )
+    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<Feature> features )
     {
         return this.getBaselineRetriever( features, null );
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<Feature> features,
-                                                                        TimeWindowOuter timeWindow )
+    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<Feature> features,
+                                                                      TimeWindowOuter timeWindow )
     {
-        Supplier<Stream<TimeSeries<Ensemble>>> baseline = Stream::of;
+        Supplier<Stream<TimeSeries<Double>>> baseline = Stream::of;
 
         if ( this.hasBaseline() )
         {
@@ -147,8 +150,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                           features,
                           timeWindow );
 
-            baseline = this.getRightRetrieverBuilder( this.baselineDataset.type() )
-                           .setEnsemblesCache( this.getEnsemblesCache() )
+            baseline = this.getSingleValuedRetrieverBuilder( this.baselineDataset.type() )
                            .setDatabase( this.getDatabase() )
                            .setFeaturesCache( this.getFeaturesCache() )
                            .setMeasurementUnitsCache( this.getMeasurementUnitsCache() )
@@ -170,7 +172,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     /**
      * Returns <code>true</code> if the project associated with this retriever factory has a baseline, otherwise
      * <code>false</code>.
-     * 
+     *
      * @return true if the project has a baseline, otherwise false
      */
 
@@ -216,26 +218,61 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     }
 
     /**
-     * Returns a builder for a right-ish retriever.
-     * 
+     * Returns a builder for a retriever.
+     *
      * @param dataType the retrieved data type
      * @return the retriever
      * @throws IllegalArgumentException if the data type is unrecognized in this context
      */
 
-    private EnsembleForecastRetriever.Builder getRightRetrieverBuilder( DataType dataType )
+    private TimeSeriesRetriever.Builder<Double> getSingleValuedRetrieverBuilder( DataType dataType )
     {
-        if ( dataType == DataType.ENSEMBLE_FORECASTS )
-        {
-            return (EnsembleForecastRetriever.Builder) new EnsembleForecastRetriever.Builder().setReferenceTimeType( ReferenceTimeType.T0 );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Unrecognized data type from which to create the ensemble "
-                                                + "retriever: "
-                                                + dataType
-                                                + "'." );
-        }
+        Duration earliestAnalysisDuration = this.getProject()
+                                                .getEarliestAnalysisDuration();
+        Duration latestAnalysisDuration = this.getProject()
+                                              .getLatestAnalysisDuration();
+
+        return switch ( dataType )
+                {
+                    case SINGLE_VALUED_FORECASTS ->
+                            new SingleValuedForecastRetriever.Builder().setReferenceTimeType( ReferenceTimeType.T0 );
+                    case OBSERVATIONS -> new ObservationRetriever.Builder();
+                    case SIMULATIONS ->
+                            new ObservationRetriever.Builder().setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
+                    case ANALYSES ->
+                            new AnalysisRetriever.Builder().setEarliestAnalysisDuration( earliestAnalysisDuration )
+                                                           .setLatestAnalysisDuration( latestAnalysisDuration )
+                                                           .setDuplicatePolicy( DuplicatePolicy.KEEP_LATEST_REFERENCE_TIME )
+                                                           .setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
+                    default -> throw new IllegalArgumentException( "Unrecognized data type from which to create the "
+                                                                   + "retriever: "
+                                                                   + dataType
+                                                                   + "'." );
+                };
+    }
+
+    /**
+     * Returns a builder for a right-ish retriever.
+     *
+     * @return the retriever
+     * @throws IllegalArgumentException if the data type is unrecognized in this context
+     */
+
+    private EnsembleForecastRetriever.Builder getEnsembleRetrieverBuilder()
+    {
+        return ( EnsembleForecastRetriever.Builder )
+                new EnsembleForecastRetriever.Builder().setReferenceTimeType( ReferenceTimeType.T0 );
+    }
+
+    /**
+     * Returns the project associated with this factory instance.
+     *
+     * @return the project
+     */
+
+    private Project getProject()
+    {
+        return this.project;
     }
 
     /**
@@ -261,16 +298,16 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param project the project
      * @param database the database,
      * @param caches the caches
      * @throws NullPointerException if any input is null
      */
 
-    private EnsembleRetrieverFactory( Project project,
-                                      Database database,
-                                      DatabaseCaches caches )
+    private EnsembleSingleValuedRetrieverFactory( Project project,
+                                                  Database database,
+                                                  DatabaseCaches caches )
     {
         Objects.requireNonNull( project );
         Objects.requireNonNull( database );
@@ -282,6 +319,32 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
 
         this.rightDataset = project.getDeclaredDataset( DatasetOrientation.RIGHT );
         this.baselineDataset = project.getDeclaredDataset( DatasetOrientation.BASELINE );
+
+        // Right data must be ensemble and baseline must be single-valued
+        if ( this.rightDataset.type() != DataType.ENSEMBLE_FORECASTS )
+        {
+            throw new IllegalArgumentException( "When creating a retriever, encountered an unexpected data type. "
+                                                + "Expected "
+                                                + DataType.ENSEMBLE_FORECASTS
+                                                + " for the dataset with orientation "
+                                                + DatasetOrientation.RIGHT
+                                                + ", but found: "
+                                                + this.rightDataset.type()
+                                                + "." );
+        }
+        if ( Objects.nonNull( this.baselineDataset )
+             && this.baselineDataset.type() == DataType.ENSEMBLE_FORECASTS )
+        {
+            throw new IllegalArgumentException( "When creating a retriever, encountered an unexpected data type. "
+                                                + "Encountered "
+                                                + DataType.ENSEMBLE_FORECASTS
+                                                + " for the dataset with orientation "
+                                                + DatasetOrientation.BASELINE
+                                                + ", but expected one of: "
+                                                + Arrays.stream( DataType.values() )
+                                                        .filter( n -> n != DataType.ENSEMBLE_FORECASTS )
+                                                        .toList() );
+        }
 
         // Obtain any seasonal constraints
         this.seasonStart = project.getStartOfSeason();

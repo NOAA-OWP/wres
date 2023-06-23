@@ -58,6 +58,8 @@ import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
 import wres.io.ingesting.memory.InMemoryTimeSeriesIngester;
 import wres.io.project.Projects;
 import wres.io.reading.ReaderUtilities;
+import wres.io.retrieving.database.EnsembleSingleValuedRetrieverFactory;
+import wres.io.retrieving.memory.EnsembleSingleValuedRetrieverFactoryInMemory;
 import wres.pipeline.pooling.PoolFactory;
 import wres.pipeline.pooling.PoolParameters;
 import wres.datamodel.units.UnitMapper;
@@ -110,6 +112,14 @@ class EvaluationUtilities
     /** A function that estimates the trace count of a pool that contains single-valued traces. */
     private static final ToIntFunction<Pool<TimeSeries<Pair<Double, Double>>>> SINGLE_VALUED_TRACE_COUNT_ESTIMATOR =
             EvaluationUtilities.getSingleValuedTraceCountEstimator();
+
+    /** Re-used string. */
+    private static final String PERFORMING_RETRIEVAL_WITH_AN_IN_MEMORY_RETRIEVER_FACTORY =
+            "Performing retrieval with an in-memory retriever factory.";
+
+    /** Re-used string. */
+    private static final String PERFORMING_RETRIEVAL_WITH_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE =
+            "Performing retrieval with a retriever factory backed by a persistent store.";
 
     /**
      * Executes an evaluation.
@@ -458,7 +468,8 @@ class EvaluationUtilities
 
             // Update the small bag-o-state
             evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
-                                                                           .declaration( declarationWithFeaturesAndThresholds )
+                                                                           .declaration(
+                                                                                   declarationWithFeaturesAndThresholds )
                                                                            .build();
             // Get the features, as described in the ingested time-series data, which may differ in number and details
             // from the declared features. For example, they are filtered for data availability, spatial mask etc. and
@@ -715,7 +726,8 @@ class EvaluationUtilities
             DecimalFormat decimalFormatter = declaration.decimalFormat();
 
             sharedSampleWriters =
-                    SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(), PairsWriter.DEFAULT_PAIRS_ZIP_NAME ),
+                    SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(),
+                                                           PairsWriter.DEFAULT_PAIRS_ZIP_NAME ),
                                                 durationUnits,
                                                 decimalFormatter );
             // Baseline writer?
@@ -1118,16 +1130,16 @@ class EvaluationUtilities
                                                                executors.metricExecutor() );
 
         // Create a retriever factory to support retrieval for this project
-        RetrieverFactory<Double, Double> retrieverFactory;
+        RetrieverFactory<Double, Double, Double> retrieverFactory;
         if ( evaluationDetails.hasInMemoryStore() )
         {
-            LOGGER.debug( "Performing retrieval with an in-memory retriever factory." );
+            LOGGER.debug( PERFORMING_RETRIEVAL_WITH_AN_IN_MEMORY_RETRIEVER_FACTORY );
             retrieverFactory = SingleValuedRetrieverFactoryInMemory.of( evaluationDetails.project(),
                                                                         evaluationDetails.timeSeriesStore() );
         }
         else
         {
-            LOGGER.debug( "Performing retrieval with a retriever factory backed by a persistent store." );
+            LOGGER.debug( PERFORMING_RETRIEVAL_WITH_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE );
             retrieverFactory = SingleValuedRetrieverFactory.of( project,
                                                                 evaluationDetails.databaseServices()
                                                                                  .database(),
@@ -1209,28 +1221,55 @@ class EvaluationUtilities
                                                            executors.thresholdExecutor(),
                                                            executors.metricExecutor() );
 
-        // Create a retriever factory to support retrieval for this project
-        RetrieverFactory<Double, Ensemble> retrieverFactory;
-        if ( evaluationDetails.hasInMemoryStore() )
+        List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>>> poolSuppliers;
+
+        // Create the pool suppliers, depending on the types of data to be retrieved
+        if ( project.hasGeneratedBaseline() )
         {
-            LOGGER.debug( "Performing retrieval with an in-memory retriever factory." );
-            retrieverFactory = EnsembleRetrieverFactoryInMemory.of( evaluationDetails.project(),
-                                                                    evaluationDetails.timeSeriesStore() );
+            RetrieverFactory<Double, Ensemble, Double> retrieverFactory;
+            if ( evaluationDetails.hasInMemoryStore() )
+            {
+                LOGGER.debug( PERFORMING_RETRIEVAL_WITH_AN_IN_MEMORY_RETRIEVER_FACTORY );
+                retrieverFactory = EnsembleSingleValuedRetrieverFactoryInMemory.of( evaluationDetails.project(),
+                                                                                    evaluationDetails.timeSeriesStore() );
+            }
+            else
+            {
+                LOGGER.debug( PERFORMING_RETRIEVAL_WITH_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE );
+                retrieverFactory = EnsembleSingleValuedRetrieverFactory.of( project,
+                                                                            evaluationDetails.databaseServices()
+                                                                                             .database(),
+                                                                            evaluationDetails.caches() );
+            }
+
+            // Create the pool suppliers for all pools in this evaluation
+            poolSuppliers = poolFactory.getEnsemblePoolsWithSingleValuedBaseline( poolRequests,
+                                                                                  retrieverFactory,
+                                                                                  poolParameters );
         }
         else
         {
-            LOGGER.debug( "Performing retrieval with a retriever factory backed by a persistent store." );
-            retrieverFactory = EnsembleRetrieverFactory.of( project,
-                                                            evaluationDetails.databaseServices()
-                                                                             .database(),
-                                                            evaluationDetails.caches() );
-        }
+            RetrieverFactory<Double, Ensemble, Ensemble> retrieverFactory;
+            if ( evaluationDetails.hasInMemoryStore() )
+            {
+                LOGGER.debug( PERFORMING_RETRIEVAL_WITH_AN_IN_MEMORY_RETRIEVER_FACTORY );
+                retrieverFactory = EnsembleRetrieverFactoryInMemory.of( evaluationDetails.project(),
+                                                                        evaluationDetails.timeSeriesStore() );
+            }
+            else
+            {
+                LOGGER.debug( PERFORMING_RETRIEVAL_WITH_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE );
+                retrieverFactory = EnsembleRetrieverFactory.of( project,
+                                                                evaluationDetails.databaseServices()
+                                                                                 .database(),
+                                                                evaluationDetails.caches() );
+            }
 
-        // Create the pool suppliers for all pools in this evaluation
-        List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>>> poolSuppliers =
-                poolFactory.getEnsemblePools( poolRequests,
-                                              retrieverFactory,
-                                              poolParameters );
+            // Create the pool suppliers for all pools in this evaluation
+            poolSuppliers = poolFactory.getEnsemblePools( poolRequests,
+                                                          retrieverFactory,
+                                                          poolParameters );
+        }
 
         // Stand-up the pair writers
         PairsWriter<Double, Ensemble> pairsWriter = null;

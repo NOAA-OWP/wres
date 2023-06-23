@@ -176,7 +176,7 @@ class PoolFactoryTest
         Assertions.assertEquals( 48, actual.size() );
 
         PoolParameters poolParameters = new PoolParameters.Builder().build();
-        RetrieverFactory<Double, Double> retrieverFactory = Mockito.mock( SingleValuedRetrieverFactory.class );
+        RetrieverFactory<Double, Double, Double> retrieverFactory = Mockito.mock( SingleValuedRetrieverFactory.class );
         Mockito.when( retrieverFactory.getLeftRetriever( Mockito.anySet(), Mockito.any() ) )
                .thenReturn( () -> Stream.of( TimeSeries.of( null ) ) );
         Mockito.when( retrieverFactory.getRightRetriever( Mockito.anySet(), Mockito.any() ) )

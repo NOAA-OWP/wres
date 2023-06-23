@@ -25,6 +25,7 @@ import wres.config.yaml.DeclarationException;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.Climatology;
+import wres.datamodel.baselines.BaselineGenerator;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
@@ -52,7 +53,7 @@ import wres.io.retrieving.RetrieverFactory;
  * @author James Brown
  */
 
-public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSeries<Pair<L, R>>>>>>
+public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<TimeSeries<Pair<L, R>>>>>>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( PoolsGenerator.class );
@@ -64,7 +65,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     private final List<PoolRequest> poolRequests;
 
     /** A factory to create project-relevant retrievers. */
-    private final RetrieverFactory<L, R> retrieverFactory;
+    private final RetrieverFactory<L, R, B> retrieverFactory;
 
     /** The upscaler for left-ish values. */
     private final TimeSeriesUpscaler<L> leftUpscaler;
@@ -119,7 +120,11 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     private final Predicate<L> climateAdmissibleValue;
 
     /** An optional generator for baseline data (e.g., persistence or climatology). */
-    private final Function<Set<Feature>, UnaryOperator<TimeSeries<R>>> baselineGenerator;
+    private final Function<Set<Feature>, BaselineGenerator<R>> baselineGenerator;
+
+    /** A shim to map from a baseline-ish dataset to a right-ish dataset.
+     * TODO: remove this shim when pools support different types of right and baseline data. */
+    private final Function<TimeSeries<B>,TimeSeries<R>> baselineShim;
 
     @Override
     public List<Supplier<Pool<TimeSeries<Pair<L, R>>>>> get()
@@ -129,9 +134,11 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
 
     /**
      * A builder for the {@link PoolsGenerator}.
+     * @param <L> the left-ish data type
+     * @param <R> the right-ish data type
+     * @param <B> the baseline-ish data type
      */
-
-    static class Builder<L, R>
+    static class Builder<L, R, B>
     {
         /** The project for which pools are required. */
         private Project project;
@@ -140,7 +147,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         private final List<PoolRequest> poolRequests = new ArrayList<>();
 
         /** A factory to create project-relevant retrievers. */
-        private RetrieverFactory<L, R> retrieverFactory;
+        private RetrieverFactory<L, R, B> retrieverFactory;
 
         /**  A function to support pairing of left and right data. */
         private TimeSeriesPairer<L, R> pairer;
@@ -194,13 +201,16 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         private Predicate<L> climateAdmissibleValue;
 
         /** An optional generator for baseline data (e.g., persistence or climatology). */
-        private Function<Set<Feature>, UnaryOperator<TimeSeries<R>>> baselineGenerator;
+        private Function<Set<Feature>, BaselineGenerator<R>> baselineGenerator;
+
+        /** A shim to map from a baseline-ish dataset to a right-ish dataset. */
+        private Function<TimeSeries<B>,TimeSeries<R>> baselineShim;
 
         /**
          * @param project the project
          * @return the builder
          */
-        Builder<L, R> setProject( Project project )
+        Builder<L, R, B> setProject( Project project )
         {
             this.project = project;
 
@@ -211,7 +221,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param poolRequests the pool requests
          * @return the builder
          */
-        Builder<L, R> setPoolRequests( List<PoolRequest> poolRequests )
+        Builder<L, R, B> setPoolRequests( List<PoolRequest> poolRequests )
         {
             if ( Objects.nonNull( poolRequests ) )
             {
@@ -225,7 +235,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param retrieverFactory the retriever factory
          * @return the builder
          */
-        Builder<L, R> setRetrieverFactory( RetrieverFactory<L, R> retrieverFactory )
+        Builder<L, R, B> setRetrieverFactory( RetrieverFactory<L, R, B> retrieverFactory )
         {
             this.retrieverFactory = retrieverFactory;
 
@@ -236,7 +246,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param pairer the pairer
          * @return the builder
          */
-        Builder<L, R> setPairer( TimeSeriesPairer<L, R> pairer )
+        Builder<L, R, B> setPairer( TimeSeriesPairer<L, R> pairer )
         {
             this.pairer = pairer;
 
@@ -247,7 +257,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param crossPairer the cross-pairer
          * @return the builder
          */
-        Builder<L, R> setCrossPairer( TimeSeriesCrossPairer<L, R> crossPairer )
+        Builder<L, R, B> setCrossPairer( TimeSeriesCrossPairer<L, R> crossPairer )
         {
             this.crossPairer = crossPairer;
 
@@ -258,7 +268,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param leftUpscaler the upscaler for left values
          * @return the builder
          */
-        Builder<L, R> setLeftUpscaler( TimeSeriesUpscaler<L> leftUpscaler )
+        Builder<L, R, B> setLeftUpscaler( TimeSeriesUpscaler<L> leftUpscaler )
         {
             this.leftUpscaler = leftUpscaler;
 
@@ -269,7 +279,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param rightUpscaler the upscaler for right values
          * @return the builder
          */
-        Builder<L, R> setRightUpscaler( TimeSeriesUpscaler<R> rightUpscaler )
+        Builder<L, R, B> setRightUpscaler( TimeSeriesUpscaler<R> rightUpscaler )
         {
             this.rightUpscaler = rightUpscaler;
 
@@ -280,7 +290,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param baselineUpscaler the upscaler for baseline values
          * @return the builder
          */
-        Builder<L, R> setBaselineUpscaler( TimeSeriesUpscaler<R> baselineUpscaler )
+        Builder<L, R, B> setBaselineUpscaler( TimeSeriesUpscaler<R> baselineUpscaler )
         {
             this.baselineUpscaler = baselineUpscaler;
 
@@ -291,7 +301,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param climatologyAdmissibleValue the admissible value constraint on climatology
          * @return the builder
          */
-        Builder<L, R> setClimateAdmissibleValue( Predicate<L> climatologyAdmissibleValue )
+        Builder<L, R, B> setClimateAdmissibleValue( Predicate<L> climatologyAdmissibleValue )
         {
             this.climateAdmissibleValue = climatologyAdmissibleValue;
 
@@ -302,7 +312,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param leftTransformer the left transformer
          * @return the builder
          */
-        Builder<L, R> setLeftTransformer( UnaryOperator<TimeSeries<L>> leftTransformer )
+        Builder<L, R, B> setLeftTransformer( UnaryOperator<TimeSeries<L>> leftTransformer )
         {
             this.leftTransformer = leftTransformer;
 
@@ -313,7 +323,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param rightTransformer the right transformer, which may consider the encapsulating event
          * @return the builder
          */
-        Builder<L, R> setRightTransformer( UnaryOperator<TimeSeries<R>> rightTransformer )
+        Builder<L, R, B> setRightTransformer( UnaryOperator<TimeSeries<R>> rightTransformer )
         {
             this.rightTransformer = rightTransformer;
 
@@ -324,7 +334,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param baselineTransformer the baseline transformer, which may consider the encapsulating event
          * @return the builder
          */
-        Builder<L, R> setBaselineTransformer( UnaryOperator<TimeSeries<R>> baselineTransformer )
+        Builder<L, R, B> setBaselineTransformer( UnaryOperator<TimeSeries<R>> baselineTransformer )
         {
             this.baselineTransformer = baselineTransformer;
 
@@ -335,7 +345,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param leftFilter the filter for left-style data
          * @return the builder
          */
-        Builder<L, R> setLeftFilter( Predicate<TimeSeries<L>> leftFilter )
+        Builder<L, R, B> setLeftFilter( Predicate<TimeSeries<L>> leftFilter )
         {
             this.leftFilter = leftFilter;
 
@@ -346,7 +356,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param rightFilter the filter for right-style data
          * @return the builder
          */
-        Builder<L, R> setRightFilter( Predicate<TimeSeries<R>> rightFilter )
+        Builder<L, R, B> setRightFilter( Predicate<TimeSeries<R>> rightFilter )
         {
             this.rightFilter = rightFilter;
 
@@ -357,7 +367,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param baselineFilter the filter for baseline-style data
          * @return the builder
          */
-        Builder<L, R> setBaselineFilter( Predicate<TimeSeries<R>> baselineFilter )
+        Builder<L, R, B> setBaselineFilter( Predicate<TimeSeries<R>> baselineFilter )
         {
             this.baselineFilter = baselineFilter;
 
@@ -368,7 +378,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param leftTimeShift the time shift for left-ish valid times
          * @return the builder
          */
-        Builder<L, R> setLeftTimeShift( Duration leftTimeShift )
+        Builder<L, R, B> setLeftTimeShift( Duration leftTimeShift )
         {
             if ( Objects.nonNull( leftTimeShift ) )
             {
@@ -382,7 +392,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param rightTimeShift the time shift for right-ish valid times
          * @return the builder
          */
-        Builder<L, R> setRightTimeShift( Duration rightTimeShift )
+        Builder<L, R, B> setRightTimeShift( Duration rightTimeShift )
         {
             if ( Objects.nonNull( rightTimeShift ) )
             {
@@ -396,7 +406,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param baselineTimeShift the time shift for baseline-ish valid times
          * @return the builder
          */
-        Builder<L, R> setBaselineTimeShift( Duration baselineTimeShift )
+        Builder<L, R, B> setBaselineTimeShift( Duration baselineTimeShift )
         {
             if ( Objects.nonNull( baselineTimeShift ) )
             {
@@ -410,7 +420,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param pairFrequency the pair frequency
          * @return the builder
          */
-        Builder<L, R> setPairFrequency( Duration pairFrequency )
+        Builder<L, R, B> setPairFrequency( Duration pairFrequency )
         {
             this.pairFrequency = pairFrequency;
 
@@ -421,7 +431,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param climateMapper the climateMapper to set
          * @return the builder
          */
-        Builder<L, R> setClimateMapper( ToDoubleFunction<L> climateMapper )
+        Builder<L, R, B> setClimateMapper( ToDoubleFunction<L> climateMapper )
         {
             this.climateMapper = climateMapper;
 
@@ -432,9 +442,22 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @param baselineGenerator the baselineGenerator to set
          * @return the builder
          */
-        Builder<L, R> setBaselineGenerator( Function<Set<Feature>, UnaryOperator<TimeSeries<R>>> baselineGenerator )
+        Builder<L, R, B> setBaselineGenerator( Function<Set<Feature>, BaselineGenerator<R>> baselineGenerator )
         {
             this.baselineGenerator = baselineGenerator;
+
+            return this;
+        }
+
+        /**
+         * Sets the baseline shim to map from baseline-ish to right-ish data.
+         * @param baselineShim the baseline shim
+         * @return the builder
+         */
+
+        Builder<L,R,B> setBaselineShim( Function<TimeSeries<B>,TimeSeries<R>> baselineShim )
+        {
+            this.baselineShim = baselineShim;
 
             return this;
         }
@@ -445,7 +468,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
          * @return an instance
          */
 
-        PoolsGenerator<L, R> build()
+        PoolsGenerator<L, R, B> build()
         {
             return new PoolsGenerator<>( this );
         }
@@ -469,8 +492,8 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                                               .getDesiredTimeScale();
 
         // Create the common builder
-        PoolSupplier.Builder<L, R> builder =
-                new PoolSupplier.Builder<L, R>()
+        PoolSupplier.Builder<L, R, B> builder =
+                new PoolSupplier.Builder<L, R, B>()
                         .setLeftUpscaler( this.getLeftUpscaler() )
                         .setRightUpscaler( this.getRightUpscaler() )
                         .setBaselineUpscaler( this.getBaselineUpscaler() )
@@ -486,6 +509,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                         .setRightFilter( this.getRightFilter() )
                         .setBaselineFilter( this.getBaselineFilter() )
                         .setPairFrequency( this.getPairFrequency() )
+                        .setBaselineShim( this.getBaselineShim() )
                         .setDesiredTimeScale( desiredTimeScale );
 
         // Get a left-ish retriever for every pool in order to promote re-use across pools via caching. May consider
@@ -536,7 +560,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                                                              .type() );
             }
 
-            List<PoolSupplier<L, R>> returnMe = new ArrayList<>();
+            List<PoolSupplier<L, R, B>> returnMe = new ArrayList<>();
 
             // Create the retrievers for each pool
             for ( PoolRequest nextPool : this.getPoolRequests() )
@@ -581,7 +605,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
                         Set<Feature> baselineFeatures = this.getFeatures( nextPool.getMetadata(),
                                                                           FeatureTuple::getBaseline );
 
-                        Supplier<Stream<TimeSeries<R>>> baselineSupplier = this.getRetrieverFactory()
+                        Supplier<Stream<TimeSeries<B>>> baselineSupplier = this.getRetrieverFactory()
                                                                                .getBaselineRetriever( baselineFeatures,
                                                                                                       nextWindow );
 
@@ -621,7 +645,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     private Map<TimeWindowOuter, Supplier<Stream<TimeSeries<L>>>> getLeftRetrievers( List<PoolRequest> poolRequests,
                                                                                      DataType type )
     {
-        RetrieverFactory<L, R> factory = this.getRetrieverFactory();
+        RetrieverFactory<L, R, B> factory = this.getRetrieverFactory();
 
         Set<TimeWindowOuter> timeWindows = poolRequests.stream()
                                                        .map( next -> next.getMetadata().getTimeWindow() )
@@ -833,7 +857,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
      * @return the retriever factory
      */
 
-    private RetrieverFactory<L, R> getRetrieverFactory()
+    private RetrieverFactory<L, R, B> getRetrieverFactory()
     {
         return this.retrieverFactory;
     }
@@ -855,7 +879,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
      * @return the baseline generator
      */
 
-    private Function<Set<Feature>, UnaryOperator<TimeSeries<R>>> getBaselineGenerator()
+    private Function<Set<Feature>, BaselineGenerator<R>> getBaselineGenerator()
     {
         return this.baselineGenerator;
     }
@@ -1108,6 +1132,16 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
     }
 
     /**
+     * A baseline shim to map from baseline-ish to right-ish data.
+     * @return the baseline shim
+     */
+
+    private Function<TimeSeries<B>,TimeSeries<R>> getBaselineShim()
+    {
+        return this.baselineShim;
+    }
+
+    /**
      * Hidden constructor.
      *
      * @param builder a builder
@@ -1115,7 +1149,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
      * @throws IllegalArgumentException if the declaration is inconsistent with the type of pool expected
      */
 
-    private PoolsGenerator( Builder<L, R> builder )
+    private PoolsGenerator( Builder<L, R, B> builder )
     {
         // Set then validate
         this.project = builder.project;
@@ -1139,6 +1173,7 @@ public class PoolsGenerator<L, R> implements Supplier<List<Supplier<Pool<TimeSer
         this.rightTimeShift = builder.rightTimeShift;
         this.baselineTimeShift = builder.baselineTimeShift;
         this.pairFrequency = builder.pairFrequency;
+        this.baselineShim = builder.baselineShim;
 
         String messageStart = "Cannot build the pool generator: ";
 

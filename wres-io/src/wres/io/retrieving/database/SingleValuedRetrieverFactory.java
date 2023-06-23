@@ -36,7 +36,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  * @author James Brown
  */
 
-public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Double>
+public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Double, Double>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( SingleValuedRetrieverFactory.class );

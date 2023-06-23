@@ -19,7 +19,6 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -51,7 +50,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  * @param <T> the type of persistence value to generate
  */
 
-public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
+public class PersistenceGenerator<T> implements BaselineGenerator<T>
 {
     private static final String WHILE_GENERATING_A_PERSISTENCE_TIME_SERIES_USING_INPUT_SERIES =
             "While generating a persistence time-series using input series {}{}";
@@ -149,7 +148,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      */
 
     @Override
-    public TimeSeries<T> apply( TimeSeries<T> template )
+    public TimeSeries<T> apply( TimeSeries<?> template )
     {
         Objects.requireNonNull( template );
 
@@ -163,7 +162,13 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
                           ", discovered that the input series had no events (i.e., was empty). Returning the empty "
                           + "time-series." );
 
-            return template;
+            // Adjust the template metadata to use source units
+            TimeSeries<T> source = this.getPersistenceSourceForTemplate( template );
+            String sourceUnit = source.getMetadata()
+                                      .getUnit();
+            TimeSeriesMetadata adjusted = this.getAdjustedMetadata( template.getMetadata(), sourceUnit );
+
+            return TimeSeries.of( adjusted );
         }
 
         // No reference times, so not a forecast. Compute persistence with respect to valid time.
@@ -193,7 +198,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * @return a persistence time-series that uses the valid times
      */
 
-    private TimeSeries<T> getPersistenceForFirstReferenceTime( TimeSeries<T> template )
+    private TimeSeries<T> getPersistenceForFirstReferenceTime( TimeSeries<?> template )
     {
         // Upscale? 
         TimeScaleOuter desiredTimeScale = template.getTimeScale();
@@ -216,7 +221,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * @return a persistence time-series that uses the valid times
      */
 
-    private TimeSeries<T> getPersistenceForFirstReferenceTimeWithoutUpscaling( TimeSeries<T> template )
+    private TimeSeries<T> getPersistenceForFirstReferenceTimeWithoutUpscaling( TimeSeries<?> template )
     {
         LOGGER.trace( "Generating persistence for a time-series with a reference time where upscaling is not "
                       + "required." );
@@ -272,7 +277,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * @return a persistence time-series that uses the valid times
      */
 
-    private TimeSeries<T> getPersistenceForFirstReferenceTimeWithUpscaling( TimeSeries<T> template )
+    private TimeSeries<T> getPersistenceForFirstReferenceTimeWithUpscaling( TimeSeries<?> template )
     {
         LOGGER.trace( "Generating persistence for a time-series with a reference time where upscaling is required." );
 
@@ -398,16 +403,12 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * @return the persistence time-series
      */
 
-    private TimeSeries<T> getPersistenceTimeSeriesFromTemplateAndPersistenceValue( TimeSeries<T> template,
+    private TimeSeries<T> getPersistenceTimeSeriesFromTemplateAndPersistenceValue( TimeSeries<?> template,
                                                                                    T persistenceValue )
     {
         // Adjust the template metadata because the persisted values are in the same measurement units as the 
         // persistence source
-        TimeSeriesMetadata adjusted = template.getMetadata()
-                                              .toBuilder()
-                                              .setUnit( this.getSourceUnit() )
-                                              .build();
-
+        TimeSeriesMetadata adjusted = this.getAdjustedMetadata( template.getMetadata(), this.getSourceUnit() );
         Builder<T> builder = new Builder<T>().setMetadata( adjusted );
 
         // Persistence value admissible?
@@ -422,7 +423,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         else
         {
             // Use the persistence value for every valid time in the template
-            for ( Event<T> next : template.getEvents() )
+            for ( Event<?> next : template.getEvents() )
             {
                 Event<T> persistedValue = Event.of( next.getTime(), persistenceValue );
                 builder.addEvent( persistedValue );
@@ -437,7 +438,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * @param template the template time-series to populate with persistence values
      * @return a persistence time-series that uses the valid times
      */
-    private TimeSeries<T> getPersistenceForEachValidTime( TimeSeries<T> template )
+    private TimeSeries<T> getPersistenceForEachValidTime( TimeSeries<?> template )
     {
         // Upscale? 
         TimeScaleOuter desiredTimeScale = template.getTimeScale();
@@ -460,7 +461,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * @return a persistence time-series that uses the valid times
      */
 
-    private TimeSeries<T> getPersistenceForEachValidTimeWithoutUpscaling( TimeSeries<T> template )
+    private TimeSeries<T> getPersistenceForEachValidTimeWithoutUpscaling( TimeSeries<?> template )
     {
         LOGGER.trace( "Generating persistence for multiple valid times where upscaling is not required." );
 
@@ -510,7 +511,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * @return a persistence time-series that uses the valid times
      */
 
-    private TimeSeries<T> getPersistenceForEachValidTimeWithUpscaling( TimeSeries<T> template )
+    private TimeSeries<T> getPersistenceForEachValidTimeWithUpscaling( TimeSeries<?> template )
     {
         LOGGER.trace( "Generating persistence for multiple valid times where upscaling is required." );
 
@@ -535,7 +536,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
             // Search the template events and find a corresponding upscaled event that is the Nth corresponding event
             // that is earlier than the template time
-            for ( Event<T> next : template.getEvents() )
+            for ( Event<?> next : template.getEvents() )
             {
                 Pair<Instant, Instant> interval = this.getLaggedMonthDayInterval( next.getTime(),
                                                                                   this.order );
@@ -684,7 +685,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * @return the upscaled series
      */
 
-    private TimeSeries<T> getUpscaledPersistenceSeriesAtTheseTimes( TimeSeries<T> template,
+    private TimeSeries<T> getUpscaledPersistenceSeriesAtTheseTimes( TimeSeries<?> template,
                                                                     TimeSeries<T> seriesToUpscale,
                                                                     List<Instant> endsAtSorted,
                                                                     String desiredUnit )
@@ -710,11 +711,8 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
 
         // Adjust the template metadata because the persisted values are in the same measurement units as the 
         // persistence source
-        TimeSeriesMetadata adjusted = template.getMetadata()
-                                              .toBuilder()
-                                              .setUnit( upscaled.getMetadata()
-                                                                .getUnit() )
-                                              .build();
+        TimeSeriesMetadata adjusted = this.getAdjustedMetadata( template.getMetadata(), upscaled.getMetadata()
+                                                                                                .getUnit() );
 
         return TimeSeries.of( adjusted, upscaled.getEvents() );
     }
@@ -872,7 +870,7 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
      * @throws BaselineGeneratorException if the template feature does not match a feature for which source data exists
      */
 
-    private TimeSeries<T> getPersistenceSourceForTemplate( TimeSeries<T> template )
+    private TimeSeries<T> getPersistenceSourceForTemplate( TimeSeries<?> template )
     {
         // Feature correlation assumes that the template feature is right-ish and the source feature is baseline-ish
         // If this is no longer a safe assumption, then the orientation should be declared on construction
@@ -895,6 +893,22 @@ public class PersistenceGenerator<T> implements UnaryOperator<TimeSeries<T>>
         }
 
         return this.persistenceSource.get( templateFeature );
+    }
+
+    /**
+     * Adjusts the supplied metadata to use the measurement unit associated with the source time-series from which the
+     * climatology is generated.
+     * @param metadata the metadata to adjust
+     * @param sourceUnit the source measurement unit
+     * @return the adjusted metadata
+     */
+
+    private TimeSeriesMetadata getAdjustedMetadata( TimeSeriesMetadata metadata,
+                                                    String sourceUnit )
+    {
+        return metadata.toBuilder()
+                       .setUnit( sourceUnit )
+                       .build();
     }
 
     /**

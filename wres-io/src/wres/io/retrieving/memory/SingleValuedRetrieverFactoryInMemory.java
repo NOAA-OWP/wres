@@ -34,7 +34,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  * @author James Brown
  */
 
-public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Double, Double>
+public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Double, Double, Double>
 {
     /** A time-series store. */
     private final TimeSeriesStore timeSeriesStore;

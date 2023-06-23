@@ -50,7 +50,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  * @author James Brown
  */
 
-public class ClimatologyGenerator implements Function<TimeSeries<?>, TimeSeries<Ensemble>>
+public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ClimatologyGenerator.class );

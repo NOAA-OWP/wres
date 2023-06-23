@@ -23,13 +23,13 @@ import wres.statistics.MessageFactory;
 import wres.statistics.generated.TimeWindow;
 
 /**
- * <p>A factory class that creates retrievers for the single-valued left and ensemble right datasets associated with one 
- * evaluation. Backed by an in-memory {@link TimeSeriesStore}.
+ * <p>A factory class that creates retrievers for single-valued left datasets, ensemble right datasets and
+ * single-valued baseline datasets associated with one evaluation. Backed by an in-memory {@link TimeSeriesStore}.
  *
  * @author James Brown
  */
 
-public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double, Ensemble, Ensemble>
+public class EnsembleSingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Double, Ensemble, Double>
 {
     /** A time-series store. */
     private final TimeSeriesStore timeSeriesStore;
@@ -46,10 +46,10 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
      * @throws NullPointerException if any input is null
      */
 
-    public static EnsembleRetrieverFactoryInMemory of( Project project,
-                                                       TimeSeriesStore timeSeriesStore )
+    public static EnsembleSingleValuedRetrieverFactoryInMemory of( Project project,
+                                                                   TimeSeriesStore timeSeriesStore )
     {
-        return new EnsembleRetrieverFactoryInMemory( project, timeSeriesStore );
+        return new EnsembleSingleValuedRetrieverFactoryInMemory( project, timeSeriesStore );
     }
 
     @Override
@@ -153,7 +153,7 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<Feature> features )
+    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<Feature> features )
     {
         TimeWindow inner = MessageFactory.getTimeWindow();
         TimeWindowOuter outer = TimeWindowOuter.of( inner );
@@ -161,8 +161,8 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<Ensemble>>> getBaselineRetriever( Set<Feature> features,
-                                                                        TimeWindowOuter timeWindow )
+    public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<Feature> features,
+                                                                      TimeWindowOuter timeWindow )
     {
         TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustByTimeScalePeriod( timeWindow,
                                                                                    this.project.getDesiredTimeScale() );
@@ -173,14 +173,14 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
                                                                              this.project.getEarliestAnalysisDuration(),
                                                                              this.project.getLatestAnalysisDuration() );
 
-        Stream<TimeSeries<Ensemble>> originalSeries =
-                this.timeSeriesStore.getEnsembleSeries( adjustedWindow,
-                                                        DatasetOrientation.BASELINE,
-                                                        features );
+        Stream<TimeSeries<Double>> originalSeries =
+                this.timeSeriesStore.getSingleValuedSeries( adjustedWindow,
+                                                            DatasetOrientation.BASELINE,
+                                                            features );
 
-        Stream<TimeSeries<Ensemble>> adaptedTimeSeries = this.getAdaptedTimeSeries( DatasetOrientation.BASELINE,
-                                                                                    originalSeries,
-                                                                                    adjustedWindow );
+        Stream<TimeSeries<Double>> adaptedTimeSeries = this.getAdaptedTimeSeries( DatasetOrientation.BASELINE,
+                                                                                  originalSeries,
+                                                                                  adjustedWindow );
 
         return () -> adaptedTimeSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
                                                                                                DatasetOrientation.BASELINE,
@@ -224,8 +224,8 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
      * @throws NullPointerException if any input is null
      */
 
-    private EnsembleRetrieverFactoryInMemory( Project project,
-                                              TimeSeriesStore timeSeriesStore )
+    private EnsembleSingleValuedRetrieverFactoryInMemory( Project project,
+                                                          TimeSeriesStore timeSeriesStore )
     {
         Objects.requireNonNull( project );
         Objects.requireNonNull( timeSeriesStore );

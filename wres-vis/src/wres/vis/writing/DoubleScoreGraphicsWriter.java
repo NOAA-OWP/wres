@@ -32,7 +32,7 @@ import wres.vis.charts.ChartFactory;
 
 /**
  * Helps write charts comprising {@link DoubleScoreStatisticOuter} to graphics formats.
- * 
+ *
  * @author James Brown
  */
 
@@ -170,13 +170,13 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
 
     /**
      * Slices the statistics for individual graphics. Returns as many sliced lists of statistics as graphics to create.
-     * 
+     *
      * @param statistics the statistics to slice
      * @return the sliced statistics to write
      */
 
     private static List<List<DoubleScoreStatisticOuter>>
-            getSlicedStatistics( List<DoubleScoreStatisticOuter> statistics )
+    getSlicedStatistics( List<DoubleScoreStatisticOuter> statistics )
     {
         List<List<DoubleScoreStatisticOuter>> sliced = new ArrayList<>();
 
@@ -278,7 +278,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
 
     /**
      *  Writes a group of destinations.
-     * 
+     *
      * @param outputDirectory the output directory
      * @param metadata the sample metadata
      * @param engines the graphics engines
@@ -332,7 +332,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param outputsDescription a description of the required outputs
      * @param outputDirectory the directory into which to write
      * @throws NullPointerException if either input is null
