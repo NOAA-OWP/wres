@@ -15,10 +15,11 @@ import wres.datamodel.time.TimeWindowOuter;
  * 
  * @author James Brown
  * @param <L> the type of left data
- * @param <R> the type of right and baseline data
+ * @param <R> the type of right data
+ * @param <B> the type of baseline data
  */
 
-public interface RetrieverFactory<L, R>
+public interface RetrieverFactory<L, R, B>
 {   
     /**
      * Creates a retriever for all left-ish data without any pool boundaries.
@@ -68,7 +69,7 @@ public interface RetrieverFactory<L, R>
      * @throws NullPointerException if the set of features is null
      */
 
-    Supplier<Stream<TimeSeries<R>>> getBaselineRetriever( Set<Feature> features );
+    Supplier<Stream<TimeSeries<B>>> getBaselineRetriever( Set<Feature> features );
     
     /**
      * Creates a retriever of right-ish data associated with a baseline for a particular {@link TimeWindowOuter}.
@@ -81,7 +82,7 @@ public interface RetrieverFactory<L, R>
      * @throws NullPointerException if the set of features is null
      */
 
-    Supplier<Stream<TimeSeries<R>>> getBaselineRetriever( Set<Feature> features, TimeWindowOuter timeWindow );
+    Supplier<Stream<TimeSeries<B>>> getBaselineRetriever( Set<Feature> features, TimeWindowOuter timeWindow );
     
     /**
      * Creates a retriever for all climatological data.

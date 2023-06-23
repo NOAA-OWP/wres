@@ -49,6 +49,7 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.Ensemble.Labels;
 import wres.datamodel.MissingValues;
 import wres.datamodel.Slicer;
+import wres.datamodel.baselines.BaselineGenerator;
 import wres.datamodel.baselines.ClimatologyGenerator;
 import wres.datamodel.units.UnitMapper;
 import wres.datamodel.units.Units;
@@ -107,6 +108,13 @@ public class PoolFactory
 
     private static final String CANNOT_CREATE_POOLS_WITHOUT_POOL_PARAMETERS = "Cannot create pools without pool "
                                                                               + "parameters.";
+    public static final String BUILDING_POOL_SUPPLIERS_FOR_FEATURE_GROUP_WHICH_CONTAINS_POOL_REQUESTS =
+            "Building pool suppliers for feature group {}, which contains {} pool requests.";
+    public static final String BUILDING_A_CACHING_RETRIEVER_FACTORY_TO_CACHE_THE_RETRIEVAL_OF_THE_CLIMATOLOGICAL_AND =
+            "Building a caching retriever factory to cache the retrieval of the climatological and ";
+    public static final String GENERATED_BASELINE_DATA_WHERE_APPLICABLE_ACROSS_ALL_POOLS_WITHIN_FEATURE_GROUP =
+            "generated baseline data (where applicable) across all pools within feature group {}.";
+    public static final String CREATING_POOL_SUPPLIERS_FOR_PROJECT = "Creating pool suppliers for project '{}'.";
 
     /** The project. */
     private final Project project;
@@ -155,10 +163,9 @@ public class PoolFactory
      *            data
      */
 
-    public List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Double>>>>>>
-    getSingleValuedPools( List<PoolRequest> poolRequests,
-                          RetrieverFactory<Double, Double> retrieverFactory,
-                          PoolParameters poolParameters )
+    public List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Double>>>>>> getSingleValuedPools( List<PoolRequest> poolRequests,
+                                                                                                           RetrieverFactory<Double, Double, Double> retrieverFactory,
+                                                                                                           PoolParameters poolParameters )
     {
         Objects.requireNonNull( poolRequests, CANNOT_CREATE_POOLS_WITHOUT_LIST_OF_POOL_REQUESTS );
         Objects.requireNonNull( retrieverFactory, CANNOT_CREATE_POOLS_WITHOUT_A_RETRIEVER_FACTORY );
@@ -180,17 +187,17 @@ public class PoolFactory
             OptimizedPoolRequests optimized = nextEntry.getValue();
             List<PoolRequest> nextPoolRequests = optimized.optimizedRequests();
 
-            LOGGER.debug( "Building pool suppliers for feature group {}, which contains {} pool requests.",
+            LOGGER.debug( BUILDING_POOL_SUPPLIERS_FOR_FEATURE_GROUP_WHICH_CONTAINS_POOL_REQUESTS,
                           featureGroup,
                           nextPoolRequests.size() );
 
             // Create a retriever factory that caches the climatological and generated baseline data for all pool 
             // requests associated with the feature group (as required)
-            RetrieverFactory<Double, Double> cachingFactory = retrieverFactory;
+            RetrieverFactory<Double, Double, Double> cachingFactory = retrieverFactory;
             if ( innerProject.hasProbabilityThresholds() || innerProject.hasGeneratedBaseline() )
             {
-                LOGGER.debug( "Building a caching retriever factory to cache the retrieval of the climatological and "
-                              + "generated baseline data (where applicable) across all pools within feature group {}.",
+                LOGGER.debug( BUILDING_A_CACHING_RETRIEVER_FACTORY_TO_CACHE_THE_RETRIEVAL_OF_THE_CLIMATOLOGICAL_AND
+                              + GENERATED_BASELINE_DATA_WHERE_APPLICABLE_ACROSS_ALL_POOLS_WITHIN_FEATURE_GROUP,
                               featureGroup );
 
                 cachingFactory = new CachingRetrieverFactory<>( retrieverFactory,
@@ -200,7 +207,7 @@ public class PoolFactory
             }
 
             List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Double>>>>> nextSuppliers =
-                    this.getSingleValuedPoolsInner( innerProject, nextPoolRequests, cachingFactory );
+                    this.getSingleValuedPools( innerProject, nextPoolRequests, cachingFactory );
 
             // Optimized? In that case, decompose the feature-batched pool suppliers into feature-specific pool 
             // suppliers
@@ -237,10 +244,9 @@ public class PoolFactory
      * @throws IllegalArgumentException if the project is not consistent with the generation of pools for ensemble data
      */
 
-    public List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>>>
-    getEnsemblePools( List<PoolRequest> poolRequests,
-                      RetrieverFactory<Double, Ensemble> retrieverFactory,
-                      PoolParameters poolParameters )
+    public List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>>> getEnsemblePools( List<PoolRequest> poolRequests,
+                                                                                                         RetrieverFactory<Double, Ensemble, Ensemble> retrieverFactory,
+                                                                                                         PoolParameters poolParameters )
     {
         Objects.requireNonNull( poolRequests, CANNOT_CREATE_POOLS_WITHOUT_LIST_OF_POOL_REQUESTS );
         Objects.requireNonNull( retrieverFactory, CANNOT_CREATE_POOLS_WITHOUT_A_RETRIEVER_FACTORY );
@@ -261,17 +267,17 @@ public class PoolFactory
             OptimizedPoolRequests optimized = nextEntry.getValue();
             List<PoolRequest> nextPoolRequests = optimized.optimizedRequests();
 
-            LOGGER.debug( "Building pool suppliers for feature group {}, which contains {} pool requests.",
+            LOGGER.debug( BUILDING_POOL_SUPPLIERS_FOR_FEATURE_GROUP_WHICH_CONTAINS_POOL_REQUESTS,
                           featureGroup,
                           nextPoolRequests.size() );
 
             // Create a retriever factory that caches the climatological and generated baseline data for all pool 
             // requests associated with the feature group (as required)
-            RetrieverFactory<Double, Ensemble> cachingFactory = retrieverFactory;
+            RetrieverFactory<Double, Ensemble, Ensemble> cachingFactory = retrieverFactory;
             if ( innerProject.hasProbabilityThresholds() || innerProject.hasGeneratedBaseline() )
             {
-                LOGGER.debug( "Building a caching retriever factory to cache the retrieval of the climatological and "
-                              + "generated baseline data (where applicable) across all pools within feature group {}.",
+                LOGGER.debug( BUILDING_A_CACHING_RETRIEVER_FACTORY_TO_CACHE_THE_RETRIEVAL_OF_THE_CLIMATOLOGICAL_AND
+                              + GENERATED_BASELINE_DATA_WHERE_APPLICABLE_ACROSS_ALL_POOLS_WITHIN_FEATURE_GROUP,
                               featureGroup );
 
                 cachingFactory = new CachingRetrieverFactory<>( retrieverFactory,
@@ -281,7 +287,81 @@ public class PoolFactory
             }
 
             List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Ensemble>>>>> nextSuppliers =
-                    this.getEnsemblePoolsInner( innerProject, nextPoolRequests, cachingFactory );
+                    this.getEnsemblePools( innerProject, nextPoolRequests, cachingFactory );
+
+            // Optimized? In that case, decompose the feature-batched pools into feature-specific pools
+            if ( optimized.isOptimized() )
+            {
+                List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Ensemble>>>>> decomposed =
+                        this.decompose( nextSuppliers );
+                suppliers.addAll( decomposed );
+            }
+            else
+            {
+                suppliers.addAll( nextSuppliers );
+            }
+        }
+
+        return this.unpack( optimizedGroups, suppliers );
+    }
+
+    /**
+     * <p>Create pools for ensemble data with an ensemble baseline generated from single-valued time-series.
+     *
+     * @see #getEnsemblePools(List, RetrieverFactory, PoolParameters)
+     * @param poolRequests the pool requests, not null
+     * @param retrieverFactory the retriever factory, not null
+     * @param poolParameters the pool parameters
+     * @return one pool supplier for each pool request, ordered in intended execution order (for optimal performance)
+     * @throws NullPointerException if the input is null
+     * @throws IllegalArgumentException if the project is not consistent with the generation of pools for ensemble data
+     */
+
+    public List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>>>
+    getEnsemblePoolsWithSingleValuedBaseline( List<PoolRequest> poolRequests,
+                                              RetrieverFactory<Double, Ensemble, Double> retrieverFactory,
+                                              PoolParameters poolParameters )
+    {
+        Objects.requireNonNull( poolRequests, CANNOT_CREATE_POOLS_WITHOUT_LIST_OF_POOL_REQUESTS );
+        Objects.requireNonNull( retrieverFactory, CANNOT_CREATE_POOLS_WITHOUT_A_RETRIEVER_FACTORY );
+        Objects.requireNonNull( poolParameters, CANNOT_CREATE_POOLS_WITHOUT_POOL_PARAMETERS );
+
+        // Optimize, if possible, by conducting feature-batched retrieval. Each list of pool requests is associated
+        // with the same feature group, which may be a composition of features to decompose
+        Map<FeatureGroup, OptimizedPoolRequests> optimizedGroups =
+                this.getFeatureBatchedSingletons( poolRequests, poolParameters );
+
+        List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Ensemble>>>>> suppliers = new ArrayList<>();
+
+        Project innerProject = this.getProject();
+
+        for ( Map.Entry<FeatureGroup, OptimizedPoolRequests> nextEntry : optimizedGroups.entrySet() )
+        {
+            FeatureGroup featureGroup = nextEntry.getKey();
+            OptimizedPoolRequests optimized = nextEntry.getValue();
+            List<PoolRequest> nextPoolRequests = optimized.optimizedRequests();
+
+            LOGGER.debug( BUILDING_POOL_SUPPLIERS_FOR_FEATURE_GROUP_WHICH_CONTAINS_POOL_REQUESTS,
+                          featureGroup,
+                          nextPoolRequests.size() );
+
+            // Create a retriever factory that caches the climatological and generated baseline data for all pool
+            // requests associated with the feature group (as required)
+            RetrieverFactory<Double, Ensemble, Double> cachingFactory = retrieverFactory;
+            if ( innerProject.hasProbabilityThresholds() || innerProject.hasGeneratedBaseline() )
+            {
+                LOGGER.debug( BUILDING_A_CACHING_RETRIEVER_FACTORY_TO_CACHE_THE_RETRIEVAL_OF_THE_CLIMATOLOGICAL_AND
+                              + GENERATED_BASELINE_DATA_WHERE_APPLICABLE_ACROSS_ALL_POOLS_WITHIN_FEATURE_GROUP,
+                              featureGroup );
+
+                cachingFactory = new CachingRetrieverFactory<>( retrieverFactory,
+                                                                innerProject.hasGeneratedBaseline(),
+                                                                false,
+                                                                null );
+            }
+
+            List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Ensemble>>>>> nextSuppliers =
+                    this.getEnsemblePoolsWithSingleValuedBaseline( innerProject, nextPoolRequests, cachingFactory );
 
             // Optimized? In that case, decompose the feature-batched pools into feature-specific pools
             if ( optimized.isOptimized() )
@@ -355,21 +435,18 @@ public class PoolFactory
      *            data
      */
 
-    private List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Double>>>>>
-    getSingleValuedPoolsInner( Project project,
-                               List<PoolRequest> poolRequests,
-                               RetrieverFactory<Double, Double> retrieverFactory )
+    private List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Double>>>>> getSingleValuedPools( Project project,
+                                                                                                        List<PoolRequest> poolRequests,
+                                                                                                        RetrieverFactory<Double, Double, Double> retrieverFactory )
     {
         EvaluationDeclaration declaration = project.getDeclaration();
 
         // Check that the project declaration is consistent with a request for single-valued pools
-        // TODO: do not rely on the declared type. Detect the type instead
-        // See #57301
         this.validateRequestedPoolsAgainstDeclaration( project, false );
 
         long projectId = project.getId();
 
-        LOGGER.debug( "Creating pool suppliers for project '{}'.",
+        LOGGER.debug( CREATING_POOL_SUPPLIERS_FOR_PROJECT,
                       projectId );
 
         // Create a default pairer for finite left and right values
@@ -405,7 +482,7 @@ public class PoolFactory
                                                                                          .getUnitAliases() );
 
         // Create a feature-specific baseline generator function (e.g., persistence), if required
-        Function<Set<Feature>, UnaryOperator<TimeSeries<Double>>> baselineGenerator = null;
+        Function<Set<Feature>, BaselineGenerator<Double>> baselineGenerator = null;
         // Generated baseline declared?
         if ( project.hasGeneratedBaseline() )
         {
@@ -461,29 +538,30 @@ public class PoolFactory
 
         // Build and return the pool suppliers
         List<Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> rawSuppliers =
-                new PoolsGenerator.Builder<Double, Double>().setProject( project )
-                                                            .setRetrieverFactory( retrieverFactory )
-                                                            .setPoolRequests( poolRequests )
-                                                            .setBaselineGenerator( baselineGenerator )
-                                                            .setLeftTransformer( valueAndUnitTransformer )
-                                                            .setRightTransformer( valueAndUnitTransformer )
-                                                            .setBaselineTransformer( valueAndUnitTransformer )
-                                                            .setLeftFilter( filter )
-                                                            .setRightFilter( filter )
-                                                            .setBaselineFilter( filter )
-                                                            .setLeftUpscaler( leftUpscaler )
-                                                            .setRightUpscaler( rightUpscaler )
-                                                            .setBaselineUpscaler( baselineUpscaler )
-                                                            .setLeftTimeShift( leftTimeShift )
-                                                            .setRightTimeShift( rightTimeShift )
-                                                            .setBaselineTimeShift( baselineTimeShift )
-                                                            .setPairer( pairer )
-                                                            .setPairFrequency( pairFrequency )
-                                                            .setCrossPairer( crossPairer )
-                                                            .setClimateMapper( Double::doubleValue )
-                                                            .setClimateAdmissibleValue( Double::isFinite )
-                                                            .build()
-                                                            .get();
+                new PoolsGenerator.Builder<Double, Double, Double>().setProject( project )
+                                                                    .setRetrieverFactory( retrieverFactory )
+                                                                    .setPoolRequests( poolRequests )
+                                                                    .setBaselineGenerator( baselineGenerator )
+                                                                    .setLeftTransformer( valueAndUnitTransformer )
+                                                                    .setRightTransformer( valueAndUnitTransformer )
+                                                                    .setBaselineTransformer( valueAndUnitTransformer )
+                                                                    .setLeftFilter( filter )
+                                                                    .setRightFilter( filter )
+                                                                    .setBaselineFilter( filter )
+                                                                    .setLeftUpscaler( leftUpscaler )
+                                                                    .setRightUpscaler( rightUpscaler )
+                                                                    .setBaselineUpscaler( baselineUpscaler )
+                                                                    .setLeftTimeShift( leftTimeShift )
+                                                                    .setRightTimeShift( rightTimeShift )
+                                                                    .setBaselineTimeShift( baselineTimeShift )
+                                                                    .setPairer( pairer )
+                                                                    .setPairFrequency( pairFrequency )
+                                                                    .setCrossPairer( crossPairer )
+                                                                    .setClimateMapper( Double::doubleValue )
+                                                                    .setClimateAdmissibleValue( Double::isFinite )
+                                                                    .setBaselineShim( Function.identity() )
+                                                                    .build()
+                                                                    .get();
 
         return this.getComposedSuppliers( poolRequests, rawSuppliers );
     }
@@ -503,21 +581,18 @@ public class PoolFactory
      * @throws IllegalArgumentException if the project is not consistent with the generation of pools for ensemble data
      */
 
-    private List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Ensemble>>>>>
-    getEnsemblePoolsInner( Project project,
-                           List<PoolRequest> poolRequests,
-                           RetrieverFactory<Double, Ensemble> retrieverFactory )
+    private List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Ensemble>>>>> getEnsemblePools( Project project,
+                                                                                                      List<PoolRequest> poolRequests,
+                                                                                                      RetrieverFactory<Double, Ensemble, Ensemble> retrieverFactory )
     {
         EvaluationDeclaration declaration = project.getDeclaration();
 
         // Check that the project declaration is consistent with a request for ensemble pools
-        // TODO: do not rely on the declared type. Detect the type instead
-        // See #57301
         this.validateRequestedPoolsAgainstDeclaration( project, true );
 
         long projectId = project.getId();
 
-        LOGGER.debug( "Creating pool suppliers for project '{}'.",
+        LOGGER.debug( CREATING_POOL_SUPPLIERS_FOR_PROJECT,
                       projectId );
 
         // Create a default pairer for finite left values and one or more finite right values
@@ -587,28 +662,182 @@ public class PoolFactory
 
         // Build and return the pool suppliers
         List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> rawSuppliers =
-                new PoolsGenerator.Builder<Double, Ensemble>().setProject( project )
-                                                              .setRetrieverFactory( retrieverFactory )
-                                                              .setPoolRequests( poolRequests )
-                                                              .setLeftTransformer( leftValueAndUnitTransformer )
-                                                              .setRightTransformer( rightValueAndUnitTransformer )
-                                                              .setBaselineTransformer( baselineValueAndUnitTransformer )
-                                                              .setLeftUpscaler( leftUpscaler )
-                                                              .setRightUpscaler( rightUpscaler )
-                                                              .setBaselineUpscaler( baselineUpscaler )
-                                                              .setLeftFilter( singleValuedFilter )
-                                                              .setRightFilter( ensembleFilter )
-                                                              .setBaselineFilter( ensembleFilter )
-                                                              .setLeftTimeShift( leftTimeShift )
-                                                              .setRightTimeShift( rightTimeShift )
-                                                              .setBaselineTimeShift( baselineTimeShift )
-                                                              .setPairer( pairer )
-                                                              .setPairFrequency( pairFrequency )
-                                                              .setCrossPairer( crossPairer )
-                                                              .setClimateMapper( Double::doubleValue )
-                                                              .setClimateAdmissibleValue( Double::isFinite )
-                                                              .build()
-                                                              .get();
+                new PoolsGenerator.Builder<Double, Ensemble, Ensemble>().setProject( project )
+                                                                        .setRetrieverFactory( retrieverFactory )
+                                                                        .setPoolRequests( poolRequests )
+                                                                        .setLeftTransformer( leftValueAndUnitTransformer )
+                                                                        .setRightTransformer(
+                                                                                rightValueAndUnitTransformer )
+                                                                        .setBaselineTransformer(
+                                                                                baselineValueAndUnitTransformer )
+                                                                        .setLeftUpscaler( leftUpscaler )
+                                                                        .setRightUpscaler( rightUpscaler )
+                                                                        .setBaselineUpscaler( baselineUpscaler )
+                                                                        .setLeftFilter( singleValuedFilter )
+                                                                        .setRightFilter( ensembleFilter )
+                                                                        .setBaselineFilter( ensembleFilter )
+                                                                        .setLeftTimeShift( leftTimeShift )
+                                                                        .setRightTimeShift( rightTimeShift )
+                                                                        .setBaselineTimeShift( baselineTimeShift )
+                                                                        .setPairer( pairer )
+                                                                        .setPairFrequency( pairFrequency )
+                                                                        .setCrossPairer( crossPairer )
+                                                                        .setClimateMapper( Double::doubleValue )
+                                                                        .setClimateAdmissibleValue( Double::isFinite )
+                                                                        .setBaselineShim( Function.identity() )
+                                                                        .build()
+                                                                        .get();
+
+        return this.getComposedSuppliers( poolRequests, rawSuppliers );
+    }
+
+    /**
+     * Create pools for ensemble data with a baseline generated from single-valued time-series.
+     *
+     * @see #getEnsemblePools(Project, List, RetrieverFactory)
+     * @param project the project for which pools are required, not null
+     * @param poolRequests the pool requests, not null
+     * @param retrieverFactory the retriever factory, not null
+     * @return a list of suppliers that supply pools of pairs
+     * @throws NullPointerException if the input is null
+     * @throws IllegalArgumentException if the project is not consistent with the generation of pools for ensemble data
+     */
+
+    private List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Ensemble>>>>>
+    getEnsemblePoolsWithSingleValuedBaseline( Project project,
+                                              List<PoolRequest> poolRequests,
+                                              RetrieverFactory<Double, Ensemble, Double> retrieverFactory )
+    {
+        EvaluationDeclaration declaration = project.getDeclaration();
+
+        // Check that the project declaration is consistent with a request for ensemble pools
+        this.validateRequestedPoolsAgainstDeclaration( project, true );
+
+        long projectId = project.getId();
+
+        LOGGER.debug( CREATING_POOL_SUPPLIERS_FOR_PROJECT,
+                      projectId );
+
+        // Create a default pairer for finite left values and one or more finite right values
+        TimePairingType timePairingType = this.getTimePairingTypeFromDeclaration( declaration );
+
+        LOGGER.debug( "Using a time-based pairing strategy of {} for the input declaration {}.",
+                      timePairingType,
+                      declaration );
+
+        TimeSeriesPairer<Double, Ensemble> pairer =
+                TimeSeriesPairerByExactTime.of( Double::isFinite,
+                                                en -> Arrays.stream( en.getMembers() )
+                                                            .anyMatch( Double::isFinite ),
+                                                timePairingType );
+
+        // Create a cross pairer, in case this is required by the declaration
+        TimeSeriesCrossPairer<Double, Ensemble> crossPairer = this.getCrossPairerOrNull( declaration );
+
+        // Lenient upscaling?
+        boolean leftLenient = project.isUpscalingLenient( DatasetOrientation.LEFT );
+        boolean rightLenient = project.isUpscalingLenient( DatasetOrientation.RIGHT );
+        boolean baselineLenient = project.isUpscalingLenient( DatasetOrientation.BASELINE );
+
+        // Create a default upscaler for each side
+        TimeSeriesUpscaler<Double> leftUpscaler = TimeSeriesOfDoubleUpscaler.of( leftLenient,
+                                                                                 this.getUnitMapper()
+                                                                                     .getUnitAliases() );
+
+        TimeSeriesUpscaler<Ensemble> rightUpscaler = TimeSeriesOfEnsembleUpscaler.of( rightLenient,
+                                                                                      this.getUnitMapper()
+                                                                                          .getUnitAliases() );
+
+        TimeSeriesUpscaler<Ensemble> baselineUpscaler = TimeSeriesOfEnsembleUpscaler.of( baselineLenient,
+                                                                                         this.getUnitMapper()
+                                                                                             .getUnitAliases() );
+        // Left transformer
+        DoubleUnaryOperator leftValueTransformer = this.getSingleValuedTransformer( declaration.values() );
+        UnaryOperator<TimeSeries<Double>> leftValueAndUnitTransformer =
+                this.getSingleValuedTransformer( leftValueTransformer );
+
+        // Right transformer
+        Dataset right = project.getDeclaredDataset( DatasetOrientation.RIGHT );
+        UnaryOperator<Event<Ensemble>> rightValueTransformer = this.getEnsembleTransformer( leftValueTransformer,
+                                                                                            right );
+        UnaryOperator<TimeSeries<Ensemble>> rightValueAndUnitTransformer =
+                this.getEnsembleTransformer( rightValueTransformer );
+
+        // Baseline transformer
+        Dataset baseline = project.getDeclaredDataset( DatasetOrientation.BASELINE );
+        UnaryOperator<Event<Ensemble>> baselineValueTransformer = this.getEnsembleTransformer( leftValueTransformer,
+                                                                                               baseline );
+
+        UnaryOperator<TimeSeries<Ensemble>> baselineValueAndUnitTransformer =
+                this.getEnsembleTransformer( baselineValueTransformer );
+
+        // Currently only a seasonal filter, which applies equally to all sides
+        Predicate<TimeSeries<Double>> singleValuedFilter = this.getSeasonalFilter( declaration.season() );
+        Predicate<TimeSeries<Ensemble>> ensembleFilter = this.getSeasonalFilter( declaration.season() );
+
+        // Get the time shifts
+        Dataset left = project.getDeclaredDataset( DatasetOrientation.LEFT );
+        Duration leftTimeShift = this.getTimeShift( left );
+        Duration rightTimeShift = this.getTimeShift( right );
+        Duration baselineTimeShift = this.getTimeShift( baseline );
+
+        Duration pairFrequency = this.getPairFrequency( declaration );
+
+        // Create a feature-specific baseline generator function (e.g., persistence), if required
+        Function<Set<Feature>, BaselineGenerator<Ensemble>> baselineGenerator = null;
+        // Generated baseline declared?
+        if ( project.hasGeneratedBaseline() )
+        {
+            GeneratedBaseline declaredGenerator = declaration.baseline()
+                                                             .generatedBaseline();
+            GeneratedBaselines method = declaredGenerator.method();
+            LOGGER.debug( "While creating pools for project '{}', discovered a baseline "
+                          + "to generate using method '{}' for data source: {}.",
+                          projectId,
+                          method,
+                          declaration.baseline() );
+
+            if ( method == GeneratedBaselines.CLIMATOLOGY )
+            {
+                baselineGenerator = this.getEnsembleClimatologyBaseline( declaredGenerator,
+                                                                         retrieverFactory,
+                                                                         leftUpscaler );
+            }
+            else
+            {
+                throw new UnsupportedOperationException( "While attempting to generate a baseline, encountered an "
+                                                         + "unrecognized type of baseline to generate: "
+                                                         + method );
+            }
+        }
+
+        // Build and return the pool suppliers
+        List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> rawSuppliers =
+                new PoolsGenerator.Builder<Double, Ensemble, Double>().setProject( project )
+                                                                      .setRetrieverFactory( retrieverFactory )
+                                                                      .setPoolRequests( poolRequests )
+                                                                      .setLeftTransformer( leftValueAndUnitTransformer )
+                                                                      .setRightTransformer(
+                                                                              rightValueAndUnitTransformer )
+                                                                      .setBaselineTransformer(
+                                                                              baselineValueAndUnitTransformer )
+                                                                      .setLeftUpscaler( leftUpscaler )
+                                                                      .setRightUpscaler( rightUpscaler )
+                                                                      .setBaselineUpscaler( baselineUpscaler )
+                                                                      .setLeftFilter( singleValuedFilter )
+                                                                      .setRightFilter( ensembleFilter )
+                                                                      .setBaselineFilter( ensembleFilter )
+                                                                      .setLeftTimeShift( leftTimeShift )
+                                                                      .setRightTimeShift( rightTimeShift )
+                                                                      .setBaselineTimeShift( baselineTimeShift )
+                                                                      .setPairer( pairer )
+                                                                      .setPairFrequency( pairFrequency )
+                                                                      .setCrossPairer( crossPairer )
+                                                                      .setClimateMapper( Double::doubleValue )
+                                                                      .setClimateAdmissibleValue( Double::isFinite )
+                                                                      .setBaselineGenerator( baselineGenerator )
+                                                                      .build()
+                                                                      .get();
 
         return this.getComposedSuppliers( poolRequests, rawSuppliers );
     }
@@ -1258,10 +1487,10 @@ public class PoolFactory
      * @return a function that takes a set of features and returns a unary operator that generates a baseline
      */
 
-    private Function<Set<Feature>, UnaryOperator<TimeSeries<Double>>> getPersistenceBaseline( GeneratedBaseline parameters,
-                                                                                              RetrieverFactory<Double, Double> retrieverFactory,
-                                                                                              TimeSeriesUpscaler<Double> upscaler,
-                                                                                              Predicate<Double> admissibleValue )
+    private Function<Set<Feature>, BaselineGenerator<Double>> getPersistenceBaseline( GeneratedBaseline parameters,
+                                                                                      RetrieverFactory<Double, Double, Double> retrieverFactory,
+                                                                                      TimeSeriesUpscaler<Double> upscaler,
+                                                                                      Predicate<Double> admissibleValue )
     {
         Objects.requireNonNull( retrieverFactory );
 
@@ -1297,10 +1526,10 @@ public class PoolFactory
      * @return a function that takes a set of features and returns a unary operator that generates a baseline
      */
 
-    private Function<Set<Feature>, UnaryOperator<TimeSeries<Double>>> getClimatologyBaseline( GeneratedBaseline parameters,
-                                                                                              RetrieverFactory<Double, Double> retrieverFactory,
-                                                                                              TimeSeriesUpscaler<Double> upscaler,
-                                                                                              ToDoubleFunction<Ensemble> mapper )
+    private Function<Set<Feature>, BaselineGenerator<Double>> getClimatologyBaseline( GeneratedBaseline parameters,
+                                                                                      RetrieverFactory<Double, Double, Double> retrieverFactory,
+                                                                                      TimeSeriesUpscaler<Double> upscaler,
+                                                                                      ToDoubleFunction<Ensemble> mapper )
     {
         Objects.requireNonNull( retrieverFactory );
 
@@ -1325,6 +1554,41 @@ public class PoolFactory
                     in -> TimeSeriesSlicer.transform( in, composed::applyAsDouble, m -> m );
 
             return in -> transformer.apply( generator.apply( in ) );
+        };
+    }
+
+    /**
+     * Creates a feature-specific climatology baseline generator. Pay close attention to the sided-ness of the feature
+     * names in this context because there are two different sources of data: 1) the source data from which the
+     * baseline is generated; and 2) the template time-series data that is mimicked. The former is a source of
+     * observation-like data and the latter may be a source of forecast-like data, each of which has a different
+     * feature name.
+     *
+     * @param parameters the persistence parameters
+     * @param retrieverFactory the factory to acquire a data source for a generated baseline
+     * @param upscaler an upscaler, which is optional unless the generated series requires upscaling
+     * @return a function that takes a set of features and returns a unary operator that generates a baseline
+     */
+
+    private Function<Set<Feature>, BaselineGenerator<Ensemble>> getEnsembleClimatologyBaseline( GeneratedBaseline parameters,
+                                                                                                RetrieverFactory<Double, Ensemble, Double> retrieverFactory,
+                                                                                                TimeSeriesUpscaler<Double> upscaler )
+    {
+        Objects.requireNonNull( retrieverFactory );
+
+        // Here the feature names supplied must be consistent with the source data from which the baseline is
+        // generated, not the template time-series that is mimicked
+        return features -> {
+            Supplier<Stream<TimeSeries<Double>>> source = () -> retrieverFactory.getBaselineRetriever( features )
+                                                                                .get();
+
+            String unit = this.getProject()
+                              .getMeasurementUnit();
+
+            return ClimatologyGenerator.of( source,
+                                            upscaler,
+                                            unit,
+                                            parameters );
         };
     }
 
@@ -1386,7 +1650,9 @@ public class PoolFactory
         {
             DataType baselineType = baseline.type();
 
-            if ( ensemble && baselineType != DataType.ENSEMBLE_FORECASTS )
+            if ( ensemble
+                 && !project.hasGeneratedBaseline()
+                 && baselineType != DataType.ENSEMBLE_FORECASTS )
             {
                 throw new IllegalArgumentException( "Requested pools for ensemble data, but the baseline "
                                                     + DATA_IS_DECLARED_AS

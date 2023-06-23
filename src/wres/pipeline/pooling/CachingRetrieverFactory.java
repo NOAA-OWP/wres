@@ -31,15 +31,16 @@ import wres.io.retrieving.RetrieverFactory;
  *  
  * @param <L> the left data type
  * @param <R> the right data type
+ * @param <B> the baseline data type
  */
 
-class CachingRetrieverFactory<L, R> implements RetrieverFactory<L, R>
+class CachingRetrieverFactory<L, R, B> implements RetrieverFactory<L, R, B>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( CachingRetrieverFactory.class );
 
     /** The factory to delegate to. */
-    private final RetrieverFactory<L, R> delegate;
+    private final RetrieverFactory<L, R, B> delegate;
 
     /** Whether the baseline is a generated baseline and should, therefore, be cached across pools. */
     private final boolean hasGeneratedBaseline;
@@ -48,7 +49,7 @@ class CachingRetrieverFactory<L, R> implements RetrieverFactory<L, R>
     private final boolean hasEqualBaselineAndClimatology;
 
     /** Function to map between climatology and baseline when they are equal. */
-    private final Function<TimeSeries<L>, TimeSeries<R>> baselineMapper;
+    private final Function<TimeSeries<L>, TimeSeries<B>> baselineMapper;
 
     /** Cache of (cached) retrievers for climatology. */
     private final Cache<Key, Supplier<Stream<TimeSeries<L>>>> climatologyCache =
@@ -57,7 +58,7 @@ class CachingRetrieverFactory<L, R> implements RetrieverFactory<L, R>
                     .build();
 
     /** Cache of (cached) retrievers for generated baselines. */
-    private final Cache<Key, Supplier<Stream<TimeSeries<R>>>> generatedBaselineCache =
+    private final Cache<Key, Supplier<Stream<TimeSeries<B>>>> generatedBaselineCache =
             Caffeine.newBuilder()
                     .maximumSize( 1 )
                     .build();
@@ -113,7 +114,7 @@ class CachingRetrieverFactory<L, R> implements RetrieverFactory<L, R>
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<R>>> getBaselineRetriever( Set<Feature> features )
+    public Supplier<Stream<TimeSeries<B>>> getBaselineRetriever( Set<Feature> features )
     {
         Objects.requireNonNull( features );
 
@@ -130,7 +131,7 @@ class CachingRetrieverFactory<L, R> implements RetrieverFactory<L, R>
         if ( this.hasGeneratedBaseline )
         {
             Key key = new Key( features );
-            Supplier<Stream<TimeSeries<R>>> cached = this.generatedBaselineCache.getIfPresent( key );
+            Supplier<Stream<TimeSeries<B>>> cached = this.generatedBaselineCache.getIfPresent( key );
 
             if ( Objects.isNull( cached ) )
             {
@@ -144,7 +145,7 @@ class CachingRetrieverFactory<L, R> implements RetrieverFactory<L, R>
                     {
                         LOGGER.debug( "Retrieving baseline data for features: {}.", features );
 
-                        Supplier<Stream<TimeSeries<R>>> delegated = this.delegate.getBaselineRetriever( features );
+                        Supplier<Stream<TimeSeries<B>>> delegated = this.delegate.getBaselineRetriever( features );
                         cached = CachingRetriever.of( delegated );
                         this.generatedBaselineCache.put( key, cached );
                     }
@@ -174,7 +175,7 @@ class CachingRetrieverFactory<L, R> implements RetrieverFactory<L, R>
     }
 
     @Override
-    public Supplier<Stream<TimeSeries<R>>> getBaselineRetriever( Set<Feature> features,
+    public Supplier<Stream<TimeSeries<B>>> getBaselineRetriever( Set<Feature> features,
                                                                  TimeWindowOuter timeWindow )
     {
         return this.delegate.getBaselineRetriever( features, timeWindow );
@@ -186,10 +187,10 @@ class CachingRetrieverFactory<L, R> implements RetrieverFactory<L, R>
      * @param hasEqualBaselineAndClimatology whether the baseline and climatological data are the same
      * @throws NullPointerException if any required input is null
      */
-    CachingRetrieverFactory( RetrieverFactory<L, R> delegate,
+    CachingRetrieverFactory( RetrieverFactory<L, R, B> delegate,
                              boolean hasGeneratedBaseline,
                              boolean hasEqualBaselineAndClimatology,
-                             Function<TimeSeries<L>, TimeSeries<R>> baselineMapper )
+                             Function<TimeSeries<L>, TimeSeries<B>> baselineMapper )
     {
         Objects.requireNonNull( delegate );
 

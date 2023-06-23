@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,6 +25,7 @@ import org.mockito.MockitoAnnotations;
 import wres.config.yaml.components.GeneratedBaseline;
 import wres.config.yaml.components.GeneratedBaselineBuilder;
 import wres.datamodel.Climatology;
+import wres.datamodel.baselines.BaselineGenerator;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
@@ -465,7 +465,8 @@ class PoolSupplierTest
 
         GeometryTuple geoTuple = MessageFactory.getGeometryTuple( FEATURE, FEATURE, FEATURE );
         FeatureTuple featureTuple = FeatureTuple.of( geoTuple );
-        GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( featureTuple.toStringShort(), geoTuple );
+        GeometryGroup geoGroup =
+                wres.statistics.MessageFactory.getGeometryGroup( featureTuple.toStringShort(), geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
         wres.statistics.generated.Pool pool = MessageFactory.getPool( featureGroup,
@@ -529,13 +530,14 @@ class PoolSupplierTest
                                                         this.desiredTimeScale );
 
         Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolOneSupplier =
-                new PoolSupplier.Builder<Double, Double>().setLeft( obsSupplier )
-                                                          .setRight( forcSupplierOne )
-                                                          .setLeftUpscaler( this.upscaler )
-                                                          .setPairer( this.pairer )
-                                                          .setDesiredTimeScale( this.desiredTimeScale )
-                                                          .setMetadata( poolOneMetadata )
-                                                          .build();
+                new PoolSupplier.Builder<Double, Double, Double>().setLeft( obsSupplier )
+                                                                  .setRight( forcSupplierOne )
+                                                                  .setLeftUpscaler( this.upscaler )
+                                                                  .setPairer( this.pairer )
+                                                                  .setDesiredTimeScale( this.desiredTimeScale )
+                                                                  .setMetadata( poolOneMetadata )
+                                                                  .setBaselineShim( Function.identity() )
+                                                                  .build();
 
         Pool<TimeSeries<Pair<Double, Double>>> poolOneActual = poolOneSupplier.get();
 
@@ -601,13 +603,14 @@ class PoolSupplierTest
                                                         this.desiredTimeScale );
 
         Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolOneSupplier =
-                new PoolSupplier.Builder<Double, Double>().setLeft( obsSupplier )
-                                                          .setRight( forcSupplierOne )
-                                                          .setLeftUpscaler( this.upscaler )
-                                                          .setPairer( this.pairer )
-                                                          .setDesiredTimeScale( this.desiredTimeScale )
-                                                          .setMetadata( poolOneMetadata )
-                                                          .build();
+                new PoolSupplier.Builder<Double, Double, Double>().setLeft( obsSupplier )
+                                                                  .setRight( forcSupplierOne )
+                                                                  .setLeftUpscaler( this.upscaler )
+                                                                  .setPairer( this.pairer )
+                                                                  .setDesiredTimeScale( this.desiredTimeScale )
+                                                                  .setMetadata( poolOneMetadata )
+                                                                  .setBaselineShim( Function.identity() )
+                                                                  .build();
 
         Pool<TimeSeries<Pair<Double, Double>>> poolOneActual = poolOneSupplier.get();
 
@@ -700,16 +703,17 @@ class PoolSupplierTest
         Supplier<Climatology> climatology = () -> Climatology.of( climData );
 
         Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolOneSupplier =
-                new PoolSupplier.Builder<Double, Double>().setLeft( obsSupplier )
-                                                          .setRight( forcSupplierOne )
-                                                          .setBaseline( forcSupplierOne )
-                                                          .setClimatology( climatology )
-                                                          .setLeftUpscaler( this.upscaler )
-                                                          .setPairer( this.pairer )
-                                                          .setDesiredTimeScale( this.desiredTimeScale )
-                                                          .setMetadata( poolOneMetadata )
-                                                          .setBaselineMetadata( poolOneMetadataBaseline )
-                                                          .build();
+                new PoolSupplier.Builder<Double, Double, Double>().setLeft( obsSupplier )
+                                                                  .setRight( forcSupplierOne )
+                                                                  .setBaseline( forcSupplierOne )
+                                                                  .setClimatology( climatology )
+                                                                  .setLeftUpscaler( this.upscaler )
+                                                                  .setPairer( this.pairer )
+                                                                  .setDesiredTimeScale( this.desiredTimeScale )
+                                                                  .setMetadata( poolOneMetadata )
+                                                                  .setBaselineMetadata( poolOneMetadataBaseline )
+                                                                  .setBaselineShim( Function.identity() )
+                                                                  .build();
 
         // Acquire the pools for the baseline
         Pool<TimeSeries<Pair<Double, Double>>> poolOneActual = poolOneSupplier.get()
@@ -790,13 +794,14 @@ class PoolSupplierTest
                                                            this.desiredTimeScale );
 
         Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolElevenSupplier =
-                new PoolSupplier.Builder<Double, Double>().setLeft( obsSupplier )
-                                                          .setRight( forcSupplierEleven )
-                                                          .setLeftUpscaler( this.upscaler )
-                                                          .setPairer( this.pairer )
-                                                          .setDesiredTimeScale( this.desiredTimeScale )
-                                                          .setMetadata( poolElevenMetadata )
-                                                          .build();
+                new PoolSupplier.Builder<Double, Double, Double>().setLeft( obsSupplier )
+                                                                  .setRight( forcSupplierEleven )
+                                                                  .setLeftUpscaler( this.upscaler )
+                                                                  .setPairer( this.pairer )
+                                                                  .setDesiredTimeScale( this.desiredTimeScale )
+                                                                  .setMetadata( poolElevenMetadata )
+                                                                  .setBaselineShim( Function.identity() )
+                                                                  .build();
 
         Pool<TimeSeries<Pair<Double, Double>>> poolElevenActual = poolElevenSupplier.get();
 
@@ -894,13 +899,14 @@ class PoolSupplierTest
                                                              this.desiredTimeScale );
 
         Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolEighteenSupplier =
-                new PoolSupplier.Builder<Double, Double>().setLeft( obsSupplier )
-                                                          .setRight( forcSupplierEighteen )
-                                                          .setLeftUpscaler( this.upscaler )
-                                                          .setPairer( this.pairer )
-                                                          .setDesiredTimeScale( this.desiredTimeScale )
-                                                          .setMetadata( poolEighteenMetadata )
-                                                          .build();
+                new PoolSupplier.Builder<Double, Double, Double>().setLeft( obsSupplier )
+                                                                  .setRight( forcSupplierEighteen )
+                                                                  .setLeftUpscaler( this.upscaler )
+                                                                  .setPairer( this.pairer )
+                                                                  .setDesiredTimeScale( this.desiredTimeScale )
+                                                                  .setMetadata( poolEighteenMetadata )
+                                                                  .setBaselineShim( Function.identity() )
+                                                                  .build();
 
         Pool<TimeSeries<Pair<Double, Double>>> poolEighteenActual = poolEighteenSupplier.get();
 
@@ -1003,13 +1009,14 @@ class PoolSupplierTest
                                       .build() );
 
         Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolSupplier =
-                new PoolSupplier.Builder<Double, Double>().setLeft( obsSupplier )
-                                                          .setRight( forcSupplier )
-                                                          .setLeftUpscaler( this.upscaler )
-                                                          .setPairer( this.pairer )
-                                                          .setDesiredTimeScale( this.desiredTimeScale )
-                                                          .setMetadata( poolMetadata )
-                                                          .build();
+                new PoolSupplier.Builder<Double, Double, Double>().setLeft( obsSupplier )
+                                                                  .setRight( forcSupplier )
+                                                                  .setLeftUpscaler( this.upscaler )
+                                                                  .setPairer( this.pairer )
+                                                                  .setDesiredTimeScale( this.desiredTimeScale )
+                                                                  .setMetadata( poolMetadata )
+                                                                  .setBaselineShim( Function.identity() )
+                                                                  .build();
 
         Pool<TimeSeries<Pair<Double, Double>>> poolActual = poolSupplier.get();
 
@@ -1040,13 +1047,14 @@ class PoolSupplierTest
                                                         this.desiredTimeScale );
 
         Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolOneSupplier =
-                new PoolSupplier.Builder<Double, Double>().setLeft( obsSupplier )
-                                                          .setRight( forcSupplierOne )
-                                                          .setLeftUpscaler( this.upscaler )
-                                                          .setPairer( this.pairer )
-                                                          .setDesiredTimeScale( this.desiredTimeScale )
-                                                          .setMetadata( poolOneMetadata )
-                                                          .build();
+                new PoolSupplier.Builder<Double, Double, Double>().setLeft( obsSupplier )
+                                                                  .setRight( forcSupplierOne )
+                                                                  .setLeftUpscaler( this.upscaler )
+                                                                  .setPairer( this.pairer )
+                                                                  .setDesiredTimeScale( this.desiredTimeScale )
+                                                                  .setMetadata( poolOneMetadata )
+                                                                  .setBaselineShim( Function.identity() )
+                                                                  .build();
 
         Pool<TimeSeries<Pair<Double, Double>>> poolOneActual = poolOneSupplier.get();
 
@@ -1172,27 +1180,27 @@ class PoolSupplierTest
         GeneratedBaseline persistence = GeneratedBaselineBuilder.builder()
                                                                 .order( 1 )
                                                                 .build();
-        UnaryOperator<TimeSeries<Double>> baselineGenerator = PersistenceGenerator.of( obsSupplier,
-                                                                                       this.upscaler,
-                                                                                       Double::isFinite,
-                                                                                       persistence,
-                                                                                       UNIT );
+        BaselineGenerator<Double> baselineGenerator = PersistenceGenerator.of( obsSupplier,
+                                                                               this.upscaler,
+                                                                               Double::isFinite,
+                                                                               persistence,
+                                                                               UNIT );
 
-        Function<Set<Feature>, UnaryOperator<TimeSeries<Double>>> featuredBaselineGenerator = in -> baselineGenerator;
+        Function<Set<Feature>, BaselineGenerator<Double>> featuredBaselineGenerator = in -> baselineGenerator;
 
         TimeSeriesCrossPairer<Double, Double> crossPairer = TimeSeriesCrossPairer.of();
 
         Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolOneSupplier =
-                new PoolSupplier.Builder<Double, Double>().setLeft( obsSupplier )
-                                                          .setRight( forcSupplierOne )
-                                                          .setLeftUpscaler( this.upscaler )
-                                                          .setPairer( this.pairer )
-                                                          .setCrossPairer( crossPairer )
-                                                          .setBaselineGenerator( featuredBaselineGenerator )
-                                                          .setDesiredTimeScale( this.desiredTimeScale )
-                                                          .setMetadata( poolOneMetadata )
-                                                          .setBaselineMetadata( poolOneBaselineMetadata )
-                                                          .build();
+                new PoolSupplier.Builder<Double, Double, Double>().setLeft( obsSupplier )
+                                                                  .setRight( forcSupplierOne )
+                                                                  .setLeftUpscaler( this.upscaler )
+                                                                  .setPairer( this.pairer )
+                                                                  .setCrossPairer( crossPairer )
+                                                                  .setBaselineGenerator( featuredBaselineGenerator )
+                                                                  .setDesiredTimeScale( this.desiredTimeScale )
+                                                                  .setMetadata( poolOneMetadata )
+                                                                  .setBaselineMetadata( poolOneBaselineMetadata )
+                                                                  .build();
 
         Pool<TimeSeries<Pair<Double, Double>>> poolOneActual = poolOneSupplier.get();
 

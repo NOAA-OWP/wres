@@ -136,7 +136,7 @@ class PoolsGeneratorTest
         Evaluation evaluationDescription = MessageFactory.parse( declaration );
 
         // Mock a feature-shaped retriever factory
-        RetrieverFactory<Double, Double> retrieverFactory = Mockito.mock( SingleValuedRetrieverFactory.class );
+        RetrieverFactory<Double, Double, Double> retrieverFactory = Mockito.mock( SingleValuedRetrieverFactory.class );
         Mockito.when( retrieverFactory.getLeftRetriever( Mockito.any(), Mockito.any() ) )
                .thenReturn( Stream::of );
         Mockito.when( retrieverFactory.getRightRetriever( Mockito.any(), Mockito.any() ) )
@@ -237,7 +237,7 @@ class PoolsGeneratorTest
         Evaluation evaluationDescription = MessageFactory.parse( declaration );
 
         // Mock a feature-shaped retriever factory
-        RetrieverFactory<Double, Ensemble> retrieverFactory = Mockito.mock( EnsembleRetrieverFactory.class );
+        RetrieverFactory<Double, Ensemble, Ensemble> retrieverFactory = Mockito.mock( EnsembleRetrieverFactory.class );
         Mockito.when( retrieverFactory.getLeftRetriever( Mockito.any(), Mockito.any() ) )
                .thenReturn( Stream::of );
         Mockito.when( retrieverFactory.getRightRetriever( Mockito.any(), Mockito.any() ) )
