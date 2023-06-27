@@ -348,7 +348,8 @@ public class WresJob
         Set<Verb> verbsNeedingAdminToken = Set.of( Verb.CLEANDATABASE,
                                                    Verb.CONNECTTODB,
                                                    Verb.REFRESHDATABASE,
-                                                   Verb.SWITCHDATABASE );
+                                                   Verb.SWITCHDATABASE,
+                                                   Verb.MIGRATEDATABASE);
         boolean usingToken = verbsNeedingAdminToken.contains( actualVerb );
         if ( ( adminTokenHash != null ) && ( usingToken ) )
         {
@@ -421,17 +422,18 @@ public class WresJob
                                            + "re-send." );
             }
         }
-        //For switchdatabase and cleandatabase, I need to record the database info
-        //from the additional arguments.  Running clean database with no arguments
-        //is fine, however.  Thus, only parse the arguments for a cleandatabase if
+        //For switchdatabase, cleandatabase, and migratedatabase, I need to record the database info
+        //from the additional arguments.  Running clean or migrate database with no arguments
+        //is fine, however.  Thus, only parse the arguments for a cleandatabase or migratedatabase if
         //some are given.
         String usedDatabaseName = null;
         String usedDatabaseHost = null;
         String usedDatabasePort = null;
         if ( actualVerb == Verb.SWITCHDATABASE
-             || ( actualVerb == Verb.CLEANDATABASE && !additionalArguments.isEmpty() ) )
+             || ( actualVerb == Verb.CLEANDATABASE && !additionalArguments.isEmpty() )
+             || ( actualVerb == Verb.MIGRATEDATABASE && !additionalArguments.isEmpty() ))
         {
-            LOGGER.info( "Switch or clean requested. Parsing additional arguments." );
+            LOGGER.info( "Switch, clean, or migrate requested. Parsing additional arguments." );
             if ( additionalArguments.size() != 3 )
             {
                 String message = "Request with verb " + actualVerb
@@ -536,9 +538,9 @@ public class WresJob
                                              .setDatabaseName( usedDatabaseName )
                                              .setDatabaseHost( usedDatabaseHost )
                                              .setDatabasePort( usedDatabasePort );
-            // Additional arguments are already handled when cleaning, per above.
+            // Additional arguments are already handled when cleaning and migrating, per above.
             // No additional arguments beyond database ones are allowed in that case.
-            if ( actualVerb != Verb.CLEANDATABASE )
+            if ( actualVerb != Verb.CLEANDATABASE && actualVerb != Verb.MIGRATEDATABASE )
             {
                 for ( String arg : additionalArguments )
                 {
