@@ -16,6 +16,7 @@ message job
         VALIDATE = 5;
         ROTATEPARTITIONS = 6;
         SWITCHDATABASE = 7;
+        MIGRATEDATABASE = 8;
     }
 
     Verb verb = 5;

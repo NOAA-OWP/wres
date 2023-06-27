@@ -205,6 +205,8 @@ final class Functions
                                          "Migrates a project declaration from XML (old-style) to YAML "
                                          + "(new style). Example usage: migrate /foo/bar/project_config.xml", true ),
                        Functions::migrate );
+        functions.put( new WresFunction( "-md", "migratedatabase", "Migrate the WRES database.", false ),
+                       Functions::migrateDatabase );
         functions.put( new WresFunction( "-mi",
                                          "migrateinline",
                                          "Migrates a project declaration from XML (old-style) to YAML "
@@ -333,6 +335,37 @@ final class Functions
         finally
         {
             lockManager.shutdown();
+        }
+
+        return ExecutionResult.success();
+    }
+
+    /**
+     * Creates the "migrateDatabase" method
+     *
+     * @return A method that will attempt to migrate the specified database according to steps in the db.changelog-master.xml
+     */
+    private static ExecutionResult migrateDatabase( SharedResources sharedResources )
+    {
+        if ( sharedResources.systemSettings()
+                            .isInMemory() )
+        {
+            throw new IllegalArgumentException(
+                    "This is an in-memory execution. Cannot migrate a database because there "
+                    + "is no database to migrate." );
+        }
+
+        try
+        {
+            //The migrateDatabase method deals with database locking, so we don't need to worry about that here
+            DatabaseOperations.migrateDatabase( sharedResources.database() );
+        }
+        catch ( SQLException se )
+        {
+            String message = "Failed to migrate the database.";
+            LOGGER.error( message, se );
+            InternalWresException e = new InternalWresException( message, se );
+            return ExecutionResult.failure( e );
         }
 
         return ExecutionResult.success();
