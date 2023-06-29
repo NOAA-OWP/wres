@@ -33,7 +33,7 @@ FROM registry.access.redhat.com/ubi8/ubi:8.7-1112
 RUN dnf install -y \
     java-17-openjdk-headless-1:17.0.7.0.7-3.el8 \
     procps-ng-3.3.15-13.el8 \
-    iproute-5.18.0-1.el8 \
+    iproute-5.18.0-1.1.el8 \
     libaio-0.3.112-1.el8 \
     && dnf clean all
 
