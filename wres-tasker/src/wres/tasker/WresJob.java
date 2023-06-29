@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.spec.KeySpec;
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -274,16 +275,36 @@ public class WresJob
     }
 
     @GET
-    @Path( "/traffic" )
+    @Path( "/info" )
     @Produces( "text/html; charset=utf-8" )
     public Response getEvaluationInQueue()
     {
         int inQueueCount = JOB_RESULTS.getJobStatusCount( JobMetadata.JobState.IN_QUEUE );
+        double queueUsePercentage = ( ( double ) inQueueCount / MAXIMUM_EVALUATION_COUNT ) * 100;
+        String totalWorkers = System.getProperty( "wres.numberOfWorkers" );
+        int totalWorkersNumber = 0;
+        try
+        {
+            totalWorkersNumber = Integer.parseInt( totalWorkers );
+        }
+        catch ( NumberFormatException e )
+        {
+            LOGGER.warn( "Discovered an invalid 'wres.numberOfWorkers'. Expected a number, but got: "
+                         + " {}.", totalWorkers );
+        }
         int inProgressCount = JOB_RESULTS.getJobStatusCount( JobMetadata.JobState.IN_PROGRESS );
+        double workersUsePercentage = 0;
+        if ( totalWorkersNumber != 0 )
+        {
+            workersUsePercentage = ( ( double ) inProgressCount / totalWorkersNumber ) * 100;
+        }
+        DecimalFormat df = new DecimalFormat( "0.00" );
 
         String htmlResponse = "<html><body><h1>Evaluations in Queue and In Progress</h1>"
                               + "<p>IN_QUEUE Count: " + inQueueCount + "</p>"
                               + "<p>IN_PROGRESS Count: " + inProgressCount + "</p>"
+                              + "<p>Queue Used Percentage: " + df.format( queueUsePercentage ) + "%</p>"
+                              + "<p>Worker Used Percentage: " + df.format( workersUsePercentage ) + "%</p>"
                               + "</body></html>";
 
         return Response.ok( htmlResponse ).build();
@@ -349,7 +370,7 @@ public class WresJob
                                                    Verb.CONNECTTODB,
                                                    Verb.REFRESHDATABASE,
                                                    Verb.SWITCHDATABASE,
-                                                   Verb.MIGRATEDATABASE);
+                                                   Verb.MIGRATEDATABASE );
         boolean usingToken = verbsNeedingAdminToken.contains( actualVerb );
         if ( ( adminTokenHash != null ) && ( usingToken ) )
         {
@@ -431,7 +452,7 @@ public class WresJob
         String usedDatabasePort = null;
         if ( actualVerb == Verb.SWITCHDATABASE
              || ( actualVerb == Verb.CLEANDATABASE && !additionalArguments.isEmpty() )
-             || ( actualVerb == Verb.MIGRATEDATABASE && !additionalArguments.isEmpty() ))
+             || ( actualVerb == Verb.MIGRATEDATABASE && !additionalArguments.isEmpty() ) )
         {
             LOGGER.info( "Switch, clean, or migrate requested. Parsing additional arguments." );
             if ( additionalArguments.size() != 3 )
