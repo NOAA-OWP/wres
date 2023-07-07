@@ -300,11 +300,13 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
                                                                                                this.desiredUnit );
                     scaleWarnings.addAll( rescaled.getValidationEvents() );
                     TimeSeries<Double> rescaledSeries = rescaled.getTimeSeries();
-                    Event<Double> rescaledEvent = rescaledSeries.getEvents()
-                                                                .first();
+                    SortedSet<Event<Double>> rescaledEvents = rescaledSeries.getEvents();
 
-                    if ( Objects.nonNull( rescaledEvent ) )
+                    // Event exists
+                    if ( !rescaledEvents.isEmpty()
+                         && Objects.nonNull( rescaledEvents.first() ) )
                     {
+                        Event<Double> rescaledEvent = rescaledEvents.first();
                         labelStrings[count] = year + "";
                         members[count] = rescaledEvent.getValue();
                         count++;

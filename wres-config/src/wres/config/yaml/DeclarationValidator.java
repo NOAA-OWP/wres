@@ -455,17 +455,16 @@ public class DeclarationValidator
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
                                                .setStatusLevel( StatusLevel.ERROR )
-                                               .setEventMessage(
-                                                       "The declaration does not contain any datasets with a data "
-                                                       + "type of "
-                                                       + DataType.ENSEMBLE_FORECASTS
-                                                       + " or "
-                                                       + DataType.SINGLE_VALUED_FORECASTS
-                                                       + ", but some of the declaration is designed for these data "
-                                                       + "types: "
-                                                       + forecastDeclaration
-                                                       + ". Please remove this ensemble declaration or correct the "
-                                                       + "data types." )
+                                               .setEventMessage( "The declaration does not contain any datasets with a "
+                                                                 + "data type of "
+                                                                 + DataType.ENSEMBLE_FORECASTS
+                                                                 + " or "
+                                                                 + DataType.SINGLE_VALUED_FORECASTS
+                                                                 + ", but some of the declaration is designed for these "
+                                                                 + "data types: "
+                                                                 + forecastDeclaration
+                                                                 + ". Please remove this ensemble declaration or "
+                                                                 + "correct the data types." )
                                                .build();
                 events.add( event );
             }
@@ -504,6 +503,33 @@ public class DeclarationValidator
                                                                        + "data types or remove the "
                                                                        + "'classifier_thresholds'." )
                                                                .build();
+            events.add( event );
+        }
+
+        // Generated baseline declared, but the type is a forecast type
+        if ( DeclarationUtilities.hasGeneratedBaseline( declaration.baseline() )
+             && Objects.nonNull( declaration.baseline()
+                                            .dataset()
+                                            .type() )
+             && declaration.baseline()
+                           .dataset()
+                           .type()
+                           .isForecastType() )
+        {
+            EvaluationStatusEvent event =
+                    EvaluationStatusEvent.newBuilder()
+                                         .setStatusLevel( StatusLevel.ERROR )
+                                         .setEventMessage( "The declaration contains a 'baseline' with a 'method' of '"
+                                                           + declaration.baseline()
+                                                                        .generatedBaseline()
+                                                                        .method()
+                                                           + "', which requires observation-like data sources, but the "
+                                                           + "declared data 'type' is '"
+                                                           + declaration.baseline()
+                                                                        .dataset()
+                                                                        .type()
+                                                           + "'. Please change the data 'type' and try again." )
+                                         .build();
             events.add( event );
         }
 
@@ -571,9 +597,7 @@ public class DeclarationValidator
 
             // Persistence not allowed for ensemble-like evaluation
             if ( baseline.method() == GeneratedBaselines.PERSISTENCE
-                 && ( declaration.right()
-                                 .type() == DataType.ENSEMBLE_FORECASTS
-                      || !ensembleDeclaration.isEmpty() ) )
+                 && !ensembleDeclaration.isEmpty() )
             {
                 EvaluationStatusEvent event =
                         EvaluationStatusEvent.newBuilder()
@@ -581,8 +605,8 @@ public class DeclarationValidator
                                              .setEventMessage( "Cannot declare a 'persistence' baseline for an "
                                                                + "evaluation that contains ensemble forecasts. Please "
                                                                + "remove the 'persistence' baseline or remove the "
-                                                               + "ensemble 'type' and/or ensemble declaration and try "
-                                                               + "again. The following ensemble declaration was "
+                                                               + "ensemble declaration and try again. The following "
+                                                               + "ensemble declaration was "
                                                                + "discovered: "
                                                                + ensembleDeclaration )
                                              .build();

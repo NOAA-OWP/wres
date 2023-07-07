@@ -329,7 +329,7 @@ public class DeclarationUtilities
         try
         {
             mask = reader.read( wktString );
-            if( Objects.nonNull( srid ) )
+            if ( Objects.nonNull( srid ) )
             {
                 mask.setSRID( srid.intValue() );
             }
@@ -1153,7 +1153,7 @@ public class DeclarationUtilities
     static Set<String> getEnsembleDeclaration( EvaluationDeclaration declaration )
     {
         EvaluationDeclarationBuilder builder = EvaluationDeclarationBuilder.builder( declaration );
-        return getEnsembleDeclaration( builder );
+        return DeclarationUtilities.getEnsembleDeclaration( builder );
     }
 
     /**
@@ -1165,7 +1165,7 @@ public class DeclarationUtilities
     static Set<String> getForecastDeclaration( EvaluationDeclaration declaration )
     {
         EvaluationDeclarationBuilder builder = EvaluationDeclarationBuilder.builder( declaration );
-        return getForecastDeclaration( builder );
+        return DeclarationUtilities.getForecastDeclaration( builder );
     }
 
     /**
@@ -1178,16 +1178,34 @@ public class DeclarationUtilities
     {
         Set<String> ensembleDeclaration = new TreeSet<>();
 
+        // Explicit ensemble type declared for the predicted data?
+        if ( builder.right()
+                    .type() == DataType.ENSEMBLE_FORECASTS )
+        {
+            ensembleDeclaration.add( "The 'type' of 'predicted' data was 'ensemble forecasts'." );
+        }
+
+        // Explicit ensemble type declared for the baseline data?
+        if ( DeclarationUtilities.hasBaseline( builder )
+             && builder.baseline()
+                       .dataset()
+                       .type() == DataType.ENSEMBLE_FORECASTS )
+        {
+            ensembleDeclaration.add( "The 'type' of 'baseline' data was 'ensemble forecasts'." );
+        }
+
         // Ensemble filter on predicted dataset?
-        if ( Objects.nonNull( builder.right().ensembleFilter() ) )
+        if ( Objects.nonNull( builder.right()
+                                     .ensembleFilter() ) )
         {
             ensembleDeclaration.add( "An 'ensemble_filter' was declared on the predicted dataset." );
         }
 
         // Ensemble filter on baseline dataset?
-        if ( hasBaseline( builder ) && Objects.nonNull( builder.baseline()
-                                                               .dataset()
-                                                               .ensembleFilter() ) )
+        if ( DeclarationUtilities.hasBaseline( builder )
+             && Objects.nonNull( builder.baseline()
+                                        .dataset()
+                                        .ensembleFilter() ) )
         {
             ensembleDeclaration.add( "An 'ensemble_filter' was declared on the baseline dataset." );
         }

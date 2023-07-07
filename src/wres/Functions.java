@@ -770,7 +770,7 @@ final class Functions
      * @param shortName the short name
      * @param longName the long name
      * @param description the description
-     * @param isSimpleOperation whether the operation is "simple" and does not, therefore, require spin-up pr tear-down
+     * @param isSimpleOperation whether the operation is "simple" and does not, therefore, require spin-up or tear-down
      */
     private record WresFunction( String shortName,
                                  String longName,

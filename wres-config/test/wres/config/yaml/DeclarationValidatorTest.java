@@ -1501,14 +1501,14 @@ class DeclarationValidatorTest
     @Test
     void testClimatologyWithInvalidDatesProducesError()
     {
-        GeneratedBaseline persistence = GeneratedBaselineBuilder.builder()
+        GeneratedBaseline climatology = GeneratedBaselineBuilder.builder()
                                                                 .method( GeneratedBaselines.CLIMATOLOGY )
                                                                 .maximumDate( Instant.MIN )
                                                                 .minimumDate( Instant.MAX )
                                                                 .build();
         BaselineDataset baseline = BaselineDatasetBuilder.builder()
                                                          .dataset( this.defaultDataset )
-                                                         .generatedBaseline( persistence )
+                                                         .generatedBaseline( climatology )
                                                          .build();
 
         EvaluationDeclaration declaration =
@@ -1523,6 +1523,35 @@ class DeclarationValidatorTest
         assertTrue( DeclarationValidatorTest.contains( events,
                                                        "Discovered a climatological baseline whose "
                                                        + "'maximum_date'",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testClimatologyWithInvalidDataTypeProducesError()
+    {
+        GeneratedBaseline climatology = GeneratedBaselineBuilder.builder()
+                                                                .method( GeneratedBaselines.CLIMATOLOGY )
+                                                                .build();
+        Dataset dataset = DatasetBuilder.builder( this.defaultDataset )
+                                        .type( DataType.ENSEMBLE_FORECASTS )
+                                        .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( dataset )
+                                                         .generatedBaseline( climatology )
+                                                         .build();
+
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .baseline( baseline )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "which requires observation-like data sources, but the "
+                                                       + "declared data",
                                                        StatusLevel.ERROR ) );
     }
 

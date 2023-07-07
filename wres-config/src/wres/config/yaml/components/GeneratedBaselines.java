@@ -11,13 +11,34 @@ import wres.config.yaml.DeclarationUtilities;
 public enum GeneratedBaselines
 {
     /** Climatology. */
-    @JsonProperty( "climatology" ) CLIMATOLOGY,
+    @JsonProperty( "climatology" ) CLIMATOLOGY( true ),
     /** Persistence. */
-    @JsonProperty( "persistence" ) PERSISTENCE;
+    @JsonProperty( "persistence" ) PERSISTENCE( false );
+    /** Whether the generated baseline is an ensemble or single-valued. */
+    private final boolean isEnsemble;
+
+    /**
+     * @return true if the generated baseline is an ensemble, false for single-valued
+     */
+
+    public boolean isEnsemble()
+    {
+        return this.isEnsemble;
+    }
 
     @Override
     public String toString()
     {
         return DeclarationUtilities.fromEnumName( this.name() );
+    }
+
+    /**
+     * Creates an instance.
+     * @param isEnsemble is true if the generated baseline is an ensemble, false for single-valued
+     */
+
+    GeneratedBaselines( boolean isEnsemble )
+    {
+        this.isEnsemble = isEnsemble;
     }
 }
