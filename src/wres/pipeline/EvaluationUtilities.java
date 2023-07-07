@@ -31,6 +31,7 @@ import wres.config.yaml.DeclarationValidator;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.GeneratedBaselines;
 import wres.datamodel.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
@@ -1212,6 +1213,7 @@ class EvaluationUtilities
                                                                                     PoolParameters poolParameters )
     {
         Project project = evaluationDetails.project();
+        EvaluationDeclaration declaration = evaluationDetails.declaration();
 
         // Separate metrics for a baseline?
         boolean separateMetrics = EvaluationUtilities.hasSeparateMetricsForBaseline( project );
@@ -1226,6 +1228,24 @@ class EvaluationUtilities
         // Create the pool suppliers, depending on the types of data to be retrieved
         if ( project.hasGeneratedBaseline() )
         {
+            GeneratedBaselines method = declaration.baseline()
+                                                   .generatedBaseline()
+                                                   .method();
+            if ( !method.isEnsemble() )
+            {
+                List<GeneratedBaselines> supported = Arrays.stream( GeneratedBaselines.values() )
+                                                           .filter( GeneratedBaselines::isEnsemble )
+                                                           .toList();
+                throw new DeclarationException( "Discovered an evaluation with ensemble forecasts and a generated "
+                                                + "'baseline' with a 'method' of '"
+                                                + method
+                                                + "'. However, this 'method' produces single-valued forecasts, which "
+                                                + "is not allowed. Please declare a baseline that contains ensemble "
+                                                + "forecasts and try again. The following 'method' options support "
+                                                + "ensemble forecasts: "
+                                                + supported );
+            }
+
             RetrieverFactory<Double, Ensemble, Double> retrieverFactory;
             if ( evaluationDetails.hasInMemoryStore() )
             {
@@ -1243,9 +1263,9 @@ class EvaluationUtilities
             }
 
             // Create the pool suppliers for all pools in this evaluation
-            poolSuppliers = poolFactory.getEnsemblePoolsWithSingleValuedBaseline( poolRequests,
-                                                                                  retrieverFactory,
-                                                                                  poolParameters );
+            poolSuppliers = poolFactory.getEnsemblePoolsWithGeneratedBaseline( poolRequests,
+                                                                               retrieverFactory,
+                                                                               poolParameters );
         }
         else
         {

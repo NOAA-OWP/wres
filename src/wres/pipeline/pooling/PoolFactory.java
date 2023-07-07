@@ -318,13 +318,18 @@ public class PoolFactory
      */
 
     public List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>>>
-    getEnsemblePoolsWithSingleValuedBaseline( List<PoolRequest> poolRequests,
-                                              RetrieverFactory<Double, Ensemble, Double> retrieverFactory,
-                                              PoolParameters poolParameters )
+    getEnsemblePoolsWithGeneratedBaseline( List<PoolRequest> poolRequests,
+                                           RetrieverFactory<Double, Ensemble, Double> retrieverFactory,
+                                           PoolParameters poolParameters )
     {
         Objects.requireNonNull( poolRequests, CANNOT_CREATE_POOLS_WITHOUT_LIST_OF_POOL_REQUESTS );
         Objects.requireNonNull( retrieverFactory, CANNOT_CREATE_POOLS_WITHOUT_A_RETRIEVER_FACTORY );
         Objects.requireNonNull( poolParameters, CANNOT_CREATE_POOLS_WITHOUT_POOL_PARAMETERS );
+
+        if ( !project.hasGeneratedBaseline() )
+        {
+            throw new IllegalArgumentException( "Expected a project that requires a generated baseline." );
+        }
 
         // Optimize, if possible, by conducting feature-batched retrieval. Each list of pool requests is associated
         // with the same feature group, which may be a composition of features to decompose
@@ -361,7 +366,7 @@ public class PoolFactory
             }
 
             List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Ensemble>>>>> nextSuppliers =
-                    this.getEnsemblePoolsWithSingleValuedBaseline( innerProject, nextPoolRequests, cachingFactory );
+                    this.getEnsemblePoolsWithGeneratedBaseline( innerProject, nextPoolRequests, cachingFactory );
 
             // Optimized? In that case, decompose the feature-batched pools into feature-specific pools
             if ( optimized.isOptimized() )
@@ -704,9 +709,9 @@ public class PoolFactory
      */
 
     private List<SupplierWithPoolRequest<Pool<TimeSeries<Pair<Double, Ensemble>>>>>
-    getEnsemblePoolsWithSingleValuedBaseline( Project project,
-                                              List<PoolRequest> poolRequests,
-                                              RetrieverFactory<Double, Ensemble, Double> retrieverFactory )
+    getEnsemblePoolsWithGeneratedBaseline( Project project,
+                                           List<PoolRequest> poolRequests,
+                                           RetrieverFactory<Double, Ensemble, Double> retrieverFactory )
     {
         EvaluationDeclaration declaration = project.getDeclaration();
 
@@ -784,31 +789,28 @@ public class PoolFactory
         Duration pairFrequency = this.getPairFrequency( declaration );
 
         // Create a feature-specific baseline generator function (e.g., persistence), if required
-        Function<Set<Feature>, BaselineGenerator<Ensemble>> baselineGenerator = null;
-        // Generated baseline declared?
-        if ( project.hasGeneratedBaseline() )
-        {
-            GeneratedBaseline declaredGenerator = declaration.baseline()
-                                                             .generatedBaseline();
-            GeneratedBaselines method = declaredGenerator.method();
-            LOGGER.debug( "While creating pools for project '{}', discovered a baseline "
-                          + "to generate using method '{}' for data source: {}.",
-                          projectId,
-                          method,
-                          declaration.baseline() );
+        Function<Set<Feature>, BaselineGenerator<Ensemble>> baselineGenerator;
 
-            if ( method == GeneratedBaselines.CLIMATOLOGY )
-            {
-                baselineGenerator = this.getEnsembleClimatologyBaseline( declaredGenerator,
-                                                                         retrieverFactory,
-                                                                         leftUpscaler );
-            }
-            else
-            {
-                throw new UnsupportedOperationException( "While attempting to generate a baseline, encountered an "
-                                                         + "unrecognized type of baseline to generate: "
-                                                         + method );
-            }
+        GeneratedBaseline declaredGenerator = declaration.baseline()
+                                                         .generatedBaseline();
+        GeneratedBaselines method = declaredGenerator.method();
+        LOGGER.debug( "While creating pools for project '{}', discovered a baseline "
+                      + "to generate using method '{}' for data source: {}.",
+                      projectId,
+                      method,
+                      declaration.baseline() );
+
+        if ( method == GeneratedBaselines.CLIMATOLOGY )
+        {
+            baselineGenerator = this.getEnsembleClimatologyBaseline( declaredGenerator,
+                                                                     retrieverFactory,
+                                                                     leftUpscaler );
+        }
+        else
+        {
+            throw new UnsupportedOperationException( "While attempting to generate a baseline, encountered an "
+                                                     + "unrecognized type of baseline to generate: "
+                                                     + method );
         }
 
         // Build and return the pool suppliers

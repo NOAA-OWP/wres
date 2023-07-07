@@ -1202,7 +1202,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         if ( Objects.nonNull( this.baselineGenerator ) != this.project.hasGeneratedBaseline() )
         {
             throw new IllegalArgumentException( messageStart
-                                                + " a baseline generator should be supplied when required, "
+                                                + "a baseline generator should be supplied when required, "
                                                 + "otherwise it should not be supplied." );
         }
     }
