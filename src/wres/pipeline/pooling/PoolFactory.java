@@ -98,22 +98,34 @@ public class PoolFactory
     /** Part of a message string about disallowed declaration that is re-used. */
     private static final String WHICH_IS_NOT_ALLOWED = "', which is not allowed.";
 
+    /** Re-used string. */
     private static final String CANNOT_CREATE_POOLS_WITHOUT_A_RETRIEVER_FACTORY =
             "Cannot create pools without a retriever factory.";
 
+    /** Re-used string. */
     private static final String CANNOT_CREATE_POOLS_WITHOUT_LIST_OF_POOL_REQUESTS =
             "Cannot create pools without list of pool requests.";
 
+    /** Re-used string. */
     private static final String CANNOT_CREATE_POOLS_FROM_A_NULL_PROJECT = "Cannot create pools from a null project.";
 
+    /** Re-used string. */
     private static final String CANNOT_CREATE_POOLS_WITHOUT_POOL_PARAMETERS = "Cannot create pools without pool "
                                                                               + "parameters.";
+
+    /** Re-used string. */
     public static final String BUILDING_POOL_SUPPLIERS_FOR_FEATURE_GROUP_WHICH_CONTAINS_POOL_REQUESTS =
             "Building pool suppliers for feature group {}, which contains {} pool requests.";
+
+    /** Re-used string. */
     public static final String BUILDING_A_CACHING_RETRIEVER_FACTORY_TO_CACHE_THE_RETRIEVAL_OF_THE_CLIMATOLOGICAL_AND =
             "Building a caching retriever factory to cache the retrieval of the climatological and ";
+
+    /** Re-used string. */
     public static final String GENERATED_BASELINE_DATA_WHERE_APPLICABLE_ACROSS_ALL_POOLS_WITHIN_FEATURE_GROUP =
             "generated baseline data (where applicable) across all pools within feature group {}.";
+
+    /** Re-used string. */
     public static final String CREATING_POOL_SUPPLIERS_FOR_PROJECT = "Creating pool suppliers for project '{}'.";
 
     /** The project. */
