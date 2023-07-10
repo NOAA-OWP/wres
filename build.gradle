@@ -378,7 +378,11 @@ project(':wres-io')
             exclude group: 'org.jdom', module: 'jdom2'
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
+            // Remove older guava version. TODO: remove when the CDM catches up
+            exclude group: 'com.google.guava', module: 'guava'
         }
+        // Include later dependency versions for the excluded dependencies above
+        implementation 'com.google.guava:guava:32.1.1-jre'
 
         implementation 'org.apache.commons:commons-compress:1.23.0'
 
@@ -1380,7 +1384,13 @@ project(':wres-eventsbroker')
 
             // Because of CVE-2022-24823. TODO: remove when Artemis catches up
             exclude group: 'io.netty'
+
+            // Because of CVE-2023-2976, CVE-2020-8908. TODO: remove when Artemis catches up
+            exclude group: 'com.google.guava', module: 'guava'
         }
+
+        // Include later dependency versions for the excluded dependencies above
+        implementation 'com.google.guava:guava:32.1.1-jre'
 
         // AMQP 1.0 protocol support for the ActiveMQ Artemis server
         implementation( 'org.apache.activemq:artemis-amqp-protocol:2.29.0' )
@@ -1739,7 +1749,11 @@ dependencies
         exclude group: 'org.jdom', module: 'jdom2'
         // Not used at runtime, bloat
         exclude group: 'org.checkerframework', module: 'checker-qual'
+        // Remove older guava version. TODO: remove when the CDM catches up
+        exclude group: 'com.google.guava', module: 'guava'
     }
+    // Include later dependency versions for the excluded dependencies above
+    implementation 'com.google.guava:guava:32.1.1-jre'
 
     // JCIP annotations
     compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
