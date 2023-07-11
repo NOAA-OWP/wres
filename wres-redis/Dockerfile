@@ -1,4 +1,4 @@
-FROM redis:7.0.11-alpine3.18
+FROM redis:6.2.13-alpine3.18
 
 COPY redis.conf /etc/redis/redis.conf
 COPY docker-healthcheck /usr/local/bin/
