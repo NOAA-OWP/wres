@@ -142,11 +142,9 @@ public class BrokerHelper
         }
     }
 
-
     /**
      * Returns a TrustManager that trusts the certificates contained in a
-     * trusted certificates file available on the classpath named
-     * trustedCertificateAuthorities.jks unless -Dwres.trustStore is set and
+     * trusted certificates file passed through -Dwres.trustStore and
      * is a file that exists and has no exception when loading.
      * @return the TrustManager
      */
@@ -159,53 +157,30 @@ public class BrokerHelper
         // to unchecked exception.
         KeyStore customTrustStore = BrokerHelper.getJKSKeyStore();
 
-        boolean useClasspathTrustStore = true;
+        String trustStore = System.getProperty( TRUST_STORE_PROPERTY_NAME );
 
-        String alternativeTrustStore = System.getProperty( TRUST_STORE_PROPERTY_NAME );
+        Path alternativeTrustStorePath = Paths.get( trustStore );
+        File alternativeTrustStoreFile = alternativeTrustStorePath.toFile();
 
-        if ( alternativeTrustStore != null )
+        if ( alternativeTrustStoreFile.isFile()
+             && alternativeTrustStoreFile.canRead() )
         {
-            Path alternativeTrustStorePath = Paths.get( alternativeTrustStore );
-            File alternativeTrustStoreFile = alternativeTrustStorePath.toFile();
-
-            if ( alternativeTrustStoreFile.isFile()
-                 && alternativeTrustStoreFile.canRead() )
+            try ( InputStream alternativeTrustStream =
+                          new FileInputStream( alternativeTrustStoreFile ) )
             {
-                try ( InputStream alternativeTrustStream =
-                              new FileInputStream( alternativeTrustStoreFile ) )
-                {
-                    customTrustStore.load( alternativeTrustStream,
-                                           "changeit".toCharArray() );
-
-                    // Only when the alternative exists, is read, is loaded do
-                    // we skip later step of using truststore from classpath.
-                    LOGGER.warn( "Trusting alternative Certificate Authority at '{}'",
-                                 alternativeTrustStore );
-                    useClasspathTrustStore = false;
-                }
-                catch ( IOException | NoSuchAlgorithmException | CertificateException e )
-                {
-                    LOGGER.warn( "Could not use alternative Certificate Authority at '{}'",
-                                 alternativeTrustStore, e );
-                    // Continue and use the default trust store.
-                }
-            }
-        }
-
-        if ( useClasspathTrustStore )
-        {
-            try ( InputStream customTrustStoreFile =
-                          BrokerHelper.class
-                                      .getClassLoader()
-                                      .getResourceAsStream( ourCustomTrustFileName ) )
-            {
-                customTrustStore.load( customTrustStoreFile,
+                customTrustStore.load( alternativeTrustStream,
                                        "changeit".toCharArray() );
+
+                // Only when the alternative exists, is read, is loaded do
+                // we skip later step of using truststore from classpath.
+                LOGGER.warn( "Trusting alternative Certificate Authority at '{}'",
+                             trustStore );
             }
             catch ( IOException | NoSuchAlgorithmException | CertificateException e )
             {
-                throw new IllegalStateException( "WRES could not open TrustStoreFile "
-                                                 + ourCustomTrustFileName, e );
+                LOGGER.warn( "Could not use alternative Certificate Authority at '{}'",
+                             trustStore, e );
+                // Continue and use the default trust store.
             }
         }
 
@@ -233,7 +208,6 @@ public class BrokerHelper
 
         throw new IllegalStateException( "WRES expected an X509TrustManager to exist in JRE, but no trust manager was found." );
     }
-
 
     /**
      * Calls KeyStore.getInstance( "JKS" ) and translates checked exceptions to
