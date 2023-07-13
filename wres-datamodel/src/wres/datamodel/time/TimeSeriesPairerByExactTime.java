@@ -208,7 +208,7 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
     private void validateTimeScalesForPairing( TimeSeries<L> left, TimeSeries<R> right )
     {
         if ( left.hasTimeScale() && right.hasTimeScale()
-             && !this.timeScalesAreEqual( left.getTimeScale(), right.getTimeScale() ) )
+             && TimeScaleOuter.isRescalingRequired( left.getTimeScale(), right.getTimeScale() ) )
         {
             throw new PairingException( "Cannot pair two datasets with different time scales. The left time-series "
                                         + "has a time-scale of '"
@@ -249,27 +249,6 @@ public class TimeSeriesPairerByExactTime<L, R> implements TimeSeriesPairer<L, R>
                           right.hashCode(),
                           add );
         }
-    }
-
-    /**
-     * Returns <code>true</code> if the inputs are equal, otherwise <code>false</code>.
-     * 
-     * @param left the left time scale
-     * @param right the right time scale 
-     * @return true if the time scales are equal, otherwise false
-     */
-
-    private boolean timeScalesAreEqual( TimeScaleOuter left, TimeScaleOuter right )
-    {
-        Objects.requireNonNull( left );
-        Objects.requireNonNull( right );
-
-        if ( left.isInstantaneous() && right.isInstantaneous() )
-        {
-            return true;
-        }
-
-        return left.equals( right );
     }
 
     /**

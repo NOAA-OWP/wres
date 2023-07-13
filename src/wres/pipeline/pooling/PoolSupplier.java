@@ -151,7 +151,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
     /** A shim to map from a baseline-ish dataset to a right-ish dataset.
      * TODO: remove this shim when pools support different types of right and baseline data. */
-    private final Function<TimeSeries<B>,TimeSeries<R>> baselineShim;
+    private final Function<TimeSeries<B>, TimeSeries<R>> baselineShim;
 
     /** Left data source. */
     private Supplier<Stream<TimeSeries<L>>> left;
@@ -333,7 +333,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         private TimeSeriesCrossPairer<L, R> crossPairer;
 
         /** A shim to map from a baseline-ish dataset to a right-ish dataset. */
-        private Function<TimeSeries<B>,TimeSeries<R>> baselineShim;
+        private Function<TimeSeries<B>, TimeSeries<R>> baselineShim;
 
         /**
          * @param climatology the climatology to set
@@ -603,7 +603,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
          * @return the builder
          */
 
-        Builder<L,R,B> setBaselineShim( Function<TimeSeries<B>,TimeSeries<R>> baselineShim )
+        Builder<L, R, B> setBaselineShim( Function<TimeSeries<B>, TimeSeries<R>> baselineShim )
         {
             this.baselineShim = baselineShim;
 
@@ -1250,14 +1250,19 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
         TimeSeries<R> scaledRight = rightOrBaseline;
 
-        boolean upscaleLeft = Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( left.getTimeScale() );
+        boolean upscaleLeft = Objects.nonNull( desiredTimeScale )
+                              && Objects.nonNull( left.getTimeScale() )
+                              && TimeScaleOuter.isRescalingRequired( left.getTimeScale(), desiredTimeScale )
+                              && !desiredTimeScale.equals( left.getTimeScale() );
         boolean upscaleRight = Objects.nonNull( desiredTimeScale )
-                               && !desiredTimeScale.equals( rightOrBaseline.getTimeScale() );
+                               && Objects.nonNull( rightOrBaseline.getTimeScale() )
+                               && TimeScaleOuter.isRescalingRequired( rightOrBaseline.getTimeScale(),
+                                                                      desiredTimeScale );
 
         List<EvaluationStatusMessage> statusEvents = new ArrayList<>();
 
         // Get the end times for paired values if upscaling is required. If upscaling both the left and right, the 
-        // superset of intersecting times is thinned to a regular sequence that depends on the desired time scale and 
+        // superset of intersecting times is thinned to a regular sequence that depends on the desired timescale and
         // frequency
         SortedSet<Instant> endsAt = TimeSeriesSlicer.getRegularSequenceOfIntersectingTimes( scaledLeft,
                                                                                             scaledRight,
@@ -1968,7 +1973,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
      * @return the baseline shim
      */
 
-    private Function<TimeSeries<B>,TimeSeries<R>> getBaselineShim()
+    private Function<TimeSeries<B>, TimeSeries<R>> getBaselineShim()
     {
         return this.baselineShim;
     }
@@ -2048,7 +2053,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         Objects.requireNonNull( this.rightFilter, messageStart + "add a filter for the right data." );
         Objects.requireNonNull( this.baselineFilter, messageStart + "add a filter for the baseline data." );
 
-        if( Objects.isNull( this.baselineGenerator ) )
+        if ( Objects.isNull( this.baselineGenerator ) )
         {
             Objects.requireNonNull( this.baselineShim, "add a baseline shim when there is no baseline "
                                                        + "generator." );

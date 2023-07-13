@@ -520,6 +520,38 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
     }
 
     /**
+     * Determine whether rescaling is required.
+     *
+     * @param existingTimeScale the existing timescale
+     * @param desiredTimeScale the desired timescale
+     * @return whether rescaling is required
+     * @throws NullPointerException if either input is null
+     */
+
+    public static boolean isRescalingRequired( TimeScaleOuter existingTimeScale, TimeScaleOuter desiredTimeScale )
+    {
+        Objects.requireNonNull( existingTimeScale );
+        Objects.requireNonNull( desiredTimeScale );
+
+        // Are they equal in size/duration? Check by using a common function and comparing for equality
+        TimeScale existingAdjusted = existingTimeScale.getTimeScale()
+                                                      .toBuilder()
+                                                      .setFunction( TimeScaleFunction.UNKNOWN )
+                                                      .build();
+        TimeScale desiredAdjusted = desiredTimeScale.getTimeScale()
+                                                    .toBuilder()
+                                                    .setFunction( TimeScaleFunction.UNKNOWN )
+                                                    .build();
+
+        // If both instantaneous or both equal or both sizes are equal and one of the functions that makes them differ
+        // is unknown, then no rescaling required, otherwise rescaling required
+        return !( existingTimeScale.equalsOrInstantaneous( desiredTimeScale )
+                  || ( existingAdjusted.equals( desiredAdjusted )
+                       && ( existingTimeScale.getFunction() == TimeScaleFunction.UNKNOWN
+                            || desiredTimeScale.getFunction() == TimeScaleFunction.UNKNOWN ) ) );
+    }
+
+    /**
      * Hidden constructor.
      *
      * @param timeScale the timescale

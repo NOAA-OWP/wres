@@ -171,7 +171,8 @@ class RescalingHelper
                                                                                    desiredUnit );
 
         // Empty time-series
-        if ( timeSeries.getEvents().isEmpty() )
+        if ( timeSeries.getEvents()
+                       .isEmpty() )
         {
             if ( LOGGER.isTraceEnabled() )
             {
@@ -181,7 +182,7 @@ class RescalingHelper
                               ": the time-series contained no events." );
             }
 
-            // Return an empty time-series with the desired time-scale: #93194
+            // Return an empty time-series with the desired timescale: #93194
             TimeSeriesMetadata metadata =
                     new TimeSeriesMetadata.Builder( timeSeries.getMetadata() ).setTimeScale( desiredTimeScale )
                                                                               .build();
@@ -192,7 +193,7 @@ class RescalingHelper
             return RescaledTimeSeriesPlusValidation.of( scaledEmpty, validationEvents );
         }
 
-        // Existing time scale missing and this was allowed during validation
+        // Existing timescale missing and this was allowed during validation
         if ( !timeSeries.hasTimeScale() )
         {
             if ( LOGGER.isTraceEnabled() )
@@ -206,7 +207,7 @@ class RescalingHelper
                               + "scales are the same." );
             }
 
-            // Return a time-series with the desired time-scale: #93194
+            // Return a time-series with the desired timescale: #93194
             TimeSeriesMetadata metadata =
                     new TimeSeriesMetadata.Builder( timeSeries.getMetadata() ).setTimeScale( desiredTimeScale )
                                                                               .build();
@@ -219,7 +220,9 @@ class RescalingHelper
         }
 
         // Existing and desired are both instantaneous
-        if ( timeSeries.getTimeScale().isInstantaneous() && desiredTimeScale.isInstantaneous() )
+        if ( timeSeries.getTimeScale()
+                       .isInstantaneous()
+             && desiredTimeScale.isInstantaneous() )
         {
             if ( LOGGER.isTraceEnabled() )
             {
@@ -238,9 +241,10 @@ class RescalingHelper
 
         // If the period is the same, return the existing series with the desired scale
         // The validation of the function happens above. For example, the existing could be UNKNOWN
-        if ( desiredTimeScale.hasPeriod() && desiredTimeScale.getPeriod()
-                                                             .equals( timeSeries.getTimeScale()
-                                                                                .getPeriod() ) )
+        if ( desiredTimeScale.hasPeriod()
+             && desiredTimeScale.getPeriod()
+                                .equals( timeSeries.getTimeScale()
+                                                   .getPeriod() ) )
         {
             if ( LOGGER.isTraceEnabled() )
             {
