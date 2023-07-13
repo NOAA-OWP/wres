@@ -213,15 +213,16 @@ class LocationRootDocument
      */
     List<Location> getLocations()
     {
+        if ( this.locationInfos == null || this.locationInfos.isEmpty() ) {
+            throw new NoDataException( "Unable to get wrds location data. Check that the URL is formed correctly" );
+        }
+
         List<Location> locations = new ArrayList<>();
         for ( LocationInformation info : this.locationInfos )
         {
             locations.add( info.locations() );
         }
 
-        if ( locations.isEmpty() ) {
-            throw new NoDataException( "Unable to get wrds location data. Check that the URL is formed correctly" );
-        }
         return locations;
     }
 
