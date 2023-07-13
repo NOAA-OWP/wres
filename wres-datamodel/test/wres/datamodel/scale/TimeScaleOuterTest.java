@@ -20,7 +20,7 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
  * Tests the {@link TimeScaleOuter}.
- * 
+ *
  * @author James Brown
  */
 final class TimeScaleOuterTest
@@ -499,4 +499,84 @@ final class TimeScaleOuterTest
         assertEquals( Duration.ofDays( 91 ), TimeScaleOuter.getOrInferPeriodFromTimeScale( outer ) );
     }
 
+    @Test
+    void testRescalingIsNotRequiredForEqualScales()
+    {
+        TimeScaleOuter existing = TimeScaleOuter.of( Duration.ofDays( 1 ) );
+        TimeScaleOuter desired = TimeScaleOuter.of( Duration.ofDays( 1 ) );
+
+        assertFalse( TimeScaleOuter.isRescalingRequired( existing, desired ) );
+    }
+
+    @Test
+    void testRescalingIsNotRequiredForEqualMagnitudeScalesWithUnknownFunction()
+    {
+        TimeScaleOuter existing = TimeScaleOuter.of( Duration.ofDays( 1 ), TimeScaleFunction.UNKNOWN );
+        TimeScaleOuter desired = TimeScaleOuter.of( Duration.ofDays( 1 ), TimeScaleFunction.MAXIMUM );
+
+        assertFalse( TimeScaleOuter.isRescalingRequired( existing, desired ) );
+    }
+
+    @Test
+    void testRescalingIsNotRequiredForInstantaneousScales()
+    {
+        TimeScaleOuter existing = TimeScaleOuter.of( Duration.ofSeconds( 1 ) );
+        TimeScaleOuter desired = TimeScaleOuter.of( Duration.ofSeconds( 60 ) );
+
+        assertFalse( TimeScaleOuter.isRescalingRequired( existing, desired ) );
+    }
+
+    @Test
+    void testRescalingIsRequiredForEqualMagnitudeScalesWithDifferentFunctions()
+    {
+        TimeScaleOuter existing = TimeScaleOuter.of( Duration.ofDays( 1 ), TimeScaleFunction.MEAN );
+        TimeScaleOuter desired = TimeScaleOuter.of( Duration.ofDays( 1 ), TimeScaleFunction.MAXIMUM );
+
+        assertTrue( TimeScaleOuter.isRescalingRequired( existing, desired ) );
+    }
+
+    @Test
+    void testRescalingIsRequiredForScalesWithDifferentPeriods()
+    {
+        TimeScaleOuter existing = TimeScaleOuter.of( Duration.ofHours( 1 ) );
+        TimeScaleOuter desired = TimeScaleOuter.of( Duration.ofHours( 2 ) );
+
+        assertTrue( TimeScaleOuter.isRescalingRequired( existing, desired ) );
+    }
+
+    @Test
+    void testRescalingIsRequiredForScalesWithDifferentMonthDays()
+    {
+        TimeScale existing = TimeScale.newBuilder()
+                                      .setStartDay( 1 )
+                                      .setStartMonth( 1 )
+                                      .setEndDay( 31 )
+                                      .setEndMonth( 3 )
+                                      .build();
+        TimeScaleOuter existingOuter = TimeScaleOuter.of( existing );
+        TimeScale desired = TimeScale.newBuilder()
+                                     .setStartDay( 2 )
+                                     .setStartMonth( 2 )
+                                     .setEndDay( 30 )
+                                     .setEndMonth( 4 )
+                                     .build();
+        TimeScaleOuter desiredOuter = TimeScaleOuter.of( desired );
+
+        assertTrue( TimeScaleOuter.isRescalingRequired( existingOuter, desiredOuter ) );
+    }
+
+    @Test
+    void testRescalingIsRequiredForPeriodScaleAndMonthDayScale()
+    {
+        TimeScaleOuter existing = TimeScaleOuter.of( Duration.ofHours( 1 ) );
+        TimeScale desiredInner = TimeScale.newBuilder()
+                                          .setStartDay( 2 )
+                                          .setStartMonth( 2 )
+                                          .setEndDay( 30 )
+                                          .setEndMonth( 4 )
+                                          .build();
+        TimeScaleOuter desired = TimeScaleOuter.of( desiredInner );
+
+        assertTrue( TimeScaleOuter.isRescalingRequired( existing, desired ) );
+    }
 }

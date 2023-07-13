@@ -4,7 +4,6 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoField;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -15,10 +14,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -26,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.components.GeneratedBaseline;
 import wres.config.yaml.components.GeneratedBaselineBuilder;
-import wres.datamodel.messages.EvaluationStatusMessage;
+import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
@@ -38,6 +39,7 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
+import wres.statistics.generated.TimeScale;
 
 /**
  * <p>Generates a climatological time-series from a source of climatological data supplied on construction. The shape
@@ -162,7 +164,7 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
         TimeScaleOuter desiredTimeScale = template.getTimeScale();
         if ( Objects.nonNull( desiredTimeScale )
              && Objects.nonNull( this.getSourceTimeScale() )
-             && !desiredTimeScale.equals( this.getSourceTimeScale() ) )
+             && TimeScaleOuter.isRescalingRequired( this.getSourceTimeScale(), desiredTimeScale ) )
         {
             return this.getClimatologyWithUpscaling( template );
         }
@@ -187,13 +189,17 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
                                                            .stream()
                                                            .collect( Collectors.toMap( Event::getTime,
                                                                                        Function.identity() ) );
-
-        // Identify the years with climatology values
-        Set<Integer> years = eventsToSearch.keySet()
-                                           .stream()
-                                           .map( n -> n.atZone( ZONE_ID ) )
-                                           .map( n -> n.get( ChronoField.YEAR ) )
-                                           .collect( Collectors.toSet() );
+        // Find the superset of times to search
+        SortedSet<Instant> times = new TreeSet<>( eventsToSearch.keySet() );
+        int start = times.first()
+                         .atZone( ZONE_ID )
+                         .get( ChronoField.YEAR );
+        int stop = times.last()
+                        .atZone( ZONE_ID )
+                        .get( ChronoField.YEAR ) + 1;  // Render upper bound inclusive
+        Set<Integer> years = IntStream.range( start, stop )
+                                      .boxed()
+                                      .collect( Collectors.toSet() );
 
         // Adjust the template metadata to use source units
         String sourceUnit = source.getMetadata()
@@ -259,29 +265,28 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
 
         // Identify the valid times for which upscaled values are required
         TimeSeries<Double> source = this.getClimatologySourceForTemplate( template );
-        Set<Integer> years = source.getEvents()
-                                   .stream()
-                                   .map( Event::getTime )
-                                   .map( n -> n.atZone( ZONE_ID ) )
-                                   .map( n -> n.get( ChronoField.YEAR ) )
-                                   .collect( Collectors.toSet() );
+        // Identify the superset of years with climatology values
+        SortedSet<Event<Double>> events = source.getEvents();
+        int start = events.first()
+                          .getTime()
+                          .atZone( ZONE_ID )
+                          .get( ChronoField.YEAR );
+        int stop = events.last()
+                         .getTime()
+                         .atZone( ZONE_ID )
+                         .get( ChronoField.YEAR ) + 1;  // Render upper bound inclusive
+        Set<Integer> years = IntStream.range( start, stop )
+                                      .boxed()
+                                      .collect( Collectors.toSet() );
 
-        // Adjust the template metadata to use source units
-        String sourceUnit = source.getMetadata()
-                                  .getUnit();
-        TimeSeriesMetadata adjusted = this.getAdjustedMetadata( template.getMetadata(), sourceUnit );
-        TimeSeries.Builder<Ensemble> builder = new TimeSeries.Builder<Ensemble>().setMetadata( adjusted );
-        List<EvaluationStatusMessage> scaleWarnings = new ArrayList<>();
-
-        // Iterate through the template events and create an upscaled climatology event
+        // Iterate through the template events and add a distinct year for each one
+        SortedSet<Instant> targetTimes = new TreeSet<>();
+        Map<Instant, SortedSet<Instant>> ensembleTimes = new TreeMap<>();
         for ( Event<?> nextEvent : template.getEvents() )
         {
             Instant nextTime = nextEvent.getTime();
             ZonedDateTime time = nextTime.atZone( ZONE_ID );
-
-            String[] labelStrings = new String[years.size()];
-            double[] members = new double[labelStrings.length];
-            int count = 0;
+            SortedSet<Instant> nextEnsemble = new TreeSet<>();
 
             // One event per year of record, at most
             for ( int year : years )
@@ -293,41 +298,106 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
                 if ( year != time.get( ChronoField.YEAR )
                      && this.isAdmissable( targetTime ) )
                 {
-                    RescaledTimeSeriesPlusValidation<Double> rescaled = this.upscaler.upscale( source,
-                                                                                               template.getTimeScale(),
-                                                                                               new TreeSet<>( Set.of(
-                                                                                                       targetTime ) ),
-                                                                                               this.desiredUnit );
-                    scaleWarnings.addAll( rescaled.getValidationEvents() );
-                    TimeSeries<Double> rescaledSeries = rescaled.getTimeSeries();
-                    SortedSet<Event<Double>> rescaledEvents = rescaledSeries.getEvents();
-
-                    // Event exists
-                    if ( !rescaledEvents.isEmpty()
-                         && Objects.nonNull( rescaledEvents.first() ) )
-                    {
-                        Event<Double> rescaledEvent = rescaledEvents.first();
-                        labelStrings[count] = year + "";
-                        members[count] = rescaledEvent.getValue();
-                        count++;
-                    }
+                    targetTimes.add( targetTime );
+                    nextEnsemble.add( targetTime );
                 }
             }
-
-            // Adjust the size for the events discovered
-            if ( count < labelStrings.length )
-            {
-                labelStrings = Arrays.copyOfRange( labelStrings, 0, count );
-                members = Arrays.copyOfRange( members, 0, count );
-            }
-
-            Ensemble.Labels labels = Ensemble.Labels.of( labelStrings );
-            Ensemble ensemble = Ensemble.of( members, labels );
-            Event<Ensemble> ensembleEvent = Event.of( nextTime, ensemble );
-            builder.addEvent( ensembleEvent );
+            ensembleTimes.put( nextTime, nextEnsemble );
         }
 
-        RescaledTimeSeriesPlusValidation.logScaleValidationWarnings( source, scaleWarnings );
+        // If the template series has an unknown timescale function, assume it is mean
+        TimeScaleOuter desiredTimeScale = template.getTimeScale();
+        if ( desiredTimeScale.getFunction() == TimeScale.TimeScaleFunction.UNKNOWN )
+        {
+            TimeScale adjusted = desiredTimeScale.getTimeScale()
+                                                 .toBuilder()
+                                                 .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                                 .build();
+            desiredTimeScale = TimeScaleOuter.of( adjusted );
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "When creating an upscaled climatology time-series from a template time-series, "
+                              + "encountered a template time-series with UNKNOWN timescale function. Assuming that the "
+                              + "timescale function is MEAN." );
+            }
+        }
+
+        // Rescale
+        RescaledTimeSeriesPlusValidation<Double> rescaled = this.upscaler.upscale( source,
+                                                                                   desiredTimeScale,
+                                                                                   targetTimes,
+                                                                                   this.desiredUnit );
+
+        RescaledTimeSeriesPlusValidation.logScaleValidationWarnings( source, rescaled.getValidationEvents() );
+
+        TimeSeries<Double> rescaledSeries = rescaled.getTimeSeries();
+
+        return this.getEnsembleSeriesFromRescaledSeries( source,
+                                                         template.getMetadata(),
+                                                         rescaledSeries,
+                                                         ensembleTimes );
+    }
+
+    /**
+     * Generates an ensemble time-series from a rescaled single-valued time-series that contains all the rescaled
+     * events at each valid time.
+     * @param sourceSeries the time-series from which the rescaled events were generated
+     * @param templateMetadata the metadata of the template time-series
+     * @param rescaledSeries the rescaled time-series
+     * @param ensembleTimes the times of the ensemble events to compose, with one collection per ensemble valid time
+     * @return the ensemble time-series
+     */
+
+    private TimeSeries<Ensemble> getEnsembleSeriesFromRescaledSeries( TimeSeries<Double> sourceSeries,
+                                                                      TimeSeriesMetadata templateMetadata,
+                                                                      TimeSeries<Double> rescaledSeries,
+                                                                      Map<Instant, SortedSet<Instant>> ensembleTimes )
+    {
+
+        // Adjust the template metadata to use source units
+        String sourceUnit = sourceSeries.getMetadata()
+                                        .getUnit();
+        TimeSeriesMetadata adjusted = this.getAdjustedMetadata( templateMetadata, sourceUnit );
+        TimeSeries.Builder<Ensemble> builder = new TimeSeries.Builder<Ensemble>().setMetadata( adjusted );
+
+        SortedSet<Event<Double>> rescaledEvents = rescaledSeries.getEvents();
+        // Map the rescaled events by time
+        Map<Instant, Event<Double>> eventsByTime = rescaledEvents.stream()
+                                                                 .collect( Collectors.toMap( Event::getTime,
+                                                                                             Function.identity() ) );
+
+        if ( !rescaledEvents.isEmpty() )
+        {
+            for ( Map.Entry<Instant, SortedSet<Instant>> nextEnsemble : ensembleTimes.entrySet() )
+            {
+                Instant nextTime = nextEnsemble.getKey();
+                SortedSet<Instant> nextEnsembleTimes = nextEnsemble.getValue();
+                String[] labelStrings = new String[nextEnsembleTimes.size()];
+                double[] members = new double[labelStrings.length];
+                int count = 0;
+                for ( Instant nextEnsembleTime : nextEnsembleTimes )
+                {
+                    ZonedDateTime time = nextEnsembleTime.atZone( ZONE_ID );
+                    int year = time.get( ChronoField.YEAR );
+                    String label = Integer.toString( year );
+                    labelStrings[count] = label;
+                    double member = MissingValues.DOUBLE;
+
+                    if ( eventsByTime.containsKey( nextEnsembleTime ) )
+                    {
+                        Event<Double> event = eventsByTime.get( nextEnsembleTime );
+                        member = event.getValue();
+                    }
+                    members[count] = member;
+                    count++;
+                }
+
+                Ensemble.Labels labels = Ensemble.Labels.of( labelStrings );
+                Ensemble ensemble = Ensemble.of( members, labels );
+                Event<Ensemble> ensembleEvent = Event.of( nextTime, ensemble );
+                builder.addEvent( ensembleEvent );
+            }
+        }
 
         return builder.build();
     }

@@ -39,6 +39,7 @@ import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
 
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
+import wres.statistics.generated.TimeScale;
 
 /**
  * <p>Generates a persistence time-series from a source of persistence data supplied on construction. The shape of the 
@@ -444,7 +445,7 @@ public class PersistenceGenerator<T> implements BaselineGenerator<T>
         TimeScaleOuter desiredTimeScale = template.getTimeScale();
         if ( Objects.nonNull( desiredTimeScale )
              && Objects.nonNull( this.getSourceTimeScale() )
-             && !desiredTimeScale.equals( this.getSourceTimeScale() ) )
+             && TimeScaleOuter.isRescalingRequired( this.getSourceTimeScale(), desiredTimeScale ) )
         {
             return this.getPersistenceForEachValidTimeWithUpscaling( template );
         }
@@ -676,7 +677,7 @@ public class PersistenceGenerator<T> implements BaselineGenerator<T>
     }
 
     /**
-     * Returns the persistence time-series upscaled to the desired time scale of the template series at the prescribed
+     * Returns the persistence time-series upscaled to the desired timescale of the template series at the prescribed
      * end times.
      * @param template the template series
      * @param seriesToUpscale the time series to upscale
@@ -703,8 +704,25 @@ public class PersistenceGenerator<T> implements BaselineGenerator<T>
                                                   + " and no temporal upscaler was supplied on construction." );
         }
 
+        // If the template series has an unknown timescale function, assume it is mean
+        TimeScaleOuter desiredTimeScale = template.getTimeScale();
+        if ( desiredTimeScale.getFunction() == TimeScale.TimeScaleFunction.UNKNOWN )
+        {
+            TimeScale adjusted = desiredTimeScale.getTimeScale()
+                                                 .toBuilder()
+                                                 .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                                 .build();
+            desiredTimeScale = TimeScaleOuter.of( adjusted );
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "When creating an upscaled persistence time-series from a template time-series, "
+                              + "encountered a template time-series with UNKNOWN timescale function. Assuming that the "
+                              + "timescale function is MEAN." );
+            }
+        }
+
         TimeSeries<T> upscaled = this.upscaler.upscale( seriesToUpscale,
-                                                        template.getTimeScale(),
+                                                        desiredTimeScale,
                                                         Collections.unmodifiableSortedSet( new TreeSet<>( endsAtSorted ) ),
                                                         desiredUnit )
                                               .getTimeSeries();
