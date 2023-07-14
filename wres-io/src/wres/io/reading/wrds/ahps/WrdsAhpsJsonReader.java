@@ -250,7 +250,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
             {
                 throw new ReadException( "Failed to obtain a response from the WRDS url "
                                          + uri
-                                         + "Was the correct URL provided in the declaration?" );
+                                         + " Was the correct URL provided in the declaration?" );
             }
 
             // The response should include the missing values, but, in case we reuse
