@@ -1608,9 +1608,10 @@ public class DeclarationInterpolator
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
                                            .setEventMessage( defaultStartMessage
-                                                             + " Inferred the 'type' is 'analyses' because "
-                                                             + "analysis durations were declared and analyses "
-                                                             + "are typically used to verify other datasets. "
+                                                             + " When inspecting the declaration alone, inferred that "
+                                                             + "the 'type' is 'analyses' because analysis durations "
+                                                             + "were declared and analyses are typically used to "
+                                                             + "verify other datasets. "
                                                              + defaultEndMessage )
                                            .build();
             events.add( event );
@@ -1624,7 +1625,9 @@ public class DeclarationInterpolator
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
                                            .setEventMessage( defaultStartMessage
-                                                             + " Inferred that the 'type' is 'observations'. "
+                                                             + " Currently assuming that the 'type' is 'observations'. "
+                                                             + "This assumption may be adjusted if the 'type' can be "
+                                                             + "inferred from the time-series data. "
                                                              + defaultEndMessage )
                                            .build();
             events.add( event );
