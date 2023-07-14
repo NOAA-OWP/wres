@@ -272,7 +272,7 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> ensembles = DeclarationValidator.ensembleOnOneSideOnly( declaration );
         events.addAll( ensembles );
 
-        // No need to check and sources because this is a post-ingest validation
+        // No need to check any sources because this is a post-ingest validation
 
         // Check that the metrics declaration is valid
         List<EvaluationStatusEvent> metrics = DeclarationValidator.metricsAreValid( declaration );
