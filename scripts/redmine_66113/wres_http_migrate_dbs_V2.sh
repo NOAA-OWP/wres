@@ -5,7 +5,8 @@
 # Intended to be run from a directory one level deeper than wres/scripts.
 
 environment=#REPLACE WITH THE HOST ENVIRONMENT AFTER COPY
-wres_ca_file=../cacerts/dod_root_ca_3_expires_2029-12.pem
+wres_ca_file=${3-../cacerts/dod_root_ca_3_expires_2029-12.pem}
+adminToken=$1
 
 if [ -f $wres_ca_file ]
 then
@@ -15,16 +16,16 @@ else
     exit 1
 fi
 
-if [ $# -eq 1 ]
+if [ $# -gt 1 ]
 then
-    host=$1
+    host=$2
     echo "We are using the $environment environment in this program and migrating the $host database."
     read -n1 -r -p "Please ctrl-c if that is not correct, any key otherwise..." key
-    post_result=$( curl -i -s --cacert $wres_ca_file --data "additionalArguments=${host}additionalArguments=5432additionalArguments=wres8projectConfig=noProjectConfigOnlyMigratio&verb=migratedatabase" https://${environment}/job | tr -d '\r' )
+    post_result=$( curl -i -s --cacert $wres_ca_file --data "additionalArguments=${host}&additionalArguments=5432&additionalArguments=wres8&projectConfig=noProjectConfigOnlyMigration&adminToken=${adminToken}&verb=migratedatabase" https://${environment}/job | tr -d '\r' )
 else
     echo "We are using the $environment environment in this program and migrating the current database."
     read -n1 -r -p "Please ctrl-c if that is not correct, any key otherwise..." key
-    post_result=$( curl -i -s --cacert $wres_ca_file --data "projectConfig=noProjectConfigOnlyMigratio&verb=migratedatabase" https://${environment}/job | tr -d '\r' )
+    post_result=$( curl -i -s --cacert $wres_ca_file --data "projectConfig=noProjectConfigOnlyMigration&adminToken=${adminToken}&verb=migratedatabase" https://${environment}/job | tr -d '\r' )
 fi
 
 post_result_http_code=$( echo -n "$post_result" | grep HTTP | tail -n 1 | cut -d' ' -f2 )
