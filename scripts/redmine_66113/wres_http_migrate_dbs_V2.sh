@@ -54,9 +54,9 @@ done
 
 if [ "$evaluation_status" == "COMPLETED_REPORTED_SUCCESS" ]
 then
-    echo "Clean succeeded for $job_location"
+    echo "Migration succeeded for $job_location"
 else
-    echo "CLEAN FAILED FOR $job_location"
+    echo "MIGRATION FAILED FOR $job_location"
     exit 3
 fi
 
