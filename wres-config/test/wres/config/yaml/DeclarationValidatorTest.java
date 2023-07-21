@@ -1527,6 +1527,37 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testClimatologyWithIntervalLessThan365DaysProducesError()
+    {
+        Instant minimum = Instant.parse( "2055-01-01T00:00:00Z" );
+        Instant maximum = Instant.parse( "2055-04-01T00:00:00Z" );
+
+        GeneratedBaseline climatology = GeneratedBaselineBuilder.builder()
+                                                                .method( GeneratedBaselines.CLIMATOLOGY )
+                                                                .minimumDate( minimum )
+                                                                .maximumDate( maximum )
+                                                                .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( this.defaultDataset )
+                                                         .generatedBaseline( climatology )
+                                                         .build();
+
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .baseline( baseline )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "Discovered a climatological baseline whose "
+                                                       + "'minimum_date'",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
     void testClimatologyWithInvalidDataTypeProducesError()
     {
         GeneratedBaseline climatology = GeneratedBaselineBuilder.builder()

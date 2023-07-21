@@ -56,55 +56,62 @@ class RescalingHelper
                                           "No attempt was made to change the time scale function without "
                                           + "also changing the period." );
 
-    private static final EvaluationStatusMessage THE_DESIRED_PERIOD_OF_ZERO_IS_AN_INTEGER_MULTIPLE =
+    private static final EvaluationStatusMessage THE_EVALUATION_PERIOD_OF_ZERO_IS_AN_INTEGER_MULTIPLE =
             EvaluationStatusMessage.info( EvaluationStage.RESCALING,
-                                          "The desired period is an integer multiple of the existing "
+                                          "The evaluation period is an integer multiple of the dataset "
                                           + "period and is, therefore, acceptable." );
 
-    private static final EvaluationStatusMessage THE_EXISTING_PERIOD_OF_ZERO_IS_NOT_LARGER_THAN_THE_DESIRED_PERIOD =
+    private static final EvaluationStatusMessage THE_DATASET_PERIOD_OF_ZERO_IS_NOT_LARGER_THAN_THE_EVALUATION_PERIOD =
             EvaluationStatusMessage.info( EvaluationStage.RESCALING,
-                                          "The existing period is not larger than the desired period and "
+                                          "The dataset period is not larger than the evaluation period and "
                                           + "is, therefore, acceptable." );
 
-    private static final EvaluationStatusMessage THE_DESIRED_FUNCTION_IS_NOT_UNKNOWN_AND_IS_THEREFORE_ACCEPTABLE =
+    private static final EvaluationStatusMessage
+            THE_EVALUATION_SCALE_FUNCTION_IS_NOT_UNKNOWN_AND_IS_THEREFORE_ACCEPTABLE =
             EvaluationStatusMessage.info( EvaluationStage.RESCALING,
-                                          "The desired function is not unknown and is, therefore, acceptable." );
+                                          "The function associated with the evaluation time scale is not "
+                                          + "unknown and is, therefore, acceptable." );
 
     private static final EvaluationStatusMessage GROUPED_EVENTS_MESSAGE =
             EvaluationStatusMessage.info( EvaluationStage.RESCALING,
-                                          "Computing grouped events for rescaling using the time scale period only." );
+                                          "Computing grouped events for rescaling using the time scale period "
+                                          + "only." );
 
     private static final String THE_FUNCTION_ASSOCIATED_WITH = "The function associated with "
-                                                               + "the desired time scale is a ''{0}'', "
+                                                               + "the evaluation time scale is a ''{0}'', "
                                                                + "but the function associated with the "
-                                                               + "existing time scale is ''{1}''. "
+                                                               + "dataset time scale is ''{1}''. "
                                                                + "Assuming that the latter is also a ''{2}''.";
 
-    private static final String EXISTING_TIME_SCALE_IS_MISSING = "While attempting to upscale to a desired time scale "
-                                                                 + "of ''{0}'', encountered a time-series whose "
+    private static final String EXISTING_TIME_SCALE_IS_MISSING = "While attempting to upscale to an evaluation time "
+                                                                 + "scale of ''{0}'', encountered a time-series whose "
                                                                  + "existing time-scale is undefined. This occurs when "
-                                                                 + "the data source fails to identify the existing time "
-                                                                 + "scale and the project declaration fails to clarify "
-                                                                 + "this information. Please include the existing time "
-                                                                 + "scale (existingTimeScale) in the project "
-                                                                 + "declaration, otherwise a change of scale is "
+                                                                 + "the data source fails to identify its time scale"
+                                                                 + "and the project declaration fails to clarify this "
+                                                                 + "information. Please include the time scale "
+                                                                 + "('time_scale') in the project declaration for each "
+                                                                 + "dataset that must be rescaled and does not clarify "
+                                                                 + "its own time scale, otherwise a change of scale is "
                                                                  + "impossible.";
 
     private static final String EXISTING_TIME_SCALE_IS_MISSING_DESIRED_INSTANTANEOUS = "Encountered a time-series "
-                                                                                       + "whose existing time "
-                                                                                       + "scale is undefined, but whose "
-                                                                                       + "desired time scale is "
+                                                                                       + "whose time scale is "
+                                                                                       + "undefined, but an evaluation "
+                                                                                       + "time scale that is "
                                                                                        + "instantaneous. This occurs "
                                                                                        + "when the data source fails to "
-                                                                                       + "identify the existing time "
+                                                                                       + "identify its own time "
                                                                                        + "scale and the project "
                                                                                        + "declaration fails to clarify "
                                                                                        + "this information. Consider "
-                                                                                       + "including the existing time "
-                                                                                       + "scale (existingTimeScale) in "
-                                                                                       + "the project declaration. "
-                                                                                       + "Assuming that the existing "
-                                                                                       + "time scale is instantaneous.";
+                                                                                       + "including the time "
+                                                                                       + "scale ('time_scale') in "
+                                                                                       + "the project declaration for "
+                                                                                       + "each dataset whose time scale "
+                                                                                       + "is undefined. In the mean "
+                                                                                       + "time, assuming that the "
+                                                                                       + "time-series has an "
+                                                                                       + "instantaneous time scale.";
 
     private static final String THESE_INTERVALS_BEFORE_STOPPING = "these intervals before stopping: ";
 
@@ -116,7 +123,7 @@ class RescalingHelper
 
     private static final String ENDING_AT = " ending at ";
 
-    private static final String EVENTS_TO_A_DESIRED_TIME_SCALE_OF = " events to a desired time scale of ";
+    private static final String EVENTS_TO_AN_EVALUATION_TIME_SCALE_OF = " events to an evaluation time scale of ";
 
     private static final String WHILE_ATTEMPING_TO_UPSCALE_A_COLLECTION_OF =
             "While attempting to upscale a collection of ";
@@ -129,9 +136,9 @@ class RescalingHelper
 
     private static final String THE_LENIENCY_STATUS_WAS = ". The leniency status was: ";
 
-    private static final String DESIRED_TIME_SCALE_LENIENT = " Consider setting the option <desiredTimeScale "
-                                                             + "lenient=\"true\"> to ignore missing data, accept "
-                                                             + "limited data and allow for unequally spaced values.";
+    private static final String EVALUATION_TIME_SCALE_LENIENT = " Consider setting the option 'rescale_lenience: all' "
+                                                                + "to ignore missing data, accept limited data and "
+                                                                + "allow for unequally spaced values.";
 
     /** Default group rescaling status. */
     private static final GroupRescalingStatus DEFAULT_GROUP_RESCALING_STATUS =
@@ -201,10 +208,10 @@ class RescalingHelper
                 LOGGER.trace( FIVE_MEMBER_MESSAGE,
                               "Skipped upscaling time-series ",
                               timeSeries.getMetadata(),
-                              " to the desired time scale of ",
+                              " to the evaluation time scale of ",
                               desiredTimeScale,
-                              " because the existing time scale was missing. Assuming that the existing and desired "
-                              + "scales are the same." );
+                              " because the dataset time scale was missing. Assuming that the dataset and evaluation "
+                              + "time scales are the same." );
             }
 
             // Return a time-series with the desired timescale: #93194
@@ -229,9 +236,9 @@ class RescalingHelper
                 LOGGER.trace( SEVEN_MEMBER_MESSAGE,
                               "Skipped upscaling time-series ",
                               timeSeries.getMetadata(),
-                              " to the desired time scale of ",
+                              " to the evaluation time scale of ",
                               desiredTimeScale,
-                              " because the existing time scale is ",
+                              " because the dataset time scale is ",
                               timeSeries.getTimeScale(),
                               " and both are recognized as instantaneous." );
             }
@@ -251,9 +258,9 @@ class RescalingHelper
                 LOGGER.trace( SEVEN_MEMBER_MESSAGE,
                               "No upscaling required for time-series ",
                               timeSeries.getMetadata(),
-                              ": the existing time scale of ",
+                              ": the dataset time scale of ",
                               timeSeries.getTimeScale(),
-                              " effectively matches the desired time scale of ",
+                              " effectively matches the evaluation time scale of ",
                               desiredTimeScale,
                               "." );
             }
@@ -457,7 +464,7 @@ class RescalingHelper
         // ignored. This is developer-facing information, not user-facing information, so log
         if ( !endsAt.isEmpty() && LOGGER.isDebugEnabled() )
         {
-            LOGGER.debug( "When attempting to rescale a time-series whose desired time scale contains one or both "
+            LOGGER.debug( "When attempting to rescale a time-series whose evaluation time scale contains one or both "
                           + "month-days, discovered an explicit list of end times at which to derive rescaled values, "
                           + "which is unexpected. These end times will be ignored." );
         }
@@ -564,7 +571,7 @@ class RescalingHelper
         if ( events.size() < 2 )
         {
             String message = WHILE_ATTEMPING_TO_UPSCALE_A_COLLECTION_OF + events.size()
-                             + EVENTS_TO_A_DESIRED_TIME_SCALE_OF
+                             + EVENTS_TO_AN_EVALUATION_TIME_SCALE_OF
                              + desiredTimeScale
                              + ENDING_AT
                              + endsAt
@@ -588,7 +595,7 @@ class RescalingHelper
         if ( times.size() > 2 )
         {
             String message = WHILE_ATTEMPING_TO_UPSCALE_A_COLLECTION_OF + events.size()
-                             + EVENTS_TO_A_DESIRED_TIME_SCALE_OF
+                             + EVENTS_TO_AN_EVALUATION_TIME_SCALE_OF
                              + desiredTimeScale
                              + ENDING_AT
                              + endsAt
@@ -691,7 +698,7 @@ class RescalingHelper
 
         if ( !lenient )
         {
-            leniencyStatus += DESIRED_TIME_SCALE_LENIENT;
+            leniencyStatus += EVALUATION_TIME_SCALE_LENIENT;
         }
 
         return leniencyStatus;
@@ -832,7 +839,7 @@ class RescalingHelper
             return EvaluationStatusMessage.error( EvaluationStage.RESCALING, message );
         }
 
-        return THE_DESIRED_FUNCTION_IS_NOT_UNKNOWN_AND_IS_THEREFORE_ACCEPTABLE;
+        return THE_EVALUATION_SCALE_FUNCTION_IS_NOT_UNKNOWN_AND_IS_THEREFORE_ACCEPTABLE;
     }
 
     /**
@@ -857,7 +864,7 @@ class RescalingHelper
             return EvaluationStatusMessage.error( EvaluationStage.RESCALING, message );
         }
 
-        return THE_EXISTING_PERIOD_OF_ZERO_IS_NOT_LARGER_THAN_THE_DESIRED_PERIOD;
+        return THE_DATASET_PERIOD_OF_ZERO_IS_NOT_LARGER_THAN_THE_EVALUATION_PERIOD;
     }
 
     /**
@@ -883,21 +890,21 @@ class RescalingHelper
 
         if ( isOneZero || remainder > 0 )
         {
-            String message = MessageFormat.format( "The desired period of ''{0}''"
-                                                   + " is not an integer multiple of the existing period"
+            String message = MessageFormat.format( "The period of ''{0}'' associated with the evaluation time "
+                                                   + "scale is not an integer multiple of the dataset period"
                                                    + ", which is ''{1}''. If the data has multiple time-steps that "
                                                    + "vary by time or feature, it may not be possible to "
-                                                   + "achieve the desired time scale for all of the data. "
-                                                   + "In that case, consider removing the desired time "
+                                                   + "achieve the evaluation time scale for all of the data. "
+                                                   + "In that case, consider removing the evaluation time "
                                                    + "scale and performing an evaluation at the "
-                                                   + "existing time scale of the data, where possible.",
+                                                   + "time scale of the data, where possible.",
                                                    desiredPeriod,
                                                    inputPeriod );
 
             return EvaluationStatusMessage.error( EvaluationStage.RESCALING, message );
         }
 
-        return THE_DESIRED_PERIOD_OF_ZERO_IS_AN_INTEGER_MULTIPLE;
+        return THE_EVALUATION_PERIOD_OF_ZERO_IS_AN_INTEGER_MULTIPLE;
     }
 
 
@@ -946,11 +953,11 @@ class RescalingHelper
             }
             else
             {
-                String message = MessageFormat.format( "The period associated with the existing and desired "
+                String message = MessageFormat.format( "The period associated with the dataset and evaluation "
                                                        + "time scales is ''{0}'', but the time scale function "
-                                                       + "associated with the existing time scale is ''{1}'', which "
-                                                       + "differs from the function associated with the desired time "
-                                                       + "scale, namely ''{2}''. This is not allowed, in general "
+                                                       + "associated with the dataset time scale is ''{1}'', which "
+                                                       + "differs from the function associated with the evaluation "
+                                                       + "time scale, namely ''{2}''. This is not allowed, in general "
                                                        + "because the function cannot be changed without changing the "
                                                        + "period. If you are attempting to change unit dimensions by "
                                                        + "performing a time integration of the existing measurement "
@@ -991,11 +998,11 @@ class RescalingHelper
             if ( Objects.nonNull( existingUnit ) && Objects.nonNull( desiredUnit )
                  && Units.isSupportedTimeIntegralConversion( existingUnit, desiredUnit ) )
             {
-                String message = MessageFormat.format( "When attempting to accumulate instantaneous values to a total, "
-                                                       + "encountered existing units of ''{0}'' with a dimension of "
-                                                       + "''{1}'' and desired units of ''{2}'' with a dimension of "
-                                                       + "''{3}''. Accumulations are allowed because the existing "
-                                                       + "dimension is a rate and the required dimension is a "
+                String message = MessageFormat.format( "When attempting to accumulate instantaneous values to a "
+                                                       + "total, encountered existing units of ''{0}'' with a "
+                                                       + "dimension of ''{1}'' and desired units of ''{2}'' with a "
+                                                       + "dimension of ''{3}''. Accumulations are allowed because the "
+                                                       + "existing dimension is a rate and the required dimension is a "
                                                        + "time-integral.",
                                                        existingUnit,
                                                        existingUnit.getDimension(),
@@ -1006,8 +1013,8 @@ class RescalingHelper
                                                       message );
             }
 
-            String message = MessageFormat.format( "Cannot accumulate instantaneous values. Change the existing "
-                                                   + "time scale or change the function associated with the desired "
+            String message = MessageFormat.format( "Cannot accumulate instantaneous values. Change the dataset "
+                                                   + "time scale or change the function associated with the evaluation "
                                                    + "time scale to something other than a ''{0}''. If you are "
                                                    + "attempting to change unit dimensions by performing a time "
                                                    + "integration of the existing measurement unit of ''{1}'', then "
@@ -1132,13 +1139,13 @@ class RescalingHelper
                 if ( Objects.nonNull( existingUnit ) && Objects.nonNull( desiredUnit ) )
                 {
                     message = MessageFormat.format( "Cannot further accumulate values that are not already "
-                                                    + "accumulations. The function associated with the existing time "
+                                                    + "accumulations. The function associated with the dataset time "
                                                     + "scale must be a ''{0}'', rather than a ''{1}'', or the function "
-                                                    + "associated with the desired time scale must be changed. If you "
-                                                    + "are attempting to change unit dimensions by performing a time "
-                                                    + "integration of the existing measurement unit of ''{2}'', then you "
-                                                    + "should instead check that the desired measurement unit of ''{3}'' is "
-                                                    + "correct.",
+                                                    + "associated with the evaluation time scale must be changed. If "
+                                                    + "you are attempting to change unit dimensions by performing a "
+                                                    + "time integration of the existing measurement unit of ''{2}'', "
+                                                    + "then you should instead check that the desired measurement unit "
+                                                    + "of ''{3}'' is correct.",
                                                     TimeScaleFunction.TOTAL,
                                                     existingFunction,
                                                     existingUnit,
@@ -1148,12 +1155,13 @@ class RescalingHelper
                 else
                 {
                     message = MessageFormat.format( "Cannot further accumulate values that are not already "
-                                                    + "accumulations. The function associated with the existing time "
+                                                    + "accumulations. The function associated with the dataset time "
                                                     + "scale must be a ''{0}'', rather than a ''{1}'', or the function "
-                                                    + "associated with the desired time scale must be changed. If you "
-                                                    + "are attempting to change unit dimensions by performing a time "
-                                                    + "integration of the existing measurement unit, then you should "
-                                                    + "instead check that the desired measurement unit is correct.",
+                                                    + "associated with the evaluation time scale must be changed. If "
+                                                    + "you are attempting to change unit dimensions by performing a "
+                                                    + "time integration of the existing measurement unit, then you "
+                                                    + "should instead check that the desired measurement unit is "
+                                                    + "correct.",
                                                     TimeScaleFunction.TOTAL,
                                                     existingFunction,
                                                     existingUnit,
