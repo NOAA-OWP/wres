@@ -581,11 +581,11 @@ public class TimeSeriesOfDoubleUpscalerTest
         RescalingException exception =
                 assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale, UNIT ) );
 
-        String message = "The desired period of 'PT1H15M' is not an integer multiple of the existing "
-                         + "period, which is 'PT1H'. If the data has multiple time-steps that vary by time or "
-                         + "feature, it may not be possible to achieve the desired time scale for all of the data. In "
-                         + "that case, consider removing the desired time scale and performing an evaluation at the "
-                         + "existing time scale of the data, where possible.";
+        String message = "The period of 'PT1H15M' associated with the evaluation time scale is not an integer multiple "
+                         + "of the dataset period, which is 'PT1H'. If the data has multiple time-steps that vary by "
+                         + "time or feature, it may not be possible to achieve the evaluation time scale for all of "
+                         + "the data. In that case, consider removing the evaluation time scale and performing an "
+                         + "evaluation at the time scale of the data, where possible.";
 
         assertTrue( exception.getMessage().contains( message ) );
     }
@@ -605,9 +605,9 @@ public class TimeSeriesOfDoubleUpscalerTest
         RescalingException exception =
                 assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale, UNIT ) );
 
-        String message = "The period associated with the existing and desired time scales is "
-                         + "'PT1H', but the time scale function associated with the existing time scale is 'MEAN', "
-                         + "which differs from the function associated with the desired time scale, namely 'TOTAL'.";
+        String message = "The period associated with the dataset and evaluation time scales is "
+                         + "'PT1H', but the time scale function associated with the dataset time scale is 'MEAN', "
+                         + "which differs from the function associated with the evaluation time scale, namely 'TOTAL'.";
 
         assertTrue( exception.getMessage().contains( message ) );
     }
@@ -627,9 +627,8 @@ public class TimeSeriesOfDoubleUpscalerTest
         RescalingException exception =
                 assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale, UNIT ) );
 
-        String message = "Cannot accumulate instantaneous values. Change the existing time scale or "
-                         + "change the function associated with the desired time scale to something other than a "
-                         + "'TOTAL'.";
+        String message = "Cannot accumulate instantaneous values. Change the dataset time scale or change the function "
+                         + "associated with the evaluation time scale to something other than a 'TOTAL'.";
 
         assertTrue( exception.getMessage().contains( message ) );
     }
@@ -650,8 +649,8 @@ public class TimeSeriesOfDoubleUpscalerTest
                 assertThrows( RescalingException.class, () -> this.upscaler.upscale( fake, desiredTimeScale, UNIT ) );
 
         String message = "Cannot further accumulate values that are not already accumulations. The "
-                         + "function associated with the existing time scale must be a 'TOTAL', "
-                         + "rather than a 'MEAN', or the function associated with the desired time "
+                         + "function associated with the dataset time scale must be a 'TOTAL', "
+                         + "rather than a 'MEAN', or the function associated with the evaluation time "
                          + "scale must be changed.";
 
         assertTrue( exception.getMessage().contains( message ) );
