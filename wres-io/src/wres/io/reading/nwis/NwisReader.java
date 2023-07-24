@@ -509,22 +509,6 @@ public class NwisReader implements TimeSeriesReader
     {
         Objects.requireNonNull( systemSettings );
 
-        if ( Objects.nonNull( declaration ) )
-        {
-            if ( Objects.isNull( declaration.validDates() )
-                 || Objects.isNull( declaration.validDates()
-                                               .minimum() )
-                 || Objects.isNull( declaration.validDates().maximum() ) )
-            {
-                throw new DeclarationException( "One must specify 'valid_dates' with both 'minimum' and 'maximum' "
-                                                + "when using a web API, such as the USGS NWIS, as a source for "
-                                                + "observations." );
-            }
-
-            LOGGER.debug( "When building a reader for time-series data from the USGS NWIS service, received a complete "
-                          + "pair declaration, which will be used to chunk requests by feature and time range." );
-        }
-
         this.declaration = declaration;
 
         ThreadFactory webClientFactory = new BasicThreadFactory.Builder().namingPattern( "USGS NWIS Reading Thread %d" )

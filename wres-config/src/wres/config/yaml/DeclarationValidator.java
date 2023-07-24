@@ -767,9 +767,10 @@ public class DeclarationValidator
             DataType type = declaration.left()
                                        .type();
 
-            List<EvaluationStatusEvent> leftEvents = DeclarationValidator.datesPresentForWebServices( declaration,
-                                                                                                      type,
-                                                                                                      OBSERVED );
+            List<EvaluationStatusEvent> leftEvents =
+                    DeclarationValidator.datesPresentForWebServices( declaration,
+                                                                     type,
+                                                                     DatasetOrientation.LEFT );
             events.addAll( leftEvents );
         }
 
@@ -779,9 +780,10 @@ public class DeclarationValidator
             DataType type = declaration.right()
                                        .type();
 
-            List<EvaluationStatusEvent> rightEvents = DeclarationValidator.datesPresentForWebServices( declaration,
-                                                                                                       type,
-                                                                                                       PREDICTED );
+            List<EvaluationStatusEvent> rightEvents =
+                    DeclarationValidator.datesPresentForWebServices( declaration,
+                                                                     type,
+                                                                     DatasetOrientation.RIGHT );
             events.addAll( rightEvents );
         }
 
@@ -791,9 +793,10 @@ public class DeclarationValidator
                                        .dataset()
                                        .type();
 
-            List<EvaluationStatusEvent> baselineEvents = DeclarationValidator.datesPresentForWebServices( declaration,
-                                                                                                          type,
-                                                                                                          BASELINE );
+            List<EvaluationStatusEvent> baselineEvents =
+                    DeclarationValidator.datesPresentForWebServices( declaration,
+                                                                     type,
+                                                                     DatasetOrientation.BASELINE );
             events.addAll( baselineEvents );
         }
 
@@ -2798,7 +2801,7 @@ public class DeclarationValidator
      */
     private static List<EvaluationStatusEvent> datesPresentForWebServices( EvaluationDeclaration declaration,
                                                                            DataType type,
-                                                                           String orientation )
+                                                                           DatasetOrientation orientation )
     {
         EvaluationStatusEvent.Builder eventBuilder =
                 EvaluationStatusEvent.newBuilder()
@@ -2814,17 +2817,41 @@ public class DeclarationValidator
         String messageMiddleFinal = " when acquiring ";
         String messageEnd = " data from web services.";
 
-        // Unknown type with both reference times and valid times incomplete
-        if ( Objects.isNull( type )
-             && DeclarationValidator.isTimeIntervalIncomplete( declaration.referenceDates() )
-             && DeclarationValidator.isTimeIntervalIncomplete( declaration.validDates() ) )
+        // The web service is for a generated baseline and a valid interval is defined
+        if ( orientation == DatasetOrientation.BASELINE
+             && DeclarationUtilities.hasGeneratedBaseline( declaration.baseline() )
+             && declaration.baseline()
+                           .generatedBaseline()
+                           .method() == GeneratedBaselines.CLIMATOLOGY
+             && Objects.nonNull( declaration.baseline()
+                                            .generatedBaseline()
+                                            .minimumDate() )
+             && Objects.nonNull( declaration.baseline()
+                                            .generatedBaseline()
+                                            .maximumDate() ) )
         {
-            EvaluationStatusEvent event = eventBuilder.setEventMessage( messageStart + orientation
-                                                                        + messageStartOuter + "null"
-                                                                        + messageMiddleInner + REFERENCE_DATES + " and "
-                                                                        + VALID_DATES + messageMiddleOuter
-                                                                        + REFERENCE_DATES + " or " + VALID_DATES
-                                                                        + messageMiddleFinal + "time-series"
+            LOGGER.debug( "Discovered a generated baseline with a web service and both the 'minimum_date' and the "
+                          + "'maximum_date' were defined." );
+        }
+        // Unknown type with both reference times and valid times incomplete
+        else if ( Objects.isNull( type )
+                  && DeclarationValidator.isTimeIntervalIncomplete( declaration.referenceDates() )
+                  && DeclarationValidator.isTimeIntervalIncomplete( declaration.validDates() ) )
+        {
+            EvaluationStatusEvent event = eventBuilder.setEventMessage( messageStart
+                                                                        + orientation
+                                                                        + messageStartOuter
+                                                                        + "null"
+                                                                        + messageMiddleInner
+                                                                        + REFERENCE_DATES
+                                                                        + " and "
+                                                                        + VALID_DATES
+                                                                        + messageMiddleOuter
+                                                                        + REFERENCE_DATES
+                                                                        + " or "
+                                                                        + VALID_DATES
+                                                                        + messageMiddleFinal
+                                                                        + "time-series"
                                                                         + messageEnd )
                                                       .build();
             events.add( event );
@@ -2835,20 +2862,32 @@ public class DeclarationValidator
                   && DeclarationValidator.isTimeIntervalIncomplete( declaration.referenceDates() ) )
         {
             EvaluationStatusEvent event = eventBuilder.setEventMessage( messageStart
-                                                                        + orientation + messageStartOuter + type
-                                                                        + messageMiddleInner + REFERENCE_DATES
-                                                                        + messageMiddleOuter + REFERENCE_DATES
-                                                                        + messageMiddleFinal + type + messageEnd )
+                                                                        + orientation
+                                                                        + messageStartOuter
+                                                                        + type
+                                                                        + messageMiddleInner
+                                                                        + REFERENCE_DATES
+                                                                        + messageMiddleOuter
+                                                                        + REFERENCE_DATES
+                                                                        + messageMiddleFinal
+                                                                        + type
+                                                                        + messageEnd )
                                                       .build();
             events.add( event );
         }
         // Non-forecasts with incomplete valid times
         else if ( DeclarationValidator.isTimeIntervalIncomplete( declaration.validDates() ) )
         {
-            EvaluationStatusEvent event = eventBuilder.setEventMessage( messageStart + orientation + messageStartOuter
-                                                                        + type + messageMiddleInner + VALID_DATES
-                                                                        + messageMiddleOuter + VALID_DATES
-                                                                        + messageMiddleFinal + type + messageEnd )
+            EvaluationStatusEvent event = eventBuilder.setEventMessage( messageStart
+                                                                        + orientation
+                                                                        + messageStartOuter
+                                                                        + type
+                                                                        + messageMiddleInner
+                                                                        + VALID_DATES
+                                                                        + messageMiddleOuter
+                                                                        + VALID_DATES
+                                                                        + messageMiddleFinal
+                                                                        + type + messageEnd )
                                                       .build();
             events.add( event );
         }

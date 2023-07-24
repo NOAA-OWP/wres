@@ -39,10 +39,12 @@ import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.FeatureAuthority;
+import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.TimeInterval;
@@ -119,7 +121,7 @@ public class ReaderUtilities
         EvaluationDeclaration adjusted = declaration;
 
         Set<ThresholdSource> thresholdSources = declaration.thresholdSources();
-        if( ! thresholdSources.isEmpty() )
+        if ( !thresholdSources.isEmpty() )
         {
             // Adjust the declaration iteratively, once for each threshold source
             for ( ThresholdSource nextSource : declaration.thresholdSources() )
@@ -559,11 +561,16 @@ public class ReaderUtilities
         Objects.requireNonNull( dataSource );
         Objects.requireNonNull( dataSource.getContext() );
 
-        TimeInterval dates = declaration.validDates();
-
         SortedSet<Pair<Instant, Instant>> yearRanges = new TreeSet<>();
 
-        Instant specifiedEarliest = dates.minimum();
+        // Get the boundaries
+        Pair<Instant, Instant> dataInterval = ReaderUtilities.getDatasetInterval( dataSource, declaration );
+
+        LOGGER.debug( "Requesting data for the following interval: {}.", dataInterval );
+
+        Instant specifiedEarliest = dataInterval.getLeft();
+        Instant specifiedLatest = dataInterval.getRight();
+
         ZonedDateTime earliest = specifiedEarliest.atZone( UTC )
                                                   .with( TemporalAdjusters.firstDayOfYear() )
                                                   .withHour( 0 )
@@ -574,8 +581,6 @@ public class ReaderUtilities
         LOGGER.debug( "Given {}, calculated {} for earliest.",
                       specifiedEarliest,
                       earliest );
-
-        Instant specifiedLatest = dates.maximum();
 
         // Intentionally keep this raw, un-next-year-ified.
         ZonedDateTime latest = specifiedLatest.atZone( UTC );
@@ -852,7 +857,7 @@ public class ReaderUtilities
         Objects.requireNonNull( unitMapper );
         Objects.requireNonNull( thresholdSource );
 
-        if( Objects.isNull( thresholdSource.uri() ) )
+        if ( Objects.isNull( thresholdSource.uri() ) )
         {
             throw new ThresholdReadingException( "Cannot read from a threshold source with a missing URI. Please "
                                                  + "add a URI for each threshold source that should be read." );
@@ -930,6 +935,80 @@ public class ReaderUtilities
 
         // Adjust the declaration and return it
         return DeclarationUtilities.addThresholds( evaluation, thresholds );
+    }
+
+    /**
+     * Returns the datetime interval required for the specified data source.
+     * @param dataSource the data source
+     * @param declaration the evaluation declaration
+     * @return the time interval required for the data source
+     */
+
+    private static Pair<Instant, Instant> getDatasetInterval( DataSource dataSource,
+                                                              EvaluationDeclaration declaration )
+    {
+        // Get the boundaries
+        TimeInterval dates = declaration.validDates();
+        Instant specifiedEarliest = null;
+        Instant specifiedLatest = null;
+        if ( Objects.nonNull( dates ) )
+        {
+            specifiedEarliest = dates.minimum();
+            specifiedLatest = dates.maximum();
+        }
+
+        // If this is a baseline dataset with a declared interval, use the earliest and latest dates of the two
+        if ( dataSource.getDatasetOrientation() == DatasetOrientation.BASELINE
+             && DeclarationUtilities.hasGeneratedBaseline( declaration.baseline() )
+             && declaration.baseline()
+                           .generatedBaseline()
+                           .method() == GeneratedBaselines.CLIMATOLOGY
+             && ( Objects.nonNull( declaration.baseline()
+                                              .generatedBaseline()
+                                              .minimumDate() )
+                  || Objects.nonNull( declaration.baseline()
+                                                 .generatedBaseline()
+                                                 .maximumDate() ) ) )
+        {
+            Instant minimumDate = declaration.baseline()
+                                             .generatedBaseline()
+                                             .minimumDate();
+            Instant maximumDate = declaration.baseline()
+                                             .generatedBaseline()
+                                             .maximumDate();
+
+            if ( Objects.isNull( specifiedEarliest )
+                 || ( Objects.nonNull( minimumDate )
+                      && specifiedEarliest.isAfter( minimumDate ) ) )
+            {
+                LOGGER.debug( "Used the 'minimum_date' on the 'baseline' of {}, because this is earlier than the "
+                              + "'minimum' value of the 'valid_dates', which is {}.", minimumDate, specifiedEarliest );
+                specifiedEarliest = minimumDate;
+            }
+
+            if ( Objects.isNull( specifiedLatest )
+                 || ( Objects.nonNull( maximumDate )
+                      && specifiedLatest.isBefore( maximumDate ) ) )
+            {
+                LOGGER.debug( "Used the 'maximum_date' on the 'baseline' of {}, because this is later than the "
+                              + "'maximum' value of the 'valid_dates', which is {}.", maximumDate, specifiedLatest );
+                specifiedLatest = maximumDate;
+            }
+        }
+
+        // Validate request
+        if ( Objects.isNull( specifiedEarliest )
+             || Objects.isNull( specifiedLatest ) )
+        {
+            throw new DeclarationException( "Could not determine the date range to request for a web data source. One "
+                                            + "must declare a date range when requesting data from a web service, such "
+                                            + "as the 'valid_dates' with both the 'minimum' and 'maximum'." );
+        }
+
+        LOGGER.debug( "When building a reader for time-series data from the USGS NWIS service, received a complete "
+                      + "pair declaration, which will be used to chunk requests by feature and time range." );
+
+        return Pair.of( specifiedEarliest, specifiedLatest );
     }
 
     /**

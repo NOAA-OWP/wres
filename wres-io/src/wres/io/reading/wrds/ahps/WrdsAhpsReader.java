@@ -35,7 +35,6 @@ import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.TimeInterval;
@@ -69,10 +68,6 @@ public class WrdsAhpsReader implements TimeSeriesReader
 
     /** Forward slash character. */
     private static final String SLASH = "/";
-
-    /** Re-used string. */
-    private static final String WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE =
-            "When using WRDS as a source of time-series data, you must declare ";
 
     /** Message string. */
     private static final String WRDS_AHPS = "WRDS AHPS";
@@ -608,38 +603,6 @@ public class WrdsAhpsReader implements TimeSeriesReader
     private WrdsAhpsReader( EvaluationDeclaration declaration, SystemSettings systemSettings )
     {
         Objects.requireNonNull( systemSettings );
-
-        if ( Objects.nonNull( declaration ) )
-        {
-            if ( Objects.isNull( declaration.validDates() ) && Objects.isNull( declaration.referenceDates() ) )
-            {
-                throw new DeclarationException( WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE
-                                                + "either the 'valid_dates' or 'reference_dates'." );
-            }
-
-            if ( Objects.nonNull( declaration.validDates() ) && ( Objects.isNull( declaration.validDates()
-                                                                                             .minimum() )
-                                                                  || Objects.isNull( declaration.validDates()
-                                                                                                .maximum() ) ) )
-            {
-                throw new DeclarationException( WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE
-                                                + "both the 'minimum' and 'maximum' values for "
-                                                + "the 'valid_dates'." );
-            }
-
-            if ( Objects.nonNull( declaration.referenceDates() )
-                 && ( Objects.isNull( declaration.referenceDates()
-                                                 .minimum() )
-                      || Objects.isNull( declaration.referenceDates()
-                                                    .maximum() ) ) )
-            {
-                throw new DeclarationException( WHEN_USING_WRDS_AS_A_SOURCE_OF_TIME_SERIES_DATA_YOU_MUST_DECLARE
-                                                + "both the 'minimum' and 'maximum' values of the 'reference_dates'." );
-            }
-
-            LOGGER.debug( "When building a reader for AHPS time-series data from the WRDS, received a complete "
-                          + "declaration, which will be used to chunk requests by feature and time range." );
-        }
 
         this.declaration = declaration;
 
