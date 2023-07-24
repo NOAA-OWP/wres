@@ -2133,7 +2133,7 @@ public class DeclarationMigrator
     /**
      * Inspects the metrics and looks for a single/global set of thresholds containing the same collection of
      * {@link ThresholdsConfig} across all {@link MetricsConfig}. If there are no global thresholds, returns an empty
-     * list. In that case, no thresholds are defined or there are different thresholds for different groups of metrics.
+     * list. In that case, no thresholds are defined or there are different thresholds for different metrics.
      *
      * @param metrics the metrics to inspect
      * @return the global thresholds, if available

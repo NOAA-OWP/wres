@@ -24,6 +24,8 @@ import org.mockserver.model.Parameter;
 import org.mockserver.model.Parameters;
 import org.mockserver.verify.VerificationTimes;
 
+import wres.config.yaml.components.BaselineDataset;
+import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.DatasetOrientation;
@@ -31,6 +33,9 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.FeaturesBuilder;
+import wres.config.yaml.components.GeneratedBaseline;
+import wres.config.yaml.components.GeneratedBaselineBuilder;
+import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.LeadTimeIntervalBuilder;
 import wres.config.yaml.components.Source;
@@ -310,7 +315,7 @@ class NwisReaderTest
     }
 
     @Test
-    void testReadReturnsThreeChunkedTimeSeries()
+    void testReadReturnsThreeChunkedTimeSeriesRequests()
     {
         // Create the chunk parameters
         Parameters parametersOne = new Parameters( new Parameter( "indent", "on" ),
@@ -388,12 +393,160 @@ class NwisReaderTest
                                                        .frequency( Duration.ofHours( 7 ) )
                                                        .build();
         Set<GeometryTuple> geometries = Set.of( GeometryTuple.newBuilder()
-                                                             .setLeft( Geometry.newBuilder().setName( "09165000" ) )
+                                                             .setLeft( Geometry.newBuilder()
+                                                                               .setName( "09165000" ) )
                                                              .build() );
         Features features = FeaturesBuilder.builder()
                                            .geometries( geometries )
                                            .build();
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .leadTimes( leadTimes )
+                                                                        .validDates( validDates )
+                                                                        .referenceDatePools( referenceTimePools )
+                                                                        .features( features )
+                                                                        .build();
+
+        SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
+        Mockito.when( systemSettings.getMaximumWebClientThreads() )
+               .thenReturn( 6 );
+        Mockito.when( systemSettings.poolObjectLifespan() )
+               .thenReturn( 30_000 );
+
+        NwisReader reader = NwisReader.of( declaration, systemSettings );
+
+        try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
+        {
+            List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
+                                                         .toList();
+
+            // Three chunks expected
+            assertEquals( 3, actual.size() );
+        }
+
+        // Three requests made
+        this.mockServer.verify( request().withMethod( GET )
+                                         .withPath( PATH ),
+                                VerificationTimes.exactly( 3 ) );
+
+        // One request made with parameters one
+        this.mockServer.verify( request().withMethod( GET )
+                                         .withPath( PATH )
+                                         .withQueryStringParameters( parametersOne ),
+                                VerificationTimes.exactly( 1 ) );
+
+        // One request made with parameters two
+        this.mockServer.verify( request().withMethod( GET )
+                                         .withPath( PATH )
+                                         .withQueryStringParameters( parametersTwo ),
+                                VerificationTimes.exactly( 1 ) );
+
+        // One request made with parameters three
+        this.mockServer.verify( request().withMethod( GET )
+                                         .withPath( PATH )
+                                         .withQueryStringParameters( parametersThree ),
+                                VerificationTimes.exactly( 1 ) );
+
+    }
+
+    @Test
+    void testReadReturnsThreeChunkedTimeSeriesRequestsForGeneratedBaselineWithTimeIntervalSet()
+    {
+        // Create the chunk parameters
+        Parameters parametersOne = new Parameters( new Parameter( "indent", "on" ),
+                                                   new Parameter( "endDT", "2019-01-01T00:00:00Z" ),
+                                                   new Parameter( "format", "json" ),
+                                                   new Parameter( "parameterCd", "00060" ),
+                                                   new Parameter( "sites", "09165000" ),
+                                                   new Parameter( "startDT", "2018-01-01T00:00:01Z" ) );
+
+        Parameters parametersTwo = new Parameters( new Parameter( "indent", "on" ),
+                                                   new Parameter( "endDT", "2020-01-01T00:00:00Z" ),
+                                                   new Parameter( "format", "json" ),
+                                                   new Parameter( "parameterCd", "00060" ),
+                                                   new Parameter( "sites", "09165000" ),
+                                                   new Parameter( "startDT", "2019-01-01T00:00:01Z" ) );
+
+        Parameters parametersThree = new Parameters( new Parameter( "indent", "on" ),
+                                                     new Parameter( "endDT", "2021-01-01T00:00:00Z" ),
+                                                     new Parameter( "format", "json" ),
+                                                     new Parameter( "parameterCd", "00060" ),
+                                                     new Parameter( "sites", "09165000" ),
+                                                     new Parameter( "startDT", "2020-01-01T00:00:01Z" ) );
+
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( PATH )
+                                         .withQueryStringParameters( parametersOne )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.response( RESPONSE ) );
+
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( PATH )
+                                         .withQueryStringParameters( parametersTwo )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.response( RESPONSE ) );
+
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( PATH )
+                                         .withQueryStringParameters( parametersThree )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.response( RESPONSE ) );
+
+        URI fakeUri = URI.create( "http://localhost:"
+                                  + this.mockServer.getLocalPort()
+                                  + PATH
+                                  + PARAMS );
+
+        Source fakeDeclarationSource = SourceBuilder.builder()
+                                                    .uri( fakeUri )
+                                                    .build();
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( fakeDeclarationSource ) )
+                                        .variable( VariableBuilder.builder()
+                                                                  .name( "00060" )
+                                                                  .build() )
+                                        .build();
+
+        DataSource fakeSource = DataSource.of( DataDisposition.JSON_WATERML,
+                                               fakeDeclarationSource,
+                                               dataset,
+                                               Collections.emptyList(),
+                                               fakeUri,
+                                               DatasetOrientation.BASELINE );
+
+        LeadTimeInterval leadTimes = LeadTimeIntervalBuilder.builder()
+                                                            .minimum( Duration.ofHours( 0 ) )
+                                                            .maximum( Duration.ofHours( 18 ) )
+                                                            .build();
+        Instant earliest = Instant.parse( "2018-01-01T00:00:00Z" );
+        Instant later = Instant.parse( "2019-01-01T00:00:00Z" );
+        TimeInterval validDates = TimeIntervalBuilder.builder()
+                                                     .minimum( earliest  )
+                                                     .maximum( later )
+                                                     .build();
+        TimePools referenceTimePools = TimePoolsBuilder.builder()
+                                                       .period( Duration.ofHours( 13 ) )
+                                                       .frequency( Duration.ofHours( 7 ) )
+                                                       .build();
+        Set<GeometryTuple> geometries = Set.of( GeometryTuple.newBuilder()
+                                                             .setBaseline( Geometry.newBuilder()
+                                                                                   .setName( "09165000" ) )
+                                                             .build() );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( geometries )
+                                           .build();
+        Instant latest = Instant.parse( "2021-01-01T00:00:00Z" );
+        GeneratedBaseline generatedBaseline = GeneratedBaselineBuilder.builder()
+                                                                      .method( GeneratedBaselines.CLIMATOLOGY )
+                                                                      .minimumDate( earliest )
+                                                                      .maximumDate( latest )
+                                                                      .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( dataset )
+                                                         .generatedBaseline( generatedBaseline )
+                                                         .build();
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .baseline( baseline )
                                                                         .leadTimes( leadTimes )
                                                                         .validDates( validDates )
                                                                         .referenceDatePools( referenceTimePools )
