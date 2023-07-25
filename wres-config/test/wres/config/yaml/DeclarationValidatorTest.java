@@ -1558,6 +1558,46 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testClimatologyWithWebServiceAndValidDatesIntervalLessThan365DaysProducesError()
+    {
+        Instant minimum = Instant.parse( "2055-01-01T00:00:00Z" );
+        Instant maximum = Instant.parse( "2055-04-01T00:00:00Z" );
+
+        GeneratedBaseline climatology = GeneratedBaselineBuilder.builder()
+                                                                .method( GeneratedBaselines.CLIMATOLOGY )
+                                                                .build();
+        Source webSource = SourceBuilder.builder()
+                                        .uri( URI.create( "https:foo.bar/baz" ) )
+                                        .build();
+        Dataset webDataset = DatasetBuilder.builder()
+                                           .sources( List.of( webSource ) )
+                                           .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( webDataset )
+                                                         .generatedBaseline( climatology )
+                                                         .build();
+
+        TimeInterval validDates = TimeIntervalBuilder.builder()
+                                                     .minimum( minimum )
+                                                     .maximum( maximum )
+                                                     .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .baseline( baseline )
+                                            .validDates( validDates )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "Discovered an evaluation with a climatological "
+                                                       + "baseline whose source data originates from a web service",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
     void testClimatologyWithInvalidDataTypeProducesError()
     {
         GeneratedBaseline climatology = GeneratedBaselineBuilder.builder()
