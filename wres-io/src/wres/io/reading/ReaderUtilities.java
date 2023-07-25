@@ -957,8 +957,10 @@ public class ReaderUtilities
             specifiedLatest = dates.maximum();
         }
 
-        // If this is a baseline dataset with a declared interval, use the earliest and latest dates of the two
-        if ( dataSource.getDatasetOrientation() == DatasetOrientation.BASELINE
+        // If the evaluation has a baseline data source and EITHER this is the baseline dataset OR this data source is
+        // the same as the baseline data source (i.e., duplicated), compare with the valid dates above and user the
+        // longer of the two intervals. See #118435
+        if ( ReaderUtilities.isBaselineOrHasSameDatasetAsBaseline( dataSource, declaration )
              && DeclarationUtilities.hasGeneratedBaseline( declaration.baseline() )
              && declaration.baseline()
                            .generatedBaseline()
@@ -979,19 +981,29 @@ public class ReaderUtilities
 
             if ( Objects.isNull( specifiedEarliest )
                  || ( Objects.nonNull( minimumDate )
+                      && minimumDate != Instant.MIN
                       && specifiedEarliest.isAfter( minimumDate ) ) )
             {
-                LOGGER.debug( "Used the 'minimum_date' on the 'baseline' of {}, because this is earlier than the "
-                              + "'minimum' value of the 'valid_dates', which is {}.", minimumDate, specifiedEarliest );
+                LOGGER.debug( "Used the 'minimum_date' of {} from the {} dataset on the {} dataset, because this is "
+                              + "earlier than the 'minimum' value of the 'valid_dates', which is {}.",
+                              minimumDate,
+                              DatasetOrientation.BASELINE,
+                              dataSource.getDatasetOrientation(),
+                              specifiedEarliest );
                 specifiedEarliest = minimumDate;
             }
 
             if ( Objects.isNull( specifiedLatest )
                  || ( Objects.nonNull( maximumDate )
+                      && maximumDate != Instant.MAX
                       && specifiedLatest.isBefore( maximumDate ) ) )
             {
-                LOGGER.debug( "Used the 'maximum_date' on the 'baseline' of {}, because this is later than the "
-                              + "'maximum' value of the 'valid_dates', which is {}.", maximumDate, specifiedLatest );
+                LOGGER.debug( "Used the 'maximum_date' of {} from the {} dataset on the {} dataset, because this is "
+                              + "later than the 'maximum' value of the 'valid_dates', which is {}.",
+                              maximumDate,
+                              DatasetOrientation.BASELINE,
+                              dataSource.getDatasetOrientation(),
+                              specifiedLatest );
                 specifiedLatest = maximumDate;
             }
         }
@@ -1005,10 +1017,26 @@ public class ReaderUtilities
                                             + "as the 'valid_dates' with both the 'minimum' and 'maximum'." );
         }
 
-        LOGGER.debug( "When building a reader for time-series data from the USGS NWIS service, received a complete "
-                      + "pair declaration, which will be used to chunk requests by feature and time range." );
+        Pair<Instant, Instant> range = Pair.of( specifiedEarliest, specifiedLatest );
 
-        return Pair.of( specifiedEarliest, specifiedLatest );
+        LOGGER.debug( "When building a reader for time-series data from a web source, received a complete pair "
+                      + "declaration, which will be used to chunk requests by feature and time range: {}.", range );
+
+        return range;
+    }
+
+    /**
+     * @param dataSource the data source to check
+     * @param declaration the evaluation declaration
+     * @return whether this data source is a baseline source or has the same dataset as a baseline source
+     */
+
+    private static boolean isBaselineOrHasSameDatasetAsBaseline( DataSource dataSource,
+                                                                 EvaluationDeclaration declaration )
+    {
+        return dataSource.getDatasetOrientation() == DatasetOrientation.BASELINE
+               || ( DeclarationUtilities.hasBaseline( declaration )
+                    && declaration.baseline().dataset().equals( dataSource.getContext() ) );
     }
 
     /**
