@@ -1626,6 +1626,46 @@ class DeclarationValidatorTest
                                                        StatusLevel.ERROR ) );
     }
 
+    @Test
+    void testForecastDatasetWithWebSourceDoesNotRequireValidDates()
+    {
+        Instant minimum = Instant.parse( "2055-01-01T00:00:00Z" );
+        Instant maximum = Instant.parse( "2055-04-01T00:00:00Z" );
+
+        Source webSource = SourceBuilder.builder()
+                                        .uri( URI.create( "https:foo.bar/baz" ) )
+                                        .sourceInterface( SourceInterface.WRDS_AHPS )
+                                        .build();
+        Dataset predicted = DatasetBuilder.builder()
+                                          .sources( List.of( webSource ) )
+                                          .type( DataType.SINGLE_VALUED_FORECASTS )
+                                          .build();
+        TimeInterval referenceDates = TimeIntervalBuilder.builder()
+                                                         .minimum( minimum )
+                                                         .maximum( maximum )
+                                                         .build();
+
+        Set<GeometryTuple> geometries = Set.of( GeometryTuple.newBuilder()
+                                                             .setLeft( Geometry.newBuilder()
+                                                                                .setName( "foo" ) )
+                                                             .setRight( Geometry.newBuilder()
+                                                                                   .setName( "foo" ) )
+                                                             .build() );
+
+        Features features = new Features( geometries );
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( predicted )
+                                            .referenceDates( referenceDates )
+                                            .features( features )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( events.isEmpty() );
+    }
+
     /**
      * @param events the events to check
      * @param message the message sequence that should appear in one or more messages

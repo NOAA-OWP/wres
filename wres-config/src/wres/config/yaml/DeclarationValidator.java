@@ -2007,7 +2007,7 @@ public class DeclarationValidator
 
             String start = "No geospatial features were defined, but web sources were declared for the '";
             String middle = "' dataset, which requires features to be defined.";
-            String end = "Please add some geospatial features to the declaration (e.g., 'features', 'feature_groups' "
+            String end = " Please add some geospatial features to the declaration (e.g., 'features', 'feature_groups' "
                          + "or 'feature_service') and try again.";
 
             // Web services require features
@@ -2913,7 +2913,7 @@ public class DeclarationValidator
                                                                         + "null"
                                                                         + messageMiddleInner
                                                                         + REFERENCE_DATES
-                                                                        + " and "
+                                                                        + " and/or "
                                                                         + VALID_DATES
                                                                         + messageMiddleOuter
                                                                         + REFERENCE_DATES
@@ -2945,7 +2945,9 @@ public class DeclarationValidator
             events.add( event );
         }
         // Non-forecasts with incomplete valid times
-        else if ( DeclarationValidator.isTimeIntervalIncomplete( declaration.validDates() ) )
+        else if ( Objects.nonNull( type )
+                  && !type.isForecastType()
+                  && DeclarationValidator.isTimeIntervalIncomplete( declaration.validDates() ) )
         {
             EvaluationStatusEvent event = eventBuilder.setEventMessage( messageStart
                                                                         + orientation
@@ -3167,21 +3169,25 @@ public class DeclarationValidator
     {
         if ( orientation == DatasetOrientation.LEFT )
         {
-            return DeclarationValidator.hasSourceInterface( declaration.left().sources(),
+            return DeclarationValidator.hasSourceInterface( declaration.left()
+                                                                       .sources(),
                                                             SourceInterface.USGS_NWIS,
                                                             SourceInterface.WRDS_AHPS,
                                                             SourceInterface.WRDS_NWM );
         }
         else if ( orientation == DatasetOrientation.RIGHT )
         {
-            return DeclarationValidator.hasSourceInterface( declaration.right().sources(),
+            return DeclarationValidator.hasSourceInterface( declaration.right()
+                                                                       .sources(),
                                                             SourceInterface.USGS_NWIS,
                                                             SourceInterface.WRDS_AHPS,
                                                             SourceInterface.WRDS_NWM );
         }
         else if ( DeclarationUtilities.hasBaseline( declaration ) && orientation == DatasetOrientation.BASELINE )
         {
-            return DeclarationValidator.hasSourceInterface( declaration.baseline().dataset().sources(),
+            return DeclarationValidator.hasSourceInterface( declaration.baseline()
+                                                                       .dataset()
+                                                                       .sources(),
                                                             SourceInterface.USGS_NWIS,
                                                             SourceInterface.WRDS_AHPS,
                                                             SourceInterface.WRDS_NWM );
