@@ -47,7 +47,7 @@ public class MultiDeclarationFactory
     private static final Path DATA_DIRECTORY = Path.of( System.getProperty( "user.dir" ) );
 
     /**
-     * <p>Deserializes a string into a POJO. The string may be any of:
+     * <p>Deserializes a declaration string or path into a POJO. The string may be any of:
      *
      * <ol>
      * <li>A path to a file that contains a string formatted in the old (XML) declaration language;</li>
@@ -170,7 +170,7 @@ public class MultiDeclarationFactory
         String declarationString = declarationOrPath;
 
         // Default origin
-        String origin = "command line argument";
+        String origin = "declaration string";
 
         // Use the default file system when none was supplied
         if ( Objects.isNull( fileSystem ) )
@@ -184,7 +184,7 @@ public class MultiDeclarationFactory
             Path path = fileSystem.getPath( declarationOrPath );
             declarationString = Files.readString( path );
             origin = path.toString();
-            LOGGER.info( "Discovered a path to a declaration string: {}", path );
+            LOGGER.info( "Discovered a path to a declaration string: {}", origin );
         }
 
         if ( LOGGER.isDebugEnabled() )

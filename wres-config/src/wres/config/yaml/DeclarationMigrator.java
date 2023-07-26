@@ -643,17 +643,14 @@ public class DeclarationMigrator
             // Is there a single set of thresholds? If so, migrate to top-level thresholds
             List<ThresholdsConfig> globalThresholds =
                     DeclarationMigrator.getGlobalThresholds( metrics );
-            boolean addThresholdsPerMetric = true;
             if ( !globalThresholds.isEmpty() )
             {
                 LOGGER.debug( "Discovered these global thresholds to migrate: {}.", globalThresholds );
-
-                addThresholdsPerMetric = false;
                 DeclarationMigrator.migrateGlobalThresholds( globalThresholds, builder, inline );
             }
 
             // Now migrate the metrics
-            DeclarationMigrator.migrateMetrics( metrics, projectConfig, builder, addThresholdsPerMetric, inline );
+            DeclarationMigrator.migrateMetrics( metrics, projectConfig, builder, globalThresholds, inline );
         }
     }
 
@@ -1587,13 +1584,13 @@ public class DeclarationMigrator
      * @param metrics the metrics to migrate
      * @param projectConfig the overall declaration used as context when migrating metrics
      * @param builder the builder to mutate
-     * @param addThresholdsPerMetric whether the thresholds declared in each metric group should be added to each metric
+     * @param globalThresholds the global thresholds, if any
      * @param inline is true to migrate external CSV thresholds inline, false to use a {@link ThresholdSource}
      */
     private static void migrateMetrics( List<MetricsConfig> metrics,
                                         ProjectConfig projectConfig,
                                         EvaluationDeclarationBuilder builder,
-                                        boolean addThresholdsPerMetric,
+                                        List<ThresholdsConfig> globalThresholds,
                                         boolean inline )
     {
         // Iterate through each metric group
@@ -1613,7 +1610,7 @@ public class DeclarationMigrator
                 // Acquire the parameters that apply to all metrics in this group
                 MetricParameters groupParameters = DeclarationMigrator.migrateMetricParameters( next,
                                                                                                 builder,
-                                                                                                addThresholdsPerMetric,
+                                                                                                globalThresholds,
                                                                                                 inline );
 
                 // Increment the metrics, preserving insertion order
@@ -1734,21 +1731,21 @@ public class DeclarationMigrator
      *
      * @param metric the metric whose parameters should be read
      * @param builder the builder, which may be updated with threshold service declaration
-     * @param addThresholdsPerMetric whether the thresholds declared in each metric group should be added to each metric
+     * @param globalThresholds the global thresholds, if any
      * @param inline is true to migrate external CSV thresholds inline, false to use a {@link ThresholdSource}
      * @return the migrated metric parameters
      */
     private static MetricParameters migrateMetricParameters( MetricsConfig metric,
                                                              EvaluationDeclarationBuilder builder,
-                                                             boolean addThresholdsPerMetric,
+                                                             List<ThresholdsConfig> globalThresholds,
                                                              boolean inline )
     {
         MetricParametersBuilder parametersBuilder = MetricParametersBuilder.builder();
 
         // Set the thresholds, if needed
-        if ( addThresholdsPerMetric && Objects.nonNull( metric.getThresholds() ) )
+        List<ThresholdsConfig> thresholds = metric.getThresholds();
+        if ( Objects.nonNull( thresholds ) && !thresholds.equals( globalThresholds ) )
         {
-            List<ThresholdsConfig> thresholds = metric.getThresholds();
             Set<Threshold> migratedThresholds = thresholds.stream()
                                                           .map( next -> DeclarationMigrator.migrateThresholds( next,
                                                                                                                builder,
@@ -2132,8 +2129,8 @@ public class DeclarationMigrator
 
     /**
      * Inspects the metrics and looks for a single/global set of thresholds containing the same collection of
-     * {@link ThresholdsConfig} across all {@link MetricsConfig}. If there are no global thresholds, returns an empty
-     * list. In that case, no thresholds are defined or there are different thresholds for different metrics.
+     * {@link ThresholdsConfig} across all {@link MetricsConfig}. Chooses the group with the most metrics. If there are
+     * no global thresholds, returns an empty list.
      *
      * @param metrics the metrics to inspect
      * @return the global thresholds, if available
@@ -2142,17 +2139,17 @@ public class DeclarationMigrator
     private static List<ThresholdsConfig> getGlobalThresholds( List<MetricsConfig> metrics )
     {
         List<ThresholdsConfig> thresholds = new ArrayList<>();
+        int largest = 0;
         for ( MetricsConfig nextMetrics : metrics )
         {
             List<ThresholdsConfig> innerThresholds = nextMetrics.getThresholds();
-            if ( !thresholds.isEmpty()
-                 && !thresholds.equals( innerThresholds ) )
-            {
-                return Collections.emptyList();
-            }
-            else
+            int metricCount = nextMetrics.getMetric()
+                                         .size();
+            if ( !innerThresholds.isEmpty()
+                 && metricCount > largest )
             {
                 thresholds = innerThresholds;
+                largest = metricCount;
             }
         }
 

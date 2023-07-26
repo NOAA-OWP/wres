@@ -577,7 +577,8 @@ class DeclarationMigratorTest
     void testMigrateProjectWithTwoGroupsOfMetricsAndThresholds()
     {
         // First group of metrics with thresholds
-        List<MetricConfig> someMetrics = List.of( new MetricConfig( null, MetricConfigName.MEAN_ABSOLUTE_ERROR ) );
+        List<MetricConfig> someMetrics = List.of( new MetricConfig( null, MetricConfigName.MEAN_ABSOLUTE_ERROR ),
+                                                  new MetricConfig( null, MetricConfigName.SAMPLE_SIZE ) );
         ThresholdsConfig someThresholds = new ThresholdsConfig( wres.config.xml.generated.ThresholdType.PROBABILITY,
                                                                 ThresholdDataType.LEFT, "0.1",
                                                                 ThresholdOperator.GREATER_THAN );
@@ -615,13 +616,13 @@ class DeclarationMigratorTest
                                                                             .build();
 
         Set<wres.config.yaml.components.Threshold> someExpectedThresholds = Set.of( pOneWrapped );
-        MetricParameters someParameters = MetricParametersBuilder.builder()
-                                                                 .probabilityThresholds( someExpectedThresholds )
-                                                                 .build();
 
         Metric metricOne = MetricBuilder.builder()
                                         .name( MetricConstants.MEAN_ABSOLUTE_ERROR )
-                                        .parameters( someParameters )
+                                        .build();
+
+        Metric metricTwo = MetricBuilder.builder()
+                                        .name( MetricConstants.SAMPLE_SIZE )
                                         .build();
 
         Threshold pTwo = Threshold.newBuilder()
@@ -639,17 +640,18 @@ class DeclarationMigratorTest
                                                                      .probabilityThresholds( someMoreExpectedThresholds )
                                                                      .build();
 
-        Metric metricTwo = MetricBuilder.builder()
-                                        .name( MetricConstants.MEAN_ERROR )
-                                        .parameters( someMoreParameters )
-                                        .build();
+        Metric metricThree = MetricBuilder.builder()
+                                          .name( MetricConstants.MEAN_ERROR )
+                                          .parameters( someMoreParameters )
+                                          .build();
 
-        Set<Metric> expectedMetrics = Set.of( metricOne, metricTwo );
+        Set<Metric> expectedMetrics = Set.of( metricOne, metricTwo, metricThree );
 
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
                                                                      .left( this.observedDataset )
                                                                      .right( this.predictedDataset )
                                                                      .metrics( expectedMetrics )
+                                                                     .probabilityThresholds( someExpectedThresholds )
                                                                      .build();
 
         assertEquals( expected, actual );

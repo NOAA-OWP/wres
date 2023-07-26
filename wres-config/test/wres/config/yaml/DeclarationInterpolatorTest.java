@@ -703,6 +703,66 @@ class DeclarationInterpolatorTest
     }
 
     @Test
+    void testInterpolateGlobalAndLocalThresholds()
+    {
+        wres.config.yaml.components.Threshold one =
+                ThresholdBuilder.builder()
+                                .threshold( Threshold.newBuilder()
+                                                     .setLeftThresholdValue( DoubleValue.of( 1.0 ) )
+                                                     .build() )
+                                .type( ThresholdType.VALUE )
+                                .build();
+
+        wres.config.yaml.components.Threshold two =
+                ThresholdBuilder.builder()
+                                .threshold( Threshold.newBuilder()
+                                                     .setLeftThresholdValue( DoubleValue.of( 2.0 ) )
+                                                     .build() )
+                                .type( ThresholdType.VALUE )
+                                .build();
+
+        Metric first = MetricBuilder.builder()
+                                    .name( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE )
+                                    .parameters( MetricParametersBuilder.builder()
+                                                                        .thresholds( Set.of( two ) )
+                                                                        .build() )
+                                    .build();
+        Metric second = MetricBuilder.builder()
+                                     .name( MetricConstants.MEAN_ABSOLUTE_ERROR )
+                                     .build();
+
+        Set<Metric> metrics = Set.of( first, second );
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .thresholds( Set.of( one ) )
+                                            .metrics( metrics )
+                                            .build();
+        EvaluationDeclaration actualDeclaration = DeclarationInterpolator.interpolate( declaration );
+        Set<Metric> actual = actualDeclaration.metrics();
+
+        Metric firstExpected =
+                MetricBuilder.builder()
+                             .name( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE )
+                             .parameters( MetricParametersBuilder.builder()
+                                                                 .thresholds( Set.of( ALL_DATA_THRESHOLD, two ) )
+                                                                 .build() )
+                             .build();
+        Metric secondExpected =
+                MetricBuilder.builder()
+                             .name( MetricConstants.MEAN_ABSOLUTE_ERROR )
+                             .parameters( MetricParametersBuilder.builder()
+                                                                 .thresholds( Set.of( ALL_DATA_THRESHOLD, one ) )
+                                                                 .build() )
+                             .build();
+
+        Set<Metric> expected = Set.of( firstExpected, secondExpected );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testInterpolateTimeZoneOffsets()
     {
         Dataset left = DatasetBuilder.builder( this.observedDataset )

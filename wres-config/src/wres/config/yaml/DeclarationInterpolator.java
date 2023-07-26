@@ -313,14 +313,16 @@ public class DeclarationInterpolator
      * Associates the specified thresholds with the appropriate metrics and adds an "all data" threshold to each
      * continuous metric.
      *
-     * @param thresholdsByType the mapped thresholds
+     * @param globalThresholds the mapped thresholds
      * @param addAllData is true to add an all data threshold where appropriate, false otherwise
      * @param builder the builder to mutate
+     * @param addThresholds is true to add the global and local thresholds together, otherwise favor the local thresholds
      */
 
-    static void addThresholdsToMetrics( Map<wres.config.yaml.components.ThresholdType, Set<Threshold>> thresholdsByType,
+    static void addThresholdsToMetrics( Map<wres.config.yaml.components.ThresholdType, Set<Threshold>> globalThresholds,
                                         EvaluationDeclarationBuilder builder,
-                                        boolean addAllData )
+                                        boolean addAllData,
+                                        boolean addThresholds )
     {
         Set<Metric> metrics = builder.metrics();
         Set<Metric> adjustedMetrics = new LinkedHashSet<>( metrics.size() );
@@ -330,10 +332,11 @@ public class DeclarationInterpolator
         // Adjust the metrics
         for ( Metric next : metrics )
         {
-            Metric adjustedMetric = DeclarationInterpolator.addThresholdsToMetric( thresholdsByType,
+            Metric adjustedMetric = DeclarationInterpolator.addThresholdsToMetric( globalThresholds,
                                                                                    next,
                                                                                    builder,
-                                                                                   addAllData );
+                                                                                   addAllData,
+                                                                                   addThresholds );
             adjustedMetrics.add( adjustedMetric );
         }
 
@@ -941,7 +944,7 @@ public class DeclarationInterpolator
         LOGGER.debug( "When interpolating thresholds for metrics, discovered the following thresholds to use: {}.",
                       thresholdsByType );
 
-        DeclarationInterpolator.addThresholdsToMetrics( thresholdsByType, builder, true );
+        DeclarationInterpolator.addThresholdsToMetrics( thresholdsByType, builder, true, false );
     }
 
     /**
@@ -1351,17 +1354,19 @@ public class DeclarationInterpolator
      * Associates the specified thresholds with the specified metric and adds an "all data" threshold as needed. Also
      * adds featureful thresholds where possible.
      *
-     * @param thresholdsByType the mapped thresholds
+     * @param globalThresholds the mapped thresholds
      * @param metric the metric
      * @param builder the builder
      * @param addAllData is true to add an all data threshold where appropriate, false otherwise
+     * @param addThresholds is true to add the global and local thresholds together, otherwise favor the local thresholds
      * @return the adjusted metric
      */
 
-    private static Metric addThresholdsToMetric( Map<wres.config.yaml.components.ThresholdType, Set<Threshold>> thresholdsByType,
+    private static Metric addThresholdsToMetric( Map<wres.config.yaml.components.ThresholdType, Set<Threshold>> globalThresholds,
                                                  Metric metric,
                                                  EvaluationDeclarationBuilder builder,
-                                                 boolean addAllData )
+                                                 boolean addAllData,
+                                                 boolean addThresholds )
     {
         MetricConstants name = metric.name();
 
@@ -1378,10 +1383,11 @@ public class DeclarationInterpolator
 
         // Value thresholds
         Set<Threshold> valByType =
-                thresholdsByType.get( ThresholdType.VALUE );
+                globalThresholds.get( ThresholdType.VALUE );
         Set<Threshold> valueThresholds =
                 DeclarationInterpolator.getCombinedThresholds( valByType,
-                                                               parametersBuilder.thresholds() );
+                                                               parametersBuilder.thresholds(),
+                                                               addThresholds );
 
         // Add "all data" thresholds?
         if ( name.isContinuous() && addAllData )
@@ -1397,10 +1403,11 @@ public class DeclarationInterpolator
 
         // Probability thresholds
         Set<Threshold> probByType =
-                thresholdsByType.get( ThresholdType.PROBABILITY );
+                globalThresholds.get( ThresholdType.PROBABILITY );
         Set<Threshold> probabilityThresholds =
                 DeclarationInterpolator.getCombinedThresholds( probByType,
-                                                               parametersBuilder.probabilityThresholds() );
+                                                               parametersBuilder.probabilityThresholds(),
+                                                               addThresholds );
         // Render the probability thresholds featureful, if possible
         probabilityThresholds = DeclarationInterpolator.getFeatureFulThresholds( probabilityThresholds, builder );
         parametersBuilder.probabilityThresholds( probabilityThresholds );
@@ -1413,10 +1420,11 @@ public class DeclarationInterpolator
                   || name.isInGroup( MetricConstants.SampleDataGroup.MULTICATEGORY ) ) )
         {
             Set<Threshold> classByType =
-                    thresholdsByType.get( ThresholdType.PROBABILITY_CLASSIFIER );
+                    globalThresholds.get( ThresholdType.PROBABILITY_CLASSIFIER );
             Set<Threshold> classifierThresholds =
                     DeclarationInterpolator.getCombinedThresholds( classByType,
-                                                                   parametersBuilder.classifierThresholds() );
+                                                                   parametersBuilder.classifierThresholds(),
+                                                                   addThresholds );
             // Render the classifier thresholds featureful, if possible
             classifierThresholds = DeclarationInterpolator.getFeatureFulThresholds( classifierThresholds, builder );
             parametersBuilder.classifierThresholds( classifierThresholds );
@@ -1444,29 +1452,47 @@ public class DeclarationInterpolator
     }
 
     /**
-     * Combines the input thresholds
-     * @param thresholds the thresholds
-     * @param moreThresholds more thresholds to combine
+     * Combines the input thresholds. If {@code adds} is {@code true} then the thresholds are added together.
+     * Otherwise, the local thresholds are returned where they exist and the global thresholds if not.
+     * @param globalThresholds the top-level thresholds, independent of metrics
+     * @param localThresholds the metric-specific thresholds
+     * @param add is true to add the global and local thresholds together, otherwise favor the local thresholds
      * @return the combined thresholds
      */
-    private static Set<Threshold> getCombinedThresholds( Set<Threshold> thresholds, Set<Threshold> moreThresholds )
+    private static Set<Threshold> getCombinedThresholds( Set<Threshold> globalThresholds,
+                                                         Set<Threshold> localThresholds,
+                                                         boolean add )
     {
         Set<Threshold> combined = new HashSet<>();
 
-        if ( Objects.nonNull( thresholds ) )
+        if( add )
         {
-            combined.addAll( thresholds );
-        }
+            if ( Objects.nonNull( globalThresholds ) )
+            {
+                combined.addAll( globalThresholds );
+            }
 
-        if ( Objects.nonNull( moreThresholds ) )
+            if ( Objects.nonNull( localThresholds ) )
+            {
+                combined.addAll( localThresholds );
+            }
+        }
+        else
         {
-            combined.addAll( moreThresholds );
+            if ( Objects.nonNull( localThresholds )
+                 && !localThresholds.isEmpty() )
+            {
+                combined.addAll( localThresholds );
+            }
+            else if ( Objects.nonNull( globalThresholds ) )
+            {
+                combined.addAll( globalThresholds );
+            }
         }
 
         // Mutable
         return combined;
     }
-
 
     /**
      * Interpolates featureful thresholds from the supplied thresholds. Each threshold that is not currently associated
