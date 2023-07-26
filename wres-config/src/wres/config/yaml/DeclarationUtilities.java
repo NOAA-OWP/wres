@@ -359,6 +359,7 @@ public class DeclarationUtilities
         thresholds.addAll( declaration.probabilityThresholds() );
         thresholds.addAll( declaration.classifierThresholds() );
         thresholds.addAll( declaration.thresholdSets() );
+
         // Map from metric parameters to thresholds
         Function<MetricParameters, Set<Threshold>> parMapper = parameters ->
         {
@@ -932,7 +933,8 @@ public class DeclarationUtilities
      * @throws NullPointerException if any input is null
      */
 
-    public static EvaluationDeclaration addThresholds( EvaluationDeclaration declaration, Set<Threshold> thresholds )
+    public static EvaluationDeclaration addThresholds( EvaluationDeclaration declaration,
+                                                       Set<Threshold> thresholds )
     {
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( thresholds );
@@ -975,7 +977,7 @@ public class DeclarationUtilities
         }
 
         // Add the thresholds to the individual metrics and return
-        DeclarationInterpolator.addThresholdsToMetrics( thresholdsByType, builder, false );
+        DeclarationInterpolator.addThresholdsToMetrics( thresholdsByType, builder, false, true );
 
         return builder.build();
     }
