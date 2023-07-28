@@ -27,6 +27,7 @@ import org.apache.tika.metadata.Metadata;
 import org.apache.tika.metadata.TikaCoreProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.commons.codec.digest.DigestUtils;
 
 @Path( "/job/{jobId}/output" )
 public class WresJobOutput
@@ -167,27 +168,35 @@ public class WresJobOutput
                 Metadata metadata = new Metadata();
                 metadata.set( TikaCoreProperties.RESOURCE_NAME_KEY,
                               actualFile.toString() );
+                String md5 = "not_computed";
 
                 try ( InputStream inputStream = TikaInputStream.get( path ) )
                 {
+                    //Probing the file type.
                     TikaConfig tikaConfig = new TikaConfig();
                     Detector detector = tikaConfig.getDetector();
                     org.apache.tika.mime.MediaType mediaType =
                             detector.detect( inputStream,
                                              metadata );
                     probedType = mediaType.toString();
-
                     if ( probedType != null )
                     {
                         type = probedType;
                     }
+
+                    //Opening a new input stream for computing the md5. 
+                    InputStream is = Files.newInputStream( path ); 
+                    md5 = DigestUtils.md5Hex(inputStream);
+
+                    LOGGER.debug( "The path {} found to have type {} and MD5 {}.", path, type, md5);
                 }
                 catch ( IOException | TikaException e )
                 {
-                    LOGGER.warn( "Could not probe content type of {}", path, e );
+                    LOGGER.warn( "Could not probe content type and compute MD5 of {}", path, e );
                 }
 
                 return Response.ok( actualFile )
+                               .header( "content-md5", md5 )
                                .type( type )
                                .build();
             }
