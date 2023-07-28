@@ -184,8 +184,7 @@ public class WresJobOutput
                         type = probedType;
                     }
 
-                    //Opening a new input stream for computing the md5. 
-                    InputStream is = Files.newInputStream( path ); 
+                    //Testing shows that the inputStream open for tika is reset and can be resused here. 
                     md5 = DigestUtils.md5Hex(inputStream);
 
                     LOGGER.debug( "The path {} found to have type {} and MD5 {}.", path, type, md5);
