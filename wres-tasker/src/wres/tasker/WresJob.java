@@ -1,5 +1,6 @@
 package wres.tasker;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -19,6 +20,8 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import java.security.SecureRandom;
 
+
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -43,8 +46,10 @@ import org.slf4j.LoggerFactory;
 
 import static jakarta.ws.rs.core.MediaType.APPLICATION_FORM_URLENCODED;
 
+import wres.config.yaml.DeclarationValidator;
 import wres.messages.BrokerHelper;
 import wres.messages.generated.Job;
+import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 
 import static wres.messages.generated.Job.job.Verb;
 
@@ -307,6 +312,56 @@ public class WresJob
                               + "</body></html>";
 
         return Response.ok( htmlResponse ).build();
+    }
+
+    /**
+     * Post a declaration to be validated. This calls the same validation functionality used by the 
+     * core WRES and does a schema-based validation as well as some business logic checks.
+     * @param projectConfig The declaration to be validated.
+     * @return HTTP 200 on success with status events encoded in byte array as content. 4XX or 5XX 
+     * otherwise as appropriate.
+     */
+    @POST
+    @Path( "/validate" )
+    @Consumes( APPLICATION_FORM_URLENCODED )
+    @Produces( "application/octet-stream" )
+    public Response postWresValidate( @FormParam( "projectConfig" ) @DefaultValue( "" ) String projectConfig )
+    {
+        //Obtain the evaluation status events.
+        Set<EvaluationStatusEvent> events;
+        try
+        {
+            events = DeclarationValidator.validate( projectConfig );
+        }
+        catch ( IOException e1 )
+        {
+            LOGGER.warn(
+                         "Unable to validate project configuration due to internal error.",
+                         e1 );
+            return WresJob.internalServerError(
+                                                "Unable to validate project configuration due to internal error." );
+        }
+
+        //Write the events to a delimited byte stream.
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        try
+        {
+            for ( EvaluationStatusEvent event : events )
+            {
+                event.writeDelimitedTo( byteStream );
+            }
+        }
+        catch ( IOException e2 )
+        {
+            LOGGER.warn(
+                         "Unable to write protobuf response byte array due to I/O exception.",
+                         e2 );
+            return WresJob.internalServerError(
+                                                "Unable to write protobuf response byte array due to I/O exception." );
+        }
+
+        //Return an OK response with the byte array as the content.
+        return Response.ok( byteStream.toByteArray() ).build();
     }
 
     /**
