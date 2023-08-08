@@ -80,7 +80,7 @@ public final class MeanSquareErrorSkillScoreTest
                                                             .addStatistics( component )
                                                             .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
 
     @Test
@@ -102,7 +102,7 @@ public final class MeanSquareErrorSkillScoreTest
                                                             .addStatistics( component )
                                                             .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
 
     @Test
@@ -124,7 +124,7 @@ public final class MeanSquareErrorSkillScoreTest
                                                             .addStatistics( component )
                                                             .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
 
     @Test
@@ -136,7 +136,7 @@ public final class MeanSquareErrorSkillScoreTest
 
         DoubleScoreStatisticOuter actual = this.msess.apply( input );
 
-        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getStatistic().getValue(), 0.0 );
     }
 
     @Test
@@ -239,7 +239,7 @@ public final class MeanSquareErrorSkillScoreTest
                                                             .addStatistics( component )
                                                             .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
 
     @Test

@@ -3,7 +3,6 @@ package wres.metrics.discreteprobability;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -24,12 +23,11 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
  * Tests the {@link RelativeOperatingCharacteristicDiagram}.
- * 
+ *
  * @author James Brown
  */
 public final class RelativeOperatingCharacteristicDiagramTest
 {
-
     /**
      * Default instance of a {@link RelativeOperatingCharacteristicDiagram}.
      */
@@ -41,11 +39,6 @@ public final class RelativeOperatingCharacteristicDiagramTest
     {
         this.roc = RelativeOperatingCharacteristicDiagram.of();
     }
-
-    /**
-     * Compares the output from {@link RelativeOperatingCharacteristicDiagram#apply(Pool)} against 
-     * expected output.
-     */
 
     @Test
     public void testApply()
@@ -105,16 +98,11 @@ public final class RelativeOperatingCharacteristicDiagramTest
         assertEquals( expected, actual );
     }
 
-    /**
-     * Validates the output from {@link RelativeOperatingCharacteristicDiagram#apply(Pool)} when 
-     * supplied with no data.
-     */
-
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        Pool<Pair<Probability, Probability>> input = Pool.of( Arrays.asList(), PoolMetadata.of() );
+        Pool<Pair<Probability, Probability>> input = Pool.of( List.of(), PoolMetadata.of() );
 
         DiagramStatisticOuter actual = this.roc.apply( input );
 
@@ -148,30 +136,21 @@ public final class RelativeOperatingCharacteristicDiagramTest
                                                     .setMetric( RelativeOperatingCharacteristicDiagram.BASIC_METRIC )
                                                     .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
-
-    /**
-     * Checks that the {@link RelativeOperatingCharacteristicDiagram#getMetricNameString()} returns
-     * {@link MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM.toString()}
-     */
 
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM.toString(), this.roc.getMetricNameString() );
+        assertEquals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM.toString(),
+                      this.roc.getMetricNameString() );
     }
-
-    /**
-     * Tests for an expected exception on calling 
-     * {@link RelativeOperatingCharacteristicDiagram#apply(DiscreteProbabilityPairs)} with null input.
-     */
 
     @Test
     public void testExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                                   () -> this.roc.apply( (Pool<Pair<Probability, Probability>>) null ) );
+                                             () -> this.roc.apply( null ) );
 
         assertEquals( "Specify non-null input to the '" + this.roc.getMetricNameString() + "'.", actual.getMessage() );
     }

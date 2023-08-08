@@ -2,7 +2,6 @@ package wres.io.writing.csv.statistics;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.text.DecimalFormat;
 import java.text.Format;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -212,14 +211,14 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
 
         // Loop across time windows
         SortedSet<TimeWindowOuter> timeWindows =
-                Slicer.discover( output, meta -> meta.getMetadata().getTimeWindow() );
+                Slicer.discover( output, meta -> meta.getPoolMetadata().getTimeWindow() );
         for ( TimeWindowOuter nextWindow : timeWindows )
         {
             List<BoxplotStatisticOuter> next =
-                    Slicer.filter( output, data -> data.getMetadata().getTimeWindow().equals( nextWindow ) );
+                    Slicer.filter( output, data -> data.getPoolMetadata().getTimeWindow().equals( nextWindow ) );
 
             MetricConstants metricName = next.get( 0 ).getMetricName();
-            PoolMetadata meta = next.get( 0 ).getMetadata();
+            PoolMetadata meta = next.get( 0 ).getPoolMetadata();
 
             StringJoiner headerRow =
                     CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( meta,
@@ -272,7 +271,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         if ( !output.isEmpty() )
         {
             MetricConstants metricName = output.get( 0 ).getMetricName();
-            PoolMetadata meta = output.get( 0 ).getMetadata();
+            PoolMetadata meta = output.get( 0 ).getPoolMetadata();
 
             StringJoiner headerRow =
                     CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( meta,
@@ -318,9 +317,9 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
 
         // Discover the time windows and thresholds to loop
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
+                Slicer.discover( output, meta -> meta.getPoolMetadata().getThresholds() );
         SortedSet<TimeWindowOuter> timeWindows =
-                Slicer.discover( output, meta -> meta.getMetadata().getTimeWindow() );
+                Slicer.discover( output, meta -> meta.getPoolMetadata().getTimeWindow() );
 
         PoolMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( output );
 
@@ -331,18 +330,18 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             for ( TimeWindowOuter timeWindow : timeWindows )
             {
                 BoxplotStatisticOuter nextValues = Slicer.filter( output,
-                                                                  next -> next.getMetadata()
+                                                                  next -> next.getPoolMetadata()
                                                                               .getThresholds()
                                                                               .equals( t )
-                                                                          && next.getMetadata()
+                                                                          && next.getPoolMetadata()
                                                                                  .getTimeWindow()
                                                                                  .equals( timeWindow ) )
                                                          .get( 0 );
 
-                boolean hasLinkedValue = nextValues.getData().getMetric().getLinkedValueType() != LinkedValueType.NONE;
+                boolean hasLinkedValue = nextValues.getStatistic().getMetric().getLinkedValueType() != LinkedValueType.NONE;
 
                 // Add each box
-                for ( Box nextBox : nextValues.getData().getStatisticsList() )
+                for ( Box nextBox : nextValues.getStatistic().getStatisticsList() )
                 {
                     List<Double> data = new ArrayList<>();
 
@@ -387,15 +386,15 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         // Discover the first item and use this to help
         BoxplotStatisticOuter nextValues = output.get( 0 );
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( output, next -> next.getMetadata().getThresholds() );
+                Slicer.discover( output, next -> next.getPoolMetadata().getThresholds() );
 
-        LinkedValueType linkedValueType = nextValues.getData().getMetric().getLinkedValueType();
-        QuantileValueType quantileValueType = nextValues.getData().getMetric().getQuantileValueType();
-        List<Double> headerProbabilities = nextValues.getData().getMetric().getQuantilesList();
+        LinkedValueType linkedValueType = nextValues.getStatistic().getMetric().getLinkedValueType();
+        QuantileValueType quantileValueType = nextValues.getStatistic().getMetric().getQuantileValueType();
+        List<Double> headerProbabilities = nextValues.getStatistic().getMetric().getQuantilesList();
         String lType = linkedValueType.toString().replace( "_", " " );
         String qType = quantileValueType.toString().replace( "_", " " );
 
-        if ( nextValues.getData().getStatisticsCount() != 0 )
+        if ( nextValues.getStatistic().getStatisticsCount() != 0 )
         {
             for ( OneOrTwoThresholds nextThreshold : thresholds )
             {
@@ -438,7 +437,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         for ( EnsembleAverageType type : EnsembleAverageType.values() )
         {
             List<BoxplotStatisticOuter> innerSlice = Slicer.filter( statistics,
-                                                                    value -> type == value.getMetadata()
+                                                                    value -> type == value.getPoolMetadata()
                                                                                           .getPool()
                                                                                           .getEnsembleAverageType() );
             // Slice by secondary threshold
@@ -465,7 +464,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
         // #51670
         SortedSet<EnsembleAverageType> types =
                 Slicer.discover( statistics,
-                                 next -> next.getMetadata().getPool().getEnsembleAverageType() );
+                                 next -> next.getPoolMetadata().getPool().getEnsembleAverageType() );
 
         Optional<EnsembleAverageType> type =
                 types.stream()

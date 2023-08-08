@@ -498,12 +498,12 @@ public final class Slicer
 
         // Null-friendly comparator on time window
         Comparator<T> twComparator =
-                Comparator.nullsFirst( Comparator.comparing( statistic -> statistic.getMetadata().getTimeWindow(),
+                Comparator.nullsFirst( Comparator.comparing( statistic -> statistic.getPoolMetadata().getTimeWindow(),
                                                              TimeWindowOuter::compareTo ) );
 
         // Null-friendly comparator on threshold
         Comparator<T> trComparator =
-                Comparator.nullsFirst( Comparator.comparing( statistic -> statistic.getMetadata().getThresholds(),
+                Comparator.nullsFirst( Comparator.comparing( statistic -> statistic.getPoolMetadata().getThresholds(),
                                                              OneOrTwoThresholds::compareTo ) );
 
         // Combined comparator
@@ -778,7 +778,7 @@ public final class Slicer
     {
 
         Function<? super T, DatasetOrientation> classifier = statistic -> {
-            if ( statistic.getMetadata()
+            if ( statistic.getPoolMetadata()
                           .getPool()
                           .getIsBaselinePool() )
             {

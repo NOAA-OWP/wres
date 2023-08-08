@@ -3,11 +3,8 @@ package wres.vis;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.protobuf.Timestamp;
 
@@ -174,7 +171,7 @@ public class TestDataGenerator
         long maxSeconds = Instant.MAX.getEpochSecond();
 
         DoubleScoreComponentOuter first = issuedPools.get( 0 );
-        PoolMetadata metaOne = first.getMetadata();
+        PoolMetadata metaOne = first.getPoolMetadata();
         long firstSeconds = FIRST_INSTANT.getEpochSecond();
         TimeWindow windowOne = metaOne.getTimeWindow()
                                       .getTimeWindow()
@@ -190,11 +187,11 @@ public class TestDataGenerator
                                       .build();
         TimeWindowOuter windowOneOuter = TimeWindowOuter.of( windowOne );
         PoolMetadata adjustedOne = PoolMetadata.of( metaOne, windowOneOuter );
-        DoubleScoreComponentOuter firstAdjusted = DoubleScoreComponentOuter.of( first.getData(), adjustedOne );
+        DoubleScoreComponentOuter firstAdjusted = DoubleScoreComponentOuter.of( first.getStatistic(), adjustedOne );
         statistics.add( firstAdjusted );
 
         DoubleScoreComponentOuter second = issuedPools.get( 1 );
-        PoolMetadata metaTwo = first.getMetadata();
+        PoolMetadata metaTwo = first.getPoolMetadata();
         long secondSeconds = SECOND_INSTANT.getEpochSecond();
         TimeWindow windowTwo = metaTwo.getTimeWindow()
                                       .getTimeWindow()
@@ -210,7 +207,7 @@ public class TestDataGenerator
                                       .build();
         TimeWindowOuter windowTwoOuter = TimeWindowOuter.of( windowTwo );
         PoolMetadata adjustedTwo = PoolMetadata.of( metaOne, windowTwoOuter );
-        DoubleScoreComponentOuter secondAdjusted = DoubleScoreComponentOuter.of( second.getData(), adjustedTwo );
+        DoubleScoreComponentOuter secondAdjusted = DoubleScoreComponentOuter.of( second.getStatistic(), adjustedTwo );
         statistics.add( secondAdjusted );
 
         return Collections.unmodifiableList( statistics );
@@ -543,22 +540,6 @@ public class TestDataGenerator
                                                                                                      .setSeconds( 0 ) )
                                                             .build();
 
-
-        // Create a list of pairs
-        List<Pair<Instant, Duration>> input = new ArrayList<>();
-        // Add some fake time-to-peak errors to the list
-        input.add( Pair.of( Instant.parse( "1985-01-01T12:00:00Z" ), Duration.ofHours( -12 ) ) );
-        input.add( Pair.of( Instant.parse( "1985-01-02T12:00:00Z" ), Duration.ofHours( -2 ) ) );
-        input.add( Pair.of( Instant.parse( "1985-01-03T12:00:00Z" ), Duration.ofHours( +2 ) ) );
-        input.add( Pair.of( Instant.parse( "1985-01-04T12:00:00Z" ), Duration.ofHours( +4 ) ) );
-        input.add( Pair.of( Instant.parse( "1985-01-05T12:00:00Z" ), Duration.ofHours( +8 ) ) );
-        input.add( Pair.of( Instant.parse( "1985-01-06T12:00:00Z" ), Duration.ofHours( -12 ) ) );
-        input.add( Pair.of( Instant.parse( "1985-01-07T12:00:00Z" ), Duration.ofHours( -16 ) ) );
-        input.add( Pair.of( Instant.parse( "1985-01-08T12:00:00Z" ), Duration.ofHours( -22 ) ) );
-        input.add( Pair.of( Instant.parse( "1985-01-09T12:00:00Z" ), Duration.ofHours( 0 ) ) );
-        input.add( Pair.of( Instant.parse( "1985-01-10T12:00:00Z" ), Duration.ofHours( 24 ) ) );
-
-
         PairOfInstantAndDuration one = PairOfInstantAndDuration.newBuilder()
                                                                .setTime( Timestamp.newBuilder()
                                                                                   .setSeconds( firstInstant.getEpochSecond() )
@@ -679,12 +660,12 @@ public class TestDataGenerator
 
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
-        return Arrays.asList( DurationDiagramStatisticOuter.of( expectedSource, meta ) );
+        return List.of( DurationDiagramStatisticOuter.of( expectedSource, meta ) );
     }
 
     /**
-     * <p>Returns a {@link DurationOutput} that summarizes the time-to-peak errors associated with
-     * {@link getTimeToPeakErrors()}. The output includes:</p>
+     * <p>Returns a {@link DurationScoreStatisticOuter} that summarizes the time-to-peak errors. The output
+     * includes:</p>
      * <ol>
      * <li>{@link MetricConstants#MEAN}</li>
      * <li>{@link MetricConstants#MEDIAN}</li>
@@ -694,7 +675,7 @@ public class TestDataGenerator
      * <li>{@link MetricConstants#MEAN_ABSOLUTE}</li>
      * </ol>
      *
-     * @return a set of summary statistics for time-to-peak errors
+     * @return a list of summary statistics for time-to-peak errors
      */
 
     public static List<DurationScoreStatisticOuter> getTimeToPeakErrorStatistics()
@@ -760,7 +741,7 @@ public class TestDataGenerator
                                                                                                                             .setSeconds( 36_720 ) ) )
                                       .build();
 
-        return Arrays.asList( DurationScoreStatisticOuter.of( score, meta ) );
+        return List.of( DurationScoreStatisticOuter.of( score, meta ) );
     }
 
 

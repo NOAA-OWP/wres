@@ -49,7 +49,7 @@ public final class DoubleErrorScoreTest
 
         //Check the parameters
         assertEquals( "ESP",
-                      actual.getMetadata()
+                      actual.getPoolMetadata()
                             .getEvaluation()
                             .getBaselineDataName() );
     }
@@ -96,7 +96,7 @@ public final class DoubleErrorScoreTest
         }
         
         NullPointerException actual = assertThrows( NullPointerException.class,
-                                                    () -> new ExceptionCheck() );
+                                                    ExceptionCheck::new );
 
         assertEquals( "Cannot construct the error score 'MEAN ERROR' with a null error function.",
                       actual.getMessage() );
@@ -132,7 +132,7 @@ public final class DoubleErrorScoreTest
         }
 
         NullPointerException actual = assertThrows( NullPointerException.class,
-                                                    () -> new ExceptionCheck() );
+                                                    ExceptionCheck::new );
 
         assertEquals( "Cannot construct the error score 'MEAN ERROR' with a null "
                       + "accumulator function.",
@@ -169,7 +169,7 @@ public final class DoubleErrorScoreTest
         }
 
         NullPointerException actual = assertThrows( NullPointerException.class,
-                                                    () -> new ExceptionCheck() );
+                                                    ExceptionCheck::new );
 
         assertEquals( "Cannot construct the error score 'MEAN ERROR' with a null error function.",
                       actual.getMessage() );

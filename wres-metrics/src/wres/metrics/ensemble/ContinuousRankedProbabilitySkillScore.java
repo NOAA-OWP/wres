@@ -84,10 +84,10 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
         // CRPSS, currently without decomposition
         // TODO: implement the decomposition
         double numerator = super.apply( pool ).getComponent( MetricConstants.MAIN )
-                                .getData()
+                                .getStatistic()
                                 .getValue();
         double denominator = super.apply( pool.getBaselineData() ).getComponent( MetricConstants.MAIN )
-                                  .getData()
+                                  .getStatistic()
                                   .getValue();
 
         double result = FunctionFactory.skill().applyAsDouble( numerator, denominator );

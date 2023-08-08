@@ -70,7 +70,7 @@ class ScoreByLeadAndThreshold extends AbstractXYDataset
         return DataUtilities.durationToNumericUnits( this.statistics.get( series )
                                                                     .getRight()
                                                                     .get( item )
-                                                                    .getMetadata()
+                                                                    .getPoolMetadata()
                                                                     .getTimeWindow()
                                                                     .getLatestLeadDuration(),
                                                      this.durationUnits );
@@ -82,7 +82,7 @@ class ScoreByLeadAndThreshold extends AbstractXYDataset
         double test = this.statistics.get( series )
                                      .getRight()
                                      .get( item )
-                                     .getData()
+                                     .getStatistic()
                                      .getValue();
 
         if ( Double.isInfinite( test ) )
@@ -123,11 +123,11 @@ class ScoreByLeadAndThreshold extends AbstractXYDataset
         // Arrange the series by threshold and then set them
         List<Pair<String, List<DoubleScoreComponentOuter>>> innerStatistics = new ArrayList<>();
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( statistics, next -> next.getMetadata().getThresholds() );
+                Slicer.discover( statistics, next -> next.getPoolMetadata().getThresholds() );
         for ( OneOrTwoThresholds key : thresholds )
         {
             List<DoubleScoreComponentOuter> sliced = Slicer.filter( statistics,
-                                                                    next -> next.getMetadata()
+                                                                    next -> next.getPoolMetadata()
                                                                                 .getThresholds()
                                                                                 .equals( key ) );
 

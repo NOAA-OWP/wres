@@ -80,7 +80,7 @@ public final class TimeToPeakErrorTest
                                                                     .build();
 
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
 
     @Test

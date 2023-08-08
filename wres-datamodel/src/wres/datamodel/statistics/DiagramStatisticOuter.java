@@ -13,6 +13,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import org.apache.commons.lang3.tuple.Pair;
 
 import net.jcip.annotations.Immutable;
+
 import wres.datamodel.pools.PoolMetadata;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricDimension;
@@ -23,57 +24,39 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
  * A wrapping for a {@link DiagramStatistic}.
- * 
+ *
  * @author James Brown
  */
 @Immutable
 public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
 {
-    /**
-     * The diagram.
-     */
-
+    /** The diagram. */
     private final DiagramStatistic diagram;
 
-    /**
-     * Local set of component names from the canonical {@link #diagram}.
-     */
-
+    /** Local set of component names from the canonical {@link #diagram}. */
     private final SortedSet<MetricDimension> componentNames;
 
-    /**
-     * Local set of component name qualifiers from the canonical {@link #diagram}.
-     */
-
+    /** Local set of component name qualifiers from the canonical {@link #diagram}. */
     private final SortedSet<String> componentNameQualifiers;
 
-    /**
-     * Local set of metric components by type from the canonical {@link #diagram}.
-     */
-
+    /** Local set of metric components by type from the canonical {@link #diagram}. */
     private final Map<DiagramComponentType, Pair<DiagramMetricComponent, MetricDimension>> componentsByType;
 
-    /**
-     * The metadata associated with the statistic.
-     */
-
+    /** The metadata associated with the statistic. */
     private final PoolMetadata metadata;
 
-    /**
-     * The metric name.
-     */
-
+    /** The metric name. */
     private final MetricConstants metricName;
 
-    /**
-     * An internal map of indexes of pairs of metric names and qualifiers to allow fast lookup.
-     */
-
+    /** An internal map of indexes of pairs of metric names and qualifiers to allow fast lookup. */
     private final Map<Pair<MetricDimension, String>, Integer> componentIndexes;
+
+    /** The sample quantile or null. */
+    private final Double sampleQuantile;
 
     /**
      * Construct the diagram.
-     * 
+     *
      * @param diagram the verification diagram
      * @param meta the metadata
      * @throws StatisticException if any of the inputs are invalid
@@ -83,7 +66,24 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
     public static DiagramStatisticOuter of( DiagramStatistic diagram,
                                             PoolMetadata meta )
     {
-        return new DiagramStatisticOuter( diagram, meta );
+        return new DiagramStatisticOuter( diagram, meta, null );
+    }
+
+    /**
+     * Construct the statistic with a sample quantile.
+     *
+     * @param diagram the verification diagram
+     * @param metadata the metadata
+     * @param sampleQuantile the sample quantile or null
+     * @throws StatisticException if any of the inputs are invalid
+     * @return an instance of the output
+     */
+
+    public static DiagramStatisticOuter of( DiagramStatistic diagram,
+                                            PoolMetadata metadata,
+                                            Double sampleQuantile )
+    {
+        return new DiagramStatisticOuter( diagram, metadata, sampleQuantile );
     }
 
     @Override
@@ -92,9 +92,15 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
         return this.metricName;
     }
 
+    @Override
+    public Double getSampleQuantile()
+    {
+        return this.sampleQuantile;
+    }
+
     /**
      * Returns the diagram component names.
-     * 
+     *
      * @return the component names
      */
 
@@ -105,7 +111,7 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
 
     /**
      * Returns the diagram metric component name for the prescribed type of component.
-     * 
+     *
      * @param type the component type
      * @return the prescribed component name or null if no such component exists
      * @throws NullPointerException if the input is null
@@ -126,7 +132,7 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
 
     /**
      * Returns the diagram metric component for the prescribed type of component.
-     * 
+     *
      * @param type the component type
      * @return the prescribed component or null if no such component exists
      * @throws NullPointerException if the input is null
@@ -147,7 +153,7 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
 
     /**
      * Returns the qualifiers for diagram component names where the same name appears more than once.
-     * 
+     *
      * @return the component name qualifiers
      */
 
@@ -158,7 +164,7 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
 
     /**
      * Returns a component with a prescribed name and qualifier.
-     * 
+     *
      * @param name the component name
      * @param qualifier the component name qualifier
      * @return the metric component
@@ -185,13 +191,13 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
     }
 
     @Override
-    public PoolMetadata getMetadata()
+    public PoolMetadata getPoolMetadata()
     {
         return this.metadata;
     }
 
     @Override
-    public DiagramStatistic getData()
+    public DiagramStatistic getStatistic()
     {
         return this.diagram;
     }
@@ -204,18 +210,22 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
             return true;
         }
 
-        if ( ! ( o instanceof final DiagramStatisticOuter v ) )
+        if ( !( o instanceof final DiagramStatisticOuter v ) )
         {
             return false;
         }
 
-        return this.getMetadata().equals( v.getMetadata() ) && this.getData().equals( v.getData() );
+        return this.getPoolMetadata()
+                   .equals( v.getPoolMetadata() )
+               && this.getStatistic()
+                      .equals( v.getStatistic() )
+               && Objects.equals( this.getSampleQuantile(), v.getSampleQuantile() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.getMetadata(), this.getData() );
+        return Objects.hash( this.getPoolMetadata(), this.getStatistic(), this.getSampleQuantile() );
     }
 
     @Override
@@ -223,25 +233,27 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
     {
         ToStringBuilder builder = new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE );
 
-        builder.append( "metric name", this.getData().getMetric().getName() );
+        builder.append( "metric", this.getStatistic().getMetric().getName() );
 
-        this.getData()
+        this.getStatistic()
             .getStatisticsList()
-            .forEach( component -> builder.append( "component name", component.getMetric().getName() )
-                                          .append( "component values", component.getValuesList() ) );
+            .forEach( component -> builder.append( "componentName", component.getMetric().getName() )
+                                          .append( "componentValues", component.getValuesList() ) );
 
-        return builder.toString();
+        return builder.append( "sampleQuantile", this.getSampleQuantile() )
+                      .toString();
     }
 
     /**
      * Construct the statistic.
-     * 
+     *
      * @param diagram the verification diagram
      * @param meta the metadata
+     * @param sampleQuantile the sample quantile or null
      * @throws StatisticException if any of the inputs are invalid
      */
 
-    private DiagramStatisticOuter( DiagramStatistic diagram, PoolMetadata meta )
+    private DiagramStatisticOuter( DiagramStatistic diagram, PoolMetadata meta, Double sampleQuantile )
     {
         if ( Objects.isNull( diagram ) )
         {
@@ -252,8 +264,18 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
             throw new StatisticException( "Specify non-null metadata." );
         }
 
+        if ( Objects.nonNull( sampleQuantile )
+             && ( sampleQuantile < 0
+                  || sampleQuantile > 1.0 ) )
+        {
+            throw new StatisticException( "The sample quantile must be within [0,1], but was: "
+                                          + sampleQuantile
+                                          + "." );
+        }
+
         this.diagram = diagram;
         this.metadata = meta;
+        this.sampleQuantile = sampleQuantile;
 
         SortedSet<MetricDimension> cNames = new TreeSet<>();
         SortedSet<String> cQual = new TreeSet<>();
@@ -262,7 +284,7 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
                 = new EnumMap<>( DiagramComponentType.class );
 
         int index = 0;
-        for ( DiagramStatisticComponent next : this.getData().getStatisticsList() )
+        for ( DiagramStatisticComponent next : this.getStatistic().getStatisticsList() )
         {
             String nameString = next.getMetric()
                                     .getName()

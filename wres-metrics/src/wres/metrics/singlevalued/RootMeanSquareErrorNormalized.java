@@ -100,10 +100,10 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<Pool<Pair<Do
         LOGGER.debug( "Computing the {} from the intermediate statistic, {}.", this, this.getCollectionOf() );
 
         double input = statistic.getComponent( MetricConstants.MAIN )
-                                .getData()
+                                .getStatistic()
                                 .getValue();
 
-        double sampleSize = statistic.getData()
+        double sampleSize = statistic.getStatistic()
                                      .getSampleSize();
 
         double rmse = Math.sqrt( input / sampleSize );
@@ -135,7 +135,7 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<Pool<Pair<Do
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, statistic.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, statistic.getPoolMetadata() );
     }
 
     @Override

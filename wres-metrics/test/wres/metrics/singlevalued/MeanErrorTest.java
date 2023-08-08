@@ -5,7 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 
-import java.util.Arrays;
+import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
@@ -26,12 +26,12 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 
 /**
  * Tests the {@link MeanError}.
- * 
+ *
  * @author James Brown
  */
 public final class MeanErrorTest
 {
-    
+
     /**
      * Default instance of a {@link MeanError}.
      */
@@ -54,11 +54,11 @@ public final class MeanErrorTest
         DoubleScoreStatisticOuter actual = this.meanError.apply( input );
 
         DoubleScoreMetricComponent metricComponent = MeanError.METRIC_INNER.getComponents( 0 )
-                                                                     .toBuilder()
-                                                                     .setUnits( input.getMetadata()
-                                                                                     .getMeasurementUnit()
-                                                                                     .toString() )
-                                                                     .build();
+                                                                           .toBuilder()
+                                                                           .setUnits( input.getMetadata()
+                                                                                           .getMeasurementUnit()
+                                                                                           .toString() )
+                                                                           .build();
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setMetric( metricComponent )
@@ -66,24 +66,24 @@ public final class MeanErrorTest
                                                                                .build();
 
         DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( DoubleScoreMetric.newBuilder()
-                                                                                      .setName( MetricName.MEAN_ERROR ) )
-                                                         .addStatistics( component )
-                                                         .build();
+                                                            .setMetric( DoubleScoreMetric.newBuilder()
+                                                                                         .setName( MetricName.MEAN_ERROR ) )
+                                                            .addStatistics( component )
+                                                            .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
-    
+
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
         Pool<Pair<Double, Double>> input =
-                Pool.of( Arrays.asList(), PoolMetadata.of() );
+                Pool.of( List.of(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = this.meanError.apply( input );
 
-        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getStatistic().getValue(), 0.0 );
     }
 
     @Test
@@ -114,9 +114,10 @@ public final class MeanErrorTest
     public void testExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                                   () -> this.meanError.apply( null ) );
+                                             () -> this.meanError.apply( null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.meanError.getMetricNameString() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.meanError.getMetricNameString() + "'.",
+                      actual.getMessage() );
     }
 
 }

@@ -25,7 +25,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 
 /**
  * Tests the {@link ContingencyTableScore}.
- * 
+ *
  * @author James Brown
  */
 public final class ContingencyTableScoreTest
@@ -88,16 +88,11 @@ public final class ContingencyTableScoreTest
         this.invalidTable = DoubleScoreStatistic.newBuilder()
                                                 .setMetric( ContingencyTable.BASIC_METRIC )
                                                 .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                             .setMetric( ContingencyTable.TRUE_POSITIVES )
+                                                                                             .setMetric(
+                                                                                                     ContingencyTable.TRUE_POSITIVES )
                                                                                              .setValue( 82.0 ) )
                                                 .build();
     }
-
-    /**
-     * Checks that a {@link ContingencyTableScore#hasRealUnits()} returns <code>false</code> and that input with the 
-     * correct shape is accepted.
-     * @throws PoolException if the input is not accepted
-     */
 
     @Test
     public void testHasRealUnits()
@@ -105,20 +100,11 @@ public final class ContingencyTableScoreTest
         assertFalse( "The Critical Success Index should not have real units.", this.cs.hasRealUnits() );
     }
 
-    /**
-     * Checks that {@link ContingencyTableScore#getCollectionOf()} returns {@link MetricConstants#CONTINGENCY_TABLE}.
-     */
-
     @Test
     public void testGetCollectionOf()
     {
         assertSame( MetricConstants.CONTINGENCY_TABLE, this.cs.getCollectionOf() );
     }
-
-    /**
-     * Compares the output from {@link ContingencyTableScore#getIntermediateStatistic(Pool)} 
-     * against a benchmark.
-     */
 
     @Test
     public void testGetCollectionInput()
@@ -135,29 +121,17 @@ public final class ContingencyTableScoreTest
         assertEquals( "Unexpected result for the contingency table.", expected, actual );
     }
 
-    /**
-     * Checks that {@link ContingencyTableScore#isDecomposable()} returns <code>false</code>.
-     */
-
     @Test
     public void testIsDecomposableReturnsFalse()
     {
         assertFalse( cs.isDecomposable() );
     }
 
-    /**
-     * Checks that {@link ContingencyTableScore#getScoreOutputGroup()} returns {@link MetricGroup#NONE}.
-     */
-
     @Test
     public void testGetScoreOutputGroupReturnsNone()
     {
         assertSame( MetricGroup.NONE, cs.getScoreOutputGroup() );
     }
-
-    /**
-     * Checks the output from {@link ContingencyTableScore#getMetadata(DoubleScoreStatisticOuter)} against a benchmark.
-     */
 
     @Test
     public void testGetMetadataReturnsExpectedOutput()
@@ -166,55 +140,38 @@ public final class ContingencyTableScoreTest
 
         PoolMetadata expected = Boilerplate.getPoolMetadata( false );
 
-        assertEquals( expected, this.cs.getIntermediateStatistic( input ).getMetadata() );
+        assertEquals( expected, this.cs.getIntermediateStatistic( input ).getPoolMetadata() );
     }
-
-    /**
-     * Checks for an exception on null input.
-     */
 
     @Test
     public void testExceptionOnNullInput()
     {
         PoolException exception =
                 assertThrows( PoolException.class,
-                              () -> cs.apply( (Pool<Pair<Boolean, Boolean>>) null ) );
+                              () -> cs.apply( null ) );
 
         assertEquals( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE, exception.getMessage() );
     }
-
-    /**
-     * Checks for an exception on null input when computing the score from an existing contingency table.
-     */
 
     @Test
     public void testExceptionOnNullInputInternal()
     {
         MetricCalculationException exception =
                 assertThrows( MetricCalculationException.class,
-                              () -> cs.is2x2ContingencyTable( (DoubleScoreStatisticOuter) null, cs ) );
+                              () -> cs.is2x2ContingencyTable( null, cs ) );
 
         assertEquals( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE, exception.getMessage() );
     }
-
-    /**
-     * Checks for an exception on null input when computing the score from an existing contingency table of 
-     * arbitray size.
-     */
 
     @Test
     public void testExceptionOnNullInputInternalForLargeTable()
     {
         MetricCalculationException exception =
                 assertThrows( MetricCalculationException.class,
-                              () -> cs.isContingencyTable( (DoubleScoreStatisticOuter) null, cs ) );
+                              () -> cs.isContingencyTable( null, cs ) );
 
         assertEquals( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE, exception.getMessage() );
     }
-
-    /**
-     * Checks for an exception on receiving an input that is too small.
-     */
 
     @Test
     public void testExceptionOnInputThatIsTooSmall()
@@ -237,11 +194,6 @@ public final class ContingencyTableScoreTest
         assertEquals( expectedMessage, exception.getMessage() );
     }
 
-
-    /**
-     * Checks for an exception on receiving a null metric.
-     */
-
     @Test
     public void testExceptionOnNullMetric()
     {
@@ -253,10 +205,6 @@ public final class ContingencyTableScoreTest
 
         assertEquals( SPECIFY_NON_NULL_INPUT_TO_THE_THREAT_SCORE, exception.getMessage() );
     }
-
-    /**
-     * Checks for an exception on receiving a null metric for a contingency table of arbitrary size.
-     */
 
     @Test
     public void testExceptionOnNullMetricForLargeTable()

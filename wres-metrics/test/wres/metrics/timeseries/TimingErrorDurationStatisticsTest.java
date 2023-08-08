@@ -80,7 +80,7 @@ public final class TimingErrorDurationStatisticsTest
                                                                 .addStatistics( component )
                                                                 .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
 
         // Check some additional statistics
         // Maximum error = 12
@@ -90,7 +90,7 @@ public final class TimingErrorDurationStatisticsTest
                                              .apply( input );
 
         assertEquals( wres.statistics.MessageFactory.parse( Duration.ofHours( 12 ) ),
-                      max.getComponent( MetricConstants.MAXIMUM ).getData().getValue() );
+                      max.getComponent( MetricConstants.MAXIMUM ).getStatistic().getValue() );
 
         // Minimum error = -6
         DurationScoreStatisticOuter min =
@@ -99,7 +99,7 @@ public final class TimingErrorDurationStatisticsTest
                                              .apply( input );
 
         assertEquals( wres.statistics.MessageFactory.parse( Duration.ofHours( -6 ) ),
-                      min.getComponent( MetricConstants.MINIMUM ).getData().getValue() );
+                      min.getComponent( MetricConstants.MINIMUM ).getStatistic().getValue() );
 
         // Mean absolute error = 9
         DurationScoreStatisticOuter meanAbs =
@@ -108,7 +108,7 @@ public final class TimingErrorDurationStatisticsTest
                                              .apply( input );
 
         assertEquals( wres.statistics.MessageFactory.parse( Duration.ofHours( 9 ) ),
-                      meanAbs.getComponent( MetricConstants.MEAN_ABSOLUTE ).getData().getValue() );
+                      meanAbs.getComponent( MetricConstants.MEAN_ABSOLUTE ).getStatistic().getValue() );
     }
 
     @Test
@@ -206,7 +206,7 @@ public final class TimingErrorDurationStatisticsTest
 
         DurationScoreStatisticOuter actual = ttps.apply( input );
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
 
     @Test
@@ -233,7 +233,7 @@ public final class TimingErrorDurationStatisticsTest
                                                                 .setMetric( metric )
                                                                 .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
 
     @Test

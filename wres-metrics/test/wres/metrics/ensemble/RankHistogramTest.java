@@ -5,7 +5,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -20,13 +19,12 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
-import wres.metrics.MetricParameterException;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
  * Tests the {@link RankHistogram}.
- * 
+ *
  * @author James Brown
  */
 public final class RankHistogramTest
@@ -115,13 +113,8 @@ public final class RankHistogramTest
                                                     .setMetric( RankHistogram.BASIC_METRIC )
                                                     .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
-
-    /**
-     * Compares the output from {@link RankHistogram#apply(Pool)} against expected output for pairs with
-     * ties.
-     */
 
     @Test
     public void testApplyWithTies()
@@ -174,21 +167,15 @@ public final class RankHistogramTest
                                                     .setMetric( RankHistogram.BASIC_METRIC )
                                                     .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
-
-
-    /**
-     * Validates the output from {@link RankHistogram#apply(Pool)} when 
-     * supplied with no data.
-     */
 
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
         Pool<Pair<Double, Ensemble>> input =
-                Pool.of( Arrays.asList(), PoolMetadata.of() );
+                Pool.of( List.of(), PoolMetadata.of() );
 
         DiagramStatisticOuter actual = this.rh.apply( input );
 
@@ -212,13 +199,8 @@ public final class RankHistogramTest
                                                     .setMetric( RankHistogram.BASIC_METRIC )
                                                     .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
-
-    /**
-     * Checks that the {@link RankHistogram#getMetricNameString()} returns
-     * {@link MetricConstants.RANK_HISTOGRAM.toString()}
-     */
 
     @Test
     public void testGetName()
@@ -226,24 +208,14 @@ public final class RankHistogramTest
         assertEquals( MetricConstants.RANK_HISTOGRAM.toString(), this.rh.getMetricNameString() );
     }
 
-    /**
-     * Tests for an expected exception on calling 
-     * {@link RankHistogram#apply(Pool)} with null input.
-     */
-
     @Test
     public void testExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                                   () -> this.rh.apply( (Pool<Pair<Double, Ensemble>>) null ) );
+                                             () -> this.rh.apply( null ) );
 
         assertEquals( "Specify non-null input to the '" + this.rh.getMetricNameString() + "'.", actual.getMessage() );
     }
-
-    /**
-     * Tests for the correct construction of a {@link RankHistogram} when a random number generator is not supplied.
-     * @throws MetricParameterException if construction fails for an unexpected reason
-     */
 
     @Test
     public void testConstructionWithoutRNG()

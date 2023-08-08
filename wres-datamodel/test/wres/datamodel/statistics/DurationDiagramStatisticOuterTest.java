@@ -1,14 +1,13 @@
 package wres.datamodel.statistics;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
-
-import org.junit.Before;
-import org.junit.Test;
-
 import com.google.protobuf.Timestamp;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
@@ -25,32 +24,22 @@ import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDurati
 
 /**
  * Tests the {@link DurationDiagramStatisticOuter}.
- * 
+ *
  * @author James Brown
  */
-public final class DurationDiagramStatisticOuterTest
+class DurationDiagramStatisticOuterTest
 {
-
-    /**
-     * Default instance for testing.
-     */
-
+    /** Default instance for testing. */
     private DurationDiagramStatistic defaultInstance;
 
-    /**
-     * Metadata for testing.
-     */
-
+    /** Metadata for testing. */
     private PoolMetadata metadata;
 
-    /**
-     * Feature group.
-     */
-
+    /** Feature group. */
     private FeatureGroup featureGroup;
 
-    @Before
-    public void runBeforeEachTest()
+    @BeforeEach
+    void runBeforeEachTest()
     {
         DurationDiagramMetric metric = DurationDiagramMetric.newBuilder()
                                                             .setName( MetricName.TIME_TO_PEAK_ERROR )
@@ -90,13 +79,8 @@ public final class DurationDiagramStatisticOuterTest
         this.metadata = PoolMetadata.of( evaluation, pool );
     }
 
-    /**
-     * Constructs a {@link DurationDiagramStatisticOuter} and tests for equality with another 
-     * {@link DurationDiagramStatisticOuter}.
-     */
-
     @Test
-    public void testEquals()
+    void testEquals()
     {
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "B" )
@@ -140,13 +124,14 @@ public final class DurationDiagramStatisticOuterTest
                                                             .setName( MetricName.TIME_TO_PEAK_ERROR )
                                                             .build();
 
-        PairOfInstantAndDuration first = PairOfInstantAndDuration.newBuilder()
-                                                                 .setTime( Timestamp.newBuilder()
-                                                                                    .setSeconds( 123456 )
-                                                                                    .setNanos( 689 ) )
-                                                                 .setDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                           .setSeconds( 13 ) )
-                                                                 .build();
+        PairOfInstantAndDuration first =
+                PairOfInstantAndDuration.newBuilder()
+                                        .setTime( Timestamp.newBuilder()
+                                                           .setSeconds( 123456 )
+                                                           .setNanos( 689 ) )
+                                        .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                  .setSeconds( 13 ) )
+                                        .build();
 
         DurationDiagramStatistic next = DurationDiagramStatistic.newBuilder()
                                                                 .setMetric( metric )
@@ -159,13 +144,14 @@ public final class DurationDiagramStatisticOuterTest
         assertNotEquals( one, DurationDiagramStatisticOuter.of( this.defaultInstance, m3 ) );
 
 
-        PairOfInstantAndDuration second = PairOfInstantAndDuration.newBuilder()
-                                                                  .setTime( Timestamp.newBuilder()
-                                                                                     .setSeconds( 123457 )
-                                                                                     .setNanos( 689 ) )
-                                                                  .setDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                            .setSeconds( 13 ) )
-                                                                  .build();
+        PairOfInstantAndDuration second =
+                PairOfInstantAndDuration.newBuilder()
+                                        .setTime( Timestamp.newBuilder()
+                                                           .setSeconds( 123457 )
+                                                           .setNanos( 689 ) )
+                                        .setDuration( com.google.protobuf.Duration.newBuilder()
+                                                                                  .setSeconds( 13 ) )
+                                        .build();
 
         DurationDiagramStatistic anotherNext = DurationDiagramStatistic.newBuilder()
                                                                        .setMetric( metric )
@@ -179,15 +165,16 @@ public final class DurationDiagramStatisticOuterTest
         assertNotEquals( yetAnother, another );
         assertEquals( yetAnother, yetAnother );
         assertNotEquals( yetAnother, oneMore );
+
+        DurationDiagramStatisticOuter u = DurationDiagramStatisticOuter.of( anotherNext, m2, 0.25 );
+        DurationDiagramStatisticOuter v = DurationDiagramStatisticOuter.of( next, this.metadata, null );
+        assertEquals( u, u );
+        assertEquals( another, v );
+        assertNotEquals( u, v );
     }
 
-    /**
-     * Constructs a {@link DurationDiagramStatisticOuter} and checks the 
-     * {@link DurationDiagramStatisticOuter#toString()} representation.
-     */
-
     @Test
-    public void testToString()
+    void testToString()
     {
         String expectedStart = "DurationDiagramStatisticOuter[";
         String expectedContainsMetric = "metric=TIME_TO_PEAK_ERROR";
@@ -205,27 +192,17 @@ public final class DurationDiagramStatisticOuterTest
         assertTrue( m1ToString.contains( expectedContainsMeasurementUnit ) );
     }
 
-    /**
-     * Constructs a {@link DurationDiagramStatisticOuter} and checks the 
-     * {@link DurationDiagramStatisticOuter#getMetadata()}.
-     */
-
     @Test
-    public void testGetMetadata()
+    void testGetMetadata()
     {
         assertEquals( PoolMetadata.of(),
                       DurationDiagramStatisticOuter.of( this.defaultInstance,
                                                         PoolMetadata.of() )
-                                                   .getMetadata() );
+                                                   .getPoolMetadata() );
     }
 
-    /**
-     * Constructs a {@link DurationDiagramStatisticOuter} and checks the 
-     * {@link DurationDiagramStatisticOuter#hashCode()}.
-     */
-
     @Test
-    public void testHashCode()
+    void testHashCode()
     {
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "B" )
@@ -242,26 +219,34 @@ public final class DurationDiagramStatisticOuterTest
 
         PoolMetadata m2 = PoolMetadata.of( evaluation, pool );
 
-        DurationDiagramStatisticOuter anInstance = DurationDiagramStatisticOuter.of( this.defaultInstance, m2 );
+        DurationDiagramStatisticOuter anInstance = DurationDiagramStatisticOuter.of( this.defaultInstance, m2, 0.26 );
 
         // Equality and consistency
         for ( int i = 0; i < 100; i++ )
         {
             assertEquals( anInstance.hashCode(), anInstance.hashCode() );
         }
-
     }
 
     @Test
-    public void testExceptionOnConstructionWithNullData()
+    void testExceptionOnConstructionWithNullData()
     {
         assertThrows( StatisticException.class, () -> DurationDiagramStatisticOuter.of( null, this.metadata ) );
     }
 
     @Test
-    public void testExceptionOnConstructionWithNullMetadata()
+    void testExceptionOnConstructionWithNullMetadata()
     {
         assertThrows( StatisticException.class, () -> DurationDiagramStatisticOuter.of( this.defaultInstance, null ) );
     }
 
+    @Test
+    void testGetSampleQuantile()
+    {
+        DurationDiagramStatisticOuter statistic = DurationDiagramStatisticOuter.of( this.defaultInstance,
+                                                                                    PoolMetadata.of(),
+                                                                                    0.26);
+
+        assertEquals( 0.26, statistic.getSampleQuantile() );
+    }
 }

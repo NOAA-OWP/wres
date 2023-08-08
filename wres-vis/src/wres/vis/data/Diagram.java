@@ -144,10 +144,10 @@ class Diagram extends AbstractXYDataset
         Objects.requireNonNull( yDimension );
         Objects.requireNonNull( durationUnits );
 
-        int timeWindowCount = Slicer.discover( statistics, meta -> meta.getMetadata().getTimeWindow() )
+        int timeWindowCount = Slicer.discover( statistics, meta -> meta.getPoolMetadata().getTimeWindow() )
                                     .size();
 
-        int thresholdCount = Slicer.discover( statistics, meta -> meta.getMetadata().getThresholds() )
+        int thresholdCount = Slicer.discover( statistics, meta -> meta.getPoolMetadata().getThresholds() )
                                    .size();
 
         // Create the series
@@ -219,13 +219,13 @@ class Diagram extends AbstractXYDataset
                                          ChronoUnit durationUnits,
                                          boolean leadThreshold )
     {
-        String label = "";
+        String label;
 
         // One lead duration and one or more thresholds: label by threshold
         if ( leadThreshold )
         {
             // Qualifier for dimensions that are repeated, such as quantile curves in an ensemble QQ diagram
-            String qualifier = diagram.getData()
+            String qualifier = diagram.getStatistic()
                                       .getStatistics( 0 )
                                       .getName();
 
@@ -237,14 +237,14 @@ class Diagram extends AbstractXYDataset
             }
             else
             {
-                label = DataUtilities.toStringWithoutUnits( diagram.getMetadata()
+                label = DataUtilities.toStringWithoutUnits( diagram.getPoolMetadata()
                                                                    .getThresholds() );
             }
         }
         // One threshold and one or more lead durations: label by lead duration
         else
         {
-            Number numericDuration = DataUtilities.durationToNumericUnits( diagram.getMetadata()
+            Number numericDuration = DataUtilities.durationToNumericUnits( diagram.getPoolMetadata()
                                                                                   .getTimeWindow()
                                                                                   .getLatestLeadDuration(),
                                                                            durationUnits );

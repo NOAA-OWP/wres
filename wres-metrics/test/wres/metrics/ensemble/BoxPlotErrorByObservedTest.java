@@ -5,10 +5,7 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
-
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,7 +32,6 @@ import wres.statistics.generated.BoxplotStatistic.Box;
  */
 public final class BoxPlotErrorByObservedTest
 {
-
     /**
      * Default instance of a {@link BoxPlotErrorByObserved}.
      */
@@ -47,11 +43,6 @@ public final class BoxPlotErrorByObservedTest
     {
         this.bpe = BoxPlotErrorByObserved.of();
     }
-
-    /**
-     * Compares the output from {@link BoxPlotErrorByObserved#apply(Pool)} against 
-     * expected output.
-     */
 
     @Test
     public void testApply()
@@ -83,19 +74,15 @@ public final class BoxPlotErrorByObservedTest
                                                        .addStatistics( box )
                                                        .build();
 
-        assertEquals( expectedBox, actual.getData() );
+        assertEquals( expectedBox, actual.getStatistic() );
     }
-
-    /**
-     * Validates the output from {@link BoxPlotErrorByObserved#apply(Pool)} when supplied with no data.
-     */
 
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
         Pool<Pair<Double, Ensemble>> input =
-                Pool.of( Arrays.asList(), PoolMetadata.of() );
+                Pool.of( List.of(), PoolMetadata.of() );
 
         BoxplotStatisticOuter actual = bpe.apply( input );
 
@@ -113,13 +100,8 @@ public final class BoxPlotErrorByObservedTest
                                                     .setMetric( metric )
                                                     .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
-
-    /**
-     * Checks that the {@link BoxPlotErrorByObserved#getMetricNameString()} returns
-     * {@link MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE.toString()}
-     */
 
     @Test
     public void testGetName()
@@ -127,25 +109,10 @@ public final class BoxPlotErrorByObservedTest
         assertEquals( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE.toString(), this.bpe.getMetricNameString() );
     }
 
-    /**
-     * Checks that the {@link BoxPlotErrorByObserved#hasRealUnits()} returns <code>true</code>.
-     */
-
     @Test
     public void testHasRealUnits()
     {
         assertTrue( this.bpe.hasRealUnits() );
-    }
-
-    /**
-     * Tests the construction of a {@link BoxPlotErrorByObserved} with two probabilities.
-     * @throws MetricParameterException if the metric could not be constructed
-     */
-
-    @Test
-    public void testConstructionWithTwoProbabilities() throws MetricParameterException
-    {
-        assertTrue( Objects.nonNull( BoxPlotErrorByObserved.of( VectorOfDoubles.of( 0.0, 1.0 ) ) ) );
     }
 
     @Test
@@ -155,10 +122,6 @@ public final class BoxPlotErrorByObservedTest
 
         assertEquals( "Specify non-null input to the 'BOX PLOT OF ERRORS BY OBSERVED VALUE'.", expected.getMessage() );
     }
-
-    /**
-     * Tests for an expected exception on construction with too few probabilities. 
-     */
 
     @Test
     public void testForExceptionOnTooFewProbabilities() throws MetricParameterException
@@ -170,10 +133,6 @@ public final class BoxPlotErrorByObservedTest
 
         assertEquals( "Specify at least two probabilities for the verification box plot.", expected.getMessage() );
     }
-
-    /**
-     * Tests for an expected exception on construction with negative probabilities. 
-     */
 
     @Test
     public void testForExceptionOnNegativeProbabilities() throws MetricParameterException
@@ -187,10 +146,6 @@ public final class BoxPlotErrorByObservedTest
                       expected.getMessage() );
     }
 
-    /**
-     * Tests for an expected exception on construction with probabilities that are too high. 
-     */
-
     @Test
     public void testForExceptionOnProbabilitiesGreaterThanOne() throws MetricParameterException
     {
@@ -203,10 +158,6 @@ public final class BoxPlotErrorByObservedTest
                       expected.getMessage() );
     }
 
-    /**
-     * Tests for an expected exception on construction with duplicate probabilities. 
-     */
-
     @Test
     public void testForExceptionOnDuplicateProbabilities() throws MetricParameterException
     {
@@ -218,10 +169,6 @@ public final class BoxPlotErrorByObservedTest
         assertEquals( "Specify only non-unique probabilities from which to construct the box plot.",
                       expected.getMessage() );
     }
-
-    /**
-     * Tests for an expected exception on construction with an even number of probabilities. 
-     */
 
     @Test
     public void testForExceptionOnEvenNumberOfProbabilities() throws MetricParameterException

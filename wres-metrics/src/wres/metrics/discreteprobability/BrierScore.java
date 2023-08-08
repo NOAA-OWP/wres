@@ -102,7 +102,7 @@ public class BrierScore extends DecomposableScore<Pool<Pair<Probability, Probabi
 
         double result = this.mse.apply( transformed )
                                 .getComponent( MetricConstants.MAIN )
-                                .getData()
+                                .getStatistic()
                                 .getValue();
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()

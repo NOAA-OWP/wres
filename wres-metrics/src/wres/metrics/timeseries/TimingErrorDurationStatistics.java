@@ -104,11 +104,11 @@ public class TimingErrorDurationStatistics
             nextIdentifier = next.getKey();
 
             // Data available
-            if ( statisticsInner.getData()
+            if ( statisticsInner.getStatistic()
                                 .getStatisticsCount() != 0 )
             {
                 // Convert the input to double ms
-                double[] input = statisticsInner.getData()
+                double[] input = statisticsInner.getStatistic()
                                                 .getStatisticsList()
                                                 .stream()
                                                 .mapToDouble( a -> ( a.getDuration()
@@ -139,7 +139,7 @@ public class TimingErrorDurationStatistics
         DurationScoreStatistic score = scoreBuilder.setMetric( metricBuilder )
                                                    .build();
 
-        return DurationScoreStatisticOuter.of( score, statisticsInner.getMetadata() );
+        return DurationScoreStatisticOuter.of( score, statisticsInner.getPoolMetadata() );
     }
 
     @Override

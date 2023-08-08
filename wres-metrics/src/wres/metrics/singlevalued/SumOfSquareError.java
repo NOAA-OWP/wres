@@ -136,7 +136,7 @@ public class SumOfSquareError extends DecomposableScore<Pool<Pair<Double, Double
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
-        return DoubleScoreStatisticOuter.of( output.getData(), output.getMetadata() );
+        return DoubleScoreStatisticOuter.of( output.getStatistic(), output.getPoolMetadata() );
     }
 
     @Override

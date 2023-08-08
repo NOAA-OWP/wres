@@ -76,7 +76,7 @@ public final class TimeToPeakRelativeErrorTest
                                                                     .addStatistics( two )
                                                                     .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
 
     @Test

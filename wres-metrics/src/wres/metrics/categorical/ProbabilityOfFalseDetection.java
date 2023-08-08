@@ -74,11 +74,11 @@ public class ProbabilityOfFalseDetection extends ContingencyTableScore
         this.is2x2ContingencyTable( output, this );
 
         double fP = output.getComponent( MetricConstants.FALSE_POSITIVES )
-                          .getData()
+                          .getStatistic()
                           .getValue();
 
         double tN = output.getComponent( MetricConstants.TRUE_NEGATIVES )
-                          .getData()
+                          .getStatistic()
                           .getValue();
 
         double result = FunctionFactory.finiteOrMissing().applyAsDouble( fP / ( fP + tN ) );
@@ -93,7 +93,7 @@ public class ProbabilityOfFalseDetection extends ContingencyTableScore
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, output.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, output.getPoolMetadata() );
     }
 
     @Override

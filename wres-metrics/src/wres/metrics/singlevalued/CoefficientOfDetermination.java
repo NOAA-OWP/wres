@@ -85,7 +85,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
         }
 
         double input = output.getComponent( MetricConstants.MAIN )
-                             .getData()
+                             .getStatistic()
                              .getValue();
 
         double result = Math.pow( input, 2 );
@@ -101,7 +101,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, output.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, output.getPoolMetadata() );
     }
 
     @Override

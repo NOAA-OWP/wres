@@ -160,7 +160,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         {
             StringJoiner headerRow =
                     CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( output.get( 0 )
-                                                                                         .getMetadata(),
+                                                                                         .getPoolMetadata(),
                                                                                    durationUnits );
 
             Set<Path> innerPathsWrittenTo = Collections.emptySet();
@@ -204,14 +204,14 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
         // Loop across time windows
         SortedSet<TimeWindowOuter> timeWindows =
-                Slicer.discover( output, next -> next.getMetadata().getTimeWindow() );
+                Slicer.discover( output, next -> next.getPoolMetadata().getTimeWindow() );
         for ( TimeWindowOuter timeWindow : timeWindows )
         {
             List<DiagramStatisticOuter> next =
-                    Slicer.filter( output, data -> data.getMetadata().getTimeWindow().equals( timeWindow ) );
+                    Slicer.filter( output, data -> data.getPoolMetadata().getTimeWindow().equals( timeWindow ) );
 
             MetricConstants metricName = next.get( 0 ).getMetricName();
-            PoolMetadata meta = next.get( 0 ).getMetadata();
+            PoolMetadata meta = next.get( 0 ).getPoolMetadata();
 
             List<RowCompareByLeft> rows =
                     CommaSeparatedDiagramWriter.getRowsForOneDiagram( next, formatter, durationUnits );
@@ -264,15 +264,15 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
         // Loop across thresholds
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
+                Slicer.discover( output, meta -> meta.getPoolMetadata().getThresholds() );
         for ( OneOrTwoThresholds threshold : thresholds )
         {
 
             List<DiagramStatisticOuter> next =
-                    Slicer.filter( output, data -> data.getMetadata().getThresholds().equals( threshold ) );
+                    Slicer.filter( output, data -> data.getPoolMetadata().getThresholds().equals( threshold ) );
 
             MetricConstants metricName = next.get( 0 ).getMetricName();
-            PoolMetadata meta = next.get( 0 ).getMetadata();
+            PoolMetadata meta = next.get( 0 ).getPoolMetadata();
 
             List<RowCompareByLeft> rows =
                     CommaSeparatedDiagramWriter.getRowsForOneDiagram( next, formatter, durationUnits );
@@ -318,9 +318,9 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
         // Discover the time windows and thresholds to loop
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
+                Slicer.discover( output, meta -> meta.getPoolMetadata().getThresholds() );
         SortedSet<TimeWindowOuter> timeWindows =
-                Slicer.discover( output, meta -> meta.getMetadata().getTimeWindow() );
+                Slicer.discover( output, meta -> meta.getPoolMetadata().getTimeWindow() );
 
         PoolMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( output );
 
@@ -333,10 +333,10 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             {
                 // One output per time window and threshold
                 DiagramStatisticOuter nextOutput = Slicer.filter( output,
-                                                                  data -> data.getMetadata()
+                                                                  data -> data.getPoolMetadata()
                                                                               .getThresholds()
                                                                               .equals( threshold )
-                                                                          && data.getMetadata()
+                                                                          && data.getPoolMetadata()
                                                                                  .getTimeWindow()
                                                                                  .equals( timeWindow ) )
                                                          .get( 0 );
@@ -375,7 +375,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
             // For safety, find the largest vector and use Double.NaN in place for vectors of differing size
             // In practice, all should be the same length
-            int maxRows = output.getData()
+            int maxRows = output.getStatistic()
                                 .getStatisticsList()
                                 .stream()
                                 .mapToInt( DiagramStatisticComponent::getValuesCount )
@@ -412,7 +412,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         List<Double> valuesToAdd = new ArrayList<>();
 
         SortedSet<MetricDimension> dimensions = next.getComponentNames();
-        SortedSet<String> qualifiers = next.getData()
+        SortedSet<String> qualifiers = next.getStatistic()
                                            .getStatisticsList()
                                            .stream()
                                            .map( DiagramStatisticComponent::getName )
@@ -478,7 +478,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
         SortedSet<MetricDimension> dimensions = data.getComponentNames();
 
-        SortedSet<String> qualifiers = data.getData()
+        SortedSet<String> qualifiers = data.getStatistic()
                                            .getStatisticsList()
                                            .stream()
                                            .map( DiagramStatisticComponent::getName )
@@ -486,7 +486,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
         //Add the metric name, dimension, and threshold for each column-vector
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
+                Slicer.discover( output, meta -> meta.getPoolMetadata().getThresholds() );
         for ( OneOrTwoThresholds nextThreshold : thresholds )
         {
             for ( String qualifier : qualifiers )
@@ -527,7 +527,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         for ( EnsembleAverageType type : EnsembleAverageType.values() )
         {
             List<DiagramStatisticOuter> innerSlice = Slicer.filter( statistics,
-                                                                    value -> type == value.getMetadata()
+                                                                    value -> type == value.getPoolMetadata()
                                                                                           .getPool()
                                                                                           .getEnsembleAverageType() );
             // Slice by secondary threshold
@@ -587,7 +587,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
         // #51670
         SortedSet<EnsembleAverageType> types =
                 Slicer.discover( statistics,
-                                 next -> next.getMetadata().getPool().getEnsembleAverageType() );
+                                 next -> next.getPoolMetadata().getPool().getEnsembleAverageType() );
 
         Optional<EnsembleAverageType> type =
                 types.stream()

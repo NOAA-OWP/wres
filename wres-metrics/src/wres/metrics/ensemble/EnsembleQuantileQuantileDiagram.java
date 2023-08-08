@@ -139,7 +139,7 @@ public class EnsembleQuantileQuantileDiagram extends Diagram<Pool<Pair<Double, E
 
             // Create the qq diagram
             DiagramStatisticOuter qq = this.qqDiagram.apply( transformed );
-            List<DiagramStatisticComponent> statistics = qq.getData().getStatisticsList();
+            List<DiagramStatisticComponent> statistics = qq.getStatistic().getStatisticsList();
 
             // Add the qualifying names to the components and then add to the qq diagram
             for ( DiagramStatisticComponent next : statistics )

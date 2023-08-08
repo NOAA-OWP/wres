@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -46,9 +45,7 @@ public final class QuantileQuantileDiagramTest
         final List<Pair<Double, Double>> values = new ArrayList<>();
         for ( int i = 1; i < 11; i++ )
         {
-            double left = i;
-            double right = left;
-            values.add( Pair.of( left, right ) );
+            values.add( Pair.of( ( double ) i, ( double ) i ) );
         }
 
         Pool<Pair<Double, Double>> input = Pool.of( values, PoolMetadata.of() );
@@ -86,7 +83,7 @@ public final class QuantileQuantileDiagramTest
                                                     .setMetric( QuantileQuantileDiagram.BASIC_METRIC )
                                                     .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
 
     @Test
@@ -94,7 +91,7 @@ public final class QuantileQuantileDiagramTest
     {
         // Generate empty data
         Pool<Pair<Double, Double>> input =
-                Pool.of( Arrays.asList(), PoolMetadata.of() );
+                Pool.of( List.of(), PoolMetadata.of() );
 
         DiagramStatisticOuter actual = this.qqd.apply( input );
 
@@ -116,7 +113,7 @@ public final class QuantileQuantileDiagramTest
                                                     .setMetric( QuantileQuantileDiagram.BASIC_METRIC )
                                                     .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
 
     @Test

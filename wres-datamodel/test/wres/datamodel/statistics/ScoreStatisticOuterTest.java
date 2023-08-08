@@ -1,10 +1,10 @@
 package wres.datamodel.statistics;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
@@ -27,28 +27,18 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * 
  * @author James Brown
  */
-public final class ScoreStatisticOuterTest
+class ScoreStatisticOuterTest
 {
-
-    /**
-     * Instant to use when testing.
-     */
-
+    /** Instant to use when testing. */
     private DoubleScoreStatistic one;
 
-    /**
-     * Default metadata for testing.
-     */
-
+    /** Default metadata for testing. */
     private PoolMetadata metadata;
 
-    /**
-     * Feature group.
-     */
-
+    /** Feature group. */
     private FeatureGroup featureGroup;
 
-    @Before
+    @BeforeEach
     public void runBeforeEachTest()
     {
         Evaluation evaluation = Evaluation.newBuilder()
@@ -80,13 +70,8 @@ public final class ScoreStatisticOuterTest
                                     .build();
     }
 
-
-    /**
-     * Constructs a {@link DoubleScoreStatisticOuter} and tests for equality with another {@link DoubleScoreStatisticOuter}.
-     */
-
     @Test
-    public void testEquals()
+    void testEquals()
     {
         Evaluation evaluation = Evaluation.newBuilder()
                                           .setRightDataName( "B" )
@@ -130,7 +115,8 @@ public final class ScoreStatisticOuterTest
 
         DoubleScoreStatistic two =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_ERROR ) )
+                                    .setMetric( DoubleScoreMetric.newBuilder()
+                                                                 .setName( MetricName.MEAN_ERROR ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 2.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
@@ -145,48 +131,49 @@ public final class ScoreStatisticOuterTest
                 DoubleScoreStatisticOuter.of( this.one, m3 );
         assertEquals( q, q );
         assertNotEquals( q, r );
+
+        DoubleScoreStatisticOuter u = DoubleScoreStatisticOuter.of( two, m1, 0.25 );
+        DoubleScoreStatisticOuter v = DoubleScoreStatisticOuter.of( this.one, m1, null );
+        assertEquals( u, u );
+        assertEquals( s, v );
+        assertNotEquals( u, v );
     }
 
-    /**
-     * Constructs a {@link DoubleScoreStatisticOuter} and checks the {@link DoubleScoreStatisticOuter#toString()} representation.
-     */
-
     @Test
-    public void testToString()
+    void testToString()
     {
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> s =
                 DoubleScoreStatisticOuter.of( this.one, this.metadata );
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> t =
                 DoubleScoreStatisticOuter.of( this.one, this.metadata );
-        assertEquals( "Expected equal string representations.", s.toString(), t.toString() );
+        assertEquals( s.toString(), t.toString() );
     }
 
-    /**
-     * Constructs a {@link DoubleScoreStatisticOuter} and checks the {@link DoubleScoreStatisticOuter#getMetadata()}.
-     */
-
     @Test
-    public void testGetMetadata()
+    void testGetMetadata()
     {
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> q =
                 DoubleScoreStatisticOuter.of( this.one, this.metadata );
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> r =
                 DoubleScoreStatisticOuter.of( this.one, this.metadata );
-        assertEquals( q.getMetadata(), r.getMetadata() );
+        assertEquals( q.getPoolMetadata(), r.getPoolMetadata() );
     }
-
-    /**
-     * Constructs a {@link DoubleScoreStatisticOuter} and checks the {@link DoubleScoreStatisticOuter#hashCode()}.
-     */
 
     @Test
-    public void testHashCode()
+    void testHashCode()
     {
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> q =
-                DoubleScoreStatisticOuter.of( this.one, this.metadata );
+                DoubleScoreStatisticOuter.of( this.one, this.metadata, 0.25 );
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> r =
-                DoubleScoreStatisticOuter.of( this.one, this.metadata );
-        assertEquals( "Expected equal hash codes.", q.hashCode(), r.hashCode() );
+                DoubleScoreStatisticOuter.of( this.one, this.metadata, 0.25 );
+        assertEquals( q.hashCode(), r.hashCode() );
     }
 
+    @Test
+    void testGetSampleQuantile()
+    {
+        ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> q =
+                DoubleScoreStatisticOuter.of( this.one, this.metadata, 0.25 );
+        assertEquals( 0.25, q.getSampleQuantile() );
+    }
 }

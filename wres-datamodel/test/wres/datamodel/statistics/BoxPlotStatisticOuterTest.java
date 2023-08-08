@@ -1,15 +1,14 @@
 package wres.datamodel.statistics;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
@@ -28,32 +27,22 @@ import wres.statistics.generated.BoxplotStatistic.Box;
 
 /**
  * Tests the {@link BoxplotStatisticOuter}.
- * 
+ *
  * @author James Brown
  */
-public final class BoxPlotStatisticOuterTest
+class BoxPlotStatisticOuterTest
 {
-
-    /**
-     * Basic statistic.
-     */
-
+    /** Basic statistic. */
     private BoxplotStatistic basic = null;
 
-    /**
-     * Basic metadata.
-     */
-
+    /** Basic metadata. */
     private PoolMetadata metadata = null;
 
-    /**
-     * Feature group.
-     */
-
+    /** Feature group. */
     private FeatureGroup featureGroup;
 
-    @Before
-    public void runBeforeEachClass()
+    @BeforeEach
+    void runBeforeEachClass()
     {
         BoxplotMetric metric = BoxplotMetric.newBuilder()
                                             .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE )
@@ -104,7 +93,7 @@ public final class BoxPlotStatisticOuterTest
      */
 
     @Test
-    public void testEquals()
+    void testEquals()
     {
 
         //Build datasets
@@ -134,7 +123,8 @@ public final class BoxPlotStatisticOuterTest
         PoolMetadata m2 = PoolMetadata.of( evaluation, poolTwo );
 
         Geometry geometryTwo = wres.statistics.MessageFactory.getGeometry( "B" );
-        GeometryTuple geoTupleTwo = wres.statistics.MessageFactory.getGeometryTuple( geometryTwo, geometryTwo, geometryTwo );
+        GeometryTuple geoTupleTwo =
+                wres.statistics.MessageFactory.getGeometryTuple( geometryTwo, geometryTwo, geometryTwo );
         GeometryGroup geoGroupTwo = wres.statistics.MessageFactory.getGeometryGroup( null, geoTupleTwo );
         FeatureGroup featureGroupTwo = FeatureGroup.of( geoGroupTwo );
 
@@ -287,7 +277,7 @@ public final class BoxPlotStatisticOuterTest
      */
 
     @Test
-    public void testHashcode()
+    void testHashcode()
     {
         // Equal objects have equal hashcodes
         assertThat( basic.hashCode(), is( basic.hashCode() ) );
@@ -344,16 +334,16 @@ public final class BoxPlotStatisticOuterTest
     }
 
     /**
-     * Constructs a {@link BoxplotStatisticOuter} and checks the {@link BoxplotStatisticOuter#getMetadata()}.
+     * Constructs a {@link BoxplotStatisticOuter} and checks the {@link BoxplotStatisticOuter#getPoolMetadata()}.
      */
 
     @Test
-    public void testGetMetadata()
+    void testGetMetadata()
     {
         BoxplotStatisticOuter outer = BoxplotStatisticOuter.of( this.basic, PoolMetadata.of() );
         PoolMetadata expected = PoolMetadata.of();
 
-        assertEquals( expected, outer.getMetadata() );
+        assertEquals( expected, outer.getPoolMetadata() );
     }
 
     /**
@@ -361,12 +351,10 @@ public final class BoxPlotStatisticOuterTest
      */
 
     @Test
-    public void testAccessors()
+    void testAccessors()
     {
         BoxplotStatisticOuter outer = BoxplotStatisticOuter.of( this.basic, this.metadata );
 
-        assertEquals( 10, outer.getData().getStatisticsCount() );
+        assertEquals( 10, outer.getStatistic().getStatisticsCount() );
     }
-
-
 }

@@ -2,6 +2,7 @@ package wres.datamodel.statistics;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -476,7 +477,7 @@ public class StatisticsStore
         }
 
         // Sort the output list in metadata order
-        returnMe.sort( ( first, second ) -> first.getMetadata().compareTo( second.getMetadata() ) );
+        returnMe.sort( Comparator.comparing( t -> t.getPoolMetadata() ) );
 
         return Collections.unmodifiableList( returnMe );
     }

@@ -322,7 +322,7 @@ abstract class CommaSeparatedStatisticsWriter
         if ( !statistic.isEmpty() )
         {
             returnMe = statistic.get( 0 )
-                                .getMetadata();
+                                .getPoolMetadata();
         }
 
         return returnMe;

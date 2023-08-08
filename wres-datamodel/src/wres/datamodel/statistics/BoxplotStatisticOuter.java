@@ -19,22 +19,13 @@ import wres.statistics.generated.BoxplotStatistic;
 @Immutable
 public class BoxplotStatisticOuter implements Statistic<BoxplotStatistic>
 {
-    /**
-     * The statistics metadata.
-     */
-
+    /** The statistics metadata. */
     private final PoolMetadata metadata;
 
-    /**
-     * The statistics.
-     */
-
+    /** The statistics. */
     private final BoxplotStatistic statistic;
 
-    /**
-     * The metric name.
-     */
-
+    /** The metric name. */
     private final MetricConstants metricName;
 
     /**
@@ -54,7 +45,7 @@ public class BoxplotStatisticOuter implements Statistic<BoxplotStatistic>
     }
 
     @Override
-    public PoolMetadata getMetadata()
+    public PoolMetadata getPoolMetadata()
     {
         return this.metadata;
     }
@@ -72,18 +63,18 @@ public class BoxplotStatisticOuter implements Statistic<BoxplotStatistic>
             return true;
         }
 
-        if ( !this.getData().equals( p.getData() ) )
+        if ( !this.getStatistic().equals( p.getStatistic() ) )
         {
             return false;
         }
 
-        return this.getMetadata().equals( p.getMetadata() );
+        return this.getPoolMetadata().equals( p.getPoolMetadata() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.getData(), this.getMetadata() );
+        return Objects.hash( this.getStatistic(), this.getPoolMetadata() );
     }
 
     @Override
@@ -91,22 +82,22 @@ public class BoxplotStatisticOuter implements Statistic<BoxplotStatistic>
     {
         ToStringBuilder builder = new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE );
 
-        builder.append( "metric name", this.getData().getMetric().getName() );
-        builder.append( "linked value type", this.getData().getMetric().getLinkedValueType() );
-        builder.append( "quantile value type", this.getData().getMetric().getQuantileValueType() );
+        builder.append( "metric name", this.getStatistic().getMetric().getName() );
+        builder.append( "linked value type", this.getStatistic().getMetric().getLinkedValueType() );
+        builder.append( "quantile value type", this.getStatistic().getMetric().getQuantileValueType() );
 
-        this.getData()
+        this.getStatistic()
             .getStatisticsList()
             .forEach( component -> builder.append( "linked value:", component.getLinkedValue() )
                                           .append( "box:", component.getQuantilesList() ) );
 
-        builder.append( "metadata", this.getMetadata() );
+        builder.append( "metadata", this.getPoolMetadata() );
 
         return builder.toString();
     }
 
     @Override
-    public BoxplotStatistic getData()
+    public BoxplotStatistic getStatistic()
     {
         return this.statistic; // Rendered immutable on construction
     }
@@ -115,6 +106,12 @@ public class BoxplotStatisticOuter implements Statistic<BoxplotStatistic>
     public MetricConstants getMetricName()
     {
         return this.metricName;
+    }
+
+    @Override
+    public Double getSampleQuantile()
+    {
+        return null;
     }
 
     /**

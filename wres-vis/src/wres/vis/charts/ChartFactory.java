@@ -205,7 +205,7 @@ public class ChartFactory
 
         // Find the metadata for the first element, which is sufficient here
         PoolMetadata metadata = statistics.get( 0 )
-                                          .getMetadata();
+                                          .getPoolMetadata();
 
         MetricConstants metricName = statistics.get( 0 )
                                                .getMetricName();
@@ -272,13 +272,13 @@ public class ChartFactory
 
         // Find the metadata for the first element, which is sufficient here
         DiagramStatisticOuter first = statistics.get( 0 );
-        PoolMetadata metadata = first.getMetadata();
+        PoolMetadata metadata = first.getPoolMetadata();
         MetricConstants metricName = first.getMetricName();
         DiagramMetricComponent domain = first.getComponent( DiagramComponentType.PRIMARY_DOMAIN_AXIS );
         DiagramMetricComponent range = first.getComponent( DiagramComponentType.PRIMARY_RANGE_AXIS );
         MetricDimension domainDimension = first.getComponentName( DiagramComponentType.PRIMARY_DOMAIN_AXIS );
         MetricDimension rangeDimension = first.getComponentName( DiagramComponentType.PRIMARY_RANGE_AXIS );
-        boolean hasDiagonal = first.getData()
+        boolean hasDiagonal = first.getStatistic()
                                    .getMetric()
                                    .getHasDiagonal();
 
@@ -313,7 +313,7 @@ public class ChartFactory
                                                                     chartType );
 
             List<PoolMetadata> metadatas = slicedStatistics.stream()
-                                                           .map( DiagramStatisticOuter::getMetadata )
+                                                           .map( DiagramStatisticOuter::getPoolMetadata )
                                                            .toList();
 
             PoolMetadata union = PoolSlicer.unionOf( metadatas );
@@ -430,7 +430,7 @@ public class ChartFactory
 
         // Find the metadata for the first element, which is sufficient here
         PoolMetadata metadata = statistics.get( 0 )
-                                          .getMetadata();
+                                          .getPoolMetadata();
 
         // Component name
         MetricConstants metricName = statistics.get( 0 )
@@ -500,8 +500,8 @@ public class ChartFactory
         BoxplotStatisticOuter first = statistics.get( 0 );
 
         MetricConstants metricName = first.getMetricName();
-        PoolMetadata metadata = first.getMetadata();
-        BoxplotMetric metric = first.getData()
+        PoolMetadata metadata = first.getPoolMetadata();
+        BoxplotMetric metric = first.getStatistic()
                                     .getMetric();
         QuantileValueType type = metric.getQuantileValueType();
         String metricUnits = metric.getUnits();
@@ -574,7 +574,7 @@ public class ChartFactory
         // Find the metadata for the first element, which is sufficient here
         BoxplotStatisticOuter first = statistics.get( 0 );
         MetricConstants metricName = first.getMetricName();
-        BoxplotMetric metric = first.getData()
+        BoxplotMetric metric = first.getStatistic()
                                     .getMetric();
         LinkedValueType valueType = metric.getLinkedValueType();
         String valueUnits = metric.getUnits();
@@ -592,12 +592,12 @@ public class ChartFactory
         for ( BoxplotStatisticOuter next : statistics )
         {
             // Skip empty outputs: #65503
-            if ( next.getData().getStatisticsCount() != 0 )
+            if ( next.getStatistic().getStatisticsCount() != 0 )
             {
                 List<BoxplotStatisticOuter> nextStatistics = List.of( next );
                 JFreeChart chart = this.getBoxplotChartPerPool( nextStatistics, valueType, valueUnits, durationUnits );
 
-                TimeWindowOuter timeWindow = next.getMetadata()
+                TimeWindowOuter timeWindow = next.getPoolMetadata()
                                                  .getTimeWindow();
 
                 results.put( timeWindow, chart );
@@ -605,7 +605,7 @@ public class ChartFactory
             else if ( LOGGER.isDebugEnabled() )
             {
                 LOGGER.debug( "Skipped the box plot outputs for {} because there were no box plot statistics to draw.",
-                              next.getMetadata() );
+                              next.getPoolMetadata() );
             }
         }
 
@@ -642,8 +642,8 @@ public class ChartFactory
         BoxplotStatisticOuter first = statistics.get( 0 );
 
         MetricConstants metricName = first.getMetricName();
-        PoolMetadata metadata = first.getMetadata();
-        BoxplotMetric metric = first.getData()
+        PoolMetadata metadata = first.getPoolMetadata();
+        BoxplotMetric metric = first.getStatistic()
                                     .getMetric();
         QuantileValueType type = metric.getQuantileValueType();
         String metricUnits = metric.getUnits();
@@ -720,9 +720,9 @@ public class ChartFactory
     {
         // Find the metadata for the first element, which is sufficient here
         PoolMetadata metadata = statistics.get( 0 )
-                                          .getMetadata();
+                                          .getPoolMetadata();
         String metricUnits = statistics.get( 0 )
-                                       .getData()
+                                       .getStatistic()
                                        .getMetric()
                                        .getUnits();
 
@@ -1941,14 +1941,14 @@ public class ChartFactory
     {
         Set<Object> keySetValues =
                 Slicer.discover( statistics,
-                                 next -> next.getMetadata()
+                                 next -> next.getPoolMetadata()
                                              .getTimeWindow() );
 
         // Slice by threshold if not time
         if ( chartType != ChartType.LEAD_THRESHOLD && chartType != ChartType.POOLING_WINDOW )
         {
             keySetValues = Slicer.discover( statistics,
-                                            next -> next.getMetadata()
+                                            next -> next.getPoolMetadata()
                                                         .getThresholds() );
         }
 

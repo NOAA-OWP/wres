@@ -61,7 +61,7 @@ public final class CollectableTaskTest
 
         //Wrap an input in a future
         final FutureTask<DoubleScoreStatisticOuter> futureInput =
-                new FutureTask<DoubleScoreStatisticOuter>( () -> {
+                new FutureTask<>( () -> {
 
                     DoubleScoreStatistic table =
                             DoubleScoreStatistic.newBuilder()
@@ -94,7 +94,7 @@ public final class CollectableTaskTest
         DoubleScoreStatisticOuter output = task.call();
 
         assertEquals( 0.333333,
-                      output.getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      output.getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       DOUBLE_COMPARE_THRESHOLD );
     }
 
@@ -111,7 +111,7 @@ public final class CollectableTaskTest
                                        futureInputNull, null );
 
         //Should throw an exception
-        assertThrows( PoolException.class, () -> task2.call() );
+        assertThrows( PoolException.class, task2::call );
     }
 
     @After

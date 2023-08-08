@@ -85,7 +85,7 @@ public class PeirceSkillScore extends ContingencyTableScore
     {
         if ( Objects.isNull( output ) )
         {
-            throw new PoolException( "Specify non-null input to the '" + this.toString() + "'." );
+            throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
         if ( output.getComponents().size() == 4 )
@@ -114,19 +114,19 @@ public class PeirceSkillScore extends ContingencyTableScore
         this.is2x2ContingencyTable( contingencyTable, this );
 
         double tP = contingencyTable.getComponent( MetricConstants.TRUE_POSITIVES )
-                                    .getData()
+                                    .getStatistic()
                                     .getValue();
 
         double fP = contingencyTable.getComponent( MetricConstants.FALSE_POSITIVES )
-                                    .getData()
+                                    .getStatistic()
                                     .getValue();
 
         double fN = contingencyTable.getComponent( MetricConstants.FALSE_NEGATIVES )
-                                    .getData()
+                                    .getStatistic()
                                     .getValue();
 
         double tN = contingencyTable.getComponent( MetricConstants.TRUE_NEGATIVES )
-                                    .getData()
+                                    .getStatistic()
                                     .getValue();
 
         double result = FunctionFactory.finiteOrMissing()
@@ -143,7 +143,7 @@ public class PeirceSkillScore extends ContingencyTableScore
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, contingencyTable.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, contingencyTable.getPoolMetadata() );
     }
 
     /**
@@ -169,7 +169,7 @@ public class PeirceSkillScore extends ContingencyTableScore
             for ( int j = 0; j < square; j++ )
             {
                 cm[i][j] = contingencyTable.getComponent( source.next() )
-                                           .getData()
+                                           .getStatistic()
                                            .getValue();
             }
         }
@@ -220,7 +220,7 @@ public class PeirceSkillScore extends ContingencyTableScore
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, contingencyTable.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, contingencyTable.getPoolMetadata() );
     }
 
 

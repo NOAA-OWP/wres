@@ -8,7 +8,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
@@ -36,7 +35,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 
 /**
  * Tests the {@link RelativeOperatingCharacteristicScore}.
- * 
+ *
  * @author James Brown
  */
 public final class RelativeOperatingCharacteristicScoreTest
@@ -53,11 +52,6 @@ public final class RelativeOperatingCharacteristicScoreTest
     {
         this.rocScore = RelativeOperatingCharacteristicScore.of();
     }
-
-    /**
-     * Compares the output from {@link RelativeOperatingCharacteristicScore#apply(Pool)} against 
-     * expected output for a dataset with ties from Mason and Graham (2002).
-     */
 
     @Test
     public void testApplyWithTies()
@@ -90,7 +84,8 @@ public final class RelativeOperatingCharacteristicScoreTest
         DoubleScoreStatisticOuter actual = this.rocScore.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( RelativeOperatingCharacteristicScore.MAIN )
+                                                                               .setMetric(
+                                                                                       RelativeOperatingCharacteristicScore.MAIN )
                                                                                .setValue( 0.6785714285714286 )
                                                                                .build();
 
@@ -103,11 +98,6 @@ public final class RelativeOperatingCharacteristicScoreTest
 
         assertEquals( expected, actual );
     }
-
-    /**
-     * Compares the output from {@link RelativeOperatingCharacteristicScore#apply(DiscreteProbabilityPairs)} against 
-     * expected output for a dataset without ties.
-     */
 
     @Test
     public void testApplyWithoutTies()
@@ -139,7 +129,8 @@ public final class RelativeOperatingCharacteristicScoreTest
         DoubleScoreStatisticOuter actual = this.rocScore.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( RelativeOperatingCharacteristicScore.MAIN )
+                                                                               .setMetric(
+                                                                                       RelativeOperatingCharacteristicScore.MAIN )
                                                                                .setValue( 0.75 )
                                                                                .build();
 
@@ -157,7 +148,8 @@ public final class RelativeOperatingCharacteristicScoreTest
         DoubleScoreStatisticOuter actualBase = this.rocScore.apply( inputBase );
 
         DoubleScoreStatisticComponent componentBase = DoubleScoreStatisticComponent.newBuilder()
-                                                                                   .setMetric( RelativeOperatingCharacteristicScore.MAIN )
+                                                                                   .setMetric(
+                                                                                           RelativeOperatingCharacteristicScore.MAIN )
                                                                                    .setValue( 0.0 )
                                                                                    .build();
 
@@ -170,11 +162,6 @@ public final class RelativeOperatingCharacteristicScoreTest
 
         assertEquals( expectedBase, actualBase );
     }
-
-    /**
-     * Compares the output from {@link RelativeOperatingCharacteristicScore#apply(DiscreteProbabilityPairs)} against 
-     * expected output for a dataset with no occurrences.
-     */
 
     @Test
     public void testApplyWithNoOccurrences()
@@ -207,7 +194,8 @@ public final class RelativeOperatingCharacteristicScoreTest
         DoubleScoreStatisticOuter actual = this.rocScore.apply( input );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( RelativeOperatingCharacteristicScore.MAIN )
+                                                                               .setMetric(
+                                                                                       RelativeOperatingCharacteristicScore.MAIN )
                                                                                .setValue( Double.NaN )
                                                                                .build();
 
@@ -221,37 +209,24 @@ public final class RelativeOperatingCharacteristicScoreTest
         assertEquals( expected, actual );
     }
 
-    /**
-     * Validates the output from {@link RelativeOperatingCharacteristicScore#apply(DiscreteProbabilityPairs)} when 
-     * supplied with no data.
-     */
-
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
         Pool<Pair<Probability, Probability>> input =
-                Pool.of( Arrays.asList(), PoolMetadata.of() );
+                Pool.of( List.of(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = this.rocScore.apply( input );
 
-        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getStatistic().getValue(), 0.0 );
     }
-
-    /**
-     * Checks that the {@link RelativeOperatingCharacteristicScore#getMetricNameString()} returns
-     * {@link MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE.toString()}
-     */
 
     @Test
     public void testGetName()
     {
-        assertEquals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE.toString(), this.rocScore.getMetricNameString() );
+        assertEquals( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE.toString(),
+                      this.rocScore.getMetricNameString() );
     }
-
-    /**
-     * Checks that the {@link BrierScore#isDecomposable()} returns <code>true</code>.
-     */
 
     @Test
     public void testIsDecomposable()
@@ -259,20 +234,11 @@ public final class RelativeOperatingCharacteristicScoreTest
         assertFalse( this.rocScore.isDecomposable() );
     }
 
-    /**
-     * Checks that the {@link RelativeOperatingCharacteristicScore#isSkillScore()} returns <code>false</code>.
-     */
-
     @Test
     public void testIsSkillScore()
     {
         assertTrue( this.rocScore.isSkillScore() );
     }
-
-    /**
-     * Checks that the {@link RelativeOperatingCharacteristicScore#getScoreOutputGroup()} returns the result provided 
-     * on construction.
-     */
 
     @Test
     public void testGetScoreOutputGroup()
@@ -280,30 +246,17 @@ public final class RelativeOperatingCharacteristicScoreTest
         assertSame( MetricGroup.NONE, this.rocScore.getScoreOutputGroup() );
     }
 
-    /**
-     * Checks that the {@link RelativeOperatingCharacteristicScore#isProper()} returns <code>true</code>.
-     */
-
     @Test
     public void testIsProper()
     {
         assertFalse( this.rocScore.isProper() );
     }
 
-    /**
-     * Checks that the {@link RelativeOperatingCharacteristicScore#isStrictlyProper()} returns <code>true</code>.
-     */
-
     @Test
     public void testIsStrictlyProper()
     {
         assertFalse( this.rocScore.isStrictlyProper() );
     }
-
-    /**
-     * Checks that the baseline identifier is correctly propagated to the metric output metadata.
-     * @throws IOException if the input pairs could not be read
-     */
 
     @Test
     public void testMetadataContainsBaselineIdentifier() throws IOException
@@ -321,23 +274,19 @@ public final class RelativeOperatingCharacteristicScoreTest
 
         assertEquals( "ESP",
                       this.rocScore.apply( transPairs )
-                                   .getMetadata()
+                                   .getPoolMetadata()
                                    .getEvaluation()
                                    .getBaselineDataName() );
     }
-
-    /**
-     * Tests for an expected exception on calling 
-     * {@link RelativeOperatingCharacteristicScore#apply(DiscreteProbabilityPairs)} with null input.
-     */
 
     @Test
     public void testExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                             () -> this.rocScore.apply( (Pool<Pair<Probability, Probability>>) null ) );
+                                             () -> this.rocScore.apply( null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.rocScore.getMetricNameString() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.rocScore.getMetricNameString() + "'.",
+                      actual.getMessage() );
     }
 
 }

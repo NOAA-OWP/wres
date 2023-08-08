@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -24,7 +23,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
 /**
  * Tests the {@link ReliabilityDiagram}.
- * 
+ *
  * @author James Brown
  */
 public final class ReliabilityDiagramTest
@@ -41,11 +40,6 @@ public final class ReliabilityDiagramTest
     {
         this.rel = ReliabilityDiagram.of();
     }
-
-    /**
-     * Compares the output from {@link ReliabilityDiagram#apply(Pool)} against 
-     * expected output.
-     */
 
     @Test
     public void testApply()
@@ -119,11 +113,6 @@ public final class ReliabilityDiagramTest
         assertEquals( expected, actual );
     }
 
-    /**
-     * Compares the output from {@link ReliabilityDiagram#apply(Pool)} against 
-     * expected output for a scenario involving some bins with zero samples. See ticket #51362.
-     */
-
     @Test
     public void testApplySomeBinsHaveZeroSamples()
     {
@@ -161,7 +150,7 @@ public final class ReliabilityDiagramTest
         data.add( Pair.of( Probability.ZERO, Probability.of( 0.0 ) ) );
 
         Pool<Pair<Probability, Probability>> input = Pool.of( data,
-                                    PoolMetadata.of() );
+                                                              PoolMetadata.of() );
 
         //Check the results       
         DiagramStatisticOuter actual = rel.apply( input );
@@ -215,24 +204,20 @@ public final class ReliabilityDiagramTest
                                          .build();
 
         DiagramStatistic expected = DiagramStatistic.newBuilder()
-                                                     .addStatistics( forecastProbability )
-                                                     .addStatistics( observedFrequency )
-                                                     .addStatistics( sampleSize )
-                                                     .setMetric( ReliabilityDiagram.BASIC_METRIC )
-                                                     .build();
+                                                    .addStatistics( forecastProbability )
+                                                    .addStatistics( observedFrequency )
+                                                    .addStatistics( sampleSize )
+                                                    .setMetric( ReliabilityDiagram.BASIC_METRIC )
+                                                    .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
-
-    /**
-     * Validates the output from {@link ReliabilityDiagram#apply(DiscreteProbabilityPairs)} when supplied with no data.
-     */
 
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        Pool<Pair<Probability, Probability>> input = Pool.of( Arrays.asList(), PoolMetadata.of() );
+        Pool<Pair<Probability, Probability>> input = Pool.of( List.of(), PoolMetadata.of() );
 
         DiagramStatisticOuter actual = rel.apply( input );
 
@@ -274,13 +259,8 @@ public final class ReliabilityDiagramTest
                                                     .setMetric( ReliabilityDiagram.BASIC_METRIC )
                                                     .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
-
-    /**
-     * Checks that the {@link ReliabilityDiagram#getMetricNameString()} returns
-     * {@link MetricConstants.RELIABILITY_DIAGRAM.toString()}
-     */
 
     @Test
     public void testGetName()
@@ -288,16 +268,11 @@ public final class ReliabilityDiagramTest
         assertEquals( MetricConstants.RELIABILITY_DIAGRAM.toString(), this.rel.getMetricNameString() );
     }
 
-    /**
-     * Tests for an expected exception on calling 
-     * {@link ReliabilityDiagram#apply(DiscreteProbabilityPairs)} with null input.
-     */
-
     @Test
     public void testExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                                   () -> this.rel.apply( (Pool<Pair<Probability, Probability>>) null ) );
+                                             () -> this.rel.apply( null ) );
 
         assertEquals( "Specify non-null input to the '" + this.rel.getMetricNameString() + "'.", actual.getMessage() );
     }

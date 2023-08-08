@@ -49,4 +49,11 @@ message Statistics
 
     int32 minimum_sample_size = 9;
     // The minimum sample size used to compute statistics in this collection.
+
+    double sample_quantile = 10;
+    // The quantile of the sampling distribution to which all statistics in this
+    // collection correspond. If the value is zero, these statistics were
+    // derived from a nominal sample, i.e., without the estimation of sampling
+    // uncertainty. A value greater than zero and less than one represents an
+    // actual quantile.
 }
