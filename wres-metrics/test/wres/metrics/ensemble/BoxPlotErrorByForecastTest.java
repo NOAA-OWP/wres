@@ -5,7 +5,6 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -48,11 +47,6 @@ public final class BoxPlotErrorByForecastTest
         this.bpe = BoxPlotErrorByForecast.of();
     }
 
-    /**
-     * Compares the output from {@link BoxPlotErrorByForecast#apply(EnsemblePairs)} against 
-     * expected output for box plots configured to use the ensemble mean as the forecast value.
-     */
-
     @Test
     public void testApplyWithEnsembleMean()
     {
@@ -83,14 +77,8 @@ public final class BoxPlotErrorByForecastTest
                                                        .addStatistics( box )
                                                        .build();
 
-        assertEquals( expectedBox, actual.getData() );
+        assertEquals( expectedBox, actual.getStatistic() );
     }
-
-    /**
-     * Compares the output from {@link BoxPlotErrorByForecast#apply(EnsemblePairs)} against 
-     * expected output for box plots configured to use the ensemble median as the forecast value.
-     * @throws MetricParameterException if the metric could not be built
-     */
 
     @Test
     public void testApplyWithEnsembleMedian() throws MetricParameterException
@@ -126,19 +114,15 @@ public final class BoxPlotErrorByForecastTest
                                                        .addStatistics( box )
                                                        .build();
 
-        assertEquals( expectedBox, actual.getData() );
+        assertEquals( expectedBox, actual.getStatistic() );
     }
-
-    /**
-     * Validates the output from {@link BoxPlotErrorByForecast#apply(EnsemblePairs)} when supplied with no data.
-     */
 
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
         Pool<Pair<Double, Ensemble>> input =
-                Pool.of( Arrays.asList(), PoolMetadata.of() );
+                Pool.of( List.of(), PoolMetadata.of() );
 
         BoxplotStatisticOuter actual = this.bpe.apply( input );
 
@@ -156,13 +140,8 @@ public final class BoxPlotErrorByForecastTest
                                                     .setMetric( metric )
                                                     .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
-
-    /**
-     * Checks that the {@link BoxPlotErrorByForecast#getMetricNameString()} returns
-     * {@link MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE.toString()}
-     */
 
     @Test
     public void testGetName()
@@ -170,20 +149,11 @@ public final class BoxPlotErrorByForecastTest
         assertEquals( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE.toString(), this.bpe.getMetricNameString() );
     }
 
-    /**
-     * Checks that the {@link BoxPlotErrorByForecast#hasRealUnits()} returns <code>true</code>.
-     */
-
     @Test
     public void testHasRealUnits()
     {
         assertTrue( this.bpe.hasRealUnits() );
     }
-
-    /**
-     * Tests for an expected exception on calling 
-     * {@link BoxPlotErrorByForecast#apply(EnsemblePairs)} with null input.
-     */
 
     @Test
     public void testApplyExceptionOnNullInput()
@@ -192,13 +162,6 @@ public final class BoxPlotErrorByForecastTest
 
         assertEquals( "Specify non-null input to the 'BOX PLOT OF ERRORS BY FORECAST VALUE'.", expected.getMessage() );
     }
-
-    /**
-     * Constructs a {@link BoxPlotErrorByForecast} and checks for an expected exception when the forecast dimension 
-     * is null. 
-     * @throws MetricParameterException if the metric could not be constructed for reasons other than the 
-     *            expected reason
-     */
 
     @Test
     public void testConstructionWithNullDimensionException() throws MetricParameterException
@@ -212,13 +175,6 @@ public final class BoxPlotErrorByForecastTest
                       + "for the domain axis.",
                       expected.getMessage() );
     }
-
-    /**
-     * Constructs a {@link BoxPlotErrorByForecast} and checks for an expected exception when the forecast dimension 
-     * is wrong. 
-     * @throws MetricParameterException if the metric could not be constructed for reasons other than the 
-     *            expected reason
-     */
 
     @Test
     public void testConstructionWithWrongDimensionException() throws MetricParameterException

@@ -6,7 +6,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Arrays;
+import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
@@ -19,11 +19,8 @@ import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.metrics.Boilerplate;
-import wres.metrics.Collectable;
-import wres.metrics.Metric;
 import wres.metrics.MetricCalculationException;
 import wres.metrics.MetricTestDataFactory;
-import wres.metrics.Score;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
@@ -54,10 +51,6 @@ public final class PeirceSkillScoreTest
         this.meta = Boilerplate.getPoolMetadata( false );
     }
 
-    /**
-     * Compares the actual output from {@link PeirceSkillScore#apply(Pool)} to the expected output.
-     */
-
     @Test
     public void testApplyWithDichotomousInput()
     {
@@ -82,24 +75,16 @@ public final class PeirceSkillScoreTest
         assertEquals( expected, actual );
     }
 
-    /**
-     * Validates the output from {@link Metric#apply(Pool)} when supplied with no data.
-     */
-
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        Pool<Pair<Boolean, Boolean>> input = Pool.of( Arrays.asList(), PoolMetadata.of() );
+        Pool<Pair<Boolean, Boolean>> input = Pool.of( List.of(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = this.pss.apply( input );
 
-        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getStatistic().getValue(), 0.0 );
     }
-
-    /**
-     * Verifies that {@link Metric#getMetricNameString()} returns the expected result.
-     */
 
     @Test
     public void testMetricIsNamedCorrectly()
@@ -107,19 +92,11 @@ public final class PeirceSkillScoreTest
         assertEquals( MetricConstants.PEIRCE_SKILL_SCORE.toString(), this.pss.getMetricNameString() );
     }
 
-    /**
-     * Verifies that {@link Score#isDecomposable()} returns <code>false</code>.
-     */
-
     @Test
     public void testMetricIsNotDecoposable()
     {
         assertFalse( this.pss.isDecomposable() );
     }
-
-    /**
-     * Verifies that {@link Score#isSkillScore()} returns <code>true</code>.
-     */
 
     @Test
     public void testMetricIsASkillScore()
@@ -127,19 +104,11 @@ public final class PeirceSkillScoreTest
         assertTrue( this.pss.isSkillScore() );
     }
 
-    /**
-     * Verifies that {@link Score#getScoreOutputGroup()} returns {@link MetricGroup#NONE}.
-     */
-
     @Test
     public void testGetScoreOutputGroup()
     {
         assertSame( MetricGroup.NONE, this.pss.getScoreOutputGroup() );
     }
-
-    /**
-     * Verifies that {@link Collectable#getCollectionOf()} returns {@link MetricConstants#CONTINGENCY_TABLE}.
-     */
 
     @Test
     public void testGetCollectionOf()
@@ -152,7 +121,7 @@ public final class PeirceSkillScoreTest
     {
         PoolException exception =
                 assertThrows( PoolException.class,
-                              () -> this.pss.aggregate( (DoubleScoreStatisticOuter) null, null ) );
+                              () -> this.pss.aggregate( null, null ) );
 
         String expectedMessage = "Specify non-null input to the '" + this.pss.getMetricNameString() + "'.";
 

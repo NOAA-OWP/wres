@@ -10,6 +10,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import net.jcip.annotations.Immutable;
+
 import wres.config.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
@@ -18,23 +19,19 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 
 /**
  * An immutable score statistic that wraps a {@link DoubleScoreStatistic}.
- * 
+ *
  * @author James Brown
  */
 
 @Immutable
 public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter>
 {
-
-    /**
-     * The metric name.
-     */
-
+    /** The metric name. */
     private final MetricConstants metricName;
 
     /**
      * Construct the statistic.
-     * 
+     *
      * @param statistic the verification statistic
      * @param metadata the metadata
      * @throws StatisticException if any of the inputs are invalid
@@ -43,41 +40,40 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
 
     public static DoubleScoreStatisticOuter of( DoubleScoreStatistic statistic, PoolMetadata metadata )
     {
-        return new DoubleScoreStatisticOuter( statistic, metadata );
+        return new DoubleScoreStatisticOuter( statistic, metadata, null );
+    }
+
+    /**
+     * Construct the statistic with a sample quantile.
+     *
+     * @param statistic the verification statistic
+     * @param metadata the metadata
+     * @param sampleQuantile the sample quantile, or null
+     * @throws StatisticException if any of the inputs are invalid
+     * @return an instance of the output
+     */
+
+    public static DoubleScoreStatisticOuter of( DoubleScoreStatistic statistic,
+                                                PoolMetadata metadata,
+                                                Double sampleQuantile )
+    {
+        return new DoubleScoreStatisticOuter( statistic, metadata, sampleQuantile );
     }
 
     /**
      * A wrapper for a {@link DoubleScoreStatisticComponent}.
-     * 
+     *
      * @author James Brown
      */
 
     public static class DoubleScoreComponentOuter extends BasicScoreComponent<DoubleScoreStatisticComponent>
     {
-
-        /**
-         * The component name.
-         */
-
+        /** The component name. */
         private final MetricConstants metricName;
 
         /**
-         * Hidden constructor.
-         * @param component the score component
-         * @param metadata the metadata
-         */
-
-        private DoubleScoreComponentOuter( DoubleScoreStatisticComponent component,
-                                           PoolMetadata metadata )
-        {
-            super( component, metadata, next -> Double.toString( next.getValue() ) );
-
-            this.metricName = MetricConstants.valueOf( component.getMetric().getName().name() );
-        }
-
-        /**
          * Create a component.
-         * 
+         *
          * @param component the score component
          * @param metadata the metadata
          * @return a component
@@ -87,7 +83,24 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
         public static DoubleScoreComponentOuter of( DoubleScoreStatisticComponent component,
                                                     PoolMetadata metadata )
         {
-            return new DoubleScoreComponentOuter( component, metadata );
+            return new DoubleScoreComponentOuter( component, metadata, null );
+        }
+
+        /**
+         * Create a component with a sample quantile.
+         *
+         * @param component the score component
+         * @param metadata the metadata
+         * @param sampleQuantile the sample quantile or null
+         * @return a component
+         * @throws NullPointerException if any input is null
+         */
+
+        public static DoubleScoreComponentOuter of( DoubleScoreStatisticComponent component,
+                                                    PoolMetadata metadata,
+                                                    Double sampleQuantile )
+        {
+            return new DoubleScoreComponentOuter( component, metadata, sampleQuantile );
         }
 
         @Override
@@ -104,7 +117,7 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
                 return false;
             }
 
-            if ( ! ( o instanceof DoubleScoreComponentOuter inner ) )
+            if ( !( o instanceof DoubleScoreComponentOuter inner ) )
             {
                 return false;
             }
@@ -122,6 +135,24 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
         {
             return 31 * this.getMetricName().hashCode() + super.hashCode();
         }
+
+        /**
+         * Hidden constructor.
+         * @param component the score component
+         * @param metadata the metadata
+         * @param sampleQuantile the sample quantile or null
+         */
+
+        private DoubleScoreComponentOuter( DoubleScoreStatisticComponent component,
+                                           PoolMetadata metadata,
+                                           Double sampleQuantile )
+        {
+            super( component, metadata, next -> Double.toString( next.getValue() ), sampleQuantile );
+
+            this.metricName = MetricConstants.valueOf( component.getMetric()
+                                                                .getName()
+                                                                .name() );
+        }
     }
 
     @Override
@@ -135,12 +166,16 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
     {
         ToStringBuilder builder = new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE );
 
-        builder.append( "metric", this.getData().getMetric().getName() );
+        builder.append( "metric", this.getStatistic()
+                                      .getMetric()
+                                      .getName() );
 
-        this.getInternalMapping().forEach( ( key, value ) -> builder.append( "value", value ) );
+        this.getInternalMapping()
+            .forEach( ( key, value ) -> builder.append( "value", value ) );
 
-        builder.append( "metadata", this.getMetadata() )
-               .append( "sampleSize", this.getData().getSampleSize() );
+        builder.append( "metadata", this.getPoolMetadata() )
+               .append( "sampleSize", this.getStatistic().getSampleSize() )
+               .append( "sampleQuantile", this.getSampleQuantile() );
 
         return builder.toString();
     }
@@ -153,7 +188,7 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
             return false;
         }
 
-        if ( ! ( o instanceof DoubleScoreStatisticOuter inner ) )
+        if ( !( o instanceof DoubleScoreStatisticOuter inner ) )
         {
             return false;
         }
@@ -174,13 +209,20 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param score the score
+     * @param metadata the metadata
+     * @param sampleQuantile the sample quantile or null
      */
 
-    private DoubleScoreStatisticOuter( DoubleScoreStatistic score, PoolMetadata metadata )
+    private DoubleScoreStatisticOuter( DoubleScoreStatistic score,
+                                       PoolMetadata metadata,
+                                       Double sampleQuantile )
     {
-        super( score, DoubleScoreStatisticOuter.createInternalMapping( score, metadata ), metadata );
+        super( score,
+               DoubleScoreStatisticOuter.createInternalMapping( score, metadata, sampleQuantile ),
+               metadata,
+               sampleQuantile );
 
         String name = score.getMetric()
                            .getName()
@@ -191,14 +233,16 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
 
     /**
      * Creates an internal mapping between score components and their identifiers.
-     * 
+     *
      * @param score the score
      * @param metadata the metadata
+     * @param sampleQuantile the sample quantile or null
      * @return the internal mapping for re-use
      */
 
     private static Map<MetricConstants, DoubleScoreComponentOuter> createInternalMapping( DoubleScoreStatistic score,
-                                                                                          PoolMetadata metadata )
+                                                                                          PoolMetadata metadata,
+                                                                                          Double sampleQuantile )
     {
         Map<MetricConstants, DoubleScoreComponentOuter> returnMe = new EnumMap<>( MetricConstants.class );
 
@@ -207,7 +251,7 @@ public class DoubleScoreStatisticOuter extends BasicScoreStatistic<DoubleScoreSt
         {
             MetricConstants name = MetricConstants.valueOf( next.getMetric().getName().name() );
 
-            DoubleScoreComponentOuter nextOuter = DoubleScoreComponentOuter.of( next, metadata );
+            DoubleScoreComponentOuter nextOuter = DoubleScoreComponentOuter.of( next, metadata, sampleQuantile );
 
             returnMe.put( name, nextOuter );
         }

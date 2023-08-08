@@ -403,9 +403,9 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         // Diagram output available
         if ( statistics.stream().anyMatch( next -> next.getDiagramsCount() > 0 ) )
         {
-            List<DiagramStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
-                                                                                      this.getDiagramMapper(
-                                                                                              poolSupplier ) );
+            List<DiagramStatisticOuter> wrapped =
+                    this.getWrappedAndSortedStatistics( statistics,
+                                                        this.getDiagramMapper( poolSupplier ) );
             Set<Path> innerPaths = this.processDiagramOutputs( wrapped );
             paths.addAll( innerPaths );
         }
@@ -436,9 +436,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         // Ordinary scores available
         if ( statistics.stream().anyMatch( next -> next.getScoresCount() > 0 ) )
         {
-            List<DoubleScoreStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
-                                                                                          this.getDoubleScoreMapper(
-                                                                                                  poolSupplier ) );
+            List<DoubleScoreStatisticOuter> wrapped =
+                    this.getWrappedAndSortedStatistics( statistics, this.getDoubleScoreMapper( poolSupplier ) );
             Set<Path> innerPaths = this.processDoubleScoreOutputs( wrapped );
             paths.addAll( innerPaths );
         }
@@ -446,9 +445,9 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         // Duration scores available
         if ( statistics.stream().anyMatch( next -> next.getDurationScoresCount() > 0 ) )
         {
-            List<DurationScoreStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
-                                                                                            this.getDurationScoreMapper(
-                                                                                                    poolSupplier ) );
+            List<DurationScoreStatisticOuter> wrapped =
+                    this.getWrappedAndSortedStatistics( statistics,
+                                                        this.getDurationScoreMapper( poolSupplier ) );
 
             Set<Path> innerPaths = this.processDurationScoreOutputs( wrapped );
             paths.addAll( innerPaths );
@@ -514,7 +513,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             Function<DiagramStatistic, DiagramStatisticOuter> innerMapper =
                     nextDiagram -> DiagramStatisticOuter.of( nextDiagram,
                                                              PoolMetadata.of( this.getEvaluationDescription(),
-                                                                              poolSupplier.apply( someStats ) ) );
+                                                                              poolSupplier.apply( someStats ) ),
+                                                             this.getSampleQuantile( someStats ) );
             return diagrams.stream()
                            .map( innerMapper )
                            .toList();
@@ -560,7 +560,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             Function<DoubleScoreStatistic, DoubleScoreStatisticOuter> innerMapper =
                     nextScore -> DoubleScoreStatisticOuter.of( nextScore,
                                                                PoolMetadata.of( this.getEvaluationDescription(),
-                                                                                poolSupplier.apply( someStats ) ) );
+                                                                                poolSupplier.apply( someStats ) ),
+                                                               this.getSampleQuantile( someStats ) );
             return scores.stream()
                          .map( innerMapper )
                          .toList();
@@ -582,7 +583,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             Function<DurationScoreStatistic, DurationScoreStatisticOuter> innerMapper =
                     nextScore -> DurationScoreStatisticOuter.of( nextScore,
                                                                  PoolMetadata.of( this.getEvaluationDescription(),
-                                                                                  poolSupplier.apply( someStats ) ) );
+                                                                                  poolSupplier.apply( someStats ) ),
+                                                                 this.getSampleQuantile( someStats ) );
             return scores.stream()
                          .map( innerMapper )
                          .toList();
@@ -604,11 +606,29 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             Function<DurationDiagramStatistic, DurationDiagramStatisticOuter> innerMapper =
                     nextDiagram -> DurationDiagramStatisticOuter.of( nextDiagram,
                                                                      PoolMetadata.of( this.getEvaluationDescription(),
-                                                                                      poolSupplier.apply( someStats ) ) );
+                                                                                      poolSupplier.apply( someStats ) ),
+                                                                     this.getSampleQuantile( someStats ) );
             return diagrams.stream()
                            .map( innerMapper )
                            .toList();
         };
+    }
+
+    /**
+     * Returns the sample quantile associated with the statistics, if any.
+     * @param statistics the statistics
+     * @return the sample quantile or null
+     */
+
+    private Double getSampleQuantile( Statistics statistics )
+    {
+        Double sampleQuantile = null;
+        if( statistics.getSampleQuantile() > 0.0 )
+        {
+            sampleQuantile = statistics.getSampleQuantile();
+        }
+
+        return sampleQuantile;
     }
 
     /**
@@ -890,13 +910,13 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                           positionString,
                           type,
                           output.get( 0 )
-                                .getMetadata()
+                                .getPoolMetadata()
                                 .getPool()
                                 .getGeometryTuples( 0 )
                                 .getLeft()
                                 .getName(),
                           output.get( 0 )
-                                .getMetadata()
+                                .getPoolMetadata()
                                 .getTimeWindow() );
         }
         else

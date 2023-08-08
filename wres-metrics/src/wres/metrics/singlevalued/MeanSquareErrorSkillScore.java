@@ -121,7 +121,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Doubl
         if ( !pool.get().isEmpty() )
         {
             double sseInner = output.getComponent( MetricConstants.MAIN )
-                                    .getData()
+                                    .getStatistic()
                                     .getValue();
 
             double numerator = FunctionFactory.finiteOrMissing()
@@ -132,7 +132,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Doubl
             {
                 denominator = this.sse.apply( pool.getBaselineData() )
                                       .getComponent( MetricConstants.MAIN )
-                                      .getData()
+                                      .getStatistic()
                                       .getValue();
             }
             // Default baseline is the average observation, which results in the so-called Nash-Sutcliffe Efficiency
@@ -162,7 +162,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Doubl
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, output.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, output.getPoolMetadata() );
     }
 
     @Override

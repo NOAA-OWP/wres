@@ -206,7 +206,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
             MetricConstants metricName = statistics.get( 0 )
                                                    .getMetricName();
             PoolMetadata metadata = statistics.get( 0 )
-                                              .getMetadata();
+                                              .getPoolMetadata();
 
             // Collection of graphics parameters, one for each set of charts to write across N formats.
             Collection<Outputs> outputsMap =
@@ -279,7 +279,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
             MetricConstants metricName = statistics.get( 0 )
                                                    .getMetricName();
             PoolMetadata metadata = statistics.get( 0 )
-                                              .getMetadata();
+                                              .getPoolMetadata();
 
             // Collection of graphics parameters, one for each set of charts to write across N formats.
             Collection<Outputs> outputsMap =
@@ -346,7 +346,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
         for ( EnsembleAverageType type : EnsembleAverageType.values() )
         {
             List<BoxplotStatisticOuter> innerSlice = Slicer.filter( statistics,
-                                                                    value -> type == value.getMetadata()
+                                                                    value -> type == value.getPoolMetadata()
                                                                                           .getPool()
                                                                                           .getEnsembleAverageType() );
             if ( !innerSlice.isEmpty() )
@@ -370,7 +370,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
             getSliceByPoolingWindow( List<BoxplotStatisticOuter> statistics )
     {
         Function<BoxplotStatisticOuter, TimeWindowOuter> classifier = boxplot -> {
-            TimeWindowOuter timeWindow = boxplot.getMetadata()
+            TimeWindowOuter timeWindow = boxplot.getPoolMetadata()
                                                 .getTimeWindow();
 
             // Create a time window without lead duration qualifiers
@@ -421,7 +421,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
         // #51670
         SortedSet<EnsembleAverageType> types =
                 Slicer.discover( statistics,
-                                 next -> next.getMetadata().getPool().getEnsembleAverageType() );
+                                 next -> next.getPoolMetadata().getPool().getEnsembleAverageType() );
 
         Optional<EnsembleAverageType> type =
                 types.stream()

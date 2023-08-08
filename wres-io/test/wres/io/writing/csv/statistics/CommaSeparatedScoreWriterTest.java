@@ -48,7 +48,7 @@ public class CommaSeparatedScoreWriterTest
         CommaSeparatedScoreWriter<DoubleScoreComponentOuter, DoubleScoreStatisticOuter> writer =
                 CommaSeparatedScoreWriter.of( declaration,
                                               this.outputDirectory,
-                                              next -> Double.toString( next.getData().getValue() ) );
+                                              next -> Double.toString( next.getStatistic().getValue() ) );
 
         Set<Path> pathsToFile = writer.apply( WriterTestHelper.getScoreStatisticsForOnePool() );
 
@@ -126,7 +126,7 @@ public class CommaSeparatedScoreWriterTest
         CommaSeparatedScoreWriter<DurationScoreComponentOuter, DurationScoreStatisticOuter> writer =
                 CommaSeparatedScoreWriter.of( declaration,
                                               this.outputDirectory,
-                                              next -> MessageFactory.parse( next.getData().getValue() ).toString() );
+                                              next -> MessageFactory.parse( next.getStatistic().getValue() ).toString() );
 
         Set<Path> pathsToFile = writer.apply( WriterTestHelper.getDurationScoreStatisticsForOnePool() );
 
@@ -167,7 +167,7 @@ public class CommaSeparatedScoreWriterTest
         CommaSeparatedScoreWriter<DoubleScoreComponentOuter, DoubleScoreStatisticOuter> writer =
                 CommaSeparatedScoreWriter.of( declaration,
                                               this.outputDirectory,
-                                              next -> Double.toString( next.getData().getValue() ) );
+                                              next -> Double.toString( next.getStatistic().getValue() ) );
 
         Set<Path> pathsToFile = writer.apply( WriterTestHelper.getScoreStatisticsForThreePoolsWithMissings() );
 

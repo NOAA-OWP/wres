@@ -157,12 +157,12 @@ public class RelativeOperatingCharacteristicDiagram
                 pOD[i] = Slicer.filter( out, MetricConstants.PROBABILITY_OF_DETECTION )
                                .get( 0 )
                                .getComponent( MetricConstants.MAIN )
-                               .getData()
+                               .getStatistic()
                                .getValue();
                 pOFD[i] = Slicer.filter( out, MetricConstants.PROBABILITY_OF_FALSE_DETECTION )
                                 .get( 0 )
                                 .getComponent( MetricConstants.MAIN )
-                                .getData()
+                                .getStatistic()
                                 .getValue();
             }
 

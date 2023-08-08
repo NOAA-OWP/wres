@@ -93,7 +93,7 @@ public class BrierSkillScore extends BrierScore
 
         double result = this.msess.apply( transformed )
                                   .getComponent( MetricConstants.MAIN )
-                                  .getData()
+                                  .getStatistic()
                                   .getValue();
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()

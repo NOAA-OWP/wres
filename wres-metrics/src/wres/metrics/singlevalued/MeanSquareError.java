@@ -85,15 +85,15 @@ public class MeanSquareError extends SumOfSquareError
         }
 
         double input = output.getComponent( MetricConstants.MAIN )
-                             .getData()
+                             .getStatistic()
                              .getValue();
 
         double mse = FunctionFactory.finiteOrMissing()
-                                    .applyAsDouble( input / output.getData().getSampleSize() );
+                                    .applyAsDouble( input / output.getStatistic().getSampleSize() );
 
         // Set the real-valued measurement units
         DoubleScoreMetricComponent.Builder metricCompBuilder = MeanSquareError.MAIN.toBuilder()
-                                                                                   .setUnits( output.getMetadata()
+                                                                                   .setUnits( output.getPoolMetadata()
                                                                                                     .getMeasurementUnit()
                                                                                                     .toString() );
         
@@ -108,7 +108,7 @@ public class MeanSquareError extends SumOfSquareError
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, output.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, output.getPoolMetadata() );
     }
 
     /**

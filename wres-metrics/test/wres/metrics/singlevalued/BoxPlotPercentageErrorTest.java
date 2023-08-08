@@ -5,7 +5,6 @@ import static org.junit.Assert.assertThrows;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -121,7 +120,7 @@ public final class BoxPlotPercentageErrorTest
                 builder.addData( next.getValue() );
             }
 
-            actualRaw.add( this.boxPlotPercentageError.apply( builder.build() ).getData() );
+            actualRaw.add( this.boxPlotPercentageError.apply( builder.build() ).getStatistic() );
         }
 
         List<BoxplotStatistic> expectedRaw = new ArrayList<>();
@@ -254,7 +253,7 @@ public final class BoxPlotPercentageErrorTest
     {
         // Generate empty data
         Pool<Pair<Double, Double>> input =
-                Pool.of( Arrays.asList(), PoolMetadata.of() );
+                Pool.of( List.of(), PoolMetadata.of() );
 
         BoxplotStatisticOuter actual = this.boxPlotPercentageError.apply( input );
 
@@ -291,20 +290,11 @@ public final class BoxPlotPercentageErrorTest
         assertEquals( expected, actual );
     }
 
-    /**
-     * Checks that the {@link BoxPlotPercentageError#getMetricNameString()} returns
-     * {@link MetricConstants#BOX_PLOT_OF_PERCENTAGE_ERRORS.toString()}
-     */
-
     @Test
     public void testGetName()
     {
         assertEquals( MetricConstants.BOX_PLOT_OF_PERCENTAGE_ERRORS.toString(), this.boxPlotPercentageError.getMetricNameString() );
     }
-
-    /**
-     * Tests for an expected exception on calling {@link BoxPlotPercentageError#apply(Pool)} with null input.
-     */
 
     @Test
     public void testApplyExceptionOnNullInput()

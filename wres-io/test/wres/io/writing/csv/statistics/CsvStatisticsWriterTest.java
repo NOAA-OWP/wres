@@ -493,12 +493,12 @@ class CsvStatisticsWriterTest
         List<DoubleScoreStatisticOuter> scores = WriterTestHelper.getScoreStatisticsForOnePool();
 
         Pool pool = scores.get( 0 )
-                          .getMetadata()
+                          .getPoolMetadata()
                           .getPool();
 
         Statistics.Builder builder = Statistics.newBuilder()
                                                .addAllScores( scores.stream()
-                                                                    .map( DoubleScoreStatisticOuter::getData )
+                                                                    .map( DoubleScoreStatisticOuter::getStatistic )
                                                                     .collect( Collectors.toList() ) );
 
         if ( isBaselinePool )
@@ -526,12 +526,12 @@ class CsvStatisticsWriterTest
         List<DurationScoreStatisticOuter> scores = WriterTestHelper.getDurationScoreStatisticsForOnePool();
 
         Pool pool = scores.get( 0 )
-                          .getMetadata()
+                          .getPoolMetadata()
                           .getPool();
 
         return Statistics.newBuilder()
                          .addAllDurationScores( scores.stream()
-                                                      .map( DurationScoreStatisticOuter::getData )
+                                                      .map( DurationScoreStatisticOuter::getStatistic )
                                                       .collect( Collectors.toList() ) )
                          .setPool( pool )
                          .build();
@@ -547,12 +547,12 @@ class CsvStatisticsWriterTest
         List<DurationDiagramStatisticOuter> scores = WriterTestHelper.getTimeToPeakErrorsForOnePool();
 
         Pool pool = scores.get( 0 )
-                          .getMetadata()
+                          .getPoolMetadata()
                           .getPool();
 
         return Statistics.newBuilder()
                          .addAllDurationDiagrams( scores.stream()
-                                                        .map( DurationDiagramStatisticOuter::getData )
+                                                        .map( DurationDiagramStatisticOuter::getStatistic )
                                                         .collect( Collectors.toList() ) )
                          .setPool( pool )
                          .build();
@@ -571,15 +571,15 @@ class CsvStatisticsWriterTest
         List<BoxplotStatisticOuter> boxesPooled = WriterTestHelper.getBoxPlotPerPoolForTwoPools();
 
         Pool pool = boxesPaired.get( 0 )
-                               .getMetadata()
+                               .getPoolMetadata()
                                .getPool();
 
         return Statistics.newBuilder()
                          .addAllOneBoxPerPair( boxesPaired.stream()
-                                                          .map( BoxplotStatisticOuter::getData )
+                                                          .map( BoxplotStatisticOuter::getStatistic )
                                                           .collect( Collectors.toList() ) )
                          .addAllOneBoxPerPool( boxesPooled.stream()
-                                                          .map( BoxplotStatisticOuter::getData )
+                                                          .map( BoxplotStatisticOuter::getStatistic )
                                                           .collect( Collectors.toList() ) )
                          .setPool( pool )
                          .build();
@@ -595,12 +595,12 @@ class CsvStatisticsWriterTest
         List<DiagramStatisticOuter> boxes = WriterTestHelper.getReliabilityDiagramForOnePool();
 
         Pool pool = boxes.get( 0 )
-                         .getMetadata()
+                         .getPoolMetadata()
                          .getPool();
 
         return Statistics.newBuilder()
                          .addAllDiagrams( boxes.stream()
-                                               .map( DiagramStatisticOuter::getData )
+                                               .map( DiagramStatisticOuter::getStatistic )
                                                .collect( Collectors.toList() ) )
                          .setPool( pool )
                          .build();

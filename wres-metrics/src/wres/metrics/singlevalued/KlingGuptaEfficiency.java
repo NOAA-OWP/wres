@@ -139,7 +139,7 @@ public class KlingGuptaEfficiency extends DecomposableScore<Pool<Pair<Double, Do
         VectorOfDoubles rightValues = VectorOfDoubles.of( Slicer.getRightSide( pool ) );
         double rhoVal = rho.apply( pool )
                            .getComponent( MetricConstants.MAIN )
-                           .getData()
+                           .getStatistic()
                            .getValue();
 
         // Check for finite correlation

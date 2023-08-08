@@ -142,25 +142,25 @@ public final class EnsembleStatisticsProcessorTest
                       .get( 0 );
 
         assertEquals( -0.032093836077598345,
-                      bias.getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      bias.getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.7873367083297588,
-                      cod.getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      cod.getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.8873199582618204,
-                      rho.getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rho.getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 11.009512537315405,
-                      mae.getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      mae.getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -1.157869354367079,
-                      me.getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      me.getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 41.01563032408479,
-                      rmse.getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rmse.getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 9.076475676968208,
-                      crps.getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      crps.getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
     }
 
@@ -180,22 +180,22 @@ public final class EnsembleStatisticsProcessorTest
         List<DoubleScoreStatisticOuter> bias = Slicer.filter( statistics.getDoubleScoreStatistics(),
                                                               MetricConstants.BIAS_FRACTION );
         assertEquals( -0.032093836077598345,
-                      bias.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      bias.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -0.032093836077598345,
-                      bias.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      bias.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -0.0365931379807274,
-                      bias.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      bias.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -0.039706682985140816,
-                      bias.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      bias.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -0.0505708024162773,
-                      bias.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      bias.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -0.056658160809530816,
-                      bias.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      bias.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
 
         //Validate CoD
@@ -203,22 +203,22 @@ public final class EnsembleStatisticsProcessorTest
                                                              MetricConstants.COEFFICIENT_OF_DETERMINATION );
 
         assertEquals( 0.7873367083297588,
-                      cod.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      cod.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.7873367083297588,
-                      cod.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      cod.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.7653639626077698,
-                      cod.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      cod.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.76063213080129,
-                      cod.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      cod.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.7542039364210298,
-                      cod.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      cod.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.7492338765733539,
-                      cod.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      cod.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
 
         //Validate rho
@@ -226,22 +226,22 @@ public final class EnsembleStatisticsProcessorTest
                                                              MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
 
         assertEquals( 0.8873199582618204,
-                      rho.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rho.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.8873199582618204,
-                      rho.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rho.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.8748508230594344,
-                      rho.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rho.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.8721422652304439,
-                      rho.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rho.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.868449155921652,
-                      rho.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rho.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.8655829692024641,
-                      rho.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rho.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
 
         //Validate mae
@@ -249,22 +249,22 @@ public final class EnsembleStatisticsProcessorTest
                                                              MetricConstants.MEAN_ABSOLUTE_ERROR );
 
         assertEquals( 11.009512537315405,
-                      mae.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      mae.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 11.009512537315405,
-                      mae.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      mae.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 17.675554578575642,
-                      mae.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      mae.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 18.997815872635968,
-                      mae.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      mae.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 20.625668563442147,
-                      mae.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      mae.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 22.094227646773568,
-                      mae.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      mae.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
 
         //Validate me
@@ -272,22 +272,22 @@ public final class EnsembleStatisticsProcessorTest
                                                             MetricConstants.MEAN_ERROR );
 
         assertEquals( -1.157869354367079,
-                      me.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      me.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -1.157869354367079,
-                      me.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      me.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -2.1250409720950105,
-                      me.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      me.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -2.4855770739425846,
-                      me.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      me.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -3.4840043925326936,
-                      me.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      me.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -4.2185439080739515,
-                      me.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      me.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
 
         //Validate rmse
@@ -295,22 +295,22 @@ public final class EnsembleStatisticsProcessorTest
                                                               MetricConstants.ROOT_MEAN_SQUARE_ERROR );
 
         assertEquals( 41.01563032408479,
-                      rmse.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rmse.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 41.01563032408479,
-                      rmse.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rmse.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 52.55361580348335,
-                      rmse.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rmse.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 54.82426155439095,
-                      rmse.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rmse.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 58.12352988180837,
-                      rmse.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rmse.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 61.12163959516186,
-                      rmse.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rmse.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
     }
 
@@ -383,7 +383,7 @@ public final class EnsembleStatisticsProcessorTest
                       Slicer.filter( actual, MetricConstants.THREAT_SCORE )
                             .get( 0 )
                             .getComponent( MetricConstants.MAIN )
-                            .getData()
+                            .getStatistic()
                             .getValue(),
                       Precision.EPSILON );
 
@@ -391,7 +391,7 @@ public final class EnsembleStatisticsProcessorTest
                       Slicer.filter( actual, MetricConstants.PEIRCE_SKILL_SCORE )
                             .get( 0 )
                             .getComponent( MetricConstants.MAIN )
-                            .getData()
+                            .getStatistic()
                             .getValue(),
                       Precision.EPSILON );
     }
@@ -415,44 +415,44 @@ public final class EnsembleStatisticsProcessorTest
         List<DoubleScoreStatisticOuter> bias = Slicer.filter( results, MetricConstants.BIAS_FRACTION );
 
         assertEquals( -0.032093836077598345,
-                      bias.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      bias.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -0.032093836077598345,
-                      bias.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      bias.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -0.0365931379807274,
-                      bias.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      bias.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -0.039706682985140816,
-                      bias.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      bias.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -0.05090288343061958,
-                      bias.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      bias.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -0.056658160809530816,
-                      bias.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      bias.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
 
         //Validate CoD
         List<DoubleScoreStatisticOuter> cod =
                 Slicer.filter( results, MetricConstants.COEFFICIENT_OF_DETERMINATION );
         assertEquals( 0.7873367083297588,
-                      cod.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      cod.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.7873367083297588,
-                      cod.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      cod.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.7653639626077698,
-                      cod.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      cod.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.76063213080129,
-                      cod.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      cod.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.7540690263086123,
-                      cod.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      cod.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.7492338765733539,
-                      cod.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      cod.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
 
         //Validate rho
@@ -460,87 +460,87 @@ public final class EnsembleStatisticsProcessorTest
                 Slicer.filter( results, MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
 
         assertEquals( 0.8873199582618204,
-                      rho.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rho.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.8873199582618204,
-                      rho.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rho.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.8748508230594344,
-                      rho.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rho.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.8721422652304439,
-                      rho.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rho.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.8683714794421868,
-                      rho.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rho.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.8655829692024641,
-                      rho.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rho.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
 
         //Validate mae
         List<DoubleScoreStatisticOuter> mae = Slicer.filter( results, MetricConstants.MEAN_ABSOLUTE_ERROR );
 
         assertEquals( 11.009512537315405,
-                      mae.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      mae.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 11.009512537315405,
-                      mae.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      mae.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 17.675554578575642,
-                      mae.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      mae.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 18.997815872635968,
-                      mae.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      mae.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 20.653785159500924,
-                      mae.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      mae.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 22.094227646773568,
-                      mae.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      mae.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
 
         //Validate me
         List<DoubleScoreStatisticOuter> me = Slicer.filter( results, MetricConstants.MEAN_ERROR );
 
         assertEquals( -1.157869354367079,
-                      me.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      me.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -1.157869354367079,
-                      me.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      me.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -2.1250409720950105,
-                      me.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      me.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -2.4855770739425846,
-                      me.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      me.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -3.5134287820490364,
-                      me.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      me.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -4.2185439080739515,
-                      me.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      me.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
 
         //Validate rmse
         List<DoubleScoreStatisticOuter> rmse = Slicer.filter( results, MetricConstants.ROOT_MEAN_SQUARE_ERROR );
         assertEquals( 41.01563032408479,
-                      rmse.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rmse.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 41.01563032408479,
-                      rmse.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rmse.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 52.55361580348335,
-                      rmse.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rmse.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 54.82426155439095,
-                      rmse.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rmse.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 58.191244125990046,
-                      rmse.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rmse.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 61.12163959516186,
-                      rmse.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rmse.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
     }
 
@@ -699,44 +699,44 @@ public final class EnsembleStatisticsProcessorTest
         //Validate bias
         List<DoubleScoreStatisticOuter> bias = Slicer.filter( results, MetricConstants.BIAS_FRACTION );
         assertEquals( -0.032093836077598345,
-                      bias.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      bias.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -0.032093836077598345,
-                      bias.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      bias.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -0.0365931379807274,
-                      bias.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      bias.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -0.039706682985140816,
-                      bias.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      bias.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -0.0505708024162773,
-                      bias.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      bias.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -0.056658160809530816,
-                      bias.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      bias.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
 
         //Validate CoD
         List<DoubleScoreStatisticOuter> cod =
                 Slicer.filter( results, MetricConstants.COEFFICIENT_OF_DETERMINATION );
         assertEquals( 0.7873367083297588,
-                      cod.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      cod.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.7873367083297588,
-                      cod.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      cod.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.7653639626077698,
-                      cod.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      cod.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.76063213080129,
-                      cod.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      cod.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.7542039364210298,
-                      cod.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      cod.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.7492338765733539,
-                      cod.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      cod.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
 
         //Validate rho
@@ -744,87 +744,87 @@ public final class EnsembleStatisticsProcessorTest
                 Slicer.filter( results, MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
 
         assertEquals( 0.8873199582618204,
-                      rho.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rho.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.8873199582618204,
-                      rho.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rho.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.8748508230594344,
-                      rho.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rho.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.8721422652304439,
-                      rho.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rho.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.868449155921652,
-                      rho.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rho.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 0.8655829692024641,
-                      rho.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rho.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
 
         //Validate mae
         List<DoubleScoreStatisticOuter> mae = Slicer.filter( results, MetricConstants.MEAN_ABSOLUTE_ERROR );
 
         assertEquals( 11.009512537315405,
-                      mae.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      mae.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 11.009512537315405,
-                      mae.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      mae.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 17.675554578575642,
-                      mae.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      mae.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 18.997815872635968,
-                      mae.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      mae.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 20.625668563442147,
-                      mae.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      mae.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 22.094227646773568,
-                      mae.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      mae.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
 
         //Validate me
         List<DoubleScoreStatisticOuter> me = Slicer.filter( results, MetricConstants.MEAN_ERROR );
 
         assertEquals( -1.157869354367079,
-                      me.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      me.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -1.157869354367079,
-                      me.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      me.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -2.1250409720950105,
-                      me.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      me.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -2.4855770739425846,
-                      me.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      me.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -3.4840043925326936,
-                      me.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      me.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -4.2185439080739515,
-                      me.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      me.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
 
         //Validate rmse
         List<DoubleScoreStatisticOuter> rmse = Slicer.filter( results, MetricConstants.ROOT_MEAN_SQUARE_ERROR );
         assertEquals( 41.01563032408479,
-                      rmse.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rmse.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 41.01563032408479,
-                      rmse.get( 1 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rmse.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 52.55361580348335,
-                      rmse.get( 2 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rmse.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 54.82426155439095,
-                      rmse.get( 3 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rmse.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 58.12352988180837,
-                      rmse.get( 4 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rmse.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 61.12163959516186,
-                      rmse.get( 5 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rmse.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
     }
 
@@ -866,7 +866,7 @@ public final class EnsembleStatisticsProcessorTest
         List<DoubleScoreStatisticOuter> results =
                 Slicer.filter( statistics.getDoubleScoreStatistics(),
                                meta -> meta.getMetricName().equals( MetricConstants.CONTINGENCY_TABLE )
-                                       && meta.getMetadata().getTimeWindow().equals( expectedWindow ) );
+                                       && meta.getPoolMetadata().getTimeWindow().equals( expectedWindow ) );
 
         // Exceeds 50.0 with occurrences > 0.05
         DoubleScoreStatistic firstTable =
@@ -907,7 +907,7 @@ public final class EnsembleStatisticsProcessorTest
                 DoubleScoreStatisticOuter.of( firstTable, expectedMetaFirst );
 
         DoubleScoreStatisticOuter actualFirst =
-                Slicer.filter( results, meta -> meta.getMetadata()
+                Slicer.filter( results, meta -> meta.getPoolMetadata()
                                                     .getThresholds()
                                                     .equals( first ) )
                       .get( 0 );
@@ -950,7 +950,7 @@ public final class EnsembleStatisticsProcessorTest
                 DoubleScoreStatisticOuter.of( secondTable, expectedMetaSecond );
 
         DoubleScoreStatisticOuter actualSecond =
-                Slicer.filter( results, meta -> meta.getMetadata().getThresholds().equals( second ) )
+                Slicer.filter( results, meta -> meta.getPoolMetadata().getThresholds().equals( second ) )
                       .get( 0 );
 
         assertEquals( expectedSecond, actualSecond );
@@ -991,7 +991,7 @@ public final class EnsembleStatisticsProcessorTest
                 DoubleScoreStatisticOuter.of( thirdTable, expectedMetaThird );
 
         DoubleScoreStatisticOuter actualThird =
-                Slicer.filter( results, meta -> meta.getMetadata().getThresholds().equals( third ) )
+                Slicer.filter( results, meta -> meta.getPoolMetadata().getThresholds().equals( third ) )
                       .get( 0 );
 
         assertEquals( expectedThird, actualThird );
@@ -1031,7 +1031,7 @@ public final class EnsembleStatisticsProcessorTest
         DoubleScoreStatisticOuter expectedFourth =
                 DoubleScoreStatisticOuter.of( fourthTable, expectedMetaFourth );
         DoubleScoreStatisticOuter actualFourth =
-                Slicer.filter( results, meta -> meta.getMetadata().getThresholds().equals( fourth ) )
+                Slicer.filter( results, meta -> meta.getPoolMetadata().getThresholds().equals( fourth ) )
                       .get( 0 );
 
         assertEquals( expectedFourth, actualFourth );
@@ -1073,7 +1073,7 @@ public final class EnsembleStatisticsProcessorTest
                 DoubleScoreStatisticOuter.of( fifthTable, expectedMetaFifth );
 
         DoubleScoreStatisticOuter actualFifth =
-                Slicer.filter( results, meta -> meta.getMetadata().getThresholds().equals( fifth ) )
+                Slicer.filter( results, meta -> meta.getPoolMetadata().getThresholds().equals( fifth ) )
                       .get( 0 );
 
         assertEquals( expectedFifth, actualFifth );
@@ -1113,7 +1113,7 @@ public final class EnsembleStatisticsProcessorTest
                 DoubleScoreStatisticOuter.of( sixthTable, expectedMetaSixth );
 
         DoubleScoreStatisticOuter actualSixth =
-                Slicer.filter( results, meta -> meta.getMetadata().getThresholds().equals( sixth ) )
+                Slicer.filter( results, meta -> meta.getPoolMetadata().getThresholds().equals( sixth ) )
                       .get( 0 );
 
         assertEquals( expectedSixth, actualSixth );
@@ -1140,7 +1140,7 @@ public final class EnsembleStatisticsProcessorTest
         {
             if ( nextMetric.getMetricName() != MetricConstants.SAMPLE_SIZE )
             {
-                nextMetric.forEach( next -> assertEquals( Double.NaN, next.getData().getValue(), 0.0 ) );
+                nextMetric.forEach( next -> assertEquals( Double.NaN, next.getStatistic().getValue(), 0.0 ) );
             }
         }
     }

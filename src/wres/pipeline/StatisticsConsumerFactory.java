@@ -163,7 +163,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
             // Formatted doubles to write
             DoubleFunction<String> formatter = this.getDecimalFormatter( this.declaration );
             Function<DoubleScoreComponentOuter, String> doubleMapper =
-                    format -> formatter.apply( format.getData().getValue() );
+                    format -> formatter.apply( format.getStatistic().getValue() );
 
             builder.addDiagramConsumer( wres.config.yaml.components.Format.CSV,
                                         CommaSeparatedDiagramWriter.of( this.declaration,
@@ -177,7 +177,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
                    .addDurationScoreConsumer( wres.config.yaml.components.Format.CSV,
                                               CommaSeparatedScoreWriter.of( this.declaration,
                                                                             path,
-                                                                            next -> MessageFactory.parse( next.getData()
+                                                                            next -> MessageFactory.parse( next.getStatistic()
                                                                                                               .getValue() )
                                                                                                   .toString() ) )
                    .addDoubleScoreConsumer( wres.config.yaml.components.Format.CSV,

@@ -116,7 +116,7 @@ public class MeanSquareErrorSkillScoreNormalized extends DecomposableScore<Pool<
         }
 
         double resultInner = resultOuter.getComponent( MetricConstants.MAIN )
-                                        .getData()
+                                        .getStatistic()
                                         .getValue();
 
         double result = 1.0 / ( 2.0 - resultInner );
@@ -132,7 +132,7 @@ public class MeanSquareErrorSkillScoreNormalized extends DecomposableScore<Pool<
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, output.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, output.getPoolMetadata() );
     }
 
     @Override

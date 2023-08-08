@@ -10,41 +10,35 @@ import org.apache.commons.lang3.builder.ToStringStyle;
 import org.apache.commons.lang3.tuple.Pair;
 
 import net.jcip.annotations.Immutable;
+
 import wres.config.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
 import wres.statistics.generated.DurationDiagramStatistic;
 
 /**
  * A statistic that comprises a list of pairs.
- * 
+ *
  * @author James Brown
  */
 
 @Immutable
 public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramStatistic>
 {
-
-    /**
-     * The statistic.
-     */
-
+    /** The statistic. */
     private final DurationDiagramStatistic statistic;
 
-    /**
-     * The metadata associated with the statistic.
-     */
-
+    /** The metadata associated with the statistic. */
     private final PoolMetadata metadata;
-    
-    /**
-     * The metric name.
-     */
 
+    /** The metric name. */
     private final MetricConstants metricName;
+
+    /** The sample quantile or null. */
+    private final Double sampleQuantile;
 
     /**
      * Construct the statistic.
-     * 
+     *
      * @param statistic the statistic
      * @param metadata the metadata
      * @throws StatisticException if any of the inputs are invalid
@@ -54,11 +48,28 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
     public static DurationDiagramStatisticOuter of( DurationDiagramStatistic statistic,
                                                     PoolMetadata metadata )
     {
-        return new DurationDiagramStatisticOuter( statistic, metadata );
+        return new DurationDiagramStatisticOuter( statistic, metadata, null );
+    }
+
+    /**
+     * Construct the statistic with a sample quantile.
+     *
+     * @param statistic the statistic
+     * @param metadata the metadata
+     * @param sampleQuantile the sample quantile or null
+     * @throws StatisticException if any of the inputs are invalid
+     * @return an instance of the output
+     */
+
+    public static DurationDiagramStatisticOuter of( DurationDiagramStatistic statistic,
+                                                    PoolMetadata metadata,
+                                                    Double sampleQuantile )
+    {
+        return new DurationDiagramStatisticOuter( statistic, metadata, sampleQuantile );
     }
 
     @Override
-    public PoolMetadata getMetadata()
+    public PoolMetadata getPoolMetadata()
     {
         return metadata;
     }
@@ -71,41 +82,49 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
             return true;
         }
 
-        if ( ! ( o instanceof DurationDiagramStatisticOuter v ) )
+        if ( !( o instanceof DurationDiagramStatisticOuter v ) )
         {
             return false;
         }
 
-        return this.getData().equals( v.getData() ) && this.getMetadata().equals( v.getMetadata() );
+        return this.getStatistic().equals( v.getStatistic() )
+               && this.getPoolMetadata().equals( v.getPoolMetadata() )
+               && Objects.equals( this.getSampleQuantile(), v.getSampleQuantile() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( statistic, metadata );
+        return Objects.hash( this.getStatistic(), this.getPoolMetadata(), this.getSampleQuantile() );
     }
 
     @Override
-    public DurationDiagramStatistic getData()
+    public DurationDiagramStatistic getStatistic()
     {
         return statistic;
     }
-    
+
     @Override
     public MetricConstants getMetricName()
     {
         return this.metricName;
     }
 
+    @Override
+    public Double getSampleQuantile()
+    {
+        return this.sampleQuantile;
+    }
+
     /**
      * Returns the pairs of instants and durations in a friendly format.
-     * 
+     *
      * @return the pairs
      */
 
     public List<Pair<Instant, Duration>> getPairs()
     {
-        return this.getData()
+        return this.getStatistic()
                    .getStatisticsList()
                    .stream()
                    .map( next -> Pair.of( Instant.ofEpochSecond( next.getTime().getSeconds(),
@@ -122,22 +141,26 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
 
         List<Pair<Instant, Duration>> pairs = this.getPairs();
 
-        builder.append( "metric", this.getData().getMetric().getName() )
+        builder.append( "metric", this.getStatistic().getMetric().getName() )
                .append( "statistic", pairs )
-               .append( "metadata", this.getMetadata() );
+               .append( "metadata", this.getPoolMetadata() )
+               .append( "sampleQuantile", this.getSampleQuantile() );
 
         return builder.toString();
     }
 
     /**
      * Construct the output.
-     * 
+     *
      * @param statistic the statistic
      * @param metadata the metadata
+     * @param sampleQuantile the sample quantile or null
      * @throws StatisticException if any of the inputs are invalid
      */
 
-    private DurationDiagramStatisticOuter( DurationDiagramStatistic statistic, PoolMetadata metadata )
+    private DurationDiagramStatisticOuter( DurationDiagramStatistic statistic,
+                                           PoolMetadata metadata,
+                                           Double sampleQuantile )
     {
         //Validate
         if ( Objects.isNull( statistic ) )
@@ -149,10 +172,21 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
             throw new StatisticException( "Specify non-null metadata." );
         }
 
+        if ( Objects.nonNull( sampleQuantile )
+             && ( sampleQuantile < 0
+                  || sampleQuantile > 1.0 ) )
+        {
+            throw new StatisticException( "The sample quantile must be within [0,1], but was: "
+                                          + sampleQuantile
+                                          + "." );
+        }
+
         //Set content
         this.statistic = statistic;
         this.metadata = metadata;
-        this.metricName = MetricConstants.valueOf( statistic.getMetric().getName().name() );
+        this.metricName = MetricConstants.valueOf( statistic.getMetric()
+                                                            .getName()
+                                                            .name() );
+        this.sampleQuantile = sampleQuantile;
     }
-
 }

@@ -103,10 +103,10 @@ public class ChartDataFactory
         // Set the chart parameters for each series
         // Find the lead durations
         SortedSet<Pair<Duration, Duration>> durations = Slicer.discover( statistics,
-                                                                         next -> Pair.of( next.getMetadata()
+                                                                         next -> Pair.of( next.getPoolMetadata()
                                                                                               .getTimeWindow()
                                                                                               .getEarliestLeadDuration(),
-                                                                                          next.getMetadata()
+                                                                                          next.getPoolMetadata()
                                                                                               .getTimeWindow()
                                                                                               .getLatestLeadDuration() ) );
 
@@ -120,10 +120,10 @@ public class ChartDataFactory
         if ( graphicShape == GraphicShape.ISSUED_DATE_POOLS )
         {
             SortedSet<Pair<Instant, Instant>> uniqueValidTimes = Slicer.discover( statistics,
-                                                                                  next -> Pair.of( next.getMetadata()
+                                                                                  next -> Pair.of( next.getPoolMetadata()
                                                                                                        .getTimeWindow()
                                                                                                        .getEarliestValidTime(),
-                                                                                                   next.getMetadata()
+                                                                                                   next.getPoolMetadata()
                                                                                                        .getTimeWindow()
                                                                                                        .getLatestValidTime() ) );
             times.addAll( uniqueValidTimes );
@@ -131,10 +131,10 @@ public class ChartDataFactory
         else if ( graphicShape == GraphicShape.VALID_DATE_POOLS )
         {
             SortedSet<Pair<Instant, Instant>> uniqueReferenceTimes = Slicer.discover( statistics,
-                                                                                      next -> Pair.of( next.getMetadata()
+                                                                                      next -> Pair.of( next.getPoolMetadata()
                                                                                                            .getTimeWindow()
                                                                                                            .getEarliestReferenceTime(),
-                                                                                                       next.getMetadata()
+                                                                                                       next.getPoolMetadata()
                                                                                                            .getTimeWindow()
                                                                                                            .getLatestReferenceTime() ) );
             times.addAll( uniqueReferenceTimes );
@@ -152,11 +152,11 @@ public class ChartDataFactory
             {
                 // Slice the data by the lead duration
                 List<DoubleScoreComponentOuter> slice = Slicer.filter( statistics,
-                                                                       next -> next.getMetadata()
+                                                                       next -> next.getPoolMetadata()
                                                                                    .getTimeWindow()
                                                                                    .getEarliestLeadDuration()
                                                                                    .equals( nextDuration.getLeft() )
-                                                                               && next.getMetadata()
+                                                                               && next.getPoolMetadata()
                                                                                       .getTimeWindow()
                                                                                       .getLatestLeadDuration()
                                                                                       .equals( nextDuration.getRight() ) );
@@ -165,11 +165,11 @@ public class ChartDataFactory
                 if ( graphicShape == GraphicShape.ISSUED_DATE_POOLS )
                 {
                     slice = Slicer.filter( slice,
-                                           next -> next.getMetadata()
+                                           next -> next.getPoolMetadata()
                                                        .getTimeWindow()
                                                        .getEarliestValidTime()
                                                        .equals( nextTime.getLeft() )
-                                                   && next.getMetadata()
+                                                   && next.getPoolMetadata()
                                                           .getTimeWindow()
                                                           .getLatestValidTime()
                                                           .equals( nextTime.getRight() ) );
@@ -177,11 +177,11 @@ public class ChartDataFactory
                 else if ( graphicShape == GraphicShape.VALID_DATE_POOLS )
                 {
                     slice = Slicer.filter( slice,
-                                           next -> next.getMetadata()
+                                           next -> next.getPoolMetadata()
                                                        .getTimeWindow()
                                                        .getEarliestReferenceTime()
                                                        .equals( nextTime.getLeft() )
-                                                   && next.getMetadata()
+                                                   && next.getPoolMetadata()
                                                           .getTimeWindow()
                                                           .getLatestReferenceTime()
                                                           .equals( nextTime.getRight() ) );
@@ -215,13 +215,13 @@ public class ChartDataFactory
         // Add the data items
         for ( DurationScoreStatisticOuter entry : statistics )
         {
-            String rowKey = DataUtilities.toStringWithoutUnits( entry.getMetadata()
+            String rowKey = DataUtilities.toStringWithoutUnits( entry.getPoolMetadata()
                                                                      .getThresholds() );
 
             for ( MetricConstants metric : entry.getComponents() )
             {
                 com.google.protobuf.Duration score = entry.getComponent( metric )
-                                                          .getData()
+                                                          .getStatistic()
                                                           .getValue();
                 Duration durationStat = MessageFactory.parse( score );
 
@@ -257,7 +257,7 @@ public class ChartDataFactory
         TimeSeriesCollection returnMe = new TimeSeriesCollection();
 
         Set<OneOrTwoThresholds> thresholds =
-                Slicer.discover( statistics, next -> next.getMetadata().getThresholds() );
+                Slicer.discover( statistics, next -> next.getPoolMetadata().getThresholds() );
 
         // Filter by by threshold
         for ( OneOrTwoThresholds nextSeries : thresholds )
@@ -267,7 +267,7 @@ public class ChartDataFactory
 
             List<DurationDiagramStatisticOuter> filtered =
                     Slicer.filter( statistics,
-                                   data -> data.getMetadata().getThresholds().equals( nextSeries ) );
+                                   data -> data.getPoolMetadata().getThresholds().equals( nextSeries ) );
 
             // Create a set-view by instant, because JFreeChart cannot handle duplicates
             Set<Instant> instants = new HashSet<>();
@@ -405,7 +405,7 @@ public class ChartDataFactory
         {
             inputSlice =
                     Slicer.filter( statistics,
-                                   next -> next.getMetadata()
+                                   next -> next.getPoolMetadata()
                                                .getTimeWindow()
                                                .equals( keyInstance ) );
         }
@@ -413,7 +413,7 @@ public class ChartDataFactory
         {
             inputSlice =
                     Slicer.filter( statistics,
-                                   next -> next.getMetadata()
+                                   next -> next.getPoolMetadata()
                                                .getThresholds()
                                                .equals( keyInstance ) );
         }
@@ -421,7 +421,7 @@ public class ChartDataFactory
         {
             inputSlice =
                     Slicer.filter( statistics,
-                                   next -> next.getMetadata()
+                                   next -> next.getPoolMetadata()
                                                .getTimeWindow()
                                                .equals( keyInstance ) );
         }
@@ -450,7 +450,7 @@ public class ChartDataFactory
             SortedSet<MetricDimension> names = diagram.getComponentNames();
             SortedSet<String> qualifiers = diagram.getComponentNameQualifiers();
 
-            DiagramStatistic.Builder builder = diagram.getData().toBuilder();
+            DiagramStatistic.Builder builder = diagram.getStatistic().toBuilder();
             for ( String qualifier : qualifiers )
             {
                 List<DiagramStatisticComponent> components = new ArrayList<>();
@@ -466,7 +466,7 @@ public class ChartDataFactory
                 builder.addAllStatistics( components );
 
                 DiagramStatistic newDiagram = builder.build();
-                DiagramStatisticOuter newWrappedDiagram = DiagramStatisticOuter.of( newDiagram, diagram.getMetadata() );
+                DiagramStatisticOuter newWrappedDiagram = DiagramStatisticOuter.of( newDiagram, diagram.getPoolMetadata() );
                 returnMe.add( newWrappedDiagram );
             }
         }
@@ -530,14 +530,14 @@ public class ChartDataFactory
     {
         // Filter by threshold
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( slice, next -> next.getMetadata().getThresholds() );
+                Slicer.discover( slice, next -> next.getPoolMetadata().getThresholds() );
         for ( OneOrTwoThresholds nextThreshold : thresholds )
         {
             // Slice the data by threshold.  The resulting data will still contain potentially
             // multiple issued time pooling windows and/or valid time pooling windows.
             List<DoubleScoreComponentOuter> finalSlice =
                     Slicer.filter( slice,
-                                   next -> next.getMetadata()
+                                   next -> next.getPoolMetadata()
                                                .getThresholds()
                                                .equals( nextThreshold ) );
 
@@ -553,12 +553,13 @@ public class ChartDataFactory
             for ( DoubleScoreComponentOuter nextDouble : finalSlice )
             {
                 Instant midpoint =
-                        ChartDataFactory.getMidpointBetweenTimes( nextDouble.getMetadata()
+                        ChartDataFactory.getMidpointBetweenTimes( nextDouble.getPoolMetadata()
                                                                             .getTimeWindow(),
                                                                   graphicShape == GraphicShape.ISSUED_DATE_POOLS );
 
                 FixedMillisecond time = new FixedMillisecond( midpoint.toEpochMilli() );
-                Double value = nextDouble.getData().getValue();
+                Double value = nextDouble.getStatistic()
+                                         .getValue();
                 next.add( time, value );
             }
 

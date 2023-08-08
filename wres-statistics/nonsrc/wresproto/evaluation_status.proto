@@ -157,10 +157,10 @@ message EvaluationStatus
         EvaluationStatusEvent cause = 4;
         // Inner event containing the cause of the outer event
 
-       enum EvaluationStage
-       {
-           // The stage within the evaluation to which the status event refers. 
-           // This enumeration is an abstraction of an evaluation pipeline.
+        enum EvaluationStage
+        {
+            // The stage within the evaluation to which the status event refers. 
+            // This enumeration is an abstraction of an evaluation pipeline.
 
             UNKNOWN = 0;
             // Undefined status.
@@ -190,11 +190,11 @@ message EvaluationStatus
             
             WRITING = 8;
             // An event that occurred while writing statistics formats.
-       }
+        }
 
-       EvaluationStage evaluation_stage = 5;
-       // The stage within the evaluation pipeline where the status event 
-       // occurred.
+        EvaluationStage evaluation_stage = 5;
+        // The stage within the evaluation pipeline where the status event 
+        // occurred.
     }    
 
     repeated EvaluationStatusEvent status_events = 7;

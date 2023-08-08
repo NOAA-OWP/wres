@@ -465,11 +465,11 @@ class SlicerTest
                                                                               thresholdThree ) ) );
 
         // Filter by the first lead time and the last lead time and threshold
-        Predicate<DoubleScoreStatisticOuter> filter = meta -> meta.getMetadata().getTimeWindow().equals( windowOne )
-                                                              || ( meta.getMetadata()
+        Predicate<DoubleScoreStatisticOuter> filter = meta -> meta.getPoolMetadata().getTimeWindow().equals( windowOne )
+                                                              || ( meta.getPoolMetadata()
                                                                        .getTimeWindow()
                                                                        .equals( windowThree )
-                                                                   && meta.getMetadata()
+                                                                   && meta.getPoolMetadata()
                                                                           .getThresholds()
                                                                           .equals( thresholdThree ) );
 
@@ -576,14 +576,14 @@ class SlicerTest
 
         // Discover the unique time windows available
         Set<TimeWindowOuter> actualOutputTwo =
-                Slicer.discover( listOfOutputs, next -> next.getMetadata().getTimeWindow() );
+                Slicer.discover( listOfOutputs, next -> next.getPoolMetadata().getTimeWindow() );
         Set<TimeWindowOuter> expectedOutputTwo = new TreeSet<>( Arrays.asList( windowOne, windowTwo, windowThree ) );
 
         assertEquals( actualOutputTwo, expectedOutputTwo );
 
         // Discover the thresholds available
         Set<OneOrTwoThresholds> actualOutputThree =
-                Slicer.discover( listOfOutputs, next -> next.getMetadata().getThresholds() );
+                Slicer.discover( listOfOutputs, next -> next.getPoolMetadata().getThresholds() );
         Set<OneOrTwoThresholds> expectedOutputThree =
                 new TreeSet<>( Arrays.asList( thresholdOne, thresholdTwo, thresholdThree ) );
 
@@ -592,10 +592,10 @@ class SlicerTest
         // Discover the unique lead times available
         Set<Pair<Duration, Duration>> actualOutputFour =
                 Slicer.discover( listOfOutputs,
-                                 next -> Pair.of( next.getMetadata()
+                                 next -> Pair.of( next.getPoolMetadata()
                                                       .getTimeWindow()
                                                       .getEarliestLeadDuration(),
-                                                  next.getMetadata()
+                                                  next.getPoolMetadata()
                                                       .getTimeWindow()
                                                       .getLatestLeadDuration() ) );
 
@@ -607,7 +607,7 @@ class SlicerTest
 
         // Discover the second thresholds, which are not available
         assertTrue( Slicer.discover( listOfOutputs,
-                                     next -> next.getMetadata().getThresholds().second() )
+                                     next -> next.getPoolMetadata().getThresholds().second() )
                           .isEmpty() );
 
     }

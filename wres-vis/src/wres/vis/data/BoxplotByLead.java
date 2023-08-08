@@ -108,7 +108,7 @@ class BoxplotByLead extends AbstractIntervalXYDataset
 
         this.data = Boxplot.of( statistics );
         this.leadDurations = statistics.stream()
-                                       .map( next -> next.getMetadata().getTimeWindow().getLatestLeadDuration() )
+                                       .map( next -> next.getPoolMetadata().getTimeWindow().getLatestLeadDuration() )
                                        .map( next -> DataUtilities.durationToNumericUnits( next,
                                                                                          durationUnits ) )
                                        .toArray( Number[]::new );

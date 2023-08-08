@@ -1,13 +1,12 @@
 package wres.metrics.singlevalued;
 
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Arrays;
+import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
@@ -26,7 +25,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 
 /**
  * Tests the {@link MeanAbsoluteErrorSkillScore}.
- * 
+ *
  * @author James Brown
  */
 final class MeanAbsoluteErrorSkillScoreTest
@@ -55,11 +54,11 @@ final class MeanAbsoluteErrorSkillScoreTest
                                                                                .build();
 
         DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( MeanAbsoluteErrorSkillScore.BASIC_METRIC )
-                                                         .addStatistics( component )
-                                                         .build();
+                                                            .setMetric( MeanAbsoluteErrorSkillScore.BASIC_METRIC )
+                                                            .addStatistics( component )
+                                                            .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
 
     @Test
@@ -77,22 +76,22 @@ final class MeanAbsoluteErrorSkillScoreTest
                                                                                .build();
 
         DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()
-                                                         .setMetric( MeanAbsoluteErrorSkillScore.BASIC_METRIC )
-                                                         .addStatistics( component )
-                                                         .build();
+                                                            .setMetric( MeanAbsoluteErrorSkillScore.BASIC_METRIC )
+                                                            .addStatistics( component )
+                                                            .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
 
     @Test
     void testApplyWithNoData()
     {
         // Generate empty data
-        Pool<Pair<Double, Double>> input = Pool.of( Arrays.asList(), PoolMetadata.of() );
+        Pool<Pair<Double, Double>> input = Pool.of( List.of(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = this.maess.apply( input );
 
-        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getStatistic().getValue(), 0.0 );
     }
 
     @Test
@@ -129,20 +128,20 @@ final class MeanAbsoluteErrorSkillScoreTest
     void testMetricBoundsAreCorrect()
     {
         Assertions.assertAll(
-                              () -> assertEquals( Double.NEGATIVE_INFINITY,
-                                                  MeanAbsoluteErrorSkillScore.MAIN.getMinimum(),
-                                                  0.0 ),
-                              () -> assertEquals( 1.0, MeanAbsoluteErrorSkillScore.MAIN.getMaximum(), 0.0 ),
-                              () -> assertEquals( 1.0, MeanAbsoluteErrorSkillScore.MAIN.getOptimum(), 0.0 ) );
+                () -> assertEquals( Double.NEGATIVE_INFINITY,
+                                    MeanAbsoluteErrorSkillScore.MAIN.getMinimum(),
+                                    0.0 ),
+                () -> assertEquals( 1.0, MeanAbsoluteErrorSkillScore.MAIN.getMaximum(), 0.0 ),
+                () -> assertEquals( 1.0, MeanAbsoluteErrorSkillScore.MAIN.getOptimum(), 0.0 ) );
     }
 
     @Test
     void testExceptionOnNullInput()
     {
         MetricCalculationException actual = assertThrows( MetricCalculationException.class,
-                                                          () -> this.maess.aggregate( (DoubleScoreStatisticOuter) null,
-                                                                                    null ) );
+                                                          () -> this.maess.aggregate( null, null ) );
 
-        assertEquals( "Specify a non-null statistic for the '" + this.maess.getMetricNameString() + "'.", actual.getMessage() );
+        assertEquals( "Specify a non-null statistic for the '" + this.maess.getMetricNameString() + "'.",
+                      actual.getMessage() );
     }
 }

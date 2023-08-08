@@ -37,7 +37,6 @@ import org.redisson.Redisson;
 import org.redisson.api.RBucket;
 import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RedissonClient;
-import org.redisson.codec.MarshallingCodec;
 import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,7 +80,7 @@ public class WresJob
     private static int redisPort = DEFAULT_REDIS_PORT;
     //Admin authentication
     private static final String ADMIN_TOKEN_SYSTEM_PROPERTY_NAME = "wres.adminToken";
-    private static byte[] salt = new byte[16];
+    private static final byte[] salt = new byte[16];
     private static byte[] adminTokenHash = null; //Empty means password not specified.
     /**
      * The count of evaluations combined with the maximum length below (which

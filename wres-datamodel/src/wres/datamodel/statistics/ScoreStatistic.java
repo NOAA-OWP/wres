@@ -41,7 +41,7 @@ public interface ScoreStatistic<T, U extends ScoreComponent<?>> extends Statisti
      * @return the score.
      */
     @Override
-    T getData();
+    T getStatistic();
 
     /**
      * Abstractions of a score component.
@@ -53,5 +53,4 @@ public interface ScoreStatistic<T, U extends ScoreComponent<?>> extends Statisti
     interface ScoreComponent<S> extends Statistic<S>
     {
     }
-    
 }

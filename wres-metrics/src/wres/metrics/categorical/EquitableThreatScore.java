@@ -77,19 +77,19 @@ public class EquitableThreatScore extends ContingencyTableScore
         this.is2x2ContingencyTable( output, this );
 
         double tP = output.getComponent( MetricConstants.TRUE_POSITIVES )
-                          .getData()
+                          .getStatistic()
                           .getValue();
 
         double fP = output.getComponent( MetricConstants.FALSE_POSITIVES )
-                          .getData()
+                          .getStatistic()
                           .getValue();
 
         double fN = output.getComponent( MetricConstants.FALSE_NEGATIVES )
-                          .getData()
+                          .getStatistic()
                           .getValue();
 
         double tN = output.getComponent( MetricConstants.TRUE_NEGATIVES )
-                          .getData()
+                          .getStatistic()
                           .getValue();
 
         final double t = tP + fP + fN;
@@ -106,7 +106,7 @@ public class EquitableThreatScore extends ContingencyTableScore
                                                          .addStatistics( component )
                                                          .build();
 
-        return DoubleScoreStatisticOuter.of( score, output.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, output.getPoolMetadata() );
     }
 
     @Override

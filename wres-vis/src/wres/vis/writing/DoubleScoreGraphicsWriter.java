@@ -127,7 +127,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         try
         {
             MetricConstants metricName = statistics.get( 0 ).getMetricName();
-            PoolMetadata metadata = statistics.get( 0 ).getMetadata();
+            PoolMetadata metadata = statistics.get( 0 ).getPoolMetadata();
 
             // Collection of graphics parameters, one for each set of charts to write across N formats.
             Collection<Outputs> outputsMap =
@@ -182,7 +182,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
 
         SortedSet<ThresholdOuter> secondThreshold =
                 Slicer.discover( statistics,
-                                 next -> next.getMetadata()
+                                 next -> next.getPoolMetadata()
                                              .getThresholds()
                                              .second() );
 
@@ -190,7 +190,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         for ( EnsembleAverageType type : EnsembleAverageType.values() )
         {
             List<DoubleScoreStatisticOuter> innerSlice = Slicer.filter( statistics,
-                                                                        value -> type == value.getMetadata()
+                                                                        value -> type == value.getPoolMetadata()
                                                                                               .getPool()
                                                                                               .getEnsembleAverageType() );
             // Slice by secondary threshold
@@ -200,13 +200,13 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                 {
                     // Slice by the second threshold
                     secondThreshold.forEach( next -> sliced.add( Slicer.filter( innerSlice,
-                                                                                value -> next.equals( value.getMetadata()
+                                                                                value -> next.equals( value.getPoolMetadata()
                                                                                                            .getThresholds()
                                                                                                            .second() ) ) ) );
 
                     // Primary thresholds without secondary thresholds
                     List<DoubleScoreStatisticOuter> primaryOnly = innerSlice.stream()
-                                                                            .filter( next -> !next.getMetadata()
+                                                                            .filter( next -> !next.getPoolMetadata()
                                                                                                   .getThresholds()
                                                                                                   .hasTwo() )
                                                                             .toList();
@@ -237,7 +237,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         // Secondary threshold? If yes, only one, as this was sliced above
         SortedSet<ThresholdOuter> second =
                 Slicer.discover( statistics,
-                                 next -> next.getMetadata()
+                                 next -> next.getPoolMetadata()
                                              .getThresholds()
                                              .second() );
         if ( !second.isEmpty() )
@@ -250,7 +250,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         // #51670
         SortedSet<EnsembleAverageType> types =
                 Slicer.discover( statistics,
-                                 next -> next.getMetadata().getPool().getEnsembleAverageType() );
+                                 next -> next.getPoolMetadata().getPool().getEnsembleAverageType() );
 
         Optional<EnsembleAverageType> type =
                 types.stream()

@@ -72,7 +72,7 @@ public final class MedianErrorTest
                                                          .addStatistics( component )
                                                          .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
 
     @Test
@@ -104,7 +104,7 @@ public final class MedianErrorTest
                                                          .addStatistics( component )
                                                          .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
 
     @Test
@@ -138,7 +138,7 @@ public final class MedianErrorTest
                                                          .addStatistics( component )
                                                          .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
 
     @Test
@@ -146,11 +146,11 @@ public final class MedianErrorTest
     {
         // Generate empty data
         Pool<Pair<Double, Double>> input =
-                Pool.of( Arrays.asList(), PoolMetadata.of() );
+                Pool.of( List.of(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = this.medianError.apply( input );
 
-        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getStatistic().getValue(), 0.0 );
     }
 
     @Test

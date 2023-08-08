@@ -127,7 +127,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         try
         {
             MetricConstants metricName = statistics.get( 0 ).getMetricName();
-            PoolMetadata metadata = statistics.get( 0 ).getMetadata();
+            PoolMetadata metadata = statistics.get( 0 ).getPoolMetadata();
 
             // Collection of graphics parameters, one for each set of charts to write across N formats.
             Collection<Outputs> outputsMap =
@@ -189,7 +189,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         for ( EnsembleAverageType type : EnsembleAverageType.values() )
         {
             List<DiagramStatisticOuter> innerSlice = Slicer.filter( statistics,
-                                                                    value -> type == value.getMetadata()
+                                                                    value -> type == value.getPoolMetadata()
                                                                                           .getPool()
                                                                                           .getEnsembleAverageType() );
             if ( !innerSlice.isEmpty() )
@@ -254,7 +254,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         // #51670
         SortedSet<EnsembleAverageType> types =
                 Slicer.discover( statistics,
-                                 next -> next.getMetadata().getPool().getEnsembleAverageType() );
+                                 next -> next.getPoolMetadata().getPool().getEnsembleAverageType() );
 
         Optional<EnsembleAverageType> type =
                 types.stream()

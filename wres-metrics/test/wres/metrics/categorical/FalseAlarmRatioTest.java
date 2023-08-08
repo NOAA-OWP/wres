@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.Arrays;
+import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
@@ -26,7 +26,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 
 /**
  * Tests the {@link FalseAlarmRatio}.
- * 
+ *
  * @author James Brown
  */
 final class FalseAlarmRatioTest
@@ -72,11 +72,11 @@ final class FalseAlarmRatioTest
     void testApplyWithNoData()
     {
         // Generate empty data
-        Pool<Pair<Boolean, Boolean>> input = Pool.of( Arrays.asList(), PoolMetadata.of() );
+        Pool<Pair<Boolean, Boolean>> input = Pool.of( List.of(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = this.far.apply( input );
 
-        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getStatistic().getValue(), 0.0 );
     }
 
     @Test
@@ -113,17 +113,16 @@ final class FalseAlarmRatioTest
     void testMetricBoundsAreCorrect()
     {
         Assertions.assertAll(
-                              () -> assertEquals( 0.0, FalseAlarmRatio.MAIN.getMinimum(), 0.0 ),
-                              () -> assertEquals( 1.0, FalseAlarmRatio.MAIN.getMaximum(), 0.0 ),
-                              () -> assertEquals( 0.0, FalseAlarmRatio.MAIN.getOptimum(), 0.0 ) );
+                () -> assertEquals( 0.0, FalseAlarmRatio.MAIN.getMinimum(), 0.0 ),
+                () -> assertEquals( 1.0, FalseAlarmRatio.MAIN.getMaximum(), 0.0 ),
+                () -> assertEquals( 0.0, FalseAlarmRatio.MAIN.getOptimum(), 0.0 ) );
     }
 
     @Test
     void testExceptionOnNullInput()
     {
         MetricCalculationException actual = assertThrows( MetricCalculationException.class,
-                                                          () -> this.far.aggregate( (DoubleScoreStatisticOuter) null,
-                                                                                    null ) );
+                                                          () -> this.far.aggregate( null, null ) );
 
         assertEquals( "Specify non-null input to the '" + this.far.getMetricNameString() + "'.", actual.getMessage() );
     }

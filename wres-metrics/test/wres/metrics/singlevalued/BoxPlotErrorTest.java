@@ -5,7 +5,6 @@ import static org.junit.Assert.assertThrows;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -83,7 +82,7 @@ public final class BoxPlotErrorTest
                                                     .addStatistics( box )
                                                     .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
 
     @Test
@@ -121,7 +120,7 @@ public final class BoxPlotErrorTest
                 builder.addData( next.getValue() );
             }
 
-            actualRaw.add( this.boxPlotError.apply( builder.build() ).getData() );
+            actualRaw.add( this.boxPlotError.apply( builder.build() ).getStatistic() );
         }
 
         List<BoxplotStatistic> expectedRaw = new ArrayList<>();
@@ -254,7 +253,7 @@ public final class BoxPlotErrorTest
     {
         // Generate empty data
         Pool<Pair<Double, Double>> input =
-                Pool.of( Arrays.asList(), PoolMetadata.of() );
+                Pool.of( List.of(), PoolMetadata.of() );
 
         BoxplotStatisticOuter actual = this.boxPlotError.apply( input );
 

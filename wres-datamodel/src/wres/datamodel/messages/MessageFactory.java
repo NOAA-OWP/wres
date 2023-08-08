@@ -536,7 +536,7 @@ public class MessageFactory
     {
         Objects.requireNonNull( statistic );
 
-        return statistic.getData();
+        return statistic.getStatistic();
     }
 
     /**
@@ -551,7 +551,7 @@ public class MessageFactory
     {
         Objects.requireNonNull( statistic );
 
-        return statistic.getData();
+        return statistic.getStatistic();
     }
 
     /**
@@ -566,7 +566,7 @@ public class MessageFactory
     {
         Objects.requireNonNull( statistic );
 
-        return statistic.getData();
+        return statistic.getStatistic();
     }
 
     /**
@@ -582,7 +582,7 @@ public class MessageFactory
     {
         Objects.requireNonNull( statistic );
 
-        return statistic.getData();
+        return statistic.getStatistic();
     }
 
     /**
@@ -597,7 +597,7 @@ public class MessageFactory
     {
         Objects.requireNonNull( statistic );
 
-        return statistic.getData();
+        return statistic.getStatistic();
     }
 
     /**
@@ -726,7 +726,7 @@ public class MessageFactory
             List<wres.datamodel.statistics.DoubleScoreStatisticOuter> doubleScores = onePool.getDoubleScoreStatistics();
             doubleScores.forEach( next -> {
                 statistics.addScores( MessageFactory.parse( next ) );
-                metadatas.add( next.getMetadata() );
+                metadatas.add( next.getPoolMetadata() );
             } );
 
             added = true;
@@ -738,7 +738,7 @@ public class MessageFactory
             List<wres.datamodel.statistics.DiagramStatisticOuter> diagrams = onePool.getDiagramStatistics();
             diagrams.forEach( next -> {
                 statistics.addDiagrams( MessageFactory.parse( next ) );
-                metadatas.add( next.getMetadata() );
+                metadatas.add( next.getPoolMetadata() );
             } );
 
             added = true;
@@ -750,7 +750,7 @@ public class MessageFactory
             List<wres.datamodel.statistics.BoxplotStatisticOuter> boxplots = onePool.getBoxPlotStatisticsPerPool();
             boxplots.forEach( next -> {
                 statistics.addOneBoxPerPool( MessageFactory.parse( next ) );
-                metadatas.add( next.getMetadata() );
+                metadatas.add( next.getPoolMetadata() );
             } );
 
             added = true;
@@ -762,7 +762,7 @@ public class MessageFactory
             List<wres.datamodel.statistics.BoxplotStatisticOuter> boxplots = onePool.getBoxPlotStatisticsPerPair();
             boxplots.forEach( next -> {
                 statistics.addOneBoxPerPair( MessageFactory.parse( next ) );
-                metadatas.add( next.getMetadata() );
+                metadatas.add( next.getPoolMetadata() );
             } );
 
             added = true;
@@ -775,7 +775,7 @@ public class MessageFactory
                     onePool.getDurationScoreStatistics();
             durationScores.forEach( next -> {
                 statistics.addDurationScores( MessageFactory.parse( next ) );
-                metadatas.add( next.getMetadata() );
+                metadatas.add( next.getPoolMetadata() );
             } );
 
             added = true;
@@ -788,7 +788,7 @@ public class MessageFactory
                     onePool.getInstantDurationPairStatistics();
             durationDiagrams.forEach( next -> {
                 statistics.addDurationDiagrams( MessageFactory.parse( next ) );
-                metadatas.add( next.getMetadata() );
+                metadatas.add( next.getPoolMetadata() );
             } );
 
             added = true;
@@ -945,7 +945,7 @@ public class MessageFactory
 
         for ( DoubleScoreStatisticOuter next : statistics )
         {
-            PoolMetadata metadata = next.getMetadata();
+            PoolMetadata metadata = next.getPoolMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
 
             StatisticsStore.Builder another = mappedStatistics.get( poolBoundaries );
@@ -977,7 +977,7 @@ public class MessageFactory
 
         for ( wres.datamodel.statistics.DurationScoreStatisticOuter next : statistics )
         {
-            PoolMetadata metadata = next.getMetadata();
+            PoolMetadata metadata = next.getPoolMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
 
             StatisticsStore.Builder another = mappedStatistics.get( poolBoundaries );
@@ -1011,7 +1011,7 @@ public class MessageFactory
 
         for ( wres.datamodel.statistics.BoxplotStatisticOuter next : statistics )
         {
-            PoolMetadata metadata = next.getMetadata();
+            PoolMetadata metadata = next.getPoolMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
 
             StatisticsStore.Builder another = mappedStatistics.get( poolBoundaries );
@@ -1050,7 +1050,7 @@ public class MessageFactory
 
         for ( wres.datamodel.statistics.DiagramStatisticOuter next : statistics )
         {
-            PoolMetadata metadata = next.getMetadata();
+            PoolMetadata metadata = next.getPoolMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
 
             StatisticsStore.Builder another = mappedStatistics.get( poolBoundaries );
@@ -1082,7 +1082,7 @@ public class MessageFactory
 
         for ( DurationDiagramStatisticOuter next : statistics )
         {
-            PoolMetadata metadata = next.getMetadata();
+            PoolMetadata metadata = next.getPoolMetadata();
             PoolBoundaries poolBoundaries = MessageFactory.getPoolBoundaries( metadata );
 
             StatisticsStore.Builder another = mappedStatistics.get( poolBoundaries );

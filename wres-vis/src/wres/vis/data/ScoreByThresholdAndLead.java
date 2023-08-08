@@ -68,7 +68,7 @@ class ScoreByThresholdAndLead extends AbstractXYDataset
         final double test = this.statistics.get( series )
                                            .getRight()
                                            .get( item )
-                                           .getMetadata()
+                                           .getPoolMetadata()
                                            .getThresholds()
                                            .first()
                                            .getValues()
@@ -94,7 +94,7 @@ class ScoreByThresholdAndLead extends AbstractXYDataset
         double statistic = this.statistics.get( series )
                                           .getRight()
                                           .get( item )
-                                          .getData()
+                                          .getStatistic()
                                           .getValue();
 
         if ( Double.isInfinite( statistic ) )
@@ -133,14 +133,14 @@ class ScoreByThresholdAndLead extends AbstractXYDataset
         // Arrange the series by threshold and then set them, ignoring the all data threshold
         List<Pair<String, List<DoubleScoreComponentOuter>>> innerStatistics = new ArrayList<>();
         SortedSet<TimeWindowOuter> timeWindows =
-                Slicer.discover( statistics, next -> next.getMetadata().getTimeWindow() );
+                Slicer.discover( statistics, next -> next.getPoolMetadata().getTimeWindow() );
         for ( TimeWindowOuter key : timeWindows )
         {
             List<DoubleScoreComponentOuter> sliced = Slicer.filter( statistics,
-                                                                    next -> next.getMetadata()
+                                                                    next -> next.getPoolMetadata()
                                                                                 .getTimeWindow()
                                                                                 .equals( key )
-                                                                            && !next.getMetadata()
+                                                                            && !next.getPoolMetadata()
                                                                                     .getThresholds()
                                                                                     .first()
                                                                                     .isAllDataThreshold() );

@@ -5,7 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 
-import java.util.Arrays;
+import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
@@ -59,7 +59,7 @@ public final class CorrelationPearsonsTest
                                                          .addStatistics( component )
                                                          .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
 
     @Test
@@ -75,11 +75,11 @@ public final class CorrelationPearsonsTest
     {
         // Generate empty data
         Pool<Pair<Double, Double>> input =
-                Pool.of( Arrays.asList(), PoolMetadata.of() );
+                Pool.of( List.of(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = rho.apply( input );
 
-        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getStatistic().getValue(), 0.0 );
     }
 
     @Test

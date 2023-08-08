@@ -32,7 +32,6 @@ import wres.statistics.generated.Pool;
  */
 class DiagramStatisticOuterTest
 {
-
     private PoolMetadata metadata;
 
     private FeatureGroup featureGroup;
@@ -110,12 +109,8 @@ class DiagramStatisticOuterTest
                                                   .setMetric( this.metric )
                                                   .build();
 
-        this.testInstance = DiagramStatisticOuter.of( rocOne, this.metadata );
+        this.testInstance = DiagramStatisticOuter.of( rocOne, this.metadata, 0.27 );
     }
-
-    /**
-     * Constructs a {@link DiagramStatisticOuter} and tests for equality with another {@link DiagramStatisticOuter}.
-     */
 
     @Test
     void testEquals()
@@ -181,24 +176,20 @@ class DiagramStatisticOuterTest
                                                     .build();
 
         DiagramStatisticOuter s = this.testInstance;
-        DiagramStatisticOuter t = DiagramStatisticOuter.of( rocTwo, this.metadata );
+        DiagramStatisticOuter t = DiagramStatisticOuter.of( rocTwo, this.metadata, 0.27 );
 
         assertEquals( s, t );
         assertNotEquals( null, s );
         assertNotEquals( 1.0, s );
-        assertNotEquals( s, DiagramStatisticOuter.of( rocThree, this.metadata ) );
-        assertNotEquals( s, DiagramStatisticOuter.of( rocThree, m2 ) );
-        DiagramStatisticOuter q = DiagramStatisticOuter.of( s.getData(), m2 );
+        assertNotEquals( s, DiagramStatisticOuter.of( rocThree, this.metadata, 0.27 ) );
+        assertNotEquals( s, DiagramStatisticOuter.of( rocThree, m2, 0.27 ) );
+        DiagramStatisticOuter q = DiagramStatisticOuter.of( s.getStatistic(), m2 );
         DiagramStatisticOuter r = DiagramStatisticOuter.of( rocTwo, m3 );
         assertEquals( q, q );
         assertNotEquals( s, r );
         assertNotEquals( r, s );
         assertNotEquals( q, r );
     }
-
-    /**
-     * Constructs a {@link DiagramStatisticOuter} and checks the {@link DiagramStatisticOuter#getMetadata()}.
-     */
 
     @Test
     void testGetMetadata()
@@ -219,14 +210,10 @@ class DiagramStatisticOuterTest
         PoolMetadata m2 = PoolMetadata.of( evaluation, pool );
 
         DiagramStatisticOuter q = this.testInstance;
-        DiagramStatisticOuter r = DiagramStatisticOuter.of( q.getData(), m2 );
+        DiagramStatisticOuter r = DiagramStatisticOuter.of( q.getStatistic(), m2 );
 
-        assertNotEquals( q.getMetadata(), r.getMetadata() );
+        assertNotEquals( q.getPoolMetadata(), r.getPoolMetadata() );
     }
-
-    /**
-     * Constructs a {@link DiagramStatisticOuter} and checks the {@link DiagramStatisticOuter#hashCode()}.
-     */
 
     @Test
     void testHashCode()
@@ -250,7 +237,7 @@ class DiagramStatisticOuterTest
                                                   .build();
 
         DiagramStatisticOuter q = this.testInstance;
-        DiagramStatisticOuter r = DiagramStatisticOuter.of( rocTwo, this.metadata );
+        DiagramStatisticOuter r = DiagramStatisticOuter.of( rocTwo, this.metadata, 0.27 );
 
         assertEquals( q.hashCode(), r.hashCode() );
     }
@@ -276,7 +263,7 @@ class DiagramStatisticOuterTest
                                                   .setMetric( this.metric )
                                                   .build();
 
-        assertEquals( rocOne, this.testInstance.getData() );
+        assertEquals( rocOne, this.testInstance.getStatistic() );
     }
 
     @Test
@@ -285,6 +272,12 @@ class DiagramStatisticOuterTest
         DiagramMetricComponent expected = this.podComponent;
         DiagramMetricComponent actual = this.testInstance.getComponent( DiagramComponentType.PRIMARY_RANGE_AXIS );
         assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetSampleQuantile()
+    {
+        assertEquals( 0.27, this.testInstance.getSampleQuantile() );
     }
 
     @Test

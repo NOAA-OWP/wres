@@ -44,11 +44,6 @@ public final class ContinousRankedProbabilitySkillScoreTest
         this.crpss = ContinuousRankedProbabilitySkillScore.of();
     }
 
-    /**
-     * Compares the output from {@link ContinuousRankedProbabilitySkillScore#apply(Pool)} against expected 
-     * output for a dataset with a supplied baseline.
-     */
-
     @Test
     public void testApply()
     {
@@ -87,13 +82,8 @@ public final class ContinousRankedProbabilitySkillScoreTest
                                                             .addStatistics( component )
                                                             .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
-
-    /**
-     * Validates the output from {@link ContinuousRankedProbabilitySkillScore#apply(Pool)} when supplied 
-     * with no data.
-     */
 
     @Test
     public void testApplyWithNoData()
@@ -108,7 +98,7 @@ public final class ContinousRankedProbabilitySkillScoreTest
 
         DoubleScoreStatisticOuter actual = this.crpss.apply( input );
 
-        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getStatistic().getValue(), 0.0 );
     }
 
     @Test
@@ -117,19 +107,11 @@ public final class ContinousRankedProbabilitySkillScoreTest
         assertEquals( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE.toString(), this.crpss.getMetricNameString() );
     }
 
-    /**
-     * Checks that the {@link ContinuousRankedProbabilitySkillScore#isDecomposable()} returns <code>true</code>.
-     */
-
     @Test
     public void testIsDecomposable()
     {
         assertTrue( this.crpss.isDecomposable() );
     }
-
-    /**
-     * Checks that the {@link ContinuousRankedProbabilitySkillScore#isSkillScore()} returns <code>true</code>.
-     */
 
     @Test
     public void testIsSkillScore()
@@ -137,20 +119,11 @@ public final class ContinousRankedProbabilitySkillScoreTest
         assertTrue( this.crpss.isSkillScore() );
     }
 
-    /**
-     * Checks that the {@link ContinuousRankedProbabilitySkillScore#getScoreOutputGroup()} returns the result 
-     * provided on construction.
-     */
-
     @Test
     public void testGetScoreOutputGroup()
     {
         assertSame( MetricGroup.NONE, this.crpss.getScoreOutputGroup() );
     }
-
-    /**
-     * Checks that the {@link ContinuousRankedProbabilitySkillScore#isProper()} returns <code>false</code>.
-     */
 
     @Test
     public void testIsProper()
@@ -158,20 +131,11 @@ public final class ContinousRankedProbabilitySkillScoreTest
         assertFalse( this.crpss.isProper() );
     }
 
-    /**
-     * Checks that the {@link ContinuousRankedProbabilitySkillScore#isStrictlyProper()} returns <code>false</code>.
-     */
-
     @Test
     public void testIsStrictlyProper()
     {
         assertFalse( this.crpss.isStrictlyProper() );
     }
-
-    /**
-     * Checks that the baseline identifier is correctly propagated to the metric output metadata.
-     * @throws IOException if the input pairs could not be read
-     */
 
     @Test
     public void testMetadataContainsBaselineIdentifier() throws IOException
@@ -180,28 +144,19 @@ public final class ContinousRankedProbabilitySkillScoreTest
 
         assertEquals( "ESP",
                       this.crpss.apply( pairs )
-                                .getMetadata()
+                                .getPoolMetadata()
                                 .getEvaluation()
                                 .getBaselineDataName() );
     }
-
-    /**
-     * Tests for an expected exception on calling {@link ContinuousRankedProbabilitySkillScore#apply(Pool)} 
-     * with null input.
-     */
 
     @Test
     public void testExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                             () -> this.crpss.apply( (Pool<Pair<Double, Ensemble>>) null ) );
+                                             () -> this.crpss.apply( null ) );
 
         assertEquals( "Specify non-null input to the '" + this.crpss.getMetricNameString() + "'.", actual.getMessage() );
     }
-
-    /**
-     * Checks for an expected exception when the input data does not contain an explicit baseline.
-     */
 
     @Test
     public void testExceptionOnInputWithMissingBaseline()

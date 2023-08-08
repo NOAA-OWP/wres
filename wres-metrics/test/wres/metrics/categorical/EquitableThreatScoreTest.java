@@ -6,7 +6,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Arrays;
+import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
@@ -18,17 +18,14 @@ import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.metrics.Boilerplate;
-import wres.metrics.Collectable;
-import wres.metrics.Metric;
 import wres.metrics.MetricCalculationException;
 import wres.metrics.MetricTestDataFactory;
-import wres.metrics.Score;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
  * Tests the {@link EquitableThreatScore}.
- * 
+ *
  * @author James Brown
  */
 public final class EquitableThreatScoreTest
@@ -52,10 +49,6 @@ public final class EquitableThreatScoreTest
         this.ets = EquitableThreatScore.of();
         this.meta = Boilerplate.getPoolMetadata( false );
     }
-
-    /**
-     * Compares the output from {@link Metric#apply(wres.datamodel.sampledata.MetricInput)} against expected output.
-     */
 
     @Test
     public void testApply()
@@ -81,24 +74,16 @@ public final class EquitableThreatScoreTest
         assertEquals( expected, actual );
     }
 
-    /**
-     * Validates the output from {@link Metric#apply(Pool)} when supplied with no data.
-     */
-
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        Pool<Pair<Boolean, Boolean>> input = Pool.of( Arrays.asList(), PoolMetadata.of() );
+        Pool<Pair<Boolean, Boolean>> input = Pool.of( List.of(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = this.ets.apply( input );
 
-        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getStatistic().getValue(), 0.0 );
     }
-
-    /**
-     * Verifies that {@link Metric#getMetricNameString()} returns the expected result.
-     */
 
     @Test
     public void testMetricIsNamedCorrectly()
@@ -106,19 +91,11 @@ public final class EquitableThreatScoreTest
         assertEquals( MetricConstants.EQUITABLE_THREAT_SCORE.toString(), this.ets.getMetricNameString() );
     }
 
-    /**
-     * Verifies that {@link Score#isDecomposable()} returns <code>false</code>.
-     */
-
     @Test
     public void testMetricIsNotDecoposable()
     {
         assertFalse( ets.isDecomposable() );
     }
-
-    /**
-     * Verifies that {@link Score#isSkillScore()} returns <code>true</code>.
-     */
 
     @Test
     public void testMetricIsASkillScore()
@@ -126,19 +103,11 @@ public final class EquitableThreatScoreTest
         assertTrue( ets.isSkillScore() );
     }
 
-    /**
-     * Verifies that {@link Score#getScoreOutputGroup()} returns {@link OutputScoreGroup#NONE}.
-     */
-
     @Test
     public void testGetScoreOutputGroup()
     {
         assertSame( MetricGroup.NONE, this.ets.getScoreOutputGroup() );
     }
-
-    /**
-     * Verifies that {@link Collectable#getCollectionOf()} returns {@link MetricConstants#CONTINGENCY_TABLE}.
-     */
 
     @Test
     public void testGetCollectionOf()
@@ -150,8 +119,7 @@ public final class EquitableThreatScoreTest
     public void testExceptionOnNullInput()
     {
         MetricCalculationException actual = assertThrows( MetricCalculationException.class,
-                                                          () -> this.ets.aggregate( (DoubleScoreStatisticOuter) null,
-                                                                                    null ) );
+                                                          () -> this.ets.aggregate( null, null ) );
 
         assertEquals( "Specify non-null input to the '" + this.ets.getMetricNameString() + "'.", actual.getMessage() );
     }

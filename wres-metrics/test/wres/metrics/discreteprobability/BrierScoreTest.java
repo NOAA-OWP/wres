@@ -6,7 +6,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import java.util.Arrays;
+import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
@@ -26,7 +26,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 
 /**
  * Tests the {@link BrierScore}.
- * 
+ *
  * @author James Brown
  */
 public final class BrierScoreTest
@@ -74,24 +74,16 @@ public final class BrierScoreTest
         assertEquals( expected, actual );
     }
 
-    /**
-     * Validates the output from {@link BrierScore#apply(Pool)} when supplied with no data.
-     */
-
     @Test
     public void testApplyWithNoData()
     {
         // Generate empty data
-        Pool<Pair<Probability, Probability>> input = Pool.of( Arrays.asList(), PoolMetadata.of() );
+        Pool<Pair<Probability, Probability>> input = Pool.of( List.of(), PoolMetadata.of() );
 
         DoubleScoreStatisticOuter actual = brierScore.apply( input );
 
-        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getStatistic().getValue(), 0.0 );
     }
-
-    /**
-     * Checks that the {@link BrierScore#getMetricNameString()} returns {@link MetricConstants.BRIER_SCORE.toString()}
-     */
 
     @Test
     public void testGetName()
@@ -99,19 +91,11 @@ public final class BrierScoreTest
         assertEquals( MetricConstants.BRIER_SCORE.toString(), this.brierScore.getMetricNameString() );
     }
 
-    /**
-     * Checks that the {@link BrierScore#isDecomposable()} returns <code>true</code>.
-     */
-
     @Test
     public void testIsDecomposable()
     {
         assertTrue( this.brierScore.isDecomposable() );
     }
-
-    /**
-     * Checks that the {@link BrierScore#isSkillScore()} returns <code>false</code>.
-     */
 
     @Test
     public void testIsSkillScore()
@@ -119,19 +103,11 @@ public final class BrierScoreTest
         assertFalse( this.brierScore.isSkillScore() );
     }
 
-    /**
-     * Checks that the {@link BrierScore#getScoreOutputGroup()} returns the result provided on construction.
-     */
-
     @Test
     public void testGetScoreOutputGroup()
     {
         assertSame( MetricGroup.NONE, this.brierScore.getScoreOutputGroup() );
     }
-
-    /**
-     * Checks that the {@link BrierScore#isProper()} returns <code>true</code>.
-     */
 
     @Test
     public void testIsProper()
@@ -139,28 +115,19 @@ public final class BrierScoreTest
         assertTrue( this.brierScore.isProper() );
     }
 
-    /**
-     * Checks that the {@link BrierScore#isStrictlyProper()} returns <code>true</code>.
-     */
-
     @Test
     public void testIsStrictlyProper()
     {
         assertTrue( this.brierScore.isStrictlyProper() );
     }
 
-    /**
-     * Tests for an expected exception on calling {@link BrierScore#apply(DiscreteProbabilityPairs)} with null 
-     * input.
-     */
-
     @Test
     public void testExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                                   () -> this.brierScore.apply( (Pool<Pair<Probability, Probability>>) null ) );
+                                             () -> this.brierScore.apply( null ) );
 
-        assertEquals( "Specify non-null input to the '" + this.brierScore.getMetricNameString() + "'.", actual.getMessage() );
+        assertEquals( "Specify non-null input to the '" + this.brierScore.getMetricNameString() + "'.",
+                      actual.getMessage() );
     }
-
 }

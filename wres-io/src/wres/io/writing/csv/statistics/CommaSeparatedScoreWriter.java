@@ -164,7 +164,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
 
                     StringJoiner timeWindowHeader =
                             CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( statistics.get( 0 )
-                                                                                                     .getMetadata(),
+                                                                                                     .getPoolMetadata(),
                                                                                            durationUnits );
 
                     headerRow.merge( timeWindowHeader );
@@ -181,7 +181,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
 
                     // Write the output
                     String append = CommaSeparatedScoreWriter.getPathQualifier( nextOutput );
-                    PoolMetadata meta = nextOutput.get( 0 ).getMetadata();
+                    PoolMetadata meta = nextOutput.get( 0 ).getPoolMetadata();
                     Path outputPath = DataUtilities.getPathFromPoolMetadata( outputDirectory,
                                                                              meta,
                                                                              append,
@@ -268,9 +268,9 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
 
         // Discover the time windows and thresholds
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( component, meta -> meta.getMetadata().getThresholds() );
+                Slicer.discover( component, meta -> meta.getPoolMetadata().getThresholds() );
         SortedSet<TimeWindowOuter> timeWindows =
-                Slicer.discover( component, meta -> meta.getMetadata().getTimeWindow() );
+                Slicer.discover( component, meta -> meta.getPoolMetadata().getTimeWindow() );
 
         PoolMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( component );
 
@@ -285,10 +285,10 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
             {
                 // Find the next score
                 List<S> nextScore = Slicer.filter( component,
-                                                   next -> next.getMetadata()
+                                                   next -> next.getPoolMetadata()
                                                                .getThresholds()
                                                                .equals( t )
-                                                           && next.getMetadata()
+                                                           && next.getPoolMetadata()
                                                                   .getTimeWindow()
                                                                   .equals( timeWindow ) );
                 if ( !nextScore.isEmpty() )
@@ -298,7 +298,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
 
                     CommaSeparatedStatisticsWriter.addRowToInput( rows,
                                                                   nextScore.get( 0 )
-                                                                           .getMetadata(),
+                                                                           .getPoolMetadata(),
                                                                   Collections.singletonList( stringScore ),
                                                                   null,
                                                                   true,
@@ -332,13 +332,13 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
         List<List<T>> sliced = new ArrayList<>();
 
         SortedSet<ThresholdOuter> secondThreshold =
-                Slicer.discover( statistics, next -> next.getMetadata().getThresholds().second() );
+                Slicer.discover( statistics, next -> next.getPoolMetadata().getThresholds().second() );
 
         // Slice by ensemble averaging function
         for ( EnsembleAverageType type : EnsembleAverageType.values() )
         {
             List<T> innerSlice = Slicer.filter( statistics,
-                                                value -> type == value.getMetadata()
+                                                value -> type == value.getPoolMetadata()
                                                                       .getPool()
                                                                       .getEnsembleAverageType() );
             // Slice by secondary threshold
@@ -366,7 +366,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
         // Secondary threshold? If yes, only one, as this was sliced above
         SortedSet<ThresholdOuter> second =
                 Slicer.discover( statistics,
-                                 next -> next.getMetadata()
+                                 next -> next.getPoolMetadata()
                                              .getThresholds()
                                              .second() );
 
@@ -374,7 +374,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
         // #51670
         SortedSet<EnsembleAverageType> types =
                 Slicer.discover( statistics,
-                                 next -> next.getMetadata().getPool().getEnsembleAverageType() );
+                                 next -> next.getPoolMetadata().getPool().getEnsembleAverageType() );
 
         Optional<EnsembleAverageType> type =
                 types.stream()

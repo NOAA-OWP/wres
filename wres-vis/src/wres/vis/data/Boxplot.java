@@ -122,12 +122,12 @@ class Boxplot extends AbstractIntervalXYDataset
         Objects.requireNonNull( statistics );
 
         this.boxes = statistics.stream()
-                               .map( next -> next.getData().getStatisticsList() )
+                               .map( next -> next.getStatistic().getStatisticsList() )
                                .flatMap( List::stream )
                                .toList();
 
         this.itemCount = statistics.stream()
-                                   .mapToInt( next -> next.getData().getStatisticsCount() )
+                                   .mapToInt( next -> next.getStatistic().getStatisticsCount() )
                                    .sum();
 
         // Empty?
@@ -140,7 +140,7 @@ class Boxplot extends AbstractIntervalXYDataset
         else
         {
             List<Box> innerBoxes = statistics.get( 0 )
-                                             .getData()
+                                             .getStatistic()
                                              .getStatisticsList();
 
             this.seriesCount = innerBoxes.get( 0 )

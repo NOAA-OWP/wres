@@ -20,7 +20,7 @@ import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticCo
 
 /**
  * An immutable score statistic that wraps a {@link DurationScoreStatistic}.
- * 
+ *
  * @author James Brown
  */
 
@@ -28,16 +28,12 @@ import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticCo
 public class DurationScoreStatisticOuter
         extends BasicScoreStatistic<DurationScoreStatistic, DurationScoreComponentOuter>
 {
-
-    /**
-     * The metric name.
-     */
-
+    /** The metric name. */
     private final MetricConstants metricName;
 
     /**
      * Construct the statistic.
-     * 
+     *
      * @param statistic the verification statistic
      * @param metadata the metadata
      * @throws StatisticException if any of the inputs are invalid
@@ -46,41 +42,56 @@ public class DurationScoreStatisticOuter
 
     public static DurationScoreStatisticOuter of( DurationScoreStatistic statistic, PoolMetadata metadata )
     {
-        return new DurationScoreStatisticOuter( statistic, metadata );
+        return new DurationScoreStatisticOuter( statistic, metadata, null );
+    }
+
+    /**
+     * Construct the statistic with a sample quantile.
+     *
+     * @param statistic the verification statistic
+     * @param metadata the metadata
+     * @param sampleQuantile the sample quantile
+     * @throws StatisticException if any of the inputs are invalid
+     * @return an instance of the output
+     */
+
+    public static DurationScoreStatisticOuter of( DurationScoreStatistic statistic,
+                                                  PoolMetadata metadata,
+                                                  Double sampleQuantile )
+    {
+        return new DurationScoreStatisticOuter( statistic, metadata, sampleQuantile );
     }
 
     /**
      * A wrapper for a {@link DurationScoreStatisticComponent}.
-     * 
+     *
      * @author James Brown
      */
 
     public static class DurationScoreComponentOuter extends BasicScoreComponent<DurationScoreStatisticComponent>
     {
-
-        /**
-         * The component name.
-         */
-
+        /** The component name. */
         private final MetricConstants metricName;
 
         /**
          * Hidden constructor.
          * @param component the score component
          * @param metadata the metadata
+         * @param sampleQuantile the sample quantile or null
          */
 
         private DurationScoreComponentOuter( DurationScoreStatisticComponent component,
-                                             PoolMetadata metadata )
+                                             PoolMetadata metadata,
+                                             Double sampleQuantile )
         {
-            super( component, metadata, next -> MessageFactory.parse( next.getValue() ).toString() );
+            super( component, metadata, next -> MessageFactory.parse( next.getValue() ).toString(), sampleQuantile );
 
             this.metricName = MetricConstants.valueOf( component.getMetric().getName().name() );
         }
 
         /**
          * Create a component.
-         * 
+         *
          * @param component the score component
          * @param metadata the metadata
          * @return a component
@@ -90,7 +101,23 @@ public class DurationScoreStatisticOuter
         public static DurationScoreComponentOuter of( DurationScoreStatisticComponent component,
                                                       PoolMetadata metadata )
         {
-            return new DurationScoreComponentOuter( component, metadata );
+            return new DurationScoreComponentOuter( component, metadata, null );
+        }
+
+        /**
+         * Create a component with a sample quantile.
+         *
+         * @param component the score component
+         * @param metadata the metadata
+         * @param sampleQuantile the sample quantile or null
+         * @return a component
+         */
+
+        public static DurationScoreComponentOuter of( DurationScoreStatisticComponent component,
+                                                      PoolMetadata metadata,
+                                                      Double sampleQuantile )
+        {
+            return new DurationScoreComponentOuter( component, metadata, sampleQuantile );
         }
 
         @Override
@@ -107,7 +134,7 @@ public class DurationScoreStatisticOuter
                 return false;
             }
 
-            if ( ! ( o instanceof DurationScoreComponentOuter inner ) )
+            if ( !( o instanceof DurationScoreComponentOuter inner ) )
             {
                 return false;
             }
@@ -138,11 +165,11 @@ public class DurationScoreStatisticOuter
     {
         ToStringBuilder builder = new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE );
 
-        builder.append( "metric", this.getData().getMetric().getName() );
+        builder.append( "metric", this.getStatistic().getMetric().getName() );
 
         this.getInternalMapping().forEach( ( key, value ) -> builder.append( "value", value ) );
 
-        builder.append( "metadata", this.getMetadata() );
+        builder.append( "metadata", this.getPoolMetadata() );
 
         return builder.toString();
     }
@@ -155,7 +182,7 @@ public class DurationScoreStatisticOuter
             return false;
         }
 
-        if ( ! ( o instanceof DurationScoreStatisticOuter inner ) )
+        if ( !( o instanceof DurationScoreStatisticOuter inner ) )
         {
             return false;
         }
@@ -176,28 +203,35 @@ public class DurationScoreStatisticOuter
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param score the score
+     * @param metadata the pool metadata
+     * @param sampleQuantile the sample quantile or null
      */
 
-    private DurationScoreStatisticOuter( DurationScoreStatistic score, PoolMetadata metadata )
+    private DurationScoreStatisticOuter( DurationScoreStatistic score, PoolMetadata metadata, Double sampleQuantile )
     {
-        super( score, DurationScoreStatisticOuter.createInternalMapping( score, metadata ), metadata );
+        super( score,
+               DurationScoreStatisticOuter.createInternalMapping( score, metadata, sampleQuantile ),
+               metadata,
+               sampleQuantile );
 
         this.metricName = MetricConstants.valueOf( score.getMetric().getName().name() );
     }
 
     /**
      * Creates an internal mapping between score components and their identifiers.
-     * 
+     *
      * @param score the score
      * @param metadata the metadata
+     * @param sampleQuantile the sample quantile
      * @return the internal mapping for re-use
      */
 
     private static Map<MetricConstants, DurationScoreComponentOuter>
-            createInternalMapping( DurationScoreStatistic score,
-                                   PoolMetadata metadata )
+    createInternalMapping( DurationScoreStatistic score,
+                           PoolMetadata metadata,
+                           Double sampleQuantile )
     {
         Map<MetricConstants, DurationScoreComponentOuter> returnMe = new EnumMap<>( MetricConstants.class );
 
@@ -205,12 +239,13 @@ public class DurationScoreStatisticOuter
         for ( DurationScoreStatisticComponent next : components )
         {
             MetricConstants name = MetricConstants.valueOf( next.getMetric().getName().name() );
-            DurationScoreComponentOuter nextOuter = DurationScoreComponentOuter.of( next, metadata );
+            DurationScoreComponentOuter nextOuter = DurationScoreComponentOuter.of( next,
+                                                                                    metadata,
+                                                                                    sampleQuantile );
 
             returnMe.put( name, nextOuter );
         }
 
         return Collections.unmodifiableMap( returnMe );
     }
-
 }

@@ -74,11 +74,11 @@ public class ProbabilityOfDetection extends ContingencyTableScore
         this.is2x2ContingencyTable( output, this );
 
         double tP = output.getComponent( MetricConstants.TRUE_POSITIVES )
-                          .getData()
+                          .getStatistic()
                           .getValue();
 
         double fN = output.getComponent( MetricConstants.FALSE_NEGATIVES )
-                          .getData()
+                          .getStatistic()
                           .getValue();
 
         double result = FunctionFactory.finiteOrMissing().applyAsDouble( tP / ( tP + fN ) );
@@ -93,7 +93,7 @@ public class ProbabilityOfDetection extends ContingencyTableScore
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, output.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, output.getPoolMetadata() );
     }
 
     @Override

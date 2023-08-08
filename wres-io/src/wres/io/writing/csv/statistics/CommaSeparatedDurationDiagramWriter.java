@@ -136,7 +136,7 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
 
             StringJoiner timeWindowHeader =
                     CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( output.get( 0 )
-                                                                                         .getMetadata(),
+                                                                                         .getPoolMetadata(),
                                                                                    durationUnits );
             headerRow.merge( timeWindowHeader );
 
@@ -152,7 +152,7 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
             rows.add( RowCompareByLeft.of( HEADER_INDEX, headerRow ) );
 
             // Write the output
-            PoolMetadata meta = nextOutput.get( 0 ).getMetadata();
+            PoolMetadata meta = nextOutput.get( 0 ).getPoolMetadata();
             MetricConstants metricName = nextOutput.get( 0 ).getMetricName();
 
             Path outputPath = DataUtilities.getPathFromPoolMetadata( outputDirectory,
@@ -192,7 +192,7 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
 
         // Discover the time windows and thresholds
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( output, meta -> meta.getMetadata().getThresholds() );
+                Slicer.discover( output, meta -> meta.getPoolMetadata().getThresholds() );
 
         PoolMetadata metadata = CommaSeparatedStatisticsWriter.getSampleMetadataFromListOfStatistics( output );
 
@@ -206,7 +206,7 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
 
             // Slice by threshold
             List<DurationDiagramStatisticOuter> sliced = Slicer.filter( output,
-                                                                        data -> data.getMetadata()
+                                                                        data -> data.getPoolMetadata()
                                                                                     .getThresholds()
                                                                                     .equals( t ) );
 
@@ -218,7 +218,7 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
                 {
                     CommaSeparatedStatisticsWriter.addRowToInput( returnMe,
                                                                   PoolMetadata.of( metadata,
-                                                                                     next.getMetadata()
+                                                                                     next.getPoolMetadata()
                                                                                          .getTimeWindow() ),
                                                                   Arrays.asList( nextPair.getLeft(),
                                                                                  nextPair.getRight() ),

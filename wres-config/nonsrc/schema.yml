@@ -446,7 +446,7 @@ definitions:
         including a time_zone_offset of 'CST'. It should be unnecessary for 
         most/all other formats."
         anyOf:
-          # Allowing both an integer and a string is a  workaround because the
+          # Allowing both an integer and a string is a workaround because the
           # networknt validator sometimes sees these strings as integers, but
           # both are interpreted properly post-validation
           - type: string

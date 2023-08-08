@@ -105,7 +105,7 @@ public class MeanAbsoluteErrorSkillScore extends DoubleErrorScore<Pool<Pair<Doub
         if ( !pool.get().isEmpty() )
         {
             double mae = output.getComponent( MetricConstants.MAIN )
-                               .getData()
+                               .getStatistic()
                                .getValue();
 
             double numerator = FunctionFactory.finiteOrMissing()
@@ -117,7 +117,7 @@ public class MeanAbsoluteErrorSkillScore extends DoubleErrorScore<Pool<Pair<Doub
                 Pool<Pair<Double, Double>> baseline = pool.getBaselineData();
                 DoubleScoreStatisticOuter maeBase = super.apply( baseline );
                 denominator = maeBase.getComponent( MetricConstants.MAIN )
-                                     .getData()
+                                     .getStatistic()
                                      .getValue();
             }
             // Default baseline is the average observation or so-called climatology
@@ -148,7 +148,7 @@ public class MeanAbsoluteErrorSkillScore extends DoubleErrorScore<Pool<Pair<Doub
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, output.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, output.getPoolMetadata() );
     }
 
     @Override

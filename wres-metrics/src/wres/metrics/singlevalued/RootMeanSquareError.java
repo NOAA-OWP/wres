@@ -92,16 +92,16 @@ public class RootMeanSquareError extends DoubleErrorScore<Pool<Pair<Double, Doub
         LOGGER.debug( "Computing the {} from the intermediate statistic, {}.", this, this.getCollectionOf() );
 
         double input = output.getComponent( MetricConstants.MAIN )
-                             .getData()
+                             .getStatistic()
                              .getValue();
 
-        double sampleSize = output.getData().getSampleSize();
+        double sampleSize = output.getStatistic().getSampleSize();
 
         double result = Math.sqrt( input / sampleSize );
 
         // Set the real-valued measurement units
         DoubleScoreMetricComponent.Builder metricCompBuilder = RootMeanSquareError.MAIN.toBuilder()
-                                                                                       .setUnits( output.getMetadata()
+                                                                                       .setUnits( output.getPoolMetadata()
                                                                                                         .getMeasurementUnit()
                                                                                                         .toString() );
 
@@ -116,7 +116,7 @@ public class RootMeanSquareError extends DoubleErrorScore<Pool<Pair<Double, Doub
                                     .addStatistics( component )
                                     .build();
 
-        return DoubleScoreStatisticOuter.of( score, output.getMetadata() );
+        return DoubleScoreStatisticOuter.of( score, output.getPoolMetadata() );
     }
 
     @Override

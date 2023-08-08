@@ -135,30 +135,30 @@ public final class SingleValuedStatisticsProcessorTest
 
         //Test contents
         assertEquals( 1.6666666666666667,
-                      bias.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      bias.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
 
         assertEquals( 1.0,
-                      cod.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      cod.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 1.0,
-                      rho.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rho.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 5.0,
-                      mae.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      mae.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 5.0,
-                      me.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      me.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 5.0,
-                      rmse.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      rmse.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -0.6666666666666666,
-                      ve.get( 0 ).getComponent( MetricConstants.MAIN ).getData().getValue(),
+                      ve.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
 
         assertEquals( List.of( 5.0, 5.0, 5.0, 5.0, 5.0 ),
-                      bpe.get( 0 ).getData().getStatistics( 0 ).getQuantilesList() );
+                      bpe.get( 0 ).getStatistic().getStatistics( 0 ).getQuantilesList() );
     }
 
     @Test
@@ -255,10 +255,10 @@ public final class SingleValuedStatisticsProcessorTest
         DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( table, expectedMeta );
 
         DoubleScoreStatisticOuter actual = Slicer.filter( scores,
-                                                          meta -> meta.getMetadata()
+                                                          meta -> meta.getPoolMetadata()
                                                                       .getThresholds()
                                                                       .equals( expectedThreshold )
-                                                                  && meta.getMetadata()
+                                                                  && meta.getPoolMetadata()
                                                                          .getTimeWindow()
                                                                          .equals( expectedWindow )
                                                                   && meta.getMetricName()
@@ -843,13 +843,13 @@ public final class SingleValuedStatisticsProcessorTest
         // Check the sample size
         double size = Slicer.filter( statistics.getDoubleScoreStatistics(),
                                      sampleMeta -> sampleMeta.getMetricName() == MetricConstants.SAMPLE_SIZE
-                                                   && !sampleMeta.getMetadata()
+                                                   && !sampleMeta.getPoolMetadata()
                                                                  .getThresholds()
                                                                  .first()
                                                                  .isFinite() )
                             .get( 0 )
                             .getComponent( MetricConstants.MAIN )
-                            .getData()
+                            .getStatistic()
                             .getValue();
 
         assertEquals( 10.0, size, Precision.EPSILON );
@@ -1119,10 +1119,10 @@ public final class SingleValuedStatisticsProcessorTest
         DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( table, expectedMeta );
 
         DoubleScoreStatisticOuter actual = Slicer.filter( scores,
-                                                          meta -> meta.getMetadata()
+                                                          meta -> meta.getPoolMetadata()
                                                                       .getThresholds()
                                                                       .equals( expectedThreshold )
-                                                                  && meta.getMetadata()
+                                                                  && meta.getPoolMetadata()
                                                                          .getTimeWindow()
                                                                          .equals( expectedWindow )
                                                                   && meta.getMetricName()

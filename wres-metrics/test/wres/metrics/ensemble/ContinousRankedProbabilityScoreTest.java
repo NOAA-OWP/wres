@@ -125,7 +125,7 @@ public final class ContinousRankedProbabilityScoreTest
                                                             .addStatistics( expectedStatisticComponent )
                                                             .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
 
     }
 
@@ -159,7 +159,7 @@ public final class ContinousRankedProbabilityScoreTest
                                                             .addStatistics( expectedStatisticComponent )
                                                             .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
 
     /**
@@ -195,7 +195,7 @@ public final class ContinousRankedProbabilityScoreTest
                                                             .addStatistics( expectedStatisticComponent )
                                                             .build();
 
-        assertEquals( expected, actual.getData() );
+        assertEquals( expected, actual.getStatistic() );
     }
 
 
@@ -213,7 +213,7 @@ public final class ContinousRankedProbabilityScoreTest
 
         DoubleScoreStatisticOuter actual = this.crps.apply( input );
 
-        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getData().getValue(), 0.0 );
+        assertEquals( Double.NaN, actual.getComponent( MetricConstants.MAIN ).getStatistic().getValue(), 0.0 );
     }
 
     @Test

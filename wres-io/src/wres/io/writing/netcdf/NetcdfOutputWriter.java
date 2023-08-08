@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
@@ -188,7 +189,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         Map<TimeWindowOuter, List<DoubleScoreStatisticOuter>> outputByTimeWindow =
                 output.stream()
-                      .collect( Collectors.groupingBy( next -> next.getMetadata().getTimeWindow() ) );
+                      .collect( Collectors.groupingBy( next -> next.getPoolMetadata().getTimeWindow() ) );
 
         Set<Path> pathsWritten = new HashSet<>();
 
@@ -674,7 +675,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         }
 
         // Sanitize file name
-        String safeName = URLEncoder.encode( filename.toString().replace( " ", "_" ) + extension, "UTF-8" );
+        String safeName = URLEncoder.encode( filename.toString().replace( " ", "_" ) + extension,
+                                             StandardCharsets.UTF_8 );
 
         return Paths.get( outputDirectory.toString(), safeName );
     }
@@ -1142,7 +1144,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             String name = this.getVariableName( score.getMetricName(), componentScore );
 
             // Figure out the location of all values and build the origin in each variable grid
-            Pool pool = score.getMetadata()
+            Pool pool = score.getPoolMetadata()
                              .getPool();
             GeometryGroup group = pool.getGeometryGroup();
             List<GeometryTuple> geometries = group.getGeometryTuplesList();
@@ -1170,7 +1172,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                            e );
                 }
 
-                double actualValue = componentScore.getData()
+                double actualValue = componentScore.getStatistic()
                                                    .getValue();
 
                 if ( MissingValues.isMissingValue( actualValue ) )
@@ -1202,7 +1204,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             String name = this.getVariableName( score.getMetricName(), componentScore );
 
             // Figure out the location of all values and build the origin in each variable grid
-            Pool pool = score.getMetadata()
+            Pool pool = score.getPoolMetadata()
                              .getPool();
             GeometryGroup geoGroup = pool.getGeometryGroup();
             GeometryTuple geometry = geoGroup.getGeometryTuplesList()
@@ -1226,7 +1228,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                        e );
             }
 
-            double actualValue = componentScore.getData()
+            double actualValue = componentScore.getStatistic()
                                                .getValue();
 
             LOGGER.trace( "Actual value found for {}: {}",
@@ -1318,7 +1320,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         private String getVariableName( MetricConstants metricName,
                                         DoubleScoreComponentOuter score )
         {
-            PoolMetadata sampleMetadata = score.getMetadata();
+            PoolMetadata sampleMetadata = score.getPoolMetadata();
 
             // Locating the variable relies on the use of a naming convention that matches the naming convention at blob
             // creation time. 
@@ -1328,7 +1330,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
             // Find the metric name
             MetricConstants metricComponentName =
-                    MetricConstants.valueOf( score.getData()
+                    MetricConstants.valueOf( score.getStatistic()
                                                   .getMetric()
                                                   .getName()
                                                   .name() );
@@ -1382,7 +1384,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             {
                 String nextName = nextThreshold.getValue();
                 OneOrTwoThresholds thresholdFromArchive = nextThreshold.getKey();
-                OneOrTwoThresholds thresholdFromScore = score.getMetadata()
+                OneOrTwoThresholds thresholdFromScore = score.getPoolMetadata()
                                                              .getThresholds();
 
                 // Second threshold is always a decision threshold and can be compared directly
@@ -1646,7 +1648,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         {
             try ( NetcdfFile outputFile = NetcdfFiles.open( this.outputPath ) )
             {
-                Variable coordinate = null;
+                Variable coordinate;
 
                 if ( this.isDeprecatedWriter )
                 {
