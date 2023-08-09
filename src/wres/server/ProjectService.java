@@ -11,7 +11,10 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 
+import jakarta.servlet.annotation.WebListener;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.FormParam;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -47,22 +50,28 @@ public class ProjectService
     private static final Logger LOGGER = LoggerFactory.getLogger( ProjectService.class );
 
     private static final SystemSettings SYSTEM_SETTINGS = SystemSettings.fromDefaultClasspathXmlFile();
-    private static final Database DATABASE = new Database( SYSTEM_SETTINGS );
+    private static Database DATABASE = null;
+
+    private BrokerConnectionFactory brokerConnectionFactory;
 
     // Migrate the database, as needed
     static
     {
-        // Migrate the database, as needed
-        if ( SYSTEM_SETTINGS.getDatabaseSettings()
-                            .getAttemptToMigrate() )
+        if ( SYSTEM_SETTINGS.isInDatabase() )
         {
-            try
+            DATABASE = new Database( SYSTEM_SETTINGS );
+            // Migrate the database, as needed
+            if ( SYSTEM_SETTINGS.getDatabaseSettings()
+                                .getAttemptToMigrate() )
             {
-                DatabaseOperations.migrateDatabase( DATABASE );
-            }
-            catch ( SQLException e )
-            {
-                throw new IllegalStateException( "Failed to migrate the WRES database.", e );
+                try
+                {
+                    DatabaseOperations.migrateDatabase( DATABASE );
+                }
+                catch ( SQLException e )
+                {
+                    throw new IllegalStateException( "Failed to migrate the WRES database.", e );
+                }
             }
         }
     }
@@ -79,49 +88,41 @@ public class ProjectService
                                                                                 .build();
 
     /**
-     * @param rawDeclaration the evaluation project declaration string
+     * ProjectService constructor
+     * @param brokerConnectionFactory The servers broker
+     */
+    public ProjectService( BrokerConnectionFactory brokerConnectionFactory )
+    {
+        this.brokerConnectionFactory = brokerConnectionFactory;
+    }
+
+    /**
+     * @param projectConfig the evaluation project declaration string
      * @return the state of the evaluation
      */
 
     @POST
     @Consumes( MediaType.TEXT_XML )
     @Produces( MediaType.TEXT_PLAIN )
-    public Response postProjectConfig( String rawDeclaration )
+    public Response postProjectConfig( String projectConfig )
     {
         long projectId;
-
-        // TODO: the embedded broker and broker connections for statistics messaging should be one per service instance,
-        // not one per evaluation, but this class does not currently provide a hook for closing its resources, so 
-        // creating them and destroying them here for now.
-
-        // Create the broker connections for statistics messaging
-        Properties brokerConnectionProperties =
-                BrokerUtilities.getBrokerConnectionProperties( BrokerConnectionFactory.DEFAULT_PROPERTIES );
-
-        // Create an embedded broker for statistics messages, if needed
-        EmbeddedBroker broker = null;
-        if ( BrokerUtilities.isEmbeddedBrokerRequired( brokerConnectionProperties ) )
-        {
-            broker = EmbeddedBroker.of( brokerConnectionProperties, false );
-        }
-
-        // TODO: abstract out the connection factory, only need one per ProjectService
-        try ( BrokerConnectionFactory brokerConnections = BrokerConnectionFactory.of( brokerConnectionProperties ) )
+        try
         {
             Evaluator evaluator = new Evaluator( ProjectService.SYSTEM_SETTINGS,
                                                  ProjectService.DATABASE,
-                                                 brokerConnections );
+                                                 brokerConnectionFactory );
 
             // Guarantee a positive number. Using Math.abs would open up failure
             // in edge cases. A while loop seems complex. Thanks to Ted Hopp
             // on StackOverflow question id 5827023.
             projectId = RANDOM.nextLong() & Long.MAX_VALUE;
 
-            ExecutionResult result = evaluator.evaluate( rawDeclaration );
+            ExecutionResult result = evaluator.evaluate( projectConfig );
             Set<java.nio.file.Path> outputPaths = result.getResources();
             OUTPUTS.put( projectId, outputPaths );
         }
-        catch ( IOException | UserInputException e )
+        catch ( UserInputException e )
         {
             return Response.status( Response.Status.BAD_REQUEST )
                            .entity( "I received something I could not parse. The top-level exception was: "
@@ -141,20 +142,6 @@ public class ProjectService
                            .entity( "WRES experienced an unexpected internal issue. The top-level exception was: "
                                     + e.getMessage() )
                            .build();
-        }
-        finally
-        {
-            if ( Objects.nonNull( broker ) )
-            {
-                try
-                {
-                    broker.close();
-                }
-                catch ( IOException e )
-                {
-                    LOGGER.warn( "Failed to destroy the embedded broker used for statistics messaging.", e );
-                }
-            }
         }
 
         return Response.ok( "I received project " + projectId
