@@ -20,7 +20,6 @@ public class JaxRSApplication extends ResourceConfig
      */
     public JaxRSApplication()
     {
-        this.register( ProjectService.class );
         this.register( GZipEncoder.class );
         this.register( DeflateEncoder.class );
 

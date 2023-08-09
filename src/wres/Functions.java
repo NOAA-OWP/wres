@@ -47,6 +47,7 @@ import wres.pipeline.Evaluator;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
 import wres.io.database.locking.DatabaseLockManager;
+import wres.server.WebServer;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
@@ -217,6 +218,8 @@ final class Functions
                        Functions::migrateInline );
         functions.put( new WresFunction( "-r", "refreshdatabase", "Refreshes the database.", false ),
                        Functions::refreshDatabase );
+        functions.put( new WresFunction( "-s", "server", "Spins up a long running worker server", true ),
+                       Functions::startServer );
         functions.put( new WresFunction( "-v",
                                          "validate",
                                          "Validates the declaration supplied as a path or string. Example "
@@ -447,6 +450,40 @@ final class Functions
         {
             lockManager.shutdown();
         }
+    }
+
+    /**
+     * Starts a long-running worker server that takes in a port to run on.
+     * @param sharedResources the shared resources
+     * @return the execution result
+     */
+
+    private static ExecutionResult startServer( final SharedResources sharedResources )
+    {
+        List<String> args = sharedResources.arguments();
+        if ( args.size() != 1 )
+        {
+            String message = "Please supply a host for the server to listen to, like this: "
+                             + "bin/wres.bat server 8010";
+            LOGGER.error( message );
+            UserInputException e = new UserInputException( message );
+            return ExecutionResult.failure( e ); // Or return 400 - Bad Request (see #41467)
+        }
+
+        // Attempt to read the port
+        String port = args.get( 0 ).trim();
+
+        try
+        {
+            WebServer.main( new String[] { port } );
+        }
+        catch ( Exception e )
+        {
+            LOGGER.error( "Failed to start the server", e );
+            return ExecutionResult.failure( e );
+        }
+
+        return ExecutionResult.success();
     }
 
     /**
