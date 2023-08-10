@@ -3,18 +3,12 @@ package wres.server;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Objects;
-import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 
-import jakarta.servlet.annotation.WebListener;
 import jakarta.ws.rs.Consumes;
-import jakarta.ws.rs.DefaultValue;
-import jakarta.ws.rs.FormParam;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -29,15 +23,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.ExecutionResult;
-import wres.events.broker.BrokerConnectionFactory;
-import wres.events.broker.BrokerUtilities;
-import wres.eventsbroker.embedded.EmbeddedBroker;
-import wres.io.database.Database;
-import wres.io.database.DatabaseOperations;
 import wres.pipeline.Evaluator;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
-import wres.system.SystemSettings;
 
 /**
  * Accepts projects in the body of http request and executes them.
@@ -49,35 +37,10 @@ public class ProjectService
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ProjectService.class );
 
-    private static final SystemSettings SYSTEM_SETTINGS = SystemSettings.fromDefaultClasspathXmlFile();
-    private static Database DATABASE = null;
-
-    private BrokerConnectionFactory brokerConnectionFactory;
-
-    // Migrate the database, as needed
-    static
-    {
-        if ( SYSTEM_SETTINGS.isInDatabase() )
-        {
-            DATABASE = new Database( SYSTEM_SETTINGS );
-            // Migrate the database, as needed
-            if ( SYSTEM_SETTINGS.getDatabaseSettings()
-                                .getAttemptToMigrate() )
-            {
-                try
-                {
-                    DatabaseOperations.migrateDatabase( DATABASE );
-                }
-                catch ( SQLException e )
-                {
-                    throw new IllegalStateException( "Failed to migrate the WRES database.", e );
-                }
-            }
-        }
-    }
-
     private static final Random RANDOM =
             new Random( System.currentTimeMillis() );
+
+    private final Evaluator evaluator;
 
     /** A shared bag of output resource references by request id */
     // The cache is here for expedience, this information could be persisted
@@ -89,11 +52,11 @@ public class ProjectService
 
     /**
      * ProjectService constructor
-     * @param brokerConnectionFactory The servers broker
+     * @param evaluator The servers evaluator used to evaluate projects
      */
-    public ProjectService( BrokerConnectionFactory brokerConnectionFactory )
+    public ProjectService( Evaluator evaluator)
     {
-        this.brokerConnectionFactory = brokerConnectionFactory;
+        this.evaluator = evaluator;
     }
 
     /**
@@ -109,10 +72,6 @@ public class ProjectService
         long projectId;
         try
         {
-            Evaluator evaluator = new Evaluator( ProjectService.SYSTEM_SETTINGS,
-                                                 ProjectService.DATABASE,
-                                                 brokerConnectionFactory );
-
             // Guarantee a positive number. Using Math.abs would open up failure
             // in edge cases. A while loop seems complex. Thanks to Ted Hopp
             // on StackOverflow question id 5827023.
