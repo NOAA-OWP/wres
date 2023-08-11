@@ -25,10 +25,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.LegendItem;
 import org.jfree.chart.LegendItemCollection;
@@ -46,6 +48,7 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.category.BarRenderer;
 import org.jfree.chart.renderer.category.StandardBarPainter;
+import org.jfree.chart.renderer.xy.XYErrorRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.title.LegendTitle;
 import org.jfree.chart.title.TextTitle;
@@ -129,6 +132,9 @@ public class ChartFactory
 
     /** Default chart title font if the preferred font cannot be found. */
     private static final Font DEFAULT_CHART_TITLE_FONT = new Font( DEFAULT_FONT_NAME, Font.PLAIN, 11 );
+
+    /** The default length of the error bars. */
+    private static final int DEFAULT_ERROR_BAR_CAP_LENGTH = 5;
 
     /** Series colors. */
     private final Color[] seriesColors;
@@ -219,13 +225,15 @@ public class ChartFactory
                                                  GraphicShape.DEFAULT,
                                                  durationUnits );
 
+        SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
+
         String title = this.getChartTitle( metadata,
-                                           metricName,
-                                           null,
+                                           Pair.of( metricName, null ),
                                            durationUnits,
                                            ChartType.TIMING_ERROR_SUMMARY_STATISTICS,
                                            StatisticType.DURATION_SCORE,
-                                           null );
+                                           null,
+                                           quantiles );
 
         String rangeTitle = metricName.toString() + " [HOURS]";
         String domainTitle = "SUMMARY STATISTIC";
@@ -318,31 +326,33 @@ public class ChartFactory
 
             PoolMetadata union = PoolSlicer.unionOf( metadatas );
 
+            SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
+
             String title = this.getChartTitle( union,
-                                               metricName,
-                                               null,
+                                               Pair.of( metricName, null ),
                                                durationUnits,
                                                chartType,
                                                StatisticType.DIAGRAM,
-                                               ensembleAverageType );
+                                               ensembleAverageType,
+                                               quantiles );
 
             XYDataset dataset;
 
             // One lead duration and up to many thresholds
             if ( chartType == ChartType.LEAD_THRESHOLD || chartType == ChartType.POOLING_WINDOW )
             {
-                dataset = ChartDataFactory.ofVerificationDiagramByLeadThreshold( slicedStatistics,
-                                                                                 domainDimension,
-                                                                                 rangeDimension,
-                                                                                 durationUnits );
+                dataset = ChartDataFactory.ofVerificationDiagramByLeadAndThreshold( slicedStatistics,
+                                                                                    domainDimension,
+                                                                                    rangeDimension,
+                                                                                    durationUnits );
             }
             // One threshold and up to many lead durations
             else
             {
-                dataset = ChartDataFactory.ofVerificationDiagramByThresholdLead( slicedStatistics,
-                                                                                 domainDimension,
-                                                                                 rangeDimension,
-                                                                                 durationUnits );
+                dataset = ChartDataFactory.ofVerificationDiagramByThresholdAndLead( slicedStatistics,
+                                                                                    domainDimension,
+                                                                                    rangeDimension,
+                                                                                    durationUnits );
             }
 
             JFreeChart chart;
@@ -389,7 +399,7 @@ public class ChartFactory
 
                 // Set the renderer
                 this.setChartTheme( chart );
-                this.setSeriesColorAndShape( plot );
+                this.setSeriesColorAndShape( plot, !quantiles.isEmpty() );
             }
 
             chart.setAntiAlias( true );
@@ -444,13 +454,16 @@ public class ChartFactory
 
         String legendTitle = this.getLegendName( metricName, metadata, chartType, GraphicShape.DEFAULT, durationUnits );
 
+        SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
+
         String title = this.getChartTitle( metadata,
-                                           metricName,
-                                           null,
+                                           Pair.of( metricName, null ),
                                            durationUnits,
                                            chartType,
                                            StatisticType.DURATION_DIAGRAM,
-                                           null );
+                                           null,
+                                           quantiles );
+
         String rangeTitle = metricName.toString() + " [HOURS]";
         String domainTitle = "FORECAST ISSUE TIME [UTC]";
 
@@ -472,7 +485,7 @@ public class ChartFactory
         chart.setAntiAlias( true );
         this.setChartTheme( chart );
         this.setChartPadding( chart );
-        this.setSeriesColorAndShape( plot );
+        this.setSeriesColorAndShape( plot, !quantiles.isEmpty() );
 
         // Set the legend on/off and the title
         if ( this.setLegendVisible( chart, false ) )
@@ -517,13 +530,16 @@ public class ChartFactory
         // Build the source
         XYDataset source = ChartDataFactory.ofBoxplotStatistics( statistics, durationUnits );
 
+        SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
+
         String title = this.getChartTitle( metadata,
-                                           metricName,
-                                           null,
+                                           Pair.of( metricName, null ),
                                            durationUnits,
                                            chartType,
                                            metricName.getMetricOutputGroup(),
-                                           ensembleAverageType );
+                                           ensembleAverageType,
+                                           quantiles );
+
         String rangeTitle = type.toString()
                                 .replace( "_", " " )
                             + " ["
@@ -657,13 +673,15 @@ public class ChartFactory
         // Build the source
         XYDataset source = ChartDataFactory.ofBoxplotStatistics( statistics, durationUnits );
 
+        SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
+
         String title = this.getChartTitle( metadata,
-                                           metricName,
-                                           null,
+                                           Pair.of( metricName, null ),
                                            durationUnits,
                                            chartType,
                                            metricName.getMetricOutputGroup(),
-                                           ensembleAverageType );
+                                           ensembleAverageType,
+                                           quantiles );
 
         // Create the titles
         String domainTitle = valueType.toString()
@@ -750,13 +768,15 @@ public class ChartFactory
 
         String legendTitle = this.getLegendName( metricName, metadata, chartType, graphicShape, durationUnits );
 
+        SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
+
         String title = this.getChartTitle( metadata,
-                                           metricName,
-                                           metricComponentName,
+                                           Pair.of( metricName, metricComponentName ),
                                            durationUnits,
                                            chartType,
                                            StatisticType.DOUBLE_SCORE,
-                                           ensembleAverageType );
+                                           ensembleAverageType,
+                                           quantiles );
         String rangeTitle = metricName.toString()
                             + " ["
                             + metricUnits
@@ -841,7 +861,7 @@ public class ChartFactory
         this.setChartPadding( chart );
         this.setChartTheme( chart );
         XYPlot plot = chart.getXYPlot();
-        this.setSeriesColorAndShape( plot );
+        this.setSeriesColorAndShape( plot, !quantiles.isEmpty() );
 
         // Set the legend on/off and the title
         if ( this.setLegendVisible( chart, false ) )
@@ -877,25 +897,25 @@ public class ChartFactory
 
         if ( leadThreshold )
         {
-            sampleSize = ChartDataFactory.ofVerificationDiagramByLeadThreshold( statistics,
-                                                                                MetricDimension.FORECAST_PROBABILITY,
-                                                                                MetricDimension.SAMPLE_SIZE,
-                                                                                durationUnits );
-            reliability = ChartDataFactory.ofVerificationDiagramByLeadThreshold( statistics,
-                                                                                 MetricDimension.FORECAST_PROBABILITY,
-                                                                                 MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                                                                                 durationUnits );
+            sampleSize = ChartDataFactory.ofVerificationDiagramByLeadAndThreshold( statistics,
+                                                                                   MetricDimension.FORECAST_PROBABILITY,
+                                                                                   MetricDimension.SAMPLE_SIZE,
+                                                                                   durationUnits );
+            reliability = ChartDataFactory.ofVerificationDiagramByLeadAndThreshold( statistics,
+                                                                                    MetricDimension.FORECAST_PROBABILITY,
+                                                                                    MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
+                                                                                    durationUnits );
         }
         else
         {
-            sampleSize = ChartDataFactory.ofVerificationDiagramByThresholdLead( statistics,
-                                                                                MetricDimension.FORECAST_PROBABILITY,
-                                                                                MetricDimension.SAMPLE_SIZE,
-                                                                                durationUnits );
-            reliability = ChartDataFactory.ofVerificationDiagramByThresholdLead( statistics,
-                                                                                 MetricDimension.FORECAST_PROBABILITY,
-                                                                                 MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
-                                                                                 durationUnits );
+            sampleSize = ChartDataFactory.ofVerificationDiagramByThresholdAndLead( statistics,
+                                                                                   MetricDimension.FORECAST_PROBABILITY,
+                                                                                   MetricDimension.SAMPLE_SIZE,
+                                                                                   durationUnits );
+            reliability = ChartDataFactory.ofVerificationDiagramByThresholdAndLead( statistics,
+                                                                                    MetricDimension.FORECAST_PROBABILITY,
+                                                                                    MetricDimension.OBSERVED_RELATIVE_FREQUENCY,
+                                                                                    durationUnits );
         }
 
         ValueAxis domainAxis = new NumberAxis( MetricDimension.FORECAST_PROBABILITY.toString() );
@@ -912,10 +932,11 @@ public class ChartFactory
         primaryRangeAxis.setTickLabelFont( font );
         secondaryRangeAxis.setTickLabelFont( font );
 
+        SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
         XYPlot reliabilityPlot = new XYPlot( reliability, domainAxis, primaryRangeAxis, null );
         this.setXYPlotAxes( reliabilityPlot, 0, 1, 0, 1, true, false );
         this.addDiagonalLine( reliabilityPlot );
-        this.setSeriesColorAndShape( reliabilityPlot );
+        this.setSeriesColorAndShape( reliabilityPlot, !quantiles.isEmpty() );
 
         XYPlot sampleSizePlot = new XYPlot( sampleSize, domainAxis, secondaryRangeAxis, null );
         this.setXYPlotAxes( sampleSizePlot, 0, 1, 0, 0, false, false );
@@ -923,7 +944,7 @@ public class ChartFactory
         // The reliability plot controls the legend, so remove legend items from the sample size plot
         LegendItemCollection noLegendItems = new LegendItemCollection();
         sampleSizePlot.setFixedLegendItems( noLegendItems );
-        this.setSeriesColorAndShape( sampleSizePlot );
+        this.setSeriesColorAndShape( sampleSizePlot, false );
 
         CombinedDomainXYPlot combinedPlot = new CombinedDomainXYPlot( domainAxis );
         combinedPlot.setGap( 5.0 );
@@ -1166,10 +1187,11 @@ public class ChartFactory
      * Sets the color and shape for each series.
      *
      * @param plot the plot
+     * @param errorBars is true to plot error bars, false otherwise
      * @throws NullPointerException if the plot is null
      */
 
-    private void setSeriesColorAndShape( XYPlot plot )
+    private void setSeriesColorAndShape( XYPlot plot, boolean errorBars )
     {
         Objects.requireNonNull( plot );
 
@@ -1182,7 +1204,19 @@ public class ChartFactory
             colors = GraphicsUtils.getColorPalette( seriesCount, Color.BLUE, Color.GREEN, Color.RED );
         }
 
-        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
+        XYLineAndShapeRenderer renderer;
+        if ( errorBars )
+        {
+            XYErrorRenderer errors = new XYErrorRenderer();
+            errors.setDrawXError( false );
+            errors.setDrawYError( true );
+            errors.setCapLength( ChartFactory.DEFAULT_ERROR_BAR_CAP_LENGTH );
+            renderer = errors;
+        }
+        else
+        {
+            renderer = new XYLineAndShapeRenderer();
+        }
 
         Shape[] shapes = DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE;
 
@@ -1193,6 +1227,7 @@ public class ChartFactory
             renderer.setSeriesShape( i, shape );
             renderer.setSeriesShapesVisible( i, true );
             renderer.setSeriesShapesFilled( i, true );
+            renderer.setSeriesLinesVisible( i, true );
         }
 
         plot.setRenderer( renderer );
@@ -1324,8 +1359,7 @@ public class ChartFactory
      * Creates a chart title.
      *
      * @param metadata the pool metadata, required
-     * @param metricName the metric name, required
-     * @param metricComponentName the metric component name, optional
+     * @param metricNames the metric names, required
      * @param durationUnits the duration units, required
      * @param chartType the chart type, required
      * @param statisticType the type of statistics, required
@@ -1335,20 +1369,23 @@ public class ChartFactory
      */
 
     private String getChartTitle( PoolMetadata metadata,
-                                  MetricConstants metricName,
-                                  MetricConstants metricComponentName,
+                                  Pair<MetricConstants, MetricConstants> metricNames,
                                   ChronoUnit durationUnits,
                                   ChartType chartType,
                                   StatisticType statisticType,
-                                  EnsembleAverageType ensembleAverageType )
+                                  EnsembleAverageType ensembleAverageType,
+                                  SortedSet<Double> quantiles )
     {
         Objects.requireNonNull( metadata );
-        Objects.requireNonNull( metricName );
+        Objects.requireNonNull( metricNames );
         Objects.requireNonNull( durationUnits );
         Objects.requireNonNull( chartType );
         Objects.requireNonNull( statisticType );
 
+        MetricConstants metricName = metricNames.getLeft();
         String name = metricName.toString();
+
+        MetricConstants metricComponentName = metricNames.getRight();
 
         if ( Objects.nonNull( metricComponentName ) )
         {
@@ -1425,7 +1462,37 @@ public class ChartFactory
             name += " and a threshold of " + threshold;
         }
 
+        if ( !quantiles.isEmpty() && this.canShowErrorBars( metricName, chartType ) )
+        {
+            double minimum = quantiles.stream()
+                                      .mapToDouble( Double::doubleValue )
+                                      .min()
+                                      .orElse( Double.NaN );
+
+            double maximum = quantiles.stream()
+                                      .mapToDouble( Double::doubleValue )
+                                      .max()
+                                      .orElse( Double.NaN );
+
+            name += " and error bars for quantiles of [" + minimum + ", " + maximum + "]";
+        }
+
         return name;
+    }
+
+    /**
+     * @param metricName the metric name
+     * @param chartType the chart type
+     * @return whether error bars can be displayed
+     */
+
+    private boolean canShowErrorBars( MetricConstants metricName, ChartType chartType )
+    {
+        return !metricName.isInGroup( StatisticType.DURATION_SCORE )
+               && !metricName.isInGroup( StatisticType.DURATION_DIAGRAM )
+               && !metricName.isInGroup( StatisticType.BOXPLOT_PER_PAIR )
+               && !metricName.isInGroup( StatisticType.BOXPLOT_PER_POOL )
+               && chartType != ChartType.POOLING_WINDOW;
     }
 
     /**

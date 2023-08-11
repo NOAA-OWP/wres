@@ -9,11 +9,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.OptionalDouble;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
+import java.util.function.ToDoubleFunction;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.jfree.data.category.CategoryDataset;
@@ -22,6 +26,8 @@ import org.jfree.data.time.FixedMillisecond;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.jfree.data.xy.XYDataset;
+import org.jfree.data.xy.YIntervalSeries;
+import org.jfree.data.xy.YIntervalSeriesCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +41,7 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentO
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
+import wres.datamodel.statistics.Statistic;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
@@ -46,7 +53,7 @@ import wres.vis.charts.ChartFactory.ChartType;
 
 /**
  * Used to create datasets for constructing charts.
- * 
+ *
  * @author James Brown
  * @author Hank Herr
  */
@@ -58,7 +65,7 @@ public class ChartDataFactory
     /** Number of milliseconds in an hour for conversion of {@link Duration} to decimal hours for plotting. */
     private static final BigDecimal MILLIS_PER_HOUR = BigDecimal.valueOf( TimeUnit.HOURS.toMillis( 1 ) );
 
-    /**     
+    /**
      * Returns a dataset for one verification score organized by lead duration and threshold.
      * @param statistics the statistics to plot
      * @param durationUnits the duration units
@@ -68,10 +75,39 @@ public class ChartDataFactory
     public static XYDataset ofDoubleScoreByLeadAndThreshold( List<DoubleScoreComponentOuter> statistics,
                                                              ChronoUnit durationUnits )
     {
-        return ScoreByLeadAndThreshold.of( statistics, durationUnits );
+        // Arrange the series by threshold
+        SortedSet<OneOrTwoThresholds> thresholds =
+                Slicer.discover( statistics, next -> next.getPoolMetadata().getThresholds() );
+
+        YIntervalSeriesCollection dataset = new YIntervalSeriesCollection();
+
+        // Create the function that generates a domain axis value
+        ToDoubleFunction<DoubleScoreComponentOuter> domainValue = score ->
+        {
+            Duration lead = score.getPoolMetadata()
+                                 .getTimeWindow()
+                                 .getLatestLeadDuration();
+
+            Number durationNumber = DataUtilities.durationToNumericUnits( lead, durationUnits );
+            return durationNumber.doubleValue();
+        };
+
+        for ( OneOrTwoThresholds key : thresholds )
+        {
+            List<DoubleScoreComponentOuter> sliced = Slicer.filter( statistics,
+                                                                    next -> next.getPoolMetadata()
+                                                                                .getThresholds()
+                                                                                .equals( key ) );
+
+            String name = DataUtilities.toStringWithoutUnits( key );
+            YIntervalSeries nextSeries = ChartDataFactory.getYIntervalSeries( sliced, name, domainValue );
+            dataset.addSeries( nextSeries );
+        }
+
+        return dataset;
     }
 
-    /**     
+    /**
      * Returns a dataset for one verification score organized by threshold and lead duration.
      * @param statistics the statistics to plot
      * @param durationUnits the duration units
@@ -81,7 +117,39 @@ public class ChartDataFactory
     public static XYDataset ofDoubleScoreByThresholdAndLead( List<DoubleScoreComponentOuter> statistics,
                                                              ChronoUnit durationUnits )
     {
-        return ScoreByThresholdAndLead.of( statistics, durationUnits );
+        // Arrange by time window
+        SortedSet<TimeWindowOuter> timeWindows =
+                Slicer.discover( statistics, next -> next.getPoolMetadata().getTimeWindow() );
+
+        // Create the function that generates a domain axis value
+        ToDoubleFunction<DoubleScoreComponentOuter> domainValue = score -> score.getPoolMetadata()
+                                                                                .getThresholds()
+                                                                                .first()
+                                                                                .getValues()
+                                                                                .first();
+
+        YIntervalSeriesCollection dataset = new YIntervalSeriesCollection();
+
+        for ( TimeWindowOuter key : timeWindows )
+        {
+            List<DoubleScoreComponentOuter> sliced = Slicer.filter( statistics,
+                                                                    next -> next.getPoolMetadata()
+                                                                                .getTimeWindow()
+                                                                                .equals( key )
+                                                                            && !next.getPoolMetadata()
+                                                                                    .getThresholds()
+                                                                                    .first()
+                                                                                    .isAllDataThreshold() );
+
+            Number leadDuration = DataUtilities.durationToNumericUnits( key.getLatestLeadDuration(),
+                                                                        durationUnits );
+            String name = leadDuration.toString();
+
+            YIntervalSeries nextSeries = ChartDataFactory.getYIntervalSeries( sliced, name, domainValue );
+            dataset.addSeries( nextSeries );
+        }
+
+        return dataset;
     }
 
     /**
@@ -259,7 +327,7 @@ public class ChartDataFactory
         Set<OneOrTwoThresholds> thresholds =
                 Slicer.discover( statistics, next -> next.getPoolMetadata().getThresholds() );
 
-        // Filter by by threshold
+        // Filter by threshold
         for ( OneOrTwoThresholds nextSeries : thresholds )
         {
             String noUnits = DataUtilities.toStringWithoutUnits( nextSeries );
@@ -306,10 +374,10 @@ public class ChartDataFactory
      * @throws NullPointerException if any input is null
      * @throws IllegalArgumentException if the dataset contains more than one lead duration
      */
-    public static XYDataset ofVerificationDiagramByLeadThreshold( List<DiagramStatisticOuter> statistics,
-                                                                  MetricDimension xDimension,
-                                                                  MetricDimension yDimension,
-                                                                  ChronoUnit durationUnits )
+    public static XYDataset ofVerificationDiagramByLeadAndThreshold( List<DiagramStatisticOuter> statistics,
+                                                                     MetricDimension xDimension,
+                                                                     MetricDimension yDimension,
+                                                                     ChronoUnit durationUnits )
     {
         Objects.requireNonNull( statistics );
         Objects.requireNonNull( xDimension );
@@ -317,13 +385,81 @@ public class ChartDataFactory
         Objects.requireNonNull( durationUnits );
 
         DiagramStatisticOuter first = statistics.get( 0 );
+        MetricConstants metricName = first.getMetricName();
 
-        if ( first.getMetricName() == MetricConstants.RANK_HISTOGRAM )
+        int timeWindowCount = Slicer.discover( statistics, meta -> meta.getPoolMetadata().getTimeWindow() )
+                                    .size();
+
+        int thresholdCount = Slicer.discover( statistics, meta -> meta.getPoolMetadata().getThresholds() )
+                                   .size();
+
+        if ( statistics.isEmpty() )
         {
-            return ChartDataFactory.ofRankHistogramByLeadThreshold( statistics, xDimension, yDimension, durationUnits );
+            throw new IllegalArgumentException( "Cannot create a diagram chart with no statistics." );
         }
 
-        return Diagram.ofLeadThreshold( statistics, xDimension, yDimension, durationUnits );
+        if ( timeWindowCount > 1 )
+        {
+            throw new IllegalArgumentException( "Received an unexpected collection of statistics for the " + metricName
+                                                + ". Expected a single time window and one or more thresholds, but "
+                                                + "found "
+                                                + timeWindowCount
+                                                + " time windows and "
+                                                + thresholdCount
+                                                + " thresholds." );
+        }
+
+        // Arrange the series by threshold
+        SortedSet<OneOrTwoThresholds> thresholds =
+                Slicer.discover( statistics, next -> next.getPoolMetadata()
+                                                         .getThresholds() );
+
+        YIntervalSeriesCollection dataset = new YIntervalSeriesCollection();
+
+        for ( OneOrTwoThresholds key : thresholds )
+        {
+            List<DiagramStatisticOuter> sliced = Slicer.filter( statistics,
+                                                                next -> next.getPoolMetadata()
+                                                                            .getThresholds()
+                                                                            .equals( key ) );
+
+            SortedSet<String> qualified = sliced.stream()
+                                                .flatMap( n -> n.getStatistic()
+                                                                .getStatisticsList()
+                                                                .stream() )
+                                                .map( DiagramStatisticComponent::getName )
+                                                .filter( n -> !n.isBlank() )
+                                                .collect( Collectors.toCollection( TreeSet::new ) );
+
+            // No qualifiers
+            if ( qualified.isEmpty() )
+            {
+                String name = DataUtilities.toStringWithoutUnits( key );
+                YIntervalSeries nextSeries = ChartDataFactory.getYIntervalSeries( sliced,
+                                                                                  name,
+                                                                                  xDimension,
+                                                                                  yDimension );
+                dataset.addSeries( nextSeries );
+            }
+            // Slice by qualifier
+            else
+            {
+                for ( String name : qualified )
+                {
+                    List<DiagramStatisticOuter> slicedInner = Slicer.filter( sliced,
+                                                                             next -> next.getComponentNameQualifiers()
+                                                                                         .stream()
+                                                                                         .anyMatch( name::equals ) );
+                    YIntervalSeries nextSeries = ChartDataFactory.getYIntervalSeries( slicedInner,
+                                                                                      name,
+                                                                                      xDimension,
+                                                                                      yDimension );
+                    dataset.addSeries( nextSeries );
+                }
+            }
+        }
+
+        return dataset;
     }
 
     /**
@@ -336,24 +472,95 @@ public class ChartDataFactory
      * @throws NullPointerException if any input is null
      * @throws IllegalArgumentException if the dataset contains more than one threshold
      */
-    public static XYDataset ofVerificationDiagramByThresholdLead( List<DiagramStatisticOuter> statistics,
-                                                                  MetricDimension xDimension,
-                                                                  MetricDimension yDimension,
-                                                                  ChronoUnit durationUnits )
+    public static XYDataset ofVerificationDiagramByThresholdAndLead( List<DiagramStatisticOuter> statistics,
+                                                                     MetricDimension xDimension,
+                                                                     MetricDimension yDimension,
+                                                                     ChronoUnit durationUnits )
     {
         Objects.requireNonNull( statistics );
         Objects.requireNonNull( xDimension );
         Objects.requireNonNull( yDimension );
         Objects.requireNonNull( durationUnits );
 
-        DiagramStatisticOuter first = statistics.get( 0 );
 
-        if ( first.getMetricName() == MetricConstants.RANK_HISTOGRAM )
+        DiagramStatisticOuter first = statistics.get( 0 );
+        MetricConstants metricName = first.getMetricName();
+
+        int timeWindowCount = Slicer.discover( statistics, meta -> meta.getPoolMetadata().getTimeWindow() )
+                                    .size();
+
+        int thresholdCount = Slicer.discover( statistics, meta -> meta.getPoolMetadata().getThresholds() )
+                                   .size();
+
+        if ( statistics.isEmpty() )
         {
-            return ChartDataFactory.ofRankHistogramByThresholdLead( statistics, xDimension, yDimension, durationUnits );
+            throw new IllegalArgumentException( "Cannot create a diagram chart with no statistics." );
         }
 
-        return Diagram.ofThresholdLead( statistics, xDimension, yDimension, durationUnits );
+        if ( thresholdCount > 1 )
+        {
+            throw new IllegalArgumentException( "Received an unexpected collection of statistics for the " + metricName
+                                                + ". Expected a single threshold and one or more time windows, but "
+                                                + "found "
+                                                + timeWindowCount
+                                                + " time windows and "
+                                                + thresholdCount
+                                                + " thresholds." );
+        }
+
+        // Arrange by time window
+        SortedSet<TimeWindowOuter> timeWindows =
+                Slicer.discover( statistics, next -> next.getPoolMetadata().getTimeWindow() );
+
+        YIntervalSeriesCollection dataset = new YIntervalSeriesCollection();
+
+        for ( TimeWindowOuter key : timeWindows )
+        {
+            List<DiagramStatisticOuter> sliced = Slicer.filter( statistics,
+                                                                next -> next.getPoolMetadata()
+                                                                            .getTimeWindow()
+                                                                            .equals( key ) );
+
+            SortedSet<String> qualified = sliced.stream()
+                                                .flatMap( n -> n.getStatistic()
+                                                                .getStatisticsList()
+                                                                .stream() )
+                                                .map( DiagramStatisticComponent::getName )
+                                                .filter( n -> !n.isBlank() )
+                                                .collect( Collectors.toCollection( TreeSet::new ) );
+
+            // No qualifiers
+            if ( qualified.isEmpty() )
+            {
+                Number leadDuration = DataUtilities.durationToNumericUnits( key.getLatestLeadDuration(),
+                                                                            durationUnits );
+                String name = leadDuration.toString();
+
+                YIntervalSeries nextSeries = ChartDataFactory.getYIntervalSeries( sliced,
+                                                                                  name,
+                                                                                  xDimension,
+                                                                                  yDimension );
+                dataset.addSeries( nextSeries );
+            }
+            // Slice by qualifier
+            else
+            {
+                for ( String name : qualified )
+                {
+                    List<DiagramStatisticOuter> slicedInner = Slicer.filter( sliced,
+                                                                             next -> next.getComponentNameQualifiers()
+                                                                                         .stream()
+                                                                                         .anyMatch( name::equals ) );
+                    YIntervalSeries nextSeries = ChartDataFactory.getYIntervalSeries( slicedInner,
+                                                                                      name,
+                                                                                      xDimension,
+                                                                                      yDimension );
+                    dataset.addSeries( nextSeries );
+                }
+            }
+        }
+
+        return dataset;
     }
 
     /**
@@ -437,6 +644,25 @@ public class ChartDataFactory
     }
 
     /**
+     * Obtains the quantiles from the statistics, if any.
+     *
+     * @param <T> the type opf statistics
+     * @param statistics the statistics
+     * @return the sample quantiles
+     */
+
+    public static <T extends Statistic<?>> SortedSet<Double> getQuantiles( List<T> statistics )
+    {
+        SortedSet<Double> quantiles = statistics.stream()
+                                                .filter( Statistic::hasQuantile )
+                                                .mapToDouble( n -> n.getSampleQuantile() )
+                                                .boxed()
+                                                .collect( Collectors.toCollection( TreeSet::new ) );
+
+        return Collections.unmodifiableSortedSet( quantiles );
+    }
+
+    /**
      * @param diagrams the diagrams to decompose
      * @return one diagram for each qualifier name
      */
@@ -466,7 +692,8 @@ public class ChartDataFactory
                 builder.addAllStatistics( components );
 
                 DiagramStatistic newDiagram = builder.build();
-                DiagramStatisticOuter newWrappedDiagram = DiagramStatisticOuter.of( newDiagram, diagram.getPoolMetadata() );
+                DiagramStatisticOuter newWrappedDiagram =
+                        DiagramStatisticOuter.of( newDiagram, diagram.getPoolMetadata(), diagram.getSampleQuantile() );
                 returnMe.add( newWrappedDiagram );
             }
         }
@@ -477,42 +704,8 @@ public class ChartDataFactory
     }
 
     /**
-     * Returns a dataset for a rank histogram organized by lead duration (one) and then threshold (up to many).
-     * @param statistics the rank histogram statistics
-     * @param xDimension the x-axis dimension
-     * @param yDimension the y-axis dimension
-     * @param durationUnits the lead duration units
-     * @return a rank histogram dataset
-     * @throws IllegalArgumentException if the dataset contains more than one lead duration
-     */
-    private static RankHistogram ofRankHistogramByLeadThreshold( List<DiagramStatisticOuter> statistics,
-                                                                 MetricDimension xDimension,
-                                                                 MetricDimension yDimension,
-                                                                 ChronoUnit durationUnits )
-    {
-        return RankHistogram.ofLeadThreshold( statistics, xDimension, yDimension, durationUnits );
-    }
-
-    /**
-     * Returns a dataset for a rank histogram organized by threshold (one) and then lead duration (up to many).
-     * @param statistics the rank histogram statistics
-     * @param xDimension the x-axis dimension
-     * @param yDimension the y-axis dimension
-     * @param durationUnits the lead duration units
-     * @return a rank histogram dataset
-     * @throws IllegalArgumentException if the dataset contains more than one threshold
-     */
-    private static RankHistogram ofRankHistogramByThresholdLead( List<DiagramStatisticOuter> statistics,
-                                                                 MetricDimension xDimension,
-                                                                 MetricDimension yDimension,
-                                                                 ChronoUnit durationUnits )
-    {
-        return RankHistogram.ofThresholdLead( statistics, xDimension, yDimension, durationUnits );
-    }
-
-    /**
      * Adds one or more series to a collection of time-based pools based on their lead durations and pooling times.
-     * 
+     *
      * @param collection the collection to expand
      * @param slice the slice of statistics from which to generate series
      * @param leadDurations the lead durations by which to filter series
@@ -528,6 +721,21 @@ public class ChartDataFactory
                                                    GraphicShape graphicShape,
                                                    ChronoUnit durationUnits )
     {
+        // Error bars? If so, find the lower and upper quantile
+        OptionalDouble lower = slice.stream()
+                                    .map( n -> n.getSampleQuantile() )
+                                    .filter( Objects::nonNull )
+                                    .mapToDouble( Double::doubleValue )
+                                    .min();
+        OptionalDouble upper = slice.stream()
+                                    .map( n -> n.getSampleQuantile() )
+                                    .filter( Objects::nonNull )
+                                    .mapToDouble( Double::doubleValue )
+                                    .max();
+
+        boolean errorBars = lower.isPresent()
+                            && upper.isPresent();
+
         // Filter by threshold
         SortedSet<OneOrTwoThresholds> thresholds =
                 Slicer.discover( slice, next -> next.getPoolMetadata().getThresholds() );
@@ -546,30 +754,77 @@ public class ChartDataFactory
                                                                                 poolingTimes,
                                                                                 nextThreshold,
                                                                                 durationUnits );
-            TimeSeries next = new TimeSeries( seriesName );
 
-            // Loop through the slice, forming a time series from the issued time or valid time pooling 
-            // windows and corresponding values.
-            for ( DoubleScoreComponentOuter nextDouble : finalSlice )
+            // Error bars?
+            if ( errorBars )
             {
-                Instant midpoint =
-                        ChartDataFactory.getMidpointBetweenTimes( nextDouble.getPoolMetadata()
-                                                                            .getTimeWindow(),
-                                                                  graphicShape == GraphicShape.ISSUED_DATE_POOLS );
+                // Lower
+                List<DoubleScoreComponentOuter> lowerSeries =
+                        Slicer.filter( finalSlice,
+                                       next -> next.hasQuantile()
+                                               && Math.abs( next.getSampleQuantile() - lower.getAsDouble() ) < 0.0001 );
+                TimeSeries lowerChartSeries = ChartDataFactory.getSeries( lowerSeries, seriesName, graphicShape );
+                collection.addSeries( lowerChartSeries );
 
-                FixedMillisecond time = new FixedMillisecond( midpoint.toEpochMilli() );
-                Double value = nextDouble.getStatistic()
-                                         .getValue();
-                next.add( time, value );
+                // Nominal
+                List<DoubleScoreComponentOuter> nominal =
+                        Slicer.filter( finalSlice,
+                                       next -> !next.hasQuantile() );
+                TimeSeries nominalChartSeries = ChartDataFactory.getSeries( nominal, seriesName, graphicShape );
+                collection.addSeries( nominalChartSeries );
+
+                // Upper
+                List<DoubleScoreComponentOuter> upperSeries =
+                        Slicer.filter( finalSlice,
+                                       next -> next.hasQuantile()
+                                               && Math.abs( next.getSampleQuantile() - upper.getAsDouble() ) < 0.0001 );
+                TimeSeries upperChartSeries = ChartDataFactory.getSeries( upperSeries, seriesName, graphicShape );
+                collection.addSeries( upperChartSeries );
             }
-
-            collection.addSeries( next );
+            // Regular series
+            else
+            {
+                TimeSeries series = ChartDataFactory.getSeries( finalSlice, seriesName, graphicShape );
+                collection.addSeries( series );
+            }
         }
     }
 
     /**
+     * Generates a time-series for a chart from the inputs.
+     * @param scores the scores
+     * @param seriesName the series name
+     * @param graphicShape the graphics shape
+     * @return the time-series to chart
+     */
+
+    private static TimeSeries getSeries( List<DoubleScoreComponentOuter> scores,
+                                         String seriesName,
+                                         GraphicShape graphicShape )
+    {
+        TimeSeries series = new TimeSeries( seriesName );
+
+        // Loop through the slice, forming a time series from the issued time or valid time pooling
+        // windows and corresponding values.
+        for ( DoubleScoreComponentOuter nextDouble : scores )
+        {
+            Instant midpoint =
+                    ChartDataFactory.getMidpointBetweenTimes( nextDouble.getPoolMetadata()
+                                                                        .getTimeWindow(),
+                                                              graphicShape == GraphicShape.ISSUED_DATE_POOLS );
+
+            FixedMillisecond time = new FixedMillisecond( midpoint.toEpochMilli() );
+            Double value = nextDouble.getStatistic()
+                                     .getValue();
+            series.add( time, value );
+        }
+
+        return series;
+    }
+
+    /**
      * Returns a series name from the inputs.
-     * 
+     *
      * @param leadDurations the lead durations by which to filter series
      * @param poolingTimes the  times by which to filter series
      * @param thresholds the thresholds
@@ -630,7 +885,7 @@ public class ChartDataFactory
 
     /**
      * Returns the midpoint between the reference times or valid times.
-     * 
+     *
      * @param timeWindow the time window
      * @param referenceTimes is true to return the midpoint between the reference times, false for valid times
      * @return the midpoint between the times
@@ -648,6 +903,171 @@ public class ChartDataFactory
             return TimeSeriesSlicer.getMidPointBetweenTimes( timeWindow.getEarliestValidTime(),
                                                              timeWindow.getLatestValidTime() );
         }
+    }
+
+    /**
+     * Creates an {@link YIntervalSeries} from the inputs.
+     * @param scores the scores
+     * @param name the series name
+     * @param domainValue a function that produces the domain value associated with a score
+     * @return the series
+     */
+
+    private static YIntervalSeries getYIntervalSeries( List<DoubleScoreComponentOuter> scores,
+                                                       String name,
+                                                       ToDoubleFunction<DoubleScoreComponentOuter> domainValue )
+    {
+        ToDoubleFunction<DoubleScoreComponentOuter> toDouble = score ->
+        {
+            if ( !score.hasQuantile() )
+            {
+                return Double.NaN;
+            }
+            return score.getSampleQuantile();
+        };
+
+        Map<Double, List<DoubleScoreComponentOuter>> mappedByQuantile
+                = scores.stream()
+                        .collect( Collectors.groupingBy( toDouble::applyAsDouble ) );
+
+        List<DoubleScoreComponentOuter> nominal = mappedByQuantile.remove( Double.NaN );
+
+        YIntervalSeries series = new YIntervalSeries( name );
+
+        double min = mappedByQuantile.keySet()
+                                     .stream()
+                                     .mapToDouble( Double::doubleValue )
+                                     .min()
+                                     .orElse( Double.NaN );
+        double max = mappedByQuantile.keySet()
+                                     .stream()
+                                     .mapToDouble( Double::doubleValue )
+                                     .max()
+                                     .orElse( Double.NaN );
+
+        List<DoubleScoreComponentOuter> lower = nominal;
+        List<DoubleScoreComponentOuter> upper = nominal;
+
+        if ( max > min )
+        {
+            lower = mappedByQuantile.get( min );
+            upper = mappedByQuantile.get( max );
+        }
+
+        for ( int i = 0; i < nominal.size(); i++ )
+        {
+            DoubleScoreComponentOuter nextNominal = nominal.get( i );
+            DoubleScoreComponentOuter nextLower = lower.get( i );
+            DoubleScoreComponentOuter nextUpper = upper.get( i );
+
+            double domainAxisValue = domainValue.applyAsDouble( nextNominal );
+            double nominalValue = nextNominal.getStatistic()
+                                             .getValue();
+            double lowerValue = nextLower.getStatistic()
+                                         .getValue();
+            double upperValue = nextUpper.getStatistic()
+                                         .getValue();
+
+            if ( Double.isInfinite( nominalValue ) )
+            {
+                nominalValue = Double.NaN;
+            }
+
+            if ( Double.isInfinite( lowerValue ) )
+            {
+                lowerValue = Double.NaN;
+            }
+
+            if ( Double.isInfinite( upperValue ) )
+            {
+                upperValue = Double.NaN;
+            }
+
+            series.add( domainAxisValue, nominalValue, lowerValue, upperValue );
+        }
+
+        return series;
+    }
+
+    /**
+     * Creates an {@link YIntervalSeries} from the inputs.
+     * @param diagram the diagram
+     * @param name the series name
+     * @param xDimension the domain axis dimension
+     * @param yDimension the range axis dimension
+     * @return the series
+     */
+
+    private static YIntervalSeries getYIntervalSeries( List<DiagramStatisticOuter> diagram,
+                                                       String name,
+                                                       MetricDimension xDimension,
+                                                       MetricDimension yDimension )
+    {
+        ToDoubleFunction<DiagramStatisticOuter> toDouble = score ->
+        {
+            if ( !score.hasQuantile() )
+            {
+                return Double.NaN;
+            }
+            return score.getSampleQuantile();
+        };
+
+        Map<Double, List<DiagramStatisticOuter>> mappedByQuantile
+                = diagram.stream()
+                         .collect( Collectors.groupingBy( toDouble::applyAsDouble ) );
+
+        List<DiagramStatisticOuter> nominal = mappedByQuantile.remove( Double.NaN );
+
+        YIntervalSeries series = new YIntervalSeries( name );
+
+        double min = mappedByQuantile.keySet()
+                                     .stream()
+                                     .mapToDouble( Double::doubleValue )
+                                     .min()
+                                     .orElse( Double.NaN );
+        double max = mappedByQuantile.keySet()
+                                     .stream()
+                                     .mapToDouble( Double::doubleValue )
+                                     .max()
+                                     .orElse( Double.NaN );
+
+        List<DiagramStatisticOuter> lower = nominal;
+        List<DiagramStatisticOuter> upper = nominal;
+
+        // Quantiles available and this is not a sample size
+        if ( max > min && yDimension != MetricDimension.SAMPLE_SIZE )
+        {
+            lower = mappedByQuantile.get( min );
+            upper = mappedByQuantile.get( max );
+        }
+
+        // Iterate the series
+        for ( int i = 0; i < nominal.size(); i++ )
+        {
+            DiagramStatisticOuter nextNominal = nominal.get( i );
+            DiagramStatisticOuter nextLower = lower.get( i );
+            DiagramStatisticOuter nextUpper = upper.get( i );
+
+            String nameQualifier = nextNominal.getComponentNameQualifiers()
+                                              .first();
+
+            DiagramStatisticComponent xData = nextNominal.getComponent( xDimension, nameQualifier );
+            DiagramStatisticComponent yNominal = nextNominal.getComponent( yDimension, nameQualifier );
+            DiagramStatisticComponent yLower = nextLower.getComponent( yDimension, nameQualifier );
+            DiagramStatisticComponent yUpper = nextUpper.getComponent( yDimension, nameQualifier );
+
+            // Add the series data
+            int valueCount = xData.getValuesCount();
+            for ( int j = 0; j < valueCount; j++ )
+            {
+                series.add( xData.getValues( j ),
+                            yNominal.getValues( j ),
+                            yLower.getValues( j ),
+                            yUpper.getValues( j ) );
+            }
+        }
+
+        return series;
     }
 
     /**

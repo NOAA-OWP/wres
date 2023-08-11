@@ -208,7 +208,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
         lock.lock();
 
-        // There is only thread per pool write, but it is convenient to increment in this form 
+        // There is only one thread per pool write, but it is convenient to increment in this form
         AtomicInteger groupNumber = new AtomicInteger( 1 );
 
         try
