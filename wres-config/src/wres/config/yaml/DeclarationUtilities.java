@@ -317,7 +317,7 @@ public class DeclarationUtilities
     }
 
     /**
-     * Creates a geometry from a WKT string and optional Spatial Reference system IDentifier (SRID).
+     * Creates a geometry from a WKT string and optional Spatial Reference system Identifier (SRID).
      * @param wktString the WKT string
      * @param srid the optional SRID
      * @return the geometry
