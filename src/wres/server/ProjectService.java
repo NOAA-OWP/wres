@@ -54,7 +54,7 @@ public class ProjectService
      * ProjectService constructor
      * @param evaluator The servers evaluator used to evaluate projects
      */
-    public ProjectService( Evaluator evaluator)
+    public ProjectService( Evaluator evaluator )
     {
         this.evaluator = evaluator;
     }

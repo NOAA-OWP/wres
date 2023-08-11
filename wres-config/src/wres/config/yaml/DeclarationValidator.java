@@ -139,7 +139,16 @@ public class DeclarationValidator
         JsonSchema schema = DeclarationFactory.getSchema();
 
         // Validate against the schema
-        return DeclarationValidator.validate( declaration, schema );
+        Set<EvaluationStatusEvent> schemaEvents = DeclarationValidator.validate( declaration, schema );
+        Set<EvaluationStatusEvent> events = new HashSet<>( schemaEvents );
+
+        EvaluationDeclaration deserialized = DeclarationFactory.deserialize( declaration );
+
+        // Validate against business logic
+        List<EvaluationStatusEvent> businessEvents = DeclarationValidator.validate( deserialized );
+        events.addAll( businessEvents );
+
+        return Collections.unmodifiableSet( events );
     }
 
     /**

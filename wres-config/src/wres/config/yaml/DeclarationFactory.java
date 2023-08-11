@@ -313,8 +313,7 @@ public class DeclarationFactory
         LOGGER.debug( "Deserializing a declaration string into POJOs." );
 
         // Deserialize
-        return DESERIALIZER.reader()
-                           .readValue( declaration, EvaluationDeclaration.class );
+        return DeclarationFactory.deserialize( declaration );
     }
 
     /**
@@ -428,6 +427,19 @@ public class DeclarationFactory
 
             return factory.getSchema( schemaNode );
         }
+    }
+
+    /**
+     * Deserializes the prescribed {@link JsonNode} into an {@link EvaluationDeclaration}.
+     * @param declaration the declaration node
+     * @return the deserialized declaration
+     * @throws IOException if the node could not be deserialized for any reason
+     */
+
+    static EvaluationDeclaration deserialize( JsonNode declaration ) throws IOException
+    {
+        return DESERIALIZER.reader()
+                           .readValue( declaration, EvaluationDeclaration.class );
     }
 
     /**
