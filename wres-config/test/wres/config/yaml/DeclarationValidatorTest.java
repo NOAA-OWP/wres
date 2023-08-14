@@ -7,6 +7,7 @@ import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Duration;
@@ -41,6 +42,8 @@ import wres.config.yaml.components.LeadTimeIntervalBuilder;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricBuilder;
 import wres.config.yaml.components.MetricParametersBuilder;
+import wres.config.yaml.components.SamplingUncertainty;
+import wres.config.yaml.components.SamplingUncertaintyBuilder;
 import wres.config.yaml.components.Season;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceBuilder;
@@ -1647,9 +1650,9 @@ class DeclarationValidatorTest
 
         Set<GeometryTuple> geometries = Set.of( GeometryTuple.newBuilder()
                                                              .setLeft( Geometry.newBuilder()
-                                                                                .setName( "foo" ) )
+                                                                               .setName( "foo" ) )
                                                              .setRight( Geometry.newBuilder()
-                                                                                   .setName( "foo" ) )
+                                                                                .setName( "foo" ) )
                                                              .build() );
 
         Features features = new Features( geometries );
@@ -1664,6 +1667,92 @@ class DeclarationValidatorTest
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
         assertTrue( events.isEmpty() );
+    }
+
+    @Test
+    void testSamplingUncertaintyQuantilesAreMissingProducesError()
+    {
+        SamplingUncertainty samplingUncertainty = SamplingUncertaintyBuilder.builder()
+                                                                            .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .sampleUncertainty( samplingUncertainty )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "does not contain any 'quantiles', which are required",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testSamplingUncertaintyQuantilesAreInvalidProducesError()
+    {
+        SamplingUncertainty samplingUncertainty = SamplingUncertaintyBuilder.builder()
+                                                                            .quantiles( new TreeSet<>( Set.of( -0.1,
+                                                                                                               0.0,
+                                                                                                               1.0,
+                                                                                                               1.5 ) ) )
+                                                                            .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .sampleUncertainty( samplingUncertainty )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "'sampling_uncertainty' must be greater than 0.0 and "
+                                                       + "less than 1.0",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testSamplingUncertaintySampleSizeIsSmallProducesWarning()
+    {
+        SamplingUncertainty samplingUncertainty = SamplingUncertaintyBuilder.builder()
+                                                                            .sampleSize( 100 )
+                                                                            .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .sampleUncertainty( samplingUncertainty )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "'sample_size' associated with the "
+                                                       + "'sampling_uncertainty' is smaller than the recommended"
+                                                       + " minimum",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
+    void testSamplingUncertaintyBlockSizeIsInvalidProducesError()
+    {
+        SamplingUncertainty samplingUncertainty = SamplingUncertaintyBuilder.builder()
+                                                                            .blockSize( java.time.Duration.ZERO )
+                                                                            .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .sampleUncertainty( samplingUncertainty )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "'sampling_uncertainty' must contain a duration that is "
+                                                       + "larger than zero",
+                                                       StatusLevel.ERROR ) );
     }
 
     /**

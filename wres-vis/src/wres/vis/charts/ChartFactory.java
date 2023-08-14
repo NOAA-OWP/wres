@@ -1488,10 +1488,10 @@ public class ChartFactory
 
     private boolean canShowErrorBars( MetricConstants metricName, ChartType chartType )
     {
-        return !metricName.isInGroup( StatisticType.DURATION_SCORE )
+        return metricName.isSamplingUncertaintyAllowed()
+               // Disallowed for graphics
+               && !metricName.isInGroup( StatisticType.DURATION_SCORE )
                && !metricName.isInGroup( StatisticType.DURATION_DIAGRAM )
-               && !metricName.isInGroup( StatisticType.BOXPLOT_PER_PAIR )
-               && !metricName.isInGroup( StatisticType.BOXPLOT_PER_POOL )
                && chartType != ChartType.POOLING_WINDOW;
     }
 
