@@ -138,6 +138,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     private final AtomicBoolean isReadyToWrite;
 
     /**
+     * Mapping between a sample quantile and its standard name.
+     */
+
+    private final Map<Double, String> standardQuantileNames;
+
+    /**
      * Mapping between each threshold and a standard threshold name for each metric. This is used to help determine the 
      * threshold portion of a variable name to which a statistic corresponds, based on the standard name of a threshold 
      * chosen at blob creation time. There is a separate group for each metric.
@@ -274,6 +280,15 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         return this.durationUnits;
     }
 
+    /**
+     * Hidden constructor.
+     * @param systemSettings the system settings
+     * @param declaration the declaration
+     * @param durationUnits the duration units
+     * @param outputDirectory the output directory
+     * @throws NullPointerException if any input is null
+     */
+
     private NetcdfOutputWriter( SystemSettings systemSettings,
                                 EvaluationDeclaration declaration,
                                 ChronoUnit durationUnits,
@@ -313,6 +328,28 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         this.outputDirectory = outputDirectory;
         this.declaration = declaration;
         this.isReadyToWrite = new AtomicBoolean();
+
+        // Set the quantile names
+        if ( Objects.nonNull( declaration.sampleUncertainty() ) )
+        {
+            SortedSet<Double> quantiles = declaration.sampleUncertainty()
+                                                     .quantiles();
+            Map<Double, String> standardQuantileNamesInner = new HashMap<>();
+            int qNumber = 1;
+            for ( Double next : quantiles )
+            {
+                standardQuantileNamesInner.put( next, "Q" + qNumber );
+                qNumber++;
+            }
+
+            this.standardQuantileNames = Collections.unmodifiableMap( standardQuantileNamesInner );
+            LOGGER.debug( "Created the following standard quantile names by quantile value: {}.",
+                          this.standardQuantileNames );
+        }
+        else
+        {
+            this.standardQuantileNames = Collections.emptyMap();
+        }
     }
 
     /**
@@ -330,7 +367,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     {
         Objects.requireNonNull( metricsAndThresholds );
 
-        if ( this.getIsReadyToWrite().get() )
+        if ( this.getIsReadyToWrite()
+                 .get() )
         {
             throw new NetcdfWriteException( "The netcdf blobs have already been created." );
         }
@@ -612,7 +650,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * @return the file name
      * @throws NoDataException if the output is empty
      * @throws NullPointerException if any of the inputs is null
-     * @throws IOException if the path cannot be produced
      */
 
     private Path getOutputPathToWriteForOneTimeWindow( Path outputDirectory,
@@ -620,7 +657,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                        String scenarioName,
                                                        TimeWindowOuter timeWindow,
                                                        ChronoUnit leadUnits )
-            throws IOException
     {
         Objects.requireNonNull( outputDirectory, "Enter non-null output directory to establish a path for writing." );
         Objects.requireNonNull( timeWindow, "Enter a non-null time window  to establish a path for writing." );
@@ -847,7 +883,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         }
 
         // Ensemble average type to append? For backwards compatibility, do not append the default value: #51670
-        if ( Objects.nonNull( ensembleAverageType ) && ensembleAverageType != EnsembleAverageType.MEAN )
+        if ( Objects.nonNull( ensembleAverageType )
+             && ensembleAverageType != EnsembleAverageType.MEAN )
         {
             append += "_ENSEMBLE_" + ensembleAverageType.name();
         }
@@ -867,25 +904,67 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 String thresholdName = nextMap.get( nextThreshold );
                 String variableName = nextMetric + "_" + thresholdName + append;
 
-                MetricVariable nextVariable = new MetricVariable.Builder().setVariableName( variableName )
-                                                                          .setTimeWindow( timeWindow )
-                                                                          .setMetricName( nextMetric )
-                                                                          .setThresholds( nextThreshold )
-                                                                          .setUnits( units )
-                                                                          .setDesiredTimeScale( desiredTimeScale )
-                                                                          .setDurationUnits( this.getDurationUnits() )
-                                                                          .setEnsembleAverageType( ensembleAverageType )
-                                                                          .build();
+                MetricVariable.Builder nextVariable =
+                        new MetricVariable.Builder().setVariableName( variableName )
+                                                    .setTimeWindow( timeWindow )
+                                                    .setMetricName( nextMetric )
+                                                    .setThresholds( nextThreshold )
+                                                    .setUnits( units )
+                                                    .setDesiredTimeScale( desiredTimeScale )
+                                                    .setDurationUnits( this.getDurationUnits() )
+                                                    .setEnsembleAverageType( ensembleAverageType );
 
-                LOGGER.debug( "Created a new metric variable to populate with name {}: {}.",
-                              variableName,
-                              nextVariable );
-
-                returnMe.add( nextVariable );
+                Collection<MetricVariable> metricVariables =
+                        this.getMetricVariableForEachSampleQuantile( nextVariable );
+                returnMe.addAll( metricVariables );
             }
         }
 
         return Collections.unmodifiableCollection( returnMe );
+    }
+
+    /**
+     * Creates a {@link MetricVariable} for each sample quantile, else for the nominal value of the statistic.
+     *
+     * @param builder the base variable builder
+     * @return the metric variables, one for each quantile or a single nominal value
+     */
+
+    private Collection<MetricVariable> getMetricVariableForEachSampleQuantile( MetricVariable.Builder builder )
+    {
+        Collection<MetricVariable> metricVariables = new ArrayList<>();
+        // Add the variable for the nominal value
+        MetricVariable nominal = builder.build();
+        metricVariables.add( nominal );
+
+        LOGGER.debug( "Created a new metric variable to populate with name {}: {}.",
+                      nominal.getName(),
+                      nominal );
+
+        MetricConstants metric = MetricConstants.valueOf( nominal.getMetricName() );
+
+        // Create a variable for each sample quantile, if this metric supports it
+        if( metric.isSamplingUncertaintyAllowed() )
+        {
+            Map<Double, String> quantileNames = this.getStandardQuantileNames();
+            for ( Map.Entry<Double, String> next : quantileNames.entrySet() )
+            {
+                Double quantile = next.getKey();
+                String quantileName = next.getValue();
+
+                String variableName = nominal.getName() + "_" + quantileName;
+                MetricVariable nextVariable = builder.setVariableName( variableName )
+                                                     .setSampleQuantile( quantile )
+                                                     .build();
+                metricVariables.add( nextVariable );
+
+                LOGGER.debug( "Created a new metric variable to populate with name {}: {}.",
+                              variableName,
+                              nextVariable );
+            }
+        }
+
+        return Collections.unmodifiableCollection( metricVariables );
     }
 
     /**
@@ -1024,6 +1103,14 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     }
 
     /**
+     * @return the standard quantile names, if any
+     */
+    private Map<Double, String> getStandardQuantileNames()
+    {
+        return this.standardQuantileNames;
+    }
+
+    /**
      * Metadata about a NetCDF value.
      * @param variableName
      * @param origin
@@ -1076,6 +1163,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 "While attempting to write statistics to ";
         private static final String FAILED_TO_IDENTIFY_A_COORDINATE_FOR_LOCATION =
                 ", failed to identify a coordinate for location ";
+        public static final String AND_THRESHOLD = " and threshold ";
         NetcdfOutputWriter outputWriter;
         private boolean useLidForLocationIdentifier;
         private final Map<Object, Integer> vectorCoordinatesMap = new ConcurrentHashMap<>();
@@ -1347,13 +1435,43 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 append = "_" + DatasetOrientation.BASELINE.name();
             }
 
-            // Add the ensemble average type where applicable
+            // Add the ensemble average type, where applicable
             wres.statistics.generated.Pool.EnsembleAverageType ensembleAverageType = sampleMetadata.getPool()
                                                                                                    .getEnsembleAverageType();
             if ( ensembleAverageType != wres.statistics.generated.Pool.EnsembleAverageType.MEAN
                  && ensembleAverageType != wres.statistics.generated.Pool.EnsembleAverageType.NONE )
             {
                 append += "_ENSEMBLE_" + ensembleAverageType.name();
+            }
+
+            // Add the sample quantile using the standard name, where applicable
+            if ( score.hasQuantile()
+                 && metricName.isSamplingUncertaintyAllowed() )
+            {
+                double quantile = score.getSampleQuantile();
+                Map<Double, String> quantileNames = this.outputWriter.getStandardQuantileNames();
+                String quantileName = quantileNames.get( quantile );
+
+                // Qualifier for the sample quantile not found?
+                if ( Objects.isNull( quantileName ) )
+                {
+                    throw new IllegalStateException( "While attempting to write statistics to netcdf for the metric "
+                                                     + "variable "
+                                                     + metricNameString
+                                                     + AND_THRESHOLD
+                                                     + sampleMetadata.getThresholds()
+                                                     + ", failed to locate the quantile name corresponding to the "
+                                                     + "sample quantile: "
+                                                     + quantile
+                                                     + ". The sample metadata of the statistic that could not "
+                                                     + "be written is: "
+                                                     + sampleMetadata
+                                                     + ". The available quantile names and associated quantiles are: "
+                                                     + quantileNames
+                                                     + "." );
+                }
+
+                append += "_" + quantileName;
             }
 
             // Look for a threshold with a standard name that is like the threshold associated with this score
@@ -1370,7 +1488,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 throw new IllegalStateException( "While attempting to write statistics to netcdf for the metric "
                                                  + "variable "
                                                  + metricNameString
-                                                 + " and threshold "
+                                                 + AND_THRESHOLD
                                                  + sampleMetadata.getThresholds()
                                                  + ", failed to locate the variable name in the map of metric "
                                                  + "variables. The map contains the following metric variable names: "
@@ -1408,7 +1526,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
             throw new IllegalStateException( "While attempting to write statistics to netcdf for the metric variable "
                                              + metricNameString
-                                             + " and threshold "
+                                             + AND_THRESHOLD
                                              + sampleMetadata.getThresholds()
                                              + ", discovered the variable name "
                                              + metricNameString
@@ -1441,7 +1559,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                               boolean secondThresholdIsEqual )
         {
             // First threshold needs to be compared more selectively. First look for a label.
-            if ( thresholdFromScore.first().hasLabel() && thresholdFromArchive.first().hasLabel() )
+            if ( thresholdFromScore.first()
+                                   .hasLabel() && thresholdFromArchive.first()
+                                                                      .hasLabel() )
             {
                 // Label associated with event threshold is equal, and any decision threshold is equal
                 String thresholdWithValuesOne = thresholdFromArchive.first()

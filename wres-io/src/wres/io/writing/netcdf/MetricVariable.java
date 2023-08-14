@@ -24,6 +24,7 @@ class MetricVariable
 
     private final ChronoUnit durationUnits;
     private final String variableName;
+    private final String metricName;
     private final String longName;
     private final String measurementUnit;
     private final String firstCondition;
@@ -42,8 +43,93 @@ class MetricVariable
     private final OneOrTwoThresholds thresholds;
     private final Number earliestLead;
     private final Number latestLead;
+    private final Double sampleQuantile;
 
     private final Pool.EnsembleAverageType ensembleAverageType;
+
+    /**
+     * @return the variable name
+     */
+
+    public String getName()
+    {
+        return this.variableName;
+    }
+
+    /**
+     * @return the metric name
+     */
+
+    public String getMetricName()
+    {
+        return this.metricName;
+    }
+
+    @Override
+    public String toString()
+    {
+        ToStringBuilder builder = new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE );
+
+        for ( Map.Entry<String, Object> nextAttribute : this.getAttributes()
+                                                            .entrySet() )
+        {
+            builder.append( nextAttribute.getKey(), nextAttribute.getValue() );
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * @return a map of attributes of the variable
+     */
+
+    Map<String, Object> getAttributes()
+    {
+        Map<String, Object> attributes = new TreeMap<>();
+
+        attributes.put( "earliest_reference_time", this.earliestReferenceTime );
+        attributes.put( "latest_reference_time", this.latestReferenceTime );
+        attributes.put( "earliest_valid_time", this.earliestValidTime );
+        attributes.put( "latest_valid_time", this.latestValidTime );
+
+        // Add the default duration units to qualify
+        attributes.put( "earliest_lead_" + this.getDurationUnits()
+                                               .name()
+                                               .toLowerCase(),
+                        this.earliestLead );
+        attributes.put( "latest_lead_" + this.getDurationUnits()
+                                             .name()
+                                             .toLowerCase(),
+                        this.latestLead );
+        attributes.put( "event_threshold_data_type", this.firstDataType );
+        attributes.put( "decision_threshold_data_type", this.secondDataType );
+        attributes.put( "event_threshold_name", this.eventThresholdName );
+        attributes.put( "measurement_unit", this.measurementUnit );
+        attributes.put( "long_name", this.longName );
+        attributes.put( "event_threshold_condition", this.firstCondition );
+        attributes.put( "decision_threshold_condition", this.secondCondition );
+
+        // Add the default duration units to qualify
+        attributes.put( "time_scale_period_" + this.getDurationUnits()
+                                                   .name()
+                                                   .toLowerCase(),
+                        this.timeScalePeriod );
+        attributes.put( "time_scale_function", this.timeScaleFunction );
+        attributes.put( "time_scale_start_month_day", this.timeScaleStartMonthDay );
+        attributes.put( "time_scale_end_month_day", this.timeScaleEndMonthDay );
+
+        attributes.put( "ensemble_average_type", this.ensembleAverageType.name() );
+
+        if ( Objects.isNull( this.sampleQuantile ) )
+        {
+            attributes.put( "sample_quantile", NONE );
+        }
+        else
+        {
+            attributes.put( "sample_quantile", this.sampleQuantile );
+        }
+        return Collections.unmodifiableMap( attributes );
+    }
 
     /**
      * Builder.
@@ -58,6 +144,7 @@ class MetricVariable
         private TimeScaleOuter desiredTimeScale;
         private ChronoUnit durationUnits;
         private Pool.EnsembleAverageType ensembleAverageType;
+        private Double sampleQuantile;
 
         Builder setVariableName( String variableName )
         {
@@ -107,6 +194,12 @@ class MetricVariable
             return this;
         }
 
+        Builder setSampleQuantile( Double sampleQuantile )
+        {
+            this.sampleQuantile = sampleQuantile;
+            return this;
+        }
+
         /**
          * @return an instance
          */
@@ -118,7 +211,7 @@ class MetricVariable
 
     /**
      * Builds a new variable.
-     * 
+     *
      * @param builder the builder
      */
 
@@ -128,15 +221,19 @@ class MetricVariable
         this.thresholds = builder.thresholds;
         this.variableName = builder.variableName;
         this.ensembleAverageType = builder.ensembleAverageType;
+        this.sampleQuantile = builder.sampleQuantile;
+        this.metricName = builder.metricName;
 
         // Build the long_name. This should not contain numbers for the thresholds because they can vary by feature.
         String fullName = builder.metricName + " " + this.getThreshold();
 
         // Primary threshold has a label? If so, ignore that when replacing numbers in the long_name.
         // See #85465.
-        if ( this.thresholds.first().hasLabel() )
+        if ( this.thresholds.first()
+                            .hasLabel() )
         {
-            String label = this.thresholds.first().getLabel();
+            String label = this.thresholds.first()
+                                          .getLabel();
             // Replace with a temporary placeholder that contains no numbers
             fullName = fullName.replace( label, "oHhcAqApZQLTLmtDvaX" );
         }
@@ -148,9 +245,11 @@ class MetricVariable
         fullName = fullName.replaceAll( "\\d+", "#" );
 
         // Add back any label removed.
-        if ( this.thresholds.first().hasLabel() )
+        if ( this.thresholds.first()
+                            .hasLabel() )
         {
-            String label = thresholds.first().getLabel();
+            String label = thresholds.first()
+                                     .getLabel();
             fullName = fullName.replace( "oHhcAqApZQLTLmtDvaX", label );
         }
 
@@ -158,10 +257,17 @@ class MetricVariable
 
         this.measurementUnit = builder.units;
 
-        this.firstCondition = this.getThreshold().first().getOperator().name();
-        this.firstDataType = this.getThreshold().first().getOrientation().name();
+        this.firstCondition = this.getThreshold()
+                                  .first()
+                                  .getOperator()
+                                  .name();
+        this.firstDataType = this.getThreshold()
+                                 .first()
+                                 .getOrientation()
+                                 .name();
 
-        if ( this.thresholds.first().hasLabel() )
+        if ( this.thresholds.first()
+                            .hasLabel() )
         {
             this.eventThresholdName = this.getThreshold().first().getLabel();
         }
@@ -173,8 +279,14 @@ class MetricVariable
         // Two thresholds available
         if ( this.thresholds.hasTwo() )
         {
-            this.secondCondition = this.getThreshold().second().getOperator().name();
-            this.secondDataType = this.getThreshold().second().getOrientation().name();
+            this.secondCondition = this.getThreshold()
+                                       .second()
+                                       .getOperator()
+                                       .name();
+            this.secondDataType = this.getThreshold()
+                                      .second()
+                                      .getOrientation()
+                                      .name();
         }
         else
         {
@@ -192,12 +304,12 @@ class MetricVariable
         if ( !localWindow.getEarliestLeadDuration().equals( TimeWindowOuter.DURATION_MIN ) )
         {
             leadLow = DataUtilities.durationToNumericUnits( localWindow.getEarliestLeadDuration(),
-                                                          this.getDurationUnits() );
+                                                            this.getDurationUnits() );
         }
         if ( !localWindow.getLatestLeadDuration().equals( TimeWindowOuter.DURATION_MAX ) )
         {
             leadHigh = DataUtilities.durationToNumericUnits( localWindow.getLatestLeadDuration(),
-                                                           this.getDurationUnits() );
+                                                             this.getDurationUnits() );
         }
 
         // Long is not supported by netcdf3
@@ -240,8 +352,8 @@ class MetricVariable
             {
                 // Use the default duration units
                 return DataUtilities.durationToNumericUnits( timeScale.getPeriod(),
-                                                           this.getDurationUnits() )
-                                  .toString();
+                                                             this.getDurationUnits() )
+                                    .toString();
             }
             else
             {
@@ -308,67 +420,6 @@ class MetricVariable
         }
 
         return UNKNOWN;
-    }
-
-    /**
-     * @return the variable name
-     */
-
-    public String getName()
-    {
-        return this.variableName;
-    }
-
-    @Override
-    public String toString()
-    {
-        ToStringBuilder builder = new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE );
-
-        for ( Map.Entry<String, Object> nextAttribute : this.getAttributes().entrySet() )
-        {
-            builder.append( nextAttribute.getKey(), nextAttribute.getValue() );
-        }
-
-        return builder.build();
-    }
-
-    /**
-     * @return a map of attributes of the variable
-     */
-
-    Map<String, Object> getAttributes()
-    {
-
-        Map<String, Object> attributes = new TreeMap<>();
-
-        attributes.put( "earliest_reference_time", this.earliestReferenceTime );
-        attributes.put( "latest_reference_time", this.latestReferenceTime );
-        attributes.put( "earliest_valid_time", this.earliestValidTime );
-        attributes.put( "latest_valid_time", this.latestValidTime );
-
-        // Add the default duration units to qualify
-        attributes.put( "earliest_lead_" + this.getDurationUnits().name().toLowerCase(),
-                        this.earliestLead );
-        attributes.put( "latest_lead_" + this.getDurationUnits().name().toLowerCase(),
-                        this.latestLead );
-        attributes.put( "event_threshold_data_type", this.firstDataType );
-        attributes.put( "decision_threshold_data_type", this.secondDataType );
-        attributes.put( "event_threshold_name", this.eventThresholdName );
-        attributes.put( "measurement_unit", this.measurementUnit );
-        attributes.put( "long_name", this.longName );
-        attributes.put( "event_threshold_condition", this.firstCondition );
-        attributes.put( "decision_threshold_condition", this.secondCondition );
-
-        // Add the default duration units to qualify
-        attributes.put( "time_scale_period_" + this.getDurationUnits().name().toLowerCase(),
-                        this.timeScalePeriod );
-        attributes.put( "time_scale_function", this.timeScaleFunction );
-        attributes.put( "time_scale_start_month_day", this.timeScaleStartMonthDay );
-        attributes.put( "time_scale_end_month_day", this.timeScaleEndMonthDay );
-
-        attributes.put( "ensemble_average_type", this.ensembleAverageType.name() );
-
-        return Collections.unmodifiableMap( attributes );
     }
 
     private ChronoUnit getDurationUnits()

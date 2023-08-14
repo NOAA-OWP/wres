@@ -110,6 +110,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonProperty( "ensemble_average" ) Pool.EnsembleAverageType ensembleAverageType,
                                      @JsonSerialize( using = PositiveIntegerSerializer.class )
                                      @JsonProperty( "minimum_sample_size" ) Integer minimumSampleSize,
+                                     @JsonProperty( "sampling_uncertainty" ) SamplingUncertainty sampleUncertainty,
                                      @JsonProperty( "season" ) Season season,
                                      @JsonProperty( "values" ) Values values,
                                      @JsonDeserialize( using = MetricsDeserializer.class )
@@ -230,7 +231,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
             minimumSampleSize = 0;
         }
 
-        if( Objects.isNull( thresholdSources ) )
+        if ( Objects.isNull( thresholdSources ) )
         {
             thresholdSources = Collections.emptySet();
         }

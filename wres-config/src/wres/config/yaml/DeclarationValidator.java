@@ -35,6 +35,7 @@ import wres.config.yaml.components.GeneratedBaseline;
 import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.MetricParameters;
+import wres.config.yaml.components.SamplingUncertainty;
 import wres.config.yaml.components.Season;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceInterface;
@@ -244,6 +245,10 @@ public class DeclarationValidator
         // Check that the threshold sources are valid
         List<EvaluationStatusEvent> thresholdService = DeclarationValidator.thresholdSourcesAreValid( declaration );
         events.addAll( thresholdService );
+        // Check that the sampling uncertainty declaration is valid
+        List<EvaluationStatusEvent> samplingUncertainty =
+                DeclarationValidator.samplingUncertaintyIsValid( declaration );
+        events.addAll( samplingUncertainty );
         // Check that the output formats declaration is valid
         List<EvaluationStatusEvent> outputs = DeclarationValidator.outputFormatsAreValid( declaration );
         events.addAll( outputs );
@@ -1503,7 +1508,8 @@ public class DeclarationValidator
      */
     private static List<EvaluationStatusEvent> thresholdSourcesAreValid( EvaluationDeclaration declaration )
     {
-        if ( !declaration.thresholdSources().isEmpty() )
+        if ( !declaration.thresholdSources()
+                         .isEmpty() )
         {
             Set<GeometryTuple> features = DeclarationUtilities.getFeatures( declaration );
             boolean hasBaseline = DeclarationUtilities.hasBaseline( declaration );
@@ -1515,6 +1521,95 @@ public class DeclarationValidator
         }
 
         return Collections.emptyList();
+    }
+
+    /**
+     * Checks that the sampling uncertainty declaration is valid.
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> samplingUncertaintyIsValid( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+        SamplingUncertainty samplingUncertainty = declaration.sampleUncertainty();
+        if ( Objects.nonNull( declaration.sampleUncertainty() ) )
+        {
+            // Quantiles are invalid
+            if ( Objects.isNull( samplingUncertainty.quantiles() )
+                 || samplingUncertainty.quantiles()
+                                       .isEmpty() )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setEventMessage( "The 'sampling_uncertainty' declaration does not "
+                                                                 + "contain any 'quantiles', which are required. "
+                                                                 + "Please declare one or more 'quantiles' and try "
+                                                                 + AGAIN )
+                                               .build();
+
+                events.add( event );
+            }
+            else if ( samplingUncertainty.quantiles()
+                                         .stream()
+                                         .anyMatch( n -> n <= 0 || n >= 1.0 ) )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setEventMessage( "The 'quantiles' associated with the "
+                                                                 + "'sampling_uncertainty' must be greater than 0.0 "
+                                                                 + "and less than 1.0, but some of the declared "
+                                                                 + "'quantiles' are outside of this range: "
+                                                                 + samplingUncertainty.quantiles()
+                                                                                      .stream()
+                                                                                      .filter( n -> n < -0.0
+                                                                                                    || n >= 1.0 )
+                                                                                      .toList()
+                                                                 + ". Please fix these 'quantiles' and try again." )
+                                               .build();
+                events.add( event );
+            }
+
+            // Block size is invalid
+            if ( Objects.nonNull( samplingUncertainty.blockSize() )
+                 && Duration.ZERO.compareTo( samplingUncertainty.blockSize() ) >= 0 )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setEventMessage( "The 'block_size' associated with the "
+                                                                 + "'sampling_uncertainty' must contain a duration "
+                                                                 + "that is larger than zero, but the declared duration "
+                                                                 + "is: "
+                                                                 + samplingUncertainty.blockSize()
+                                                                 + ". Please fix the 'block_size' and try again." )
+                                               .build();
+                events.add( event );
+            }
+
+            // Warning for small sample size
+            if ( samplingUncertainty.sampleSize() < 5000 )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.WARN )
+                                               .setEventMessage( "The 'sample_size' associated with the "
+                                                                 + "'sampling_uncertainty' is smaller than the "
+                                                                 + "recommended minimum of 5,000 samples, which "
+                                                                 + "may lead to inaccurate estimates of the "
+                                                                 + "sampling uncertainty: "
+                                                                 + samplingUncertainty.sampleSize()
+                                                                 + ". Please consider using a larger 'sample_size', "
+                                                                 + "which will increase the evaluation runtime, but "
+                                                                 + "should lead to a more accurate estimate of the "
+                                                                 + "sampling uncertainty." )
+                                               .build();
+                events.add( event );
+            }
+        }
+
+        return Collections.unmodifiableList( events );
     }
 
     /**

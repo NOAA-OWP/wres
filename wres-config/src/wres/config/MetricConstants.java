@@ -573,6 +573,19 @@ public enum MetricConstants
     }
 
     /**
+     * Returns whether the metric supports sample uncertainty estimation.
+     *
+     * @return whether the sampling uncertainties can be estimated
+     */
+
+    public boolean isSamplingUncertaintyAllowed()
+    {
+        return this != SAMPLE_SIZE
+               && !this.isInGroup( StatisticType.BOXPLOT_PER_PAIR )
+               && !this.isInGroup( StatisticType.BOXPLOT_PER_POOL );
+    }
+
+    /**
      * Returns the {@link StatisticType} associated with the {@link MetricConstants}.
      *
      * @return the {@link StatisticType}.
