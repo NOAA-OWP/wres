@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * A utility class for slicing/dicing and transforming time-series.
- * 
+ *
  * @author James Brown
  * @see     Slicer
  * @see     PoolSlicer
@@ -71,7 +71,7 @@ public final class TimeSeriesSlicer
 
     /**
      * <p>Composes the input predicate as applying to the left side of any paired value within a time-series.
-     * 
+     *
      * @param <L> the type of left paired value
      * @param <R> the type of right paired value
      * @param predicate the input predicate
@@ -102,7 +102,7 @@ public final class TimeSeriesSlicer
 
     /**
      * <p>Composes the input predicate as applying to the right side of any paired value within a time-series.
-     *  
+     *
      * @param <L> the type of left paired value
      * @param <R> the type of right paired value
      * @param predicate the input predicate
@@ -134,7 +134,7 @@ public final class TimeSeriesSlicer
     /**
      * <p>Composes the input predicate as applying to the left side of any paired value within a time-series and,
      * separately, to the right side of any paired value within that time-series.
-     * 
+     *
      * @param <S> the type of left and right paired values
      * @param predicate the input predicate
      * @return a composed predicate
@@ -142,11 +142,11 @@ public final class TimeSeriesSlicer
      */
 
     public static <S> Predicate<TimeSeries<Pair<S, S>>>
-            anyOfLeftAndAnyOfRightInTimeSeries( Predicate<S> predicate )
+    anyOfLeftAndAnyOfRightInTimeSeries( Predicate<S> predicate )
     {
         Objects.requireNonNull( predicate,
                                 "Specify non-null input when slicing a time-series by any of left"
-                                           + "and any of right." );
+                                + "and any of right." );
 
         return times -> {
 
@@ -179,7 +179,7 @@ public final class TimeSeriesSlicer
 
     /**
      * Returns a filtered view of a time-series based on the input predicate.
-     * 
+     *
      * @param <T> the type of time-series value
      * @param timeSeries the time-series
      * @param filter the filter
@@ -254,7 +254,7 @@ public final class TimeSeriesSlicer
     /**
      * Returns a filtered {@link TimeSeries} whose events are within the right-closed time intervals contained in the 
      * prescribed {@link TimeWindowOuter}.
-     * 
+     *
      * @param <T> the type of time-series data
      * @param input the input to slice
      * @param timeWindow the time window on which to slice
@@ -274,7 +274,7 @@ public final class TimeSeriesSlicer
      * Returns a filtered {@link TimeSeries} whose events are within the right-closed time intervals contained in the 
      * prescribed {@link TimeWindowOuter}. When considering lead durations, the filter may focus on all 
      * {@link ReferenceTimeType} or a prescribed subset.
-     * 
+     *
      * @param <T> the type of time-series data
      * @param input the input to slice
      * @param timeWindow the time window on which to slice
@@ -362,7 +362,7 @@ public final class TimeSeriesSlicer
 
     /**
      * Returns a filtered view of a time-series based on the input predicate.
-     * 
+     *
      * @param <T> the type of time-series value
      * @param timeSeries the time-series
      * @param filter the filter
@@ -394,7 +394,7 @@ public final class TimeSeriesSlicer
      * is right-closed. In other words, when an event time falls within <code>(endsAt-period,endsAt]</code>, then add
      * that event to the group associated with <code>endsAt</code>. Use this method to determine groups of events for
      * upscaling values that end at <code>endsAt</code>.
-     * 
+     *
      * @param <T> the type of event value
      * @param events the events to group
      * @param endsAt the end of each group, inclusive
@@ -425,11 +425,11 @@ public final class TimeSeriesSlicer
     /**
      * <p>Groups the input events according to the event valid time. An event falls within a group if its valid time
      * falls within the corresponding group interval. Each interval is right-closed.
-     * 
+     *
      * <p>TODO: this method has a nested loop, which implies O(n^2) complexity, where <code>n</code> is the cardinality
      * of <code>endsAt</code>. While it does exploit time-ordering to avoid searching the entire set of
      * <code>endsAt</code>, it does not scale well for very large datasets.
-     * 
+     *
      * @param <T> the type of event value
      * @param events the events to group
      * @param intervals the intervals within which to group events
@@ -500,7 +500,7 @@ public final class TimeSeriesSlicer
     /**
      * Creates as many intervals as years within the supplied time series using the time scale, which must have one or
      * both month-day bookends defined. Each interval is right-closed.
-     * 
+     *
      * @param <T> the type of time series event value
      * @param desiredTimeScale the desired time scale
      * @param timeSeries the time series
@@ -509,8 +509,8 @@ public final class TimeSeriesSlicer
      */
 
     public static <T> SortedSet<Pair<Instant, Instant>>
-            getIntervalsFromTimeScaleWithMonthDays( TimeScaleOuter desiredTimeScale,
-                                                    TimeSeries<T> timeSeries )
+    getIntervalsFromTimeScaleWithMonthDays( TimeScaleOuter desiredTimeScale,
+                                            TimeSeries<T> timeSeries )
     {
         Objects.requireNonNull( desiredTimeScale );
         Objects.requireNonNull( timeSeries );
@@ -561,7 +561,7 @@ public final class TimeSeriesSlicer
      * Returns a function that calculates the interval that corresponds to the pair of month-day bookends when supplied
      * with a given datetime. This interval can be used to determine whether a given datetime is contained in the 
      * interval.
-     * 
+     *
      * @param startMonthDay the start month-day, possibly null
      * @param endMonthDay the end month-day, possibly null
      * @return the function
@@ -630,14 +630,17 @@ public final class TimeSeriesSlicer
 
     /**
      * Helper that returns the times associated with values in the input series.
-     * 
+     *
      * @param <T> the type of time series event values
      * @param timeSeries the time-series whose valid times should be determined
      * @return the valid times
+     * @throws NullPointerException if the input is null
      */
 
     public static <T> SortedSet<Instant> getValidTimes( TimeSeries<T> timeSeries )
     {
+        Objects.requireNonNull( timeSeries );
+
         SortedSet<Instant> endsAt =
                 timeSeries.getEvents()
                           .stream()
@@ -648,22 +651,58 @@ public final class TimeSeriesSlicer
     }
 
     /**
+     * Helper that returns the unique timesteps between valid times in the input.
+     *
+     * @param timeSeries the time-series
+     * @return the unique timesteps
+     * @throws NullPointerException if the input is null
+     */
+
+    public static <T> SortedSet<Duration> getTimesteps( TimeSeries<T> timeSeries )
+    {
+        SortedSet<Instant> validTimes = TimeSeriesSlicer.getValidTimes( timeSeries );
+        return TimeSeriesSlicer.getTimesteps( validTimes );
+    }
+
+    /**
+     * Helper that returns the time offset between the first valid times of consecutive time-series in the inputs when
+     * the time-series are ordered by their first valid time.
+     *
+     * @param timeSeries the time-series
+     * @return the unique timesteps
+     * @throws NullPointerException if the input is null
+     */
+
+    public static <T> SortedSet<Duration> getTimeOffsets( Collection<TimeSeries<T>> timeSeries )
+    {
+        Objects.requireNonNull( timeSeries );
+
+        SortedSet<Instant> validTimes = timeSeries.stream()
+                                                  .map( n -> n.getEvents()
+                                                              .first()
+                                                              .getTime() )
+                                                  .collect( Collectors.toCollection( TreeSet::new ) );
+
+        return TimeSeriesSlicer.getTimesteps( validTimes );
+    }
+
+    /**
      * <p>Returns a regular sequence of times that are present in both time series and are consistent with the desired 
-     * time scale and begin within the designated time window. If the desired time scale contains month-day bookends, 
+     * timescale and begin within the designated time window. If the desired timescale contains month-day bookends,
      * returns the empty set.
-     * 
+     *
      * <p>When both time series require upscaling, this method makes a best attempt to retain those times from the 
      * superset of possible valid times that follow a prescribed frequency. Consequently, this method effectively 
      * "thins out" the superset of all possible times in order to provide a subset of regularly spaced times. In 
      * general, there is no unique subset of times that follows a prescribed frequency unless a starting position is 
      * defined. Here, counting occurs with respect to a reference time, when available (i.e., the reference time helps 
      * to select a subset). 
-     * 
+     *
      * <p>See #47158-24.
-     * 
+     *
      * <p>This is to re-assert my opinion, stated in #47158, that choosing a subset of possible times is somewhat 
      * arbitrary. This method is an inevitable source of brittleness or surprise.
-     * 
+     *
      * @param <L> the type of left value
      * @param <R> the type of right value
      * @param left the left-ish time-series
@@ -775,7 +814,7 @@ public final class TimeSeriesSlicer
     /**
      * Extracts the events within a time-series and maps them by the duration between a prescribed 
      * {@link ReferenceTimeType} and the event valid time. If the reference time is not found, an empty map is returned.
-     * 
+     *
      * @param <T> the type of event value
      * @param timeSeries the time-series to map
      * @param referenceTimeType the reference time from which to compute durations
@@ -979,7 +1018,7 @@ public final class TimeSeriesSlicer
 
     /**
      * Transforms a time-series from one type to another.
-     * 
+     *
      * @param <S> the existing type of time-series value
      * @param <T> the required type of time-series value
      * @param timeSeries the time-series
@@ -1024,7 +1063,7 @@ public final class TimeSeriesSlicer
     /**
      * Transforms a time-series from one type to another, conditionally upon the valid time of each event as well as 
      * the event value.
-     * 
+     *
      * @param <S> the existing type of time-series value
      * @param <T> the required type of time-series value
      * @param timeSeries the time-series
@@ -1082,7 +1121,7 @@ public final class TimeSeriesSlicer
     /**
      * Returns the subset of pairs where the condition is met. Applies to both the main pairs and any baseline pairs.
      * Does not modify the metadata associated with the input.
-     * 
+     *
      * @param <L> the type of left value
      * @param <R> the type of right value
      * @param input the pairs to slice
@@ -1142,7 +1181,7 @@ public final class TimeSeriesSlicer
     /**
      * Consolidates the input collection of time-series into one time-series. Requires that none of the valid datetimes 
      * are duplicates.
-     * 
+     *
      * @param <T> the time-series event value type
      * @param collectedSeries the collected series
      * @return the consolidated series
@@ -1182,7 +1221,7 @@ public final class TimeSeriesSlicer
 
     /**
      * Returns the mid-point on the UTC timeline between the two inputs
-     * 
+     *
      * @param earliest the earliest time
      * @param latest the latest time
      * @return the mid-point on the UTC timeline
@@ -1201,7 +1240,7 @@ public final class TimeSeriesSlicer
     /**
      * Adds a declared existing timescale to a time-series that has no timescale defined or updates the function
      * associated with a timescale that is defined.
-     * 
+     *
      * @param <T> the time-series event value type
      * @param timeSeries the time-series
      * @param timeScale the declared existing timescale
@@ -1232,7 +1271,7 @@ public final class TimeSeriesSlicer
 
     /**
      * Augments an existing time-scale with a new one, where possible.
-     * 
+     *
      * @param existingTimeScale the existing time scale, optional
      * @param newTimeScale, the new time scale, required
      * @return the augmented time scale
@@ -1273,7 +1312,7 @@ public final class TimeSeriesSlicer
      * Inspects the sorted list of events by counting backwards from the input index. Returns the index of the earliest 
      * time that is larger than the prescribed start time. This is useful for backfilling when searching for groups of
      * events by time. See {@link #groupEventsByInterval(SortedSet, SortedSet, Duration)}.
-     * 
+     *
      * @param workBackFromHere the index at which to begin searching backwards
      * @param startTime the start time that must be exceeded
      * @param events the list of events in time order
@@ -1325,7 +1364,7 @@ public final class TimeSeriesSlicer
         TimeSeries.Builder<Ensemble> builder = new TimeSeries.Builder<>();
         builder.setMetadata( metadata );
 
-        Labels labs = null;
+        Labels labs;
 
         if ( !labels.isEmpty() )
         {
@@ -1354,7 +1393,7 @@ public final class TimeSeriesSlicer
 
     /**
      * Snips the first series to the bounds of the second series.
-     * 
+     *
      * @param <S> the type of time-series event value in the series to snip
      * @param toSnip the series to snip
      * @param snipTo the series to snip to
@@ -1376,12 +1415,13 @@ public final class TimeSeriesSlicer
         {
             if ( LOGGER.isTraceEnabled() )
             {
-                LOGGER.trace( "While snipping series {} to series {} with lower buffer {} and upper buffer {}, no events "
-                              + "were discovered within the series to snip to. Returning the unsnipped series.",
-                              toSnip,
-                              snipTo,
-                              lowerBuffer,
-                              upperBuffer );
+                LOGGER.trace(
+                        "While snipping series {} to series {} with lower buffer {} and upper buffer {}, no events "
+                        + "were discovered within the series to snip to. Returning the unsnipped series.",
+                        toSnip,
+                        snipTo,
+                        lowerBuffer,
+                        upperBuffer );
             }
 
             return toSnip;
@@ -1462,7 +1502,7 @@ public final class TimeSeriesSlicer
      * Adjusts the earliest lead duration of the time window to account for the period associated with the desired time 
      * scale in order to capture sufficient data for rescaling. If the time scale is instantaneous, no adjustment is
      * made.
-     * 
+     *
      * @param timeWindow the time window to adjust, required
      * @param desiredTimeScale the desired time scale, lenient if null (returns the input time window)
      * @return the adjusted time window
@@ -1472,7 +1512,7 @@ public final class TimeSeriesSlicer
     {
         Objects.requireNonNull( timeWindow );
 
-        if( Objects.nonNull( desiredTimeScale ) && desiredTimeScale.isInstantaneous() )
+        if ( Objects.nonNull( desiredTimeScale ) && desiredTimeScale.isInstantaneous() )
         {
             LOGGER.debug( "Not adjusting the time window of {} with the time scale because the time scale is "
                           + "instantaneous.", timeWindow );
@@ -1501,11 +1541,12 @@ public final class TimeSeriesSlicer
 
             if ( LOGGER.isDebugEnabled() )
             {
-                LOGGER.debug( "Adjusted the earliest lead duration of {} by {} to {}, in order to select sufficient data "
-                              + "for rescaling.",
-                              timeWindow,
-                              desiredTimeScale.getPeriod(),
-                              adjustedWindow );
+                LOGGER.debug(
+                        "Adjusted the earliest lead duration of {} by {} to {}, in order to select sufficient data "
+                        + "for rescaling.",
+                        timeWindow,
+                        desiredTimeScale.getPeriod(),
+                        adjustedWindow );
             }
         }
 
@@ -1514,7 +1555,7 @@ public final class TimeSeriesSlicer
 
     /**
      * Adds a prescribed offset to the valid time of each time-series in the list.
-     * 
+     *
      * @param <T> the time-series event value type
      * @param toTransform the list of time-series to transform
      * @param offset the offset to add
@@ -1559,7 +1600,7 @@ public final class TimeSeriesSlicer
     /**
      * Snips the input series to the prescribed time window. Only snips lead durations with respect to reference times 
      * with the type {@link ReferenceTimeType#T0}.
-     * 
+     *
      * @param <T> the time-series event value type
      * @param toSnip the time-series to snip
      * @param snipTo the time window to use when snipping
@@ -1612,7 +1653,7 @@ public final class TimeSeriesSlicer
 
     /**
      * Returns the reference times that fall within the right-closed time window.
-     * 
+     *
      * @param referenceTimes the reference times
      * @param timeWindow the time window
      * @return the reference times that fall within the window
@@ -1651,7 +1692,7 @@ public final class TimeSeriesSlicer
 
     /**
      * Returns true if the input time is contained within the right-closed bounds provided.
-     * 
+     *
      * @param time the time to test
      * @param lowerExclusive the lower exclusive limit
      * @param upperInclusive the upper inclusive limit
@@ -1676,7 +1717,7 @@ public final class TimeSeriesSlicer
 
     /**
      * Returns true if the input duration is contained within the right-closed bounds provided.
-     * 
+     *
      * @param duration the duration to test
      * @param lowerExclusive the lower exclusive limit
      * @param upperInclusive the upper inclusive limit
@@ -1697,7 +1738,7 @@ public final class TimeSeriesSlicer
 
     /**
      * Helper that returns the first available reference time from the time series, otherwise <code>null</code>.
-     * 
+     *
      * @param left the left time series
      * @param right the right time series
      * @return the first available reference time or null
@@ -1723,7 +1764,7 @@ public final class TimeSeriesSlicer
     /**
      * Helper that returns the first available valid time, adjusted for the <code>period</code> associated with the 
      * time scale, otherwise <code>null</code>.
-     * 
+     *
      * @param validTimes the valid times
      * @param period the time scale period
      * @return the first available valid time adjusted for the time scale period
@@ -1750,7 +1791,7 @@ public final class TimeSeriesSlicer
 
     /**
      * Returns a regular sequence of times from the supplied set of times using the prescribed period and frequency.
-     * 
+     *
      * @param timesToThin the times from which a regular sequence should be created
      * @param origin the start of the sequence
      * @param period the period associated with the desired time scale
@@ -1842,7 +1883,7 @@ public final class TimeSeriesSlicer
      * Steps away from the reference time by the period, initially, then the frequency, until an event is discovered in
      * the list with the same valid time. If no event is discovered, returns the valid time of the first event in the 
      * list.
-     * 
+     *
      * @param referenceTime the reference time
      * @param period the period
      * @param frequency the frequency
@@ -1877,7 +1918,7 @@ public final class TimeSeriesSlicer
     /**
      * Steps forwards from the reference time by the period, initially, then the frequency, until a time is discovered 
      * in the list. If no time is discovered, returns the first time in the list.
-     * 
+     *
      * @param referenceTime the reference time
      * @param period the period
      * @param frequency the frequency
@@ -1945,7 +1986,7 @@ public final class TimeSeriesSlicer
 
         for ( Instant nextValidTime : times )
         {
-            boolean include = true;
+            boolean include;
 
             // Filter by valid times
             // Falls on upper bound or falls within bounds
@@ -1971,6 +2012,33 @@ public final class TimeSeriesSlicer
         }
 
         return Collections.unmodifiableSortedSet( contained );
+    }
+
+    /**
+     * Helper that returns the unique timesteps between consecutive times in the input.
+     *
+     * @param times the times
+     * @return the unique timesteps
+     * @throws NullPointerException if the input is null
+     */
+
+    private static SortedSet<Duration> getTimesteps( SortedSet<Instant> times )
+    {
+        Objects.requireNonNull( times );
+
+        Instant last = null;
+        SortedSet<Duration> timesteps = new TreeSet<>();
+        for ( Instant next : times )
+        {
+            if ( Objects.nonNull( last ) )
+            {
+                Duration timestep = Duration.between( last, next );
+                timesteps.add( timestep );
+            }
+            last = next;
+        }
+
+        return Collections.unmodifiableSortedSet( timesteps );
     }
 
     /**

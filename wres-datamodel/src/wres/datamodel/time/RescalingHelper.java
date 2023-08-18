@@ -497,9 +497,13 @@ class RescalingHelper
         Duration period = desiredTimeScale.getPeriod();
 
         Duration timeStep = Duration.ZERO; // The inert amount by which to back-pedal
-        if ( timeSeries.getEvents().size() > 1 )
+        if ( timeSeries.getEvents()
+                       .size() > 1 )
         {
-            Iterator<Instant> iterator = timeSeries.getEvents().stream().map( Event::getTime ).iterator();
+            Iterator<Instant> iterator = timeSeries.getEvents()
+                                                   .stream()
+                                                   .map( Event::getTime )
+                                                   .iterator();
             timeStep = Duration.between( iterator.next(), iterator.next() );
         }
 
