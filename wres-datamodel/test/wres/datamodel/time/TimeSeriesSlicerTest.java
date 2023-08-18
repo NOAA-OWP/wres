@@ -72,8 +72,7 @@ final class TimeSeriesSlicerTest
     private static final Instant T2086_05_01T00_00_00Z = Instant.parse( "2086-05-01T00:00:00Z" );
 
     private static final String VARIABLE_NAME = "Fruit";
-    private static final Feature FEATURE_NAME = Feature.of(
-            MessageFactory.getGeometry( "Tropics" ) );
+    private static final Feature FEATURE_NAME = Feature.of( MessageFactory.getGeometry( "Tropics" ) );
     private static final String UNIT = "kg/h";
 
     @Test
@@ -1424,6 +1423,53 @@ final class TimeSeriesSlicerTest
                                                                  Duration.ofHours( 2 ) );
         TimeWindowOuter expected = TimeWindowOuter.of( expectedInner );
 
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetTimesteps()
+    {
+        TimeSeries<Double> series =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T17:00:00Z" ), 1.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T18:00:00Z" ), 1.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T19:00:00Z" ), 1.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T21:00:00Z" ), 1.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ), 1.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-05T04:00:00Z" ), 1.0 ) )
+                        .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                        .build();
+
+        SortedSet<Duration> actual = TimeSeriesSlicer.getTimesteps( series );
+        SortedSet<Duration> expected = new TreeSet<>( Set.of( Duration.ofHours( 1 ),
+                                                              Duration.ofHours( 2 ),
+                                                              Duration.ofHours( 3 ),
+                                                              Duration.ofHours( 4 ) ) );
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetTimeOffsets()
+    {
+        TimeSeries<Double> first =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T17:00:00Z" ), 1.0 ) )
+                        .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                        .build();
+        TimeSeries<Double> second =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T18:00:00Z" ), 1.0 ) )
+                        .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                        .build();
+        TimeSeries<Double> third =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ), 1.0 ) )
+                        .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
+                        .build();
+
+        SortedSet<Duration> actual = TimeSeriesSlicer.getTimeOffsets( List.of( first, third, second ) );
+        SortedSet<Duration> expected = new TreeSet<>( Set.of( Duration.ofHours( 1 ),
+                                                              Duration.ofHours( 6 ) ) );
         assertEquals( expected, actual );
     }
 
