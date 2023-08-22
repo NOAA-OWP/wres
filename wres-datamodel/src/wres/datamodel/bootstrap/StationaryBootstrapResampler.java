@@ -1,4 +1,4 @@
-package wres.datamodel.pools.bootstrap;
+package wres.datamodel.bootstrap;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -82,6 +82,7 @@ public class StationaryBootstrapResampler<T>
      * @param pool the pool to resample, required
      * @param meanBlockSizeInTimesteps the mean block size in timestep units, which must be greater than zero
      * @param randomGenerator the random number generator to use when sampling block sizes, required
+     * @return an instance
      * @throws NullPointerException if any required input is null
      * @throws IllegalArgumentException if the block size is less than or equal to zero or the pairs are invalid
      */
@@ -113,8 +114,8 @@ public class StationaryBootstrapResampler<T>
                                                          .getMetadata() );
         }
 
-        // Generate the common indexes to resample across mini pools and both main/baseline pairs. This assumes perfect
-        // statistical dependence across mini pools and main/baseline pairs
+        // Generate the common indexes to resample across mini pools and both the main/baseline pairs. This assumes
+        // perfect statistical dependence across the mini pools and main/baseline pairs
         List<ResampleIndexes> indexes = this.generateIndexesForResampling( this.main.get( 0 ) );
 
         for ( int i = 0; i < this.main.size(); i++ )

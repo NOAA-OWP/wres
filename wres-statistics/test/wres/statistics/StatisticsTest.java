@@ -14,7 +14,7 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
 
 /**
  * Tests the generated statistics messages.
- * 
+ *
  * @author James Brown
  */
 
@@ -24,12 +24,14 @@ class StatisticsTest
     @Test
     void testThatAStatisticCanBeCreated()
     {
+        DoubleScoreMetricComponent metric = DoubleScoreMetricComponent.newBuilder()
+                                                                      .setName( ComponentName.SHARPNESS )
+                                                                      .build();
         DoubleScoreStatistic aScore =
                 DoubleScoreStatistic.newBuilder()
                                     .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.BRIER_SCORE ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.SHARPNESS ) )
+                                                                                 .setMetric( metric )
                                                                                  .setValue( 1.0 ) )
                                     .build();
 

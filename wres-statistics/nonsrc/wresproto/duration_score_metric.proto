@@ -40,6 +40,7 @@ message DurationScoreMetric
         }
 
         ComponentName name = 1;
+        // The metric component name.
 
         google.protobuf.Duration optimum = 2; 
         /*The optimum value of the score (e.g., 0.0 for the mean error in 

@@ -1,4 +1,4 @@
-package wres.datamodel.pools.bootstrap;
+package wres.datamodel.bootstrap;
 
 import java.time.Duration;
 import java.time.Instant;
