@@ -24,7 +24,7 @@ message DoubleScoreMetric
     
     message DoubleScoreMetricComponent
     {
-        // A score component name.
+        // A score component.
         
         enum ComponentName 
         {
@@ -48,6 +48,7 @@ message DoubleScoreMetric
         }
 
         ComponentName name = 1;
+        // The metric component name.
 
         string units = 2;
         // Units of the score.

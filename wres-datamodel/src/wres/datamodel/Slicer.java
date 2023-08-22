@@ -628,25 +628,25 @@ public final class Slicer
             {
                 return Double.NaN;
             }
-            //Single item
+            // Single item
             if ( sorted.length == 1 )
             {
                 return sorted[0];
             }
 
-            //Estimate the position
+            // Estimate the position
             double pos = probability * ( sorted.length + 1.0 );
             //Lower bound
             if ( pos < 1.0 )
             {
                 return sorted[0];
             }
-            //Upper bound
+            // Upper bound
             else if ( pos >= sorted.length )
             {
                 return sorted[sorted.length - 1];
             }
-            //Contained: use linear interpolation
+            // Contained: use linear interpolation
             else
             {
                 double floorPos = Math.floor( pos );

@@ -36,7 +36,8 @@ message DiagramMetric
     
         enum DiagramComponentName 
         {
-            // Name of component
+            // The name of a diagram component.
+
             UNKNOWN = 0;
             PROBABILITY_OF_FALSE_DETECTION = 1;
             PROBABILITY_OF_DETECTION = 2;
@@ -48,7 +49,8 @@ message DiagramMetric
             SAMPLE_SIZE = 8;
         }
 
-        DiagramComponentName name = 1;               
+        DiagramComponentName name = 1;
+        // The metric component name.
 
         string units = 2;
         // Units of the component

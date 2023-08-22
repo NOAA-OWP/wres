@@ -1,4 +1,4 @@
-package wres.datamodel.pools.bootstrap;
+package wres.datamodel.bootstrap;
 
 import java.util.ArrayList;
 import java.util.Collections;
