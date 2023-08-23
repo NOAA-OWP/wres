@@ -653,6 +653,7 @@ public final class TimeSeriesSlicer
     /**
      * Helper that returns the unique timesteps between valid times in the input.
      *
+     * @param <T> the time-series event value type
      * @param timeSeries the time-series
      * @return the unique timesteps
      * @throws NullPointerException if the input is null
@@ -668,6 +669,7 @@ public final class TimeSeriesSlicer
      * Helper that returns the time offset between the first valid times of consecutive time-series in the inputs when
      * the time-series are ordered by their first valid time.
      *
+     * @param <T> the time-series event value type
      * @param timeSeries the time-series
      * @return the unique timesteps
      * @throws NullPointerException if the input is null

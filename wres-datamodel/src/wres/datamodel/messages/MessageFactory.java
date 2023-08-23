@@ -87,19 +87,19 @@ public class MessageFactory
      * Creates a collection of {@link wres.statistics.generated.Statistics} by pool from a
      * {@link wres.datamodel.statistics.StatisticsStore}.
      *
-     * @param project the project statistics
+     * @param store the project statistics
      * @return the statistics message
      * @throws IllegalArgumentException if there are zero statistics in total
      * @throws NullPointerException if any input is null
      * @throws InterruptedException if the statistics could not be retrieved from the project
      */
 
-    public static Collection<Statistics> getStatistics( StatisticsStore project )
+    public static Collection<Statistics> getStatistics( StatisticsStore store )
             throws InterruptedException
     {
-        Objects.requireNonNull( project );
+        Objects.requireNonNull( store );
 
-        Collection<StatisticsStore> decomposedStatistics = MessageFactory.getStatisticsPerPool( project );
+        Collection<StatisticsStore> decomposedStatistics = MessageFactory.getStatisticsPerPool( store );
 
         Collection<Statistics> returnMe = new ArrayList<>();
 

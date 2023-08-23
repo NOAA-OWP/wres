@@ -255,16 +255,17 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         LOGGER.debug( "Created pool {}.", pool.getMetadata() );
 
         // Compute the statistics
-        List<StatisticsStore> statistics = this.getStatisticsProcessingTask( this.metricProcessors,
-                                                                             this.traceCountEstimator )
-                                               .apply( pool );
+        Function<Pool<TimeSeries<Pair<L, R>>>, List<StatisticsStore>> processor =
+                this.getStatisticsProcessingTask( this.metricProcessors,
+                                                  this.traceCountEstimator );
+        List<StatisticsStore> statistics = processor.apply( pool );
 
         // Publish the statistics
         Status status = this.publish( this.evaluation,
                                       statistics,
                                       this.getMessageGroupId() );
 
-        // Register publication of the pool with the pool group tracker
+        // Register publication of the statistics for this pool/message group
         this.poolGroupTracker.registerPublication( this.getMessageGroupId(), status == Status.STATISTICS_PUBLISHED );
 
         // TODO: extract the pair writing to the product writers, i.e., publish the pairs
