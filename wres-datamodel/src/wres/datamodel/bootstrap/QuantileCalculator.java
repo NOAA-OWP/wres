@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.DoubleUnaryOperator;
@@ -74,7 +75,7 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
     private final AtomicBoolean hasQuantiles;
 
     /** The probabilities corresponding to the required quantile values. */
-    private final List<Double> probabilities;
+    private final SortedSet<Double> probabilities;
 
     /** The quantiles, which cannot be read unless {@link #hasQuantiles} is {@code true}. */
     private final List<Statistics> quantiles;
@@ -91,7 +92,7 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
      */
     public static QuantileCalculator of( Statistics nominal,
                                          int sampleCount,
-                                         List<Double> probabilities,
+                                         SortedSet<Double> probabilities,
                                          boolean addNominal )
     {
         return new QuantileCalculator( nominal, sampleCount, probabilities, addNominal );
@@ -518,7 +519,7 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
      */
     private QuantileCalculator( Statistics nominal,
                                 int sampleCount,
-                                List<Double> probabilities,
+                                SortedSet<Double> probabilities,
                                 boolean addNominal )
     {
         Objects.requireNonNull( nominal );
@@ -556,7 +557,7 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
 
         this.nominal = nominal;
         this.sampleCount = sampleCount;
-        this.probabilities = Collections.unmodifiableList( probabilities );
+        this.probabilities = Collections.unmodifiableSortedSet( probabilities );
         this.sampleIndexStarted = new AtomicInteger();
         this.sampleIndexCompleted = new AtomicInteger();
         this.hasQuantiles = new AtomicBoolean();

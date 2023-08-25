@@ -2,13 +2,14 @@ package wres.datamodel.messages;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -19,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Timestamp;
+
 import wres.datamodel.Ensemble;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
@@ -85,23 +87,24 @@ public class MessageFactory
 
     /**
      * Creates a collection of {@link wres.statistics.generated.Statistics} by pool from a
-     * {@link wres.datamodel.statistics.StatisticsStore}.
+     * {@link wres.datamodel.statistics.StatisticsStore}. The statistics are returned in a guaranteed order,
+     * corresponding to the natural order of the pool boundaries.
      *
      * @param store the project statistics
-     * @return the statistics message
+     * @return the statistics in the natural order of their corresponding pools
      * @throws IllegalArgumentException if there are zero statistics in total
      * @throws NullPointerException if any input is null
      * @throws InterruptedException if the statistics could not be retrieved from the project
      */
 
-    public static Collection<Statistics> getStatistics( StatisticsStore store )
+    public static List<Statistics> getStatistics( StatisticsStore store )
             throws InterruptedException
     {
         Objects.requireNonNull( store );
 
-        Collection<StatisticsStore> decomposedStatistics = MessageFactory.getStatisticsPerPool( store );
+        List<StatisticsStore> decomposedStatistics = MessageFactory.getStatisticsPerPool( store );
 
-        Collection<Statistics> returnMe = new ArrayList<>();
+        List<Statistics> returnMe = new ArrayList<>();
 
         for ( StatisticsStore next : decomposedStatistics )
         {
@@ -114,7 +117,7 @@ public class MessageFactory
             }
         }
 
-        return Collections.unmodifiableCollection( returnMe );
+        return Collections.unmodifiableList( returnMe );
     }
 
     /**
@@ -471,7 +474,7 @@ public class MessageFactory
 
         // Set the outputs
         wres.config.yaml.components.Formats formats = evaluation.formats();
-        if( Objects.nonNull( formats ) )
+        if ( Objects.nonNull( formats ) )
         {
             Outputs innerOutputs = formats.outputs();
             builder.setOutputs( innerOutputs );
@@ -820,20 +823,21 @@ public class MessageFactory
     }
 
     /**
-     * Decomposes the input into pools. A pool contains a single set of space, time and threshold dimensions.
+     * Decomposes the input into pools. A pool contains a single set of space, time and threshold dimensions. The
+     * statistics are returned in the natural order of the pools.
      *
      * @param statisticsStore the project statistics
-     * @return the decomposed statistics
+     * @return the decomposed statistics in natural order
      * @throws InterruptedException if the statistics could not be retrieved from the project
      * @throws NullPointerException if the input is null
      */
 
-    private static Collection<StatisticsStore> getStatisticsPerPool( StatisticsStore statisticsStore )
+    private static List<StatisticsStore> getStatisticsPerPool( StatisticsStore statisticsStore )
             throws InterruptedException
     {
         Objects.requireNonNull( statisticsStore );
 
-        Map<PoolBoundaries, StatisticsStore.Builder> mappedStatistics = new HashMap<>();
+        Map<PoolBoundaries, StatisticsStore.Builder> mappedStatistics = new TreeMap<>();
 
         // Double scores
         if ( statisticsStore.hasStatistic( StatisticType.DOUBLE_SCORE ) )
@@ -881,7 +885,7 @@ public class MessageFactory
             MessageFactory.addPairedStatisticsToPool( statistics, mappedStatistics );
         }
 
-        Collection<StatisticsStore> returnMe = new ArrayList<>();
+        List<StatisticsStore> returnMe = new ArrayList<>();
 
         // Build the per-pool statistics
         for ( StatisticsStore.Builder builder : mappedStatistics.values() )
@@ -891,7 +895,7 @@ public class MessageFactory
             returnMe.add( statistics );
         }
 
-        return Collections.unmodifiableCollection( returnMe );
+        return Collections.unmodifiableList( returnMe );
     }
 
     /**
@@ -909,14 +913,19 @@ public class MessageFactory
         wres.datamodel.time.TimeWindowOuter window = metadata.getTimeWindow();
         wres.datamodel.thresholds.OneOrTwoThresholds thresholds = metadata.getThresholds();
 
-        Set<wres.datamodel.space.FeatureTuple> features = metadata.getPool()
-                                                                  .getGeometryGroup()
-                                                                  .getGeometryTuplesList()
-                                                                  .stream()
-                                                                  .map( MessageFactory::parse )
-                                                                  .collect( Collectors.toSet() );
+        SortedSet<wres.datamodel.space.FeatureTuple> features =
+                metadata.getPool()
+                        .getGeometryGroup()
+                        .getGeometryTuplesList()
+                        .stream()
+                        .map( MessageFactory::parse )
+                        .collect( Collectors.toCollection( TreeSet::new ) );
 
-        return new PoolBoundaries( features, window, thresholds, metadata.getPool().getIsBaselinePool() );
+        return new PoolBoundaries( Collections.unmodifiableSortedSet( features ),
+                                   window,
+                                   thresholds,
+                                   metadata.getPool()
+                                           .getIsBaselinePool() );
     }
 
     /**
@@ -925,10 +934,65 @@ public class MessageFactory
      * @author James Brown
      */
 
-    private record PoolBoundaries( Set<FeatureTuple> features,
+    private record PoolBoundaries( SortedSet<FeatureTuple> features,
                                    TimeWindowOuter window,
                                    OneOrTwoThresholds thresholds,
-                                   boolean isBaselinePool ) {}
+                                   boolean isBaselinePool ) implements Comparable<PoolBoundaries>
+    {
+        @Override
+        public int compareTo( PoolBoundaries o )
+        {
+            int compare = this.window()
+                              .compareTo( o.window() );
+
+            if ( compare != 0 )
+            {
+                return compare;
+            }
+
+            compare = this.thresholds()
+                          .compareTo( o.thresholds() );
+
+            if ( compare != 0 )
+            {
+                return compare;
+            }
+
+            compare = Boolean.compare( this.isBaselinePool(), o.isBaselinePool() );
+
+            if ( compare != 0 )
+            {
+                return compare;
+            }
+
+            compare = Integer.compare( this.features()
+                                           .size(),
+                                       o.features()
+                                        .size() );
+
+            if ( compare != 0 )
+            {
+                return compare;
+            }
+
+            Iterator<FeatureTuple> internal = this.features()
+                                                  .iterator();
+            Iterator<FeatureTuple> external = o.features()
+                                               .iterator();
+            while ( internal.hasNext() )
+            {
+                compare = internal.next()
+                                  .compareTo( external.next() );
+
+                if ( compare != 0 )
+                {
+                    return compare;
+                }
+            }
+
+            return 0;
+        }
+    }
 
     /**
      * Adds the new statistics to the map.
@@ -1167,8 +1231,8 @@ public class MessageFactory
             else if ( Objects.nonNull( baseline.generatedBaseline() ) )
             {
                 String methodName = baseline.generatedBaseline()
-                                              .method()
-                                              .name();
+                                            .method()
+                                            .name();
                 builder.setBaselineDataName( methodName );
                 LOGGER.debug( SET_THE_BASELINE_DATASET_NAME_TO, methodName );
             }

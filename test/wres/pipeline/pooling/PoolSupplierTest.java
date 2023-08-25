@@ -1188,7 +1188,7 @@ class PoolSupplierTest
 
         Function<Set<Feature>, BaselineGenerator<Double>> featuredBaselineGenerator = in -> baselineGenerator;
 
-        TimeSeriesCrossPairer<Double, Double> crossPairer = TimeSeriesCrossPairer.of();
+        TimeSeriesCrossPairer<Pair<Double, Double>> crossPairer = TimeSeriesCrossPairer.of();
 
         Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolOneSupplier =
                 new PoolSupplier.Builder<Double, Double, Double>().setLeft( obsSupplier )

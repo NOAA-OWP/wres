@@ -354,7 +354,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
 
         // Process the ensemble result, which do not yet include single-valued metrics       
         StatisticsFutures futureResults = futures.build();
-        StatisticsStore results = futureResults.getMetricOutput();
+        StatisticsStore results = futureResults.getStatistics();
 
         // Process the metrics that consume single-valued pairs, which includes any dichotomous metrics derived from 
         // single-valued pairs: #109783. See later for dichotomous metrics produced from ensemble pairs

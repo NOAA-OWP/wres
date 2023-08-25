@@ -1534,6 +1534,20 @@ public class DeclarationValidator
         SamplingUncertainty samplingUncertainty = declaration.sampleUncertainty();
         if ( Objects.nonNull( declaration.sampleUncertainty() ) )
         {
+            // Always warn about cost of this option
+            EvaluationStatusEvent warn
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( "The evaluation included 'sampling_uncertainty' "
+                                                             + "declaration, which will be delivered using a "
+                                                             + "resampling scheme that is computationally expensive. "
+                                                             + "This option should be used with care and the "
+                                                             + "evaluation may take significantly longer to complete "
+                                                             + "than an equivalent evaluation without the "
+                                                             + "'sampling_uncertainty' declaration." )
+                                           .build();
+            events.add( warn );
+
             // Quantiles are invalid
             if ( Objects.isNull( samplingUncertainty.quantiles() )
                  || samplingUncertainty.quantiles()
@@ -1571,23 +1585,6 @@ public class DeclarationValidator
                 events.add( event );
             }
 
-            // Block size is invalid
-            if ( Objects.nonNull( samplingUncertainty.blockSize() )
-                 && Duration.ZERO.compareTo( samplingUncertainty.blockSize() ) >= 0 )
-            {
-                EvaluationStatusEvent event
-                        = EvaluationStatusEvent.newBuilder()
-                                               .setStatusLevel( StatusLevel.ERROR )
-                                               .setEventMessage( "The 'block_size' associated with the "
-                                                                 + "'sampling_uncertainty' must contain a duration "
-                                                                 + "that is larger than zero, but the declared duration "
-                                                                 + "is: "
-                                                                 + samplingUncertainty.blockSize()
-                                                                 + ". Please fix the 'block_size' and try again." )
-                                               .build();
-                events.add( event );
-            }
-
             // Warning for small sample size
             if ( samplingUncertainty.sampleSize() < 5000 )
             {
@@ -1604,6 +1601,28 @@ public class DeclarationValidator
                                                                  + "which will increase the evaluation runtime, but "
                                                                  + "should lead to a more accurate estimate of the "
                                                                  + "sampling uncertainty." )
+                                               .build();
+                events.add( event );
+            }
+
+            // Error for a sample size that is too large
+            if ( samplingUncertainty.sampleSize() > 100000 )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setEventMessage( "The 'sample_size' associated with the "
+                                                                 + "'sampling_uncertainty' is larger than the "
+                                                                 + "reasonable maximum of 100,000 samples: "
+                                                                 + samplingUncertainty.sampleSize()
+                                                                 + ". This restriction is imposed because sampling "
+                                                                 + "uncertainty estimation is extremely expensive, "
+                                                                 + "computationally. Please reduce the 'sample_size' "
+                                                                 + "to a reasonable value below 100,000. A suggested "
+                                                                 + "maximum is 10,000 samples, which should be more "
+                                                                 + "than sufficient to estimate the sampling "
+                                                                 + "uncertainty with reasonable accuracy and without "
+                                                                 + "using excessive resources." )
                                                .build();
                 events.add( event );
             }

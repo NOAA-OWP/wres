@@ -1735,10 +1735,10 @@ class DeclarationValidatorTest
     }
 
     @Test
-    void testSamplingUncertaintyBlockSizeIsInvalidProducesError()
+    void testSamplingUncertaintySampleSizeIsTooLargeProducesError()
     {
         SamplingUncertainty samplingUncertainty = SamplingUncertaintyBuilder.builder()
-                                                                            .blockSize( java.time.Duration.ZERO )
+                                                                            .sampleSize( 100_001 )
                                                                             .build();
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
@@ -1750,8 +1750,7 @@ class DeclarationValidatorTest
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
         assertTrue( DeclarationValidatorTest.contains( events,
-                                                       "'sampling_uncertainty' must contain a duration that is "
-                                                       + "larger than zero",
+                                                       "is larger than the reasonable maximum",
                                                        StatusLevel.ERROR ) );
     }
 

@@ -500,12 +500,17 @@ public class StationaryBootstrapResampler<T>
                 .forEach( timesteps::add );
         }
 
+        // Warn about missing data or irregular time-series. Perhaps more sophistication could be introduced in future
+        // to account for missing data, but the current approach assumes regular time-series without a lot of missing
+        // data. Warn, but allow because even a single missing event among many could trigger this check
         if ( timesteps.size() > 1 )
         {
-            throw new IllegalArgumentException( "Cannot resample time-series that contain more than one timestep. "
-                                                + "Discovered the following timesteps among the supplied time-series: "
-                                                + timesteps
-                                                + "." );
+            LOGGER.warn( "While resampling a pool to estimate the sampling uncertainties of the statistics, discovered "
+                         + "more than one timestep among the time-series present, which may be caused by missing data "
+                         + "or irregular time-series. The resampling technique assumes regular timeseries with a "
+                         + "consistent transition probability between adjacent times. If the time-series contain a lot "
+                         + "of missing data or irregular time-series, the sampling uncertainty estimates may be "
+                         + "unreliable. The following timesteps were discovered: {}.", timesteps );
         }
 
         SortedSet<Duration> timeOffsets = new TreeSet<>( TimeSeriesSlicer.getTimeOffsets( pool.get() ) );

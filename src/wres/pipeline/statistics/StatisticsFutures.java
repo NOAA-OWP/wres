@@ -19,7 +19,7 @@ import wres.datamodel.statistics.StatisticsStore;
 import wres.datamodel.statistics.StatisticsStore.Builder;
 
 /**
- * Store of metric futures for each output type. Use {@link #getMetricOutput()} to obtain the processed
+ * Store of metric futures for each output type. Use {@link #getStatistics()} to obtain the processed
  * {@link StatisticsStore}.
  * 
  * @author James Brown
@@ -69,7 +69,7 @@ class StatisticsFutures
      * @return the metric results
      */
 
-    StatisticsStore getMetricOutput()
+    StatisticsStore getStatistics()
     {
         Builder builder = new StatisticsStore.Builder();
 

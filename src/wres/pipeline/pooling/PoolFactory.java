@@ -478,7 +478,7 @@ public class PoolFactory
                                                                                   timePairingType );
 
         // Create a cross pairer, in case this is required by the declaration
-        TimeSeriesCrossPairer<Double, Double> crossPairer = this.getCrossPairerOrNull( declaration );
+        TimeSeriesCrossPairer<Pair<Double, Double>> crossPairer = this.getCrossPairerOrNull( declaration );
 
         // Lenient upscaling?
         boolean leftLenient = project.isUpscalingLenient( DatasetOrientation.LEFT );
@@ -626,7 +626,7 @@ public class PoolFactory
                                                 timePairingType );
 
         // Create a cross pairer, in case this is required by the declaration
-        TimeSeriesCrossPairer<Double, Ensemble> crossPairer = this.getCrossPairerOrNull( declaration );
+        TimeSeriesCrossPairer<Pair<Double, Ensemble>> crossPairer = this.getCrossPairerOrNull( declaration );
 
         // Lenient upscaling?
         boolean leftLenient = project.isUpscalingLenient( DatasetOrientation.LEFT );
@@ -749,7 +749,7 @@ public class PoolFactory
                                                 timePairingType );
 
         // Create a cross pairer, in case this is required by the declaration
-        TimeSeriesCrossPairer<Double, Ensemble> crossPairer = this.getCrossPairerOrNull( declaration );
+        TimeSeriesCrossPairer<Pair<Double, Ensemble>> crossPairer = this.getCrossPairerOrNull( declaration );
 
         // Lenient upscaling?
         boolean leftLenient = project.isUpscalingLenient( DatasetOrientation.LEFT );
@@ -996,10 +996,10 @@ public class PoolFactory
      * @return a cross-pairer or null
      */
 
-    private <L, R> TimeSeriesCrossPairer<L, R> getCrossPairerOrNull( EvaluationDeclaration declaration )
+    private <L, R> TimeSeriesCrossPairer<Pair<L, R>> getCrossPairerOrNull( EvaluationDeclaration declaration )
     {
         // Create a cross pairer, in case this is required by the declaration
-        TimeSeriesCrossPairer<L, R> crossPairer = null;
+        TimeSeriesCrossPairer<Pair<L, R>> crossPairer = null;
         CrossPair crossPair = declaration.crossPair();
         if ( Objects.nonNull( crossPair ) )
         {

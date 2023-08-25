@@ -183,14 +183,14 @@ public final class StatisticsFuturesTest
     }
 
     /**
-     * Checks that the {@link StatisticsFutures#getMetricOutput()} returns non-null output when expected.
+     * Checks that the {@link StatisticsFutures#getStatistics()} returns non-null output when expected.
      */
 
     @Test
     public void testGetMetricOutput()
     {
         // Check with all present
-        assertNotNull( this.futures.getMetricOutput() );
+        assertNotNull( this.futures.getStatistics() );
     }
 
     /**

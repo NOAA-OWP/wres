@@ -16,6 +16,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
+import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -24,6 +25,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.MetricConstants;
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationInterpolator;
 import wres.config.yaml.DeclarationUtilities;
@@ -33,6 +35,7 @@ import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.GeneratedBaselines;
 import wres.datamodel.Ensemble;
+import wres.datamodel.bootstrap.BlockSizeEstimator;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolRequest;
@@ -113,6 +116,14 @@ class EvaluationUtilities
     /** A function that estimates the trace count of a pool that contains single-valued traces. */
     private static final ToIntFunction<Pool<TimeSeries<Pair<Double, Double>>>> SINGLE_VALUED_TRACE_COUNT_ESTIMATOR =
             EvaluationUtilities.getSingleValuedTraceCountEstimator();
+
+    /** A block size estimator for the stationary bootstrap as applied to single-valued pools.*/
+    private static final ToLongFunction<Pool<TimeSeries<Pair<Double, Double>>>> SINGLE_VALUED_BLOCK_SIZE_ESTIMATOR =
+            EvaluationUtilities::getOptimalBlockSizeForStationaryBootstrap;
+
+    /** A block size estimator for the stationary bootstrap as applied to ensemble pools.*/
+    private static final ToLongFunction<Pool<TimeSeries<Pair<Double, Ensemble>>>> ENSEMBLE_BLOCK_SIZE_ESTIMATOR =
+            EvaluationUtilities::getOptimalBlockSizeForStationaryBootstrap;
 
     /** Re-used string. */
     private static final String PERFORMING_RETRIEVAL_WITH_AN_IN_MEMORY_RETRIEVER_FACTORY =
@@ -683,10 +694,17 @@ class EvaluationUtilities
                                            PoolReporter poolReporter,
                                            PoolGroupTracker poolGroupTracker )
     {
-
         LOGGER.info( "Submitting {} pool tasks for execution, which are awaiting completion. This can take a "
                      + "while...",
                      poolRequests.size() );
+
+        // Sampling uncertainty declaration?
+        if ( Objects.nonNull( evaluationDetails.declaration()
+                                               .sampleUncertainty() ) )
+        {
+            LOGGER.warn( "Estimating the sampling uncertainties of the evaluation statistics with the stationary "
+                         + "bootstrap. This evaluation may take much longer than usual..." );
+        }
 
         // Create the atomic tasks for this evaluation pipeline, i.e., pools. There are as many tasks as pools and
         // they are composed into an asynchronous "chain" such that all pools complete successfully or one pool 
@@ -1130,6 +1148,13 @@ class EvaluationUtilities
                                                                executors.thresholdExecutor(),
                                                                executors.metricExecutor() );
 
+        // Get a separate set of processors for sampling uncertainty, excluding metrics whose uncertainties should not
+        // be estimated
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> sampleProcessors =
+                EvaluationUtilities.getSingleValuedProcessorsForSamplingUncertainty( evaluationDetails.metricsAndThresholds(),
+                                                                                     executors.thresholdExecutor(),
+                                                                                     executors.metricExecutor() );
+
         // Create a retriever factory to support retrieval for this project
         RetrieverFactory<Double, Double, Double> retrieverFactory;
         if ( evaluationDetails.hasInMemoryStore() )
@@ -1173,18 +1198,22 @@ class EvaluationUtilities
             Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolSupplier = next.getValue();
 
             PoolProcessor<Double, Double> poolProcessor =
-                    new PoolProcessor.Builder<Double, Double>().setPairsWriter( pairsWriter )
-                                                               .setBasePairsWriter( basePairsWriter )
-                                                               .setMetricProcessors( processors )
-                                                               .setPoolRequest( poolRequest )
-                                                               .setPoolSupplier( poolSupplier )
-                                                               .setEvaluation( evaluationDetails.evaluation() )
-                                                               .setMonitor( evaluationDetails.monitor() )
-                                                               .setTraceCountEstimator(
-                                                                       SINGLE_VALUED_TRACE_COUNT_ESTIMATOR )
-                                                               .setSeparateMetricsForBaseline( separateMetrics )
-                                                               .setPoolGroupTracker( groupPublicationTracker )
-                                                               .build();
+                    new PoolProcessor.Builder<Double, Double>()
+                            .setPairsWriter( pairsWriter )
+                            .setBasePairsWriter( basePairsWriter )
+                            .setMetricProcessors( processors )
+                            .setSamplingUncertaintyMetricProcessors( sampleProcessors )
+                            .setSamplingUncertaintyDeclaration( evaluationDetails.declaration()
+                                                                                 .sampleUncertainty() )
+                            .setSamplingUncertaintyBlockSize( SINGLE_VALUED_BLOCK_SIZE_ESTIMATOR )
+                            .setPoolRequest( poolRequest )
+                            .setPoolSupplier( poolSupplier )
+                            .setEvaluation( evaluationDetails.evaluation() )
+                            .setMonitor( evaluationDetails.monitor() )
+                            .setTraceCountEstimator( SINGLE_VALUED_TRACE_COUNT_ESTIMATOR )
+                            .setSeparateMetricsForBaseline( separateMetrics )
+                            .setPoolGroupTracker( groupPublicationTracker )
+                            .build();
 
             poolProcessors.add( poolProcessor );
         }
@@ -1222,6 +1251,13 @@ class EvaluationUtilities
                 EvaluationUtilities.getEnsembleProcessors( evaluationDetails.metricsAndThresholds(),
                                                            executors.thresholdExecutor(),
                                                            executors.metricExecutor() );
+
+        // Get a separate set of processors for sampling uncertainty, excluding metrics whose uncertainties should not
+        // be estimated
+        List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> sampleProcessors =
+                EvaluationUtilities.getEnsembleProcessorsForSamplingUncertainty( evaluationDetails.metricsAndThresholds(),
+                                                                                 executors.thresholdExecutor(),
+                                                                                 executors.metricExecutor() );
 
         List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>>> poolSuppliers;
 
@@ -1312,17 +1348,22 @@ class EvaluationUtilities
             Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>> poolSupplier = next.getValue();
 
             PoolProcessor<Double, Ensemble> poolProcessor =
-                    new PoolProcessor.Builder<Double, Ensemble>().setPairsWriter( pairsWriter )
-                                                                 .setBasePairsWriter( basePairsWriter )
-                                                                 .setMetricProcessors( processors )
-                                                                 .setPoolRequest( poolRequest )
-                                                                 .setPoolSupplier( poolSupplier )
-                                                                 .setEvaluation( evaluationDetails.evaluation() )
-                                                                 .setMonitor( evaluationDetails.monitor() )
-                                                                 .setTraceCountEstimator( ENSEMBLE_TRACE_COUNT_ESTIMATOR )
-                                                                 .setSeparateMetricsForBaseline( separateMetrics )
-                                                                 .setPoolGroupTracker( groupPublicationTracker )
-                                                                 .build();
+                    new PoolProcessor.Builder<Double, Ensemble>()
+                            .setPairsWriter( pairsWriter )
+                            .setBasePairsWriter( basePairsWriter )
+                            .setMetricProcessors( processors )
+                            .setSamplingUncertaintyMetricProcessors( sampleProcessors )
+                            .setSamplingUncertaintyDeclaration( evaluationDetails.declaration()
+                                                                                 .sampleUncertainty() )
+                            .setSamplingUncertaintyBlockSize( ENSEMBLE_BLOCK_SIZE_ESTIMATOR )
+                            .setPoolRequest( poolRequest )
+                            .setPoolSupplier( poolSupplier )
+                            .setEvaluation( evaluationDetails.evaluation() )
+                            .setMonitor( evaluationDetails.monitor() )
+                            .setTraceCountEstimator( ENSEMBLE_TRACE_COUNT_ESTIMATOR )
+                            .setSeparateMetricsForBaseline( separateMetrics )
+                            .setPoolGroupTracker( groupPublicationTracker )
+                            .build();
 
             poolProcessors.add( poolProcessor );
         }
@@ -1403,7 +1444,26 @@ class EvaluationUtilities
      * @param metricsAndThresholds the metrics and thresholds, one for each atomic processing operation
      * @param thresholdExecutor the threshold executor
      * @param metricExecutor the metric executor
-     * @return the single-valued processors
+     * @return the single-valued processors for sampling uncertainty calculations
+     */
+
+    private static List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>>
+    getSingleValuedProcessorsForSamplingUncertainty( Set<MetricsAndThresholds> metricsAndThresholds,
+                                                     ExecutorService thresholdExecutor,
+                                                     ExecutorService metricExecutor )
+    {
+        Set<MetricsAndThresholds> overallFiltered =
+                EvaluationUtilities.getMetricsForSamplingUncertainty( metricsAndThresholds );
+        return EvaluationUtilities.getSingleValuedProcessors( overallFiltered,
+                                                              thresholdExecutor,
+                                                              metricExecutor );
+    }
+
+    /**
+     * @param metricsAndThresholds the metrics and thresholds, one for each atomic processing operation
+     * @param thresholdExecutor the threshold executor
+     * @param metricExecutor the metric executor
+     * @return the ensemble processors
      */
 
     private static List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>>
@@ -1423,6 +1483,49 @@ class EvaluationUtilities
         }
 
         return Collections.unmodifiableList( processors );
+    }
+
+    /**
+     * @param metricsAndThresholds the metrics and thresholds, one for each atomic processing operation
+     * @param thresholdExecutor the threshold executor
+     * @param metricExecutor the metric executor
+     * @return the ensemble processors for sampling uncertainty calculations
+     */
+
+    private static List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>>
+    getEnsembleProcessorsForSamplingUncertainty( Set<MetricsAndThresholds> metricsAndThresholds,
+                                                 ExecutorService thresholdExecutor,
+                                                 ExecutorService metricExecutor )
+    {
+        Set<MetricsAndThresholds> overallFiltered =
+                EvaluationUtilities.getMetricsForSamplingUncertainty( metricsAndThresholds );
+        return EvaluationUtilities.getEnsembleProcessors( overallFiltered,
+                                                          thresholdExecutor,
+                                                          metricExecutor );
+    }
+
+    /**
+     * @param metrics the metrics and thresholds to filter
+     * @return the metrics and thresholds containing only metrics for which sampling uncertainties can be estimated
+     */
+
+    private static Set<MetricsAndThresholds> getMetricsForSamplingUncertainty( Set<MetricsAndThresholds> metrics )
+    {
+        Set<MetricsAndThresholds> overallFiltered = new HashSet<>();
+        for ( MetricsAndThresholds next : metrics )
+        {
+            Set<MetricConstants> nextMetrics = next.metrics();
+            Set<MetricConstants> filtered = nextMetrics.stream()
+                                                       .filter( MetricConstants::isSamplingUncertaintyAllowed )
+                                                       .collect( Collectors.toUnmodifiableSet() );
+            MetricsAndThresholds adjusted = new MetricsAndThresholds( filtered,
+                                                                      next.thresholds(),
+                                                                      next.minimumSampleSize(),
+                                                                      next.ensembleAverageType() );
+            overallFiltered.add( adjusted );
+        }
+
+        return Collections.unmodifiableSet( overallFiltered );
     }
 
     /**
@@ -1485,6 +1588,74 @@ class EvaluationUtilities
         }
 
         return griddedFeatures;
+    }
+
+    /**
+     * Estimates the optimal block size for each left-ish time-series in each mini-pool and returns the average of the
+     * optimal block sizes across all time-series.
+     * @param <R> the type of right-ish time-series data
+     * @param pool the pool
+     * @return the optimal block size for the stationary bootstrap
+     */
+    private static <R> long getOptimalBlockSizeForStationaryBootstrap( Pool<TimeSeries<Pair<Double, R>>> pool )
+    {
+        List<Pool<TimeSeries<Pair<Double, R>>>> miniPools = pool.getMiniPools();
+
+        List<Long> blockSizes = new ArrayList<>();
+        for ( Pool<TimeSeries<Pair<Double, R>>> next : miniPools )
+        {
+            List<Long> nextMain = EvaluationUtilities.getOptimalBlockSizesForStationaryBootstrap( next.get() );
+            blockSizes.addAll( nextMain );
+            if ( next.hasBaseline() )
+            {
+                List<TimeSeries<Pair<Double, R>>> baseline = next.getBaselineData()
+                                                                 .get();
+                List<Long> nextBaseline = EvaluationUtilities.getOptimalBlockSizesForStationaryBootstrap( baseline );
+                blockSizes.addAll( nextBaseline );
+            }
+        }
+
+        double optimalBlockSizeReal =
+                blockSizes.stream()
+                          .mapToLong( Long::longValue )
+                          .average()
+                          .orElseThrow( () -> new WresProcessingException( "Failed to estimate the optimal block size "
+                                                                           + "for the stationary bootstrap." ) );
+
+        long optimalBlockSize = ( long ) Math.ceil( optimalBlockSizeReal );
+
+        LOGGER.debug( "Determined an optimal block size of {} timesteps for applying the stationary bootstrap to the "
+                      + "pool with metadata: {}. This is an average of the optimal block sizes across all observed "
+                      + "time-series within the pool, which included the following block sizes: {}.",
+                      optimalBlockSize,
+                      pool.getMetadata(),
+                      blockSizes );
+
+        return optimalBlockSize;
+    }
+
+    /**
+     * Estimates the optimal block size for each left-ish time-series in the input and returns the average of the
+     * optimal block sizes across all time-series.
+     * @param <T> the type of time-series data
+     * @param pool the pool
+     * @return the optimal block size for the stationary bootstrap
+     */
+    private static <T> List<Long> getOptimalBlockSizesForStationaryBootstrap( List<TimeSeries<Pair<Double, T>>> pool )
+    {
+        List<Long> blockSizes = new ArrayList<>();
+        for ( TimeSeries<Pair<Double, T>> nextSeries : pool )
+        {
+            double[] data = nextSeries.getEvents()
+                                      .stream()
+                                      .mapToDouble( n -> n.getValue()
+                                                          .getLeft() )
+                                      .toArray();
+            long blockSize = BlockSizeEstimator.getOptimalBlockSize( data );
+            blockSizes.add( blockSize );
+        }
+
+        return Collections.unmodifiableList( blockSizes );
     }
 
     /**

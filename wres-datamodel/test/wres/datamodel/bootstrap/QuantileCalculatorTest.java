@@ -3,6 +3,8 @@ package wres.datamodel.bootstrap;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -67,7 +69,7 @@ class QuantileCalculatorTest
 
         QuantileCalculator calculator = QuantileCalculator.of( nominal,
                                                                10,
-                                                               List.of( 0.1, 0.5, 0.9 ),
+                                                               new TreeSet<>( Set.of( 0.1, 0.5, 0.9 ) ),
                                                                false );
 
         for ( int i = 1; i < 11; i++ )
@@ -157,7 +159,7 @@ class QuantileCalculatorTest
 
         QuantileCalculator calculator = QuantileCalculator.of( nominal,
                                                                10,
-                                                               List.of( 0.1, 0.5, 0.9 ),
+                                                               new TreeSet<>( Set.of( 0.1, 0.5, 0.9 ) ),
                                                                false );
 
         for ( int i = 1; i < 11; i++ )
@@ -251,7 +253,7 @@ class QuantileCalculatorTest
 
         QuantileCalculator calculator = QuantileCalculator.of( nominal,
                                                                10,
-                                                               List.of( 0.1, 0.5, 0.9 ),
+                                                               new TreeSet<>( Set.of( 0.1, 0.5, 0.9 ) ),
                                                                false );
 
         for ( int i = 1; i < 11; i++ )
@@ -335,7 +337,7 @@ class QuantileCalculatorTest
 
         QuantileCalculator calculator = QuantileCalculator.of( nominal,
                                                                10,
-                                                               List.of( 0.1, 0.5, 0.9 ),
+                                                               new TreeSet<>( Set.of( 0.1, 0.5, 0.9 ) ),
                                                                false );
 
         for ( int i = 1; i < 11; i++ )
@@ -446,7 +448,7 @@ class QuantileCalculatorTest
 
         QuantileCalculator calculator = QuantileCalculator.of( nominal,
                                                                10,
-                                                               List.of( 0.1, 0.5, 0.9 ),
+                                                               new TreeSet<>( Set.of( 0.1, 0.5, 0.9 ) ),
                                                                false );
 
         ExecutorService executor = Executors.newFixedThreadPool( 5 );
@@ -532,7 +534,7 @@ class QuantileCalculatorTest
 
         QuantileCalculator calculator = QuantileCalculator.of( nominal,
                                                                10,
-                                                               List.of( 0.5 ),
+                                                               new TreeSet<>( Set.of( 0.5 ) ),
                                                                true );
 
         for ( int i = 1; i < 11; i++ )

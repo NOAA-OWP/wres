@@ -96,10 +96,7 @@ import wres.vis.data.ChartDataFactory;
  */
 public class ChartFactory
 {
-    /**
-     * The chart type.
-     */
-
+    /** The chart type. */
     public enum ChartType
     {
         /** Not one of the other types, unique. */
@@ -1462,7 +1459,8 @@ public class ChartFactory
             name += " and a threshold of " + threshold;
         }
 
-        if ( !quantiles.isEmpty() && this.canShowErrorBars( metricName, chartType ) )
+        if ( !quantiles.isEmpty()
+             && this.canShowErrorBars( metricName, chartType ) )
         {
             double minimum = quantiles.stream()
                                       .mapToDouble( Double::doubleValue )
@@ -1474,10 +1472,33 @@ public class ChartFactory
                                       .max()
                                       .orElse( Double.NaN );
 
-            name += " and error bars for quantiles of [" + minimum + ", " + maximum + "]";
+            name += this.getSamplingUncertaintyQualifier( metricName, minimum, maximum );
         }
 
         return name;
+    }
+
+    /**
+     * Generates qualifying text about the sampling uncertainty for use in a chart title.
+     * @param metricName the metric name
+     * @param minimum the minimum quantile
+     * @param maximum the maximum quantile
+     * @return the sampling uncertainty qualification
+     */
+
+    private String getSamplingUncertaintyQualifier( MetricConstants metricName,
+                                                    double minimum,
+                                                    double maximum )
+    {
+        if ( metricName == MetricConstants.SAMPLE_SIZE )
+        {
+            return " and error bars for quantiles of [" + minimum + ", " + maximum + "], which show the variation "
+                   + "in sample size across the pool samples";
+        }
+        else
+        {
+            return " and error bars for quantiles of [" + minimum + ", " + maximum + "]";
+        }
     }
 
     /**

@@ -175,6 +175,8 @@ definitions:
         as represented by a probability of 1.0 and 0.0, respectively."
         type: integer
         minimum: 1
+      sampling_uncertainty:
+        "$ref": "#/definitions/SamplingUncertainty"
       metrics:
         anyOf:
           # Singleton without parameters
@@ -548,6 +550,29 @@ definitions:
     required:
       - period
       - unit
+
+  SamplingUncertainty:
+    title: Sampling uncertainty estimation.
+    description: "Declares the need to estimate the sampling uncertainty of the 
+    verification statistics using the stationary bootstrap. Requires one or 
+    more quantiles to estimate and the sample size required."
+    type: object
+    additionalProperties: false
+    properties:
+      sample_size:
+        type: integer
+        minimum: 1
+      quantiles:
+        type: array
+        items:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          uniqueItems: true
+          minItems: 1
+    required:
+      - sample_size
+      - quantiles
 
   Feature:
     title: A geospatial feature.

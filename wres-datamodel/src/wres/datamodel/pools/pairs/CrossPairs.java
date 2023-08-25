@@ -6,74 +6,65 @@ import java.util.Objects;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.time.TimeSeries;
 
 /**
- * A collection of cross-pairs whose main pairs and baseline pairs are accessible.
- * 
- * @param <L> the left type of event value
- * @param <R> the right type of event value
+ * A collection of cross-pairs whose pairs are accessible.
+ *
+ * @param <T> the time-series event value type
  */
 
-public class CrossPairs<L, R>
+public class CrossPairs<T>
 {
-    /**
-     * The main pairs.
-     */
+    /** The first pairs. */
+    private final List<TimeSeries<T>> firstPairs;
 
-    private final List<TimeSeries<Pair<L, R>>> mainPairs;
-
-    /**
-     * The baseline pairs.
-     */
-
-    private final List<TimeSeries<Pair<L, R>>> baselinePairs;
+    /** The second pairs. */
+    private final List<TimeSeries<T>> secondPairs;
 
     /**
      * Hidden constructor.
-     * 
-     * @param <L> the left type of data on one side of a pairing
-     * @param <R> the right type of data on one side of a pairing
-     * @param mainPairs the mains pairs
-     * @param baselinePairs the baseline pairs
-     * @return a lightweight container of the two sets of pairs
+     *
+     * @param <T> the time-series event value type
+     * @param firstPairs the first pairs
+     * @param secondPairs the second pairs
+     * @return a lightweight container of the two sets of cross-pairs
      * @throws NullPointerException if either input is null
      */
 
-    public static <L, R> CrossPairs<L, R> of( List<TimeSeries<Pair<L, R>>> mainPairs,
-                                              List<TimeSeries<Pair<L, R>>> baselinePairs )
+    public static <T> CrossPairs<T> of( List<TimeSeries<T>> firstPairs,
+                                        List<TimeSeries<T>> secondPairs )
     {
-        return new CrossPairs<>( mainPairs, baselinePairs );
+        return new CrossPairs<>( firstPairs, secondPairs );
     }
 
     /**
-     * Returns the main pairs, cross paired against the baseline pairs.
-     * 
-     * @return the main pairs
+     * Returns the first pairs, cross paired against the second pairs.
+     *
+     * @return the first pairs
      */
 
-    public List<TimeSeries<Pair<L, R>>> getMainPairs()
+    public List<TimeSeries<T>> getFirstPairs()
     {
-        return this.mainPairs;
+        return this.firstPairs;
     }
 
     /**
-     * Returns the baseline pairs, cross paired against the main pairs.
-     * 
-     * @return the baseline pairs
+     * Returns the second pairs, cross paired against the first pairs.
+     *
+     * @return the second pairs
      */
 
-    public List<TimeSeries<Pair<L, R>>> getBaselinePairs()
+    public List<TimeSeries<T>> getSecondPairs()
     {
-        return this.baselinePairs;
+        return this.secondPairs;
     }
 
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof CrossPairs<?, ?> in ) )
+        if ( !( o instanceof CrossPairs<?> in ) )
         {
             return false;
         }
@@ -83,40 +74,41 @@ public class CrossPairs<L, R>
             return true;
         }
 
-        return in.getMainPairs().equals( this.getMainPairs() )
-               && in.getBaselinePairs().equals( this.getBaselinePairs() );
+        return in.getFirstPairs()
+                 .equals( this.getFirstPairs() )
+               && in.getSecondPairs()
+                    .equals( this.getSecondPairs() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.getMainPairs(), this.getBaselinePairs() );
+        return Objects.hash( this.getFirstPairs(), this.getSecondPairs() );
     }
 
     @Override
     public String toString()
     {
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                                                                            .append( "mainPairs", this.getMainPairs() )
-                                                                            .append( "baselinePairs",
-                                                                                     this.getBaselinePairs() )
-                                                                            .toString();
+                .append( "firstPairs", this.getFirstPairs() )
+                .append( "secondPairs", this.getSecondPairs() )
+                .toString();
     }
 
     /**
      * Hidden constructor.
      *
-     * @param mainPairs the main pairs
-     * @param baselinePairs the baseline pairs
+     * @param firstPairs the first pairs
+     * @param secondPairs the second pairs
      * @throws NullPointerException if either input is null
      */
 
-    private CrossPairs( List<TimeSeries<Pair<L, R>>> mainPairs, List<TimeSeries<Pair<L, R>>> baselinePairs )
+    private CrossPairs( List<TimeSeries<T>> firstPairs, List<TimeSeries<T>> secondPairs )
     {
-        Objects.requireNonNull( mainPairs );
-        Objects.requireNonNull( baselinePairs );
+        Objects.requireNonNull( firstPairs );
+        Objects.requireNonNull( secondPairs );
 
-        this.mainPairs = Collections.unmodifiableList( mainPairs );
-        this.baselinePairs = Collections.unmodifiableList( baselinePairs );
+        this.firstPairs = Collections.unmodifiableList( firstPairs );
+        this.secondPairs = Collections.unmodifiableList( secondPairs );
     }
 }
