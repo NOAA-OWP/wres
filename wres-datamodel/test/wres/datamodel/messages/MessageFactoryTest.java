@@ -1,7 +1,6 @@
 package wres.datamodel.messages;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,7 +13,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.MonthDay;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -150,14 +148,16 @@ class MessageFactoryTest
     private static final Geometry ANOTHER_LOCATION = wres.statistics.MessageFactory.getGeometry( "DOLC2" );
     private static final FeatureGroup FEATURE_GROUP =
             FeatureGroup.of( wres.statistics.MessageFactory.getGeometryGroup( null,
-                                                                              wres.statistics.MessageFactory.getGeometryTuple( LOCATION,
-                                                                                                               LOCATION,
-                                                                                                               LOCATION ) ) );
+                                                                              wres.statistics.MessageFactory.getGeometryTuple(
+                                                                                      LOCATION,
+                                                                                      LOCATION,
+                                                                                      LOCATION ) ) );
     private static final FeatureGroup ANOTHER_FEATURE_GROUP =
             FeatureGroup.of( wres.statistics.MessageFactory.getGeometryGroup( null,
-                                                                              wres.statistics.MessageFactory.getGeometryTuple( ANOTHER_LOCATION,
-                                                                                                               ANOTHER_LOCATION,
-                                                                                                               ANOTHER_LOCATION ) ) );
+                                                                              wres.statistics.MessageFactory.getGeometryTuple(
+                                                                                      ANOTHER_LOCATION,
+                                                                                      ANOTHER_LOCATION,
+                                                                                      ANOTHER_LOCATION ) ) );
 
     /**
      * Scores to serialize.
@@ -385,7 +385,7 @@ class MessageFactoryTest
     }
 
     @Test
-    void testParseByPool() throws InterruptedException
+    void testGetStatisticsProducesExpectedStatisticsInPoolOrder() throws InterruptedException
     {
         // Create a statistics message composed of scores and diagrams
         StatisticsStore statistics =
@@ -394,7 +394,7 @@ class MessageFactoryTest
                                              .build();
 
         // Scores and diagrams should be split due to threshold difference
-        Collection<Statistics> actual = MessageFactory.getStatistics( statistics );
+        List<Statistics> actual = MessageFactory.getStatistics( statistics );
 
         assertEquals( 2, actual.size() );
 
@@ -411,11 +411,10 @@ class MessageFactoryTest
         Assertions.assertNotNull( expectedDiagrams );
         Assertions.assertNotNull( expectedScores );
 
-        Collection<Statistics> expected = Set.of( expectedDiagrams, expectedScores );
+        List<Statistics> expected = List.of( expectedScores, expectedDiagrams );
 
         // Assert set-like equality
-        assertTrue( expected.containsAll( actual ) );
-        assertTrue( actual.containsAll( expected ) );
+        assertEquals( expected, actual );
     }
 
     @Test

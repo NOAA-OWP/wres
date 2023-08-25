@@ -24,7 +24,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Tests the {@link Event}.
- * 
+ *
  * @author James Brown
  */
 public final class TimeSeriesCrossPairerTest
@@ -48,7 +48,7 @@ public final class TimeSeriesCrossPairerTest
      * An instance to test.
      */
 
-    private TimeSeriesCrossPairer<Integer, Integer> instance;
+    private TimeSeriesCrossPairer<Pair<Integer, Integer>> instance;
 
     @Before
     public void runBeforeEachTest()
@@ -80,38 +80,38 @@ public final class TimeSeriesCrossPairerTest
 
         TimeSeries<Pair<Integer, Integer>> firstSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( metadata )
-                                                               .addEvent( first )
-                                                               .addEvent( second )
-                                                               .addEvent( third )
-                                                               .addEvent( fourth )
-                                                               .build();
+                                                     .addEvent( first )
+                                                     .addEvent( second )
+                                                     .addEvent( third )
+                                                     .addEvent( fourth )
+                                                     .build();
 
         TimeSeries<Pair<Integer, Integer>> secondSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( metadata )
-                                                               .addEvent( sixth )
-                                                               .addEvent( seventh )
-                                                               .addEvent( eighth )
-                                                               .addEvent( fifth )
-                                                               .build();
+                                                     .addEvent( sixth )
+                                                     .addEvent( seventh )
+                                                     .addEvent( eighth )
+                                                     .addEvent( fifth )
+                                                     .build();
 
-        CrossPairs<Integer, Integer> actual =
+        CrossPairs<Pair<Integer, Integer>> actual =
                 this.instance.apply( List.of( firstSeries, firstSeries ), List.of( secondSeries, secondSeries ) );
 
         TimeSeries<Pair<Integer, Integer>> expectedSeriesMain =
                 new Builder<Pair<Integer, Integer>>().setMetadata( metadata )
-                                                               .addEvent( first )
-                                                               .addEvent( second )
-                                                               .addEvent( third )
-                                                               .build();
+                                                     .addEvent( first )
+                                                     .addEvent( second )
+                                                     .addEvent( third )
+                                                     .build();
 
         TimeSeries<Pair<Integer, Integer>> expectedSeriesBase =
                 new Builder<Pair<Integer, Integer>>().setMetadata( metadata )
-                                                               .addEvent( sixth )
-                                                               .addEvent( seventh )
-                                                               .addEvent( eighth )
-                                                               .build();
+                                                     .addEvent( sixth )
+                                                     .addEvent( seventh )
+                                                     .addEvent( eighth )
+                                                     .build();
 
-        CrossPairs<Integer, Integer> expected =
+        CrossPairs<Pair<Integer, Integer>> expected =
                 CrossPairs.of( List.of( expectedSeriesMain, expectedSeriesMain ),
                                List.of( expectedSeriesBase, expectedSeriesBase ) );
 
@@ -133,8 +133,8 @@ public final class TimeSeriesCrossPairerTest
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
-                                                               .addEvent( first )
-                                                               .build();
+                                                     .addEvent( first )
+                                                     .build();
 
         Event<Pair<Integer, Integer>> second = Event.of( SECOND, Pair.of( 2, 2 ) );
 
@@ -147,15 +147,15 @@ public final class TimeSeriesCrossPairerTest
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> secondSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
-                                                               .addEvent( second )
-                                                               .build();
+                                                     .addEvent( second )
+                                                     .build();
 
         Event<Pair<Integer, Integer>> third = Event.of( FIRST, Pair.of( 3, 3 ) );
 
         TimeSeries<Pair<Integer, Integer>> thirdSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
-                                                               .addEvent( third )
-                                                               .build();
+                                                     .addEvent( third )
+                                                     .build();
 
         Event<Pair<Integer, Integer>> fourth = Event.of( FOURTH, Pair.of( 4, 4 ) );
 
@@ -168,13 +168,13 @@ public final class TimeSeriesCrossPairerTest
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> fourthSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( fourthMetadata )
-                                                               .addEvent( fourth )
-                                                               .build();
+                                                     .addEvent( fourth )
+                                                     .build();
 
-        CrossPairs<Integer, Integer> actual =
+        CrossPairs<Pair<Integer, Integer>> actual =
                 this.instance.apply( List.of( firstSeries, secondSeries ), List.of( thirdSeries, fourthSeries ) );
 
-        CrossPairs<Integer, Integer> expected = CrossPairs.of( List.of( firstSeries ), List.of( thirdSeries ) );
+        CrossPairs<Pair<Integer, Integer>> expected = CrossPairs.of( List.of( firstSeries ), List.of( thirdSeries ) );
 
         assertEquals( expected, actual );
     }
@@ -193,8 +193,8 @@ public final class TimeSeriesCrossPairerTest
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
-                                                               .addEvent( first )
-                                                               .build();
+                                                     .addEvent( first )
+                                                     .build();
 
         Event<Pair<Integer, Integer>> second = Event.of( SECOND, Pair.of( 2, 2 ) );
 
@@ -207,14 +207,14 @@ public final class TimeSeriesCrossPairerTest
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> secondSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
-                                                               .addEvent( second )
-                                                               .build();
+                                                     .addEvent( second )
+                                                     .build();
 
-        CrossPairs<Integer, Integer> actual =
+        CrossPairs<Pair<Integer, Integer>> actual =
                 this.instance.apply( List.of( firstSeries ), List.of( secondSeries ) );
 
 
-        CrossPairs<Integer, Integer> expected =
+        CrossPairs<Pair<Integer, Integer>> expected =
                 CrossPairs.of( List.of(), List.of() );
 
         assertEquals( expected, actual );
@@ -234,8 +234,8 @@ public final class TimeSeriesCrossPairerTest
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
-                                                               .addEvent( first )
-                                                               .build();
+                                                     .addEvent( first )
+                                                     .build();
 
         Event<Pair<Integer, Integer>> second = Event.of( SECOND, Pair.of( 2, 2 ) );
 
@@ -248,14 +248,14 @@ public final class TimeSeriesCrossPairerTest
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> secondSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
-                                                               .addEvent( second )
-                                                               .build();
+                                                     .addEvent( second )
+                                                     .build();
 
-        CrossPairs<Integer, Integer> actual =
+        CrossPairs<Pair<Integer, Integer>> actual =
                 this.instance.apply( List.of( firstSeries ), List.of( secondSeries ) );
 
 
-        CrossPairs<Integer, Integer> expected =
+        CrossPairs<Pair<Integer, Integer>> expected =
                 CrossPairs.of( List.of(), List.of() );
 
         assertEquals( expected, actual );
@@ -275,8 +275,8 @@ public final class TimeSeriesCrossPairerTest
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
-                                                               .addEvent( first )
-                                                               .build();
+                                                     .addEvent( first )
+                                                     .build();
 
         Event<Pair<Integer, Integer>> second = Event.of( FIRST, Pair.of( 2, 2 ) );
         Event<Pair<Integer, Integer>> third = Event.of( SECOND, Pair.of( 3, 3 ) );
@@ -290,19 +290,19 @@ public final class TimeSeriesCrossPairerTest
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> secondSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
-                                                               .addEvent( second )
-                                                               .addEvent( third )
-                                                               .build();
+                                                     .addEvent( second )
+                                                     .addEvent( third )
+                                                     .build();
 
-        CrossPairs<Integer, Integer> actual =
+        CrossPairs<Pair<Integer, Integer>> actual =
                 this.instance.apply( List.of( firstSeries ), List.of( secondSeries ) );
 
         TimeSeries<Pair<Integer, Integer>> thirdSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
-                                                               .addEvent( second )
-                                                               .build();
+                                                     .addEvent( second )
+                                                     .build();
 
-        CrossPairs<Integer, Integer> expected =
+        CrossPairs<Pair<Integer, Integer>> expected =
                 CrossPairs.of( List.of( firstSeries ), List.of( thirdSeries ) );
 
         assertEquals( expected, actual );
@@ -311,7 +311,7 @@ public final class TimeSeriesCrossPairerTest
     @Test
     public void testCrossPairTimeSeriesWithNoEqualReferenceTimesAndSomeEqualValidTimesWhenExactMatching()
     {
-        TimeSeriesCrossPairer<Integer, Integer> crossPairerExact = TimeSeriesCrossPairer.of( CrossPair.EXACT );
+        TimeSeriesCrossPairer<Pair<Integer, Integer>> crossPairerExact = TimeSeriesCrossPairer.of( CrossPair.EXACT );
 
         Event<Pair<Integer, Integer>> first = Event.of( FIRST, Pair.of( 1, 1 ) );
 
@@ -324,8 +324,8 @@ public final class TimeSeriesCrossPairerTest
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
-                                                               .addEvent( first )
-                                                               .build();
+                                                     .addEvent( first )
+                                                     .build();
 
         Event<Pair<Integer, Integer>> second = Event.of( FIRST, Pair.of( 2, 2 ) );
 
@@ -338,13 +338,13 @@ public final class TimeSeriesCrossPairerTest
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> secondSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
-                                                               .addEvent( second )
-                                                               .build();
+                                                     .addEvent( second )
+                                                     .build();
 
-        CrossPairs<Integer, Integer> actual =
+        CrossPairs<Pair<Integer, Integer>> actual =
                 crossPairerExact.apply( List.of( firstSeries ), List.of( secondSeries ) );
 
-        CrossPairs<Integer, Integer> expected =
+        CrossPairs<Pair<Integer, Integer>> expected =
                 CrossPairs.of( List.of(), List.of() );
 
         assertEquals( expected, actual );
@@ -363,8 +363,8 @@ public final class TimeSeriesCrossPairerTest
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
-                                                               .addEvent( first )
-                                                               .build();
+                                                     .addEvent( first )
+                                                     .build();
 
         Event<Pair<Integer, Integer>> second = Event.of( FIRST, Pair.of( 2, 2 ) );
 
@@ -376,13 +376,13 @@ public final class TimeSeriesCrossPairerTest
 
         TimeSeries<Pair<Integer, Integer>> secondSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
-                                                               .addEvent( second )
-                                                               .build();
+                                                     .addEvent( second )
+                                                     .build();
 
-        CrossPairs<Integer, Integer> actual =
+        CrossPairs<Pair<Integer, Integer>> actual =
                 this.instance.apply( List.of( firstSeries ), List.of( secondSeries ) );
 
-        CrossPairs<Integer, Integer> expected =
+        CrossPairs<Pair<Integer, Integer>> expected =
                 CrossPairs.of( List.of( firstSeries ), List.of( secondSeries ) );
 
         assertEquals( expected, actual );
@@ -402,8 +402,8 @@ public final class TimeSeriesCrossPairerTest
                                        KG_H );
         TimeSeries<Pair<Integer, Integer>> firstSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
-                                                               .addEvent( first )
-                                                               .build();
+                                                     .addEvent( first )
+                                                     .build();
 
         Event<Pair<Integer, Integer>> second = Event.of( SECOND, Pair.of( 2, 2 ) );
 
@@ -417,15 +417,15 @@ public final class TimeSeriesCrossPairerTest
 
         TimeSeries<Pair<Integer, Integer>> secondSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
-                                                               .addEvent( second )
-                                                               .build();
+                                                     .addEvent( second )
+                                                     .build();
 
         Event<Pair<Integer, Integer>> third = Event.of( FIRST, Pair.of( 3, 3 ) );
 
         TimeSeries<Pair<Integer, Integer>> thirdSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
-                                                               .addEvent( third )
-                                                               .build();
+                                                     .addEvent( third )
+                                                     .build();
 
         Event<Pair<Integer, Integer>> fourth = Event.of( FOURTH, Pair.of( 4, 4 ) );
 
@@ -439,8 +439,8 @@ public final class TimeSeriesCrossPairerTest
 
         TimeSeries<Pair<Integer, Integer>> fourthSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( fourthMetadata )
-                                                               .addEvent( fourth )
-                                                               .build();
+                                                     .addEvent( fourth )
+                                                     .build();
 
         Event<Pair<Integer, Integer>> fifth = Event.of( SECOND, Pair.of( 5, 5 ) );
 
@@ -457,8 +457,8 @@ public final class TimeSeriesCrossPairerTest
 
         TimeSeries<Pair<Integer, Integer>> fifthSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( fifthMetadata )
-                                                               .addEvent( fifth )
-                                                               .build();
+                                                     .addEvent( fifth )
+                                                     .build();
 
 
         Event<Pair<Integer, Integer>> sixth = Event.of( FIRST, Pair.of( 6, 6 ) );
@@ -473,14 +473,14 @@ public final class TimeSeriesCrossPairerTest
 
         TimeSeries<Pair<Integer, Integer>> sixthSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( sixthMetadata )
-                                                               .addEvent( sixth )
-                                                               .build();
+                                                     .addEvent( sixth )
+                                                     .build();
 
-        CrossPairs<Integer, Integer> actual =
+        CrossPairs<Pair<Integer, Integer>> actual =
                 this.instance.apply( List.of( firstSeries, secondSeries ),
                                      List.of( thirdSeries, fourthSeries, fifthSeries, sixthSeries ) );
 
-        CrossPairs<Integer, Integer> expected =
+        CrossPairs<Pair<Integer, Integer>> expected =
                 CrossPairs.of( List.of( firstSeries, secondSeries ), List.of( thirdSeries, fifthSeries ) );
 
         assertEquals( expected, actual );
@@ -501,8 +501,8 @@ public final class TimeSeriesCrossPairerTest
 
         TimeSeries<Pair<Integer, Integer>> firstSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
-                                                               .addEvent( first )
-                                                               .build();
+                                                     .addEvent( first )
+                                                     .build();
 
         Event<Pair<Integer, Integer>> second = Event.of( FIRST, Pair.of( 2, 2 ) );
 
@@ -516,21 +516,22 @@ public final class TimeSeriesCrossPairerTest
 
         TimeSeries<Pair<Integer, Integer>> secondSeries =
                 new Builder<Pair<Integer, Integer>>().setMetadata( secondMetadata )
-                                                               .addEvent( second )
-                                                               .build();
+                                                     .addEvent( second )
+                                                     .build();
 
-        List<TimeSeries<Pair<Integer,Integer>>> firstThrow = List.of( firstSeries );
-        List<TimeSeries<Pair<Integer,Integer>>> secondThrow = List.of( secondSeries );
+        List<TimeSeries<Pair<Integer, Integer>>> firstThrow = List.of( firstSeries );
+        List<TimeSeries<Pair<Integer, Integer>>> secondThrow = List.of( secondSeries );
         PairingException exception = assertThrows( PairingException.class,
-                                                  () -> this.instance.apply( firstThrow,
-                                                                             secondThrow ) );
+                                                   () -> this.instance.apply( firstThrow,
+                                                                              secondThrow ) );
 
         // TODO, make an exception specific to the situation, assert that
         // the exception type is thrown, skip attempting to match message text.
         assertTrue( exception.getMessage()
                              .startsWith( "While attempting to cross pair time-series" ) );
         assertTrue( exception.getMessage()
-                             .endsWith( "using their common reference times by type, found no common reference time types, which is not allowed." ) );
+                             .endsWith(
+                                     "using their common reference times by type, found no common reference time types, which is not allowed." ) );
     }
 
 }

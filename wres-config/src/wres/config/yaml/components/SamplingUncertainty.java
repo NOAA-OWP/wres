@@ -1,14 +1,11 @@
 package wres.config.yaml.components;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.datatype.jsr310.deser.DurationDeserializer;
 import io.soabase.recordbuilder.core.RecordBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,12 +15,10 @@ import org.slf4j.LoggerFactory;
  *
  * @param quantiles the desired quantiles of the sampling distribution of a statistic
  * @param sampleSize the number of samples to use when estimating the sampling distribution of a statistic
- * @param blockSize the temporal auto-correlation length to use when estimating the sampling uncertainties
  */
 @RecordBuilder
 public record SamplingUncertainty( @JsonProperty( "quantiles" ) SortedSet<Double> quantiles,
-                                   @JsonProperty( "sample_size" ) int sampleSize,
-                                   @JsonDeserialize( using = DurationDeserializer.class ) Duration blockSize )
+                                   @JsonProperty( "sample_size" ) int sampleSize )
 {
     /** The default sample size. */
     public static final int DEFAULT_SAMPLE_SIZE = 5000;
@@ -35,7 +30,6 @@ public record SamplingUncertainty( @JsonProperty( "quantiles" ) SortedSet<Double
      * Sets the default values.
      * @param quantiles the desired quantiles of the sampling distribution of a statistic
      * @param sampleSize the number of samples to use when estimating the sampling distribution of a statistic
-     * @param blockSize the temporal auto-correlation length to use when estimating the sampling uncertainties
      */
     public SamplingUncertainty
     {

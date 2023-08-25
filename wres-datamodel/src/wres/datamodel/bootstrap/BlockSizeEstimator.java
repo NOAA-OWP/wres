@@ -27,7 +27,7 @@ import org.apache.commons.math3.transform.TransformType;
  *
  * @author James Brown
  */
-class BlockSizeEstimator
+public class BlockSizeEstimator
 {
     /** Fast Fourier Transform. */
     private static final FastFourierTransformer FAST_FOURIER_TRANSFORMER =
@@ -47,7 +47,7 @@ class BlockSizeEstimator
      * @throws IllegalArgumentException if the data is invalid
      */
 
-    static int getOptimalBlockSize( double[] data )
+    public static int getOptimalBlockSize( double[] data )
     {
         Objects.requireNonNull( data );
 

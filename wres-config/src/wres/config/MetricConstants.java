@@ -580,8 +580,7 @@ public enum MetricConstants
 
     public boolean isSamplingUncertaintyAllowed()
     {
-        return this != SAMPLE_SIZE
-               && !this.isInGroup( StatisticType.BOXPLOT_PER_PAIR )
+        return !this.isInGroup( StatisticType.BOXPLOT_PER_PAIR )
                && !this.isInGroup( StatisticType.BOXPLOT_PER_POOL );
     }
 

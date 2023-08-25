@@ -80,7 +80,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     private final TimeSeriesPairer<L, R> pairer;
 
     /** An optional cross-pairer to use common pairs (by time) for the main and baseline pairs. */
-    private final TimeSeriesCrossPairer<L, R> crossPairer;
+    private final TimeSeriesCrossPairer<Pair<L, R>> crossPairer;
 
     /** A transformer for left-ish values. */
     private final UnaryOperator<TimeSeries<L>> leftTransformer;
@@ -153,7 +153,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         private TimeSeriesPairer<L, R> pairer;
 
         /** An optional cross-pairer to use common pairs (by time) for the main and baseline pairs. */
-        private TimeSeriesCrossPairer<L, R> crossPairer;
+        private TimeSeriesCrossPairer<Pair<L, R>> crossPairer;
 
         /** A function to upscale left data. */
         private TimeSeriesUpscaler<L> leftUpscaler;
@@ -257,7 +257,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
          * @param crossPairer the cross-pairer
          * @return the builder
          */
-        Builder<L, R, B> setCrossPairer( TimeSeriesCrossPairer<L, R> crossPairer )
+        Builder<L, R, B> setCrossPairer( TimeSeriesCrossPairer<Pair<L, R>> crossPairer )
         {
             this.crossPairer = crossPairer;
 
@@ -745,7 +745,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
      * @return the cross pairer
      */
 
-    private TimeSeriesCrossPairer<L, R> getCrossPairer()
+    private TimeSeriesCrossPairer<Pair<L, R>> getCrossPairer()
     {
         return this.crossPairer;
     }

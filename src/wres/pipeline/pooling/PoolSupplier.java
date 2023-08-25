@@ -90,7 +90,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
     private final TimeSeriesPairer<L, R> pairer;
 
     /** An optional cross-pairer to ensure that the main pairs and baseline pairs are coincident in time. */
-    private final TimeSeriesCrossPairer<L, R> crossPairer;
+    private final TimeSeriesCrossPairer<Pair<L, R>> crossPairer;
 
     /** Upscaler for left-type data. Optional on construction, but may be exceptional if absent and later required. */
     private final TimeSeriesUpscaler<L> leftUpscaler;
@@ -330,7 +330,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         private Duration frequency;
 
         /** An optional cross-pairer to ensure that the main pairs and baseline pairs are coincident in time. */
-        private TimeSeriesCrossPairer<L, R> crossPairer;
+        private TimeSeriesCrossPairer<Pair<L, R>> crossPairer;
 
         /** A shim to map from a baseline-ish dataset to a right-ish dataset. */
         private Function<TimeSeries<B>, TimeSeries<R>> baselineShim;
@@ -405,7 +405,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
          * @param crossPairer the cross-pairer to set
          * @return the builder
          */
-        Builder<L, R, B> setCrossPairer( TimeSeriesCrossPairer<L, R> crossPairer )
+        Builder<L, R, B> setCrossPairer( TimeSeriesCrossPairer<Pair<L, R>> crossPairer )
         {
             this.crossPairer = crossPairer;
 
@@ -706,8 +706,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
             if ( Objects.nonNull( this.crossPairer ) )
             {
                 Pair<Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>, Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>>
-                        cp =
-                        this.getCrossPairs( mainPairs, basePairs );
+                        cp = this.getCrossPairs( mainPairs, basePairs );
 
                 mainPairs = cp.getLeft();
                 basePairs = cp.getRight();
@@ -1549,9 +1548,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
             if ( basePairs.containsKey( nextFeature ) )
             {
                 List<TimeSeries<Pair<L, R>>> nextBasePairs = basePairs.get( nextFeature );
-                CrossPairs<L, R> crossPairs = this.crossPairer.apply( nextMainPairs, nextBasePairs );
-                mainPairsCrossed.put( nextFeature, crossPairs.getMainPairs() );
-                basePairsCrossed.put( nextFeature, crossPairs.getBaselinePairs() );
+                CrossPairs<Pair<L, R>> crossPairs = this.crossPairer.apply( nextMainPairs, nextBasePairs );
+                mainPairsCrossed.put( nextFeature, crossPairs.getFirstPairs() );
+                basePairsCrossed.put( nextFeature, crossPairs.getSecondPairs() );
             }
             else if ( LOGGER.isDebugEnabled() )
             {

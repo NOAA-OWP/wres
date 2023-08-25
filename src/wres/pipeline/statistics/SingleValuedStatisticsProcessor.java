@@ -252,7 +252,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
         //Process and return the result       
         StatisticsFutures futureResults = futures.build();
 
-        return futureResults.getMetricOutput();
+        return futureResults.getStatistics();
     }
 
     /**
@@ -415,7 +415,8 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
                                            StatisticType outGroup )
     {
         // Don't waste cpu cycles computing statistics for empty pairs
-        if ( pairs.get().isEmpty() )
+        if ( pairs.get()
+                  .isEmpty() )
         {
             LOGGER.debug( "Skipping the calculation of statistics for an empty pool of pairs with metadata {}.",
                           pairs.getMetadata() );
@@ -454,7 +455,8 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
         int minimumSampleSize = super.getMinimumSampleSize();
 
         // Log and return an empty result if the sample size is too small
-        if ( pairs.get().size() < minimumSampleSize )
+        if ( pairs.get()
+                  .size() < minimumSampleSize )
         {
             if ( LOGGER.isDebugEnabled() )
             {
