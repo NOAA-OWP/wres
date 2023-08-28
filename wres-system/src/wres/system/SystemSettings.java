@@ -52,6 +52,7 @@ public class SystemSettings extends XMLReader
     private int maximumProductThreads = 3;
     private int maximumReadThreads = 7;
     private int maximumIngestThreads = 7;
+    private int maximumSamplingUncertaintyThreads = 6;
 
     /** The minimum number of singleton features per evaluation at which feature-batched retrieval is triggered. **/
     private int featureBatchThreshold = 10;
@@ -381,7 +382,7 @@ public class SystemSettings extends XMLReader
 
     public int getMaximumProductThreads()
     {
-        return maximumProductThreads;
+        return this.maximumProductThreads;
     }
 
     /**
@@ -390,7 +391,16 @@ public class SystemSettings extends XMLReader
 
     public int getMaximumMetricThreads()
     {
-        return maximumMetricThreads;
+        return this.maximumMetricThreads;
+    }
+
+    /**
+     * @return the maximum number of sampling uncertainty threads
+     */
+
+    public int getMaximumSamplingUncertaintyThreads()
+    {
+        return this.maximumSamplingUncertaintyThreads;
     }
 
     @Override
@@ -496,7 +506,7 @@ public class SystemSettings extends XMLReader
     }
 
     @Override
-    protected void completeParsing() throws IOException
+    protected void completeParsing()
     {
         // Check for expected database settings where required
         if ( !this.isInMemory() && Objects.isNull( this.databaseConfiguration ) )

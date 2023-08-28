@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -89,6 +90,9 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
     /** The stationary bootstrap block size estimator. */
     private final ToLongFunction<Pool<TimeSeries<Pair<L, R>>>> blockSize;
+
+    /** The sampling uncertainty executor. */
+    private final ExecutorService samplingUncertaintyExecutor;
 
     /** The pool supplier. */
     private Supplier<Pool<TimeSeries<Pair<L, R>>>> poolSupplier;
@@ -202,6 +206,9 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
         /** Group publication tracker. */
         private PoolGroupTracker poolGroupTracker;
+
+        /** The sampling uncertainty executor. */
+        private ExecutorService samplingUncertaintyExecutor;
 
         /** Are separate metrics required for the baseline? */
         private boolean separateMetrics;
@@ -337,6 +344,16 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         }
 
         /**
+         * @param samplingUncertaintyExecutor the sampling uncertainty executor
+         * @return this builder
+         */
+        public Builder<L, R> setSamplingUncertaintyExecutor( ExecutorService samplingUncertaintyExecutor )
+        {
+            this.samplingUncertaintyExecutor = samplingUncertaintyExecutor;
+            return this;
+        }
+
+        /**
          * @return an instance of a pool processor
          */
 
@@ -438,12 +455,6 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                           seed,
                           pool.getMetadata() );
 
-            // Create the resampling structure
-            RandomGenerator randomGenerator = new MersenneTwister( seed );
-            StationaryBootstrapResampler<Pair<L, R>> resampler = StationaryBootstrapResampler.of( pool,
-                                                                                                  optimalBlockSize,
-                                                                                                  randomGenerator );
-
             // Create the quantile estimators, one for each set of nominal statistics
             Map<OneOrTwoThresholds, QuantileCalculator> quantileCalculators =
                     nominalStatistics.stream()
@@ -452,6 +463,14 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                                                                                                          sampleSize,
                                                                                                          samplingUncertainty.quantiles(),
                                                                                                          true ) ) );
+
+            // Create the resampling structure
+            RandomGenerator randomGenerator = new MersenneTwister( seed );
+            StationaryBootstrapResampler<Pair<L, R>> resampler =
+                    StationaryBootstrapResampler.of( pool,
+                                                     optimalBlockSize,
+                                                     randomGenerator,
+                                                     this.samplingUncertaintyExecutor );
 
             // Iterate the samples and register the statistics for quantile calaculation
             for ( int i = 0; i < sampleSize; i++ )
@@ -726,6 +745,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         this.poolGroupTracker = builder.poolGroupTracker;
         this.separateMetrics = builder.separateMetrics;
         this.samplingUncertainty = builder.samplingUncertainty;
+        this.samplingUncertaintyExecutor = builder.samplingUncertaintyExecutor;
         this.blockSize = builder.blockSize;
 
         Objects.requireNonNull( this.evaluation );
@@ -738,6 +758,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         if ( Objects.nonNull( this.samplingUncertainty ) )
         {
             Objects.requireNonNull( this.samplingUncertaintyMetricProcessors );
+            Objects.requireNonNull( this.samplingUncertaintyExecutor );
             Objects.requireNonNull( this.blockSize );
         }
 

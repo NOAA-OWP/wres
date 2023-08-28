@@ -142,7 +142,7 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
      */
 
     void processDichotomousPairs( Pool<Pair<Boolean, Boolean>> pairs,
-                                  StatisticsFutures.MetricFuturesByTimeBuilder futures )
+                                  StatisticsStore.Builder futures )
     {
         // Don't waste cpu cycles computing statistics for empty pairs
         if ( pairs.get().isEmpty() )
@@ -155,7 +155,7 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
 
         Future<List<DoubleScoreStatisticOuter>> scores = this.processDichotomousPairs( pairs,
                                                                                        this.dichotomousScalar );
-        futures.addDoubleScoreOutput( scores );
+        futures.addDoubleScoreStatistics( scores );
     }
 
     /**

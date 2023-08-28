@@ -356,7 +356,7 @@ class MessageFactoryTest
     {
         // Create a statistics message
         StatisticsStore statistics =
-                new StatisticsStore.Builder().addInstantDurationPairStatistics( CompletableFuture.completedFuture( this.durationDiagrams ) )
+                new StatisticsStore.Builder().addDurationDiagramStatistics( CompletableFuture.completedFuture( this.durationDiagrams ) )
                                              .build();
 
         // Create a statistics message

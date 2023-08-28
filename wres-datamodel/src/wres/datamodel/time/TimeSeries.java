@@ -222,7 +222,7 @@ public class TimeSeries<T>
          * set of events. Otherwise, favor {@link #addEvent(Event)} to build incrementally. Do not build a set of 
          * events locally and then call this method, as it will be less performant than building incrementally with 
          * {@link #addEvent(Event)}, although more performant than using the same pattern with 
-         * {@link #addEvents(SortedSet)} (i.e., avoid both, but especially the latter).
+         * {@link #addEvents(SortedSet)} (i.e., avoid both where possible, but especially the latter).
          *
          * @param events the events
          * @return the builder
@@ -339,16 +339,18 @@ public class TimeSeries<T>
         }
 
         // All reference datetimes and types must be non-null
-        for ( Map.Entry<ReferenceTimeType, Instant> nextEntry : this.getReferenceTimes().entrySet() )
+        for ( Map.Entry<ReferenceTimeType, Instant> nextEntry : this.getReferenceTimes()
+                                                                    .entrySet() )
         {
             Objects.requireNonNull( nextEntry.getKey() );
             Objects.requireNonNull( nextEntry.getValue() );
         }
 
         // No null events
-        this.getEvents().forEach( Objects::requireNonNull );
+        this.getEvents()
+            .forEach( Objects::requireNonNull );
 
-        // Log absence of time scale
+        // Log absence of timescale
         if ( Objects.isNull( this.getMetadata().getTimeScale() ) )
         {
             LOGGER.trace( "No time-scale information was provided in builder {} for time-series {}.",

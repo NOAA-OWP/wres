@@ -788,7 +788,7 @@ public class MessageFactory
         if ( onePool.hasStatistic( StatisticType.DURATION_DIAGRAM ) )
         {
             List<wres.datamodel.statistics.DurationDiagramStatisticOuter> durationDiagrams =
-                    onePool.getInstantDurationPairStatistics();
+                    onePool.getDurationDiagramStatistics();
             durationDiagrams.forEach( next -> {
                 statistics.addDurationDiagrams( MessageFactory.parse( next ) );
                 metadatas.add( next.getPoolMetadata() );
@@ -881,7 +881,7 @@ public class MessageFactory
         if ( statisticsStore.hasStatistic( StatisticType.DURATION_DIAGRAM ) )
         {
             List<DurationDiagramStatisticOuter> statistics =
-                    statisticsStore.getInstantDurationPairStatistics();
+                    statisticsStore.getDurationDiagramStatistics();
             MessageFactory.addPairedStatisticsToPool( statistics, mappedStatistics );
         }
 
@@ -1159,7 +1159,7 @@ public class MessageFactory
 
             Future<List<DurationDiagramStatisticOuter>> future =
                     CompletableFuture.completedFuture( List.of( next ) );
-            another.addInstantDurationPairStatistics( future );
+            another.addDurationDiagramStatistics( future );
         }
     }
 

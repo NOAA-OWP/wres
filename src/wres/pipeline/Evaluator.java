@@ -177,33 +177,45 @@ public class Evaluator
 
         // Create some thread pools to perform the work required by different parts of the evaluation pipeline
         // Thread pool that processes pools of pairs
-        ThreadPoolExecutor poolExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumPoolThreads(),
-                                                                  innerSystemSettings.getMaximumPoolThreads(),
+        ExecutorService poolExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumPoolThreads(),
+                                                               innerSystemSettings.getMaximumPoolThreads(),
+                                                               innerSystemSettings.poolObjectLifespan(),
+                                                               TimeUnit.MILLISECONDS,
+                                                               poolQueue,
+                                                               poolFactory );
+        // Thread pool that dispatches thresholds
+        ExecutorService thresholdExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumThresholdThreads(),
+                                                                    innerSystemSettings.getMaximumThresholdThreads(),
+                                                                    0,
+                                                                    TimeUnit.SECONDS,
+                                                                    thresholdQueue,
+                                                                    thresholdFactory );
+        // Thread pool that processes metrics
+        ExecutorService metricExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumMetricThreads(),
+                                                                 innerSystemSettings.getMaximumMetricThreads(),
+                                                                 innerSystemSettings.poolObjectLifespan(),
+                                                                 TimeUnit.MILLISECONDS,
+                                                                 metricQueue,
+                                                                 metricFactory );
+        // Thread pool that generates products, such as statistics formats
+        ExecutorService productExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumProductThreads(),
+                                                                  innerSystemSettings.getMaximumProductThreads(),
                                                                   innerSystemSettings.poolObjectLifespan(),
                                                                   TimeUnit.MILLISECONDS,
-                                                                  poolQueue,
-                                                                  poolFactory );
-        // Thread pool that dispatches thresholds
-        ThreadPoolExecutor thresholdExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumThresholdThreads(),
-                                                                       innerSystemSettings.getMaximumThresholdThreads(),
-                                                                       0,
-                                                                       TimeUnit.SECONDS,
-                                                                       thresholdQueue,
-                                                                       thresholdFactory );
-        // Thread pool that processes metrics
-        ThreadPoolExecutor metricExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumMetricThreads(),
-                                                                    innerSystemSettings.getMaximumMetricThreads(),
-                                                                    innerSystemSettings.poolObjectLifespan(),
-                                                                    TimeUnit.MILLISECONDS,
-                                                                    metricQueue,
-                                                                    metricFactory );
-        // Thread pool that generates products, such as statistics formats
-        ThreadPoolExecutor productExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumProductThreads(),
-                                                                     innerSystemSettings.getMaximumProductThreads(),
-                                                                     innerSystemSettings.poolObjectLifespan(),
-                                                                     TimeUnit.MILLISECONDS,
-                                                                     productQueue,
-                                                                     productFactory );
+                                                                  productQueue,
+                                                                  productFactory );
+
+        ExecutorService samplingUncertaintyExecutor = null;
+
+        if ( Objects.nonNull( declaration.sampleUncertainty() ) )
+        {
+            ThreadFactory resamplingFactory = new BasicThreadFactory.Builder()
+                    .namingPattern( "Sampling Uncertainty Thread %d" )
+                    .build();
+            int threadCount = innerSystemSettings.getMaximumSamplingUncertaintyThreads();
+            samplingUncertaintyExecutor = java.util.concurrent.Executors.newFixedThreadPool( threadCount,
+                                                                                             resamplingFactory );
+        }
 
         // Create database services if needed
         DatabaseServices databaseServices = null;
@@ -211,9 +223,8 @@ public class Evaluator
         if ( innerSystemSettings.isInDatabase() )
         {
             Database innerDatabase = this.getDatabase();
-            lockManager =
-                    DatabaseLockManager.from( innerSystemSettings,
-                                              innerDatabase::getRawConnection );
+            lockManager = DatabaseLockManager.from( innerSystemSettings,
+                                                    innerDatabase::getRawConnection );
 
             databaseServices = new DatabaseServices( innerDatabase, lockManager );
         }
@@ -235,7 +246,8 @@ public class Evaluator
             Executors executors = new Executors( poolExecutor,
                                                  thresholdExecutor,
                                                  metricExecutor,
-                                                 productExecutor );
+                                                 productExecutor,
+                                                 samplingUncertaintyExecutor );
 
             // Monitor the task queues if required
             if ( System.getProperty( "wres.monitorTaskQueues" ) != null )
@@ -299,6 +311,7 @@ public class Evaluator
             Evaluator.shutDownGracefully( metricExecutor );
             Evaluator.shutDownGracefully( thresholdExecutor );
             Evaluator.shutDownGracefully( poolExecutor );
+            Evaluator.shutDownGracefully( samplingUncertaintyExecutor );
             lockManager.shutdown();
         }
 
@@ -315,34 +328,35 @@ public class Evaluator
      *
      * @param executor the executor to shut down
      */
-    private static void shutDownGracefully( final ExecutorService executor )
+    private static void shutDownGracefully( ExecutorService executor )
     {
-        Objects.requireNonNull( executor );
-
-        // Shutdown
-        executor.shutdown();
-
-        try
+        if ( Objects.nonNull( executor ) )
         {
-            // Await termination after shutdown
-            boolean died = executor.awaitTermination( 5, TimeUnit.SECONDS );
+            // Shutdown
+            executor.shutdown();
 
-            if ( !died )
+            try
             {
-                List<Runnable> tasks = executor.shutdownNow();
+                // Await termination after shutdown
+                boolean died = executor.awaitTermination( 5, TimeUnit.SECONDS );
 
-                if ( !tasks.isEmpty() && LOGGER.isInfoEnabled() )
+                if ( !died )
                 {
-                    LOGGER.info( "Abandoned {} tasks from {}",
-                                 tasks.size(),
-                                 executor );
+                    List<Runnable> tasks = executor.shutdownNow();
+
+                    if ( !tasks.isEmpty() && LOGGER.isInfoEnabled() )
+                    {
+                        LOGGER.info( "Abandoned {} tasks from {}",
+                                     tasks.size(),
+                                     executor );
+                    }
                 }
             }
-        }
-        catch ( InterruptedException ie )
-        {
-            LOGGER.warn( "Interrupted while shutting down {}", executor, ie );
-            Thread.currentThread().interrupt();
+            catch ( InterruptedException ie )
+            {
+                LOGGER.warn( "Interrupted while shutting down {}", executor, ie );
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
@@ -430,10 +444,19 @@ public class Evaluator
 
     /**
      * A value object that reduces count of args for some methods and provides names for those objects.
+     *
+     * @param poolExecutor the pool executor
+     * @param thresholdExecutor the threshold executor
+     * @param metricExecutor the metric executor
+     * @param productExecutor the product executor
+     * @param samplingUncertaintyExecutor the sampling uncertainty executor
      */
 
-    record Executors( ExecutorService poolExecutor, ExecutorService thresholdExecutor,
-                      ExecutorService metricExecutor, ExecutorService productExecutor )
+    record Executors( ExecutorService poolExecutor,
+                      ExecutorService thresholdExecutor,
+                      ExecutorService metricExecutor,
+                      ExecutorService productExecutor,
+                      ExecutorService samplingUncertaintyExecutor )
     {
     }
 }

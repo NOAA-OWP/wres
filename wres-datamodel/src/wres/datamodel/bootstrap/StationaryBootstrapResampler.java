@@ -10,6 +10,11 @@ import java.util.List;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.StringJoiner;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.TreeSet;
 
@@ -18,9 +23,12 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.components.CrossPair;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.pools.pairs.CrossPairs;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesCrossPairer;
 import wres.datamodel.time.TimeSeriesSlicer;
 
 /**
@@ -76,12 +84,16 @@ public class StationaryBootstrapResampler<T>
     /** A random number generator. */
     private final RandomGenerator randomGenerator;
 
+    /** A resample executor. */
+    private final ExecutorService resampleExecutor;
+
     /**
      * Create an instance.
      * @param <T> the type of time-series event
      * @param pool the pool to resample, required
      * @param meanBlockSizeInTimesteps the mean block size in timestep units, which must be greater than zero
      * @param randomGenerator the random number generator to use when sampling block sizes, required
+     * @param resampleExecutor an executor service for resampling work, optional
      * @return an instance
      * @throws NullPointerException if any required input is null
      * @throws IllegalArgumentException if the block size is less than or equal to zero or the pairs are invalid
@@ -89,11 +101,13 @@ public class StationaryBootstrapResampler<T>
 
     public static <T> StationaryBootstrapResampler<T> of( Pool<TimeSeries<T>> pool,
                                                           long meanBlockSizeInTimesteps,
-                                                          RandomGenerator randomGenerator )
+                                                          RandomGenerator randomGenerator,
+                                                          ExecutorService resampleExecutor )
     {
         return new StationaryBootstrapResampler<>( pool,
                                                    meanBlockSizeInTimesteps,
-                                                   randomGenerator );
+                                                   randomGenerator,
+                                                   resampleExecutor );
     }
 
     /**
@@ -118,6 +132,7 @@ public class StationaryBootstrapResampler<T>
         // perfect statistical dependence across the mini pools and main/baseline pairs
         List<ResampleIndexes> indexes = this.generateIndexesForResampling( this.main.get( 0 ) );
 
+        // Generate the samples using the common sample structure/indexes across the mini-pools and main/baseline series
         for ( int i = 0; i < this.main.size(); i++ )
         {
             BootstrapPool<T> nextPool = this.main.get( i );
@@ -159,6 +174,7 @@ public class StationaryBootstrapResampler<T>
         List<TimeSeries<T>> poolSeries = pool.getPool()
                                              .get();
 
+        // One set of resample indexes for each time-series, indicating where to obtain the event values for that series
         List<ResampleIndexes> indexes = new ArrayList<>();
         for ( int i = 0; i < poolSeries.size(); i++ )
         {
@@ -423,11 +439,58 @@ public class StationaryBootstrapResampler<T>
         List<TimeSeries<T>> original = pool.getPool()
                                            .get();
 
+        // Execute the time-series resampling in parallel as this can be time-consuming for large time-series, mainly
+        // adding the time-series events to a sorted set. This will only improve performance when the series count is
+        // greater than one, so not for a single, long, time-series
+        List<CompletableFuture<TimeSeries<T>>> futures = new ArrayList<>();
         for ( int i = 0; i < original.size(); i++ )
         {
             TimeSeries<T> nextSeries = original.get( i );
+            UnaryOperator<TimeSeries<T>> resampler = this.getTimeSeriesResampler( pool, resampleIndexes, i );
+            CompletableFuture<TimeSeries<T>> future =
+                    CompletableFuture.supplyAsync( () -> resampler.apply( nextSeries ),
+                                                   this.resampleExecutor );
+            futures.add( future );
+        }
+
+        // Advance the futures
+        try
+        {
+            for ( CompletableFuture<TimeSeries<T>> next : futures )
+            {
+                TimeSeries<T> resampled = next.get();
+                resampledPool.add( resampled );
+            }
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            throw new ResamplingException( "Encountered an error while attempting to resample a time-series.", e );
+        }
+        catch ( ExecutionException e )
+        {
+            throw new ResamplingException( "Encountered an error while attempting to resample a time-series.", e );
+        }
+
+        return Collections.unmodifiableList( resampledPool );
+    }
+
+    /**
+     * Creates a function that resamples a time-series.
+     * @param pool the pool
+     * @param resampleIndexes the resample indexes
+     * @param seriesIndex the series index
+     * @return the resampled time-series
+     */
+
+    private UnaryOperator<TimeSeries<T>> getTimeSeriesResampler( BootstrapPool<T> pool,
+                                                                 List<ResampleIndexes> resampleIndexes,
+                                                                 int seriesIndex )
+    {
+        return nextSeries ->
+        {
             TimeSeries.Builder<T> builder = new TimeSeries.Builder<T>().setMetadata( nextSeries.getMetadata() );
-            ResampleIndexes indexes = resampleIndexes.get( i );
+            ResampleIndexes indexes = resampleIndexes.get( seriesIndex );
             List<Event<T>> events = new ArrayList<>( nextSeries.getEvents() );
             int eventCount = events.size();
             List<List<Event<T>>> eventsToSample = pool.getTimeSeriesWithAtLeastThisManyEvents( eventCount );
@@ -442,10 +505,9 @@ public class StationaryBootstrapResampler<T>
                 Event<T> resampled = Event.of( nextEvent.getTime(), resampledValue.getValue() );
                 builder.addEvent( resampled );
             }
-            resampledPool.add( builder.build() );
-        }
 
-        return Collections.unmodifiableList( resampledPool );
+            return builder.build();
+        };
     }
 
     /**
@@ -453,13 +515,15 @@ public class StationaryBootstrapResampler<T>
      * @param pool the pool to resample, required
      * @param meanBlockSizeInTimesteps the block size, which must be greater than zero
      * @param randomGenerator the random number generator to use when sampling block sizes, required
+     * @param resampleExecutor an executor service for resampling work
      * @throws NullPointerException if any required input is null
      * @throws IllegalArgumentException if the block size is less than or equal to zero or the pairs are invalid
      */
 
     private StationaryBootstrapResampler( Pool<TimeSeries<T>> pool,
                                           long meanBlockSizeInTimesteps,
-                                          RandomGenerator randomGenerator )
+                                          RandomGenerator randomGenerator,
+                                          ExecutorService resampleExecutor )
     {
         Objects.requireNonNull( pool );
         Objects.requireNonNull( randomGenerator );
@@ -531,6 +595,11 @@ public class StationaryBootstrapResampler<T>
                                                 + "." );
         }
 
+        // Cross-pair the main and baseline pairs with each other across all "mini pools". Resampling only works if
+        // there is a consistent structure across the main and baseline pairs and across "mini pools" because perfect
+        // statistical dependence is assumed, i.e., one structure for everything.
+        pool = this.getCrossPairedTimeSeries( pool );
+
         double pProb = 1.0 / meanBlockSizeInTimesteps;
         this.p = new BinomialDistribution( randomGenerator, 1, pProb );
         double qProb = this.getTransitionProbabilityBetweenSeries( pProb,
@@ -540,6 +609,15 @@ public class StationaryBootstrapResampler<T>
         this.q = new BinomialDistribution( randomGenerator, 1, qProb );
 
         this.randomGenerator = randomGenerator;
+
+        if ( Objects.isNull( resampleExecutor ) )
+        {
+            this.resampleExecutor = ForkJoinPool.commonPool();
+        }
+        else
+        {
+            this.resampleExecutor = resampleExecutor;
+        }
 
         // Create the common structure to resample
         List<Pool<TimeSeries<T>>> miniPools = pool.getMiniPools();
@@ -580,6 +658,264 @@ public class StationaryBootstrapResampler<T>
                           pool.get()
                               .size(),
                           baselineCount );
+        }
+    }
+
+    /**
+     * Cross-pairs all mini-pools and main/baseline time-series in the inputs.
+     * @param pool the pool for which cross-pairing is needed
+     * @return the cross-paired pool
+     */
+
+    private Pool<TimeSeries<T>> getCrossPairedTimeSeries( Pool<TimeSeries<T>> pool )
+    {
+        List<Pool<TimeSeries<T>>> miniPools = pool.getMiniPools();
+        if ( miniPools.size() == 1 && !pool.hasBaseline() )
+        {
+            LOGGER.debug( "No cross-pairing required for the pool to resample." );
+            return pool;
+        }
+
+        LOGGER.debug( "The pool to resample contains {} mini-pools.", miniPools.size() );
+        TimeSeriesCrossPairer<T> crossPairer = TimeSeriesCrossPairer.of( CrossPair.EXACT );
+
+        // Take the main time-series from the first mini-pool and cross-pair against all other main and baseline pairs
+        // from all other mini-pools. Then use this to cross-pair the main and baseline time-series across all other
+        // mini-pools.  If the structure is changed following cross pairing, then warn about this.
+        Pool<TimeSeries<T>> firstPool = miniPools.get( 0 );
+        List<TimeSeries<T>> first = firstPool.get();
+        for ( int i = 1; i < miniPools.size(); i++ )
+        {
+            Pool<TimeSeries<T>> next = miniPools.get( i );
+            List<TimeSeries<T>> nextMain = next.get();
+            first = crossPairer.apply( first, nextMain )
+                               .getFirstPairs();
+            // Baseline too?
+            if ( next.hasBaseline() )
+            {
+                List<TimeSeries<T>> nextBaseline = next.getBaselineData()
+                                                       .get();
+                first = crossPairer.apply( first, nextBaseline )
+                                   .getFirstPairs();
+            }
+        }
+
+        Pool.Builder<TimeSeries<T>> poolBuilder =
+                new Pool.Builder<TimeSeries<T>>().setMetadata( pool.getMetadata() )
+                                                 .setClimatology( pool.getClimatology() );
+        if ( pool.hasBaseline() )
+        {
+            poolBuilder.setMetadataForBaseline( pool.getBaselineData()
+                                                    .getMetadata() );
+        }
+
+        // Finally, cross pair with the first baseline to provide the first set of main and baseline pairs
+        Pool.Builder<TimeSeries<T>> firstPoolBuilder =
+                new Pool.Builder<TimeSeries<T>>().setClimatology( firstPool.getClimatology() )
+                                                 .setMetadata( firstPool.getMetadata() );
+        if ( firstPool.hasBaseline() )
+        {
+            List<TimeSeries<T>> nextBaseline = firstPool.getBaselineData()
+                                                        .get();
+            CrossPairs<T> crossPaired = crossPairer.apply( first, nextBaseline );
+            first = crossPaired.getFirstPairs();
+            firstPoolBuilder.setMetadataForBaseline( firstPool.getBaselineData()
+                                                              .getMetadata() );
+
+            firstPoolBuilder.addDataForBaseline( crossPaired.getSecondPairs() );
+        }
+
+        // Add the main pairs to the first pool
+        firstPoolBuilder.addData( first );
+
+        // Add the first pool
+        poolBuilder.addPool( firstPoolBuilder.build() );
+
+        // Add all the other pools, cross-pairing against the first pairs, which have now been cross-paired against all
+        // other time-series
+        for ( int i = 1; i < miniPools.size(); i++ )
+        {
+            Pool<TimeSeries<T>> next = miniPools.get( i );
+            Pool.Builder<TimeSeries<T>> nextPoolBuilder =
+                    new Pool.Builder<TimeSeries<T>>().setClimatology( next.getClimatology() )
+                                                     .setMetadata( next.getMetadata() );
+            List<TimeSeries<T>> nextMain = next.get();
+            List<TimeSeries<T>> crossPaired = crossPairer.apply( nextMain, first )
+                                                         .getFirstPairs();
+            nextPoolBuilder.addData( crossPaired );
+
+            // Baseline too?
+            if ( next.hasBaseline() )
+            {
+                Pool<TimeSeries<T>> nextBaselinePool = next.getBaselineData();
+                List<TimeSeries<T>> nextBaseline = nextBaselinePool.get();
+                List<TimeSeries<T>> crossPairedBaseline = crossPairer.apply( nextBaseline, first )
+                                                                     .getFirstPairs();
+                nextPoolBuilder.addDataForBaseline( crossPairedBaseline );
+                nextPoolBuilder.setMetadataForBaseline( nextBaselinePool.getMetadata() );
+            }
+
+            // Add the next mini-pool
+            poolBuilder.addPool( nextPoolBuilder.build() );
+        }
+
+        Pool<TimeSeries<T>> crossPairedPool = poolBuilder.build();
+
+        this.checkForEmptyPools( crossPairedPool, pool );
+        this.reportEffectsOfCrossPairing( crossPairedPool, pool );
+
+        return crossPairedPool;
+    }
+
+    /**
+     * Checks that there are no empty pools following cross-pairing that were not already present in the original pool.
+     *
+     * @param crossPairedPool the cross-paired pool
+     * @param originalPool the original pool
+     * @throws ResamplingException if cross pairing produced empty pools
+     */
+
+    private void checkForEmptyPools( Pool<TimeSeries<T>> crossPairedPool,
+                                     Pool<TimeSeries<T>> originalPool )
+    {
+        List<Pool<TimeSeries<T>>> miniPoolsCross = crossPairedPool.getMiniPools();
+        List<Pool<TimeSeries<T>>> miniPoolsOrig = originalPool.getMiniPools();
+
+        String start = "When attempting to resample the pooled data, discovered that there were no common time-series "
+                       + "and associated events across the ";
+        String end = " pairs within the sub-pools that compose the overall pool. Resampling requires at least some "
+                     + "common time-series events because the same events are resampled across the sub-pools, "
+                     + "including the main and baseline datasets, where applicable. When estimating the sampling "
+                     + "uncertainties, please ensure that there are some common time-series across the datasets that "
+                     + "compose each pool or remove the sampling uncertainty assessment.";
+
+        boolean mainError = false;
+        boolean baselineError = false;
+
+        for ( int i = 0; i < miniPoolsCross.size(); i++ )
+        {
+            if ( miniPoolsCross.get( i )
+                               .get()
+                               .isEmpty() != miniPoolsOrig.get( i )
+                                                          .get()
+                                                          .isEmpty() )
+            {
+                mainError = true;
+            }
+
+            if ( crossPairedPool.hasBaseline() && miniPoolsCross.get( i )
+                                                                .getBaselineData()
+                                                                .get()
+                                                                .isEmpty() != miniPoolsOrig.get( i )
+                                                                                           .getBaselineData()
+                                                                                           .get()
+                                                                                           .isEmpty() )
+            {
+                baselineError = true;
+            }
+        }
+
+        if ( mainError && baselineError )
+        {
+            throw new ResamplingException( start + "main and baseline" + end );
+        }
+        else if ( mainError )
+        {
+            throw new ResamplingException( start + "main" + end );
+        }
+        else if ( baselineError )
+        {
+            throw new ResamplingException( start + "baseline" + end );
+        }
+    }
+
+    /**
+     * Reports the effects of cross-pairing on the data available for resampling.
+     *
+     * @param crossPairedPool the cross-paired pool
+     * @param originalPool the original pool
+     */
+
+    private void reportEffectsOfCrossPairing( Pool<TimeSeries<T>> crossPairedPool,
+                                              Pool<TimeSeries<T>> originalPool )
+    {
+        // Report at debug level
+        if ( !LOGGER.isDebugEnabled() )
+        {
+            return;
+        }
+
+        int crossPairSeriesCountMain = 0;
+        int crossPairEventCountMain = 0;
+
+        for ( TimeSeries<T> next : crossPairedPool.get() )
+        {
+            crossPairSeriesCountMain += 1;
+            crossPairEventCountMain += next.getEvents()
+                                           .size();
+        }
+
+        int originalSeriesCountMain = 0;
+        int originalEventCountMain = 0;
+
+        for ( TimeSeries<T> next : originalPool.get() )
+        {
+            originalSeriesCountMain += 1;
+            originalEventCountMain += next.getEvents()
+                                          .size();
+        }
+
+        int originalSeriesCountBaseline = 0;
+        int originalEventCountBaseline = 0;
+
+        int crossPairSeriesCountBaseline = 0;
+        int crossPairEventCountBaseline = 0;
+
+        if ( crossPairedPool.hasBaseline() )
+        {
+            for ( TimeSeries<T> next : crossPairedPool.getBaselineData()
+                                                      .get() )
+            {
+                crossPairSeriesCountBaseline += 1;
+                crossPairEventCountBaseline += next.getEvents()
+                                                   .size();
+            }
+
+            for ( TimeSeries<T> next : originalPool.getBaselineData()
+                                                   .get() )
+            {
+                originalSeriesCountBaseline += 1;
+                originalEventCountBaseline += next.getEvents()
+                                                  .size();
+            }
+        }
+
+        if ( crossPairSeriesCountMain != originalSeriesCountMain
+             || crossPairEventCountMain != originalEventCountMain
+             || crossPairSeriesCountBaseline != originalSeriesCountBaseline
+             || crossPairEventCountBaseline != originalEventCountBaseline )
+        {
+            LOGGER.debug( "When cross-pairing the resampled time-series to ensure a common structure across all "
+                          + "time-series, discovered that some time-series or events were removed from the "
+                          + "original pool. This is necessary for sample uncertainty estimation with the "
+                          + "stationary bootstrap, which assumes perfect statistical dependence across the sub-pools "
+                          + "and main/baseline datasets within an overall pool. However, when the number or "
+                          + "length of time-series differs greatly across the various datasets within a pool, the "
+                          + "sampling uncertainty estimates may not be very reliable. The number of time-series in the "
+                          + "original pool is {} and the number of time-series following cross-pairing is {}. The "
+                          + "number of time-series events in the original pool is {} and the number of time-series "
+                          + "events following cross-pairing is {}. The number of baseline time-series in the original "
+                          + "pool is {} and the number of baseline time-series following cross-pairing is {}. The "
+                          + "number of baseline time-series events in the original pool is {} and the number of "
+                          + "baseline time-series events following cross-pairing is {}.",
+                          originalSeriesCountMain,
+                          crossPairSeriesCountMain,
+                          originalEventCountMain,
+                          crossPairEventCountMain,
+                          originalSeriesCountBaseline,
+                          crossPairSeriesCountBaseline,
+                          originalEventCountBaseline,
+                          crossPairEventCountBaseline );
         }
     }
 
@@ -652,4 +988,26 @@ public class StationaryBootstrapResampler<T>
         }
     }
 
+    /**
+     * An exception encountered when resampling time-series.
+     */
+    private static class ResamplingException extends RuntimeException
+    {
+        /**
+         * @param message the message
+         */
+        public ResamplingException( String message )
+        {
+            super( message );
+        }
+
+        /**
+         * @param message the message
+         * @param cause the cause
+         */
+        public ResamplingException( String message, Throwable cause )
+        {
+            super( message, cause );
+        }
+    }
 }

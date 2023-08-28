@@ -325,8 +325,8 @@ public final class SingleValuedStatisticsProcessorTest
         List<DurationDiagramStatisticOuter> actual = new ArrayList<>();
         StatisticsStore some = this.getAndCombineStatistics( processors, first );
         StatisticsStore more = this.getAndCombineStatistics( processors, second );
-        actual.addAll( some.getInstantDurationPairStatistics() );
-        actual.addAll( more.getInstantDurationPairStatistics() );
+        actual.addAll( some.getDurationDiagramStatistics() );
+        actual.addAll( more.getDurationDiagramStatistics() );
 
         // Validate the outputs
         // Compare the errors against the benchmark
@@ -456,8 +456,8 @@ public final class SingleValuedStatisticsProcessorTest
         List<DurationDiagramStatisticOuter> actual = new ArrayList<>();
         StatisticsStore some = this.getAndCombineStatistics( processors, first );
         StatisticsStore more = this.getAndCombineStatistics( processors, second );
-        actual.addAll( some.getInstantDurationPairStatistics() );
-        actual.addAll( more.getInstantDurationPairStatistics() );
+        actual.addAll( some.getDurationDiagramStatistics() );
+        actual.addAll( more.getDurationDiagramStatistics() );
 
         //Validate the outputs
         //Compare the errors against the benchmark

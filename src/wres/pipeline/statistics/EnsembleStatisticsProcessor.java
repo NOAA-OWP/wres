@@ -50,7 +50,6 @@ import wres.metrics.MetricCalculationException;
 import wres.metrics.MetricCollection;
 import wres.metrics.MetricFactory;
 import wres.metrics.MetricParameterException;
-import wres.pipeline.statistics.StatisticsFutures.MetricFuturesByTimeBuilder;
 import wres.statistics.generated.Pool.EnsembleAverageType;
 
 /**
@@ -303,8 +302,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
 
         LOGGER.debug( "Computing ensemble statistics for pool: {}.", pool.getMetadata() );
 
-        // Metric futures 
-        MetricFuturesByTimeBuilder futures = new MetricFuturesByTimeBuilder();
+        // Statistics futures
+        StatisticsStore.Builder futures = new StatisticsStore.Builder();
 
         // Add the ensemble average type used by this processor to the pool metadata. It is convenient to use a pool
         // transformer with a metadata mapper. The pool transformation itself is an identity transformation, only the
@@ -352,9 +351,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
             this.processPairsForDichotomousMetrics( inputNoMissing, futures );
         }
 
-        // Process the ensemble result, which do not yet include single-valued metrics       
-        StatisticsFutures futureResults = futures.build();
-        StatisticsStore results = futureResults.getStatistics();
+        // Process the ensemble result, which do not yet include single-valued metrics
+        StatisticsStore results = futures.build();
 
         // Process the metrics that consume single-valued pairs, which includes any dichotomous metrics derived from 
         // single-valued pairs: #109783. See later for dichotomous metrics produced from ensemble pairs
@@ -483,7 +481,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
      * @throws MetricCalculationException if the metrics cannot be computed
      */
 
-    private void processEnsemblePairs( Pool<Pair<Double, Ensemble>> input, MetricFuturesByTimeBuilder futures )
+    private void processEnsemblePairs( Pool<Pair<Double, Ensemble>> input, StatisticsStore.Builder futures )
     {
         if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE ) )
         {
@@ -518,7 +516,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
      */
 
     private void processEnsemblePairsByThreshold( Pool<Pair<Double, Ensemble>> pool,
-                                                  StatisticsFutures.MetricFuturesByTimeBuilder futures,
+                                                  StatisticsStore.Builder futures,
                                                   StatisticType outGroup )
     {
         // Filter the thresholds for the feature group associated with this pool and for the required types
@@ -594,7 +592,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
      */
 
     private void processEnsemblePairs( Pool<Pair<Double, Ensemble>> pairs,
-                                       StatisticsFutures.MetricFuturesByTimeBuilder futures,
+                                       StatisticsStore.Builder futures,
                                        StatisticType outGroup )
     {
         // Don't waste cpu cycles computing statistics for empty pairs
@@ -611,20 +609,20 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
             // Baseline pool without a baseline of its own?
             if ( pairs.getMetadata().getPool().getIsBaselinePool() && !pairs.hasBaseline() )
             {
-                futures.addDoubleScoreOutput( this.processEnsemblePairs( pairs, this.ensembleScoreNoBaseline ) );
+                futures.addDoubleScoreStatistics( this.processEnsemblePairs( pairs, this.ensembleScoreNoBaseline ) );
             }
             else
             {
-                futures.addDoubleScoreOutput( this.processEnsemblePairs( pairs, this.ensembleScore ) );
+                futures.addDoubleScoreStatistics( this.processEnsemblePairs( pairs, this.ensembleScore ) );
             }
         }
         else if ( outGroup == StatisticType.DIAGRAM )
         {
-            futures.addDiagramOutput( this.processEnsemblePairs( pairs, this.ensembleDiagrams ) );
+            futures.addDiagramStatistics( this.processEnsemblePairs( pairs, this.ensembleDiagrams ) );
         }
         else if ( outGroup == StatisticType.BOXPLOT_PER_PAIR )
         {
-            futures.addBoxPlotOutputPerPair( this.processEnsemblePairs( pairs, this.ensembleBoxPlot ) );
+            futures.addBoxPlotStatisticsPerPair( this.processEnsemblePairs( pairs, this.ensembleBoxPlot ) );
         }
     }
 
@@ -638,7 +636,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
      */
 
     private void processDiscreteProbabilityPairs( Pool<Pair<Double, Ensemble>> input,
-                                                  MetricFuturesByTimeBuilder futures )
+                                                  StatisticsStore.Builder futures )
     {
         if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE ) )
         {
@@ -659,7 +657,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
      */
 
     private void processPairsForDichotomousMetrics( Pool<Pair<Double, Ensemble>> input,
-                                                    MetricFuturesByTimeBuilder futures )
+                                                    StatisticsStore.Builder futures )
     {
         if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ) )
         {
@@ -678,7 +676,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
      */
 
     private void processDiscreteProbabilityPairsByThreshold( Pool<Pair<Double, Ensemble>> pool,
-                                                             StatisticsFutures.MetricFuturesByTimeBuilder futures,
+                                                             StatisticsStore.Builder futures,
                                                              StatisticType outGroup )
     {
         // Filter the thresholds for the feature group associated with this pool and for the required types
@@ -746,7 +744,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
      */
 
     private void processDiscreteProbabilityPairs( Pool<Pair<Probability, Probability>> pairs,
-                                                  StatisticsFutures.MetricFuturesByTimeBuilder futures,
+                                                  StatisticsStore.Builder futures,
                                                   StatisticType outGroup )
     {
         // Don't waste cpu cycles computing statistics for empty pairs
@@ -760,12 +758,12 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
 
         if ( outGroup == StatisticType.DOUBLE_SCORE )
         {
-            futures.addDoubleScoreOutput( this.processDiscreteProbabilityPairs( pairs,
+            futures.addDoubleScoreStatistics( this.processDiscreteProbabilityPairs( pairs,
                                                                                 this.discreteProbabilityScore ) );
         }
         else if ( outGroup == StatisticType.DIAGRAM )
         {
-            futures.addDiagramOutput( this.processDiscreteProbabilityPairs( pairs, this.discreteProbabilityDiagrams ) );
+            futures.addDiagramStatistics( this.processDiscreteProbabilityPairs( pairs, this.discreteProbabilityDiagrams ) );
         }
     }
 
@@ -870,7 +868,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
      */
 
     private void processDichotomousPairsByThreshold( Pool<Pair<Double, Ensemble>> pool,
-                                                     StatisticsFutures.MetricFuturesByTimeBuilder futures )
+                                                     StatisticsStore.Builder futures )
     {
         // Filter the thresholds for the feature group associated with this pool and for the required types
         Map<FeatureTuple, Set<ThresholdOuter>> thresholdsByFeature = super.getThresholdsWithoutAllData();
