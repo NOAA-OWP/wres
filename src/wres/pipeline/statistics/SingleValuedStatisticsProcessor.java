@@ -49,7 +49,6 @@ import wres.metrics.MetricCalculationException;
 import wres.metrics.MetricCollection;
 import wres.metrics.MetricFactory;
 import wres.metrics.MetricParameterException;
-import wres.pipeline.statistics.StatisticsFutures.MetricFuturesByTimeBuilder;
 
 /**
  * Builds and processes all {@link MetricCollection} associated with an evaluation for metrics that consume
@@ -228,7 +227,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
         }
 
         //Metric futures 
-        MetricFuturesByTimeBuilder futures = new MetricFuturesByTimeBuilder();
+        StatisticsStore.Builder futures = new StatisticsStore.Builder();
 
         //Process the metrics that consume single-valued pairs
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED ) )
@@ -249,10 +248,8 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
                       pool.getMetadata().getFeatureGroup(),
                       pool.getMetadata().getTimeWindow() );
 
-        //Process and return the result       
-        StatisticsFutures futureResults = futures.build();
-
-        return futureResults.getStatistics();
+        // Process and return the result
+        return futures.build();
     }
 
     /**
@@ -306,7 +303,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
      */
 
     private void processSingleValuedPairs( Pool<Pair<Double, Double>> pool,
-                                           StatisticsFutures.MetricFuturesByTimeBuilder futures )
+                                           StatisticsStore.Builder futures )
     {
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ) )
         {
@@ -335,7 +332,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
      */
 
     private void processSingleValuedPairsByThreshold( Pool<Pair<Double, Double>> pool,
-                                                      StatisticsFutures.MetricFuturesByTimeBuilder futures,
+                                                      StatisticsStore.Builder futures,
                                                       StatisticType outGroup )
     {
         // Filter the thresholds for the feature group associated with this pool and for the required types
@@ -411,7 +408,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
      */
 
     private void processSingleValuedPairs( Pool<Pair<Double, Double>> pairs,
-                                           StatisticsFutures.MetricFuturesByTimeBuilder futures,
+                                           StatisticsStore.Builder futures,
                                            StatisticType outGroup )
     {
         // Don't waste cpu cycles computing statistics for empty pairs
@@ -426,12 +423,12 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
 
         switch ( outGroup )
         {
-            case DOUBLE_SCORE -> futures.addDoubleScoreOutput( this.processSingleValuedPairs( pairs,
-                                                                                              this.singleValuedScore ) );
-            case DIAGRAM -> futures.addDiagramOutput( this.processSingleValuedPairs( pairs,
-                                                                                     this.singleValuedDiagrams ) );
-            case BOXPLOT_PER_POOL -> futures.addBoxPlotOutputPerPool( this.processSingleValuedPairs( pairs,
-                                                                                                     this.singleValuedBoxPlot ) );
+            case DOUBLE_SCORE -> futures.addDoubleScoreStatistics( this.processSingleValuedPairs( pairs,
+                                                                                                  this.singleValuedScore ) );
+            case DIAGRAM -> futures.addDiagramStatistics( this.processSingleValuedPairs( pairs,
+                                                                                         this.singleValuedDiagrams ) );
+            case BOXPLOT_PER_POOL -> futures.addBoxPlotStatisticsPerPool( this.processSingleValuedPairs( pairs,
+                                                                                                         this.singleValuedBoxPlot ) );
             default -> throw new IllegalStateException( "The statistic group '" + outGroup
                                                         + "' is not supported in this context." );
         }
@@ -496,7 +493,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
      */
 
     private void processPairsForDichotomousMetrics( Pool<Pair<Double, Double>> input,
-                                                    MetricFuturesByTimeBuilder futures )
+                                                    StatisticsStore.Builder futures )
     {
         if ( hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ) )
         {
@@ -514,7 +511,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
      */
 
     private void processDichotomousPairsByThreshold( Pool<Pair<Double, Double>> pool,
-                                                     MetricFuturesByTimeBuilder futures )
+                                                     StatisticsStore.Builder futures )
     {
         // Filter the thresholds for the feature group associated with this pool and for the required types
         Map<FeatureTuple, Set<ThresholdOuter>> thresholdsByFeature = super.getThresholdsWithoutAllData();
@@ -581,7 +578,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
      */
 
     private void processTimeSeriesPairs( Pool<TimeSeries<Pair<Double, Double>>> pool,
-                                         MetricFuturesByTimeBuilder futures )
+                                         StatisticsStore.Builder futures )
     {
         // Filter the thresholds for the feature group associated with this pool and for the required types
         Map<FeatureTuple, Set<ThresholdOuter>> thresholdsByFeature = super.getThresholds();
@@ -634,7 +631,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
                                                                                               this.timeSeries );
 
             // Add the future result to the store
-            futures.addDurationDiagramOutput( output );
+            futures.addDurationDiagramStatistics( output );
 
             // Summary statistics?
             if ( Objects.nonNull( this.timeSeriesStatistics ) )
@@ -642,7 +639,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
                 Future<List<DurationScoreStatisticOuter>> summary = this.processTimeSeriesSummaryPairs( sliced,
                                                                                                         this.timeSeriesStatistics );
 
-                futures.addDurationScoreOutput( summary );
+                futures.addDurationScoreStatistics( summary );
             }
         }
     }

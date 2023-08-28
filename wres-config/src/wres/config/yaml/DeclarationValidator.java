@@ -1593,14 +1593,13 @@ public class DeclarationValidator
                                                .setStatusLevel( StatusLevel.WARN )
                                                .setEventMessage( "The 'sample_size' associated with the "
                                                                  + "'sampling_uncertainty' is smaller than the "
-                                                                 + "recommended minimum of 5,000 samples, which "
-                                                                 + "may lead to inaccurate estimates of the "
-                                                                 + "sampling uncertainty: "
+                                                                 + "recommended minimum of 5,000 samples ("
                                                                  + samplingUncertainty.sampleSize()
-                                                                 + ". Please consider using a larger 'sample_size', "
-                                                                 + "which will increase the evaluation runtime, but "
-                                                                 + "should lead to a more accurate estimate of the "
-                                                                 + "sampling uncertainty." )
+                                                                 + "), which may lead to inaccurate estimates of the "
+                                                                 + "sampling uncertainty. Please consider using a "
+                                                                 + "larger 'sample_size', which will increase the "
+                                                                 + "evaluation runtime, but should lead to a more "
+                                                                 + "accurate estimate of the sampling uncertainty." )
                                                .build();
                 events.add( event );
             }

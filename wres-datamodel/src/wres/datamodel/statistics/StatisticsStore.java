@@ -20,46 +20,25 @@ import wres.config.MetricConstants.StatisticType;
 
 public class StatisticsStore
 {
-    /**
-     * Thread safe map for {@link DoubleScoreStatisticOuter}.
-     */
-
+    /** Thread safe map for {@link DoubleScoreStatisticOuter}. */
     private final List<Future<List<DoubleScoreStatisticOuter>>> doubleScores = new ArrayList<>();
 
-    /**
-     * Thread safe map for {@link DurationScoreStatisticOuter}.
-     */
-
+    /** Thread safe map for {@link DurationScoreStatisticOuter}. */
     private final List<Future<List<DurationScoreStatisticOuter>>> durationScores = new ArrayList<>();
 
-    /**
-     * Thread safe map for {@link DiagramStatisticOuter}.
-     */
-
+    /** Thread safe map for {@link DiagramStatisticOuter}. */
     private final List<Future<List<DiagramStatisticOuter>>> diagrams = new ArrayList<>();
 
-    /**
-     * Thread safe map for {@link BoxplotStatisticOuter} for each pair within a pool.
-     */
-
+    /** Thread safe map for {@link BoxplotStatisticOuter} for each pair within a pool. */
     private final List<Future<List<BoxplotStatisticOuter>>> boxplotPerPair = new ArrayList<>();
 
-    /**
-     * Thread safe map for {@link BoxplotStatisticOuter} for each pool.
-     */
-
+    /** Thread safe map for {@link BoxplotStatisticOuter} for each pool. */
     private final List<Future<List<BoxplotStatisticOuter>>> boxplotPerPool = new ArrayList<>();
 
-    /**
-     * Thread safe map for {@link DurationDiagramStatisticOuter}.
-     */
+    /** Thread safe map for {@link DurationDiagramStatisticOuter}. */
+    private final List<Future<List<DurationDiagramStatisticOuter>>> durationDiagrams = new ArrayList<>();
 
-    private final List<Future<List<DurationDiagramStatisticOuter>>> paired = new ArrayList<>();
-
-    /**
-     * Minimum sample size used when forming the statistics.
-     */
-
+    /** Minimum sample size used when forming the statistics. */
     private final int minimumSampleSize;
 
     /**
@@ -167,10 +146,10 @@ public class StatisticsStore
      * @throws InterruptedException if the retrieval was interrupted
      */
 
-    public List<DurationDiagramStatisticOuter> getInstantDurationPairStatistics()
+    public List<DurationDiagramStatisticOuter> getDurationDiagramStatistics()
             throws InterruptedException
     {
-        return this.unwrap( StatisticType.DURATION_DIAGRAM, this.paired );
+        return this.unwrap( StatisticType.DURATION_DIAGRAM, this.durationDiagrams );
     }
 
     /**
@@ -189,7 +168,7 @@ public class StatisticsStore
                     case DIAGRAM -> !this.diagrams.isEmpty();
                     case BOXPLOT_PER_PAIR -> !this.boxplotPerPair.isEmpty();
                     case BOXPLOT_PER_POOL -> !this.boxplotPerPool.isEmpty();
-                    case DURATION_DIAGRAM -> !this.paired.isEmpty();
+                    case DURATION_DIAGRAM -> !this.durationDiagrams.isEmpty();
                 };
     }
 
@@ -247,7 +226,7 @@ public class StatisticsStore
          * Thread safe map for {@link DurationDiagramStatisticOuter}.
          */
 
-        private final ConcurrentLinkedQueue<Future<List<DurationDiagramStatisticOuter>>> pairedInternal =
+        private final ConcurrentLinkedQueue<Future<List<DurationDiagramStatisticOuter>>> durationDiagramsInternal =
                 new ConcurrentLinkedQueue<>();
 
         /**
@@ -339,9 +318,9 @@ public class StatisticsStore
          * @return the builder
          */
 
-        public Builder addInstantDurationPairStatistics( Future<List<DurationDiagramStatisticOuter>> result )
+        public Builder addDurationDiagramStatistics( Future<List<DurationDiagramStatisticOuter>> result )
         {
-            this.pairedInternal.add( result );
+            this.durationDiagramsInternal.add( result );
 
             return this;
         }
@@ -386,7 +365,7 @@ public class StatisticsStore
 
             if ( project.hasStatistic( StatisticType.DURATION_DIAGRAM ) )
             {
-                this.addInstantDurationPairStatistics( CompletableFuture.completedFuture( project.getInstantDurationPairStatistics() ) );
+                this.addDurationDiagramStatistics( CompletableFuture.completedFuture( project.getDurationDiagramStatistics() ) );
             }
 
             return this;
@@ -431,7 +410,7 @@ public class StatisticsStore
         this.diagrams.addAll( builder.diagramsInternal );
         this.boxplotPerPair.addAll( builder.boxplotPerPairInternal );
         this.boxplotPerPool.addAll( builder.boxplotPerPoolInternal );
-        this.paired.addAll( builder.pairedInternal );
+        this.durationDiagrams.addAll( builder.durationDiagramsInternal );
         this.minimumSampleSize = builder.minimumSampleSize;
     }
 
