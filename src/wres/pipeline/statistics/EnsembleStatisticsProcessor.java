@@ -146,7 +146,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
      * Constructor.
      *
      * @param metricsAndThresholds the metrics and thresholds
-     * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null
+     * @param slicingExecutor an {@link ExecutorService} for executing slicing and dicing of pools, cannot be null
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
      * @throws DeclarationException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
@@ -154,10 +154,10 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
      */
 
     public EnsembleStatisticsProcessor( MetricsAndThresholds metricsAndThresholds,
-                                        ExecutorService thresholdExecutor,
+                                        ExecutorService slicingExecutor,
                                         ExecutorService metricExecutor )
     {
-        super( metricsAndThresholds, thresholdExecutor, metricExecutor );
+        super( metricsAndThresholds, slicingExecutor, metricExecutor );
 
         this.ensembleAverageType = this.getEnsembleAverageType( metricsAndThresholds.ensembleAverageType() );
 
@@ -283,8 +283,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         // Create a single-valued processor for computing single-valued measures, but first eliminate any metrics that
         // relate to ensemble or probabilistic pairs.
         this.singleValuedProcessor = this.getSingleValuedProcessor( metricsAndThresholds,
-                                                                    thresholdExecutor,
-                                                                    metricExecutor);
+                                                                    slicingExecutor,
+                                                                    metricExecutor );
 
         // Finalize validation now all required parameters are available
         // This is also called by the constructor of the superclass, but local parameters must be validated too
@@ -305,26 +305,20 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         // Statistics futures
         StatisticsStore.Builder futures = new StatisticsStore.Builder();
 
-        // Add the ensemble average type used by this processor to the pool metadata. It is convenient to use a pool
-        // transformer with a metadata mapper. The pool transformation itself is an identity transformation, only the
-        // metadata is changed
+        // Remove missing values. 
+        // TODO: when time-series metrics are supported, leave missings in place for time-series
+        // Also retain the time-series shape, where required
+        // Add the ensemble average type used by this processor to the pool metadata.
         String typeName = this.getEnsembleAverageType()
                               .name();
         wres.statistics.generated.Pool.EnsembleAverageType averageType =
                 wres.statistics.generated.Pool.EnsembleAverageType.valueOf( typeName );
-        // Do the metadata transformation        
-        Pool<TimeSeries<Pair<Double, Ensemble>>> adjustedPool = PoolSlicer.transform( pool,
-                                                                                      Function.identity(),
-                                                                                      unadjusted -> PoolMetadata.of(
-                                                                                              unadjusted,
-                                                                                              averageType ) );
-
-        // Remove missing values. 
-        // TODO: when time-series metrics are supported, leave missings in place for time-series
-        // Also retain the time-series shape, where required
-        Pool<Pair<Double, Ensemble>> unpacked = PoolSlicer.unpack( adjustedPool );
+        UnaryOperator<PoolMetadata> metaMapper = unadjusted -> PoolMetadata.of( unadjusted, averageType );
+        Pool<Pair<Double, Ensemble>> unpacked = this.doWorkWithSlicingExecutor( () -> PoolSlicer.unpack( pool ) );
         Pool<Pair<Double, Ensemble>> inputNoMissing =
-                PoolSlicer.transform( unpacked, Slicer.leftAndEachOfRight( MissingValues::isNotMissingValue ) );
+                this.doWorkWithSlicingExecutor( () -> PoolSlicer.transform( unpacked,
+                                                                            Slicer.leftAndEachOfRight( MissingValues::isNotMissingValue ),
+                                                                            metaMapper ) );
 
         LOGGER.debug( "Computing ensemble statistics from {} pairs.",
                       inputNoMissing.get()
@@ -361,7 +355,10 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
             // Derive the single-valued pairs from the ensemble pairs using the configured mapper
             Function<TimeSeries<Pair<Double, Ensemble>>, TimeSeries<Pair<Double, Double>>> mapper =
                     in -> TimeSeriesSlicer.transform( in, this.toSingleValues, null );
-            Pool<TimeSeries<Pair<Double, Double>>> singleValued = PoolSlicer.transform( adjustedPool, mapper );
+            Pool<TimeSeries<Pair<Double, Double>>> singleValued =
+                    this.doWorkWithSlicingExecutor( () -> PoolSlicer.transform( pool,
+                                                                                mapper,
+                                                                                metaMapper ) );  // Add the ensemble average type to the metadata too
 
             LOGGER.debug( "Computing single-valued statistics for an ensemble forecast from {} time-series.",
                           singleValued.get()
@@ -374,8 +371,10 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         }
 
         LOGGER.debug( PROCESSING_COMPLETE_MESSAGE,
-                      pool.getMetadata().getFeatureGroup(),
-                      pool.getMetadata().getTimeWindow() );
+                      pool.getMetadata()
+                          .getFeatureGroup(),
+                      pool.getMetadata()
+                          .getTimeWindow() );
 
         return results;
     }
@@ -570,11 +569,12 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
                     PoolSlicer.decompose( pool, PoolSlicer.getFeatureMapper() );
 
             // Filter by threshold using the feature as a hook to tie a pool to a threshold
-            Pool<Pair<Double, Ensemble>> sliced = PoolSlicer.filter( pools,
-                                                                     slicers,
-                                                                     pool.getMetadata(),
-                                                                     super.getBaselineMetadata( pool ),
-                                                                     metaTransformer );
+            Pool<Pair<Double, Ensemble>> sliced =
+                    this.doWorkWithSlicingExecutor( () -> PoolSlicer.filter( pools,
+                                                                             slicers,
+                                                                             pool.getMetadata(),
+                                                                             super.getBaselineMetadata( pool ),
+                                                                             metaTransformer ) );
 
             this.processEnsemblePairs( sliced,
                                        futures,
@@ -723,11 +723,12 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
                                                                                           PoolSlicer.getFeatureMapper() );
 
             // Transform by threshold using the feature as a hook to tie a pool to a threshold
-            Pool<Pair<Probability, Probability>> transformed = PoolSlicer.transform( pools,
-                                                                                     transformers,
-                                                                                     pool.getMetadata(),
-                                                                                     super.getBaselineMetadata( pool ),
-                                                                                     metaTransformer );
+            Pool<Pair<Probability, Probability>> transformed =
+                    this.doWorkWithSlicingExecutor( () -> PoolSlicer.transform( pools,
+                                                                                transformers,
+                                                                                pool.getMetadata(),
+                                                                                super.getBaselineMetadata( pool ),
+                                                                                metaTransformer ) );
 
             this.processDiscreteProbabilityPairs( transformed,
                                                   futures,
@@ -759,11 +760,12 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         if ( outGroup == StatisticType.DOUBLE_SCORE )
         {
             futures.addDoubleScoreStatistics( this.processDiscreteProbabilityPairs( pairs,
-                                                                                this.discreteProbabilityScore ) );
+                                                                                    this.discreteProbabilityScore ) );
         }
         else if ( outGroup == StatisticType.DIAGRAM )
         {
-            futures.addDiagramStatistics( this.processDiscreteProbabilityPairs( pairs, this.discreteProbabilityDiagrams ) );
+            futures.addDiagramStatistics( this.processDiscreteProbabilityPairs( pairs,
+                                                                                this.discreteProbabilityDiagrams ) );
         }
     }
 
@@ -848,7 +850,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
             {
                 Set<MetricConstants> ss = Set.of( MetricConstants.SAMPLE_SIZE );
                 return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ss ),
-                                                      this.getThresholdExecutor() );
+                                                      this.getSlicingExecutor() );
             }
 
             return CompletableFuture.completedFuture( List.of() );
@@ -916,11 +918,12 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
                                                                                           PoolSlicer.getFeatureMapper() );
 
             // Transform by threshold using the feature as a hook to tie a pool to a threshold
-            Pool<Pair<Probability, Probability>> transformed = PoolSlicer.transform( pools,
-                                                                                     transformers,
-                                                                                     pool.getMetadata(),
-                                                                                     super.getBaselineMetadata( pool ),
-                                                                                     meta -> meta );
+            Pool<Pair<Probability, Probability>> transformed =
+                    this.doWorkWithSlicingExecutor( () -> PoolSlicer.transform( pools,
+                                                                                transformers,
+                                                                                pool.getMetadata(),
+                                                                                super.getBaselineMetadata( pool ),
+                                                                           meta -> meta ) );
 
             // Get the composed threshold for the metadata
             ThresholdOuter composedOuter = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
@@ -952,11 +955,12 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
                                               PoolSlicer.getFeatureMapper() );
 
                 // Transform by threshold using the feature as a hook to tie a pool to a threshold
-                Pool<Pair<Boolean, Boolean>> dichotomous = PoolSlicer.transform( innerPools,
-                                                                                 innerTransformers,
-                                                                                 transformed.getMetadata(),
-                                                                                 super.getBaselineMetadata( transformed ),
-                                                                                 metaTransformer );
+                Pool<Pair<Boolean, Boolean>> dichotomous =
+                        this.doWorkWithSlicingExecutor( () -> PoolSlicer.transform( innerPools,
+                                                                                    innerTransformers,
+                                                                                    transformed.getMetadata(),
+                                                                                    super.getBaselineMetadata( transformed ),
+                                                                                    metaTransformer ) );
 
                 super.processDichotomousPairs( dichotomous, futures );
             }
@@ -1070,7 +1074,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
                                                                       ExecutorService metricExecutor )
     {
         Set<MetricConstants> singleValuedMetrics = this.getSingleValuedMetrics( metricsAndThresholds.metrics() );
-        if( ! singleValuedMetrics.isEmpty() )
+        if ( !singleValuedMetrics.isEmpty() )
         {
             LOGGER.debug( "Discovered the following single-valued metrics for processing: {}.",
                           singleValuedMetrics );
@@ -1080,8 +1084,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
                                               metricsAndThresholds.minimumSampleSize(),
                                               null );
             return new SingleValuedStatisticsProcessor( singleValuedMetricsAndThresholds,
-                                                                              thresholdExecutor,
-                                                                              metricExecutor );
+                                                        thresholdExecutor,
+                                                        metricExecutor );
         }
         else
         {

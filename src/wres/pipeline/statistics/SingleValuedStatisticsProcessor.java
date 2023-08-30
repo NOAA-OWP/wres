@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -109,7 +110,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
      * Constructor.
      *
      * @param metricsAndThresholds the metrics and thresholds
-     * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null
+     * @param slicingExecutor an {@link ExecutorService} for executing slicing and dicing of pools, cannot be null
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
      * @throws DeclarationException if the metrics are configured incorrectly
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
@@ -117,10 +118,10 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
      */
 
     public SingleValuedStatisticsProcessor( MetricsAndThresholds metricsAndThresholds,
-                                            ExecutorService thresholdExecutor,
+                                            ExecutorService slicingExecutor,
                                             ExecutorService metricExecutor )
     {
-        super( metricsAndThresholds, thresholdExecutor, metricExecutor );
+        super( metricsAndThresholds, slicingExecutor, metricExecutor );
 
         // Construct the metrics
         // Time-series
@@ -217,9 +218,11 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
                           pool.getMetadata() );
             Pool<Pair<Double, Double>> unpacked = PoolSlicer.unpack( pool );
             // Climatology is filtered for missings on construction
-            unpackedNoMissing = PoolSlicer.filter( unpacked,
-                                                   Slicer.leftAndRight( MissingValues::isNotMissingValue ),
-                                                   null );
+            Supplier<Pool<Pair<Double, Double>>> filterer =
+                    () -> PoolSlicer.filter( unpacked,
+                                             Slicer.leftAndRight( MissingValues::isNotMissingValue ),
+                                             null );
+            unpackedNoMissing = this.doWorkWithSlicingExecutor( filterer );
 
             LOGGER.debug( "Computing single-valued statistics from {} pairs.",
                           unpackedNoMissing.get()
@@ -386,11 +389,12 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
                     PoolSlicer.decompose( pool, PoolSlicer.getFeatureMapper() );
 
             // Filter by threshold using the feature as a hook to tie a pool to a threshold
-            Pool<Pair<Double, Double>> sliced = PoolSlicer.filter( pools,
-                                                                   slicers,
-                                                                   pool.getMetadata(),
-                                                                   super.getBaselineMetadata( pool ),
-                                                                   metaTransformer );
+            Pool<Pair<Double, Double>> sliced =
+                    this.doWorkWithSlicingExecutor( () -> PoolSlicer.filter( pools,
+                                                                             slicers,
+                                                                             pool.getMetadata(),
+                                                                             super.getBaselineMetadata( pool ),
+                                                                             metaTransformer ) );
 
             this.processSingleValuedPairs( sliced,
                                            futures,
@@ -473,8 +477,9 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
             if ( collection.getMetrics().contains( MetricConstants.SAMPLE_SIZE ) )
             {
                 Set<MetricConstants> ss = Set.of( MetricConstants.SAMPLE_SIZE );
+                // Submit on a different executor than the metric executor that does the work
                 return CompletableFuture.supplyAsync( () -> collection.apply( pairs, ss ),
-                                                      this.getThresholdExecutor() );
+                                                      this.getSlicingExecutor() );
             }
 
             return CompletableFuture.completedFuture( List.of() );
@@ -558,11 +563,12 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
                     PoolSlicer.decompose( pool, PoolSlicer.getFeatureMapper() );
 
             // Transform by threshold using the feature as a hook to tie a pool to a threshold
-            Pool<Pair<Boolean, Boolean>> transformed = PoolSlicer.transform( pools,
-                                                                             transformers,
-                                                                             pool.getMetadata(),
-                                                                             this.getBaselineMetadata( pool ),
-                                                                             metaTransformer );
+            Pool<Pair<Boolean, Boolean>> transformed =
+                    this.doWorkWithSlicingExecutor( () -> PoolSlicer.transform( pools,
+                                                                                transformers,
+                                                                                pool.getMetadata(),
+                                                                                this.getBaselineMetadata( pool ),
+                                                                                metaTransformer ) );
 
             super.processDichotomousPairs( transformed,
                                            futures );
@@ -620,11 +626,12 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
                     PoolSlicer.decompose( pool, PoolSlicer.getFeatureMapper() );
 
             // Filter by threshold using the feature as a hook to tie a pool to a threshold
-            Pool<TimeSeries<Pair<Double, Double>>> sliced = PoolSlicer.filter( pools,
-                                                                               slicers,
-                                                                               pool.getMetadata(),
-                                                                               super.getBaselineMetadata( pool ),
-                                                                               metaTransformer );
+            Pool<TimeSeries<Pair<Double, Double>>> sliced =
+                    this.doWorkWithSlicingExecutor( () -> PoolSlicer.filter( pools,
+                                                                             slicers,
+                                                                             pool.getMetadata(),
+                                                                             super.getBaselineMetadata( pool ),
+                                                                             metaTransformer ) );
 
             // Build the future result
             Future<List<DurationDiagramStatisticOuter>> output = this.processTimeSeriesPairs( sliced,
@@ -636,8 +643,9 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
             // Summary statistics?
             if ( Objects.nonNull( this.timeSeriesStatistics ) )
             {
-                Future<List<DurationScoreStatisticOuter>> summary = this.processTimeSeriesSummaryPairs( sliced,
-                                                                                                        this.timeSeriesStatistics );
+                Future<List<DurationScoreStatisticOuter>> summary =
+                        this.processTimeSeriesSummaryPairs( sliced,
+                                                            this.timeSeriesStatistics );
 
                 futures.addDurationScoreStatistics( summary );
             }

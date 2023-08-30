@@ -151,12 +151,12 @@ public class Evaluator
         ThreadFactory poolFactory = new BasicThreadFactory.Builder()
                 .namingPattern( "Pool Thread %d" )
                 .build();
-        // Essential to use a separate thread pool for thresholds and metrics as ArrayBlockingQueue operates a FIFO
-        // policy. If dependent tasks (thresholds) are queued ahead of independent ones (metrics) in the same pool,
-        // there is a DEADLOCK probability. Likewise, use a separate thread pool for dispatching pools and completing
-        // tasks within pools with the same number of threads in each.
-        ThreadFactory thresholdFactory = new BasicThreadFactory.Builder()
-                .namingPattern( "Threshold Thread %d" )
+        // Use this thread pool for slicing pools and to dispatch metric tasks as ArrayBlockingQueue operates a FIFO
+        // policy. If dependent tasks (slicing) are queued ahead of independent ones (metrics) in the same pool, there
+        // is a DEADLOCK probability. Likewise, use a separate thread pool for dispatching pools and completing tasks
+        // within pools with the same number of threads in each.
+        ThreadFactory slicingFactory = new BasicThreadFactory.Builder()
+                .namingPattern( "Slicing Thread %d" )
                 .build();
         ThreadFactory metricFactory = new BasicThreadFactory.Builder()
                 .namingPattern( "Metric Thread %d" )
@@ -169,9 +169,10 @@ public class Evaluator
 
         // Create some unbounded work queues. For evaluations that produce statistics faster than subscribers (e.g.,
         // statistics format writers) can consume them, production is flow controlled explicitly via the statistics
-        // messaging. See #95867.
+        // messaging. See #95867. There is a separate thread pool for each of several themed tasks within an evaluation
+        // pipeline that are resource-intensive
         BlockingQueue<Runnable> poolQueue = new LinkedBlockingQueue<>();
-        BlockingQueue<Runnable> thresholdQueue = new LinkedBlockingQueue<>();
+        BlockingQueue<Runnable> slicingQueue = new LinkedBlockingQueue<>();
         BlockingQueue<Runnable> metricQueue = new LinkedBlockingQueue<>();
         BlockingQueue<Runnable> productQueue = new LinkedBlockingQueue<>();
 
@@ -183,13 +184,13 @@ public class Evaluator
                                                                TimeUnit.MILLISECONDS,
                                                                poolQueue,
                                                                poolFactory );
-        // Thread pool that dispatches thresholds
-        ExecutorService thresholdExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumThresholdThreads(),
-                                                                    innerSystemSettings.getMaximumThresholdThreads(),
-                                                                    0,
-                                                                    TimeUnit.SECONDS,
-                                                                    thresholdQueue,
-                                                                    thresholdFactory );
+        // Thread pool that performs slicing/dicing and transforming of pooled data
+        ExecutorService slicingExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumSlicingThreads(),
+                                                                  innerSystemSettings.getMaximumSlicingThreads(),
+                                                                  0,
+                                                                  TimeUnit.SECONDS,
+                                                                  slicingQueue,
+                                                                  slicingFactory );
         // Thread pool that processes metrics
         ExecutorService metricExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumMetricThreads(),
                                                                  innerSystemSettings.getMaximumMetricThreads(),
@@ -244,7 +245,7 @@ public class Evaluator
 
             // Reduce our set of executors to one object
             Executors executors = new Executors( poolExecutor,
-                                                 thresholdExecutor,
+                                                 slicingExecutor,
                                                  metricExecutor,
                                                  productExecutor,
                                                  samplingUncertaintyExecutor );
@@ -255,7 +256,7 @@ public class Evaluator
                 monitoringService = new ScheduledThreadPoolExecutor( 1 );
                 QueueMonitor queueMonitor = new QueueMonitor( this.getDatabase(),
                                                               poolQueue,
-                                                              thresholdQueue,
+                                                              slicingQueue,
                                                               metricQueue,
                                                               productQueue );
 
@@ -309,7 +310,7 @@ public class Evaluator
             }
             Evaluator.shutDownGracefully( productExecutor );
             Evaluator.shutDownGracefully( metricExecutor );
-            Evaluator.shutDownGracefully( thresholdExecutor );
+            Evaluator.shutDownGracefully( slicingExecutor );
             Evaluator.shutDownGracefully( poolExecutor );
             Evaluator.shutDownGracefully( samplingUncertaintyExecutor );
             lockManager.shutdown();
@@ -446,14 +447,14 @@ public class Evaluator
      * A value object that reduces count of args for some methods and provides names for those objects.
      *
      * @param poolExecutor the pool executor
-     * @param thresholdExecutor the threshold executor
+     * @param slicingExecutor the executor for slicing/dicing/transforming pools
      * @param metricExecutor the metric executor
      * @param productExecutor the product executor
      * @param samplingUncertaintyExecutor the sampling uncertainty executor
      */
 
     record Executors( ExecutorService poolExecutor,
-                      ExecutorService thresholdExecutor,
+                      ExecutorService slicingExecutor,
                       ExecutorService metricExecutor,
                       ExecutorService productExecutor,
                       ExecutorService samplingUncertaintyExecutor )

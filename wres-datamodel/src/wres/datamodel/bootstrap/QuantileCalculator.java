@@ -8,9 +8,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -21,8 +23,10 @@ import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.MetricConstants;
 import wres.datamodel.Slicer;
 import wres.statistics.MessageFactory;
+import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DoubleScoreMetric;
@@ -175,6 +179,8 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
                                                             component.getMetric()
                                                                      .getName() );
                 double[] samples = this.doubleScores.get( name );
+                // Check the slot exists
+                this.validateSlot( samples, name );
                 samples[index] = component.getValue();
             }
         }
@@ -198,6 +204,8 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
                                                                 component.getMetric()
                                                                          .getName() );
                 Duration[] samples = this.durationScores.get( name );
+                // Check the slot exists
+                this.validateSlot( samples, name );
                 samples[index] = MessageFactory.parse( component.getValue() );
             }
         }
@@ -222,6 +230,8 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
                                                              .getName(),
                                                     component.getName() );
                 double[][] samples = this.diagrams.get( name );
+                // Check the slot exists
+                this.validateSlot( samples, name );
                 int valuesCount = component.getValuesCount();
                 for ( int i = 0; i < valuesCount; i++ )
                 {
@@ -245,6 +255,8 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
                                            .getName();
 
             Map<Instant, Duration[]> samples = this.durationDiagrams.get( metricName );
+            // Check the slot exists
+            this.validateSlot( samples, metricName );
             int valuesCount = diagram.getStatisticsCount();
             for ( int i = 0; i < valuesCount; i++ )
             {
@@ -254,6 +266,24 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
                 Duration[] durations = samples.get( instant );
                 durations[index] = duration;
             }
+        }
+    }
+
+    /**
+     * Throws an exception in encountering an empty slot for a statistic received at runtime.
+     * @param slot the slot data to check for nullity
+     * @param name the name of the statistic
+     */
+    private void validateSlot( Object slot, Object name )
+    {
+        if ( Objects.isNull( slot ) )
+        {
+            throw new ResamplingException( "Encountered an internal error when conducting quantile "
+                                           + "estimation. Could not find a slot in the quantile calculator "
+                                           + "for a supplied statistic: "
+                                           + name
+                                           + ". This probably occurred because the quantile calculator was not "
+                                           + "instantiated with all required statistics." );
         }
     }
 
@@ -555,7 +585,8 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
             sampleCount = sampleCount + 1;
         }
 
-        this.nominal = nominal;
+        // Filter the nominal statistics for statistics that support sampling uncertainty estimation
+        this.nominal = this.filter( nominal );
         this.sampleCount = sampleCount;
         this.probabilities = Collections.unmodifiableSortedSet( probabilities );
         this.sampleIndexStarted = new AtomicInteger();
@@ -573,15 +604,110 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
         this.durationDiagrams = this.createDurationDiagramSlots( this.nominal.getDurationDiagramsList(),
                                                                  this.sampleCount );
 
-        LOGGER.debug( "Created a quantile calculator with a sample count of {} and probabilities of {}.",
-                      sampleCount,
-                      probabilities );
+        if ( LOGGER.isDebugEnabled() )
+        {
+            Set<Object> names = new HashSet<>( this.doubleScores.keySet() );
+            names.addAll( this.diagrams.keySet() );
+            names.addAll( this.durationScores.keySet() );
+            names.addAll( this.durationDiagrams.keySet() );
+            LOGGER.debug( "Created a quantile calculator with a sample count of {}, probabilities of {} and slots for "
+                          + "the following metrics: {}.",
+                          sampleCount,
+                          probabilities,
+                          names );
+        }
 
         // Add the nominal statistics
         if ( addNominal )
         {
             this.add( nominal );
         }
+    }
+
+    /**
+     * Removes any statistics that do not support sampling uncertainty estimation.
+     *
+     * @param statistics the statistics to filter
+     * @return the filtered statistics
+     */
+
+    private Statistics filter( Statistics statistics )
+    {
+        Statistics.Builder builder = statistics.toBuilder()
+                                               .clearScores()
+                                               .clearDurationScores()
+                                               .clearDiagrams()
+                                               .clearDurationDiagrams()
+                                               .clearOneBoxPerPair()
+                                               .clearOneBoxPerPool();
+
+        // Filter scores
+        List<DoubleScoreStatistic> scoreList =
+                statistics.getScoresList()
+                          .stream()
+                          .filter( n -> MetricConstants.valueOf( n.getMetric()
+                                                                  .getName()
+                                                                  .name() )
+                                                       .isSamplingUncertaintyAllowed() )
+                          .toList();
+        builder.addAllScores( scoreList );
+
+        // Filter duration scores
+        List<DurationScoreStatistic> durationScoreList =
+                statistics.getDurationScoresList()
+                          .stream()
+                          .filter( n -> MetricConstants.valueOf( n.getMetric()
+                                                                  .getName()
+                                                                  .name() )
+                                                       .isSamplingUncertaintyAllowed() )
+                          .toList();
+        builder.addAllDurationScores( durationScoreList );
+
+        // Filter diagrams
+        List<DiagramStatistic> diagramList =
+                statistics.getDiagramsList()
+                          .stream()
+                          .filter( n -> MetricConstants.valueOf( n.getMetric()
+                                                                  .getName()
+                                                                  .name() )
+                                                       .isSamplingUncertaintyAllowed() )
+                          .toList();
+        builder.addAllDiagrams( diagramList );
+
+        // Filter duration diagrams
+        List<DurationDiagramStatistic> durationDiagramList =
+                statistics.getDurationDiagramsList()
+                          .stream()
+                          .filter( n -> MetricConstants.valueOf( n.getMetric()
+                                                                  .getName()
+                                                                  .name() )
+                                                       .isSamplingUncertaintyAllowed() )
+                          .toList();
+        builder.addAllDurationDiagrams( durationDiagramList );
+
+        // Filter box plots per pool
+        List<BoxplotStatistic> boxplotPerPoolList =
+                statistics.getOneBoxPerPoolList()
+                          .stream()
+                          .filter( n -> MetricConstants.valueOf( n.getMetric()
+                                                                  .getName()
+                                                                  .name() )
+                                                       .isSamplingUncertaintyAllowed() )
+                          .toList();
+        builder.addAllOneBoxPerPool( boxplotPerPoolList );
+
+        // Filter box plots per pair
+        List<BoxplotStatistic> boxplotPerPairList =
+                statistics.getOneBoxPerPairList()
+                          .stream()
+                          .filter( n -> MetricConstants.valueOf( n.getMetric()
+                                                                  .getName()
+                                                                  .name() )
+                                                       .isSamplingUncertaintyAllowed() )
+                          .toList();
+        builder.addAllOneBoxPerPair( boxplotPerPairList );
+
+        return builder.build();
     }
 
     /**
@@ -597,16 +723,22 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
         Map<DoubleScoreName, double[]> slots = new HashMap<>();
         for ( DoubleScoreStatistic score : scores )
         {
-            List<DoubleScoreStatistic.DoubleScoreStatisticComponent> components = score.getStatisticsList();
             MetricName metricName = score.getMetric()
                                          .getName();
-            for ( DoubleScoreStatistic.DoubleScoreStatisticComponent component : components )
+            MetricConstants nextMetric = MetricConstants.valueOf( metricName.name() );
+
+            // Supports sampling uncertainty?
+            if ( nextMetric.isSamplingUncertaintyAllowed() )
             {
-                DoubleScoreName name = new DoubleScoreName( metricName,
-                                                            component.getMetric()
-                                                                     .getName() );
-                double[] placeholders = new double[sampleCount];
-                slots.put( name, placeholders );
+                List<DoubleScoreStatistic.DoubleScoreStatisticComponent> components = score.getStatisticsList();
+                for ( DoubleScoreStatistic.DoubleScoreStatisticComponent component : components )
+                {
+                    DoubleScoreName name = new DoubleScoreName( metricName,
+                                                                component.getMetric()
+                                                                         .getName() );
+                    double[] placeholders = new double[sampleCount];
+                    slots.put( name, placeholders );
+                }
             }
         }
 
@@ -626,19 +758,25 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
         Map<DiagramName, double[][]> slots = new HashMap<>();
         for ( DiagramStatistic diagram : diagramStatistics )
         {
-            List<DiagramStatistic.DiagramStatisticComponent> components = diagram.getStatisticsList();
             MetricName metricName = diagram.getMetric()
                                            .getName();
-            for ( DiagramStatistic.DiagramStatisticComponent component : components )
-            {
-                DiagramName name = new DiagramName( metricName,
-                                                    component.getMetric()
-                                                             .getName(),
-                                                    component.getName() );
+            MetricConstants nextMetric = MetricConstants.valueOf( metricName.name() );
 
-                int valueCount = component.getValuesCount();
-                double[][] placeholders = new double[valueCount][sampleCount];
-                slots.put( name, placeholders );
+            // Supports sampling uncertainty?
+            if ( nextMetric.isSamplingUncertaintyAllowed() )
+            {
+                List<DiagramStatistic.DiagramStatisticComponent> components = diagram.getStatisticsList();
+                for ( DiagramStatistic.DiagramStatisticComponent component : components )
+                {
+                    DiagramName name = new DiagramName( metricName,
+                                                        component.getMetric()
+                                                                 .getName(),
+                                                        component.getName() );
+
+                    int valueCount = component.getValuesCount();
+                    double[][] placeholders = new double[valueCount][sampleCount];
+                    slots.put( name, placeholders );
+                }
             }
         }
 
@@ -658,16 +796,22 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
         Map<DurationScoreName, Duration[]> slots = new HashMap<>();
         for ( DurationScoreStatistic score : scores )
         {
-            List<DurationScoreStatistic.DurationScoreStatisticComponent> components = score.getStatisticsList();
             MetricName metricName = score.getMetric()
                                          .getName();
-            for ( DurationScoreStatistic.DurationScoreStatisticComponent component : components )
+            MetricConstants nextMetric = MetricConstants.valueOf( metricName.name() );
+
+            // Supports sampling uncertainty?
+            if ( nextMetric.isSamplingUncertaintyAllowed() )
             {
-                DurationScoreName name = new DurationScoreName( metricName,
-                                                                component.getMetric()
-                                                                         .getName() );
-                Duration[] placeholders = new Duration[sampleCount];
-                slots.put( name, placeholders );
+                List<DurationScoreStatistic.DurationScoreStatisticComponent> components = score.getStatisticsList();
+                for ( DurationScoreStatistic.DurationScoreStatisticComponent component : components )
+                {
+                    DurationScoreName name = new DurationScoreName( metricName,
+                                                                    component.getMetric()
+                                                                             .getName() );
+                    Duration[] placeholders = new Duration[sampleCount];
+                    slots.put( name, placeholders );
+                }
             }
         }
 
@@ -681,25 +825,31 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
      * @return the duration diagram samples, to fill
      */
 
-    private Map<MetricName, Map<Instant, Duration[]>> createDurationDiagramSlots( List<DurationDiagramStatistic> diagramStatistics,
-                                                                                  int sampleCount )
+    private Map<MetricName, Map<Instant, Duration[]>> createDurationDiagramSlots
+    ( List<DurationDiagramStatistic> diagramStatistics,
+      int sampleCount )
     {
         Map<MetricName, Map<Instant, Duration[]>> slots = new EnumMap<>( MetricName.class );
         for ( DurationDiagramStatistic diagram : diagramStatistics )
         {
-            List<DurationDiagramStatistic.PairOfInstantAndDuration> values = diagram.getStatisticsList();
             MetricName metricName = diagram.getMetric()
                                            .getName();
+            MetricConstants nextMetric = MetricConstants.valueOf( metricName.name() );
 
-            Map<Instant, Duration[]> pairs = new HashMap<>();
-            for ( DurationDiagramStatistic.PairOfInstantAndDuration pair : values )
+            // Supports sampling uncertainty?
+            if ( nextMetric.isSamplingUncertaintyAllowed() )
             {
-                Instant instant = MessageFactory.parse( pair.getTime() );
-                Duration[] durations = new Duration[sampleCount];
-                pairs.put( instant, durations );
-            }
+                List<DurationDiagramStatistic.PairOfInstantAndDuration> values = diagram.getStatisticsList();
+                Map<Instant, Duration[]> pairs = new HashMap<>();
+                for ( DurationDiagramStatistic.PairOfInstantAndDuration pair : values )
+                {
+                    Instant instant = MessageFactory.parse( pair.getTime() );
+                    Duration[] durations = new Duration[sampleCount];
+                    pairs.put( instant, durations );
+                }
 
-            slots.put( metricName, Collections.unmodifiableMap( pairs ) );
+                slots.put( metricName, Collections.unmodifiableMap( pairs ) );
+            }
         }
 
         return Collections.unmodifiableMap( slots );

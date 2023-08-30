@@ -677,7 +677,7 @@ public class StationaryBootstrapResampler<T>
         }
 
         LOGGER.debug( "The pool to resample contains {} mini-pools.", miniPools.size() );
-        TimeSeriesCrossPairer<T> crossPairer = TimeSeriesCrossPairer.of( CrossPair.EXACT );
+        TimeSeriesCrossPairer<T> crossPairer = TimeSeriesCrossPairer.of( CrossPair.FUZZY );
 
         // Take the main time-series from the first mini-pool and cross-pair against all other main and baseline pairs
         // from all other mini-pools. Then use this to cross-pair the main and baseline time-series across all other
@@ -761,7 +761,10 @@ public class StationaryBootstrapResampler<T>
 
         Pool<TimeSeries<T>> crossPairedPool = poolBuilder.build();
 
+        // Check that the cross-pairing has not led to empty pools
         this.checkForEmptyPools( crossPairedPool, pool );
+
+        // Report the effects of cross-pairing in terms of any time-series and events removed
         this.reportEffectsOfCrossPairing( crossPairedPool, pool );
 
         return crossPairedPool;
@@ -971,6 +974,8 @@ public class StationaryBootstrapResampler<T>
      * A record that contains the indexes to resample for a prescribed time-series. Each index pair refers to a
      * position within a {@link BootstrapPool} for the time-series returned by
      * {@link BootstrapPool#getTimeSeriesWithAtLeastThisManyEvents(int)}.
+     *
+     * @param indexes the sample indexes
      */
 
     private record ResampleIndexes( List<int[]> indexes )
@@ -985,29 +990,6 @@ public class StationaryBootstrapResampler<T>
             }
 
             return joiner.toString();
-        }
-    }
-
-    /**
-     * An exception encountered when resampling time-series.
-     */
-    private static class ResamplingException extends RuntimeException
-    {
-        /**
-         * @param message the message
-         */
-        public ResamplingException( String message )
-        {
-            super( message );
-        }
-
-        /**
-         * @param message the message
-         * @param cause the cause
-         */
-        public ResamplingException( String message, Throwable cause )
-        {
-            super( message, cause );
         }
     }
 }
