@@ -47,8 +47,8 @@
     <!-- The maximum number of threads used to complete pools. A pool is the 
     atomic unit of work for retrieving and evaluating statistics. -->
     <maximum_pool_threads>6</maximum_pool_threads>
-    <maximum_threshold_threads>1</maximum_threshold_threads>
-    <maximum_metric_threads>1</maximum_metric_threads>
+    <maximum_slicing_threads>6</maximum_slicing_threads>
+    <maximum_metric_threads>3</maximum_metric_threads>
     <!-- The maximum number of threads for writing statistics formats. -->
     <maximum_product_threads>5</maximum_product_threads>
     <!-- Legacy setting used to drive the number of threads for reading/ingest. -->

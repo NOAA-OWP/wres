@@ -47,7 +47,7 @@ public class SystemSettings extends XMLReader
     private int maximumWebClientThreads = 3;
     private int maximumNwmIngestThreads = 6;
     private int maximumPoolThreads = 6;
-    private int maximumThresholdThreads = 1;
+    private int maximumSlicingThreads = 1;
     private int maximumMetricThreads = 1;
     private int maximumProductThreads = 3;
     private int maximumReadThreads = 7;
@@ -305,9 +305,9 @@ public class SystemSettings extends XMLReader
      * @return the maximum number of threshold threads
      */
 
-    public int getMaximumThresholdThreads()
+    public int getMaximumSlicingThreads()
     {
-        return maximumThresholdThreads;
+        return maximumSlicingThreads;
     }
 
     /**
@@ -355,7 +355,7 @@ public class SystemSettings extends XMLReader
                 .append( "maximumPoolThreads",
                          this.maximumPoolThreads )
                 .append( "maximumThresholdThreads",
-                         this.maximumThresholdThreads )
+                         this.maximumSlicingThreads )
                 .append( "maximumMetricThreads",
                          this.maximumMetricThreads )
                 .append( "maximumProductThreads",
@@ -463,8 +463,8 @@ public class SystemSettings extends XMLReader
                     case "maximum_pool_threads":
                         this.setMaximumPoolThreads( reader );
                         break;
-                    case "maximum_threshold_threads":
-                        this.setMaximumThresholdThreads( reader );
+                    case "maximum_slicing_threads":
+                        this.setMaximumSlicingThreads( reader );
                         break;
                     case "maximum_metric_threads":
                         this.setMaximumMetricThreads( reader );
@@ -807,20 +807,20 @@ public class SystemSettings extends XMLReader
         }
     }
 
-    private void setMaximumThresholdThreads( XMLStreamReader reader )
+    private void setMaximumSlicingThreads( XMLStreamReader reader )
             throws XMLStreamException
     {
         String value = XMLHelper.getXMLText( reader );
 
         if ( StringUtils.isNumeric( value ) )
         {
-            this.maximumThresholdThreads = Integer.parseInt( value );
+            this.maximumSlicingThreads = Integer.parseInt( value );
         }
         else
         {
-            LOGGER.warn( "'{}' is not a valid value for maximum_threshold_threads. Falling back to {}",
+            LOGGER.warn( "'{}' is not a valid value for maximum_slicing_threads. Falling back to {}",
                          value,
-                         this.maximumThresholdThreads );
+                         this.maximumSlicingThreads );
         }
     }
 
@@ -1051,19 +1051,19 @@ public class SystemSettings extends XMLReader
         }
 
 
-        String maxThresholdThreads = System.getProperty( "wres.maximumThresholdThreads" );
+        String maxSlicingThreads = System.getProperty( "wres.maximumSlicingThreads" );
 
-        if ( maxThresholdThreads != null )
+        if ( maxSlicingThreads != null )
         {
-            if ( StringUtils.isNumeric( maxThresholdThreads ) )
+            if ( StringUtils.isNumeric( maxSlicingThreads ) )
             {
-                this.maximumThresholdThreads = Integer.parseInt( maxThresholdThreads );
+                this.maximumSlicingThreads = Integer.parseInt( maxSlicingThreads );
             }
             else
             {
-                LOGGER.warn( "'{}' is not a valid value for wres.maximumThresholdThreads. Falling back to {}.",
-                             maxThresholdThreads,
-                             this.maximumThresholdThreads );
+                LOGGER.warn( "'{}' is not a valid value for wres.maximumSlicingThreads. Falling back to {}.",
+                             maxSlicingThreads,
+                             this.maximumSlicingThreads );
             }
         }
 

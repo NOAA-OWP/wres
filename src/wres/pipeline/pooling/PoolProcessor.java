@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
+import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -16,7 +17,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.random.RandomGenerator;
-import org.apache.commons.math3.random.MersenneTwister;
+import org.apache.commons.math3.random.Well512a;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -455,29 +456,35 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                           seed,
                           pool.getMetadata() );
 
-            // Create the quantile estimators, one for each set of nominal statistics
+            // Create the quantile calculators, one for each threshold
             Map<OneOrTwoThresholds, QuantileCalculator> quantileCalculators =
-                    nominalStatistics.stream()
-                                     .collect( Collectors.toUnmodifiableMap( this::getThreshold,
-                                                                             n -> QuantileCalculator.of( n,
-                                                                                                         sampleSize,
-                                                                                                         samplingUncertainty.quantiles(),
-                                                                                                         true ) ) );
+                    this.getQuantileCalculators( nominalStatistics, samplingUncertainty );
 
             // Create the resampling structure
-            RandomGenerator randomGenerator = new MersenneTwister( seed );
+            RandomGenerator randomGenerator = new Well512a( seed );
             StationaryBootstrapResampler<Pair<L, R>> resampler =
                     StationaryBootstrapResampler.of( pool,
                                                      optimalBlockSize,
                                                      randomGenerator,
                                                      this.samplingUncertaintyExecutor );
 
-            // Iterate the samples and register the statistics for quantile calaculation
+            // Iterate the samples and register the statistics for quantile calculation
             for ( int i = 0; i < sampleSize; i++ )
             {
                 Pool<TimeSeries<Pair<L, R>>> nextPool = resampler.resample();
                 List<StatisticsStore> stores = processor.apply( nextPool );
                 this.updateSampleStatistics( stores, quantileCalculators );
+
+                // Log progress every 100 samples
+                if ( LOGGER.isInfoEnabled()
+                     && i > 1
+                     && ( i + 1 ) % 100 == 0 )
+                {
+                    LOGGER.info( "Completed resample {} of {} for pool request {}.",
+                                 ( i + 1 ),
+                                 sampleSize,
+                                 this.poolRequest );
+                }
             }
 
             // Add the completed quantiles
@@ -547,6 +554,37 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         }
 
         return OneOrTwoThresholds.of( eventThreshold, decisionThreshold );
+    }
+
+    /**
+     * Creates the quantile calculators from the supplied list of statistics, one for each threshold.
+     * @param statistics the statistics
+     * @return the quantile calculators
+     */
+
+    private Map<OneOrTwoThresholds, QuantileCalculator> getQuantileCalculators( List<Statistics> statistics,
+                                                                                SamplingUncertainty samplingUncertainty )
+    {
+        // Merge any metrics for corresponding thresholds
+        BinaryOperator<Statistics> merger = ( first, second ) ->
+        {
+            Statistics.Builder merged = first.toBuilder();
+            merged.mergeFrom( second );
+            return merged.build();
+        };
+
+        Map<OneOrTwoThresholds, Statistics> merged = statistics.stream()
+                                                               .collect( Collectors.toUnmodifiableMap( this::getThreshold,
+                                                                                                       Function.identity(),
+                                                                                                       merger ) );
+
+        return merged.entrySet()
+                     .stream()
+                     .collect( Collectors.toUnmodifiableMap( Map.Entry::getKey,
+                                                             n -> QuantileCalculator.of( n.getValue(),
+                                                                                         samplingUncertainty.sampleSize(),
+                                                                                         samplingUncertainty.quantiles(),
+                                                                                         true ) ) );
     }
 
     /**

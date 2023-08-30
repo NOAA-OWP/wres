@@ -14,6 +14,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import java.util.function.ToLongFunction;
@@ -43,7 +44,9 @@ import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.MetricsAndThresholds;
 import wres.datamodel.thresholds.ThresholdSlicer;
+import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.events.EvaluationMessager;
@@ -1145,14 +1148,14 @@ class EvaluationUtilities
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
                 EvaluationUtilities.getSingleValuedProcessors( evaluationDetails.metricsAndThresholds(),
-                                                               executors.thresholdExecutor(),
+                                                               executors.slicingExecutor(),
                                                                executors.metricExecutor() );
 
         // Get a separate set of processors for sampling uncertainty, excluding metrics whose uncertainties should not
         // be estimated
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> sampleProcessors =
                 EvaluationUtilities.getSingleValuedProcessorsForSamplingUncertainty( evaluationDetails.metricsAndThresholds(),
-                                                                                     executors.thresholdExecutor(),
+                                                                                     executors.slicingExecutor(),
                                                                                      executors.metricExecutor() );
 
         // Create a retriever factory to support retrieval for this project
@@ -1250,14 +1253,14 @@ class EvaluationUtilities
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors =
                 EvaluationUtilities.getEnsembleProcessors( evaluationDetails.metricsAndThresholds(),
-                                                           executors.thresholdExecutor(),
+                                                           executors.slicingExecutor(),
                                                            executors.metricExecutor() );
 
         // Get a separate set of processors for sampling uncertainty, excluding metrics whose uncertainties should not
         // be estimated
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> sampleProcessors =
                 EvaluationUtilities.getEnsembleProcessorsForSamplingUncertainty( evaluationDetails.metricsAndThresholds(),
-                                                                                 executors.thresholdExecutor(),
+                                                                                 executors.slicingExecutor(),
                                                                                  executors.metricExecutor() );
 
         List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>>> poolSuppliers;
@@ -1418,14 +1421,14 @@ class EvaluationUtilities
 
     /**
      * @param metricsAndThresholds the metrics and thresholds, one for each atomic processing operation
-     * @param thresholdExecutor the threshold executor
+     * @param slicingExecutor the pool slicing/dicing/transforming executor
      * @param metricExecutor the metric executor
      * @return the single-valued processors
      */
 
     private static List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>>
     getSingleValuedProcessors( Set<MetricsAndThresholds> metricsAndThresholds,
-                               ExecutorService thresholdExecutor,
+                               ExecutorService slicingExecutor,
                                ExecutorService metricExecutor )
     {
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors = new ArrayList<>();
@@ -1434,7 +1437,7 @@ class EvaluationUtilities
         {
             StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> nextProcessor =
                     new SingleValuedStatisticsProcessor( nextMetrics,
-                                                         thresholdExecutor,
+                                                         slicingExecutor,
                                                          metricExecutor );
             processors.add( nextProcessor );
         }
@@ -1444,33 +1447,33 @@ class EvaluationUtilities
 
     /**
      * @param metricsAndThresholds the metrics and thresholds, one for each atomic processing operation
-     * @param thresholdExecutor the threshold executor
+     * @param slicingExecutor the pool slicing/dicing/transforming executor
      * @param metricExecutor the metric executor
      * @return the single-valued processors for sampling uncertainty calculations
      */
 
     private static List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>>
     getSingleValuedProcessorsForSamplingUncertainty( Set<MetricsAndThresholds> metricsAndThresholds,
-                                                     ExecutorService thresholdExecutor,
+                                                     ExecutorService slicingExecutor,
                                                      ExecutorService metricExecutor )
     {
         Set<MetricsAndThresholds> overallFiltered =
                 EvaluationUtilities.getMetricsForSamplingUncertainty( metricsAndThresholds );
         return EvaluationUtilities.getSingleValuedProcessors( overallFiltered,
-                                                              thresholdExecutor,
+                                                              slicingExecutor,
                                                               metricExecutor );
     }
 
     /**
      * @param metricsAndThresholds the metrics and thresholds, one for each atomic processing operation
-     * @param thresholdExecutor the threshold executor
+     * @param slicingExecutor the pool slicing/dicing/transforming executor
      * @param metricExecutor the metric executor
      * @return the ensemble processors
      */
 
     private static List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>>
     getEnsembleProcessors( Set<MetricsAndThresholds> metricsAndThresholds,
-                           ExecutorService thresholdExecutor,
+                           ExecutorService slicingExecutor,
                            ExecutorService metricExecutor )
     {
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors = new ArrayList<>();
@@ -1479,7 +1482,7 @@ class EvaluationUtilities
         {
             StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> nextProcessor =
                     new EnsembleStatisticsProcessor( nextMetrics,
-                                                     thresholdExecutor,
+                                                     slicingExecutor,
                                                      metricExecutor );
             processors.add( nextProcessor );
         }
@@ -1489,20 +1492,20 @@ class EvaluationUtilities
 
     /**
      * @param metricsAndThresholds the metrics and thresholds, one for each atomic processing operation
-     * @param thresholdExecutor the threshold executor
+     * @param slicingExecutor the pool slicing/dicing/transforming executor
      * @param metricExecutor the metric executor
      * @return the ensemble processors for sampling uncertainty calculations
      */
 
     private static List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>>
     getEnsembleProcessorsForSamplingUncertainty( Set<MetricsAndThresholds> metricsAndThresholds,
-                                                 ExecutorService thresholdExecutor,
+                                                 ExecutorService slicingExecutor,
                                                  ExecutorService metricExecutor )
     {
         Set<MetricsAndThresholds> overallFiltered =
                 EvaluationUtilities.getMetricsForSamplingUncertainty( metricsAndThresholds );
         return EvaluationUtilities.getEnsembleProcessors( overallFiltered,
-                                                          thresholdExecutor,
+                                                          slicingExecutor,
                                                           metricExecutor );
     }
 
@@ -1606,14 +1609,14 @@ class EvaluationUtilities
         List<Long> blockSizes = new ArrayList<>();
         for ( Pool<TimeSeries<Pair<Double, R>>> next : miniPools )
         {
-            List<Long> nextMain = EvaluationUtilities.getOptimalBlockSizesForStationaryBootstrap( next.get() );
-            blockSizes.addAll( nextMain );
+            long nextMain = EvaluationUtilities.getOptimalBlockSizesForStationaryBootstrap( next.get() );
+            blockSizes.add( nextMain );
             if ( next.hasBaseline() )
             {
                 List<TimeSeries<Pair<Double, R>>> baseline = next.getBaselineData()
                                                                  .get();
-                List<Long> nextBaseline = EvaluationUtilities.getOptimalBlockSizesForStationaryBootstrap( baseline );
-                blockSizes.addAll( nextBaseline );
+                long nextBaseline = EvaluationUtilities.getOptimalBlockSizesForStationaryBootstrap( baseline );
+                blockSizes.add( nextBaseline );
             }
         }
 
@@ -1637,27 +1640,26 @@ class EvaluationUtilities
     }
 
     /**
-     * Estimates the optimal block size for each left-ish time-series in the input and returns the average of the
-     * optimal block sizes across all time-series.
+     * Estimates the optimal block size for the consolidated left-ish time-series in the input.
      * @param <T> the type of time-series data
      * @param pool the pool
      * @return the optimal block size for the stationary bootstrap
      */
-    private static <T> List<Long> getOptimalBlockSizesForStationaryBootstrap( List<TimeSeries<Pair<Double, T>>> pool )
+    private static <T> long getOptimalBlockSizesForStationaryBootstrap( List<TimeSeries<Pair<Double, T>>> pool )
     {
-        List<Long> blockSizes = new ArrayList<>();
-        for ( TimeSeries<Pair<Double, T>> nextSeries : pool )
-        {
-            double[] data = nextSeries.getEvents()
-                                      .stream()
-                                      .mapToDouble( n -> n.getValue()
-                                                          .getLeft() )
-                                      .toArray();
-            long blockSize = BlockSizeEstimator.getOptimalBlockSize( data );
-            blockSizes.add( blockSize );
-        }
+        Function<Pair<Double, T>, Double> doubleMapper = Pair::getLeft;
+        List<TimeSeries<Double>> leftSeries = pool.stream()
+                                                  .map( n -> TimeSeriesSlicer.transform( n,
+                                                                                         doubleMapper,
+                                                                                         null ) )
+                                                  .toList();
+        TimeSeries<Double> consolidatedLeft = TimeSeriesSlicer.consolidate( leftSeries );
+        double[] data = consolidatedLeft.getEvents()
+                                        .stream()
+                                        .mapToDouble( Event::getValue )
+                                        .toArray();
 
-        return Collections.unmodifiableList( blockSizes );
+        return BlockSizeEstimator.getOptimalBlockSize( data );
     }
 
     /**

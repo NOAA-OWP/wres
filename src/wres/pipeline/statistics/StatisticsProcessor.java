@@ -8,10 +8,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -42,6 +44,7 @@ import wres.metrics.MetricCalculationException;
 import wres.metrics.MetricCollection;
 import wres.metrics.MetricFactory;
 import wres.metrics.MetricParameterException;
+import wres.pipeline.WresProcessingException;
 
 /**
  * Creates statistics by applying a {@link Metric} to a {@link Pool} and stores them in a {@link StatisticsStore}.
@@ -51,60 +54,33 @@ import wres.metrics.MetricParameterException;
 
 public abstract class StatisticsProcessor<S extends Pool<?>> implements Function<S, StatisticsStore>
 {
-    /**
-     * Message that indicates processing is complete.
-     */
-
+    /** Message that indicates processing is complete. */
     static final String PROCESSING_COMPLETE_MESSAGE = "Completed processing of metrics for feature group '{}' "
                                                       + "at time window '{}'.";
 
-    /**
-     * Logger instance.
-     */
-
+    /** Logger instance. */
     private static final Logger LOGGER = LoggerFactory.getLogger( StatisticsProcessor.class );
 
-    /**
-     * A {@link MetricCollection} of {@link Metric} that consume dichotomous pairs and produce {@link ScoreStatistic}.
-     */
-
+    /** A {@link MetricCollection} of {@link Metric} that consume dichotomous pairs and produce {@link ScoreStatistic}. */
     private final MetricCollection<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
             dichotomousScalar;
 
-    /**
-     * An {@link ExecutorService} used to process the thresholds.
-     */
+    /** An {@link ExecutorService} used to perform slicing and dicing of pools. */
+    private final ExecutorService slicingExecutor;
 
-    private final ExecutorService thresholdExecutor;
-
-    /**
-     * The all data threshold.
-     */
-
+    /** The all data threshold. */
     private final ThresholdOuter allDataThreshold;
 
-    /**
-     * The thresholds by feature.
-     */
-
+    /** The thresholds by feature. */
     private final Map<FeatureTuple, Set<ThresholdOuter>> thresholds;
 
-    /**
-     * The thresholds by feature.
-     */
-
+    /** The thresholds by feature. */
     private final Map<FeatureTuple, Set<ThresholdOuter>> thresholdsWithoutAllData;
 
-    /**
-     * The raw metrics (the union for all thresholds and features).
-     */
-
+    /** The raw metrics (the union for all thresholds and features). */
     private final Set<MetricConstants> metrics;
 
-    /**
-     * Minimum sample size for metric calculation.
-     */
-
+    /** Minimum sample size for metric calculation. */
     private final int minimumSampleSize;
 
     /**
@@ -249,8 +225,9 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
             return CompletableFuture.completedFuture( Collections.emptyList() );
         }
 
+        // Dispatch from a different executor than the metric executor, which does the underlying work
         return CompletableFuture.supplyAsync( () -> collection.apply( pairs, all ),
-                                              this.thresholdExecutor );
+                                              this.getSlicingExecutor() );
     }
 
     /**
@@ -312,9 +289,9 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
      * @return the threshold executor
      */
 
-    ExecutorService getThresholdExecutor()
+    ExecutorService getSlicingExecutor()
     {
-        return this.thresholdExecutor;
+        return this.slicingExecutor;
     }
 
     /**
@@ -423,6 +400,33 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
     }
 
     /**
+     * Performs work on the thread pool intended for slicing and dicing pooled datasets.
+     *
+     * @param <T> the type of result from the work
+     * @param work the work to perform
+     */
+
+    <T> T doWorkWithSlicingExecutor( Supplier<T> work )
+    {
+        Future<T> workDone = CompletableFuture.supplyAsync( work,
+                                                            this.getSlicingExecutor() );
+        try
+        {
+            return workDone.get();
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread()
+                  .interrupt();
+            throw new WresProcessingException( "Interrupted while attempting to complete work on a metric thread.", e );
+        }
+        catch ( ExecutionException e )
+        {
+            throw new WresProcessingException( "Failed to complete work on a metric thread.", e );
+        }
+    }
+
+    /**
      * Builds a metric future for a {@link MetricCollection} that consumes dichotomous pairs.
      *
      * @param <T> the type of {@link Statistic}
@@ -489,17 +493,17 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
      * Constructor.
      *
      * @param metricsAndThresholds the metrics and thresholds
-     * @param thresholdExecutor an {@link ExecutorService} for executing thresholds, cannot be null 
+     * @param slicingExecutor an {@link ExecutorService} for executing slicing and dicing of pools, cannot be null
      * @param metricExecutor an {@link ExecutorService} for executing metrics, cannot be null
      * @throws MetricParameterException if one or more metric parameters is set incorrectly
      * @throws NullPointerException if a required input is null
      */
 
     StatisticsProcessor( MetricsAndThresholds metricsAndThresholds,
-                         ExecutorService thresholdExecutor,
+                         ExecutorService slicingExecutor,
                          ExecutorService metricExecutor )
     {
-        Objects.requireNonNull( thresholdExecutor, "Specify a non-null threshold executor service." );
+        Objects.requireNonNull( slicingExecutor, "Specify a non-null threshold executor service." );
         Objects.requireNonNull( metricExecutor, "Specify a non-null metric executor service." );
         Objects.requireNonNull( metricsAndThresholds, "Specify metrics and thresholds to process." );
         Objects.requireNonNull( metricsAndThresholds.metrics(),
@@ -528,7 +532,7 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
 
         LOGGER.debug( "Based on the project declaration, the following metrics will be computed: {}.", this.metrics );
 
-        //Dichotomous scores
+        // Dichotomous scores
         if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ) )
         {
             MetricConstants[] scores = this.getMetrics( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE );
@@ -541,8 +545,8 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
             this.dichotomousScalar = null;
         }
 
-        //Set the executor for processing thresholds
-        this.thresholdExecutor = thresholdExecutor;
+        // Set the executor for processing thresholds
+        this.slicingExecutor = slicingExecutor;
 
         this.allDataThreshold = ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
                                                    ThresholdOperator.GREATER,
