@@ -1,12 +1,20 @@
 package wres.server;
 
+import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintStream;
+import java.io.Writer;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
@@ -19,10 +27,14 @@ import jakarta.ws.rs.core.Response;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import jakarta.ws.rs.core.StreamingOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static wres.messages.generated.EvaluationStatusOuterClass.EvaluationStatus.*;
+
 import wres.ExecutionResult;
+import wres.messages.generated.EvaluationStatusOuterClass;
 import wres.pipeline.Evaluator;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
@@ -39,6 +51,12 @@ public class ProjectService
 
     private static final Random RANDOM =
             new Random( System.currentTimeMillis() );
+
+    private static final String LINE_TERMINATOR = "\n";
+
+    private static final AtomicReference<EvaluationStatusOuterClass.EvaluationStatus> evaluationStage = new AtomicReference<>( AWAITING );
+
+    private static final AtomicLong evaluationId = new AtomicLong(-1);
 
     private final Evaluator evaluator;
 
@@ -59,26 +77,129 @@ public class ProjectService
         this.evaluator = evaluator;
     }
 
+
+    @GET
+    @Path( "/up" )
+    @Produces( MediaType.TEXT_PLAIN )
+    public Response isUp()
+    {
+        evaluationStage.set( OPENED );
+        return Response.ok( "The Server is Up\n" )
+                       .build();
+    }
+
+    @GET
+    @Path( "/status/{id}" )
+    @Produces( MediaType.TEXT_PLAIN )
+    public Response getStatus(@PathParam( "id" ) Long id)
+
+    {
+        return Response.ok( evaluationStage.get().toString() )
+                       .build();
+    }
+
+    @GET
+    @Path( "/stdout" )
+    @Produces("application/octet-stream")
+    public Response getOutStream()
+    {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        PrintStream printStream = new PrintStream( byteArrayOutputStream );
+
+        System.setOut( printStream );
+
+        StreamingOutput streamingOutput = outputStream -> {
+            long offset = 0;
+            while (!evaluationStage.get().equals( COMPLETED ))
+            {
+                ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
+                long skip = byteArrayInputStream.skip( offset );
+                if (offset == skip)
+                {
+                    outputStream.write( byteArrayInputStream.read() );
+                    outputStream.flush();
+                    offset++;
+                }
+            }
+            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
+            byteArrayInputStream.skip( offset );
+            outputStream.write( byteArrayInputStream.readAllBytes() );
+            outputStream.flush();
+            outputStream.close();
+        };
+
+        return Response.ok( streamingOutput )
+                .build();
+    }
+
+    @GET
+    @Path( "/stderr" )
+    @Produces("application/octet-stream")
+    public Response getErrorStream()
+    {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        PrintStream printStream = new PrintStream( byteArrayOutputStream );
+
+        System.setErr( printStream );
+
+        StreamingOutput streamingOutput = outputStream -> {
+            long offset = 0;
+            while (!evaluationStage.get().equals( COMPLETED ))
+            {
+                ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
+                long skip = byteArrayInputStream.skip( offset );
+                if (offset == skip)
+                {
+                    outputStream.write( byteArrayInputStream.read() );
+                    outputStream.flush();
+                    offset++;
+                }
+            }
+            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
+            byteArrayInputStream.skip( offset );
+            outputStream.write( byteArrayInputStream.readAllBytes() );
+            outputStream.flush();
+            outputStream.close();
+        };
+
+        return Response.ok( streamingOutput )
+                       .build();
+    }
+
+    @GET
+    @Path( "/prepareEvaluation" )
+    @Produces( MediaType.TEXT_PLAIN )
+    public Response prepareEvaluation() {
+        // Guarantee a positive number. Using Math.abs would open up failure
+        // in edge cases. A while loop seems complex. Thanks to Ted Hopp
+        // on StackOverflow question id 5827023.
+        long projectId = RANDOM.nextLong() & Long.MAX_VALUE;
+        evaluationStage.set( OPENED );
+        evaluationId.set( projectId );
+
+        return Response.ok( Response.Status.CREATED )
+                       .entity( projectId )
+                       .build();
+    }
+
     /**
      * @param projectConfig the evaluation project declaration string
      * @return the state of the evaluation
      */
 
     @POST
+    @Path(  "/startEvaluation/{id}"  )
     @Consumes( MediaType.TEXT_XML )
-    @Produces( MediaType.TEXT_PLAIN )
-    public Response postProjectConfig( String projectConfig )
+    @Produces("application/octet-stream")
+    public Response postProjectConfig(String projectConfig, @PathParam( "id" ) Long id )
     {
-        long projectId;
+        long projectId = id;
+        Set<java.nio.file.Path> outputPaths;
         try
         {
-            // Guarantee a positive number. Using Math.abs would open up failure
-            // in edge cases. A while loop seems complex. Thanks to Ted Hopp
-            // on StackOverflow question id 5827023.
-            projectId = RANDOM.nextLong() & Long.MAX_VALUE;
-
+            evaluationStage.set( ONGOING );
             ExecutionResult result = evaluator.evaluate( projectConfig );
-            Set<java.nio.file.Path> outputPaths = result.getResources();
+            outputPaths = result.getResources();
             OUTPUTS.put( projectId, outputPaths );
         }
         catch ( UserInputException e )
@@ -103,10 +224,25 @@ public class ProjectService
                            .build();
         }
 
-        return Response.ok( "I received project " + projectId
-                            + ", and successfully ran it. Visit /project/"
-                            + projectId
-                            + " for more." )
+        evaluationStage.set( COMPLETED );
+
+        if ( outputPaths == null )
+        {
+            return Response.status( Response.Status.NOT_FOUND )
+                           .entity( "Could not find job " + id )
+                           .build();
+        }
+
+        StreamingOutput streamingOutput = outputSream -> {
+            Writer writer = new BufferedWriter( new OutputStreamWriter( outputSream ) );
+            for ( java.nio.file.Path path : outputPaths) {
+                writer.write( path.toString() + LINE_TERMINATOR );
+            }
+            writer.flush();
+            writer.close();
+        };
+
+        return Response.ok( streamingOutput )
                        .build();
     }
 

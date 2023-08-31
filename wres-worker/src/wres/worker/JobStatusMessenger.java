@@ -1,9 +1,13 @@
 package wres.worker;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URI;
 import java.time.Instant;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import com.google.protobuf.Timestamp;
 import com.rabbitmq.client.AMQP;
@@ -13,7 +17,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static wres.messages.generated.JobStatus.job_status.Report.*;
+import static wres.messages.generated.EvaluationStatusOuterClass.EvaluationStatus.*;
 
+import wres.http.WebClient;
+import wres.messages.generated.EvaluationStatusOuterClass;
 import wres.messages.generated.JobStatus;
 
 
@@ -37,10 +44,15 @@ public class JobStatusMessenger implements Runnable
     private static final Logger LOGGER = LoggerFactory.getLogger( JobStatusMessenger.class );
     private static final String TOPIC = "status";
 
+    private static final String STATUS_URI = "http://localhost:%d/project/status/%s";
+
+    /** A web client to help with reading data from the web. */
+    private static final WebClient WEB_CLIENT = new WebClient();
+
     private final Connection connection;
     private final String exchangeName;
     private final String jobId;
-    private final Process process;
+    private final int port;
 
     /** Helps the consumer re-order messages received out-of-order */
     private final AtomicInteger order = new AtomicInteger( 0 );
@@ -48,12 +60,12 @@ public class JobStatusMessenger implements Runnable
     JobStatusMessenger( Connection connection,
                         String exchangeName,
                         String jobId,
-                        Process process )
+                        int port )
     {
         this.connection = connection;
         this.exchangeName = exchangeName;
         this.jobId = jobId;
-        this.process = process;
+        this.port = port;
     }
 
     private Connection getConnection()
@@ -71,9 +83,9 @@ public class JobStatusMessenger implements Runnable
         return this.jobId;
     }
 
-    private Process getProcess()
+    private int getPort()
     {
-        return this.process;
+        return this.port;
     }
 
     private AtomicInteger getOrder()
@@ -89,24 +101,29 @@ public class JobStatusMessenger implements Runnable
     @Override
     public void run()
     {
-        Process process = this.getProcess();
-
         try ( Channel channel = this.getConnection().createChannel() )
         {
-            String exchangeName = this.getExchangeName();
-            String exchangeType = "topic";
+            String evaluationStatus = getEvaluationStatus();
 
-            channel.exchangeDeclare( exchangeName, exchangeType, true );
-
-            this.sendMessage( channel, RECEIVED );
-
-            while ( process.isAlive() )
+            while ( !evaluationStatus.equals( COMPLETED.toString() ) )
             {
-                this.sendMessage( channel, ALIVE );
-                Thread.sleep( 1000 );
-            }
+                evaluationStatus = getEvaluationStatus();
+                String exchangeName = this.getExchangeName();
+                String exchangeType = "topic";
 
-            this.sendMessage( channel, DEAD );
+                channel.exchangeDeclare( exchangeName, exchangeType, true );
+
+                this.sendMessage( channel, RECEIVED );
+
+                while ( evaluationStatus.equals( ONGOING.toString() ) )
+                {
+                    evaluationStatus = getEvaluationStatus();
+                    this.sendMessage( channel, ALIVE );
+                    Thread.sleep( 1000 );
+                }
+
+                this.sendMessage( channel, DEAD );
+            }
         }
         catch ( TimeoutException te )
         {
@@ -124,6 +141,14 @@ public class JobStatusMessenger implements Runnable
         LOGGER.info( "Finished sending {} for job {}", TOPIC, jobId );
     }
 
+    private String getEvaluationStatus() throws IOException
+    {
+        String url = String.format( STATUS_URI, this.getPort(), this.getJobId() );
+        WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( URI.create( url ) );
+        return new BufferedReader( new InputStreamReader( fromWeb.getResponse() ) ).lines()
+                                                                                             .collect( Collectors.joining(
+                                                                                                     "\n" ) );
+    }
 
     /**
      * Attempts to send a message with a single line of output
