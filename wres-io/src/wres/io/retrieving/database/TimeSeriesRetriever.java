@@ -82,7 +82,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     /** Time window filter. */
     private final TimeWindowOuter timeWindow;
 
-    /** The desired time scale, which is used to adjust retrieval when a forecast lead duration ends within
+    /** The desired timescale, which is used to adjust retrieval when a forecast lead duration ends within
      * the {@link #timeWindow} but starts outside it. */
     private final TimeScaleOuter desiredTimeScale;
 
@@ -98,7 +98,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     /** The data type. */
     private final DatasetOrientation orientation;
 
-    /** A declared existing time-scale, which can be used to augment a source, but not override it. */
+    /** A declared existing timescale, which can be used to augment a source, but not override it. */
     private final TimeScaleOuter declaredExistingTimeScale;
 
     /** The start monthday of a season constraint. */
@@ -117,8 +117,269 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     /** Reference time type. If there are multiple instances per time-series in future, then the shape of retrieval will 
      * substantively differ and the reference time type would necessarily become inline to the time-series, not 
      * declared upfront. */
-    private ReferenceTimeType referenceTimeType = ReferenceTimeType.UNKNOWN;
+    private final ReferenceTimeType referenceTimeType;
 
+    /**
+     * Abstract builder.
+     *
+     * @author James Brown
+     * @param <S> the type of time-series to build
+     */
+
+    abstract static class Builder<S>
+    {
+        /**
+         * The database used to retrieve data.
+         */
+
+        private Database database;
+
+        /**
+         * The cache/ORM to get feature data from.
+         */
+        private Features featuresCache;
+
+        /**
+         * The cache/ORM for measurement units.
+         */
+
+        private MeasurementUnits measurementUnits;
+
+        /**
+         * Time window filter.
+         */
+
+        private TimeWindowOuter timeWindow;
+
+        /**
+         * The <code>wres.Project.project_id</code>.
+         */
+
+        private long projectId;
+
+        /**
+         * Variable name.
+         */
+
+        private String variableName;
+
+        /**
+         * Features.
+         */
+
+        private final Set<Feature> features = new HashSet<>();
+
+        /**
+         * The data type.
+         */
+
+        private DatasetOrientation orientation;
+
+        /**
+         * Desired timescale.
+         */
+
+        private TimeScaleOuter desiredTimeScale;
+
+        /**
+         * Declared existing timescale;
+         */
+
+        private TimeScaleOuter declaredExistingTimeScale;
+
+        /**
+         * The start monthday of a season constraint.
+         */
+
+        private MonthDay seasonStart;
+
+        /**
+         * The end monthday of a season constraint.
+         */
+
+        private MonthDay seasonEnd;
+
+        /**
+         * The reference time type.
+         */
+
+        private ReferenceTimeType referenceTimeType = ReferenceTimeType.UNKNOWN;
+
+        /**
+         * Sets the database.
+         * @param database the database
+         * @return the builder
+         */
+
+        Builder<S> setDatabase( Database database )
+        {
+            this.database = database;
+            return this;
+        }
+
+        /**
+         * Sets the features cache/ORM.
+         * @param featuresCache the features cache
+         * @return the builder
+         */
+
+        Builder<S> setFeaturesCache( Features featuresCache )
+        {
+            this.featuresCache = featuresCache;
+            return this;
+        }
+
+        /**
+         * Sets the measurement units cache/ORM.
+         * @param measurementUnits the measurement units cache
+         * @return the builder
+         */
+
+        Builder<S> setMeasurementUnitsCache( MeasurementUnits measurementUnits )
+        {
+            this.measurementUnits = measurementUnits;
+            return this;
+        }
+
+        /**
+         * Sets the <code>wres.Project.project_id</code>.
+         *
+         * @param projectId the <code>wres.Project.project_id</code>
+         * @return the builder
+         */
+
+        Builder<S> setProjectId( long projectId )
+        {
+            this.projectId = projectId;
+            return this;
+        }
+
+        /**
+         * Sets the variable name.
+         *
+         * @param variableName the variable name
+         * @return the builder
+         */
+
+        Builder<S> setVariableName( String variableName )
+        {
+            this.variableName = variableName;
+            return this;
+        }
+
+        /**
+         * Sets the features.
+         *
+         * @param features the features
+         * @return the builder
+         */
+
+        Builder<S> setFeatures( Set<Feature> features )
+        {
+            if ( Objects.nonNull( features ) )
+            {
+                this.features.addAll( features );
+            }
+
+            return this;
+        }
+
+        /**
+         * Sets the data type.
+         *
+         * @param orientation the data type
+         * @return the builder
+         */
+
+        Builder<S> setDatasetOrientation( DatasetOrientation orientation )
+        {
+            this.orientation = orientation;
+            return this;
+        }
+
+        /**
+         * Sets the time window filter.
+         *
+         * @param timeWindow the time window filter
+         * @return the builder
+         */
+
+        Builder<S> setTimeWindow( TimeWindowOuter timeWindow )
+        {
+            this.timeWindow = timeWindow;
+            return this;
+        }
+
+        /**
+         * Sets the desired timescale, which is used to adjust retrieval when a forecast lead duration ends within
+         * the {@link #timeWindow} but starts outside it.
+         *
+         * @param desiredTimeScale the desired timescale
+         * @return the builder
+         */
+
+        Builder<S> setDesiredTimeScale( TimeScaleOuter desiredTimeScale )
+        {
+            this.desiredTimeScale = desiredTimeScale;
+            return this;
+        }
+
+        /**
+         * Sets the existing timescale from the project declaration, which can be used to augment a source, but not
+         * override it.
+         *
+         * @param declaredExistingTimeScale the declared existing timescale
+         * @return the builder
+         */
+
+        Builder<S> setDeclaredExistingTimeScale( TimeScaleOuter declaredExistingTimeScale )
+        {
+            this.declaredExistingTimeScale = declaredExistingTimeScale;
+            return this;
+        }
+
+        /**
+         * Sets the start of a season in which values will be selected.
+         *
+         * @param seasonStart the start of the season
+         * @return the builder
+         */
+
+        Builder<S> setSeasonStart( MonthDay seasonStart )
+        {
+            this.seasonStart = seasonStart;
+            return this;
+        }
+
+        /**
+         * Sets the end of a season in which values will be selected.
+         *
+         * @param seasonEnd the end of the season
+         * @return the builder
+         */
+
+        Builder<S> setSeasonEnd( MonthDay seasonEnd )
+        {
+            this.seasonEnd = seasonEnd;
+            return this;
+        }
+
+        /**
+         * Sets the {@link ReferenceTimeType}.
+         *
+         * @param referenceTimeType the reference time type
+         * @return the builder
+         */
+
+        Builder<S> setReferenceTimeType( ReferenceTimeType referenceTimeType )
+        {
+            this.referenceTimeType = referenceTimeType;
+            return this;
+        }
+
+        abstract TimeSeriesRetriever<S> build();
+    }
+    
     /**
      * Returns true if the retriever supplies forecast data.
      *
@@ -445,9 +706,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Returns the desired time scale.
+     * Returns the desired timescale.
      *
-     * @return the desired time scale
+     * @return the desired timescale
      */
 
     TimeScaleOuter getDesiredTimeScale()
@@ -456,9 +717,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Returns the declared existing time scale, which may be null.
+     * Returns the declared existing timescale, which may be null.
      *
-     * @return the declared existing time scale or null
+     * @return the declared existing timescale or null
      */
 
     TimeScaleOuter getDeclaredExistingTimeScale()
@@ -636,19 +897,19 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Checks that the time-scale information is consistent with the last time scale. If not, throws an exception. If
-     * so, returns the valid time scale, which is obtained from the input period and function, possibly augmented by
-     * any declared time scale information attached to this instance on construction. In using an existing time scale 
+     * Checks that the timescale information is consistent with the last timescale. If not, throws an exception. If
+     * so, returns the valid timescale, which is obtained from the input period and function, possibly augmented by
+     * any declared timescale information attached to this instance on construction. In using an existing timescale 
      * from the project declaration, the principle is to augment, but not override, because the source is canonical
-     * on its own time scale. The only exception is the function {@link TimeScaleFunction#UNKNOWN}, which can be
+     * on its own timescale. The only exception is the function {@link TimeScaleFunction#UNKNOWN}, which can be
      * overridden.
      *
      * @param lastScale the last scale information retrieved
-     * @param period the period of ther current time scale to be retrieved
-     * @param functionString the function string for the current time scale to be retrieved
-     * @param validTime the valid time of the event whose time scale is to be determined, which helps with messaging
-     * @return the current time scale
-     * @throws DataAccessException if the current time scale is inconsistent with the last time scale
+     * @param period the period of ther current timescale to be retrieved
+     * @param functionString the function string for the current timescale to be retrieved
+     * @param validTime the valid time of the event whose timescale is to be determined, which helps with messaging
+     * @return the current timescale
+     * @throws DataAccessException if the current timescale is inconsistent with the last timescale
      */
 
     TimeScaleOuter checkAndGetLatestTimeScale( TimeScaleOuter lastScale,
@@ -656,7 +917,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                                String functionString,
                                                Instant validTime )
     {
-        // As of v6.5, the db schema represents a time scale with a period and a function only and does not admit
+        // As of v6.5, the db schema represents a timescale with a period and a function only and does not admit
         // month-days
         Duration periodToUse = null;
         TimeScaleFunction functionToUse = null;
@@ -702,13 +963,13 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
              && !this.getDeclaredExistingTimeScale()
                      .equalsOrInstantaneous( returnMe ) )
         {
-            throw new DataAccessException( "The time scale information associated with a "
+            throw new DataAccessException( "The timescale information associated with a "
                                            + this.getDatasetOrientation()
                                            + " event at '"
                                            + validTime
                                            + "' was declared as '"
                                            + this.getDeclaredExistingTimeScale()
-                                           + "' but the time scale recorded in the time-series data is '"
+                                           + "' but the timescale recorded in the time-series data is '"
                                            + returnMe
                                            + "', which is inconsistent. If the declaration is incorrect, it should be "
                                            + "fixed. Otherwise, the time-series data was not ingested accurately and "
@@ -717,7 +978,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
         if ( Objects.nonNull( lastScale ) && !lastScale.equals( returnMe ) )
         {
-            throw new DataAccessException( "The time scale information associated with an event at'" + validTime
+            throw new DataAccessException( "The timescale information associated with an event at'" + validTime
                                            + "' is '"
                                            + returnMe
                                            + "' but other events in the same series have a different time "
@@ -841,7 +1102,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @param lastBuilder the builder for the last time-series
      * @param lastSeriesId the last time-series id
      * @param replicateCount the number of replicates of the last series
-     * @param lastScale the last time scale to use in validation
+     * @param lastScale the last timescale to use in validation
      * @return a completed series or null when incrementing a series
      * @throws DataAccessException if the data could not be accessed for any reason
      */
@@ -914,7 +1175,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         Event<S> event = mapper.apply( provider );
         this.addEventToTimeSeries( event, lastBuilder );
 
-        // Add the time-scale info
+        // Add the timescale info
         String functionString = provider.getString( "scale_function" );
         long periodInMs = provider.getLong( "scale_period" );
         Duration period = null;
@@ -1056,7 +1317,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             if ( Objects.nonNull( this.desiredTimeScale ) && LOGGER.isDebugEnabled() )
             {
                 LOGGER.debug( "Adjusting the lower lead duration of time window {} from {} to {} "
-                              + "in order to acquire data at the desired time scale of {}.",
+                              + "in order to acquire data at the desired timescale of {}.",
                               filter,
                               filter.getEarliestLeadDuration(),
                               lowered,
@@ -1264,7 +1525,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 {
                     lowerValidTime = lowerValidTime.plus( timeWindow.getEarliestLeadDuration() );
 
-                    //Adjust for the desired time scale, if available
+                    //Adjust for the desired timescale, if available
                     Duration period = Duration.ZERO;
 
                     if ( Objects.nonNull( this.desiredTimeScale ) )
@@ -1386,267 +1647,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Abstract builder.
-     *
-     * @author James Brown
-     * @param <S> the type of time-series to build
-     */
-
-    abstract static class Builder<S>
-    {
-        /**
-         * The database used to retrieve data.
-         */
-
-        private Database database;
-
-        /**
-         * The cache/ORM to get feature data from.
-         */
-        private Features featuresCache;
-
-        /**
-         * The cache/ORM for measurement units.
-         */
-
-        private MeasurementUnits measurementUnits;
-
-        /**
-         * Time window filter.
-         */
-
-        private TimeWindowOuter timeWindow;
-
-        /**
-         * The <code>wres.Project.project_id</code>.
-         */
-
-        private long projectId;
-
-        /**
-         * Variable name.
-         */
-
-        private String variableName;
-
-        /**
-         * Features.
-         */
-
-        private final Set<Feature> features = new HashSet<>();
-
-        /**
-         * The data type.
-         */
-
-        private DatasetOrientation orientation;
-
-        /**
-         * Desired time scale.
-         */
-
-        private TimeScaleOuter desiredTimeScale;
-
-        /**
-         * Declared existing time scale;
-         */
-
-        private TimeScaleOuter declaredExistingTimeScale;
-
-        /**
-         * The start monthday of a season constraint.
-         */
-
-        private MonthDay seasonStart;
-
-        /**
-         * The end monthday of a season constraint.
-         */
-
-        private MonthDay seasonEnd;
-
-        /**
-         * The reference time type.
-         */
-
-        private ReferenceTimeType referenceTimeType = ReferenceTimeType.UNKNOWN;
-
-        /**
-         * Sets the database.
-         * @param database the database
-         * @return the builder
-         */
-
-        Builder<S> setDatabase( Database database )
-        {
-            this.database = database;
-            return this;
-        }
-
-        /**
-         * Sets the features cache/ORM.
-         * @param featuresCache the features cache
-         * @return the builder
-         */
-
-        Builder<S> setFeaturesCache( Features featuresCache )
-        {
-            this.featuresCache = featuresCache;
-            return this;
-        }
-
-        /**
-         * Sets the measurement units cache/ORM.
-         * @param measurementUnits the measurement units cache
-         * @return the builder
-         */
-
-        Builder<S> setMeasurementUnitsCache( MeasurementUnits measurementUnits )
-        {
-            this.measurementUnits = measurementUnits;
-            return this;
-        }
-
-        /**
-         * Sets the <code>wres.Project.project_id</code>.
-         *
-         * @param projectId the <code>wres.Project.project_id</code>
-         * @return the builder
-         */
-
-        Builder<S> setProjectId( long projectId )
-        {
-            this.projectId = projectId;
-            return this;
-        }
-
-        /**
-         * Sets the variable name.
-         *
-         * @param variableName the variable name
-         * @return the builder
-         */
-
-        Builder<S> setVariableName( String variableName )
-        {
-            this.variableName = variableName;
-            return this;
-        }
-
-        /**
-         * Sets the features.
-         *
-         * @param features the features
-         * @return the builder
-         */
-
-        Builder<S> setFeatures( Set<Feature> features )
-        {
-            if ( Objects.nonNull( features ) )
-            {
-                this.features.addAll( features );
-            }
-
-            return this;
-        }
-
-        /**
-         * Sets the data type.
-         *
-         * @param orientation the data type
-         * @return the builder
-         */
-
-        Builder<S> setDatasetOrientation( DatasetOrientation orientation )
-        {
-            this.orientation = orientation;
-            return this;
-        }
-
-        /**
-         * Sets the time window filter.
-         *
-         * @param timeWindow the time window filter
-         * @return the builder
-         */
-
-        Builder<S> setTimeWindow( TimeWindowOuter timeWindow )
-        {
-            this.timeWindow = timeWindow;
-            return this;
-        }
-
-        /**
-         * Sets the desired time scale, which is used to adjust retrieval when a forecast lead duration ends within
-         * the {@link #timeWindow} but starts outside it.
-         *
-         * @param desiredTimeScale the desired time scale
-         * @return the builder
-         */
-
-        Builder<S> setDesiredTimeScale( TimeScaleOuter desiredTimeScale )
-        {
-            this.desiredTimeScale = desiredTimeScale;
-            return this;
-        }
-
-        /**
-         * Sets the existing time scale from the project declaration, which can be used to augment a source, but not
-         * override it.
-         *
-         * @param declaredExistingTimeScale the declared existing time scale
-         * @return the builder
-         */
-
-        Builder<S> setDeclaredExistingTimeScale( TimeScaleOuter declaredExistingTimeScale )
-        {
-            this.declaredExistingTimeScale = declaredExistingTimeScale;
-            return this;
-        }
-
-        /**
-         * Sets the start of a season in which values will be selected.
-         *
-         * @param seasonStart the start of the season
-         * @return the builder
-         */
-
-        Builder<S> setSeasonStart( MonthDay seasonStart )
-        {
-            this.seasonStart = seasonStart;
-            return this;
-        }
-
-        /**
-         * Sets the end of a season in which values will be selected.
-         *
-         * @param seasonEnd the end of the season
-         * @return the builder
-         */
-
-        Builder<S> setSeasonEnd( MonthDay seasonEnd )
-        {
-            this.seasonEnd = seasonEnd;
-            return this;
-        }
-
-        /**
-         * Sets the {@link ReferenceTimeType}.
-         *
-         * @param referenceTimeType the reference time type
-         * @return the builder
-         */
-
-        Builder<S> setReferenceTimeType( ReferenceTimeType referenceTimeType )
-        {
-            this.referenceTimeType = referenceTimeType;
-            return this;
-        }
-
-        abstract TimeSeriesRetriever<S> build();
-    }
-
-    /**
      * Construct.
      *
      * @param builder the builder
@@ -1721,14 +1721,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                 LOGGER.debug( start,
                               this.projectId,
                               this.orientation,
-                              "the desired time scale was null: the retrieval will not be adjusted to account "
-                              + "for the desired time scale." );
+                              "the desired timescale was null: the retrieval will not be adjusted to account "
+                              + "for the desired timescale." );
             }
 
             if ( Objects.nonNull( this.timeWindow ) || Objects.isNull( this.desiredTimeScale ) )
             {
                 String message = WHILE_BUILDING_THE_RETRIEVER
-                                 + "discovered a time window of {} and a desired time scale of {}.";
+                                 + "discovered a time window of {} and a desired timescale of {}.";
 
                 LOGGER.debug( message,
                               this.projectId,

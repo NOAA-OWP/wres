@@ -65,7 +65,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     {
         LOGGER.debug( "Computing the {}.", this );
 
-        return this.aggregate( getIntermediateStatistic( pool ), pool );
+        return this.aggregate( this.getIntermediateStatistic( pool ), pool );
     }
 
     @Override
