@@ -38,6 +38,7 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import jakarta.ws.rs.core.StreamingOutput;
 
+import jodd.net.HttpStatus;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RMapCache;
@@ -470,7 +471,8 @@ class JobResults
                           resultValue,
                           sharedData );
 
-            if ( resultValue == 0 )
+            // Checking for HTTP OK status
+            if ( resultValue == HttpStatus.ok().status() )
             {
                 sharedData.setJobState( JobMetadata.JobState.COMPLETED_REPORTED_SUCCESS );
                 LOGGER.debug( "Shared metadata after setting job state: {}",

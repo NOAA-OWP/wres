@@ -214,6 +214,7 @@ public class WebServer
             serverConnector.setHost( "127.0.0.1" );
             serverConnector.setPort( getPortOrDefault( args ) );
             serverConnector.addBean( HTTP_CHANNEL_LISTENER );
+            serverConnector.setAcceptedSendBufferSize( 0 );
             ServerConnector[] serverConnectors = { serverConnector };
             jettyServer.setConnectors( serverConnectors );
 

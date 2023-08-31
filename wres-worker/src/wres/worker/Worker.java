@@ -2,7 +2,12 @@ package wres.worker;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -20,11 +25,12 @@ import com.rabbitmq.client.DefaultSaslConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.http.WebClient;
 import wres.messages.BrokerHelper;
 
 /**
- * A long-running, light-weight process that takes a job from a queue, and runs
- * a single WRES instance for the job taken from the queue, and repeats.
+ * A long-running, light-weight process that starts up and monitors a worker server, takes a job from a queue,
+ * and sends the project config to its worker server, and repeats.
  */
 
 public class Worker
@@ -32,6 +38,15 @@ public class Worker
     private static final Logger LOGGER = LoggerFactory.getLogger( Worker.class );
     private static final String RECV_QUEUE_NAME = "wres.job";
     private static volatile boolean killed = false;
+
+    private static final String serverUpURI = "http://localhost:%d/project/up";
+
+    private static final int DEFAULT_PORT = 8010;
+
+    private static int port;
+
+    /** A web client to help with reading data from the web. */
+    private static final WebClient WEB_CLIENT = new WebClient();
 
     /**
      * Expects exactly one arg with a path to WRES executable
@@ -65,26 +80,10 @@ public class Worker
         }
 
         // This is to satisfy SonarQube and IntelliJ IDEA re: infinite loop
-        Runtime.getRuntime().addShutdownHook( new Thread(() -> { Worker.killed = true; } ) );
-
-        // Determine the actual broker name, whether from -D or default
-        String brokerHost = BrokerHelper.getBrokerHost();
-        String brokerVhost = BrokerHelper.getBrokerVhost();
-        int brokerPort = BrokerHelper.getBrokerPort();
-        LOGGER.info( "Using broker at host '{}', vhost '{}', port '{}'",
-                     brokerHost, brokerVhost, brokerPort );
+        Runtime.getRuntime().addShutdownHook( new Thread( () -> {Worker.killed = true;} ) );
 
         // Set up connection parameters for connection to broker
-        ConnectionFactory factory = new ConnectionFactory();
-        factory.setHost( brokerHost );
-        factory.setVirtualHost( brokerVhost );
-        factory.setPort( brokerPort );
-        factory.setSaslConfig( DefaultSaslConfig.EXTERNAL );
-        factory.setAutomaticRecoveryEnabled( true );
-
-        SSLContext sslContext =
-                BrokerHelper.getSSLContextWithClientCertificate( BrokerHelper.Role.WORKER );
-        factory.useSslProtocol( sslContext );
+        ConnectionFactory factory = createConnectionFactory();
 
         // Get work from the queue
         try ( Connection connection = factory.newConnection();
@@ -94,28 +93,41 @@ public class Worker
             receiveChannel.basicQos( 1 );
 
             Map<String, Object> queueArgs = new HashMap<String, Object>();
-            queueArgs.put("x-max-priority", 2);
+            queueArgs.put( "x-max-priority", 2 );
             receiveChannel.queueDeclare( RECV_QUEUE_NAME, true, false, false, queueArgs );
 
-            BlockingQueue<WresProcess> processToLaunch = new ArrayBlockingQueue<>( 1 );
+            BlockingQueue<WresEvaluationProcessor> processToLaunch = new ArrayBlockingQueue<>( 1 );
+
+            Process serverProcess = startWorkerServer( wresExecutable );
 
             JobReceiver receiver = new JobReceiver( receiveChannel,
-                                                    wresExecutable,
-                                                    processToLaunch );
+                                                    processToLaunch,
+                                                    Worker.port );
 
             receiveChannel.basicConsume( RECV_QUEUE_NAME, false, receiver );
 
             while ( !Worker.killed )
             {
                 LOGGER.info( "Waiting for work..." );
-                WresProcess wresProcess = processToLaunch.poll( 2, TimeUnit.MINUTES );
 
-                if ( wresProcess != null )
+                WresEvaluationProcessor wresEvaluationProcessor = processToLaunch.poll( 2, TimeUnit.MINUTES );
+
+                if ( wresEvaluationProcessor != null )
                 {
-                    // Launch WRES if the consumer found a message saying so.
-                    wresProcess.call();
-                    // Tell broker it is OK to get more messages by acknowledging
-                    receiveChannel.basicAck( wresProcess.getDeliveryTag(), false );
+                    if ( !isServerUp() )
+                    {
+                        // Server is not up, destroy and restart the process
+                        serverProcess = restartServerProcess( serverProcess, wresExecutable );
+                        // Refuse the job and requeue it to allow time for the server to start up
+                        receiveChannel.basicNack( wresEvaluationProcessor.getDeliveryTag(), false, true);
+                    }
+                    else
+                    {
+                        // Launch WRES if the consumer found a message saying so.
+                        wresEvaluationProcessor.call();
+                        // Tell broker it is OK to get more messages by acknowledging
+                        receiveChannel.basicAck( wresEvaluationProcessor.getDeliveryTag(), false );
+                    }
                 }
             }
         }
@@ -131,5 +143,109 @@ public class Worker
             LOGGER.error( message, re );
             throw re;
         }
+        catch ( URISyntaxException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    private static ConnectionFactory createConnectionFactory()
+    {
+        // Determine the actual broker name, whether from -D or default
+        String brokerHost = BrokerHelper.getBrokerHost();
+        String brokerVhost = BrokerHelper.getBrokerVhost();
+        int brokerPort = BrokerHelper.getBrokerPort();
+
+        // Set up connection parameters for connection to broker
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setHost( brokerHost );
+        factory.setVirtualHost( brokerVhost );
+        factory.setPort( brokerPort );
+        factory.setSaslConfig( DefaultSaslConfig.EXTERNAL );
+        factory.setAutomaticRecoveryEnabled( true );
+
+        SSLContext sslContext =
+                BrokerHelper.getSSLContextWithClientCertificate( BrokerHelper.Role.WORKER );
+        factory.useSslProtocol( sslContext );
+
+        return factory;
+    }
+
+    private static Process startWorkerServer( File wresExecutable )
+    {
+        List<String> result = new ArrayList<>();
+
+        String executable = wresExecutable
+                .getPath();
+
+        setFreePortOrDefault();
+
+        result.add( executable );
+        result.add( "server" );
+        result.add( String.valueOf( Worker.port ) );
+
+        ProcessBuilder processBuilder = new ProcessBuilder( result );
+
+        Process process;
+
+        try
+        {
+            process = processBuilder.start();
+
+            if ( process.isAlive() )
+            {
+                return process;
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+
+        throw new InternalError( "Was unable to start up the worker server" );
+    }
+
+    private static void setFreePortOrDefault()
+    {
+        try
+        {
+            ServerSocket serverSocket = new ServerSocket( 0 );
+            Worker.port = serverSocket.getLocalPort();
+            serverSocket.close();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( "Unable to find free port with exception: {}", e );
+        }
+        if ( Worker.port == 0 )
+        {
+            Worker.port = DEFAULT_PORT;
+        }
+    }
+
+
+    /**
+     * Method to check if the server is reachable
+     * @return boolean value if the server returns 200 (HTTP.OK)
+     * @throws IOException
+     */
+    private static boolean isServerUp() throws IOException, URISyntaxException
+    {
+        URI uri = new URI( String.format( serverUpURI, Worker.port ) );
+        WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( uri );
+
+        return fromWeb.getStatusCode() == 200;
+    }
+
+    private static Process restartServerProcess( Process oldServerProcess, File wresExecutable )
+    {
+
+        if ( oldServerProcess.isAlive() )
+        {
+            oldServerProcess.destroy();
+        }
+
+        return startWorkerServer( wresExecutable );
+
     }
 }
