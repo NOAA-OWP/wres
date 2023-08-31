@@ -4,15 +4,19 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import wres.http.WebClient;
 
 
 /**
@@ -32,6 +36,13 @@ public class JobStandardStreamMessenger implements Runnable
     /** Flag to indicate whether to also send output to system.out, system.err*/
     private static final boolean PASS_THROUGH = true;
 
+    /** A web client to help with reading data from the web. */
+    private static final WebClient WEB_CLIENT = new WebClient();
+
+    private static final String stdOutUri = "http://localhost:%d/project/stdout";
+
+    private static final String stdErrorUri = "http://localhost:%d/project/stderr";
+
     /** Stream identifier. */
     public enum WhichStream
     {
@@ -45,7 +56,8 @@ public class JobStandardStreamMessenger implements Runnable
     private final String exchangeName;
     private final String jobId;
     private final WhichStream whichStream;
-    private final InputStream stream;
+
+    private final int port;
 
     /** Helps the consumer re-order the stream */
     private final AtomicInteger order = new AtomicInteger( 0 );
@@ -54,13 +66,13 @@ public class JobStandardStreamMessenger implements Runnable
                                 String exchangeName,
                                 String jobId,
                                 WhichStream whichStream,
-                                InputStream stream )
+                                int port )
     {
         this.connection = connection;
         this.exchangeName = exchangeName;
         this.jobId = jobId;
         this.whichStream = whichStream;
-        this.stream = stream;
+        this.port = port;
     }
 
     private Connection getConnection()
@@ -83,11 +95,6 @@ public class JobStandardStreamMessenger implements Runnable
         return this.whichStream;
     }
 
-    private InputStream getStream()
-    {
-        return this.stream;
-    }
-
     private AtomicInteger getOrder()
     {
         return this.order;
@@ -98,10 +105,36 @@ public class JobStandardStreamMessenger implements Runnable
         return "job." + this.getJobId() + "." + this.getWhichStream().name();
     }
 
+    private int getPort() {
+        return this.port;
+    }
+
     @Override
     public void run()
     {
-        InputStream inputStream = this.getStream();
+
+        String url;
+
+        if (this.getWhichStream().equals( WhichStream.STDOUT ))
+        {
+            url = String.format( stdOutUri, this.getPort() );
+        }
+        else
+        {
+            url = String.format( stdErrorUri, this.getPort() );
+        }
+
+        WebClient.ClientResponse clientResponse;
+        try
+        {
+             clientResponse = WEB_CLIENT.getFromWeb( URI.create( url ) );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+
+        InputStream inputStream = clientResponse.getResponse();
         try ( InputStreamReader utf8Reader = new InputStreamReader( inputStream,
                                                                     StandardCharsets.UTF_8 );
               BufferedReader reader = new BufferedReader( utf8Reader );
