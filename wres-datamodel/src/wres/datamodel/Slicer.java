@@ -382,7 +382,8 @@ public final class Slicer
         Objects.requireNonNull( ensemble );
         Objects.requireNonNull( labels );
 
-        if ( !ensemble.getLabels().hasLabels() )
+        if ( !ensemble.getLabels()
+                      .hasLabels() )
         {
             throw new IllegalArgumentException( "Cannot filter ensemble " + ensemble
                                                 + " to remove labels because the "
@@ -821,7 +822,6 @@ public final class Slicer
             combined.close();
         }
     }
-
 
     /**
      * Creates an averaging function that converts an {@link Ensemble} to a single value.

@@ -10,38 +10,24 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 
 /**
  * Stores an array of ensemble member values as double values and, optionally, an array of ensemble member labels.
- * 
+ *
  * @author James Brown
  */
 public class Ensemble implements Comparable<Ensemble>
 {
-
-    /**
-     * Ensemble labels.
-     */
-
+    /** Ensemble labels. */
     public static class Labels
     {
-
-        /**
-         * A cache of ensemble names to re-use, indexed by the concatenation of the names as a unique identifier. Allow 
-         * one hundred; there should not be more than a handful of instances across recent evaluations. 
-         */
-
+        /** A cache of ensemble names to re-use, indexed by the concatenation of the names as a unique identifier.
+         * Allow one hundred; there should not be more than a handful of instances across recent evaluations. */
         private static final Cache<String, Labels> LABELS_CACHE = Caffeine.newBuilder()
                                                                           .maximumSize( 100 )
                                                                           .build();
 
-        /**
-         * Empty labels.
-         */
-
+        /** Empty labels. */
         private static final Labels EMPTY_LABELS = new Labels( new String[0] );
 
-        /**
-         * The labels, which may be empty.
-         */
-
+        /** The labels, which may be empty. */
         private final String[] labs;
 
         /**
@@ -112,7 +98,7 @@ public class Ensemble implements Comparable<Ensemble>
                 return true;
             }
 
-            if ( ! ( other instanceof Labels otherLabels ) )
+            if ( !( other instanceof Labels otherLabels ) )
             {
                 return false;
             }
@@ -166,34 +152,28 @@ public class Ensemble implements Comparable<Ensemble>
         }
     }
 
-    /**
-     * The ensemble members.
-     */
-
+    /** The ensemble members. */
     private final double[] members;
 
-    /**
-     * The member labels.
-     */
-
+    /** The member labels. */
     private final Labels labels;
 
     /**
      * Returns a {@link Ensemble} from a primitive array of members.
-     * 
+     *
      * @param members the ensemble members
      * @return the ensemble
      */
 
     public static Ensemble of( final double... members )
     {
-        return new Ensemble( members );
+        return new Ensemble( members, Labels.EMPTY_LABELS );
     }
 
     /**
      * Returns a {@link Ensemble} from a primitive array of members and a corresponding array of member labels. The
      * members are ordered according to the order of the labels.
-     * 
+     *
      * @param members the ensemble members
      * @param labels the labels
      * @return the ensemble
@@ -207,7 +187,7 @@ public class Ensemble implements Comparable<Ensemble>
 
     /**
      * Returns a copy of the ensemble members.
-     * 
+     *
      * @return the members
      */
 
@@ -218,7 +198,7 @@ public class Ensemble implements Comparable<Ensemble>
 
     /**
      * Returns a member that corresponds to a prescribed label.
-     * 
+     *
      * @param label the label
      * @return the ensemble member
      * @throws IllegalArgumentException if the label is not present
@@ -242,7 +222,7 @@ public class Ensemble implements Comparable<Ensemble>
 
     /**
      * Returns the labels.
-     * 
+     *
      * @return the labels
      */
 
@@ -253,7 +233,7 @@ public class Ensemble implements Comparable<Ensemble>
 
     /**
      * Return the number of members present.
-     * 
+     *
      * @return the number of members
      */
 
@@ -265,8 +245,6 @@ public class Ensemble implements Comparable<Ensemble>
     @Override
     public int compareTo( Ensemble other )
     {
-        Objects.requireNonNull( other );
-
         int returnMe = Arrays.compare( this.getMembers(), other.getMembers() );
 
         if ( returnMe != 0 )
@@ -297,15 +275,14 @@ public class Ensemble implements Comparable<Ensemble>
     @Override
     public boolean equals( Object other )
     {
-        if ( ! ( other instanceof Ensemble ) )
+        if ( !( other instanceof Ensemble otherVec ) )
         {
             return false;
         }
 
-        Ensemble otherVec = (Ensemble) other;
-
         // Label status?
-        if ( !this.getLabels().equals( otherVec.getLabels() ) )
+        if ( !this.getLabels()
+                  .equals( otherVec.getLabels() ) )
         {
             return false;
         }
@@ -316,7 +293,8 @@ public class Ensemble implements Comparable<Ensemble>
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.labels, Arrays.hashCode( this.getMembers() ) );
+        return Objects.hash( this.labels,
+                             Arrays.hashCode( this.getMembers() ) );
     }
 
     @Override
@@ -341,18 +319,7 @@ public class Ensemble implements Comparable<Ensemble>
 
     /**
      * Hidden constructor.
-     * 
-     * @param members the ensemble members
-     */
-
-    private Ensemble( final double[] members )
-    {
-        this( members.clone(), Labels.EMPTY_LABELS );
-    }
-
-    /**
-     * Hidden constructor.
-     * 
+     *
      * @param members the ensemble members
      * @param labels the ensemble member labels
      * @throws IllegalArgumentException if the labels are non-null and differ in size to the number of members

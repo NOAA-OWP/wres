@@ -683,10 +683,8 @@ public class PoolFactory
                                                                         .setRetrieverFactory( retrieverFactory )
                                                                         .setPoolRequests( poolRequests )
                                                                         .setLeftTransformer( leftValueAndUnitTransformer )
-                                                                        .setRightTransformer(
-                                                                                rightValueAndUnitTransformer )
-                                                                        .setBaselineTransformer(
-                                                                                baselineValueAndUnitTransformer )
+                                                                        .setRightTransformer( rightValueAndUnitTransformer )
+                                                                        .setBaselineTransformer( baselineValueAndUnitTransformer )
                                                                         .setLeftUpscaler( leftUpscaler )
                                                                         .setRightUpscaler( rightUpscaler )
                                                                         .setBaselineUpscaler( baselineUpscaler )

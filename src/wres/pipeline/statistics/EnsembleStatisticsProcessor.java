@@ -257,28 +257,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
             this.ensembleBoxPlot = null;
         }
 
-        // Construct the default mapper from ensembles to single-values: this is not currently configurable
-        // Handle missings here
-        ToDoubleFunction<Ensemble> ensembleMapper = Slicer.getEnsembleAverageFunction( this.ensembleAverageType );
-
-        UnaryOperator<Pair<Double, Ensemble>> missingFilter =
-                Slicer.leftAndEachOfRight( MissingValues::isNotMissingValue );
-
-        this.toSingleValues = in -> {
-            // Handle missings
-            Pair<Double, Ensemble> inWithoutMissings = missingFilter.apply( in );
-
-            // Some data present?
-            if ( Objects.nonNull( inWithoutMissings ) )
-            {
-                double left = inWithoutMissings.getLeft();
-                double right = ensembleMapper.applyAsDouble( inWithoutMissings.getRight() );
-                return Pair.of( left, right );
-            }
-
-            // No data
-            return null;
-        };
+        this.toSingleValues = this.getSingleValuedTransformer( this.ensembleAverageType );
 
         // Create a single-valued processor for computing single-valued measures, but first eliminate any metrics that
         // relate to ensemble or probabilistic pairs.
@@ -923,7 +902,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
                                                                                 transformers,
                                                                                 pool.getMetadata(),
                                                                                 super.getBaselineMetadata( pool ),
-                                                                           meta -> meta ) );
+                                                                                meta -> meta ) );
 
             // Get the composed threshold for the metadata
             ThresholdOuter composedOuter = ThresholdSlicer.compose( Set.copyOf( thresholds.values() ) );
@@ -959,7 +938,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
                         this.doWorkWithSlicingExecutor( () -> PoolSlicer.transform( innerPools,
                                                                                     innerTransformers,
                                                                                     transformed.getMetadata(),
-                                                                                    super.getBaselineMetadata( transformed ),
+                                                                                    super.getBaselineMetadata(
+                                                                                            transformed ),
                                                                                     metaTransformer ) );
 
                 super.processDichotomousPairs( dichotomous, futures );
@@ -1022,6 +1002,40 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         {
             return ensembleAverageType;
         }
+    }
+
+    /**
+     * Returns a function that transforms ensemble pairs into single-valued pairs. The ensemble average is only
+     * computed explicitly if not supplied inband to the {@link Ensemble}.
+     * @param averageType the ensemble average type, which is only used if the ensemble average is not already present
+     * @return a function to transform an ensemble pair to a single-valued pair
+     */
+
+    private Function<Pair<Double, Ensemble>, Pair<Double, Double>> getSingleValuedTransformer( EnsembleAverageType averageType )
+    {
+        // Construct the default mapper from ensembles to single-values: this is not currently configurable
+        // Handle missings here too
+        ToDoubleFunction<Ensemble> ensembleMapper = Slicer.getEnsembleAverageFunction( averageType );
+
+        UnaryOperator<Pair<Double, Ensemble>> missingFilter =
+                Slicer.leftAndEachOfRight( MissingValues::isNotMissingValue );
+
+        return in -> {
+            // Handle missings
+            Pair<Double, Ensemble> inWithoutMissings = missingFilter.apply( in );
+
+            // Some data present?
+            if ( Objects.nonNull( inWithoutMissings ) )
+            {
+                double left = inWithoutMissings.getLeft();
+                Ensemble members = inWithoutMissings.getRight();
+                double right = ensembleMapper.applyAsDouble( members );
+                return Pair.of( left, right );
+            }
+
+            // No data
+            return null;
+        };
     }
 
     /**

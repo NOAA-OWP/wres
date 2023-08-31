@@ -476,14 +476,14 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                 this.updateSampleStatistics( stores, quantileCalculators );
 
                 // Log progress every 100 samples
-                if ( LOGGER.isInfoEnabled()
+                if ( LOGGER.isDebugEnabled()
                      && i > 1
                      && ( i + 1 ) % 100 == 0 )
                 {
-                    LOGGER.info( "Completed resample {} of {} for pool request {}.",
-                                 ( i + 1 ),
-                                 sampleSize,
-                                 this.poolRequest );
+                    LOGGER.debug( "Completed resample {} of {} for pool request {}.",
+                                  ( i + 1 ),
+                                  sampleSize,
+                                  this.poolRequest );
                 }
             }
 

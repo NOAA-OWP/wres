@@ -351,15 +351,18 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
                 Iterator<Collectable<S, T, U>> iterator = next.values().iterator();
 
                 Collectable<S, T, U> baseMetric = iterator.next();
-                final CompletableFuture<T> baseFuture =
+                CompletableFuture<T> baseFuture =
                         CompletableFuture.supplyAsync( () -> baseMetric.getIntermediateStatistic( input ),
                                                        this.metricPool );
                 // Compute a final statistic for each statistic that depends on the intermediate one
-                next.forEach( ( id,
-                                metric ) -> metricFutures.add( baseFuture.thenApplyAsync( statistic -> metric.aggregate(
-                                                                                                  statistic,
-                                                                                                  input ),
-                                                                                          this.metricPool ) ) );
+                for ( Map.Entry<MetricConstants, Collectable<S, T, U>> nextEntry : next.entrySet() )
+                {
+                    Collectable<S, T, U> metric = nextEntry.getValue();
+                    Function<T, U> aggregator = statistic -> metric.aggregate( statistic, input );
+                    CompletableFuture<U> future = baseFuture.thenApplyAsync( aggregator,
+                                                                             this.metricPool );
+                    metricFutures.add( future );
+                }
             }
         }
         // Create the futures for the ordinary metrics

@@ -194,15 +194,16 @@ class PoolsGeneratorTest
                                       .variable( VariableBuilder.builder().name( "STREAMFLOW" )
                                                                 .build() )
                                       .build();
-        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
-                                                                        .unit( CFS )
-                                                                        .leadTimes( leadTimes )
-                                                                        .leadTimePools( leadTimePools )
-                                                                        .referenceDates( referenceDates )
-                                                                        .referenceDatePools( referenceTimePools )
-                                                                        .left( left )
-                                                                        .right( right )
-                                                                        .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .unit( CFS )
+                                            .leadTimes( leadTimes )
+                                            .leadTimePools( leadTimePools )
+                                            .referenceDates( referenceDates )
+                                            .referenceDatePools( referenceTimePools )
+                                            .left( left )
+                                            .right( right )
+                                            .build();
 
         Geometry feature = wres.statistics.MessageFactory.getGeometry( "FAKE2" );
         GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( feature, feature, null );
