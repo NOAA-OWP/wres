@@ -8,4 +8,5 @@ module wres.worker
     requires com.rabbitmq.client;
     requires org.slf4j;
     requires wres.messages;
+    requires wres.http;
 }

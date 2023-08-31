@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package wres.messages.generated;
+
+enum EvaluationStatus
+{
+    AWAITING = 0;
+    OPENED = 1;
+    ONGOING = 2;
+    COMPLETED = 3;
+    CLOSED = 4;
+}
