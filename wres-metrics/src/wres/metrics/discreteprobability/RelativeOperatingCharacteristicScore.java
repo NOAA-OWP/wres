@@ -1,10 +1,9 @@
 package wres.metrics.discreteprobability;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
@@ -43,7 +42,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * Mason, S. J. and Graham, N. E. (2002) Areas beneath the relative operating characteristics (ROC) and relative
  * operating levels (ROL) curves: Statistical significance and interpretation, Q. J. R. Meteorol. Soc. 128, 2145-2166.
  * </p>
- * 
+ *
  * @author James Brown
  */
 
@@ -82,7 +81,7 @@ public class RelativeOperatingCharacteristicScore
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -103,17 +102,18 @@ public class RelativeOperatingCharacteristicScore
 
         if ( pool.hasBaseline() )
         {
-            double rocMain = getAUCMasonGraham( pool );
-            double rocBase = getAUCMasonGraham( pool.getBaselineData() );
+            double rocMain = this.getAUCMasonGraham( pool );
+            double rocBase = this.getAUCMasonGraham( pool.getBaselineData() );
             rocScore = ( rocMain - rocBase ) / ( 1.0 - rocBase );
         }
         else
         {
-            rocScore = 2.0 * getAUCMasonGraham( pool ) - 1.0;
+            rocScore = 2.0 * this.getAUCMasonGraham( pool ) - 1.0;
         }
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( RelativeOperatingCharacteristicScore.MAIN )
+                                                                               .setMetric(
+                                                                                       RelativeOperatingCharacteristicScore.MAIN )
                                                                                .setValue( rocScore )
                                                                                .build();
         DoubleScoreStatistic score =
@@ -171,65 +171,72 @@ public class RelativeOperatingCharacteristicScore
 
     /**
      * Returns the AUC using the procedure outlined in Mason and graham (2002).
-     * 
+     *
      * @param pairs the pairs
      * @return the AUC
      */
 
     private double getAUCMasonGraham( Pool<Pair<Probability, Probability>> pairs )
     {
-        //Obtain the predicted probabilities when the event occurred and did not occur
-        //Begin by collecting against occurrence/non-occurrence
-        Map<Boolean, List<Pair<Probability, Probability>>> mapped =
-                pairs.get()
-                     .stream()
-                     .collect( Collectors.groupingBy( a -> Precision.equals( a.getLeft()
-                                                                              .getProbability(),
-                                                                             1.0,
-                                                                             Precision.EPSILON ) ) );
-        if ( mapped.size() != 2 )
+        // Obtain the predicted probabilities when the event occurred and did not occur
+        List<Probability> byOccurrence = new ArrayList<>();
+        List<Probability> byNonOccurrence = new ArrayList<>();
+        for ( Pair<Probability, Probability> nextPair : pairs.get() )
         {
-            return Double.NaN; //Undefined
+            Probability left = nextPair.getLeft();
+            Probability right = nextPair.getRight();
+
+            // Occurrence
+            if ( Precision.equals( left.getProbability(),
+                                   1.0,
+                                   Precision.EPSILON ) )
+            {
+                byOccurrence.add( right );
+            }
+            // Non-occurrence
+            else
+            {
+                byNonOccurrence.add( right );
+            }
         }
-        //Get the right side by each outcome
-        List<Double> byOccurrence =
-                mapped.get( true )
-                      .stream()
-                      .map( right -> right.getRight().getProbability() )
-                      .collect( Collectors.toList() );
-        List<Double> byNonOccurrence = mapped.get( false )
-                                             .stream()
-                                             .map( right -> right.getRight().getProbability() )
-                                             .collect( Collectors.toList() );
-        //Sort descending
+
+        // Score is undefined
+        if ( byOccurrence.isEmpty() || byNonOccurrence.isEmpty() )
+        {
+            return Double.NaN;
+        }
+
+        // Sort descending
         byOccurrence.sort( Collections.reverseOrder() );
         byNonOccurrence.sort( Collections.reverseOrder() );
 
-        //For each occurrence, determine how may forecasts associated with non-occurrences had a larger or equal 
-        //probability. Derive the AUC from this.
+        // For each occurrence, determine how many forecasts associated with non-occurrences had a larger or equal
+        // probability. Derive the AUC from this.
         double rhs = 0.0;
-        for ( double probYes : byOccurrence )
+        for ( Probability probYes : byOccurrence )
         {
-            for ( double probNo : byNonOccurrence )
+            for ( Probability probNo : byNonOccurrence )
             {
-                double diff = probNo - probYes;
+                double diff = probNo.getProbability() - probYes.getProbability();
                 if ( diff > .0000001 )
-                { //prob[non-occurrence] > prob[occurrence]
+                { // prob[non-occurrence] > prob[occurrence]
                     rhs += 2.0;
                 }
                 else if ( Math.abs( diff ) < .0000001 )
-                { //Equal probs
+                { // Equal probs
                     rhs += 1.0;
                 }
                 else
-                { //Less than
+                { // Less than
                     break; //Sorted data, so no more elements
                 }
             }
         }
+
         return FunctionFactory.finiteOrMissing()
-                              .applyAsDouble( 1.0 - ( ( 1.0 / ( 2.0 * byOccurrence.size() * byNonOccurrence.size() ) )
-                                                      * rhs ) );
+                              .applyAsDouble( 1.0 -
+                                              ( ( 1.0 / ( 2.0 * byOccurrence.size() * byNonOccurrence.size() ) )
+                                                * rhs ) );
     }
 
     /**

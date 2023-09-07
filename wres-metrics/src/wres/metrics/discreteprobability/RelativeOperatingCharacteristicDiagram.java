@@ -3,22 +3,17 @@ package wres.metrics.discreteprobability;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 
 import wres.datamodel.Probability;
 import wres.datamodel.MissingValues;
-import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
-import wres.datamodel.pools.PoolSlicer;
-import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.metrics.Diagram;
-import wres.metrics.MetricCollection;
-import wres.metrics.MetricFactory;
+import wres.metrics.FunctionFactory;
 import wres.metrics.MetricParameterException;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.statistics.generated.DiagramMetric;
@@ -34,7 +29,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
  * compares the probability of detection (PoFD) against the probability of false detection (PoFD). The empirical ROC is
  * computed for a discrete number of probability thresholds or classifiers that determine whether the forecast event
  * occurred, based on the forecast probability.
- * 
+ *
  * @author James Brown
  */
 
@@ -46,8 +41,10 @@ public class RelativeOperatingCharacteristicDiagram
      */
 
     public static final DiagramMetricComponent PROBABILITY_OF_DETECTION = DiagramMetricComponent.newBuilder()
-                                                                                                .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
-                                                                                                .setType( DiagramComponentType.PRIMARY_RANGE_AXIS )
+                                                                                                .setName(
+                                                                                                        DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                                                                                .setType(
+                                                                                                        DiagramComponentType.PRIMARY_RANGE_AXIS )
                                                                                                 .setMinimum( 0 )
                                                                                                 .setMaximum( 1 )
                                                                                                 .setUnits( "PROBABILITY" )
@@ -58,11 +55,14 @@ public class RelativeOperatingCharacteristicDiagram
      */
 
     public static final DiagramMetricComponent PROBABILITY_OF_FALSE_DETECTION = DiagramMetricComponent.newBuilder()
-                                                                                                      .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
-                                                                                                      .setType( DiagramComponentType.PRIMARY_DOMAIN_AXIS )
+                                                                                                      .setName(
+                                                                                                              DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                                                                                      .setType(
+                                                                                                              DiagramComponentType.PRIMARY_DOMAIN_AXIS )
                                                                                                       .setMinimum( 0 )
                                                                                                       .setMaximum( 1 )
-                                                                                                      .setUnits( "PROBABILITY" )
+                                                                                                      .setUnits(
+                                                                                                              "PROBABILITY" )
                                                                                                       .build();
 
     /**
@@ -92,12 +92,6 @@ public class RelativeOperatingCharacteristicDiagram
     private static final int DEFAULT_POINT_COUNT = 10;
 
     /**
-     * Components of the ROC.
-     */
-
-    private final MetricCollection<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> roc;
-
-    /**
      * Number of points in the empirical ROC diagram.
      */
 
@@ -105,7 +99,7 @@ public class RelativeOperatingCharacteristicDiagram
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      * @throws MetricParameterException if the metric cannot be constructed
      */
@@ -123,9 +117,9 @@ public class RelativeOperatingCharacteristicDiagram
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
-        //Determine the empirical ROC. 
-        //For each classifier, derive the pairs of booleans and compute the PoD and PoFD from the
-        //2x2 contingency table, using a metric collection to compute the table only once
+        // Determine the empirical ROC.
+        // For each classifier, derive the pairs of booleans and compute the PoD and PoFD from the
+        // 2x2 contingency table, using a metric collection to compute the table only once
         double constant = 1.0 / this.points;
         double[] pOD = new double[this.points + 1];
         double[] pOFD = new double[this.points + 1];
@@ -135,38 +129,27 @@ public class RelativeOperatingCharacteristicDiagram
         Arrays.fill( pOFD, MissingValues.DOUBLE );
 
         // Some data to process        
-        if ( !pool.get().isEmpty() )
+        if ( !pool.get()
+                  .isEmpty() )
         {
-            for ( int i = 1; i < this.points; i++ )
+            // Calculate the left occurrences, which will be re-used
+            List<Pair<Probability, Probability>> poolData = pool.get();
+            int poolSize = poolData.size();
+            boolean[] left = new boolean[poolSize];
+            for ( int i = 0; i < poolSize; i++ )
             {
-                double prob = Precision.round( 1.0 - ( i * constant ), 5 );
-                //Compute the PoD/PoFD using the probability threshold to determine whether the event occurred
-                //according to the probability on the RHS
-
-                // Tranformer from probabilities to yes/no
-                Function<Pair<Probability, Probability>, Pair<Boolean, Boolean>> transformer =
-                        in -> Pair.of( Double.compare( in.getLeft().getProbability(),
-                                                       1.0 ) == 0,
-                                       in.getRight().getProbability() > prob );
-
-                // Transformed pairs
-                Pool<Pair<Boolean, Boolean>> transformed = PoolSlicer.transform( pool, transformer );
-                List<DoubleScoreStatisticOuter> out = this.roc.apply( transformed );
-
-                //Store
-                pOD[i] = Slicer.filter( out, MetricConstants.PROBABILITY_OF_DETECTION )
-                               .get( 0 )
-                               .getComponent( MetricConstants.MAIN )
-                               .getStatistic()
-                               .getValue();
-                pOFD[i] = Slicer.filter( out, MetricConstants.PROBABILITY_OF_FALSE_DETECTION )
-                                .get( 0 )
-                                .getComponent( MetricConstants.MAIN )
-                                .getStatistic()
-                                .getValue();
+                Pair<Probability, Probability> p = poolData.get( i );
+                left[i] = Double.compare( p.getLeft()
+                                           .getProbability(), 1.0 ) == 0;
             }
 
-            //Set the lower and upper margins to (0.0, 0.0) and (1.0, 1.0), respectively            
+            // Calculate the 2x2 contingency table components for each predicted threshold
+            for ( int i = 1; i < this.points; i++ )
+            {
+                this.increment( poolData, constant, left, pOD, pOFD, poolSize, i );
+            }
+
+            // Set the lower and upper margins to (0.0, 0.0) and (1.0, 1.0), respectively
             pOD[0] = 0.0;
             pOFD[0] = 0.0;
             pOD[this.points] = 1.0;
@@ -208,17 +191,82 @@ public class RelativeOperatingCharacteristicDiagram
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param points the number of points in the diagram
      */
 
     private RelativeOperatingCharacteristicDiagram( int points )
     {
         super();
-        this.roc = MetricFactory.ofDichotomousScores( MetricConstants.PROBABILITY_OF_DETECTION,
-                                                      MetricConstants.PROBABILITY_OF_FALSE_DETECTION );
         //Set the default points
         this.points = points;
     }
 
+    /**
+     * Calculate and record the probability of detection and the probability of false detection for the current
+     * threshold.
+     * @param poolData the pool data
+     * @param constant a constant
+     * @param left the occurrences for the left values
+     * @param pOD the probability of detection to record at the current index
+     * @param pOFD the probability of false detection to record at the current index
+     * @param poolSize the pool size
+     * @param index the index
+     */
+
+    private void increment( List<Pair<Probability, Probability>> poolData,
+                            double constant,
+                            boolean[] left,
+                            double[] pOD,
+                            double[] pOFD,
+                            int poolSize,
+                            int index )
+    {
+        double tP = 0;
+        double tN = 0;
+        double fP = 0;
+        double fN = 0;
+
+        double prob = Precision.round( 1.0 - ( index * constant ), 5 );
+
+        // Compute the PoD/PoFD using the probability threshold to determine whether the event occurred
+        // according to the probability on the RHS
+        for ( int j = 0; j < poolSize; j++ )
+        {
+            Pair<Probability, Probability> p = poolData.get( j );
+            boolean right = p.getRight()
+                             .getProbability() > prob;
+            // True positives aka hits
+            if ( left[j] && right )
+            {
+                tP++;
+            }
+            // True negatives
+            else if ( !left[j] && !right )
+            {
+                tN++;
+            }
+            // False positives aka false alarms
+            else if ( !left[j] )
+            {
+                fP++;
+            }
+            // False negatives aka misses
+            else
+            {
+                fN++;
+            }
+        }
+
+        if ( tP + fN > 0 )
+        {
+            pOD[index] = FunctionFactory.finiteOrMissing()
+                                        .applyAsDouble( tP / ( tP + fN ) );
+        }
+        if ( fP + tN > 0 )
+        {
+            pOFD[index] = FunctionFactory.finiteOrMissing()
+                                         .applyAsDouble( fP / ( fP + tN ) );
+        }
+    }
 }

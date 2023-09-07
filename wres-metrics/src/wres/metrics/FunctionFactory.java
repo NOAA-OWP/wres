@@ -2,6 +2,7 @@ package wres.metrics;
 
 import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiPredicate;
@@ -9,6 +10,7 @@ import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.ToDoubleFunction;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.commons.math3.stat.descriptive.rank.Median;
@@ -16,6 +18,7 @@ import org.apache.commons.math3.stat.descriptive.rank.Median;
 import wres.datamodel.MissingValues;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricGroup;
+import wres.datamodel.pools.Pool;
 
 /**
  * A factory class for constructing elementary functions.
@@ -205,6 +208,68 @@ public class FunctionFactory
     public static ToDoubleFunction<double[]> sampleSize()
     {
         return a -> a.length;
+    }
+
+    /**
+     * Return a function that computes the sum of square errors from a pool, mapping the pool values to real values
+     * using the supplied mapper.
+     * @param <T> the pool data type
+     * @param mapper the mapper
+     * @return the function that computes the sum of square errors
+     */
+
+    public static <T> ToDoubleFunction<Pool<Pair<T, T>>> sumOfSquareErrors( ToDoubleFunction<T> mapper )
+    {
+        return pool ->
+        {
+            List<Pair<T, T>> data = pool.get();
+            double sum = 0.0;
+
+            // Data available
+            if ( !data.isEmpty() )
+            {
+                for ( Pair<T, T> next : data )
+                {
+                    double left = mapper.applyAsDouble( next.getLeft() );
+                    double right = mapper.applyAsDouble( next.getRight() );
+                    sum += Math.pow( right - left, 2 );
+                }
+            }
+
+            return sum;
+        };
+    }
+
+    /**
+     * Return a function that computes the sum of square errors from a pool when using the mean left value as the
+     * prediction.
+     * @param <T> the pool data type
+     * @return the function that computes the sum of square errors relative to the mean left value
+     */
+
+    public static <T> ToDoubleFunction<Pool<Pair<T, T>>> sumOfSquareErrorsForMeanLeft( ToDoubleFunction<T> mapper )
+    {
+        return pool ->
+        {
+            List<Pair<T, T>> data = pool.get();
+            double sum = 0.0;
+
+            // Data available
+            if ( !data.isEmpty() )
+            {
+                double sumLeft = data.stream()
+                                     .mapToDouble( n -> mapper.applyAsDouble( n.getLeft() ) )
+                                     .sum();
+                double meanLeft = sumLeft / data.size();
+                for ( Pair<T, T> next : data )
+                {
+                    double left = mapper.applyAsDouble( next.getLeft() );
+                    sum += Math.pow( meanLeft - left, 2 );
+                }
+            }
+
+            return sum;
+        };
     }
 
     /**
