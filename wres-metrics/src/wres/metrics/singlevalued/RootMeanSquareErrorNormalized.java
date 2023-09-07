@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MissingValues;
-import wres.datamodel.VectorOfDoubles;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.Pool;
@@ -54,7 +53,7 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<Pool<Pair<Do
                                                                           .build();
 
     /** Instance of a standard deviation. */
-    private final ToDoubleFunction<VectorOfDoubles> stdev;
+    private final ToDoubleFunction<double[]> stdev;
 
     /** Instance of {@link SumOfSquareError}. */
     private final SumOfSquareError sse;
@@ -78,8 +77,8 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<Pool<Pair<Do
     {
         LOGGER.debug( "Computing the {}.", this );
 
-        DoubleScoreStatisticOuter statistic = this.getIntermediateStatistic( pool );
-        return this.aggregate( statistic, pool );
+        DoubleScoreStatisticOuter statistic = this.getIntermediate( pool );
+        return this.applyIntermediate( statistic, pool );
     }
 
     @Override
@@ -95,7 +94,7 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<Pool<Pair<Do
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter statistic, Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter statistic, Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing the {} from the intermediate statistic, {}.", this, this.getCollectionOf() );
 
@@ -118,8 +117,7 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<Pool<Pair<Do
                                   .mapToDouble( Pair::getLeft )
                                   .toArray();
 
-            VectorOfDoubles sdVector = VectorOfDoubles.of( sdLeft );
-            double stdevValue = this.stdev.applyAsDouble( sdVector );
+            double stdevValue = this.stdev.applyAsDouble( sdLeft );
 
             result = rmse / stdevValue;
         }
@@ -139,7 +137,7 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<Pool<Pair<Do
     }
 
     @Override
-    public DoubleScoreStatisticOuter getIntermediateStatistic( Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter getIntermediate( Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing an intermediate statistic of {} for the {}.", this.getCollectionOf(), this );
 

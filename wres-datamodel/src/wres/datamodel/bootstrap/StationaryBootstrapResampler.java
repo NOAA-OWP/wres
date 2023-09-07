@@ -48,13 +48,20 @@ import wres.datamodel.time.TimeSeriesSlicer;
  * sampled with respect to a fixed lead duration; in other words, the candidate events for resampling of a nominated
  * event all have the same lead duration as the nominated event.
  *
- * <p>This implementation requires regular time-series. Specifically, the timestep between each valid time in every
- * time series must be constant. Likewise, the duration between the first valid times in consecutive time-series must be
- * constant. The transition probability between time-series is calculated with respect to the mean block size, which is
- * supplied in timestep units, and the offset between time-series. Specifically, the number of mean blocks per offset is
- * calculated and adjusted so that it is 1 or larger and used to calculate the transition probability as 1 / adjusted
- * mean blocks per offset. In short, if the offset between time-series is larger than the timestep, then the probability
- * of no relationship (i.e., random sampling) between the first valid times in adjacent time-series is increased.
+ * <p>This implementation assumes regular time-series. Specifically, the timestep between each valid time in every
+ * time series should be constant. Likewise, the duration between the first valid times in consecutive time-series
+ * should be constant. The transition probability between time-series is calculated with respect to the mean block size,
+ * which is supplied in timestep units, and the offset between time-series. Specifically, the number of mean blocks per
+ * offset is calculated and adjusted so that it is 1 or larger and used to calculate the transition probability as
+ * 1 / adjusted mean blocks per offset. In short, if the offset between time-series is larger than the timestep, then
+ * the probability of no relationship (i.e., random sampling) between the first valid times in adjacent time-series is
+ * increased.
+ *
+ * <p>TODO: Practically speaking, missing data will be encountered, whether formally (i.e., a missing value sentinel)
+ * or via absence. When values are missing by absence, this implementation should be able to adjust the transition
+ * probability between timesteps based on duration (i.e., reducing the probability of sampling the "next" time from the
+ * previous sequence in proportion to the ratio of the actual timestep to the average timestep). This is already done
+ * when the duration between consecutive time-series exceeds the timestep.
  *
  * @author James Brown
  */

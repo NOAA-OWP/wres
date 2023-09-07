@@ -118,7 +118,7 @@ public final class FrequencyBiasTest
     public void testExceptionOnNullInput()
     {
         MetricCalculationException actual = assertThrows( MetricCalculationException.class,
-                                                   () -> this.fb.aggregate( null, null ) );
+                                                   () -> this.fb.applyIntermediate( null, null ) );
 
         assertEquals( "Specify non-null input to the '" + this.fb.getMetricNameString() + "'.", actual.getMessage() );
     }

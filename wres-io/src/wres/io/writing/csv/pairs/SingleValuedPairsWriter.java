@@ -3,10 +3,13 @@ package wres.io.writing.csv.pairs;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.time.temporal.ChronoUnit;
+import java.util.Collections;
 import java.util.Objects;
+import java.util.SortedSet;
 import java.util.StringJoiner;
+import java.util.TreeSet;
+import java.util.function.BiFunction;
 import java.util.function.DoubleFunction;
-import java.util.function.Function;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -21,7 +24,6 @@ import wres.datamodel.time.TimeSeries;
 
 public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
 {
-
     /**
      * Build an instance of a writer.
      *
@@ -68,9 +70,16 @@ public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
     public static SingleValuedPairsWriter of( Path pathToPairs,
                                               ChronoUnit timeResolution,
                                               DecimalFormat decimalFormatter,
-                                              boolean gzip)
+                                              boolean gzip )
     {
         return new SingleValuedPairsWriter( pathToPairs, timeResolution, decimalFormatter, gzip );
+    }
+
+    @Override
+    SortedSet<String> getRightValueNames()
+    {
+        // Default/empty names
+        return Collections.unmodifiableSortedSet( new TreeSet<>() );
     }
 
     @Override
@@ -98,12 +107,12 @@ public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
     private SingleValuedPairsWriter( Path pathToPairs,
                                      ChronoUnit timeResolution,
                                      DecimalFormat decimalFormatter,
-                                     boolean gzip)
+                                     boolean gzip )
     {
         super( pathToPairs,
                timeResolution,
                SingleValuedPairsWriter.getPairFormatter( decimalFormatter ),
-               gzip);
+               gzip );
     }
 
     /**
@@ -113,9 +122,9 @@ public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
      * @return the string formatter
      */
 
-    private static Function<Pair<Double, Double>, String> getPairFormatter( DecimalFormat decimalFormatter )
+    private static BiFunction<SortedSet<String>, Pair<Double, Double>, String> getPairFormatter( DecimalFormat decimalFormatter )
     {
-        return pair -> {
+        return ( columnNames, pair ) -> {
 
             StringJoiner joiner = new StringJoiner( PairsWriter.DELIMITER );
 

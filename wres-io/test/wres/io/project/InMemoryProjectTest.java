@@ -7,6 +7,8 @@ import java.time.MonthDay;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import com.google.protobuf.DoubleValue;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +48,7 @@ import wres.config.yaml.components.TimePoolsBuilder;
 import wres.config.yaml.components.TimeScaleBuilder;
 import wres.config.yaml.components.TimeScaleLenience;
 import wres.config.yaml.components.VariableBuilder;
+import wres.datamodel.Ensemble;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
@@ -96,17 +99,47 @@ class InMemoryProjectTest
                                                              feature,
                                                              "unit" );
         TimeSeries<Double> timeSeries
-                = new TimeSeries.Builder<Double>().setMetadata( metadata )
-                                                  .addEvent( Event.of( Instant.parse( "2037-12-23T06:00:00Z" ), 1.0 ) )
-                                                  .addEvent( Event.of( Instant.parse( "2037-12-23T12:00:00Z" ), 2.0 ) )
-                                                  .addEvent( Event.of( Instant.parse( "2037-12-23T18:00:00Z" ), 3.0 ) )
-                                                  .build();
+                = new TimeSeries.Builder<Double>()
+                .setMetadata( metadata )
+                .addEvent( Event.of( Instant.parse( "2037-12-23T06:00:00Z" ), 1.0 ) )
+                .addEvent( Event.of( Instant.parse( "2037-12-23T12:00:00Z" ), 2.0 ) )
+                .addEvent( Event.of( Instant.parse( "2037-12-23T18:00:00Z" ), 3.0 ) )
+                .build();
+
+        // Add some ensembles, both with and without labels in different orientations
+        Ensemble.Labels labels = Ensemble.Labels.of( "A", "B", "C" );
+        Ensemble ensemble = Ensemble.of( new double[] { 1, 2, 3 }, labels );
+        TimeSeries<Ensemble> ensembleSeriesOne
+                = new TimeSeries.Builder<Ensemble>().setMetadata( metadata )
+                                                    .addEvent( Event.of( Instant.parse( "2037-12-23T06:00:00Z" ),
+                                                                         ensemble ) )
+                                                    .build();
+        Ensemble.Labels labelsTwo = Ensemble.Labels.of( "D", "E", "F" );
+        Ensemble ensembleTwo = Ensemble.of( new double[] { 1, 2, 3 }, labelsTwo );
+        TimeSeries<Ensemble> ensembleSeriesTwo
+                = new TimeSeries.Builder<Ensemble>().setMetadata( metadata )
+                                                    .addEvent( Event.of( Instant.parse( "2037-12-23T06:00:00Z" ),
+                                                                         ensembleTwo ) )
+                                                    .build();
+        Ensemble ensembleThree = Ensemble.of( 1, 2, 3 );
+        TimeSeries<Ensemble> ensembleSeriesThree
+                = new TimeSeries.Builder<Ensemble>().setMetadata( metadata )
+                                                    .addEvent( Event.of( Instant.parse( "2037-12-23T06:00:00Z" ),
+                                                                         ensembleThree ) )
+                                                    .build();
+
         TimeSeriesStore store = new TimeSeriesStore.Builder().addSingleValuedSeries( timeSeries,
                                                                                      DatasetOrientation.LEFT )
                                                              .addSingleValuedSeries( timeSeries,
                                                                                      DatasetOrientation.RIGHT )
                                                              .addSingleValuedSeries( timeSeries,
                                                                                      DatasetOrientation.BASELINE )
+                                                             .addEnsembleSeries( ensembleSeriesOne,
+                                                                                 DatasetOrientation.RIGHT )
+                                                             .addEnsembleSeries( ensembleSeriesTwo,
+                                                                                 DatasetOrientation.RIGHT )
+                                                             .addEnsembleSeries( ensembleSeriesThree,
+                                                                                 DatasetOrientation.BASELINE )
                                                              .build();
 
         URI fakeLeftUri = URI.create( "https://foo.bar" );
@@ -195,8 +228,8 @@ class InMemoryProjectTest
 
         this.declaration = EvaluationDeclarationBuilder.builder()
                                                        .unit( "moon" )
-                                                       .left( leftDataset )
-                                                       .right( rightDataset )
+                                                       .left( this.leftDataset )
+                                                       .right( this.rightDataset )
                                                        .baseline( baseline )
                                                        .leadTimes( leadTimes )
                                                        .validDates( validDates )
@@ -211,7 +244,7 @@ class InMemoryProjectTest
                                                        .season( season )
                                                        .build();
 
-        this.testProject = new InMemoryProject( declaration, store, List.of() );
+        this.testProject = new InMemoryProject( this.declaration, store, List.of() );
     }
 
     @Test
@@ -347,5 +380,19 @@ class InMemoryProjectTest
     void testGetId()
     {
         assertTrue( this.testProject.getId() >= 0 );
+    }
+
+    @Test
+    void testGetEnsembleLabelsForSeriesWithExplicitLabels()
+    {
+        SortedSet<String> actual = this.testProject.getEnsembleLabels( DatasetOrientation.RIGHT );
+        assertEquals( new TreeSet<>( Set.of( "A", "B", "C", "D", "E", "F" ) ), actual );
+    }
+
+    @Test
+    void testGetEnsembleLabelsForSeriesWithoutExplicitLabels()
+    {
+        SortedSet<String> actual = this.testProject.getEnsembleLabels( DatasetOrientation.BASELINE );
+        assertEquals( new TreeSet<>( Set.of( "1", "2", "3" ) ), actual );
     }
 }

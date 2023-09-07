@@ -10,7 +10,6 @@ import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.Slicer;
-import wres.datamodel.VectorOfDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -82,7 +81,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Doubl
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
-        return this.aggregate( this.getIntermediateStatistic( pool ), pool );
+        return this.applyIntermediate( this.getIntermediate( pool ), pool );
     }
 
     @Override
@@ -98,7 +97,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Doubl
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing the {} from the intermediate statistic, {}.", this, this.getCollectionOf() );
 
@@ -138,7 +137,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Doubl
             // Default baseline is the average observation, which results in the so-called Nash-Sutcliffe Efficiency
             else
             {
-                VectorOfDoubles left = VectorOfDoubles.of( Slicer.getLeftSide( pool ) );
+                double[] left = Slicer.getLeftSide( pool );
                 double meanLeft = FunctionFactory.mean()
                                                  .applyAsDouble( left );
                 for ( Pair<Double, Double> next : pool.get() )
@@ -166,7 +165,7 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Doubl
     }
 
     @Override
-    public DoubleScoreStatisticOuter getIntermediateStatistic( Pool<Pair<Double, Double>> input )
+    public DoubleScoreStatisticOuter getIntermediate( Pool<Pair<Double, Double>> input )
     {
         return this.sse.apply( input );
     }

@@ -1,48 +1,46 @@
 package wres.metrics;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.ToDoubleFunction;
 
+import org.apache.commons.math3.stat.descriptive.moment.Mean;
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.commons.math3.stat.descriptive.rank.Median;
 
 import wres.datamodel.MissingValues;
-import wres.datamodel.VectorOfDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricGroup;
 
 /**
  * A factory class for constructing elementary functions.
- * 
+ *
  * @author James Brown
  */
 
 public class FunctionFactory
 {
-
-    /**
-     * Map of summary statistics.
-     */
-
-    private static final Map<MetricConstants, ToDoubleFunction<VectorOfDoubles>> STATISTICS =
+    /** Map of summary statistics. */
+    private static final Map<MetricConstants, ToDoubleFunction<double[]>> STATISTICS =
             new EnumMap<>( MetricConstants.class );
 
-    /**
-     * Median.
-     */
-
+    /** Median. */
     private static final Median MEDIAN = new Median();
+
+    /** Mean. */
+    private static final Mean MEAN = new Mean();
+
+    /** Standard deviation. */
+    private static final StandardDeviation STANDARD_DEVIATION = new StandardDeviation();
 
     /**
      * Return a function that computes the difference between the second and first entries in a single-valued pair.
-     * 
+     *
      * @return a function that computes the error
      */
 
@@ -54,7 +52,7 @@ public class FunctionFactory
     /**
      * Return a function that computes the absolute difference between the first and second entries in a single-valued 
      * pair.
-     * 
+     *
      * @return a function that computes the absolute error
      */
 
@@ -66,7 +64,7 @@ public class FunctionFactory
     /**
      * Return a function that computes the square difference between the first and second entries in a single-valued 
      * pair.
-     * 
+     *
      * @return a function that computes the square error
      */
 
@@ -76,13 +74,10 @@ public class FunctionFactory
     }
 
     /**
-     * <p>
-     * Return a function that computes a skill score from two elementary scores whose perfect score is zero:
-     * </p>
-     * <p>
-     * <code>(a,b) -&gt; 1.0 - (a / b)</code>
-     * </p>
-     * 
+     * <p>Return a function that computes a skill score from two elementary scores whose perfect score is zero:
+     *
+     * <p> <code>(a,b) -&gt; 1.0 - (a / b)</code>
+     *
      * @return a function that computes the skill for scores whose perfect value is 0
      */
 
@@ -92,11 +87,9 @@ public class FunctionFactory
     }
 
     /**
-     * <p>
-     * Return a function that produces the identity of the finite input or {@link MissingValues#DOUBLE} if the 
+     * Return a function that produces the identity of the finite input or {@link MissingValues#DOUBLE} if the
      * input is non-finite.
-     * </p>
-     * 
+     *
      * @return a function that computes the finite identity
      */
 
@@ -106,59 +99,48 @@ public class FunctionFactory
     }
 
     /**
-     * <p>
      * Return a function that computes the equality of two doubles to 8 d.p.
-     * </p>
-     * 
+     *
      * @return a function that computes the skill
      */
 
     public static BiPredicate<Double, Double> doubleEquals()
     {
         return ( a, b ) -> Double.isFinite( a ) && Double.isFinite( b ) ? Math.abs( a - b ) < .00000001
-                                                                        : Double.compare( a, b ) == 0;
+                : Double.compare( a, b ) == 0;
     }
 
     /**
-     * <p>
      * Return a function that computes the mean average of a vector of doubles.
-     * </p>
-     * 
+     *
      * @return a function that computes the mean over the input
      */
 
-    public static ToDoubleFunction<VectorOfDoubles> mean()
+    public static ToDoubleFunction<double[]> mean()
     {
-        return a -> Arrays.stream( a.getDoubles() )
-                          .sorted() // Sort for accuracy/consistency: #72568
-                          .average()
-                          .orElse( MissingValues.DOUBLE );
+        return MEAN::evaluate;
     }
 
     /**
-     * <p>
      * Return a function that computes the mean average of a vector of doubles.
-     * </p>
-     * 
+     *
      * @return a function that computes the mean over the input
      */
 
-    public static ToDoubleFunction<VectorOfDoubles> median()
+    public static ToDoubleFunction<double[]> median()
     {
-        return a -> MEDIAN.evaluate( a.getDoubles() );
+        return MEDIAN::evaluate;
     }
 
     /**
-     * <p>
      * Return a function that computes the mean average of the absolute values in a vector of doubles.
-     * </p>
-     * 
+     *
      * @return a function that computes the mean absolute value over the input
      */
 
-    public static ToDoubleFunction<VectorOfDoubles> meanAbsolute()
+    public static ToDoubleFunction<double[]> meanAbsolute()
     {
-        return a -> Arrays.stream( a.getDoubles() )
+        return a -> Arrays.stream( a )
                           .map( Math::abs )
                           .sorted() // Sort for accuracy/consistency: #72568
                           .average()
@@ -166,80 +148,77 @@ public class FunctionFactory
     }
 
     /**
-     * <p>
      * Return a function that computes the minimum of value in a vector of doubles.
-     * </p>
-     * 
+     *
      * @return a function that computes the minimum over the input
      */
 
-    public static ToDoubleFunction<VectorOfDoubles> minimum()
+    public static ToDoubleFunction<double[]> minimum()
     {
-        return a -> Arrays.stream( a.getDoubles() )
+        return a -> Arrays.stream( a )
                           .min()
                           .orElse( MissingValues.DOUBLE );
     }
 
     /**
-     * <p>
      * Return a function that computes the maximum of value in a vector of doubles.
-     * </p>
-     * 
+     *
      * @return a function that computes the maximum over the input
      */
 
-    public static ToDoubleFunction<VectorOfDoubles> maximum()
+    public static ToDoubleFunction<double[]> maximum()
     {
-        return a -> Arrays.stream( a.getDoubles() )
+        return a -> Arrays.stream( a )
                           .max()
                           .orElse( MissingValues.DOUBLE );
     }
 
     /**
-     * <p>
      * Return a function that computes the sample standard deviation of a vector of doubles.
-     * </p>
-     * 
+     *
      * @return a function that computes the standard deviation over the input
      */
 
-    public static ToDoubleFunction<VectorOfDoubles> standardDeviation()
+    public static ToDoubleFunction<double[]> standardDeviation()
     {
-        return a -> {
-            double mean = FunctionFactory.mean().applyAsDouble( a );
-            return Math.sqrt( Arrays.stream( a.getDoubles() )
-                                    .map( d -> Math.pow( d - mean, 2 ) )
-                                    .sorted() // Sort for accuracy/consistency: #72568
-                                    .sum()
-                              / ( a.size() - 1.0 ) );
-        };
+        return STANDARD_DEVIATION::evaluate;
     }
 
     /**
-     * <p>
+     * Return a function that computes the sample standard deviation of a vector of doubles.
+     *
+     * @param mean the precomputed mean
+     * @return a function that computes the standard deviation over the input
+     */
+
+    public static ToDoubleFunction<double[]> standardDeviation( double mean )
+    {
+        return a -> STANDARD_DEVIATION.evaluate( a, mean );
+    }
+
+    /**
      * Return a function that computes the maximum of value in a vector of doubles.
-     * </p>
-     * 
+     *
      * @return a function that computes the maximum over the input
      */
 
-    public static ToDoubleFunction<VectorOfDoubles> sampleSize()
+    public static ToDoubleFunction<double[]> sampleSize()
     {
-        return VectorOfDoubles::size;
+        return a -> a.length;
     }
 
     /**
      * Returns a statistic associated with a {@link MetricConstants} that belongs to the 
      * {@link MetricGroup#UNIVARIATE_STATISTIC}.
-     * 
+     *
      * @param statistic the identifier for the statistic
      * @return the statistic
      * @throws NullPointerException if the input is null
-     * @throws IllegalArgumentException if the input does not belong to {@link MetricGroup#UNIVARIATE_STATISTIC} 
+     * @throws IllegalArgumentException if the input does not belong to {@link MetricGroup#UNIVARIATE_STATISTIC}
      *            or the statistic does not exist
      */
 
-    public static ToDoubleFunction<VectorOfDoubles> ofStatistic( MetricConstants statistic )
+    public static ToDoubleFunction<double[]> ofStatistic( MetricConstants statistic )
     {
         Objects.requireNonNull( statistic );
         if ( !statistic.isInGroup( MetricGroup.UNIVARIATE_STATISTIC ) )
@@ -253,17 +232,6 @@ public class FunctionFactory
         buildStatisticsMap();
 
         return STATISTICS.get( statistic );
-    }
-
-    /**
-     * Returns the set of supported univariate statistics.
-     * 
-     * @return the univariate statistics
-     */
-
-    public static Set<MetricConstants> getSupportedUnivariateStatistics()
-    {
-        return Collections.unmodifiableSet( STATISTICS.keySet() );
     }
 
     /**

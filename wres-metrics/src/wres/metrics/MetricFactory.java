@@ -69,7 +69,7 @@ import wres.metrics.timeseries.TimingErrorDurationStatistics;
 
 /**
  * <p>A factory class for constructing metrics.
- * 
+ *
  * @author James Brown
  */
 
@@ -90,26 +90,25 @@ public final class MetricFactory
     /**
      * <p>Returns a {@link MetricCollection} of metrics that consume single-valued pairs and produce
      * {@link DoubleScoreStatisticOuter}.</p>
-     * 
+     *
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
-     * 
+     *
      * @param metric the metric identifiers
      * @return a collection of metrics
      * @throws MetricParameterException if one or more parameter values is incorrect
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static
-            MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
-            ofSingleValuedScoreCollection( MetricConstants... metric )
+    public static MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+    ofSingleValuedScores( MetricConstants... metric )
     {
-        return MetricFactory.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofSingleValuedScores( ForkJoinPool.commonPool(), metric );
     }
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume single-valued pairs and produce
      * {@link DiagramStatisticOuter}.
-     * 
+     *
      * @param metric the metric identifiers
      * @return a collection of metrics
      * @throws MetricParameterException if one or more parameter values is incorrect
@@ -117,93 +116,89 @@ public final class MetricFactory
      */
 
     public static MetricCollection<Pool<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter>
-            ofSingleValuedDiagramCollection( MetricConstants... metric )
+    ofSingleValuedDiagrams( MetricConstants... metric )
     {
-        return MetricFactory.ofSingleValuedDiagramCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofSingleValuedDiagrams( ForkJoinPool.commonPool(), metric );
     }
 
     /**
      * <p>Returns a {@link MetricCollection} of metrics that consume discrete probability pairs and produce
      * {@link DoubleScoreStatisticOuter}.</p>
-     * 
+     *
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
-     * 
+     *
      * @param metric the metric identifiers
      * @return a collection of metrics
      * @throws MetricParameterException if one or more parameter values is incorrect
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static
-            MetricCollection<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
-            ofDiscreteProbabilityScoreCollection( MetricConstants... metric )
+    public static MetricCollection<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+    ofDiscreteProbabilityScores( MetricConstants... metric )
     {
-        return MetricFactory.ofDiscreteProbabilityScoreCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofDiscreteProbabilityScores( ForkJoinPool.commonPool(), metric );
     }
 
     /**
      * <p>Returns a {@link MetricCollection} of metrics that consume dichotomous pairs and produce
      * {@link DoubleScoreStatisticOuter}.</p>
-     * 
+     *
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
-     * 
+     *
      * @param metric the metric identifiers
      * @return a collection of metrics
      * @throws MetricParameterException if one or more parameter values is incorrect
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static
-            MetricCollection<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
-            ofDichotomousScoreCollection( MetricConstants... metric )
+    public static MetricCollection<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+    ofDichotomousScores( MetricConstants... metric )
     {
-        return MetricFactory.ofDichotomousScoreCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofDichotomousScores( ForkJoinPool.commonPool(), metric );
     }
 
     /**
      * <p>Returns a {@link MetricCollection} of metrics that consume discrete probability pairs and produce
      * {@link DiagramStatisticOuter}.</p>
-     * 
+     *
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
-     * 
+     *
      * @param metric the metric identifiers
      * @return a collection of metrics
      * @throws MetricParameterException if one or more parameter values is incorrect
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static
-            MetricCollection<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter>
-            ofDiscreteProbabilityDiagramCollection( MetricConstants... metric )
+    public static MetricCollection<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter>
+    ofDiscreteProbabilityDiagrams( MetricConstants... metric )
     {
-        return MetricFactory.ofDiscreteProbabilityDiagramCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofDiscreteProbabilityDiagrams( ForkJoinPool.commonPool(), metric );
     }
 
     /**
      * <p>Returns a {@link MetricCollection} of metrics that consume ensemble pairs and produce
      * {@link DoubleScoreStatisticOuter}.</p>
-     * 
+     *
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
-     * 
+     *
      * @param metric the metric identifiers
      * @return a collection of metrics
      * @throws MetricParameterException if one or more parameter values is incorrect
      * @throws IllegalArgumentException if a metric identifier is not recognized 
      */
 
-    public static
-            MetricCollection<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
-            ofEnsembleScoreCollection( MetricConstants... metric )
+    public static MetricCollection<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+    ofEnsembleScores( MetricConstants... metric )
     {
-        return MetricFactory.ofEnsembleScoreCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofEnsembleScores( ForkJoinPool.commonPool(), metric );
     }
 
     /**
      * <p>Returns a {@link MetricCollection} of metrics that consume ensemble pairs and produce 
      * {@link DiagramStatisticOuter}.</p>
-     * 
+     *
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
-     * 
+     *
      * @param metric the metric identifiers
      * @return a collection of metrics
      * @throws MetricParameterException if one or more parameter values is incorrect
@@ -211,17 +206,17 @@ public final class MetricFactory
      */
 
     public static MetricCollection<Pool<Pair<Double, Ensemble>>, DiagramStatisticOuter, DiagramStatisticOuter>
-            ofEnsembleDiagramCollection( MetricConstants... metric )
+    ofEnsembleDiagrams( MetricConstants... metric )
     {
-        return MetricFactory.ofEnsembleDiagramCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofEnsembleDiagrams( ForkJoinPool.commonPool(), metric );
     }
 
     /**
      * <p>Returns a {@link MetricCollection} of metrics that consume ensemble pairs and produce
      * {@link BoxplotStatisticOuter}.</p>
-     * 
+     *
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
-     * 
+     *
      * @param metric the metric identifiers
      * @return a collection of metrics
      * @throws MetricParameterException if one or more parameter values is incorrect
@@ -229,34 +224,33 @@ public final class MetricFactory
      */
 
     public static MetricCollection<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter, BoxplotStatisticOuter>
-            ofEnsembleBoxPlotCollection( MetricConstants... metric )
+    ofEnsembleBoxplots( MetricConstants... metric )
     {
-        return MetricFactory.ofEnsembleBoxPlotCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofEnsembleBoxplots( ForkJoinPool.commonPool(), metric );
     }
 
     /**
      * <p>Returns a {@link MetricCollection} of metrics that consume a {@link Pool} with single-valued 
      * pairs and produce {@link DurationDiagramStatisticOuter}.</p>
-     * 
+     *
      * <p>Uses the {@link ForkJoinPool#commonPool()} for execution.</p>
-     * 
+     *
      * @param metric the metric identifiers
      * @return a collection of metrics
      * @throws MetricParameterException if one or more parameter values is incorrect
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static
-            MetricCollection<Pool<TimeSeries<Pair<Double, Double>>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter>
-            ofSingleValuedTimeSeriesCollection( MetricConstants... metric )
+    public static MetricCollection<Pool<TimeSeries<Pair<Double, Double>>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter>
+    ofSingleValuedTimeSeriesMetrics( MetricConstants... metric )
     {
-        return MetricFactory.ofSingleValuedTimeSeriesCollection( ForkJoinPool.commonPool(), metric );
+        return MetricFactory.ofSingleValuedTimeSeriesMetrics( ForkJoinPool.commonPool(), metric );
     }
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume single-valued pairs and produce
      * {@link DoubleScoreStatisticOuter}.
-     * 
+     *
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
      * @return a collection of metrics
@@ -264,10 +258,9 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static
-            MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
-            ofSingleValuedScoreCollection( ExecutorService executor,
-                                           MetricConstants... metric )
+    public static MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+    ofSingleValuedScores( ExecutorService executor,
+                          MetricConstants... metric )
     {
         final Builder<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
                 Builder.of();
@@ -292,7 +285,7 @@ public final class MetricFactory
     /**
      * Returns a {@link MetricCollection} of metrics that consume single-valued pairs and produce
      * {@link DiagramStatisticOuter}.
-     * 
+     *
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
      * @return a collection of metrics
@@ -301,8 +294,8 @@ public final class MetricFactory
      */
 
     public static MetricCollection<Pool<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter>
-            ofSingleValuedDiagramCollection( ExecutorService executor,
-                                             MetricConstants... metric )
+    ofSingleValuedDiagrams( ExecutorService executor,
+                            MetricConstants... metric )
     {
         final Builder<Pool<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
                 Builder.of();
@@ -317,7 +310,7 @@ public final class MetricFactory
     /**
      * Returns a {@link MetricCollection} of metrics that consume single-valued pairs and produce 
      * {@link BoxplotStatisticOuter}.
-     * 
+     *
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
      * @return a collection of metrics
@@ -326,8 +319,8 @@ public final class MetricFactory
      */
 
     public static MetricCollection<Pool<Pair<Double, Double>>, BoxplotStatisticOuter, BoxplotStatisticOuter>
-            ofSingleValuedBoxPlotCollection( ExecutorService executor,
-                                             MetricConstants... metric )
+    ofSingleValuedBoxplots( ExecutorService executor,
+                            MetricConstants... metric )
     {
         final Builder<Pool<Pair<Double, Double>>, BoxplotStatisticOuter, BoxplotStatisticOuter> builder =
                 Builder.of();
@@ -342,7 +335,7 @@ public final class MetricFactory
     /**
      * Returns a {@link MetricCollection} of metrics that consume discrete probability pairs and produce
      * {@link DoubleScoreStatisticOuter}.
-     * 
+     *
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
      * @return a collection of metrics
@@ -350,12 +343,12 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static
-            MetricCollection<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
-            ofDiscreteProbabilityScoreCollection( ExecutorService executor,
-                                                  MetricConstants... metric )
+    public static MetricCollection<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+    ofDiscreteProbabilityScores( ExecutorService executor,
+                                 MetricConstants... metric )
     {
-        final Builder<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
+        final Builder<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+                builder =
                 Builder.of();
         for ( MetricConstants next : metric )
         {
@@ -368,7 +361,7 @@ public final class MetricFactory
     /**
      * Returns a {@link MetricCollection} of metrics that consume dichotomous pairs and produce
      * {@link DoubleScoreStatisticOuter}.
-     * 
+     *
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
      * @return a collection of metrics
@@ -376,10 +369,9 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized 
      */
 
-    public static
-            MetricCollection<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
-            ofDichotomousScoreCollection( ExecutorService executor,
-                                          MetricConstants... metric )
+    public static MetricCollection<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+    ofDichotomousScores( ExecutorService executor,
+                         MetricConstants... metric )
     {
         final Builder<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
                 Builder.of();
@@ -395,7 +387,7 @@ public final class MetricFactory
     /**
      * Returns a {@link MetricCollection} of metrics that consume discrete probability pairs and produce
      * {@link DiagramStatisticOuter}.
-     * 
+     *
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
      * @return a collection of metrics
@@ -403,10 +395,9 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized 
      */
 
-    public static
-            MetricCollection<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter>
-            ofDiscreteProbabilityDiagramCollection( ExecutorService executor,
-                                                    MetricConstants... metric )
+    public static MetricCollection<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter>
+    ofDiscreteProbabilityDiagrams( ExecutorService executor,
+                                   MetricConstants... metric )
     {
         final Builder<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
                 Builder.of();
@@ -421,7 +412,7 @@ public final class MetricFactory
     /**
      * Returns a {@link MetricCollection} of metrics that consume ensemble pairs and produce 
      * {@link DoubleScoreStatisticOuter}.
-     * 
+     *
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
      * @return a collection of metrics
@@ -429,10 +420,9 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static
-            MetricCollection<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
-            ofEnsembleScoreCollection( ExecutorService executor,
-                                       MetricConstants... metric )
+    public static MetricCollection<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+    ofEnsembleScores( ExecutorService executor,
+                      MetricConstants... metric )
     {
         final Builder<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
                 Builder.of();
@@ -446,7 +436,7 @@ public final class MetricFactory
 
     /**
      * Returns a {@link MetricCollection} of metrics that consume ensemble pairs and produce {@link DiagramStatisticOuter}.
-     * 
+     *
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
      * @return a collection of metrics
@@ -455,8 +445,8 @@ public final class MetricFactory
      */
 
     public static MetricCollection<Pool<Pair<Double, Ensemble>>, DiagramStatisticOuter, DiagramStatisticOuter>
-            ofEnsembleDiagramCollection( ExecutorService executor,
-                                         MetricConstants... metric )
+    ofEnsembleDiagrams( ExecutorService executor,
+                        MetricConstants... metric )
     {
         final Builder<Pool<Pair<Double, Ensemble>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
                 Builder.of();
@@ -471,7 +461,7 @@ public final class MetricFactory
     /**
      * Returns a {@link MetricCollection} of metrics that consume ensemble pairs and produce
      * {@link BoxplotStatisticOuter}.
-     * 
+     *
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
      * @return a collection of metrics
@@ -480,8 +470,8 @@ public final class MetricFactory
      */
 
     public static MetricCollection<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter, BoxplotStatisticOuter>
-            ofEnsembleBoxPlotCollection( ExecutorService executor,
-                                         MetricConstants... metric )
+    ofEnsembleBoxplots( ExecutorService executor,
+                        MetricConstants... metric )
     {
         final Builder<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter, BoxplotStatisticOuter> builder =
                 Builder.of();
@@ -496,7 +486,7 @@ public final class MetricFactory
     /**
      * Returns a {@link MetricCollection} of metrics that consume {@link Pool} with single-valued pairs 
      * and produce {@link DurationDiagramStatisticOuter}.
-     * 
+     *
      * @param executor an optional {@link ExecutorService} for executing the metrics
      * @param metric the metric identifiers
      * @return a collection of metrics
@@ -504,12 +494,12 @@ public final class MetricFactory
      * @throws IllegalArgumentException if a metric identifier is not recognized
      */
 
-    public static
-            MetricCollection<Pool<TimeSeries<Pair<Double, Double>>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter>
-            ofSingleValuedTimeSeriesCollection( ExecutorService executor,
-                                                MetricConstants... metric )
+    public static MetricCollection<Pool<TimeSeries<Pair<Double, Double>>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter>
+    ofSingleValuedTimeSeriesMetrics( ExecutorService executor,
+                                     MetricConstants... metric )
     {
-        final Builder<Pool<TimeSeries<Pair<Double, Double>>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter> builder =
+        final Builder<Pool<TimeSeries<Pair<Double, Double>>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter>
+                builder =
                 Builder.of();
         for ( MetricConstants next : metric )
         {
@@ -521,14 +511,14 @@ public final class MetricFactory
 
     /**
      * Returns a {@link Metric} that consumes single-valued pairs and produces {@link DoubleScoreStatisticOuter}.
-     * 
+     *
      * @param metric the metric identifier
      * @return the metric
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
     public static Metric<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter>
-            ofSingleValuedScore( MetricConstants metric )
+    ofSingleValuedScore( MetricConstants metric )
     {
         return switch ( metric )
                 {
@@ -559,14 +549,14 @@ public final class MetricFactory
 
     /**
      * Returns a {@link Collectable} that consumes single-valued pairs and produces {@link DoubleScoreStatisticOuter}.
-     * 
+     *
      * @param metric the metric identifier
      * @return the metric
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
     public static Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
-            ofSingleValuedScoreCollectable( MetricConstants metric )
+    ofSingleValuedScoreCollectable( MetricConstants metric )
     {
         return switch ( metric )
                 {
@@ -583,14 +573,14 @@ public final class MetricFactory
 
     /**
      * Returns a {@link Metric} that consumes single-valued pairs and produces {@link DiagramStatisticOuter}.
-     * 
+     *
      * @param metric the metric identifier
      * @return a metric
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
     public static Metric<Pool<Pair<Double, Double>>, DiagramStatisticOuter>
-            ofSingleValuedDiagram( MetricConstants metric )
+    ofSingleValuedDiagram( MetricConstants metric )
     {
         if ( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.equals( metric ) )
         {
@@ -604,14 +594,14 @@ public final class MetricFactory
 
     /**
      * Returns a {@link Metric} that consumes single-valued pairs and produces {@link BoxplotStatisticOuter}.
-     * 
+     *
      * @param metric the metric identifier
      * @return a metric
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
     public static Metric<Pool<Pair<Double, Double>>, BoxplotStatisticOuter>
-            ofSingleValuedBoxPlot( MetricConstants metric )
+    ofSingleValuedBoxPlot( MetricConstants metric )
     {
         return switch ( metric )
                 {
@@ -623,14 +613,14 @@ public final class MetricFactory
 
     /**
      * Returns a {@link Metric} that consumes discrete probability pairs and produces {@link DoubleScoreStatisticOuter}.
-     * 
+     *
      * @param metric the metric identifier
      * @return a metric
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
     public static Metric<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter>
-            ofDiscreteProbabilityScore( MetricConstants metric )
+    ofDiscreteProbabilityScore( MetricConstants metric )
     {
         return switch ( metric )
                 {
@@ -643,14 +633,14 @@ public final class MetricFactory
 
     /**
      * Returns a {@link Metric} that consumes dichotomous pairs and produces {@link DoubleScoreStatisticOuter}.
-     * 
+     *
      * @param metric the metric identifier
      * @return a metric
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
     public static Collectable<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
-            ofDichotomousScore( MetricConstants metric )
+    ofDichotomousScore( MetricConstants metric )
     {
         return switch ( metric )
                 {
@@ -668,7 +658,7 @@ public final class MetricFactory
 
     /**
      * Returns a {@link Metric} that consumes discrete probability pairs and produces {@link DiagramStatisticOuter}.
-     * 
+     *
      * @param metric the metric identifier
      * @return a metric
      * @throws MetricParameterException if one or more parameter values is incorrect
@@ -676,7 +666,7 @@ public final class MetricFactory
      */
 
     public static Metric<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter>
-            ofDiscreteProbabilityDiagram( MetricConstants metric )
+    ofDiscreteProbabilityDiagram( MetricConstants metric )
     {
         return switch ( metric )
                 {
@@ -688,14 +678,14 @@ public final class MetricFactory
 
     /**
      * Returns a {@link Metric} that consumes ensemble pairs and produces {@link DoubleScoreStatisticOuter}.
-     * 
+     *
      * @param metric the metric identifier
      * @return a metric
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
     public static Metric<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter>
-            ofEnsembleScore( MetricConstants metric )
+    ofEnsembleScore( MetricConstants metric )
     {
         return switch ( metric )
                 {
@@ -708,14 +698,14 @@ public final class MetricFactory
 
     /**
      * Returns a {@link Metric} that consumes ensemble pairs and produces {@link BoxplotStatisticOuter}.
-     * 
+     *
      * @param metric the metric identifier
      * @return a metric
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
     public static Metric<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter>
-            ofEnsembleBoxPlot( MetricConstants metric )
+    ofEnsembleBoxPlot( MetricConstants metric )
     {
         return switch ( metric )
                 {
@@ -727,14 +717,14 @@ public final class MetricFactory
 
     /**
      * Returns a {@link Metric} that consumes ensemble pairs and produces {@link DiagramStatisticOuter}.
-     * 
+     *
      * @param metric the metric identifier
      * @return a metric
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
     public static Metric<Pool<Pair<Double, Ensemble>>, DiagramStatisticOuter>
-            ofEnsembleDiagram( MetricConstants metric )
+    ofEnsembleDiagram( MetricConstants metric )
     {
         switch ( metric )
         {
@@ -754,14 +744,14 @@ public final class MetricFactory
     /**
      * Returns a {@link Metric} that consumes a {@link Pool} with single-valued pairs and produces 
      * {@link DurationDiagramStatisticOuter}.
-     * 
+     *
      * @param metric the metric identifier
      * @return a metric
      * @throws IllegalArgumentException if the metric identifier is not recognized
      */
 
     public static Metric<Pool<TimeSeries<Pair<Double, Double>>>, DurationDiagramStatisticOuter>
-            ofSingleValuedTimeSeries( MetricConstants metric )
+    ofSingleValuedTimeSeries( MetricConstants metric )
     {
         // Use a random number generator with a fixed seed if required
         Random random = MetricFactory.getRandomNumberGenerator();
@@ -776,7 +766,7 @@ public final class MetricFactory
 
     /**
      * Helper that returns timing error summary statistics for a nominated type of timing error metric.
-     * 
+     *
      * @param timingMetric the timing error metric
      * @param summaryStatistics the set of summary statistics to compute
      * @return the summary statistics calculator
@@ -784,8 +774,8 @@ public final class MetricFactory
      */
 
     public static Metric<Pool<TimeSeries<Pair<Double, Double>>>, DurationScoreStatisticOuter>
-            ofSummaryStatisticsForTimingErrorMetric( MetricConstants timingMetric,
-                                                     Set<MetricConstants> summaryStatistics )
+    ofSummaryStatisticsForTimingErrorMetric( MetricConstants timingMetric,
+                                             Set<MetricConstants> summaryStatistics )
     {
         Objects.requireNonNull( timingMetric, "Specify a non-null timing error metric." );
         Objects.requireNonNull( summaryStatistics, "Specify non-null summary statistics for the timing error metric." );
@@ -806,21 +796,21 @@ public final class MetricFactory
 
     /**
      * Helper that returns timing error summary statistics for a nominated type of timing error metric.
-     * 
+     *
      * @param executor the executor
      * @param timingMetrics the timing error metrics and associated summary statistics
      * @return the summary statistics calculators
      * @throws NullPointerException if the map of timing metrics is null
      */
 
-    public static
-            MetricCollection<Pool<TimeSeries<Pair<Double, Double>>>, DurationScoreStatisticOuter, DurationScoreStatisticOuter>
-            ofSummaryStatisticsForTimingErrorMetrics( ExecutorService executor,
-                                                      Map<MetricConstants, Set<MetricConstants>> timingMetrics )
+    public static MetricCollection<Pool<TimeSeries<Pair<Double, Double>>>, DurationScoreStatisticOuter, DurationScoreStatisticOuter>
+    ofSummaryStatisticsForTimingErrorMetrics( ExecutorService executor,
+                                              Map<MetricConstants, Set<MetricConstants>> timingMetrics )
     {
         Objects.requireNonNull( timingMetrics, "Specify a non-null map of timing error metrics." );
 
-        MetricCollection.Builder<Pool<TimeSeries<Pair<Double, Double>>>, DurationScoreStatisticOuter, DurationScoreStatisticOuter> builder =
+        MetricCollection.Builder<Pool<TimeSeries<Pair<Double, Double>>>, DurationScoreStatisticOuter, DurationScoreStatisticOuter>
+                builder =
                 new MetricCollection.Builder<>();
         builder.setExecutorService( executor );
 
@@ -841,7 +831,7 @@ public final class MetricFactory
     /**
      * Returns <code>true</code> if the input metric is an instance of {@link Collectable}, otherwise 
      * <code>false</code>.
-     * 
+     *
      * @param metric the metric
      * @return true if the metric is {@link Collectable}, otherwise false
      */

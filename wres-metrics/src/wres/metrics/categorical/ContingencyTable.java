@@ -181,7 +181,7 @@ public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, Do
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output, Pool<Pair<Boolean, Boolean>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output, Pool<Pair<Boolean, Boolean>> pool )
     {
         Objects.requireNonNull( output );
 
@@ -189,7 +189,7 @@ public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, Do
     }
 
     @Override
-    public DoubleScoreStatisticOuter getIntermediateStatistic( Pool<Pair<Boolean, Boolean>> input )
+    public DoubleScoreStatisticOuter getIntermediate( Pool<Pair<Boolean, Boolean>> input )
     {
         return this.apply( input );
     }

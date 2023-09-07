@@ -53,7 +53,7 @@ public final class KlingGuptaEfficiencyTest
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setMetric( KlingGuptaEfficiency.MAIN )
-                                                                               .setValue( 0.8921704394462281 )
+                                                                               .setValue( 0.8921704394462279 )
                                                                                .build();
 
         DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()

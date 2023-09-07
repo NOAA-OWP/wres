@@ -4,30 +4,45 @@ import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Objects;
-import java.util.OptionalInt;
+import java.util.SortedSet;
 import java.util.StringJoiner;
+import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiFunction;
 import java.util.function.DoubleFunction;
-import java.util.function.Function;
 
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.Ensemble;
+import wres.datamodel.MissingValues;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.time.TimeSeries;
+import wres.io.writing.WriteException;
 
 /**
- * Class for writing a {@link Pool} that contains ensemble forecasts.
- * 
+ * Class for writing a {@link Pool} that contains ensemble forecasts. This writer must be primed for writing before
+ * the header is written because the ensemble data structure may be sparse/non-rectangular whereby successive pools
+ * compose a different set of ensemble members. Since this writer abstracts a rectangular/columnar format, the superset
+ * of column names (ensemble member identifiers) must be supplied between instantiation time (when this information is
+ * unknown) and write time using {@link #prime(SortedSet)}.
+ *
  * @author James Brown
  */
 
 public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
 {
+    /** Whether the writer has been primed. */
+    private final AtomicBoolean primed = new AtomicBoolean();
+
+    /** The ensemble member names to write. */
+    private SortedSet<String> ensembleNames;
+
     /**
      * Build an instance of a writer.
-     * 
+     *
      * @param pathToPairs the path to write, required
      * @param timeResolution the time resolution at which to write datetime and duration information, required
      * @return the writer
@@ -41,7 +56,7 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
 
     /**
      * Build an instance of a writer.
-     * 
+     *
      * @param pathToPairs the path to write, required
      * @param timeResolution the time resolution at which to write datetime and duration information, required
      * @param decimalFormatter the optional formatter for writing decimal values, optional
@@ -73,9 +88,29 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
         return new EnsemblePairsWriter( pathToPairs, timeResolution, decimalFormatter, gzip );
     }
 
+    /**
+     * Prime this writer with the ensemble member names that can be expected across all pools to be written. This
+     * method must be called before any other information is written to the file, otherwise the writer will enter an
+     * exceptional state.
+     * @param ensembleNames the ensemble names to write
+     */
+
+    public void prime( SortedSet<String> ensembleNames )
+    {
+        Objects.requireNonNull( ensembleNames );
+
+        this.ensembleNames = Collections.unmodifiableSortedSet( new TreeSet<>( ensembleNames ) );
+        this.primed.set( true );
+    }
+
     @Override
     StringJoiner getHeaderFromPairs( Pool<TimeSeries<Pair<Double, Ensemble>>> pairs )
     {
+        if( ! this.primed.get() )
+        {
+            throw new WriteException( "The ensemble pair writer has not been primed for writing." );
+        }
+
         StringJoiner joiner = super.getHeaderFromPairs( pairs );
 
         String unit = pairs.getMetadata()
@@ -87,11 +122,9 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
         int pairCount = PoolSlicer.getPairCount( pairs );
         if ( pairCount > 0 )
         {
-            int memberCount = this.getEnsembleMemberCount( pairs );
-
-            for ( int i = 1; i <= memberCount; i++ )
+            for ( String nextName : this.getRightValueNames() )
             {
-                joiner.add( "RIGHT MEMBER " + i + " IN " + unit );
+                joiner.add( "RIGHT MEMBER " + nextName + " IN " + unit );
             }
         }
         else
@@ -102,9 +135,15 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
         return joiner;
     }
 
+    @Override
+    SortedSet<String> getRightValueNames()
+    {
+        return this.ensembleNames;
+    }
+
     /**
      * Hidden constructor.
-     * 
+     *
      * @param pathToPairs the path to write
      * @param timeResolution the time resolution at which to write datetime and duration information
      * @param decimalFormatter the optional formatter for writing decimal values
@@ -112,44 +151,27 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
      * @throws NullPointerException if any of the expected inputs is null
      */
 
-    private EnsemblePairsWriter( Path pathToPairs, ChronoUnit timeResolution, DecimalFormat decimalFormatter, boolean gzip )
+    private EnsemblePairsWriter( Path pathToPairs,
+                                 ChronoUnit timeResolution,
+                                 DecimalFormat decimalFormatter,
+                                 boolean gzip )
     {
-        super( pathToPairs, timeResolution, EnsemblePairsWriter.getPairFormatter( decimalFormatter ), gzip );
-    }
-
-    /**
-     * Returns the largest number of ensemble members in the input.
-     * 
-     * @param pairs the pairs
-     * @return the largest number of ensemble members
-     */
-
-    private int getEnsembleMemberCount( Pool<TimeSeries<Pair<Double, Ensemble>>> pairs )
-    {
-        OptionalInt members = pairs.get()
-                                   .stream()
-                                   .flatMap( next -> next.getEvents().stream() )
-                                   .mapToInt( next -> next.getValue().getRight().getMembers().length )
-                                   .max();
-
-        if ( members.isPresent() )
-        {
-            return members.getAsInt();
-        }
-
-        return 0;
+        super( pathToPairs,
+               timeResolution,
+               EnsemblePairsWriter.getPairFormatter( decimalFormatter ),
+               gzip );
     }
 
     /**
      * Returns the string formatter from the paired input using an optional {@link DecimalFormat}.
-     *  
+     *
      * @param decimalFormatter the optional decimal formatter, may be null
      * @return the string formatter
      */
 
-    private static Function<Pair<Double, Ensemble>, String> getPairFormatter( DecimalFormat decimalFormatter )
+    private static BiFunction<SortedSet<String>, Pair<Double, Ensemble>, String> getPairFormatter( DecimalFormat decimalFormatter )
     {
-        return pair -> {
+        return ( columnNames, pair ) -> {
             StringJoiner joiner = new StringJoiner( PairsWriter.DELIMITER );
 
             DoubleFunction<String> handleNaNs = input -> {
@@ -165,11 +187,35 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
             joiner.add( handleNaNs.apply( pair.getLeft() ) );
 
             // Add right members
-            Arrays.stream( pair.getRight().getMembers() )
-                  .forEach( nextMember -> joiner.add( handleNaNs.apply( nextMember ) ) );
+            Ensemble ensemble = pair.getRight();
+            if ( ensemble.hasLabels() )
+            {
+                // Iterate the members are put a missing inband when the member label is missing
+                Ensemble.Labels labels = ensemble.getLabels();
+                for ( String name : columnNames )
+                {
+                    if ( labels.hasLabel( name ) )
+                    {
+                        double doubleValue = ensemble.getMember( name );
+                        String stringValue = handleNaNs.apply( doubleValue );
+                        joiner.add( stringValue );
+                    }
+                    else
+                    {
+                        String stringValue = handleNaNs.apply( MissingValues.DOUBLE );
+                        joiner.add( stringValue );
+                    }
+                }
+            }
+            // No labels, so write the structure as it appears. If there are missings, this will be non-rectangular
+            else
+            {
+                Arrays.stream( pair.getRight()
+                                   .getMembers() )
+                      .forEach( nextMember -> joiner.add( handleNaNs.apply( nextMember ) ) );
+            }
 
             return joiner.toString();
         };
     }
-
 }

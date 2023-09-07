@@ -118,7 +118,7 @@ public final class ProbabilityOfFalseDetectionTest
     public void testExceptionOnNullInput()
     {
         MetricCalculationException actual = assertThrows( MetricCalculationException.class,
-                                                          () -> this.pofd.aggregate( null, null ) );
+                                                          () -> this.pofd.applyIntermediate( null, null ) );
 
         assertEquals( "Specify non-null input to the '" + this.pofd.getMetricNameString() + "'.", actual.getMessage() );
     }

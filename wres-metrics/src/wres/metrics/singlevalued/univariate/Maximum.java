@@ -7,7 +7,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
-import wres.datamodel.VectorOfDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -105,7 +104,7 @@ public class Maximum extends DecomposableScore<Pool<Pair<Double, Double>>>
                                                                         .setOptimum( Double.NaN )
                                                                         .build();
 
-        ToDoubleFunction<VectorOfDoubles> maximum = FunctionFactory.maximum();
+        ToDoubleFunction<double[]> maximum = FunctionFactory.maximum();
         this.score = new UnivariateScore( maximum, metric, template, true );
     }
 

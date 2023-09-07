@@ -116,7 +116,7 @@ public final class ContingencyTableScoreTest
 
         DoubleScoreStatisticOuter expected = DoubleScoreStatisticOuter.of( this.table, m1 );
 
-        DoubleScoreStatisticOuter actual = this.cs.getIntermediateStatistic( input );
+        DoubleScoreStatisticOuter actual = this.cs.getIntermediate( input );
 
         assertEquals( "Unexpected result for the contingency table.", expected, actual );
     }
@@ -140,7 +140,7 @@ public final class ContingencyTableScoreTest
 
         PoolMetadata expected = Boilerplate.getPoolMetadata( false );
 
-        assertEquals( expected, this.cs.getIntermediateStatistic( input ).getPoolMetadata() );
+        assertEquals( expected, this.cs.getIntermediate( input ).getPoolMetadata() );
     }
 
     @Test

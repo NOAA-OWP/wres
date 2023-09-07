@@ -67,6 +67,7 @@ import wres.io.project.Projects;
 import wres.io.reading.ReaderUtilities;
 import wres.io.retrieving.database.EnsembleSingleValuedRetrieverFactory;
 import wres.io.retrieving.memory.EnsembleSingleValuedRetrieverFactoryInMemory;
+import wres.io.writing.csv.pairs.EnsemblePairsWriter;
 import wres.pipeline.pooling.PoolFactory;
 import wres.pipeline.pooling.PoolParameters;
 import wres.datamodel.units.UnitMapper;
@@ -227,7 +228,7 @@ class EvaluationUtilities
             // writing work from each other. This is expected insofar as all subscribers are par. However, core clients
             // currently run in short-running processes, we want to estimate resources for core clients effectively,
             // and some format writers are stateful (e.g., netcdf), hence this is currently a bad thing. Goal: place
-            // all format writers in long running processes instead. See #88262 and #88267.
+            // all format writers in long-running processes instead. See #88262 and #88267.
             SubscriberApprover subscriberApprover =
                     new SubscriberApprover.Builder().addApprovedSubscriber( internalFormats,
                                                                             consumerId )
@@ -277,11 +278,13 @@ class EvaluationUtilities
             // Add the paths written by shared writers
             if ( sharedWriters.hasSharedSampleWriters() )
             {
-                resources.addAll( sharedWriters.getSampleDataWriters().get() );
+                resources.addAll( sharedWriters.getSampleDataWriters()
+                                               .get() );
             }
             if ( sharedWriters.hasSharedBaselineSampleWriters() )
             {
-                resources.addAll( sharedWriters.getBaselineSampleDataWriters().get() );
+                resources.addAll( sharedWriters.getBaselineSampleDataWriters()
+                                               .get() );
             }
 
             return Pair.of( Collections.unmodifiableSet( resources ), projectHash );
@@ -530,7 +533,7 @@ class EvaluationUtilities
             // description prior to ingest, in order to message the status of ingest to client applications. In order
             // to build an evaluation description before ingest, those parts of the evaluation description that depend
             // on the data would need to be part of the pool description instead (e.g., the measurement units). Indeed,
-            // the time-scale is part of the pool description for this reason.
+            // the timescale is part of the pool description for this reason.
             evaluation = EvaluationMessager.of( evaluationDescription,
                                                 connections,
                                                 EvaluationUtilities.CLIENT_ID,
@@ -1186,11 +1189,13 @@ class EvaluationUtilities
         PairsWriter<Double, Double> basePairsWriter = null;
         if ( sharedWriters.hasSharedSampleWriters() )
         {
-            pairsWriter = sharedWriters.getSampleDataWriters().getSingleValuedWriter();
+            pairsWriter = sharedWriters.getSampleDataWriters()
+                                       .getSingleValuedWriter();
         }
         if ( sharedWriters.hasSharedBaselineSampleWriters() )
         {
-            basePairsWriter = sharedWriters.getBaselineSampleDataWriters().getSingleValuedWriter();
+            basePairsWriter = sharedWriters.getBaselineSampleDataWriters()
+                                           .getSingleValuedWriter();
         }
 
         List<PoolProcessor<Double, Double>> poolProcessors = new ArrayList<>();
@@ -1332,15 +1337,26 @@ class EvaluationUtilities
         }
 
         // Stand-up the pair writers
+        // The ensemble writers have are instantiated for writing in two parts. First (earlier) the writers are created.
+        // Second (here), the writers are primed for writing using the superset of ensemble members across all pools.
+        // The second stage accommodates the writing of disparate pools that contain only a subset of ensemble members.
         PairsWriter<Double, Ensemble> pairsWriter = null;
         PairsWriter<Double, Ensemble> basePairsWriter = null;
         if ( sharedWriters.hasSharedSampleWriters() )
         {
-            pairsWriter = sharedWriters.getSampleDataWriters().getEnsembleWriter();
+            SortedSet<String> labels = project.getEnsembleLabels( DatasetOrientation.RIGHT );
+            EnsemblePairsWriter ensembleWriter = sharedWriters.getSampleDataWriters()
+                                                              .getEnsembleWriter();
+            ensembleWriter.prime( labels );
+            pairsWriter = ensembleWriter;
         }
         if ( sharedWriters.hasSharedBaselineSampleWriters() )
         {
-            basePairsWriter = sharedWriters.getBaselineSampleDataWriters().getEnsembleWriter();
+            SortedSet<String> labels = project.getEnsembleLabels( DatasetOrientation.BASELINE );
+            EnsemblePairsWriter ensembleWriter = sharedWriters.getBaselineSampleDataWriters()
+                                                              .getEnsembleWriter();
+            ensembleWriter.prime( labels );
+            basePairsWriter = ensembleWriter;
         }
 
         List<PoolProcessor<Double, Ensemble>> poolProcessors = new ArrayList<>();

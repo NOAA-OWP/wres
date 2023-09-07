@@ -5,7 +5,6 @@ import java.util.function.ToDoubleFunction;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.VectorOfDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.pools.Pool;
@@ -105,7 +104,7 @@ public class StandardDeviation extends DecomposableScore<Pool<Pair<Double, Doubl
                                                                         .setOptimum( Double.NaN )
                                                                         .build();
 
-        ToDoubleFunction<VectorOfDoubles> standardDeviation = FunctionFactory.standardDeviation();
+        ToDoubleFunction<double[]> standardDeviation = FunctionFactory.standardDeviation();
 
         this.score = new UnivariateScore( standardDeviation, metric, template, true );
     }
