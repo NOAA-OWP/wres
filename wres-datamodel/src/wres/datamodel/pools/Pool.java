@@ -29,48 +29,30 @@ import wres.datamodel.Climatology;
 @Immutable
 public class Pool<T> implements Supplier<List<T>>
 {
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( Pool.class );
 
-    /**
-     * The verification pairs in an immutable list.
-     */
-
+    /** The verification pairs in an immutable list. */
     private final List<T> sampleData;
 
-    /**
-     * Metadata associated with the verification pairs.
-     */
-
+    /** Metadata associated with the verification pairs. */
     private final PoolMetadata mainMeta;
 
-    /**
-     * The verification pairs for a baseline in an immutable list (may be null).
-     */
-
+    /** The verification pairs for a baseline in an immutable list (possibly null). */
     private final List<T> baselineSampleData;
 
-    /**
-     * Metadata associated with the baseline verification pairs (may be null).
-     */
-
+    /** Metadata associated with the baseline verification pairs (may be null). */
     private final PoolMetadata baselineMeta;
 
-    /**
-     * Climatological dataset. May be null.
-     */
-
+    /** Climatological dataset. May be null. */
     private final Climatology climatology;
 
-    /**
-     * Provides a view of the mini-pools from which this pool was constructed, otherwise, a view of the overall pool, 
-     * i.e., the current pool, wrapped in a singleton list.
-     */
-
+    /** Provides a view of the mini-pools from which this pool was constructed, otherwise, a view of the overall pool,
+     * i.e., the current pool, wrapped in a singleton list. */
     private final List<Pool<T>> miniPools;
+
+    /** View of the baseline pool. */
+    private final Pool<T> baselinePool;
 
     /**
      * Returns the pooled data.
@@ -155,31 +137,7 @@ public class Pool<T> implements Supplier<List<T>>
 
     public Pool<T> getBaselineData()
     {
-        if ( !this.hasBaseline() )
-        {
-            return null;
-        }
-
-        Builder<T> builder = new Builder<T>().setMetadata( this.baselineMeta )
-                                             .setClimatology( this.climatology );
-
-        // Preserve the mini-pool view of the data
-        List<Pool<T>> miniPoolsInner = this.getMiniPools();
-
-        for ( Pool<T> next : miniPoolsInner )
-        {
-            if ( next.hasBaseline() )
-            {
-                Pool<T> nextBaseline = new Builder<T>().setMetadata( next.baselineMeta )
-                                                       .addData( next.baselineSampleData )
-                                                       .setClimatology( next.climatology )
-                                                       .build();
-
-                builder.addPool( nextBaseline );
-            }
-        }
-
-        return builder.build();
+        return this.baselinePool;
     }
 
     @Override
@@ -569,5 +527,42 @@ public class Pool<T> implements Supplier<List<T>>
                                      + this.baselineMeta
                                      + "." );
         }
+
+        this.baselinePool = this.getBaselinePool();
+    }
+
+    /**
+     * Returns the baseline data as a {@link Pool} or null if no baseline is defined.
+     *
+     * @return the baseline
+     */
+
+    private Pool<T> getBaselinePool()
+    {
+        if ( !this.hasBaseline() )
+        {
+            return null;
+        }
+
+        Builder<T> builder = new Builder<T>().setMetadata( this.baselineMeta )
+                                             .setClimatology( this.climatology );
+
+        // Preserve the mini-pool view of the data
+        List<Pool<T>> miniPoolsInner = this.getMiniPools();
+
+        for ( Pool<T> next : miniPoolsInner )
+        {
+            if ( next.hasBaseline() )
+            {
+                Pool<T> nextBaseline = new Builder<T>().setMetadata( next.baselineMeta )
+                                                       .addData( next.baselineSampleData )
+                                                       .setClimatology( next.climatology )
+                                                       .build();
+
+                builder.addPool( nextBaseline );
+            }
+        }
+
+        return builder.build();
     }
 }

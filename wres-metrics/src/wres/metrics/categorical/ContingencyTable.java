@@ -139,7 +139,8 @@ public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, Do
         };
 
         // Increment the count in a serial stream as the lambda is stateful
-        pool.get().forEach( f );
+        pool.get()
+            .forEach( f );
 
         // Name the outcomes for a 2x2 contingency table
         DoubleScoreStatistic table =

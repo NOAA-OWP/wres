@@ -1,6 +1,7 @@
 package wres.metrics.singlevalued;
 
 import java.util.Objects;
+import java.util.function.ToDoubleFunction;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -9,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
-import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -97,7 +97,8 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Doubl
     }
 
     @Override
-    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output,
+                                                        Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing the {} from the intermediate statistic, {}.", this, this.getCollectionOf() );
 
@@ -117,7 +118,8 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Doubl
         double result = Double.NaN;
 
         // Some data, proceed
-        if ( !pool.get().isEmpty() )
+        if ( !pool.get()
+                  .isEmpty() )
         {
             double sseInner = output.getComponent( MetricConstants.MAIN )
                                     .getStatistic()
@@ -126,24 +128,31 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Doubl
             double numerator = FunctionFactory.finiteOrMissing()
                                               .applyAsDouble( sseInner );
 
-            double denominator = 0.0;
+            ToDoubleFunction<Pool<Pair<Double, Double>>> sses = FunctionFactory.sumOfSquareErrors( a -> a );
+
+            double denominator;
             if ( pool.hasBaseline() )
             {
-                denominator = this.sse.apply( pool.getBaselineData() )
-                                      .getComponent( MetricConstants.MAIN )
-                                      .getStatistic()
-                                      .getValue();
+                Pool<Pair<Double, Double>> baselinePool = pool.getBaselineData();
+                denominator = sses.applyAsDouble( baselinePool );
+
+                // Divide?
+                int mainSize = pool.get()
+                                   .size();
+                int baselineSize = baselinePool.get()
+                                               .size();
+                if ( mainSize != baselineSize )
+                {
+                    numerator = numerator / mainSize;
+                    denominator = denominator / baselineSize;
+                }
             }
             // Default baseline is the average observation, which results in the so-called Nash-Sutcliffe Efficiency
             else
             {
-                double[] left = Slicer.getLeftSide( pool );
-                double meanLeft = FunctionFactory.mean()
-                                                 .applyAsDouble( left );
-                for ( Pair<Double, Double> next : pool.get() )
-                {
-                    denominator += Math.pow( next.getLeft() - meanLeft, 2 );
-                }
+                ToDoubleFunction<Pool<Pair<Double, Double>>> sseml =
+                        FunctionFactory.sumOfSquareErrorsForMeanLeft( a -> a );
+                denominator = sseml.applyAsDouble( pool );
             }
 
             result = FunctionFactory.skill()

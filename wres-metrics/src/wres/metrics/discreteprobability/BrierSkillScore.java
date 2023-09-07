@@ -1,6 +1,7 @@
 package wres.metrics.discreteprobability;
 
 import java.util.Objects;
+import java.util.function.ToDoubleFunction;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -9,8 +10,8 @@ import wres.config.MetricConstants;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
-import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.metrics.FunctionFactory;
 import wres.metrics.singlevalued.MeanSquareErrorSkillScore;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -25,7 +26,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * associated with one set of predictions when compared to another. The BSS is analogous to the
  * {@link MeanSquareErrorSkillScore} or the Nash-Sutcliffe Efficiency for a single-valued input. The perfect BSS is 1.0.
  * </p>
- * 
+ *
  * @author James Brown
  */
 public class BrierSkillScore extends BrierScore
@@ -61,14 +62,8 @@ public class BrierSkillScore extends BrierScore
                                                                     .build();
 
     /**
-     * Instance of MSE-SS used to compute the BSS.
-     */
-
-    private final MeanSquareErrorSkillScore msess;
-
-    /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -85,16 +80,37 @@ public class BrierSkillScore extends BrierScore
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
-        // Transform probabilities to double values
-        Pool<Pair<Double, Double>> transformed =
-                PoolSlicer.transform( pool,
-                                  pair -> Pair.of( pair.getLeft().getProbability(),
-                                                   pair.getRight().getProbability() ) );
+        ToDoubleFunction<Pool<Pair<Probability, Probability>>> sse =
+                FunctionFactory.sumOfSquareErrors( Probability::getProbability );
 
-        double result = this.msess.apply( transformed )
-                                  .getComponent( MetricConstants.MAIN )
-                                  .getStatistic()
-                                  .getValue();
+        // Avoid division where possible for numerical accuracy
+        double numerator = sse.applyAsDouble( pool );
+        double denominator;
+        if ( pool.hasBaseline() )
+        {
+            Pool<Pair<Probability, Probability>> baselinePool = pool.getBaselineData();
+            denominator = sse.applyAsDouble( baselinePool );
+
+            // Divide?
+            int mainSize = pool.get()
+                               .size();
+            int baselineSize = baselinePool.get()
+                                           .size();
+            if ( mainSize != baselineSize )
+            {
+                numerator = numerator / mainSize;
+                denominator = denominator / baselineSize;
+            }
+        }
+        else
+        {
+            ToDoubleFunction<Pool<Pair<Probability, Probability>>> sseml =
+                    FunctionFactory.sumOfSquareErrorsForMeanLeft( Probability::getProbability );
+            denominator = sseml.applyAsDouble( pool );
+        }
+
+        double result = FunctionFactory.skill()
+                                       .applyAsDouble( numerator, denominator );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setMetric( BrierSkillScore.MAIN )
@@ -140,8 +156,6 @@ public class BrierSkillScore extends BrierScore
     private BrierSkillScore()
     {
         super();
-
-        msess = MeanSquareErrorSkillScore.of();
     }
 
 }
