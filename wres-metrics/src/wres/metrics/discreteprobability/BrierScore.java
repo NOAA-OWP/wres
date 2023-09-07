@@ -1,6 +1,7 @@
 package wres.metrics.discreteprobability;
 
 import java.util.Objects;
+import java.util.function.ToDoubleFunction;
 
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -9,11 +10,10 @@ import wres.config.MetricConstants;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
-import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.metrics.DecomposableScore;
+import wres.metrics.FunctionFactory;
 import wres.metrics.ProbabilityScore;
-import wres.metrics.singlevalued.MeanSquareError;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
@@ -32,7 +32,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * Brier, G. W. (1950) Verification of forecasts expressed in terms of probability. <i> Monthly Weather Review</i>,
  * <b>78</b>, 1-3.
  * </p>
- * 
+ *
  * @author James Brown
  */
 public class BrierScore extends DecomposableScore<Pool<Pair<Probability, Probability>>>
@@ -70,7 +70,7 @@ public class BrierScore extends DecomposableScore<Pool<Pair<Probability, Probabi
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -78,12 +78,6 @@ public class BrierScore extends DecomposableScore<Pool<Pair<Probability, Probabi
     {
         return new BrierScore();
     }
-
-    /**
-     * Instance of MSE used to compute the BS.
-     */
-
-    private final MeanSquareError mse;
 
     @Override
     public DoubleScoreStatisticOuter apply( Pool<Pair<Probability, Probability>> pool )
@@ -93,17 +87,11 @@ public class BrierScore extends DecomposableScore<Pool<Pair<Probability, Probabi
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
-        // Transform probabilities to double values
-        Pool<Pair<Double, Double>> transformed =
-                PoolSlicer.transform( pool,
-                                  pair -> Pair.of( pair.getLeft().getProbability(),
-                                                   pair.getRight().getProbability() ) );
+        ToDoubleFunction<Pool<Pair<Probability, Probability>>> sse =
+                FunctionFactory.sumOfSquareErrors( Probability::getProbability );
 
-
-        double result = this.mse.apply( transformed )
-                                .getComponent( MetricConstants.MAIN )
-                                .getStatistic()
-                                .getValue();
+        double result = sse.applyAsDouble( pool ) / pool.get()
+                                                        .size();
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setMetric( BrierScore.MAIN )
@@ -149,8 +137,6 @@ public class BrierScore extends DecomposableScore<Pool<Pair<Probability, Probabi
     BrierScore()
     {
         super();
-
-        this.mse = MeanSquareError.of();
     }
 
 }
