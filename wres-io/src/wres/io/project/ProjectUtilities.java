@@ -5,9 +5,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.ParseException;
@@ -18,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.SpatialMask;
@@ -499,6 +502,49 @@ class ProjectUtilities
         }
 
         return Collections.unmodifiableSet( all );
+    }
+
+    /**
+     * Filters from the input any ensemble member labels that are declared to be filtered.
+     * @param labels the ensemble labels to filter
+     * @param ensembleFilter the ensemble filter, possibly null
+     * @return the filtered members
+     */
+
+    static SortedSet<String> filter( SortedSet<String> labels, EnsembleFilter ensembleFilter )
+    {
+        Objects.requireNonNull( labels );
+
+        if( Objects.isNull( ensembleFilter ) )
+        {
+            return labels;
+        }
+
+        SortedSet<String> labelsToFilter = new TreeSet<>( labels );
+        if( ensembleFilter.exclude() )
+        {
+            labelsToFilter.removeAll( ensembleFilter.members() );
+        }
+        else
+        {
+            labelsToFilter.retainAll( ensembleFilter.members() );
+        }
+
+        return Collections.unmodifiableSortedSet( labelsToFilter );
+    }
+
+    /**
+     * @param max the maximum value, inclusive
+     * @return a series of integer labels between 1 and the maximum value, inclusive
+     */
+
+    static SortedSet<String> getSeries( int max )
+    {
+        SortedSet<String> labels = IntStream.range( 1, max + 1 )
+                                            .boxed()
+                                            .map( Object::toString )
+                                            .collect( Collectors.toCollection( TreeSet::new ) );
+        return Collections.unmodifiableSortedSet( labels );
     }
 
     /**

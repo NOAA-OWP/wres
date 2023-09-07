@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.MissingValues;
-import wres.datamodel.VectorOfDoubles;
 import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.metrics.DoubleErrorFunction;
@@ -41,7 +40,7 @@ public abstract class DoubleErrorScore<S extends Pool<Pair<Double, Double>>>
     final DoubleErrorFunction errorFunction;
 
     /** The error accumulator function. */
-    final ToDoubleFunction<VectorOfDoubles> errorAccumulator;
+    final ToDoubleFunction<double[]> errorAccumulator;
 
     /** The metric description.*/
     final DoubleScoreMetric metric;
@@ -67,9 +66,8 @@ public abstract class DoubleErrorScore<S extends Pool<Pair<Double, Double>>>
                                    .stream()
                                    .mapToDouble( this.getErrorFunction() )
                                    .toArray();
-            VectorOfDoubles wrappedDoubles = VectorOfDoubles.of( doubles );
             doubleScore = this.getErrorAccumulator()
-                              .applyAsDouble( wrappedDoubles );
+                              .applyAsDouble( doubles );
         }
 
         Optional<DoubleScoreMetricComponent> main = this.metric.getComponentsList()
@@ -187,7 +185,7 @@ public abstract class DoubleErrorScore<S extends Pool<Pair<Double, Double>>>
      */
 
     DoubleErrorScore( DoubleErrorFunction function,
-                      ToDoubleFunction<VectorOfDoubles> errorAccumulator,
+                      ToDoubleFunction<double[]> errorAccumulator,
                       DoubleScoreMetric metric )
     {
         super();
@@ -223,7 +221,7 @@ public abstract class DoubleErrorScore<S extends Pool<Pair<Double, Double>>>
      * @return the error accumulator for internal use
      */
 
-    private ToDoubleFunction<VectorOfDoubles> getErrorAccumulator()
+    private ToDoubleFunction<double[]> getErrorAccumulator()
     {
         return this.errorAccumulator;
     }

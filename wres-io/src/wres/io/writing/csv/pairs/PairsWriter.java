@@ -16,11 +16,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.zip.GZIPOutputStream;
 
@@ -47,10 +48,10 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  * <p>Abstract base class for writing a time-series of pairs as comma separated values (CSV). There is one 
  * {@link PairsWriter} for each {@link Path} to be written; writing to that {@link Path} is managed by this 
  * {@link PairsWriter}. The {@link PairsWriter} must be closed after all writing is complete.
- * 
+ *
  * <p>The {@link Path} is supplied on construction and no guarantee is made that anything is created at that 
  * {@link Path}. If nothing is created, then {@link #get()} will return the {@link Collections#emptySet()}.
- * 
+ *
  * <p>TODO: Add some additional qualification to the pairs, such as the left and right feature names (separately).
  * However, pairs are modeled as time-series of pairs, not pairs of time-series, so the time-series metadata only
  * accommodates a {@link Feature}, not a {@link FeatureTuple}. Currently, the time-series metadata contains the
@@ -61,7 +62,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  * time-series of pairs, plus both sides of time-series metadata. However, this class would then need to consume a
  * {@code PoolOfPairs<L, R>} that composed the {@code TimeSeriesOfPairs<L,R>}. Another alternative would be to replace
  * the {@link Feature} within the {@link TimeSeriesMetadata} with a {@link FeatureTuple}.
- * 
+ *
  * @param <L> the type of left data in the pairing
  * @param <R> the type of right data in the pairing
  * @author James Brown
@@ -70,88 +71,41 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 public abstract class PairsWriter<L, R>
         implements Consumer<Pool<TimeSeries<Pair<L, R>>>>, Supplier<Set<Path>>, Closeable
 {
-
-    /**
-     * Double quotation mark.
-     */
-
+    /** Double quotation mark. */
     private static final String QUOTE = "\"";
 
-    /**
-     * A default name for the pairs.
-     */
-
-    public static final String DEFAULT_PAIRS_NAME = "pairs.csv";
-
-    /**
-     * A default name for the zipped pairs.
-     */
-
+    /** A default name for the zipped pairs. */
     public static final String DEFAULT_PAIRS_ZIP_NAME = "pairs.csv.gz";
 
-    /**
-     * Delimiter.
-     */
-
-    public static final String DELIMITER = ",";
-
-    /**
-     * A default name for the baseline pairs.
-     */
-
-    public static final String DEFAULT_BASELINE_PAIRS_NAME = "baseline_pairs.csv";
-
-    /**
-     * A default name for the zipped baseline pairs.
-     */
-
+    /** A default name for the zipped baseline pairs. */
     public static final String DEFAULT_BASELINE_PAIRS_ZIP_NAME = "baseline_pairs.csv.gz";
 
-    /**
-     * Logger.
-     */
+    /** Delimiter. */
+    public static final String DELIMITER = ",";
 
+    /** Logger. */
     static final Logger LOGGER = LoggerFactory.getLogger( PairsWriter.class );
 
-    /**
-     * Lock for writing pairs to the {@link #pathToPairs} for which this writer is built.
-     */
-
+    /** Lock for writing pairs to the {@link #pathToPairs} for which this writer is built. */
     private final ReentrantLock writeLock;
 
-    /**
-     * Path to write.
-     */
-
+    /** Path to write. */
     private final Path pathToPairs;
 
-    /**
-     * Boolean determining if output is gzip
-     */
+    /** Boolean determining if output is gzip */
     private final boolean gzip;
 
-    /**
-     * The time resolution.
-     */
-
+    /** The time resolution. */
     private final ChronoUnit timeResolution;
 
-    /**
-     * Formatter that maps from a paired value to a {@link String}.
-     */
+    /** Formatter that maps from a paired value to a {@link String} using the prescribed column names supplied in an
+     * array. */
+    private final BiFunction<SortedSet<String>, Pair<L, R>, String> pairFormatter;
 
-    private final Function<Pair<L, R>, String> pairFormatter;
-
-    /**
-     * Is <code>true</code> if the header needs to be written, <code>false</code> when it has already been written. 
-     */
-
+    /** Is <code>true</code> if the header needs to be written, <code>false</code> when it has already been written. */
     private final AtomicBoolean isHeaderRequired = new AtomicBoolean( true );
 
-    /**
-     * Shared instance of a {@link BufferedWriter} to be closed on completion.
-     */
-
+    /** Shared instance of a {@link BufferedWriter} to be closed on completion. */
     private BufferedWriter writer = null;
 
     @Override
@@ -164,9 +118,14 @@ public abstract class PairsWriter<L, R>
     }
 
     /**
+     * @return the column names for the right-ish values
+     */
+    abstract SortedSet<String> getRightValueNames();
+
+    /**
      * Returns a basic header for the pairs from the input. Override this method to add information for specific types
      * of pairs.
-     * 
+     *
      * @param pairs the pairs
      * @throws NullPointerException if the pairs are null
      */
@@ -216,14 +175,16 @@ public abstract class PairsWriter<L, R>
                                           .toString()
                                           .toUpperCase();
 
-        // Time scale for lead duration?
-        if ( pairs.getMetadata().hasTimeScale() )
+        // Timescale for lead duration?
+        if ( pairs.getMetadata()
+                  .hasTimeScale() )
         {
-            TimeScaleOuter timeScaleOuter = pairs.getMetadata().getTimeScale();
+            TimeScaleOuter timeScaleOuter = pairs.getMetadata()
+                                                 .getTimeScale();
             leadDurationString =
                     leadDurationString + CommaSeparatedUtilities.HEADER_DELIMITER
-                                 + CommaSeparatedUtilities.getTimeScaleForHeader( timeScaleOuter,
-                                                                                  this.getTimeResolution() );
+                    + CommaSeparatedUtilities.getTimeScaleForHeader( timeScaleOuter,
+                                                                     this.getTimeResolution() );
         }
 
         joiner.add( leadDurationString );
@@ -233,7 +194,7 @@ public abstract class PairsWriter<L, R>
 
     /**
      * Supplies the {@link Path} to which values were written or the empty set if nothing was written.
-     * 
+     *
      * @return the paths written
      */
 
@@ -253,7 +214,7 @@ public abstract class PairsWriter<L, R>
 
     /**
      * Write the pairs.
-     * 
+     *
      * @param pairs the pairs to write
      * @throws NullPointerException if the input is null or required metadata is null
      * @throws WriteException if the writing fails
@@ -278,12 +239,17 @@ public abstract class PairsWriter<L, R>
             // Write contents if available
             if ( PoolSlicer.getPairCount( pairs ) > 0 )
             {
+                // Get the column names
+                SortedSet<String> columnNames = this.getRightValueNames();
+
                 // Write header if not already written
                 // At this point, we have a non-empty pool: #67088
                 this.writeHeaderIfRequired( pairs );
 
                 // Feature group name
-                GeometryGroup geoGroup = pairs.getMetadata().getPool().getGeometryGroup();
+                GeometryGroup geoGroup = pairs.getMetadata()
+                                              .getPool()
+                                              .getGeometryGroup();
                 String featureGroupName = this.getFeatureNameFrom( geoGroup.getRegionName() );
 
                 // Time window to write, which is fixed across all pairs
@@ -304,7 +270,6 @@ public abstract class PairsWriter<L, R>
 
                 try
                 {
-
                     // Iterate in time-series order
                     for ( TimeSeries<Pair<L, R>> nextSeries : pairs.get() )
                     {
@@ -336,15 +301,16 @@ public abstract class PairsWriter<L, R>
                                 joiner.add( timeWindow.getEarliestValidTime().toString() );
                                 joiner.add( timeWindow.getLatestValidTime().toString() );
                                 joiner.add( DataUtilities.durationToNumericUnits( timeWindow.getEarliestLeadDuration(),
-                                                                                this.getTimeResolution() )
-                                                       .toString() );
+                                                                                  this.getTimeResolution() )
+                                                         .toString() );
                                 joiner.add( DataUtilities.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
-                                                                                this.getTimeResolution() )
-                                                       .toString() );
+                                                                                  this.getTimeResolution() )
+                                                         .toString() );
                             }
 
                             // ISO8601 datetime string
-                            joiner.add( nextPair.getTime().toString() );
+                            joiner.add( nextPair.getTime()
+                                                .toString() );
 
                             // Choose one. TODO: include reference times, rather than lead durations, and
                             // then print all reference times
@@ -352,17 +318,16 @@ public abstract class PairsWriter<L, R>
                             // Lead duration in standard units
                             Duration leadDuration = this.getLeadDuration( referenceTime, nextPair.getTime() );
                             joiner.add( DataUtilities.durationToNumericUnits( leadDuration,
-                                                                            this.getTimeResolution() )
-                                                   .toString() );
+                                                                              this.getTimeResolution() )
+                                                     .toString() );
 
                             // Write the values
-                            joiner.add( this.getPairFormatter().apply( nextPair.getValue() ) );
+                            joiner.add( this.getPairFormatter()
+                                            .apply( columnNames, nextPair.getValue() ) );
 
                             // Write the composed line
                             sharedWriter.write( joiner.toString() );
-
                         }
-
                     }
 
                     // Flush the buffer
@@ -401,7 +366,7 @@ public abstract class PairsWriter<L, R>
 
     /**
      * Returns the time resolution at which pairs should be written.
-     * 
+     *
      * @return the time resolution
      */
 
@@ -422,7 +387,7 @@ public abstract class PairsWriter<L, R>
 
     /**
      * Returns the path to the pairs.
-     * 
+     *
      * @return the path to the pairs.
      */
 
@@ -433,7 +398,7 @@ public abstract class PairsWriter<L, R>
 
     /**
      * Returns the lock to use when writing pairs.
-     * 
+     *
      * @return the write lock
      */
 
@@ -444,7 +409,7 @@ public abstract class PairsWriter<L, R>
 
     /**
      * Returns the reference time from the next series, if any.
-     * 
+     *
      * @return the reference time, if any
      */
 
@@ -465,7 +430,7 @@ public abstract class PairsWriter<L, R>
 
     /**
      * Returns the lead duration associated with the input.
-     * 
+     *
      * @param referenceTime the reference time
      * @param validTime the valid time
      * @return the lead duration
@@ -523,7 +488,7 @@ public abstract class PairsWriter<L, R>
 
     /**
      * Helper that writes the specified header information if it has not been written already.
-     * 
+     *
      * @param pairs the pairs
      * @throws IOException if the header cannot be written
      * @throws NullPointerException if the header is null
@@ -576,7 +541,7 @@ public abstract class PairsWriter<L, R>
 
     /**
      * Returns <code>true</code> is the header needs to be written, otherwise <code>false</code>.
-     * 
+     *
      * @return true to write the header, otherwise false
      */
 
@@ -588,18 +553,18 @@ public abstract class PairsWriter<L, R>
 
     /**
      * Returns the formatter for writing paired values.
-     * 
+     *
      * @return the formatter
      */
 
-    private Function<Pair<L, R>, String> getPairFormatter()
+    private BiFunction<SortedSet<String>, Pair<L, R>, String> getPairFormatter()
     {
         return this.pairFormatter;
     }
 
     /**
      * Returns a sanitized feature name from the input.
-     * 
+     *
      * @param featureName the unsanitized name
      * @return the sanitized name
      */
@@ -616,7 +581,7 @@ public abstract class PairsWriter<L, R>
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param pathToPairs the required path to write
      * @param timeResolution the required time resolution at which to write datetime and duration information
      * @param formatter the required formatter for writing pairs
@@ -626,7 +591,7 @@ public abstract class PairsWriter<L, R>
 
     PairsWriter( Path pathToPairs,
                  ChronoUnit timeResolution,
-                 Function<Pair<L, R>, String> formatter,
+                 BiFunction<SortedSet<String>, Pair<L, R>, String> formatter,
                  boolean gzip )
     {
         Objects.requireNonNull( pathToPairs, "Specify a non-null path to write." );

@@ -884,19 +884,18 @@ public final class TimeSeriesSlicer
                                                          + "to the ensemble information.)" );
             }
 
-            traceCount = next.getValue().size();
+            Ensemble ensemble = next.getValue();
+            traceCount = ensemble.size();
 
-            double[] members = next.getValue()
-                                   .getMembers();
-            Labels nextLabels = next.getValue()
-                                    .getLabels();
+            double[] members = ensemble.getMembers();
+            Labels nextLabels = ensemble.getLabels();
 
             String[] labels = nextLabels.getLabels();
 
             for ( int i = 0; i < traceCount; i++ )
             {
-                Object label = i;
-                if ( nextLabels.hasLabels() )
+                Object label = i+1;
+                if ( ensemble.hasLabels() )
                 {
                     label = labels[i];
                 }
@@ -1116,7 +1115,7 @@ public final class TimeSeriesSlicer
                                        .map( memberTransformer::apply )
                                        .toArray();
 
-            return Ensemble.of( converted, ensemble.getLabels() );
+            return Ensemble.of( converted, ensemble.getLabels(), ensemble.areSortedMembersCached() );
         };
     }
 

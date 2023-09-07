@@ -11,10 +11,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import wres.datamodel.Ensemble;
 import wres.datamodel.pools.Pool;
 import wres.io.writing.csv.pairs.EnsemblePairsWriter;
-import wres.io.writing.csv.pairs.PairsWriter;
 import wres.io.writing.csv.pairs.SingleValuedPairsWriter;
 
 /**
@@ -22,31 +20,24 @@ import wres.io.writing.csv.pairs.SingleValuedPairsWriter;
  * some friction by exposing the wildcard type of {@link Pool}, rather than 
  * a non-wildcard type. This class resolves that friction by providing access to 
  * parameterized types of writing on request.
- * 
+ *
  * <p>TODO: remove this class in favor of the direct application of a parameterized
  * {@link SingleValuedPairsWriter} or {@link EnsemblePairsWriter} once the wres-io 
  * uses non-wildcard types of {@link Pool}.
- * 
+ *
  * @author James Brown
  */
 public class SharedSampleDataWriters implements Supplier<Set<Path>>, Closeable
 {
+    /** The shared writer for single-valued pairs. */
+    private final SingleValuedPairsWriter singleValuedWriter;
 
-    /**
-     * The shared writer for single-valued pairs.
-     */
-
-    private final PairsWriter<Double, Double> singleValuedWriter;
-
-    /**
-     * The shared writer for ensemble pairs.
-     */
-
-    private final PairsWriter<Double, Ensemble> ensembleWriter;
+    /** The shared writer for ensemble pairs. */
+    private final EnsemblePairsWriter ensembleWriter;
 
     /**
      * Return an instance.
-     * 
+     *
      * @param outputPath the required output path
      * @param timeResolution the required time resolution for writing pairs
      * @param decimalFormatter the optional decimal formatter
@@ -54,8 +45,9 @@ public class SharedSampleDataWriters implements Supplier<Set<Path>>, Closeable
      * @throws NullPointerException if the outputPath or timeResolution is null
      */
 
-    public static SharedSampleDataWriters
-            of( Path outputPath, ChronoUnit timeResolution, DecimalFormat decimalFormatter )
+    public static SharedSampleDataWriters of( Path outputPath,
+                                              ChronoUnit timeResolution,
+                                              DecimalFormat decimalFormatter )
     {
         return new SharedSampleDataWriters( outputPath, timeResolution, decimalFormatter );
     }
@@ -64,10 +56,10 @@ public class SharedSampleDataWriters implements Supplier<Set<Path>>, Closeable
     public Set<Path> get()
     {
         Set<Path> returnMe = new HashSet<>();
-        
+
         returnMe.addAll( this.singleValuedWriter.get() );
         returnMe.addAll( this.ensembleWriter.get() );
-        
+
         return Collections.unmodifiableSet( returnMe );
     }
 
@@ -102,29 +94,29 @@ public class SharedSampleDataWriters implements Supplier<Set<Path>>, Closeable
 
     /**
      * Returns the single-valued writer.
-     * 
+     *
      * @return the single-valued writer
      */
 
-    public PairsWriter<Double, Double> getSingleValuedWriter()
+    public SingleValuedPairsWriter getSingleValuedWriter()
     {
         return this.singleValuedWriter;
     }
 
     /**
      * Returns the single-valued writer.
-     * 
+     *
      * @return the single-valued writer
      */
 
-    public PairsWriter<Double, Ensemble> getEnsembleWriter()
+    public EnsemblePairsWriter getEnsembleWriter()
     {
         return this.ensembleWriter;
     }
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param outputPath the required output path
      * @param timeResolution the required time resolution for writing pairs
      * @param decimalFormatter the optional decimal formatter

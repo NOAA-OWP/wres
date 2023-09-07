@@ -66,15 +66,17 @@ public class BoxPlotErrorByObserved extends EnsembleBoxPlot
     @Override
     Box getBox( Pair<Double, Ensemble> pair )
     {
-        //Get the sorted errors
-        List<Double> probs = this.getMetric().getQuantilesList();
-        double[] sortedErrors =
-                Arrays.stream( pair.getRight().getMembers() )
-                      .map( x -> x - pair.getLeft() )
-                      .sorted()
-                      .toArray();
+        // Get the sorted errors
+        List<Double> probs = this.getMetric()
+                                 .getQuantilesList();
+        double[] sorted = pair.getRight()
+                              .getMembers();
+        Arrays.sort( sorted );
+        double[] sortedErrors = Arrays.stream( sorted )
+                                      .map( x -> x - pair.getLeft() )
+                                      .toArray();
 
-        //Compute the quantiles
+        // Compute the quantiles
         List<Double> box = probs.stream()
                                 .mapToDouble( Double::doubleValue )
                                 .map( Slicer.getQuantileFunction( sortedErrors ) )
@@ -129,7 +131,8 @@ public class BoxPlotErrorByObserved extends EnsembleBoxPlot
                                                      .setMinimum( Double.NEGATIVE_INFINITY )
                                                      .setMaximum( Double.POSITIVE_INFINITY );
 
-        Arrays.stream( probabilities.getDoubles() ).forEach( builder::addQuantiles );
+        Arrays.stream( probabilities.getDoubles() )
+              .forEach( builder::addQuantiles );
         this.metric = builder.build();
     }
 

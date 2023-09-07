@@ -56,10 +56,10 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     /** The evaluation. */
     private final EvaluationMessager evaluation;
 
-    /** The pairs writer. */
+    /** The pair writer. */
     private final PairsWriter<L, R> pairsWriter;
 
-    /** The baseline pairs writer. */
+    /** The baseline pair writer. */
     private final PairsWriter<L, R> basePairsWriter;
 
     /** Monitor. */

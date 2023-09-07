@@ -22,7 +22,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * The mean square error (MSE) measures the accuracy of a single-valued predictand. It comprises the average square
  * difference between the predictand and verifying observation. Optionally, the MSE may be factored into two-component
  * or three-component decompositions.
- * 
+ *
  * @author James Brown
  */
 public class MeanSquareError extends SumOfSquareError
@@ -48,10 +48,10 @@ public class MeanSquareError extends SumOfSquareError
 
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( MeanSquareError.class );
-    
+
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -65,7 +65,7 @@ public class MeanSquareError extends SumOfSquareError
     {
         LOGGER.debug( "Computing the {}.", this );
 
-        return this.aggregate( this.getIntermediateStatistic( pool ), pool );
+        return this.applyIntermediate( this.getIntermediate( pool ), pool );
     }
 
     @Override
@@ -75,10 +75,11 @@ public class MeanSquareError extends SumOfSquareError
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output,
+                                                        Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing the {} from the intermediate statistic, {}.", this, this.getCollectionOf() );
-        
+
         if ( Objects.isNull( output ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
@@ -96,7 +97,7 @@ public class MeanSquareError extends SumOfSquareError
                                                                                    .setUnits( output.getPoolMetadata()
                                                                                                     .getMeasurementUnit()
                                                                                                     .toString() );
-        
+
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setMetric( metricCompBuilder )
                                                                                .setValue( mse )

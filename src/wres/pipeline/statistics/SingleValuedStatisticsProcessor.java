@@ -11,7 +11,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -28,7 +27,6 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
-import wres.datamodel.MissingValues;
 import wres.datamodel.Slicer;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.ScoreStatistic;
@@ -129,8 +127,8 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
         {
             MetricConstants[] timingErrorMetrics = this.getMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
                                                                     StatisticType.DURATION_DIAGRAM );
-            this.timeSeries = MetricFactory.ofSingleValuedTimeSeriesCollection( metricExecutor,
-                                                                                timingErrorMetrics );
+            this.timeSeries = MetricFactory.ofSingleValuedTimeSeriesMetrics( metricExecutor,
+                                                                             timingErrorMetrics );
 
             LOGGER.debug( "Created the timing-error metrics for processing. {}", this.timeSeries );
         }
@@ -146,7 +144,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ) )
         {
             MetricConstants[] scores = this.getMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE );
-            this.singleValuedScore = MetricFactory.ofSingleValuedScoreCollection( metricExecutor, scores );
+            this.singleValuedScore = MetricFactory.ofSingleValuedScores( metricExecutor, scores );
 
             LOGGER.debug( "Created the single-valued scores for processing. {}", this.singleValuedScore );
         }
@@ -159,7 +157,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM ) )
         {
             MetricConstants[] diagrams = this.getMetrics( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM );
-            this.singleValuedDiagrams = MetricFactory.ofSingleValuedDiagramCollection( metricExecutor, diagrams );
+            this.singleValuedDiagrams = MetricFactory.ofSingleValuedDiagrams( metricExecutor, diagrams );
 
             LOGGER.debug( "Created the single-valued diagrams for processing. {}", this.singleValuedDiagrams );
         }
@@ -173,7 +171,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
         {
             MetricConstants[] boxplots = this.getMetrics( SampleDataGroup.SINGLE_VALUED,
                                                           StatisticType.BOXPLOT_PER_POOL );
-            this.singleValuedBoxPlot = MetricFactory.ofSingleValuedBoxPlotCollection( metricExecutor, boxplots );
+            this.singleValuedBoxPlot = MetricFactory.ofSingleValuedBoxplots( metricExecutor, boxplots );
 
             LOGGER.debug( "Created the single-valued box plots for processing. {}", this.singleValuedBoxPlot );
         }
@@ -210,36 +208,25 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
                       pool.get()
                           .size() );
 
-        //Remove missing values from pairs that do not preserver time order
-        Pool<Pair<Double, Double>> unpackedNoMissing = null;
-        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED ) || this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) )
+        // Unpack pairs as needed
+        Pool<Pair<Double, Double>> unpacked = null;
+        if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED )
+             || this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) )
         {
-            LOGGER.debug( "Removing any single-valued pairs with missing left or right values for pool {}.",
-                          pool.getMetadata() );
-            Pool<Pair<Double, Double>> unpacked = PoolSlicer.unpack( pool );
-            // Climatology is filtered for missings on construction
-            Supplier<Pool<Pair<Double, Double>>> filterer =
-                    () -> PoolSlicer.filter( unpacked,
-                                             Slicer.leftAndRight( MissingValues::isNotMissingValue ),
-                                             null );
-            unpackedNoMissing = this.doWorkWithSlicingExecutor( filterer );
-
-            LOGGER.debug( "Computing single-valued statistics from {} pairs.",
-                          unpackedNoMissing.get()
-                                           .size() );
+            unpacked = PoolSlicer.unpack( pool );
         }
 
-        //Metric futures 
+        // Metric futures
         StatisticsStore.Builder futures = new StatisticsStore.Builder();
 
-        //Process the metrics that consume single-valued pairs
+        // Process the metrics that consume single-valued pairs
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED ) )
         {
-            this.processSingleValuedPairs( unpackedNoMissing, futures );
+            this.processSingleValuedPairs( unpacked, futures );
         }
         if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS ) )
         {
-            this.processPairsForDichotomousMetrics( unpackedNoMissing, futures );
+            this.processPairsForDichotomousMetrics( unpacked, futures );
         }
         if ( this.hasMetrics( SampleDataGroup.SINGLE_VALUED_TIME_SERIES ) )
         {

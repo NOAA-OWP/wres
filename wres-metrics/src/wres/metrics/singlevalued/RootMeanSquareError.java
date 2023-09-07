@@ -71,7 +71,7 @@ public class RootMeanSquareError extends DoubleErrorScore<Pool<Pair<Double, Doub
     {
         LOGGER.debug( "Computing the {}.", this );
 
-        return this.aggregate( this.getIntermediateStatistic( pool ), pool );
+        return this.applyIntermediate( this.getIntermediate( pool ), pool );
     }
 
     @Override
@@ -87,7 +87,7 @@ public class RootMeanSquareError extends DoubleErrorScore<Pool<Pair<Double, Doub
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing the {} from the intermediate statistic, {}.", this, this.getCollectionOf() );
 
@@ -120,7 +120,7 @@ public class RootMeanSquareError extends DoubleErrorScore<Pool<Pair<Double, Doub
     }
 
     @Override
-    public DoubleScoreStatisticOuter getIntermediateStatistic( Pool<Pair<Double, Double>> input )
+    public DoubleScoreStatisticOuter getIntermediate( Pool<Pair<Double, Double>> input )
     {
         LOGGER.debug( "Computing an intermediate statistic of {} for the {}.", this.getCollectionOf(), this );
 

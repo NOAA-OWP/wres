@@ -219,99 +219,99 @@ public final class MetricFactoryTest
     }
 
     /**
-     * Tests {@link MetricFactory#ofSingleValuedScoreCollection(MetricConstants...)}. 
+     * Tests {@link MetricFactory#ofSingleValuedScores(MetricConstants...)}.
      * @throws MetricParameterException if the metric construction fails
      */
     @Test
     public void testOfSingleValuedScoreCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( MetricFactory.ofSingleValuedScoreCollection( MetricConstants.MEAN_ABSOLUTE_ERROR ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofSingleValuedScores( MetricConstants.MEAN_ABSOLUTE_ERROR ) ) );
     }
 
     /**
-     * Tests {@link MetricFactory#ofDiscreteProbabilityScoreCollection(MetricConstants...)}. 
+     * Tests {@link MetricFactory#ofDiscreteProbabilityScores(MetricConstants...)}.
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
     public void testOfDiscreteProbabilityVectorCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( MetricFactory.ofDiscreteProbabilityScoreCollection( MetricConstants.BRIER_SCORE ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofDiscreteProbabilityScores( MetricConstants.BRIER_SCORE ) ) );
     }
 
     /**
-     * Tests {@link MetricFactory#ofDichotomousScoreCollection(MetricConstants...)}. 
+     * Tests {@link MetricFactory#ofDichotomousScores(MetricConstants...)}.
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
     public void testOfDichotomousScoreCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( MetricFactory.ofDichotomousScoreCollection( MetricConstants.THREAT_SCORE ) ) );
-        assertTrue( Objects.nonNull( MetricFactory.ofDichotomousScoreCollection( MetricConstants.FREQUENCY_BIAS ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofDichotomousScores( MetricConstants.THREAT_SCORE ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofDichotomousScores( MetricConstants.FREQUENCY_BIAS ) ) );
     }
 
     /**
-     * Tests {@link MetricFactory#ofSingleValuedDiagramCollection(MetricConstants...)}. 
+     * Tests {@link MetricFactory#ofSingleValuedDiagrams(MetricConstants...)}.
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
     public void testOfSingleValuedDiagramCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( MetricFactory.ofSingleValuedDiagramCollection( MetricConstants.QUANTILE_QUANTILE_DIAGRAM ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofSingleValuedDiagrams( MetricConstants.QUANTILE_QUANTILE_DIAGRAM ) ) );
     }
 
     /**
-     * Tests {@link MetricFactory#ofDiscreteProbabilityDiagramCollection(MetricConstants...)}. 
+     * Tests {@link MetricFactory#ofDiscreteProbabilityDiagrams(MetricConstants...)}.
      * @throws MetricParameterException if the metric collection could not be constructed
      */
     @Test
     public void testOfDiscreteProbabilityDiagramCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( MetricFactory.ofDiscreteProbabilityDiagramCollection( MetricConstants.RELIABILITY_DIAGRAM ) ) );
-        assertTrue( Objects.nonNull( MetricFactory.ofDiscreteProbabilityDiagramCollection( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofDiscreteProbabilityDiagrams( MetricConstants.RELIABILITY_DIAGRAM ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofDiscreteProbabilityDiagrams( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM ) ) );
     }
 
     /**
-     * Tests {@link MetricFactory#ofEnsembleScoreCollection(MetricConstants...)}. 
+     * Tests {@link MetricFactory#ofEnsembleScores(MetricConstants...)}.
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
     public void testOfEnsembleScoreCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( MetricFactory.ofEnsembleScoreCollection( MetricConstants.SAMPLE_SIZE ) ) );
-        assertTrue( Objects.nonNull( MetricFactory.ofEnsembleScoreCollection( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE ) ) );
-        assertTrue( Objects.nonNull( MetricFactory.ofEnsembleScoreCollection( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofEnsembleScores( MetricConstants.SAMPLE_SIZE ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofEnsembleScores( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofEnsembleScores( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) ) );
     }
 
     /**
-     * Tests {@link MetricFactory#ofEnsembleDiagramCollection(MetricConstants...)}. 
+     * Tests {@link MetricFactory#ofEnsembleDiagrams(MetricConstants...)}.
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
     public void testOfEnsembleDiagramCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( MetricFactory.ofEnsembleDiagramCollection( MetricConstants.RANK_HISTOGRAM ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofEnsembleDiagrams( MetricConstants.RANK_HISTOGRAM ) ) );
     }
 
     /**
-     * Tests {@link MetricFactory#ofEnsembleBoxPlotCollection(MetricConstants...)}. 
+     * Tests {@link MetricFactory#ofEnsembleBoxplots(MetricConstants...)}.
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
     public void testOfEnsembleBoxPlotCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( MetricFactory.ofEnsembleBoxPlotCollection( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE ) ) );
-        assertTrue( Objects.nonNull( MetricFactory.ofEnsembleBoxPlotCollection( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofEnsembleBoxplots( MetricConstants.BOX_PLOT_OF_ERRORS_BY_FORECAST_VALUE ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofEnsembleBoxplots( MetricConstants.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE ) ) );
     }
 
     /**
-     * Tests {@link MetricFactory#ofSingleValuedTimeSeriesCollection(MetricConstants...)}. 
+     * Tests {@link MetricFactory#ofSingleValuedTimeSeriesMetrics(MetricConstants...)}.
      * @throws MetricParameterException if the metric construction fails 
      */
     @Test
     public void testOfSingleValuedTimeSeriesCollection() throws MetricParameterException
     {
-        assertTrue( Objects.nonNull( MetricFactory.ofSingleValuedTimeSeriesCollection( MetricConstants.TIME_TO_PEAK_ERROR ) ) );
-        assertTrue( Objects.nonNull( MetricFactory.ofSingleValuedTimeSeriesCollection( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofSingleValuedTimeSeriesMetrics( MetricConstants.TIME_TO_PEAK_ERROR ) ) );
+        assertTrue( Objects.nonNull( MetricFactory.ofSingleValuedTimeSeriesMetrics( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR ) ) );
     }
 
 }

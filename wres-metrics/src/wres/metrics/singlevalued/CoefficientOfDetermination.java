@@ -65,7 +65,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     {
         LOGGER.debug( "Computing the {}.", this );
 
-        return this.aggregate( this.getIntermediateStatistic( pool ), pool );
+        return this.applyIntermediate( this.getIntermediate( pool ), pool );
     }
 
     @Override
@@ -75,7 +75,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing the {} from the intermediate statistic, {}.", this, this.getCollectionOf() );
 
@@ -105,7 +105,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     }
 
     @Override
-    public DoubleScoreStatisticOuter getIntermediateStatistic( Pool<Pair<Double, Double>> input )
+    public DoubleScoreStatisticOuter getIntermediate( Pool<Pair<Double, Double>> input )
     {
         if ( Objects.isNull( input ) )
         {

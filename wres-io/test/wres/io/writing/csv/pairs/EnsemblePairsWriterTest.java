@@ -55,12 +55,12 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Tests the {@link EnsemblePairsWriter}.
- * 
+ *
  * @author James Brown
  */
 public final class EnsemblePairsWriterTest
 {
-
+    private static final String DEFAULT_PAIRS_NAME = "pairs.csv";
     private static final String VARIABLE_NAME = "ARMS";
     private static final Feature FEATURE = Feature.of(
             wres.statistics.MessageFactory.getGeometry( "FRUIT" ) );
@@ -124,9 +124,10 @@ public final class EnsemblePairsWriterTest
                                           .setMeasurementUnit( "SCOOBIES" )
                                           .build();
 
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "PLUM" ),
-                                                                                  wres.statistics.MessageFactory.getGeometry( "PLUM" ),
-                                                                                  null );
+        GeometryTuple geoTuple =
+                wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "PLUM" ),
+                                                                 wres.statistics.MessageFactory.getGeometry( "PLUM" ),
+                                                                 null );
         GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
@@ -163,9 +164,10 @@ public final class EnsemblePairsWriterTest
                                              .setMeasurementUnit( "SCOOBIES" )
                                              .build();
 
-        GeometryTuple geoTupleTwo = wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "ORANGE" ),
-                                                                                     wres.statistics.MessageFactory.getGeometry( "ORANGE" ),
-                                                                                     null );
+        GeometryTuple geoTupleTwo =
+                wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "ORANGE" ),
+                                                                 wres.statistics.MessageFactory.getGeometry( "ORANGE" ),
+                                                                 null );
         GeometryGroup geoGroupTwo = wres.statistics.MessageFactory.getGeometryGroup( null, geoTupleTwo );
         FeatureGroup featureGroupTwo = FeatureGroup.of( geoGroupTwo );
 
@@ -204,9 +206,10 @@ public final class EnsemblePairsWriterTest
                                                .setMeasurementUnit( "SCOOBIES" )
                                                .build();
 
-        GeometryTuple geoTupleThree = wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "BANANA" ),
-                                                                                       wres.statistics.MessageFactory.getGeometry( "BANANA" ),
-                                                                                       null );
+        GeometryTuple geoTupleThree =
+                wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "BANANA" ),
+                                                                 wres.statistics.MessageFactory.getGeometry( "BANANA" ),
+                                                                 null );
         GeometryGroup geoGroupThree = wres.statistics.MessageFactory.getGeometryGroup( null, geoTupleThree );
         FeatureGroup featureGroupThree = FeatureGroup.of( geoGroupThree );
 
@@ -247,7 +250,7 @@ public final class EnsemblePairsWriterTest
         {
             Path directory = fileSystem.getPath( "test" );
             Files.createDirectory( directory );
-            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_NAME );
+            Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
             try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
@@ -256,9 +259,12 @@ public final class EnsemblePairsWriterTest
                 Builder<TimeSeries<Pair<Double, Ensemble>>> tsBuilder = new Builder<>();
 
                 // Set the measurement units and time scale
-                GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "PINEAPPLE" ),
-                                                                                          wres.statistics.MessageFactory.getGeometry( "PINEAPPLE" ),
-                                                                                          null );
+                GeometryTuple geoTuple =
+                        wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry(
+                                                                                 "PINEAPPLE" ),
+                                                                         wres.statistics.MessageFactory.getGeometry(
+                                                                                 "PINEAPPLE" ),
+                                                                         null );
                 GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
                 FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
@@ -310,11 +316,13 @@ public final class EnsemblePairsWriterTest
         {
             Path directory = fileSystem.getPath( "test" );
             Files.createDirectory( directory );
-            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_NAME );
+            Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
             try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS, formatter ) )
             {
+                // Prime the writer with the expected ensemble structure
+                writer.prime( new TreeSet<>( Set.of( "1" ) ) );
 
                 Builder<TimeSeries<Pair<Double, Ensemble>>> tsBuilder = new Builder<>();
 
@@ -336,9 +344,12 @@ public final class EnsemblePairsWriterTest
                 tsBuilder.addData( timeSeriesNaN );
 
                 // Set the measurement units and time scale
-                GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "PINEAPPLE" ),
-                                                                                          wres.statistics.MessageFactory.getGeometry( "PINEAPPLE" ),
-                                                                                          null );
+                GeometryTuple geoTuple =
+                        wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry(
+                                                                                 "PINEAPPLE" ),
+                                                                         wres.statistics.MessageFactory.getGeometry(
+                                                                                 "PINEAPPLE" ),
+                                                                         null );
                 GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
                 FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
@@ -402,11 +413,14 @@ public final class EnsemblePairsWriterTest
         {
             Path directory = fileSystem.getPath( "test" );
             Files.createDirectory( directory );
-            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_NAME );
+            Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
             try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
             {
+                // Prime the writer with the expected ensemble structure
+                writer.prime( new TreeSet<>( Set.of( "1", "2", "3" ) ) );
+
                 // Write the pairs
                 writer.accept( EnsemblePairsWriterTest.pairs );
 
@@ -451,6 +465,9 @@ public final class EnsemblePairsWriterTest
             // Create the writer
             try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS, null, true ) )
             {
+                // Prime the writer with the expected ensemble structure
+                writer.prime( new TreeSet<>( Set.of( "1", "2", "3" ) ) );
+
                 // Write the pairs with gzip set to true
                 writer.accept( EnsemblePairsWriterTest.pairs );
 
@@ -458,7 +475,7 @@ public final class EnsemblePairsWriterTest
                 TikaConfig tikaConfig = new TikaConfig();
                 Detector detector = tikaConfig.getDetector();
 
-                try( InputStream inStream = Files.newInputStream( csvPath ) )
+                try ( InputStream inStream = Files.newInputStream( csvPath ) )
                 {
                     InputStream bufferedStream = new BufferedInputStream( inStream );
                     MediaType detectedMediaType = detector.detect( bufferedStream, metadata );
@@ -483,11 +500,13 @@ public final class EnsemblePairsWriterTest
         {
             Path directory = fileSystem.getPath( "test" );
             Files.createDirectory( directory );
-            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_NAME );
+            Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
             try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
             {
+                // Prime the writer with the expected ensemble structure
+                writer.prime( new TreeSet<>( Set.of( "1", "2", "3" ) ) );
 
                 // Write the pairs
                 writer.accept( EnsemblePairsWriterTest.pairs );
@@ -536,11 +555,13 @@ public final class EnsemblePairsWriterTest
         {
             Path directory = fileSystem.getPath( "test" );
             Files.createDirectory( directory );
-            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_NAME );
+            Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
             try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS, formatter ) )
             {
+                // Prime the writer with the expected ensemble structure
+                writer.prime( new TreeSet<>( Set.of( "1", "2", "3" ) ) );
 
                 // Write the pairs async on the common FJP
                 CompletableFuture.allOf( CompletableFuture.runAsync( () -> writer.accept( EnsemblePairsWriterTest.pairs ) ),
@@ -552,7 +573,7 @@ public final class EnsemblePairsWriterTest
                 List<String> results = Files.readAllLines( csvPath );
 
                 // Sort the results
-                Collections.sort( results, Comparator.naturalOrder() );
+                results.sort( Comparator.naturalOrder() );
 
                 // Assert the expected results
                 assertEquals( 10, results.size() );
@@ -597,11 +618,14 @@ public final class EnsemblePairsWriterTest
         {
             Path directory = fileSystem.getPath( "test" );
             Files.createDirectory( directory );
-            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_NAME );
+            Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
             try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS, formatter ) )
             {
+                // Prime the writer with the expected ensemble structure
+                writer.prime( new TreeSet<>( Set.of( "1", "2", "3" ) ) );
+
                 // Write the pairs async on the common FJP
                 List<CompletableFuture<Void>> futures = new ArrayList<>();
                 for ( int i = 0; i < 100; i++ )
@@ -609,16 +633,17 @@ public final class EnsemblePairsWriterTest
                     futures.add( CompletableFuture.runAsync( () -> writer.accept( EnsemblePairsWriterTest.pairs ) ) );
                 }
 
-                CompletableFuture.allOf( futures.toArray( new CompletableFuture[futures.size()] ) ).get();
+                CompletableFuture.allOf( futures.toArray( new CompletableFuture[0] ) )
+                                 .get();
 
                 // Read the results
                 List<String> results = Files.readAllLines( csvPath );
 
                 // Sort the results
-                Collections.sort( results, Comparator.naturalOrder() );
+                results.sort( Comparator.naturalOrder() );
 
                 // Assert the expected results by dimension
-                assertEquals( results.size(), 301 );
+                assertEquals( 301, results.size() );
             }
         }
     }
@@ -637,12 +662,13 @@ public final class EnsemblePairsWriterTest
         {
             Path directory = fileSystem.getPath( "test" );
             Files.createDirectory( directory );
-            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_NAME );
+            Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
             try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
             {
-
+                // Prime the writer with the expected ensemble structure
+                writer.prime( new TreeSet<>( Set.of() ) );
 
                 // Write the pairs
                 writer.accept( EnsemblePairsWriterTest.pairs );

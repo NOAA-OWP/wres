@@ -49,7 +49,7 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
      * Default domain mapper function.
      */
 
-    private static final ToDoubleFunction<VectorOfDoubles> DEFAULT_DOMAIN_MAPPER = FunctionFactory.mean();
+    private static final ToDoubleFunction<double[]> DEFAULT_DOMAIN_MAPPER = FunctionFactory.mean();
 
     /**
      * The dimension associated with the domain axis, which corresponds to a function that is applied to the 
@@ -62,7 +62,7 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
      * The function used to map the forecast values for the domain axis.
      */
 
-    private final ToDoubleFunction<VectorOfDoubles> domainMapper;
+    private final ToDoubleFunction<double[]> domainMapper;
 
     /**
      * Returns an instance.
@@ -112,23 +112,24 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
     @Override
     Box getBox( Pair<Double, Ensemble> pair )
     {
-        //Get the sorted errors
-        List<Double> probs = this.getMetric().getQuantilesList();
-        double[] sorted = pair.getRight().getMembers();
+        // Get the sorted errors
+        List<Double> probs = this.getMetric()
+                                 .getQuantilesList();
+        double[] sorted = pair.getRight()
+                              .getMembers();
         Arrays.sort( sorted );
         double[] sortedErrors = Arrays.stream( sorted )
                                       .map( x -> x - pair.getLeft() )
                                       .toArray();
 
-        //Compute the quantiles
+        // Compute the quantiles
         List<Double> box = probs.stream()
                                 .mapToDouble( Double::doubleValue )
                                 .map( Slicer.getQuantileFunction( sortedErrors ) )
                                 .boxed()
                                 .toList();
 
-        VectorOfDoubles domain = VectorOfDoubles.of( sorted );
-        double linkedValue = this.domainMapper.applyAsDouble( domain );
+        double linkedValue = this.domainMapper.applyAsDouble( sorted );
 
         return Box.newBuilder()
                   .setLinkedValue( linkedValue )
@@ -181,7 +182,8 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
         {
             case ENSEMBLE_MEAN -> this.domainMapper = FunctionFactory.mean();
             case ENSEMBLE_MEDIAN -> this.domainMapper =
-                    a -> Slicer.getQuantileFunction( a.getDoubles() ).applyAsDouble( 0.5 );
+                    a -> Slicer.getQuantileFunction( a )
+                               .applyAsDouble( 0.5 );
             default -> throw new MetricParameterException( "Unsupported dimension for the domain axis of the box plot: "
                                                            + "'"
                                                            + domainDimension
@@ -196,7 +198,8 @@ public class BoxPlotErrorByForecast extends EnsembleBoxPlot
                                                      .setMinimum( Double.NEGATIVE_INFINITY )
                                                      .setMaximum( Double.POSITIVE_INFINITY );
 
-        Arrays.stream( probabilities.getDoubles() ).forEach( builder::addQuantiles );
+        Arrays.stream( probabilities.getDoubles() )
+              .forEach( builder::addQuantiles );
         this.metric = builder.build();
     }
 

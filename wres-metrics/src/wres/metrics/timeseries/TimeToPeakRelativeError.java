@@ -124,7 +124,7 @@ public class TimeToPeakRelativeError extends TimingError
                                   pool.hashCode() );
                 }
 
-                Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, this.getRNG() );
+                Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, this.getRandomNumberGenerator() );
 
                 // Duration.between is negative if the predicted/right or "end" is before the observed/left or "start"
                 Duration error = Duration.between( peak.getLeft(), peak.getRight() );

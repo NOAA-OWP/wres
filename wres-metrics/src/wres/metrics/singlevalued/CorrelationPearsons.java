@@ -131,7 +131,7 @@ public class CorrelationPearsons implements Score<Pool<Pair<Double, Double>>, Do
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
     {
         if ( Objects.isNull( output ) )
         {
@@ -142,7 +142,7 @@ public class CorrelationPearsons implements Score<Pool<Pair<Double, Double>>, Do
     }
 
     @Override
-    public DoubleScoreStatisticOuter getIntermediateStatistic( Pool<Pair<Double, Double>> input )
+    public DoubleScoreStatisticOuter getIntermediate( Pool<Pair<Double, Double>> input )
     {
         LOGGER.debug( "Computing the {}, which may be used as an intermediate statistic for other statistics.",
                       MetricConstants.PEARSON_CORRELATION_COEFFICIENT );

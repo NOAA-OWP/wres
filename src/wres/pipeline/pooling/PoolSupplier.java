@@ -80,8 +80,11 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( PoolSupplier.class );
 
-    /** Message re-used several times. */
+    /** Repeated message string. */
     private static final String WHILE_CONSTRUCTING_A_POOL_SUPPLIER_FOR = "While constructing a pool supplier for {}, ";
+
+    /** Repeated message string. */
+    private static final String EXPECTED = "Expected ";
 
     /** Generator for baseline data source. Optional. */
     private final Function<Set<Feature>, BaselineGenerator<R>> baselineGenerator;
@@ -127,6 +130,15 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
     /** A function that filters baseline-ish time-series. */
     private final Predicate<TimeSeries<R>> baselineFilter;
+
+    /** A function that filters missing left-ish values. */
+    private final Predicate<L> leftMissingFilter;
+
+    /** A function that filters missing right-ish values. */
+    private final Predicate<R> rightMissingFilter;
+
+    /** A function that filters missing baseline-ish values. */
+    private final Predicate<R> baselineMissingFilter;
 
     /** Any time offset to apply to the left-ish valid times. */
     private final Duration leftTimeShift;
@@ -316,6 +328,15 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
         /** A function that filters baseline-ish time-series. */
         private Predicate<TimeSeries<R>> baselineFilter = in -> true;
+
+        /** A function that filters missing left-ish values. */
+        private Predicate<L> leftMissingFilter = notMissing -> true;
+
+        /** A function that filters missing right-ish values. */
+        private Predicate<R> rightMissingFilter = notMissing -> true;
+
+        /** A function that filters missing baseline-ish values. */
+        private Predicate<R> baselineMissingFilter = notMissing -> true;
 
         /** The time offset to apply to the left-ish valid times. */
         private Duration leftTimeShift = Duration.ZERO;
@@ -540,6 +561,39 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         Builder<L, R, B> setBaselineFilter( Predicate<TimeSeries<R>> baselineFilter )
         {
             this.baselineFilter = baselineFilter;
+
+            return this;
+        }
+
+        /**
+         * @param leftMissingFilter the filter for left-style data
+         * @return the builder
+         */
+        Builder<L, R, B> setLeftMissingFilter( Predicate<L> leftMissingFilter )
+        {
+            this.leftMissingFilter = leftMissingFilter;
+
+            return this;
+        }
+
+        /**
+         * @param rightMissingFilter the filter for right-style data
+         * @return the builder
+         */
+        Builder<L, R, B> setRightMissingFilter( Predicate<R> rightMissingFilter )
+        {
+            this.rightMissingFilter = rightMissingFilter;
+
+            return this;
+        }
+
+        /**
+         * @param baselineMissingFilter the filter for baseline-style data
+         * @return the builder
+         */
+        Builder<L, R, B> setBaselineMissingFilter( Predicate<R> baselineMissingFilter )
+        {
+            this.baselineMissingFilter = baselineMissingFilter;
 
             return this;
         }
@@ -833,7 +887,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
             builder.addPool( nextMiniPool );
         }
 
-        // Set the metadata, adjusted to include the desired time scale
+        // Set the metadata, adjusted to include the desired timescale
         wres.statistics.generated.Pool.Builder newMetadataBuilder =
                 this.getMetadata()
                     .getPool()
@@ -981,6 +1035,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
         Predicate<TimeSeries<L>> leftFilterInner = this.getLeftFilter();
         Predicate<TimeSeries<R>> rightOrBaselineFilter = this.getRightOrBaselineFilter( rightOrBaselineOrientation );
+        Predicate<R> rightOrBaselineMissingFilter = this.getRightOrBaselineMissingFilter( rightOrBaselineOrientation );
 
         List<EvaluationStatusMessage> validation = new ArrayList<>();
 
@@ -1014,8 +1069,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
             baselineGeneratorFunction = generatorSupplier.apply( allBaselineFeatures );
         }
 
-        Transformers<R> rightTransformers = new Transformers<>( rightOrBaselineTransformer,
-                                                                baselineGeneratorFunction );
+        Transformers<R> rightOrBaselineTransformers = new Transformers<>( rightOrBaselineTransformer,
+                                                                          rightOrBaselineMissingFilter,
+                                                                          baselineGeneratorFunction );
 
         Iterator<TimeSeries<R>> rightOrBaselineIterator = rightOrBaseline.iterator();
 
@@ -1054,7 +1110,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                                                        frequency,
                                                        rightOrBaselineOrientation,
                                                        timeWindow,
-                                                       rightTransformers );
+                                                       rightOrBaselineTransformers );
 
                 this.addPairsForFeature( pairsPerFeature,
                                          nextPairedSeries,
@@ -1150,7 +1206,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
      * @param frequency the frequency of the pairs
      * @param rightOrBaselineOrientation the orientation of the pairs
      * @param timeWindow the time window
-     * @param rightTransformers the transformers for right-ish data
+     * @param rightOrBaselineTransformers the transformers for right-ish data
      * @return the pairs plus validation
      * @throws NullPointerException if any required input is null
      */
@@ -1161,7 +1217,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                                                                            Duration frequency,
                                                                            DatasetOrientation rightOrBaselineOrientation,
                                                                            TimeWindowOuter timeWindow,
-                                                                           Transformers<R> rightTransformers )
+                                                                           Transformers<R> rightOrBaselineTransformers )
     {
         Objects.requireNonNull( rightOrBaselineSeries );
         Objects.requireNonNull( rightOrBaselineOrientation );
@@ -1184,7 +1240,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                                                                                frequency,
                                                                                timeWindow,
                                                                                rightOrBaselineOrientation,
-                                                                               rightTransformers );
+                                                                               rightOrBaselineTransformers );
 
             returnMe.add( pairsPlus );
 
@@ -1214,12 +1270,12 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
      *
      * @param left the left time-series
      * @param rightOrBaseline the right or baseline time-series
-     * @param desiredTimeScale the desired time scale
-     * @param frequency the frequency with which to create pairs at the desired time scale
+     * @param desiredTimeScale the desired timescale
+     * @param frequency the frequency with which to create pairs at the desired timescale
      * @param timeWindow the time window to snip the pairs
      * @param orientation the orientation of the non-left data, one of {@link DatasetOrientation#RIGHT} or
      *            {@link DatasetOrientation#BASELINE}
-     * @param rightTransformers the right-ish transformers
+     * @param rightOrBaselineTransformers the right-ish transformers
      * @return a paired time-series
      * @throws NullPointerException if the left, rightOrBaseline or timeWindow is null
      */
@@ -1230,7 +1286,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                                                               Duration frequency,
                                                               TimeWindowOuter timeWindow,
                                                               DatasetOrientation orientation,
-                                                              Transformers<R> rightTransformers )
+                                                              Transformers<R> rightOrBaselineTransformers )
     {
         Objects.requireNonNull( left );
         Objects.requireNonNull( rightOrBaseline );
@@ -1363,12 +1419,19 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         TimeSeries<L> scaledAndTransformedLeft = this.getLeftTransformer()
                                                      .apply( scaledLeft );
 
-        TimeSeries<R> scaledAndTransformedRight = rightTransformers.rightTransformer()
-                                                                   .apply( scaledRight );
+        TimeSeries<R> scaledAndTransformedRight = rightOrBaselineTransformers.rightTransformer()
+                                                                             .apply( scaledRight );
+
+        // Remove any missing values
+        TimeSeries<L> filteredLeft = TimeSeriesSlicer.filter( scaledAndTransformedLeft,
+                                                              this.getLeftMissingFilter() );
+
+        TimeSeries<R> filteredRight = TimeSeriesSlicer.filter( scaledAndTransformedRight,
+                                                               rightOrBaselineTransformers.rightMissingFilter() );
 
         // Create the pairs, if any
         TimeSeries<Pair<L, R>> pairs = this.getPairer()
-                                           .pair( scaledAndTransformedLeft, scaledAndTransformedRight );
+                                           .pair( filteredLeft, filteredRight );
 
         // Snip the pairs to the pool boundary
         TimeSeries<Pair<L, R>> snippedPairs = TimeSeriesSlicer.snip( pairs, timeWindow );
@@ -1410,11 +1473,11 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                              .collect( Collectors.toMap( Map.Entry::getKey,
                                                          Map.Entry::getValue ) );
 
-        // Do we also need generated baseline pairs using the right as a template?
+        // Do we also need to generate baseline pairs using the right as a template?
         Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> generatedBaseline = new HashMap<>();
         if ( this.hasBaselineGenerator() && orientation == DatasetOrientation.RIGHT )
         {
-            generatedBaseline = this.getGeneratedBaselinePairs( rightTransformers,
+            generatedBaseline = this.getGeneratedBaselinePairs( rightOrBaselineTransformers,
                                                                 featureTuples,
                                                                 scaledAndTransformedLeft,
                                                                 scaledAndTransformedRight );
@@ -1786,6 +1849,33 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
     }
 
     /**
+     * @return the missing filter for left-ish data
+     */
+
+    private Predicate<L> getLeftMissingFilter()
+    {
+        return this.leftMissingFilter;
+    }
+
+    /**
+     * @return the missing filter for right-ish data
+     */
+
+    private Predicate<R> getRightMissingFilter()
+    {
+        return this.rightMissingFilter;
+    }
+
+    /**
+     * @return the missing filter for baseline-ish data
+     */
+
+    private Predicate<R> getBaselineMissingFilter()
+    {
+        return this.baselineMissingFilter;
+    }
+
+    /**
      * @param lrb the orientation of the required transformer
      * @return the transformer
      * @throws NullPointerException if the orientation is null
@@ -1802,7 +1892,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                     case BASELINE -> this.getBaselineTransformer();
                     default -> throw new IllegalArgumentException( "Unexpected orientation for transformer: " + lrb
                                                                    + ". "
-                                                                   + "Expected "
+                                                                   + EXPECTED
                                                                    + DatasetOrientation.RIGHT
                                                                    + " or "
                                                                    + DatasetOrientation.BASELINE
@@ -1827,7 +1917,32 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                     case BASELINE -> this.getBaselineFilter();
                     default -> throw new IllegalArgumentException( "Unexpected orientation for filter: " + lrb
                                                                    + ". "
-                                                                   + "Expected "
+                                                                   + EXPECTED
+                                                                   + DatasetOrientation.RIGHT
+                                                                   + " or "
+                                                                   + DatasetOrientation.BASELINE
+                                                                   + "." );
+                };
+    }
+
+    /**
+     * @param lrb the orientation of the required filter
+     * @return the filter
+     * @throws NullPointerException if the orientation is null
+     * @throws IllegalArgumentException if the orientation is unexpected
+     */
+
+    private Predicate<R> getRightOrBaselineMissingFilter( DatasetOrientation lrb )
+    {
+        Objects.requireNonNull( lrb );
+
+        return switch ( lrb )
+                {
+                    case RIGHT -> this.getRightMissingFilter();
+                    case BASELINE -> this.getBaselineMissingFilter();
+                    default -> throw new IllegalArgumentException( "Unexpected orientation for missing filter: " + lrb
+                                                                   + ". "
+                                                                   + EXPECTED
                                                                    + DatasetOrientation.RIGHT
                                                                    + " or "
                                                                    + DatasetOrientation.BASELINE
@@ -2007,6 +2122,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         this.leftFilter = builder.leftFilter;
         this.rightFilter = builder.rightFilter;
         this.baselineFilter = builder.baselineFilter;
+        this.leftMissingFilter = builder.leftMissingFilter;
+        this.rightMissingFilter = builder.rightMissingFilter;
+        this.baselineMissingFilter = builder.baselineMissingFilter;
         this.climatology = builder.climatology;
         this.leftTimeShift = builder.leftTimeShift;
         this.rightTimeShift = builder.rightTimeShift;
@@ -2047,10 +2165,15 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         Objects.requireNonNull( this.metadata, messageStart + "add the metadata for the main pairs." );
         Objects.requireNonNull( this.leftTransformer, messageStart + "add a transformer for the left data." );
         Objects.requireNonNull( this.rightTransformer, messageStart + "add a transformer for the right data." );
-        Objects.requireNonNull( this.baselineTransformer, messageStart + "add a transformer for the baseline data." );
+        Objects.requireNonNull( this.baselineTransformer, messageStart + "add a transformer for the baseline "
+                                                          + "data." );
         Objects.requireNonNull( this.leftFilter, messageStart + "add a filter for the left data." );
         Objects.requireNonNull( this.rightFilter, messageStart + "add a filter for the right data." );
         Objects.requireNonNull( this.baselineFilter, messageStart + "add a filter for the baseline data." );
+        Objects.requireNonNull( this.leftMissingFilter, messageStart + "add a filter for missing left data." );
+        Objects.requireNonNull( this.rightMissingFilter, messageStart + "add a filter for missing right data." );
+        Objects.requireNonNull( this.baselineMissingFilter, messageStart + "add a filter for missing baseline "
+                                                            + "data." );
 
         if ( Objects.isNull( this.baselineGenerator ) )
         {
@@ -2141,8 +2264,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         }
     }
 
-    /** Record class to bundle two right-ish transformers. */
+    /** Record class to bundle right-ish transformers and filters. */
     private record Transformers<R>( UnaryOperator<TimeSeries<R>> rightTransformer,
+                                    Predicate<R> rightMissingFilter,
                                     Function<TimeSeries<?>, TimeSeries<R>> baselineGenerator )
     {
     }

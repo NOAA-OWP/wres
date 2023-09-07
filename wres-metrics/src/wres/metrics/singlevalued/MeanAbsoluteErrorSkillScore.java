@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.Slicer;
-import wres.datamodel.VectorOfDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.pools.MeasurementUnit;
@@ -80,11 +79,11 @@ public class MeanAbsoluteErrorSkillScore extends DoubleErrorScore<Pool<Pair<Doub
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
-        return this.aggregate( this.getIntermediateStatistic( pool ), pool );
+        return this.applyIntermediate( this.getIntermediate( pool ), pool );
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing the {} from the intermediate statistic, {}.", this, this.getCollectionOf() );
 
@@ -123,8 +122,8 @@ public class MeanAbsoluteErrorSkillScore extends DoubleErrorScore<Pool<Pair<Doub
             // Default baseline is the average observation or so-called climatology
             else
             {
-                double meanLeft =
-                        FunctionFactory.mean().applyAsDouble( VectorOfDoubles.of( Slicer.getLeftSide( pool ) ) );
+                double meanLeft = FunctionFactory.mean()
+                                       .applyAsDouble( Slicer.getLeftSide( pool ) );
                 for ( Pair<Double, Double> next : pool.get() )
                 {
                     denominator += Math.abs( next.getLeft() - meanLeft );
@@ -152,7 +151,7 @@ public class MeanAbsoluteErrorSkillScore extends DoubleErrorScore<Pool<Pair<Doub
     }
 
     @Override
-    public DoubleScoreStatisticOuter getIntermediateStatistic( Pool<Pair<Double, Double>> input )
+    public DoubleScoreStatisticOuter getIntermediate( Pool<Pair<Double, Double>> input )
     {
         return super.apply( input );
     }

@@ -139,7 +139,7 @@ final class MeanAbsoluteErrorSkillScoreTest
     void testExceptionOnNullInput()
     {
         MetricCalculationException actual = assertThrows( MetricCalculationException.class,
-                                                          () -> this.maess.aggregate( null, null ) );
+                                                          () -> this.maess.applyIntermediate( null, null ) );
 
         assertEquals( "Specify a non-null statistic for the '" + this.maess.getMetricNameString() + "'.",
                       actual.getMessage() );

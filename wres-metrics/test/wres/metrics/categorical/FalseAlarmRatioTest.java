@@ -122,7 +122,7 @@ final class FalseAlarmRatioTest
     void testExceptionOnNullInput()
     {
         MetricCalculationException actual = assertThrows( MetricCalculationException.class,
-                                                          () -> this.far.aggregate( null, null ) );
+                                                          () -> this.far.applyIntermediate( null, null ) );
 
         assertEquals( "Specify non-null input to the '" + this.far.getMetricNameString() + "'.", actual.getMessage() );
     }

@@ -493,7 +493,7 @@ public final class TestDataFactory
 
     public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> getTimeSeriesOfSingleValuedPairsEleven()
     {
-        //Construct some single-valued pairs
+        // Construct some single-valued pairs
         SortedSet<Event<Pair<Double, Double>>> events = new TreeSet<>();
 
         Instant start = Instant.parse( "1985-01-01T00:00:00Z" );
@@ -508,9 +508,6 @@ public final class TestDataFactory
         events.add( Event.of( start.plus( Duration.ofHours( 8 ) ), Pair.of( 8.0, 7.0 ) ) );
         events.add( Event.of( start.plus( Duration.ofHours( 9 ) ), Pair.of( 12.0, 12.0 ) ) );
         events.add( Event.of( start.plus( Duration.ofHours( 10 ) ), Pair.of( 93.0, 94.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 11 ) ), Pair.of( Double.NaN, 94.0 ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 12 ) ), Pair.of( 93.0, Double.NaN ) ) );
-        events.add( Event.of( start.plus( Duration.ofHours( 13 ) ), Pair.of( Double.NaN, Double.NaN ) ) );
 
         Builder<TimeSeries<Pair<Double, Double>>> builder = new Builder<>();
 
@@ -734,8 +731,8 @@ public final class TestDataFactory
     public static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> getTimeSeriesOfEnsemblePairsTwo()
             throws IOException
     {
-        //Construct some ensemble pairs
-        final SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
+        // Construct some ensemble pairs
+        SortedSet<Event<Pair<Double, Ensemble>>> values = new TreeSet<>();
 
         File file = new File( "testinput/sharedinput/getEnsemblePairsTwo.asc" );
         List<Double> climatology = new ArrayList<>();
@@ -750,7 +747,9 @@ public final class TestDataFactory
             while ( Objects.nonNull( line = in.readLine() ) && !line.isEmpty() )
             {
                 double[] doubleValues =
-                        Arrays.stream( line.split( "\\s+" ) ).mapToDouble( Double::parseDouble ).toArray();
+                        Arrays.stream( line.split( "\\s+" ) )
+                              .mapToDouble( Double::parseDouble )
+                              .toArray();
                 values.add( Event.of( time,
                                       Pair.of( doubleValues[0],
                                                Ensemble.of( Arrays.copyOfRange( doubleValues,

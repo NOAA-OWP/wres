@@ -215,8 +215,8 @@ public class RelativeOperatingCharacteristicDiagram
     private RelativeOperatingCharacteristicDiagram( int points )
     {
         super();
-        this.roc = MetricFactory.ofDichotomousScoreCollection( MetricConstants.PROBABILITY_OF_DETECTION,
-                                                               MetricConstants.PROBABILITY_OF_FALSE_DETECTION );
+        this.roc = MetricFactory.ofDichotomousScores( MetricConstants.PROBABILITY_OF_DETECTION,
+                                                      MetricConstants.PROBABILITY_OF_FALSE_DETECTION );
         //Set the default points
         this.points = points;
     }

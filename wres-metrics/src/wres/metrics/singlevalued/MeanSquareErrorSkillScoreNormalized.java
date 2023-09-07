@@ -81,7 +81,7 @@ public class MeanSquareErrorSkillScoreNormalized extends DecomposableScore<Pool<
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
 
-        return this.aggregate( this.getIntermediateStatistic( pool ), pool );
+        return this.applyIntermediate( this.getIntermediate( pool ), pool );
     }
 
     @Override
@@ -103,11 +103,11 @@ public class MeanSquareErrorSkillScoreNormalized extends DecomposableScore<Pool<
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing the {} from the intermediate statistic, {}.", this, this.getCollectionOf() );
 
-        DoubleScoreStatisticOuter resultOuter = this.msess.aggregate( output, pool );
+        DoubleScoreStatisticOuter resultOuter = this.msess.applyIntermediate( output, pool );
 
         if ( this.getScoreOutputGroup() != MetricGroup.NONE )
         {
@@ -136,7 +136,7 @@ public class MeanSquareErrorSkillScoreNormalized extends DecomposableScore<Pool<
     }
 
     @Override
-    public DoubleScoreStatisticOuter getIntermediateStatistic( Pool<Pair<Double, Double>> input )
+    public DoubleScoreStatisticOuter getIntermediate( Pool<Pair<Double, Double>> input )
     {
         return this.sse.apply( input );
     }

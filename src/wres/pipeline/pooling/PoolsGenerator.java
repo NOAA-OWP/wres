@@ -58,6 +58,9 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( PoolsGenerator.class );
 
+    /** Repeated message string. */
+    private static final String DATA = "data.";
+
     /** The project for which pools are required. */
     private final Project project;
 
@@ -99,6 +102,15 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
 
     /** A function that filters baseline-ish time-series. */
     private final Predicate<TimeSeries<R>> baselineFilter;
+
+    /** A function that filters missing left-ish values. */
+    private final Predicate<L> leftMissingFilter;
+
+    /** A function that filters missing right-ish values. */
+    private final Predicate<R> rightMissingFilter;
+
+    /** A function that filters missing baseline-ish values. */
+    private final Predicate<R> baselineMissingFilter;
 
     /** The time shift for left-ish valid times. */
     private final Duration leftTimeShift;
@@ -181,6 +193,15 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
 
         /** A function that filters baseline-ish time-series. */
         private Predicate<TimeSeries<R>> baselineFilter = in -> true;
+
+        /** A function that filters missing left-ish values. */
+        private Predicate<L> leftMissingFilter = notMissing -> true;
+
+        /** A function that filters missing right-ish values. */
+        private Predicate<R> rightMissingFilter = notMissing -> true;
+
+        /** A function that filters missing baseline-ish values. */
+        private Predicate<R> baselineMissingFilter = notMissing -> true;
 
         /** The time offset to apply to the left-ish valid times. */
         private Duration leftTimeShift = Duration.ZERO;
@@ -375,6 +396,39 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         }
 
         /**
+         * @param leftMissingFilter the filter for left-style data
+         * @return the builder
+         */
+        Builder<L, R, B> setLeftMissingFilter( Predicate<L> leftMissingFilter )
+        {
+            this.leftMissingFilter = leftMissingFilter;
+
+            return this;
+        }
+
+        /**
+         * @param rightMissingFilter the filter for right-style data
+         * @return the builder
+         */
+        Builder<L, R, B> setRightMissingFilter( Predicate<R> rightMissingFilter )
+        {
+            this.rightMissingFilter = rightMissingFilter;
+
+            return this;
+        }
+
+        /**
+         * @param baselineMissingFilter the filter for baseline-style data
+         * @return the builder
+         */
+        Builder<L, R, B> setBaselineMissingFilter( Predicate<R> baselineMissingFilter )
+        {
+            this.baselineMissingFilter = baselineMissingFilter;
+
+            return this;
+        }
+
+        /**
          * @param leftTimeShift the time shift for left-ish valid times
          * @return the builder
          */
@@ -508,6 +562,9 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                         .setLeftFilter( this.getLeftFilter() )
                         .setRightFilter( this.getRightFilter() )
                         .setBaselineFilter( this.getBaselineFilter() )
+                        .setLeftMissingFilter( this.getLeftMissingFilter() )
+                        .setRightMissingFilter( this.getRightMissingFilter() )
+                        .setBaselineMissingFilter( this.getBaselineMissingFilter() )
                         .setPairFrequency( this.getPairFrequency() )
                         .setBaselineShim( this.getBaselineShim() )
                         .setDesiredTimeScale( desiredTimeScale );
@@ -813,6 +870,33 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     private Predicate<TimeSeries<R>> getBaselineFilter()
     {
         return this.baselineFilter;
+    }
+
+    /**
+     * @return the missing filter for left-ish data
+     */
+
+    private Predicate<L> getLeftMissingFilter()
+    {
+        return this.leftMissingFilter;
+    }
+
+    /**
+     * @return the missing filter for right-ish data
+     */
+
+    private Predicate<R> getRightMissingFilter()
+    {
+        return this.rightMissingFilter;
+    }
+
+    /**
+     * @return the missing filter for baseline-ish data
+     */
+
+    private Predicate<R> getBaselineMissingFilter()
+    {
+        return this.baselineMissingFilter;
     }
 
     /**
@@ -1167,6 +1251,9 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         this.leftFilter = builder.leftFilter;
         this.rightFilter = builder.rightFilter;
         this.baselineFilter = builder.baselineFilter;
+        this.leftMissingFilter = builder.leftMissingFilter;
+        this.rightMissingFilter = builder.rightMissingFilter;
+        this.baselineMissingFilter = builder.baselineMissingFilter;
         this.climateMapper = builder.climateMapper;
         this.crossPairer = builder.crossPairer;
         this.leftTimeShift = builder.leftTimeShift;
@@ -1183,13 +1270,20 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         Objects.requireNonNull( this.pairer, messageStart + "the pairer is missing." );
         Objects.requireNonNull( this.leftUpscaler, messageStart + "the upscaler for left values is missing" );
         Objects.requireNonNull( this.rightUpscaler, messageStart + "the upscaler for right values is missing." );
-        Objects.requireNonNull( this.baselineUpscaler, messageStart + "the upscaler for baseline values is missing." );
+        Objects.requireNonNull( this.baselineUpscaler, messageStart + "the upscaler for baseline values is "
+                                                       + "missing." );
         Objects.requireNonNull( this.leftTransformer, messageStart + "add a transformer for the left data." );
         Objects.requireNonNull( this.rightTransformer, messageStart + "add a transformer for the right data." );
-        Objects.requireNonNull( this.baselineTransformer, messageStart + "add a transformer for the baseline data." );
+        Objects.requireNonNull( this.baselineTransformer, messageStart + "add a transformer for the baseline "
+                                                          + DATA );
         Objects.requireNonNull( this.leftFilter, messageStart + "add a filter for the left data." );
         Objects.requireNonNull( this.rightFilter, messageStart + "add a filter for the right data." );
         Objects.requireNonNull( this.baselineFilter, messageStart + "add a filter for the baseline data." );
+        Objects.requireNonNull( this.leftMissingFilter, messageStart + "add a filter for missing left data." );
+        Objects.requireNonNull( this.rightMissingFilter, messageStart + "add a filter for missing right "
+                                                         + DATA );
+        Objects.requireNonNull( this.baselineMissingFilter, messageStart + "add a filter for missing baseline "
+                                                            + DATA );
 
         // If adding a baseline, baseline metadata is needed. If not, it should not be supplied
         if ( this.getPoolRequests().isEmpty() )

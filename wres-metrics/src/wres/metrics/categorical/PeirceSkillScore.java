@@ -25,7 +25,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * predictand, the Peirce Skill Score corresponds to the difference between the {@link ProbabilityOfDetection} and the
  * {@link ProbabilityOfFalseDetection}. 
  * 
- * <p>TODO: The {@link #aggregate(DoubleScoreStatisticOuter, Pool)} is implemented for the multicategory case. 
+ * <p>TODO: The {@link #applyIntermediate(DoubleScoreStatisticOuter, Pool)} is implemented for the multicategory case.
  * Abstract this to somewhere appropriately visible for extensibility. 
  * 
  * @author James Brown
@@ -76,12 +76,12 @@ public class PeirceSkillScore extends ContingencyTableScore
     @Override
     public DoubleScoreStatisticOuter apply( final Pool<Pair<Boolean, Boolean>> pool )
     {
-        return aggregate( this.getIntermediateStatistic( pool ), pool );
+        return applyIntermediate( this.getIntermediate( pool ), pool );
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( final DoubleScoreStatisticOuter output,
-                                                Pool<Pair<Boolean, Boolean>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( final DoubleScoreStatisticOuter output,
+                                                        Pool<Pair<Boolean, Boolean>> pool )
     {
         if ( Objects.isNull( output ) )
         {

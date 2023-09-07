@@ -119,7 +119,7 @@ public final class EquitableThreatScoreTest
     public void testExceptionOnNullInput()
     {
         MetricCalculationException actual = assertThrows( MetricCalculationException.class,
-                                                          () -> this.ets.aggregate( null, null ) );
+                                                          () -> this.ets.applyIntermediate( null, null ) );
 
         assertEquals( "Specify non-null input to the '" + this.ets.getMetricNameString() + "'.", actual.getMessage() );
     }

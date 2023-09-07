@@ -67,7 +67,7 @@ public final class CorrelationPearsonsTest
     {
         Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
-        assertEquals( this.rho.aggregate( rho.getIntermediateStatistic( input ), input ), this.rho.apply( input ) );
+        assertEquals( this.rho.applyIntermediate( rho.getIntermediate( input ), input ), this.rho.apply( input ) );
     }
 
     @Test
@@ -131,7 +131,7 @@ public final class CorrelationPearsonsTest
     public void testAggregateExceptionOnNullInput()
     {
         PoolException actual = assertThrows( PoolException.class,
-                                                   () -> this.rho.aggregate( null, null ) );
+                                                   () -> this.rho.applyIntermediate( null, null ) );
 
         assertEquals( "Specify non-null input to the '" + this.rho.getMetricNameString() + "'.", actual.getMessage() );
     }
