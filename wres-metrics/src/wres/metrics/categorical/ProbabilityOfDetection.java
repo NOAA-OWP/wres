@@ -81,7 +81,8 @@ public class ProbabilityOfDetection extends ContingencyTableScore
                           .getStatistic()
                           .getValue();
 
-        double result = FunctionFactory.finiteOrMissing().applyAsDouble( tP / ( tP + fN ) );
+        double result = FunctionFactory.finiteOrMissing()
+                                       .applyAsDouble( tP / ( tP + fN ) );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setMetric( ProbabilityOfDetection.MAIN )

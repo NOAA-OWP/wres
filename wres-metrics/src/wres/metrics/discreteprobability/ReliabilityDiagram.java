@@ -7,7 +7,6 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.math3.util.Precision;
 
 import wres.datamodel.Probability;
 import wres.config.MetricConstants;
@@ -36,7 +35,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
  * The Reliability Diagram comprises the average forecast probabilities, the average conditional observed probabilities,
  * and the sample sizes (sharpness) for each bin within the unit interval.
  * </p>
- * 
+ *
  * @author James Brown
  */
 
@@ -48,8 +47,10 @@ public class ReliabilityDiagram extends Diagram<Pool<Pair<Probability, Probabili
      */
 
     public static final DiagramMetricComponent FORECAST_PROBABILITY = DiagramMetricComponent.newBuilder()
-                                                                                            .setName( DiagramComponentName.FORECAST_PROBABILITY )
-                                                                                            .setType( DiagramComponentType.PRIMARY_DOMAIN_AXIS )
+                                                                                            .setName(
+                                                                                                    DiagramComponentName.FORECAST_PROBABILITY )
+                                                                                            .setType(
+                                                                                                    DiagramComponentType.PRIMARY_DOMAIN_AXIS )
                                                                                             .setMinimum( 0 )
                                                                                             .setMaximum( 1 )
                                                                                             .setUnits( "PROBABILITY" )
@@ -60,11 +61,14 @@ public class ReliabilityDiagram extends Diagram<Pool<Pair<Probability, Probabili
      */
 
     public static final DiagramMetricComponent OBSERVED_RELATIVE_FREQUENCY = DiagramMetricComponent.newBuilder()
-                                                                                                   .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
-                                                                                                   .setType( DiagramComponentType.PRIMARY_RANGE_AXIS )
+                                                                                                   .setName(
+                                                                                                           DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                                                                                   .setType(
+                                                                                                           DiagramComponentType.PRIMARY_RANGE_AXIS )
                                                                                                    .setMinimum( 0 )
                                                                                                    .setMaximum( 1 )
-                                                                                                   .setUnits( "PROBABILITY" )
+                                                                                                   .setUnits(
+                                                                                                           "PROBABILITY" )
                                                                                                    .build();
 
     /**
@@ -111,7 +115,7 @@ public class ReliabilityDiagram extends Diagram<Pool<Pair<Probability, Probabili
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -128,23 +132,25 @@ public class ReliabilityDiagram extends Diagram<Pool<Pair<Probability, Probabili
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
         // Determine the probabilities and sample sizes 
-        double constant = 1.0 / bins;
-        double[] fProb = new double[bins];
-        double[] oProb = new double[bins];
-        double[] samples = new double[bins];
+        double constant = 1.0 / this.bins;
+        double[] fProb = new double[this.bins];
+        double[] oProb = new double[this.bins];
+        double[] samples = new double[this.bins];
 
         // Some data available
-        if ( !pool.get().isEmpty() )
+        if ( !pool.get()
+                  .isEmpty() )
         {
             // Compute the average probabilities for samples > 0
 
             // Increment the reliability 
-            pool.get().forEach( this.getIncrementor( fProb, oProb, samples, constant ) );
+            pool.get()
+                .forEach( this.getIncrementor( fProb, oProb, samples, constant ) );
 
             // Compute the average reliability
             List<Double> fProbFinal = new ArrayList<>(); //Forecast probs for samples > 0
             List<Double> oProbFinal = new ArrayList<>(); //Observed probs for samples > 0
-            for ( int i = 0; i < bins; i++ )
+            for ( int i = 0; i < this.bins; i++ )
             {
                 // Bin with > 0 samples
                 if ( samples[i] > 0 )
@@ -161,8 +167,12 @@ public class ReliabilityDiagram extends Diagram<Pool<Pair<Probability, Probabili
             }
 
             // Stream to an array
-            fProb = fProbFinal.stream().mapToDouble( Double::doubleValue ).toArray();
-            oProb = oProbFinal.stream().mapToDouble( Double::doubleValue ).toArray();
+            fProb = fProbFinal.stream()
+                              .mapToDouble( Double::doubleValue )
+                              .toArray();
+            oProb = oProbFinal.stream()
+                              .mapToDouble( Double::doubleValue )
+                              .toArray();
         }
         // No data available
         else
@@ -219,7 +229,7 @@ public class ReliabilityDiagram extends Diagram<Pool<Pair<Probability, Probabili
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param bins the number of bins in the diagram
      */
 
@@ -232,39 +242,43 @@ public class ReliabilityDiagram extends Diagram<Pool<Pair<Probability, Probabili
 
     /**
      * Consumer that increments the input probabilities and sample sizes.
-     * 
+     *
      * @param fProb the forecast probabilities to increment
      * @param oProb the observed relative frequencies to increment
      * @param constant the fraction occupied by each bin
      */
 
-    private Consumer<Pair<Probability, Probability>>
-            getIncrementor( final double[] fProb, final double[] oProb, final double[] samples, final double constant )
+    private Consumer<Pair<Probability, Probability>> getIncrementor( final double[] fProb,
+                                                                     final double[] oProb,
+                                                                     final double[] samples,
+                                                                     final double constant )
     {
         //Consumer that increments the probabilities and sample size
         return pair -> {
 
-            //Determine forecast bin
+            // Determine forecast bin
             for ( int i = 0; i < this.bins; i++ )
             {
-                //Define the bin
-                double lower = Precision.round( i * constant, 5 );
-                double upper = Precision.round( lower + constant, 5 );
+                // Define the bin
+                double lower = i * constant;
+                double upper = lower + constant;
                 if ( i == 0 )
                 {
-                    lower = -1.0; //Catch forecast probabilities of zero in the first bin
+                    lower = -1.0; // Catch forecast probabilities of zero in the first bin
                 }
-                //Establish whether the forecast probability falls inside it
-                if ( pair.getRight().getProbability() > lower && pair.getRight().getProbability() <= upper )
+                // Establish whether the forecast probability falls inside it
+                if ( pair.getRight()
+                         .getProbability() > lower && pair.getRight()
+                                                          .getProbability() <= upper )
                 {
-                    fProb[i] += pair.getRight().getProbability();
-                    oProb[i] += pair.getLeft().getProbability();
+                    fProb[i] += pair.getRight()
+                                    .getProbability();
+                    oProb[i] += pair.getLeft()
+                                    .getProbability();
                     samples[i] += 1;
                     break;
                 }
             }
         };
     }
-
-
 }
