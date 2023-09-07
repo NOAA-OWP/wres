@@ -75,7 +75,7 @@ public final class MeanSquareErrorSkillScoreNormalizedTest
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setMetric( MeanSquareErrorSkillScoreNormalized.MAIN )
-                                                                               .setValue( 0.82188122037703356 )
+                                                                               .setValue( 0.8218812203770344 )
                                                                                .build();
 
         DoubleScoreStatistic expected = DoubleScoreStatistic.newBuilder()

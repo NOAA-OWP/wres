@@ -19,6 +19,8 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.Probability;
 import wres.datamodel.Slicer;
@@ -43,11 +45,15 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 
 /**
  * Tests the {@link MetricCollection}.
- * 
+ *
  * @author James Brown
  */
 public class MetricCollectionTest
 {
+    /** Logger.*/
+    private static final Logger LOGGER = LoggerFactory.getLogger( MetricCollectionTest.class );
+
+    /** Executor. */
     private ExecutorService metricPool;
 
     @Before
@@ -63,11 +69,12 @@ public class MetricCollectionTest
         final Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         //Finalize
-        final MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
-                MetricFactory.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
-                                                             MetricConstants.MEAN_ERROR,
-                                                             MetricConstants.MEAN_ABSOLUTE_ERROR,
-                                                             MetricConstants.ROOT_MEAN_SQUARE_ERROR );
+        final MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+                collection =
+                MetricFactory.ofSingleValuedScores( ForkJoinPool.commonPool(),
+                                                    MetricConstants.MEAN_ERROR,
+                                                    MetricConstants.MEAN_ABSOLUTE_ERROR,
+                                                    MetricConstants.ROOT_MEAN_SQUARE_ERROR );
 
         //Compute them
         final List<DoubleScoreStatisticOuter> d = collection.apply( input );
@@ -118,7 +125,8 @@ public class MetricCollectionTest
         n.addMetric( MeanSquareErrorSkillScore.of() ); //Should be 0.8007025335093799
 
         //Finalize
-        final MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
+        final MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+                collection =
                 n.build();
 
         //Compute them
@@ -235,7 +243,8 @@ public class MetricCollectionTest
         n.addMetric( BrierSkillScore.of() ); //Should be 0.11363636363636376
 
         //Finalize
-        final MetricCollection<Pool<Pair<Probability, Probability>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
+        final MetricCollection<Pool<Pair<Probability, Probability>>, Statistic<?>, DoubleScoreStatisticOuter>
+                collection =
                 n.build();
 
         //Compute them
@@ -268,9 +277,9 @@ public class MetricCollectionTest
         Pool<Pair<Double, Double>> input = MetricTestDataFactory.getSingleValuedPairsOne();
 
         MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
-                MetricFactory.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
-                                                             MetricConstants.MEAN_ERROR,
-                                                             MetricConstants.SAMPLE_SIZE );
+                MetricFactory.ofSingleValuedScores( ForkJoinPool.commonPool(),
+                                                    MetricConstants.MEAN_ERROR,
+                                                    MetricConstants.SAMPLE_SIZE );
 
         // Compute the subset
         List<DoubleScoreStatisticOuter> actualList = collection.apply( input, Set.of( MetricConstants.SAMPLE_SIZE ) );
@@ -297,7 +306,7 @@ public class MetricCollectionTest
     /**
      * Expects a {@link MetricCalculationException} when calling 
      * {@link MetricCollection#apply(wres.datamodel.pools.Pool)} with null input.
-     * 
+     *
      * @throws MetricCalculationException if the execution fails
      * @throws MetricParameterException if the metric construction fails
      */
@@ -330,7 +339,7 @@ public class MetricCollectionTest
     /**
      * Expects a {@link MetricParameterException} when building a {@link MetricCollection} without an 
      * {@link ExecutorService}.
-     * 
+     *
      * @throws MetricParameterException if the metric construction fails
      */
 
@@ -350,7 +359,7 @@ public class MetricCollectionTest
 
     /**
      * Expects a {@link MetricParameterException} when building a {@link MetricCollection} without any metrics.
-     * 
+     *
      * @throws MetricParameterException if the metric construction fails
      */
 
@@ -358,7 +367,8 @@ public class MetricCollectionTest
     public void testBuildWithNoMetrics() throws MetricParameterException
     {
         Builder<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
-                new Builder<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter>().setExecutorService( this.metricPool );
+                new Builder<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter>().setExecutorService(
+                        this.metricPool );
 
         MetricParameterException expected =
                 assertThrows( MetricParameterException.class,
@@ -369,7 +379,7 @@ public class MetricCollectionTest
 
     /**
      * Tests that {@link MetricCollection#apply(Pool, Set)} throws an expected exception when cancelled.
-     * 
+     *
      * @throws MetricCalculationException if the execution fails
      * @throws MetricParameterException if the metric construction fails
      * @throws InvocationTargetException if the underlying method throws an exception
@@ -390,7 +400,7 @@ public class MetricCollectionTest
         assertEquals( expected.getCause().getClass(), MetricCalculationException.class );
 
         MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> collection =
-                MetricFactory.ofSingleValuedScoreCollection( MetricConstants.MEAN_ERROR );
+                MetricFactory.ofSingleValuedScores( MetricConstants.MEAN_ERROR );
         Method method = collection.getClass().getDeclaredMethod( "apply", Pool.class, Set.class );
         method.setAccessible( true );
 
@@ -402,7 +412,7 @@ public class MetricCollectionTest
 
     /**
      * Expects a {@link MetricCalculationException} from a metric within a {@link MetricCollection}.
-     * 
+     *
      * @throws MetricCalculationException if the execution fails
      * @throws MetricParameterException if the metric construction fails
      */
@@ -419,7 +429,8 @@ public class MetricCollectionTest
         Mockito.when( meanError.apply( input ) ).thenThrow( IllegalArgumentException.class );
 
         MetricCollection<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter> collection =
-                new Builder<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter>().setExecutorService( metricPool )
+                new Builder<Pool<Pair<Double, Double>>, Statistic<?>, DoubleScoreStatisticOuter>().setExecutorService(
+                                                                                                          metricPool )
                                                                                                   .addMetric( meanError )
                                                                                                   .build();
 
@@ -438,12 +449,12 @@ public class MetricCollectionTest
         //Create a collection of metrics that consume single-valued pairs and produce a scalar output
         //Add some appropriate metrics to the collection
         final MetricCollection<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> n =
-                MetricFactory.ofSingleValuedScoreCollection( ForkJoinPool.commonPool(),
-                                                             MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
-                                                             MetricConstants.COEFFICIENT_OF_DETERMINATION,
-                                                             MetricConstants.SUM_OF_SQUARE_ERROR,
-                                                             MetricConstants.MEAN_SQUARE_ERROR,
-                                                             MetricConstants.ROOT_MEAN_SQUARE_ERROR );
+                MetricFactory.ofSingleValuedScores( ForkJoinPool.commonPool(),
+                                                    MetricConstants.PEARSON_CORRELATION_COEFFICIENT,
+                                                    MetricConstants.COEFFICIENT_OF_DETERMINATION,
+                                                    MetricConstants.SUM_OF_SQUARE_ERROR,
+                                                    MetricConstants.MEAN_SQUARE_ERROR,
+                                                    MetricConstants.ROOT_MEAN_SQUARE_ERROR );
 
         //Compute them
         final List<DoubleScoreStatisticOuter> d = n.apply( input );
@@ -503,8 +514,10 @@ public class MetricCollectionTest
     {
         this.metricPool.shutdownNow();
 
-        // Return the interrupted status of the thread running the test
-        Thread.interrupted();
+        // Clear the interrupted status of the thread running the test
+        boolean interrupted = Thread.interrupted();
+
+        LOGGER.debug( "Thread interrupted status cleared. Status before check: {}.", interrupted );
     }
 
 }

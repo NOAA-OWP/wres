@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.StringJoiner;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -56,15 +57,6 @@ public class Ensemble implements Comparable<Ensemble>
         public String[] getLabels()
         {
             return this.labs.clone();
-        }
-
-        /**
-         * @return {@code true} if one or more labels is defined, {@code false} if no labels are defined.
-         */
-
-        public boolean hasLabels()
-        {
-            return this.labs.length > 0;
         }
 
         /**
@@ -158,6 +150,12 @@ public class Ensemble implements Comparable<Ensemble>
     /** The member labels. */
     private final Labels labels;
 
+    /** The cached, sorted ensemble members. */
+    private final AtomicReference<double[]> sorted = new AtomicReference<>();
+
+    /** Whether the sorted members should be cached, trading cpu for memory. */
+    private final boolean cacheSorted;
+
     /**
      * Returns a {@link Ensemble} from a primitive array of members.
      *
@@ -167,7 +165,9 @@ public class Ensemble implements Comparable<Ensemble>
 
     public static Ensemble of( final double... members )
     {
-        return new Ensemble( members, Labels.EMPTY_LABELS );
+        return new Ensemble( members,
+                             Labels.EMPTY_LABELS,
+                             false );
     }
 
     /**
@@ -177,12 +177,33 @@ public class Ensemble implements Comparable<Ensemble>
      * @param members the ensemble members
      * @param labels the labels
      * @return the ensemble
-     * @throws IllegalArgumentException if the two inputs have different size
+     * @throws IllegalArgumentException if the members and labels have different size
+     * @throws NullPointerException if the members are null
      */
 
-    public static Ensemble of( final double[] members, Labels labels )
+    public static Ensemble of( final double[] members,
+                               Labels labels )
     {
-        return new Ensemble( members, labels );
+        return new Ensemble( members, labels, false );
+    }
+
+    /**
+     * Returns a {@link Ensemble} from a primitive array of members and a corresponding array of member labels. The
+     * members are ordered according to the order of the labels.
+     *
+     * @param members the ensemble members
+     * @param labels the labels
+     * @param cacheSorted whether to cache the sorted ensemble members or generate them on-the-fly
+     * @return the ensemble
+     * @throws IllegalArgumentException if the members and labels have different size
+     * @throws NullPointerException if the members are null
+     */
+
+    public static Ensemble of( final double[] members,
+                               Labels labels,
+                               boolean cacheSorted )
+    {
+        return new Ensemble( members, labels, cacheSorted );
     }
 
     /**
@@ -193,7 +214,58 @@ public class Ensemble implements Comparable<Ensemble>
 
     public double[] getMembers()
     {
-        return members.clone();
+        return this.members.clone();
+    }
+
+    /**
+     * <p>Sorts the ensemble members, either sorting on demand or by returning the previously cached result.
+     *
+     * <p>TODO: a possible optimization or rebalancing of the trade-off between cpu and memory would involve caching the
+     * indexes of the sorted members as a short array, rather than the sorted members themselves. This would for
+     * sorting of ensembles with up to 32,767 members before resorting to on-the-fly calculation (far in excess of the
+     * practical number of members that could be evaluated, anyway).
+     *
+     * @return the sorted ensemble members
+     */
+
+    public double[] getSortedMembers()
+    {
+        // No caching? Then compute the sorted members
+        if ( !this.cacheSorted )
+        {
+            double[] result = this.getMembers(); // Deep copy
+            Arrays.sort( result );
+            return result;
+        }
+
+        double[] result = this.sorted.get();
+
+        // Already cached? Then return a deep copy
+        if ( Objects.nonNull( result ) )
+        {
+            return result.clone();
+        }
+
+        result = this.getMembers(); // Deep copy
+        Arrays.sort( result );
+
+        // May sort across multiple threads, but only one wins and sets the cache. Avoids blocking.
+        if ( !this.sorted.compareAndSet( null, result ) )
+        {
+            result = this.sorted.get()
+                                .clone();
+        }
+
+        return result;
+    }
+
+    /**
+     * @return whether the sorted ensemble members should be cached.
+     */
+
+    public boolean areSortedMembersCached()
+    {
+        return this.cacheSorted;
     }
 
     /**
@@ -218,6 +290,15 @@ public class Ensemble implements Comparable<Ensemble>
         }
 
         throw new IllegalArgumentException( "Unrecognized label '" + label + "'." );
+    }
+
+    /**
+     * @return {@code true} if one or more labels is defined, {@code false} if no labels are defined.
+     */
+
+    public boolean hasLabels()
+    {
+        return this.labels.labs.length > 0;
     }
 
     /**
@@ -252,18 +333,18 @@ public class Ensemble implements Comparable<Ensemble>
             return returnMe;
         }
 
-        Labels labs = this.getLabels();
-        Labels otherLabs = other.getLabels();
-
-        returnMe = Boolean.compare( labs.hasLabels(), otherLabs.hasLabels() );
+        returnMe = Boolean.compare( this.hasLabels(), other.hasLabels() );
 
         if ( returnMe != 0 )
         {
             return returnMe;
         }
 
-        if ( labs.hasLabels() )
+        if ( this.hasLabels() )
         {
+            Labels labs = this.getLabels();
+            Labels otherLabs = other.getLabels();
+
             Comparator<String[]> compare = Comparator.nullsFirst( Arrays::compare );
 
             return Objects.compare( labs.labs, otherLabs.labs, compare );
@@ -300,7 +381,7 @@ public class Ensemble implements Comparable<Ensemble>
     @Override
     public String toString()
     {
-        if ( this.getLabels().hasLabels() )
+        if ( this.hasLabels() )
         {
             StringJoiner joiner = new StringJoiner( ",", "[", "]" );
 
@@ -322,16 +403,21 @@ public class Ensemble implements Comparable<Ensemble>
      *
      * @param members the ensemble members
      * @param labels the ensemble member labels
+     * @param cacheSorted whether to cache the sorted ensemble members or generate them on-the-fly
      * @throws IllegalArgumentException if the labels are non-null and differ in size to the number of members
-     * @throws NullPointerException if the labels are null
+     * @throws NullPointerException if the members are null
      */
 
-    private Ensemble( final double[] members, Labels labels )
+    private Ensemble( final double[] members, Labels labels, boolean cacheSorted )
     {
         Objects.requireNonNull( members );
-        Objects.requireNonNull( labels );
 
-        if ( labels.hasLabels() && members.length != labels.labs.length )
+        if( Objects.isNull( labels ) )
+        {
+            labels = Labels.EMPTY_LABELS;
+        }
+
+        if ( labels != Labels.EMPTY_LABELS && members.length != labels.labs.length )
         {
             throw new IllegalArgumentException( "Expected the same number of members (" + members.length
                                                 + ") as labels ("
@@ -340,7 +426,10 @@ public class Ensemble implements Comparable<Ensemble>
         }
 
         this.labels = labels;
+
+        // Deep copy the members
         this.members = members.clone();
+        this.cacheSorted = cacheSorted;
     }
 
 }

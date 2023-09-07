@@ -10,7 +10,9 @@ import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.time.Duration;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TimeZone;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.AfterEach;
@@ -197,6 +199,13 @@ class DatabaseProjectTest
         assertEquals( expectedCanonical, actualCanonical );
 
         assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetEnsembleLabels()
+    {
+        SortedSet<String> actual = this.project.getEnsembleLabels( DatasetOrientation.RIGHT );
+        assertEquals( new TreeSet<>( Set.of( "ENS123" ) ), actual );
     }
 
     @Test

@@ -13,7 +13,6 @@ import wres.config.MetricConstants;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.metrics.Collectable;
 import wres.metrics.DecomposableScore;
-import wres.metrics.FunctionFactory;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
@@ -23,7 +22,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 
 /**
  * Base class for decomposable scores that involve a sum-of-square errors.
- * 
+ *
  * @author James Brown
  */
 public class SumOfSquareError extends DecomposableScore<Pool<Pair<Double, Double>>>
@@ -53,7 +52,7 @@ public class SumOfSquareError extends DecomposableScore<Pool<Pair<Double, Double
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -67,7 +66,7 @@ public class SumOfSquareError extends DecomposableScore<Pool<Pair<Double, Double
     {
         LOGGER.debug( "Computing the {}.", this );
 
-        return this.aggregate( this.getIntermediateStatistic( pool ), pool );
+        return this.applyIntermediate( this.getIntermediate( pool ), pool );
     }
 
     @Override
@@ -83,7 +82,7 @@ public class SumOfSquareError extends DecomposableScore<Pool<Pair<Double, Double
     }
 
     @Override
-    public DoubleScoreStatisticOuter getIntermediateStatistic( Pool<Pair<Double, Double>> input )
+    public DoubleScoreStatisticOuter getIntermediate( Pool<Pair<Double, Double>> input )
     {
         LOGGER.debug( "Computing the {}, which may be used as an intermediate statistic for other statistics.",
                       MetricConstants.SUM_OF_SQUARE_ERROR );
@@ -96,15 +95,15 @@ public class SumOfSquareError extends DecomposableScore<Pool<Pair<Double, Double
         double returnMe = MissingValues.DOUBLE;
 
         // Data available
-        if ( !input.get().isEmpty() )
+        if ( !input.get()
+                   .isEmpty() )
         {
-            // Sort the stream, as this improves accuracy according to the API docs
-            // See #71343
-            returnMe = input.get()
-                            .stream()
-                            .mapToDouble( FunctionFactory.squareError() )
-                            .sorted()
-                            .sum();
+            double sum = 0.0;
+            for ( Pair<Double, Double> next : input.get() )
+            {
+                sum += Math.pow( next.getRight() - next.getLeft(), 2 );
+            }
+            returnMe = sum;
         }
 
         // Set the real-valued measurement units
@@ -129,7 +128,7 @@ public class SumOfSquareError extends DecomposableScore<Pool<Pair<Double, Double
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
     {
         if ( Objects.isNull( output ) )
         {

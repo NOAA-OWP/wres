@@ -60,25 +60,16 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  */
 public final class SingleValuedPairsWriterTest
 {
-
-    /**
-     * First set of pairs to use for writing.
-     */
-
+    /** First set of pairs to use for writing. */
     private static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> pairs = null;
 
-    /**
-     * Second set of pairs to use for writing.
-     */
-
+    /** Second set of pairs to use for writing. */
     private static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> pairsTwo = null;
 
-    /**
-     * Third set of pairs to use for writing.
-     */
-
+    /** Third set of pairs to use for writing. */
     private static wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Double>>> pairsThree = null;
 
+    private static final String DEFAULT_PAIRS_NAME = "pairs.csv";
     private static final String VARIABLE_NAME = "ARMS";
     private static final Feature FEATURE = Feature.of(
             wres.statistics.MessageFactory.getGeometry( "FRUIT" ) );
@@ -249,7 +240,7 @@ public final class SingleValuedPairsWriterTest
         {
             Path directory = fileSystem.getPath( "test" );
             Files.createDirectory( directory );
-            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_NAME );
+            Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
             try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
@@ -307,7 +298,7 @@ public final class SingleValuedPairsWriterTest
         {
             Path directory = fileSystem.getPath( "test" );
             Files.createDirectory( directory );
-            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_NAME );
+            Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
             try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
@@ -384,7 +375,7 @@ public final class SingleValuedPairsWriterTest
         {
             Path directory = fileSystem.getPath( "test" );
             Files.createDirectory( directory );
-            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_NAME );
+            Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
             try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
@@ -462,7 +453,7 @@ public final class SingleValuedPairsWriterTest
         {
             Path directory = fileSystem.getPath( "test" );
             Files.createDirectory( directory );
-            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_NAME );
+            Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
             try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
@@ -513,7 +504,7 @@ public final class SingleValuedPairsWriterTest
         {
             Path directory = fileSystem.getPath( "test" );
             Files.createDirectory( directory );
-            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_NAME );
+            Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
             try ( SingleValuedPairsWriter writer =
@@ -530,7 +521,7 @@ public final class SingleValuedPairsWriterTest
                 List<String> results = Files.readAllLines( csvPath );
 
                 // Sort the results
-                Collections.sort( results, Comparator.naturalOrder() );
+                results.sort( Comparator.naturalOrder() );
 
                 // Assert the expected results
                 assertEquals( 10, results.size() );
@@ -568,7 +559,7 @@ public final class SingleValuedPairsWriterTest
         {
             Path directory = fileSystem.getPath( "test" );
             Files.createDirectory( directory );
-            Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_NAME );
+            Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
             try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( csvPath, ChronoUnit.SECONDS ) )

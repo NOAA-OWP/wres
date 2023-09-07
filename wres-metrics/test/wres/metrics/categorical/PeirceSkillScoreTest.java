@@ -121,7 +121,7 @@ public final class PeirceSkillScoreTest
     {
         PoolException exception =
                 assertThrows( PoolException.class,
-                              () -> this.pss.aggregate( null, null ) );
+                              () -> this.pss.applyIntermediate( null, null ) );
 
         String expectedMessage = "Specify non-null input to the '" + this.pss.getMetricNameString() + "'.";
 
@@ -147,7 +147,7 @@ public final class PeirceSkillScoreTest
         DoubleScoreStatisticOuter statistic = DoubleScoreStatisticOuter.of( table, this.meta );
 
         MetricCalculationException exception =
-                assertThrows( MetricCalculationException.class, () -> this.pss.aggregate( statistic, null ) );
+                assertThrows( MetricCalculationException.class, () -> this.pss.applyIntermediate( statistic, null ) );
 
         String expectedMessage = "Expected an intermediate result with a square number of elements when computing "
                                  + "the '"

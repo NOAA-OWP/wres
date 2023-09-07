@@ -6,11 +6,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.TreeSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,6 +30,7 @@ import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.TimeScale;
 import wres.datamodel.space.FeatureTuple;
+import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.datamodel.Ensemble;
@@ -315,6 +318,40 @@ public class InMemoryProject implements Project
                     case RIGHT -> this.getRightVariableName();
                     case BASELINE -> this.getBaselineVariableName();
                 };
+    }
+
+    @Override
+    public SortedSet<String> getEnsembleLabels( DatasetOrientation orientation )
+    {
+        Objects.requireNonNull( orientation );
+
+        Stream<TimeSeries<Ensemble>> series = this.timeSeriesStore.getEnsembleSeries( orientation );
+        List<Ensemble> ensembles = series.flatMap( n -> n.getEvents()
+                                                         .stream()
+                                                         .map( Event::getValue ) )
+                                         .toList();
+
+        SortedSet<String> labels = ensembles.stream()
+                                            .flatMap( e -> Arrays.stream( e.getLabels().getLabels() ) )
+                                            .collect( Collectors.toCollection( TreeSet::new ) );
+
+        // Return some default labels
+        if ( labels.isEmpty() )
+        {
+            int memberCount = ensembles.stream()
+                                       .mapToInt( Ensemble::size )
+                                       .max()
+                                       .orElse( 0 );
+            if ( memberCount > 0 )
+            {
+                labels = ProjectUtilities.getSeries( memberCount );
+            }
+        }
+
+        SortedSet<String> unmodifiable = Collections.unmodifiableSortedSet( labels );
+
+        return ProjectUtilities.filter( unmodifiable, this.getDeclaredDataset( orientation )
+                                                          .ensembleFilter() );
     }
 
     @Override

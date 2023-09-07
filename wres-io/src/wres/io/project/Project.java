@@ -3,6 +3,7 @@ package wres.io.project;
 import java.time.Duration;
 import java.time.MonthDay;
 import java.util.Set;
+import java.util.SortedSet;
 
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
@@ -48,7 +49,7 @@ public interface Project
      * project, variable and feature. The LCS is computed from all sides of a pairing (left, right and baseline) 
      * collectively. 
      * 
-     * @return the desired time scale or null if unknown
+     * @return the desired timescale or null if unknown
      * @throws DataAccessException if the existing time scales could not be obtained
      */
 
@@ -89,6 +90,15 @@ public interface Project
      */
 
     String getVariableName( DatasetOrientation orientation );
+
+    /**
+     * @param orientation the side of data for which the ensemble labels are required
+     * @return the ensemble member labels for the specified dataset orientation
+     * @throws NullPointerException if the orientation is null
+     * @throws IllegalArgumentException if the orientation is unrecognized
+     */
+
+    SortedSet<String> getEnsembleLabels( DatasetOrientation orientation );
 
     /**
      * @return the earliest analysis duration, defaults to {@link TimeWindowOuter#DURATION_MIN}.

@@ -63,7 +63,7 @@ class CollectableTask<S extends Pool<?>, T extends Statistic<?>, U extends Stati
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
-        return this.metric.aggregate( in, this.pool );
+        return this.metric.applyIntermediate( in, this.pool );
     }
 
 }

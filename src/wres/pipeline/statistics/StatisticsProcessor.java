@@ -536,7 +536,7 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
         if ( this.hasMetrics( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ) )
         {
             MetricConstants[] scores = this.getMetrics( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE );
-            this.dichotomousScalar = MetricFactory.ofDichotomousScoreCollection( metricExecutor, scores );
+            this.dichotomousScalar = MetricFactory.ofDichotomousScores( metricExecutor, scores );
 
             LOGGER.debug( "Created the dichotomous scores for processing. {}", this.dichotomousScalar );
         }

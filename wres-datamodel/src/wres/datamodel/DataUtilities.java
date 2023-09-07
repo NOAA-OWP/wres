@@ -308,9 +308,7 @@ public final class DataUtilities
     {
         String noSpaceString = rawString.replace( " ", "_" );
         String sanitized = noSpaceString.replaceAll( "[^a-zA-Z0-9\\-_.]", "" );
-        String safeName = URLEncoder.encode( sanitized, StandardCharsets.UTF_8 );
-
-        return safeName;
+        return URLEncoder.encode( sanitized, StandardCharsets.UTF_8 );
     }
 
     /**

@@ -64,7 +64,7 @@ public class MeanAbsoluteError extends DoubleErrorScore<Pool<Pair<Double, Double
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( DoubleScoreStatisticOuter statistic, Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter statistic, Pool<Pair<Double, Double>> pool )
     {
         if ( Objects.isNull( statistic ) )
         {
@@ -75,7 +75,7 @@ public class MeanAbsoluteError extends DoubleErrorScore<Pool<Pair<Double, Double
     }
 
     @Override
-    public DoubleScoreStatisticOuter getIntermediateStatistic( Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter getIntermediate( Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing the {}, which may be used as an intermediate statistic for other statistics.",
                       MetricConstants.MEAN_ABSOLUTE_ERROR );

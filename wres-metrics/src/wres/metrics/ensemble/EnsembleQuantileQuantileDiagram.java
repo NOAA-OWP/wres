@@ -178,7 +178,8 @@ public class EnsembleQuantileQuantileDiagram extends Diagram<Pool<Pair<Double, E
             double member = Double.NaN;
 
             // Does the label exist for this pair?
-            if ( ensemble.getLabels().hasLabel( ensembleName ) )
+            if ( ensemble.getLabels()
+                         .hasLabel( ensembleName ) )
             {
                 member = ensemble.getMember( ensembleName );
             }

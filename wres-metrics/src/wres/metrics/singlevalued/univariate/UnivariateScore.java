@@ -8,7 +8,6 @@ import java.util.function.ToDoubleFunction;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.MissingValues;
-import wres.datamodel.VectorOfDoubles;
 import wres.datamodel.pools.Pool;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
@@ -29,7 +28,7 @@ class UnivariateScore implements Function<Pool<Pair<Double, Double>>, DoubleScor
      * The scoring rule.
      */
 
-    private final ToDoubleFunction<VectorOfDoubles> function;
+    private final ToDoubleFunction<double[]> function;
 
     /**
      * Is true if the score units are the same as the paired units.
@@ -82,14 +81,10 @@ class UnivariateScore implements Function<Pool<Pair<Double, Double>>, DoubleScor
                 rightDoubles[i] = rawPairs.get( i ).getRight();
             }
 
-            VectorOfDoubles leftVector = VectorOfDoubles.of( leftDoubles );
-            VectorOfDoubles rightVector = VectorOfDoubles.of( rightDoubles );
-
-
             leftInner = this.getFunction()
-                       .applyAsDouble( leftVector );
+                       .applyAsDouble( leftDoubles );
             rightInner = this.getFunction()
-                        .applyAsDouble( rightVector );
+                        .applyAsDouble( rightDoubles );
         }
 
         // Empty string for default units
@@ -134,9 +129,8 @@ class UnivariateScore implements Function<Pool<Pair<Double, Double>>, DoubleScor
                     baselineDoubles[i] = rawBaselinePairs.get( i ).getRight();
                 }
 
-                VectorOfDoubles baselineVector = VectorOfDoubles.of( baselineDoubles );
                 baselineInner = this.getFunction()
-                               .applyAsDouble( baselineVector );
+                               .applyAsDouble( baselineDoubles );
             }
 
             // Add the metric component with the actual units of the pairs
@@ -159,12 +153,12 @@ class UnivariateScore implements Function<Pool<Pair<Double, Double>>, DoubleScor
      * 
      * @param function the scoring rule
      * @param metric the metric description
-     * @param a template score metric component from which to derive the l/r/b components
+     * @param template a template score metric component from which to derive the l/r/b components
      * @param pairedUnits is true if the units of the score are the same as the pairs
      * @throws NullPointerException if any nullable input is null
      */
 
-    UnivariateScore( ToDoubleFunction<VectorOfDoubles> function,
+    UnivariateScore( ToDoubleFunction<double[]> function,
                      DoubleScoreMetric metric,
                      DoubleScoreMetricComponent template,
                      boolean pairedUnits )
@@ -194,7 +188,7 @@ class UnivariateScore implements Function<Pool<Pair<Double, Double>>, DoubleScor
      * @return the function.
      */
 
-    private ToDoubleFunction<VectorOfDoubles> getFunction()
+    private ToDoubleFunction<double[]> getFunction()
     {
         return this.function;
     }

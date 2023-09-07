@@ -124,6 +124,8 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
     {
         Objects.requireNonNull( pool, "Specify non-null input to the '" + this.getMetricNameString() + "'." );
 
+        LOGGER.debug( "Computing the {}.", this );
+
         int quantileCount = this.probCount;
 
         // Use the smaller of the number of pairs and the default: no value in more quantiles than order statistics

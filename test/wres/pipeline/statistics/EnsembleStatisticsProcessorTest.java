@@ -153,7 +153,7 @@ public final class EnsembleStatisticsProcessorTest
         assertEquals( 11.009512537315405,
                       mae.getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( -1.157869354367079,
+        assertEquals( -1.1578693543670804,
                       me.getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 41.01563032408479,
@@ -254,13 +254,13 @@ public final class EnsembleStatisticsProcessorTest
         assertEquals( 11.009512537315405,
                       mae.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( 17.675554578575642,
+        assertEquals( 17.675554578575646,
                       mae.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 18.997815872635968,
                       mae.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( 20.625668563442147,
+        assertEquals( 20.625668563442144,
                       mae.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 22.094227646773568,
@@ -271,19 +271,19 @@ public final class EnsembleStatisticsProcessorTest
         List<DoubleScoreStatisticOuter> me = Slicer.filter( statistics.getDoubleScoreStatistics(),
                                                             MetricConstants.MEAN_ERROR );
 
-        assertEquals( -1.157869354367079,
+        assertEquals( -1.1578693543670804,
                       me.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( -1.157869354367079,
+        assertEquals( -1.1578693543670804,
                       me.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( -2.1250409720950105,
+        assertEquals( -2.1250409720950096,
                       me.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( -2.4855770739425846,
+        assertEquals( -2.485577073942586,
                       me.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( -3.4840043925326936,
+        assertEquals( -3.4840043925326953,
                       me.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -4.2185439080739515,
@@ -303,13 +303,13 @@ public final class EnsembleStatisticsProcessorTest
         assertEquals( 52.55361580348335,
                       rmse.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( 54.82426155439095,
+        assertEquals( 54.824261554390944,
                       rmse.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 58.12352988180837,
                       rmse.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( 61.12163959516186,
+        assertEquals( 61.12163959516187,
                       rmse.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
     }
@@ -487,13 +487,13 @@ public final class EnsembleStatisticsProcessorTest
         assertEquals( 11.009512537315405,
                       mae.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( 17.675554578575642,
+        assertEquals( 17.675554578575646,
                       mae.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 18.997815872635968,
                       mae.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( 20.653785159500924,
+        assertEquals( 20.65378515950092,
                       mae.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 22.094227646773568,
@@ -503,19 +503,19 @@ public final class EnsembleStatisticsProcessorTest
         //Validate me
         List<DoubleScoreStatisticOuter> me = Slicer.filter( results, MetricConstants.MEAN_ERROR );
 
-        assertEquals( -1.157869354367079,
+        assertEquals( -1.1578693543670804,
                       me.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( -1.157869354367079,
+        assertEquals( -1.1578693543670804,
                       me.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( -2.1250409720950105,
+        assertEquals( -2.1250409720950096,
                       me.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( -2.4855770739425846,
+        assertEquals( -2.485577073942586,
                       me.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( -3.5134287820490364,
+        assertEquals( -3.5134287820490377,
                       me.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -4.2185439080739515,
@@ -533,13 +533,13 @@ public final class EnsembleStatisticsProcessorTest
         assertEquals( 52.55361580348335,
                       rmse.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( 54.82426155439095,
+        assertEquals( 54.824261554390944,
                       rmse.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( 58.191244125990046,
+        assertEquals( 58.19124412599005,
                       rmse.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( 61.12163959516186,
+        assertEquals( 61.12163959516187,
                       rmse.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
     }
@@ -771,13 +771,13 @@ public final class EnsembleStatisticsProcessorTest
         assertEquals( 11.009512537315405,
                       mae.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( 17.675554578575642,
+        assertEquals( 17.675554578575646,
                       mae.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 18.997815872635968,
                       mae.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( 20.625668563442147,
+        assertEquals( 20.625668563442144,
                       mae.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 22.094227646773568,
@@ -787,19 +787,19 @@ public final class EnsembleStatisticsProcessorTest
         //Validate me
         List<DoubleScoreStatisticOuter> me = Slicer.filter( results, MetricConstants.MEAN_ERROR );
 
-        assertEquals( -1.157869354367079,
+        assertEquals( -1.1578693543670804,
                       me.get( 0 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( -1.157869354367079,
+        assertEquals( -1.1578693543670804,
                       me.get( 1 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( -2.1250409720950105,
+        assertEquals( -2.1250409720950096,
                       me.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( -2.4855770739425846,
+        assertEquals( -2.485577073942586,
                       me.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( -3.4840043925326936,
+        assertEquals( -3.4840043925326953,
                       me.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( -4.2185439080739515,
@@ -817,13 +817,13 @@ public final class EnsembleStatisticsProcessorTest
         assertEquals( 52.55361580348335,
                       rmse.get( 2 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( 54.82426155439095,
+        assertEquals( 54.824261554390944,
                       rmse.get( 3 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
         assertEquals( 58.12352988180837,
                       rmse.get( 4 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
-        assertEquals( 61.12163959516186,
+        assertEquals( 61.12163959516187,
                       rmse.get( 5 ).getComponent( MetricConstants.MAIN ).getStatistic().getValue(),
                       Precision.EPSILON );
     }
@@ -837,8 +837,9 @@ public final class EnsembleStatisticsProcessorTest
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors =
                 EnsembleStatisticsProcessorTest.ofMetricProcessorForEnsemblePairs( declaration );
-        StatisticsStore statistics = this.getAndCombineStatistics( processors,
-                                                                   TestDataFactory.getTimeSeriesOfEnsemblePairsTwo() );
+
+        Pool<TimeSeries<Pair<Double,Ensemble>>> poolData = TestDataFactory.getTimeSeriesOfEnsemblePairsTwo();
+        StatisticsStore statistics = this.getAndCombineStatistics( processors, poolData );
 
         // Expected result
         TimeWindow timeWindow = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),

@@ -68,7 +68,7 @@ public abstract class TimingError implements Metric<Pool<TimeSeries<Pair<Double,
      * @return the random number generator
      */
 
-    Random getRNG()
+    Random getRandomNumberGenerator()
     {
         return this.rng;
     }

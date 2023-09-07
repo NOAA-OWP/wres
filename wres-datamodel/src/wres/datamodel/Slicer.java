@@ -109,7 +109,8 @@ public final class Slicer
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by left and right." );
 
-        return pair -> predicate.test( pair.getLeft() ) && predicate.test( pair.getRight() );
+        return pair -> predicate.test( pair.getLeft() )
+                       && predicate.test( pair.getRight() );
     }
 
     /**
@@ -139,7 +140,9 @@ public final class Slicer
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by all of right." );
 
-        return pair -> Arrays.stream( pair.getRight().getMembers() ).allMatch( predicate );
+        return pair -> Arrays.stream( pair.getRight()
+                                          .getMembers() )
+                             .allMatch( predicate );
     }
 
     /**
@@ -154,7 +157,9 @@ public final class Slicer
     {
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by any of right." );
 
-        return pair -> Arrays.stream( pair.getRight().getMembers() ).anyMatch( predicate );
+        return pair -> Arrays.stream( pair.getRight()
+                                          .getMembers() )
+                             .anyMatch( predicate );
     }
 
     /**
@@ -170,7 +175,9 @@ public final class Slicer
         Objects.requireNonNull( predicate, "Specify non-null input when slicing by left and all of right." );
 
         return pair -> predicate.test( pair.getLeft() )
-                       && Arrays.stream( pair.getRight().getMembers() ).allMatch( predicate );
+                       && Arrays.stream( pair.getRight()
+                                             .getMembers() )
+                                .allMatch( predicate );
     }
 
     /**
@@ -206,7 +213,8 @@ public final class Slicer
 
         Objects.requireNonNull( transformer, "Specify a non-null transformer when slicing by right." );
 
-        return pair -> predicate.test( transformer.applyAsDouble( pair.getRight().getMembers() ) );
+        return pair -> predicate.test( transformer.applyAsDouble( pair.getRight()
+                                                                      .getMembers() ) );
     }
 
     /**
@@ -250,7 +258,7 @@ public final class Slicer
             Ensemble ensemble = Slicer.eachOfRight( predicate )
                                       .apply( pair.getRight() );
 
-            if( ensemble.size() == 0 )
+            if ( ensemble.size() == 0 )
             {
                 return null;
             }
@@ -283,11 +291,17 @@ public final class Slicer
                 {
                     filteredMembers.add( members[i] );
 
-                    if ( labels.hasLabels() )
+                    if ( ensemble.hasLabels() )
                     {
                         filteredLabels.add( labelValues[i] );
                     }
                 }
+            }
+
+            // Optimization, nothing filtered
+            if ( filteredMembers.size() == members.length )
+            {
+                return ensemble;
             }
 
             // Unbox
@@ -301,7 +315,7 @@ public final class Slicer
             if ( filteredMemberArray.length > 0 )
             {
                 Labels fLabels = Labels.of( filteredLabelArray );
-                return Ensemble.of( filteredMemberArray, fLabels );
+                return Ensemble.of( filteredMemberArray, fLabels, ensemble.areSortedMembersCached() );
             }
             else
             {
@@ -339,7 +353,10 @@ public final class Slicer
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
-        return input.get().stream().mapToDouble( Pair::getRight ).toArray();
+        return input.get()
+                    .stream()
+                    .mapToDouble( Pair::getRight )
+                    .toArray();
     }
 
     /**
@@ -382,8 +399,7 @@ public final class Slicer
         Objects.requireNonNull( ensemble );
         Objects.requireNonNull( labels );
 
-        if ( !ensemble.getLabels()
-                      .hasLabels() )
+        if ( !ensemble.hasLabels() )
         {
             throw new IllegalArgumentException( "Cannot filter ensemble " + ensemble
                                                 + " to remove labels because the "
@@ -420,43 +436,7 @@ public final class Slicer
 
         String[] filteredLabelArray = newLabels.toArray( new String[0] );
 
-        return Ensemble.of( filteredMemberArray, Labels.of( filteredLabelArray ) );
-    }
-
-    /**
-     * <p>Discovers the unique instances of a given type of statistic. The mapper function identifies the type to 
-     * discover. For example, to discover the unique thresholds contained in the list of outputs:</p>
-     *
-     * <p><code>Slicer.discover( outputs, next {@literal ->}
-     *                                         next.getMetadata().getThresholds() );</code></p>
-     *
-     * <p>To discover the unique pairs of lead times in the list of outputs:</p>
-     *
-     * <p><code>Slicer.discover( outputs, next {@literal ->}
-     * Pair.of( next.getMetadata().getTimeWindow().getEarliestLeadTime(), 
-     * next.getMetadata().getTimeWindow().getLatestLeadTime() );</code></p>
-     *
-     * <p>Returns the empty set if no elements are mapped.</p>
-     *
-     * @param <S> the metric output type
-     * @param <T> the type of information required about the output
-     * @param statistics the list of outputs
-     * @param mapper the mapper function that discovers the type of interest
-     * @return the unique instances of a given type associated with the output
-     * @throws NullPointerException if the input list is null or the mapper is null
-     */
-
-    public static <S extends Statistic<?>, T> SortedSet<T> discover( List<S> statistics,
-                                                                     Function<S, T> mapper )
-    {
-        Objects.requireNonNull( statistics, NULL_INPUT_EXCEPTION );
-
-        Objects.requireNonNull( mapper, NULL_INPUT_EXCEPTION );
-
-        return Collections.unmodifiableSortedSet( statistics.stream()
-                                                            .map( mapper )
-                                                            .filter( Objects::nonNull )
-                                                            .collect( Collectors.toCollection( TreeSet::new ) ) );
+        return Ensemble.of( filteredMemberArray, Labels.of( filteredLabelArray ), ensemble.areSortedMembersCached() );
     }
 
     /**
@@ -482,6 +462,60 @@ public final class Slicer
         return statistics.stream()
                          .filter( next -> metricIdentifier == next.getMetricName() )
                          .toList();
+    }
+
+    /**
+     * Returns as many lists of ensemble pairs as groups of atomic pairs in the input with an equal number of elements,
+     * i.e. each list of ensemble pairs in the returned result has an equal number of elements, internally, and a
+     * different number of elements than all other subsets of pairs. The subsets are returned in a map, indexed by the
+     * number of elements on the right side.
+     *
+     * @param input a list of ensemble pairs to slice
+     * @return as many subsets of ensemble pairs as groups of pairs in the input of equal size
+     * @throws NullPointerException if the input is null
+     */
+
+    public static Map<Integer, List<Pair<Double, Ensemble>>> filterByRightSize( List<Pair<Double, Ensemble>> input )
+    {
+        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
+
+        return input.stream().collect( Collectors.groupingBy( pair -> pair.getRight().size() ) );
+    }
+
+    /**
+     * <p>Discovers the unique instances of a given type of statistic. The mapper function identifies the type to
+     * discover. For example, to discover the unique thresholds contained in the list of outputs:</p>
+     *
+     * <p><code>Slicer.discover( outputs, next {@literal ->}
+     *                                         next.getMetadata().getThresholds() );</code></p>
+     *
+     * <p>To discover the unique pairs of lead times in the list of outputs:</p>
+     *
+     * <p><code>Slicer.discover( outputs, next {@literal ->}
+     * Pair.of( next.getMetadata().getTimeWindow().getEarliestLeadTime(),
+     * next.getMetadata().getTimeWindow().getLatestLeadTime() );</code></p>
+     *
+     * <p>Returns the empty set if no elements are mapped.</p>
+     *
+     * @param <S> the metric output type
+     * @param <T> the type of information required about the output
+     * @param statistics the list of outputs
+     * @param mapper the mapper function that discovers the type of interest
+     * @return the unique instances of a given type associated with the output
+     * @throws NullPointerException if the input list is null or the mapper is null
+     */
+
+    public static <S extends Statistic<?>, T> SortedSet<T> discover( List<S> statistics,
+                                                                     Function<S, T> mapper )
+    {
+        Objects.requireNonNull( statistics, NULL_INPUT_EXCEPTION );
+
+        Objects.requireNonNull( mapper, NULL_INPUT_EXCEPTION );
+
+        return Collections.unmodifiableSortedSet( statistics.stream()
+                                                            .map( mapper )
+                                                            .filter( Objects::nonNull )
+                                                            .collect( Collectors.toCollection( TreeSet::new ) ) );
     }
 
     /**
@@ -514,24 +548,6 @@ public final class Slicer
         returnMe.sort( compare );
 
         return Collections.unmodifiableList( returnMe );
-    }
-
-    /**
-     * Returns as many lists of ensemble pairs as groups of atomic pairs in the input with an equal number of elements, 
-     * i.e. each list of ensemble pairs in the returned result has an equal number of elements, internally, and a 
-     * different number of elements than all other subsets of pairs. The subsets are returned in a map, indexed by the 
-     * number of elements on the right side.
-     *
-     * @param input a list of ensemble pairs to slice
-     * @return as many subsets of ensemble pairs as groups of pairs in the input of equal size
-     * @throws NullPointerException if the input is null
-     */
-
-    public static Map<Integer, List<Pair<Double, Ensemble>>> filterByRightSize( List<Pair<Double, Ensemble>> input )
-    {
-        Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
-
-        return input.stream().collect( Collectors.groupingBy( pair -> pair.getRight().size() ) );
     }
 
     /**
