@@ -543,6 +543,9 @@ public class PoolFactory
         // Currently only a seasonal filter, which applies equally to all sides
         Predicate<TimeSeries<Double>> filter = this.getSeasonalFilter( declaration.season() );
 
+        // Missing values filter
+        Predicate<Double> missingFilter = MissingValues::isNotMissingValue;
+
         // Get the time shifts
         Dataset left = project.getDeclaredDataset( DatasetOrientation.LEFT );
         Duration leftTimeShift = this.getTimeShift( left );
@@ -565,6 +568,9 @@ public class PoolFactory
                                                                     .setLeftFilter( filter )
                                                                     .setRightFilter( filter )
                                                                     .setBaselineFilter( filter )
+                                                                    .setLeftMissingFilter( missingFilter )
+                                                                    .setRightMissingFilter( missingFilter )
+                                                                    .setBaselineMissingFilter( missingFilter )
                                                                     .setLeftUpscaler( leftUpscaler )
                                                                     .setRightUpscaler( rightUpscaler )
                                                                     .setBaselineUpscaler( baselineUpscaler )
@@ -650,17 +656,24 @@ public class PoolFactory
         UnaryOperator<TimeSeries<Double>> leftValueAndUnitTransformer =
                 this.getSingleValuedTransformer( leftValueTransformer );
 
+        // Whether to cache the sorted ensemble members, trading cpu for memory. Do this when performing sampling
+        // uncertainty estimation, because repeated sorting for each realization is otherwise extremely expensive and
+        // the ensemble members themselves are not resampled
+        boolean cacheSorted = Objects.nonNull( declaration.sampleUncertainty() );
+
         // Right transformer
         Dataset right = project.getDeclaredDataset( DatasetOrientation.RIGHT );
         UnaryOperator<Event<Ensemble>> rightValueTransformer = this.getEnsembleTransformer( leftValueTransformer,
-                                                                                            right );
+                                                                                            right,
+                                                                                            cacheSorted );
         UnaryOperator<TimeSeries<Ensemble>> rightValueAndUnitTransformer =
                 this.getEnsembleTransformer( rightValueTransformer );
 
         // Baseline transformer
         Dataset baseline = project.getDeclaredDataset( DatasetOrientation.BASELINE );
         UnaryOperator<Event<Ensemble>> baselineValueTransformer = this.getEnsembleTransformer( leftValueTransformer,
-                                                                                               baseline );
+                                                                                               baseline,
+                                                                                               cacheSorted );
 
         UnaryOperator<TimeSeries<Ensemble>> baselineValueAndUnitTransformer =
                 this.getEnsembleTransformer( baselineValueTransformer );
@@ -668,6 +681,11 @@ public class PoolFactory
         // Currently only a seasonal filter, which applies equally to all sides
         Predicate<TimeSeries<Double>> singleValuedFilter = this.getSeasonalFilter( declaration.season() );
         Predicate<TimeSeries<Ensemble>> ensembleFilter = this.getSeasonalFilter( declaration.season() );
+
+        // Missing value filters
+        Predicate<Double> leftMissingFilter = MissingValues::isNotMissingValue;
+        Predicate<Ensemble> rightBaselineMissingFilter = ensemble -> Objects.nonNull( ensemble )
+                                                                     && ensemble.size() > 0;
 
         // Get the time shifts
         Dataset left = project.getDeclaredDataset( DatasetOrientation.LEFT );
@@ -679,29 +697,33 @@ public class PoolFactory
 
         // Build and return the pool suppliers
         List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> rawSuppliers =
-                new PoolsGenerator.Builder<Double, Ensemble, Ensemble>().setProject( project )
-                                                                        .setRetrieverFactory( retrieverFactory )
-                                                                        .setPoolRequests( poolRequests )
-                                                                        .setLeftTransformer( leftValueAndUnitTransformer )
-                                                                        .setRightTransformer( rightValueAndUnitTransformer )
-                                                                        .setBaselineTransformer( baselineValueAndUnitTransformer )
-                                                                        .setLeftUpscaler( leftUpscaler )
-                                                                        .setRightUpscaler( rightUpscaler )
-                                                                        .setBaselineUpscaler( baselineUpscaler )
-                                                                        .setLeftFilter( singleValuedFilter )
-                                                                        .setRightFilter( ensembleFilter )
-                                                                        .setBaselineFilter( ensembleFilter )
-                                                                        .setLeftTimeShift( leftTimeShift )
-                                                                        .setRightTimeShift( rightTimeShift )
-                                                                        .setBaselineTimeShift( baselineTimeShift )
-                                                                        .setPairer( pairer )
-                                                                        .setPairFrequency( pairFrequency )
-                                                                        .setCrossPairer( crossPairer )
-                                                                        .setClimateMapper( Double::doubleValue )
-                                                                        .setClimateAdmissibleValue( Double::isFinite )
-                                                                        .setBaselineShim( Function.identity() )
-                                                                        .build()
-                                                                        .get();
+                new PoolsGenerator.Builder<Double, Ensemble, Ensemble>()
+                        .setProject( project )
+                        .setRetrieverFactory( retrieverFactory )
+                        .setPoolRequests( poolRequests )
+                        .setLeftTransformer( leftValueAndUnitTransformer )
+                        .setRightTransformer( rightValueAndUnitTransformer )
+                        .setBaselineTransformer( baselineValueAndUnitTransformer )
+                        .setLeftUpscaler( leftUpscaler )
+                        .setRightUpscaler( rightUpscaler )
+                        .setBaselineUpscaler( baselineUpscaler )
+                        .setLeftFilter( singleValuedFilter )
+                        .setRightFilter( ensembleFilter )
+                        .setBaselineFilter( ensembleFilter )
+                        .setLeftMissingFilter( leftMissingFilter )
+                        .setRightMissingFilter( rightBaselineMissingFilter )
+                        .setBaselineMissingFilter( rightBaselineMissingFilter )
+                        .setLeftTimeShift( leftTimeShift )
+                        .setRightTimeShift( rightTimeShift )
+                        .setBaselineTimeShift( baselineTimeShift )
+                        .setPairer( pairer )
+                        .setPairFrequency( pairFrequency )
+                        .setCrossPairer( crossPairer )
+                        .setClimateMapper( Double::doubleValue )
+                        .setClimateAdmissibleValue( Double::isFinite )
+                        .setBaselineShim( Function.identity() )
+                        .build()
+                        .get();
 
         return this.getComposedSuppliers( poolRequests, rawSuppliers );
     }
@@ -771,17 +793,24 @@ public class PoolFactory
         UnaryOperator<TimeSeries<Double>> leftValueAndUnitTransformer =
                 this.getSingleValuedTransformer( leftValueTransformer );
 
+        // Whether to cache the sorted ensemble members, trading cpu for memory. Do this when performing sampling
+        // uncertainty estimation, because repeated sorting for each realization is otherwise extremely expensive and
+        // the ensemble members themselves are not resampled
+        boolean cacheSorted = Objects.nonNull( declaration.sampleUncertainty() );
+
         // Right transformer
         Dataset right = project.getDeclaredDataset( DatasetOrientation.RIGHT );
         UnaryOperator<Event<Ensemble>> rightValueTransformer = this.getEnsembleTransformer( leftValueTransformer,
-                                                                                            right );
+                                                                                            right,
+                                                                                            cacheSorted );
         UnaryOperator<TimeSeries<Ensemble>> rightValueAndUnitTransformer =
                 this.getEnsembleTransformer( rightValueTransformer );
 
         // Baseline transformer
         Dataset baseline = project.getDeclaredDataset( DatasetOrientation.BASELINE );
         UnaryOperator<Event<Ensemble>> baselineValueTransformer = this.getEnsembleTransformer( leftValueTransformer,
-                                                                                               baseline );
+                                                                                               baseline,
+                                                                                               cacheSorted );
 
         UnaryOperator<TimeSeries<Ensemble>> baselineValueAndUnitTransformer =
                 this.getEnsembleTransformer( baselineValueTransformer );
@@ -789,6 +818,11 @@ public class PoolFactory
         // Currently only a seasonal filter, which applies equally to all sides
         Predicate<TimeSeries<Double>> singleValuedFilter = this.getSeasonalFilter( declaration.season() );
         Predicate<TimeSeries<Ensemble>> ensembleFilter = this.getSeasonalFilter( declaration.season() );
+
+        // Missing value filters
+        Predicate<Double> leftMissingFilter = MissingValues::isNotMissingValue;
+        Predicate<Ensemble> rightBaselineMissingFilter = ensemble -> Objects.nonNull( ensemble )
+                                                                     && ensemble.size() > 0;
 
         // Get the time shifts
         Dataset left = project.getDeclaredDataset( DatasetOrientation.LEFT );
@@ -825,31 +859,33 @@ public class PoolFactory
 
         // Build and return the pool suppliers
         List<Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>> rawSuppliers =
-                new PoolsGenerator.Builder<Double, Ensemble, Double>().setProject( project )
-                                                                      .setRetrieverFactory( retrieverFactory )
-                                                                      .setPoolRequests( poolRequests )
-                                                                      .setLeftTransformer( leftValueAndUnitTransformer )
-                                                                      .setRightTransformer(
-                                                                              rightValueAndUnitTransformer )
-                                                                      .setBaselineTransformer(
-                                                                              baselineValueAndUnitTransformer )
-                                                                      .setLeftUpscaler( leftUpscaler )
-                                                                      .setRightUpscaler( rightUpscaler )
-                                                                      .setBaselineUpscaler( baselineUpscaler )
-                                                                      .setLeftFilter( singleValuedFilter )
-                                                                      .setRightFilter( ensembleFilter )
-                                                                      .setBaselineFilter( ensembleFilter )
-                                                                      .setLeftTimeShift( leftTimeShift )
-                                                                      .setRightTimeShift( rightTimeShift )
-                                                                      .setBaselineTimeShift( baselineTimeShift )
-                                                                      .setPairer( pairer )
-                                                                      .setPairFrequency( pairFrequency )
-                                                                      .setCrossPairer( crossPairer )
-                                                                      .setClimateMapper( Double::doubleValue )
-                                                                      .setClimateAdmissibleValue( Double::isFinite )
-                                                                      .setBaselineGenerator( baselineGenerator )
-                                                                      .build()
-                                                                      .get();
+                new PoolsGenerator.Builder<Double, Ensemble, Double>()
+                        .setProject( project )
+                        .setRetrieverFactory( retrieverFactory )
+                        .setPoolRequests( poolRequests )
+                        .setLeftTransformer( leftValueAndUnitTransformer )
+                        .setRightTransformer( rightValueAndUnitTransformer )
+                        .setBaselineTransformer( baselineValueAndUnitTransformer )
+                        .setLeftUpscaler( leftUpscaler )
+                        .setRightUpscaler( rightUpscaler )
+                        .setBaselineUpscaler( baselineUpscaler )
+                        .setLeftFilter( singleValuedFilter )
+                        .setRightFilter( ensembleFilter )
+                        .setBaselineFilter( ensembleFilter )
+                        .setLeftMissingFilter( leftMissingFilter )
+                        .setRightMissingFilter( rightBaselineMissingFilter )
+                        .setBaselineMissingFilter( rightBaselineMissingFilter )
+                        .setLeftTimeShift( leftTimeShift )
+                        .setRightTimeShift( rightTimeShift )
+                        .setBaselineTimeShift( baselineTimeShift )
+                        .setPairer( pairer )
+                        .setPairFrequency( pairFrequency )
+                        .setCrossPairer( crossPairer )
+                        .setClimateMapper( Double::doubleValue )
+                        .setClimateAdmissibleValue( Double::isFinite )
+                        .setBaselineGenerator( baselineGenerator )
+                        .build()
+                        .get();
 
         return this.getComposedSuppliers( poolRequests, rawSuppliers );
     }
@@ -942,7 +978,7 @@ public class PoolFactory
      * @param evaluation the evaluation description
      * @param declaration the project declaration
      * @param featureGroup the feature group
-     * @param desiredTimeScale the desired time scale
+     * @param desiredTimeScale the desired timescale
      * @param timeWindows the time windows
      * @return the pool requests
      * @throws NullPointerException if any input is null
@@ -1013,7 +1049,7 @@ public class PoolFactory
      * @param evaluation the evaluation description
      * @param featureGroup the feature group
      * @param timeWindow the time window
-     * @param desiredTimeScale the desired time scale
+     * @param desiredTimeScale the desired timescale
      * @param orientation the context for the data as it relates to the declaration
      * @return the metadata
      */
@@ -1238,7 +1274,9 @@ public class PoolFactory
                                           .map( unitMapper )
                                           .toArray();
 
-            Ensemble convertedEnsemble = Ensemble.of( mappedValues, ensemble.getLabels() );
+            Ensemble convertedEnsemble = Ensemble.of( mappedValues,
+                                                      ensemble.getLabels(),
+                                                      ensemble.areSortedMembersCached() );
 
             return Event.of( ensembleEvent.getTime(), convertedEnsemble );
         };
@@ -1316,23 +1354,14 @@ public class PoolFactory
      *
      * @param valueTransformer the value transformer to compose
      * @param dataset the data source declaration
+     * @param cacheSorted whether to cache the sorted ensemble members, trading cpu for memory
      * @return a transformer or null
      */
 
     private UnaryOperator<Event<Ensemble>> getEnsembleTransformer( DoubleUnaryOperator valueTransformer,
-                                                                   Dataset dataset )
+                                                                   Dataset dataset,
+                                                                   boolean cacheSorted )
     {
-        // Return null to avoid iterating a no-op function
-        if ( Objects.isNull( valueTransformer )
-             && ( Objects.isNull( dataset )
-                  || Objects.isNull( dataset.ensembleFilter() )
-                  || dataset.ensembleFilter()
-                            .members()
-                            .isEmpty() ) )
-        {
-            return null;
-        }
-
         List<String> inclusive = null;
         List<String> exclusive = null;
 
@@ -1359,22 +1388,22 @@ public class PoolFactory
 
         return toTransform -> {
 
-            Ensemble ensemble = toTransform.getValue();
-            Labels ensLabels = ensemble.getLabels();
+            Ensemble returnMe = toTransform.getValue();
+            Labels ensLabels = returnMe.getLabels();
 
             // If filters were defined, they must select something
             if ( ( ( Objects.nonNull( finalInclusive ) && !finalInclusive.isEmpty() )
                    || ( Objects.nonNull( finalExclusive ) && !finalExclusive.isEmpty() ) )
-                 && !ensLabels.hasLabels() )
+                 && !returnMe.hasLabels() )
             {
                 throw new IllegalArgumentException( "When attempting to filter ensemble members, discovered some "
                                                     + "filters, but the ensemble members were not labelled, "
                                                     + "which is not allowed." );
             }
 
-            double[] members = ensemble.getMembers();
+            double[] members = returnMe.getMembers();
 
-            // Map the members
+            // Apply the value mapper
             if ( Objects.nonNull( valueTransformer ) )
             {
                 members = Arrays.stream( members )
@@ -1382,17 +1411,31 @@ public class PoolFactory
                                 .toArray();
             }
 
-            Ensemble furtherFilter = Ensemble.of( members, ensLabels );
-            furtherFilter = this.filterEnsembleMembers( furtherFilter, finalInclusive, finalExclusive );
+            // Apply the filters, if they exist
+            returnMe = this.filterEnsembleMembers( Ensemble.of( members,
+                                                                ensLabels,
+                                                                returnMe.areSortedMembersCached() ),
+                                                   finalInclusive,
+                                                   finalExclusive );
 
-            return Event.of( toTransform.getTime(), furtherFilter );
+            // Remove any missing ensemble members
+            returnMe = Slicer.eachOfRight( MissingValues::isNotMissingValue )
+                             .apply( returnMe );
+
+            // Cache the sorted ensemble members if required
+            if ( cacheSorted )
+            {
+                returnMe = Ensemble.of( returnMe.getMembers(), returnMe.getLabels(), true );
+            }
+
+            return Event.of( toTransform.getTime(), returnMe );
         };
     }
 
     /**
      * @param ensemble the ensemble to filter
      * @param finalInclusive the inclusive filters
-     * @param finalExclusive the exclusive filters
+     * @param finalExclusive the exclusive filter
      * @return the filtered ensemble
      */
 
@@ -1400,11 +1443,17 @@ public class PoolFactory
                                             List<String> finalInclusive,
                                             List<String> finalExclusive )
     {
+        // Nothing to filter
+        if ( Objects.isNull( finalInclusive ) && Objects.isNull( finalExclusive ) )
+        {
+            return ensemble;
+        }
+
         double[] members = ensemble.getMembers();
         Labels ensLabels = ensemble.getLabels();
 
         // Filter named members?
-        if ( ensLabels.hasLabels() )
+        if ( ensemble.hasLabels() )
         {
             Map<String, Double> valuesToUse = new TreeMap<>();
             String[] labels = ensLabels.getLabels();
@@ -1771,7 +1820,7 @@ public class PoolFactory
             }
         }
 
-        // Is there a left over feature batch with fewer than this.FEATURE_BATCHED_RETRIEVAL_SIZE features?
+        // Is there a leftover feature batch with fewer than this.FEATURE_BATCHED_RETRIEVAL_SIZE features?
         if ( !nextGroups.isEmpty() )
         {
             FeatureGroup nextComposedGroup = this.getComposedFeatureGroup( nextGroups );

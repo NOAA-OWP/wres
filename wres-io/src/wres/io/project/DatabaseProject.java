@@ -10,6 +10,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -69,28 +71,19 @@ public class DatabaseProject implements Project
 
     private long projectId;
 
-    /**
-     * The measurement unit, which is the declared unit, if available, else the most commonly occurring unit among the 
+    /** The measurement unit, which is the declared unit, if available, else the most commonly occurring unit among the
      * project sources, with a preference for the mostly commonly occurring right-sided source unit. See 
-     * {@link ProjectScriptGenerator#createUnitScript(Database, long)}}.
-     */
+     * {@link ProjectScriptGenerator#createUnitScript(Database, long)}}. */
 
     private String measurementUnit = null;
 
-    /**
-     * The set of all features pertaining to the project
-     */
+    /** The set of all features pertaining to the project. */
     private Set<FeatureTuple> features;
 
-    /**
-     * The feature groups related to the project.
-     */
-
+    /** The feature groups related to the project. */
     private Set<FeatureGroup> featureGroups;
 
-    /**
-     * Indicates whether this project was inserted on upon this execution of the project
-     */
+    /** Indicates whether this project was inserted on upon this execution of the project. */
     private boolean performedInsert;
 
     private Boolean leftUsesGriddedData = null;
@@ -106,7 +99,7 @@ public class DatabaseProject implements Project
     /** The baseline-ish variable to evaluate. */
     private String baselineVariable;
 
-    /** The desired time scale. */
+    /** The desired timescale. */
     private TimeScaleOuter desiredTimeScale;
 
     /**
@@ -203,7 +196,7 @@ public class DatabaseProject implements Project
     }
 
     /**
-     * Returns the desired time scale. In order of availability, this is:
+     * Returns the desired timescale. In order of availability, this is:
      *
      * <ol>
      * <li>The desired time scale provided on construction;</li>
@@ -372,6 +365,36 @@ public class DatabaseProject implements Project
                     case RIGHT -> this.getRightVariableName();
                     case BASELINE -> this.getBaselineVariableName();
                 };
+    }
+
+    @Override
+    public SortedSet<String> getEnsembleLabels( DatasetOrientation orientation )
+    {
+        Objects.requireNonNull( orientation );
+
+        DataScripter script = ProjectScriptGenerator.createEnsembleLabelScript( this.getDatabase(),
+                                                                                this.getProjectId(),
+                                                                                orientation );
+        try ( DataProvider provider = script.getData() )
+        {
+            // Labels are always present in the database, even if only defaults (i.e., a zero-indexed series), as
+            // defined in the relevant ingest class
+            SortedSet<String> labels = new TreeSet<>();
+            while ( provider.next() )
+            {
+                String label = provider.getString( "ensemble_name" );
+                labels.add( label );
+            }
+
+            SortedSet<String> unmodifiable = Collections.unmodifiableSortedSet( labels );
+
+            return ProjectUtilities.filter( unmodifiable, this.getDeclaredDataset( orientation )
+                                                              .ensembleFilter() );
+        }
+        catch ( SQLException e )
+        {
+            throw new DataAccessException( "While attempting to determine whether gridded data were ingested.", e );
+        }
     }
 
     @Override

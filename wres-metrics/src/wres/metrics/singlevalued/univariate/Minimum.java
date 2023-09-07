@@ -7,7 +7,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
-import wres.datamodel.VectorOfDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
@@ -105,7 +104,7 @@ public class Minimum extends DecomposableScore<Pool<Pair<Double, Double>>>
                                                                         .setOptimum( Double.NaN )
                                                                         .build();
 
-        ToDoubleFunction<VectorOfDoubles> minimum = FunctionFactory.minimum();
+        ToDoubleFunction<double[]> minimum = FunctionFactory.minimum();
         this.score = new UnivariateScore( minimum, metric, template, true );
     }
 

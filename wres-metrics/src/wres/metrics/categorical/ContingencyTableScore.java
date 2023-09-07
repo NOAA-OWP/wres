@@ -44,7 +44,7 @@ abstract class ContingencyTableScore implements Score<Pool<Pair<Boolean, Boolean
     }
 
     @Override
-    public DoubleScoreStatisticOuter getIntermediateStatistic( final Pool<Pair<Boolean, Boolean>> s )
+    public DoubleScoreStatisticOuter getIntermediate( final Pool<Pair<Boolean, Boolean>> s )
     {
         if ( Objects.isNull( s ) )
         {

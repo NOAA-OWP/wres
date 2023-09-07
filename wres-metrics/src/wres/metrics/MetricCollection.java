@@ -29,8 +29,8 @@ import wres.datamodel.statistics.Statistic;
 import wres.metrics.categorical.ContingencyTable;
 
 /**
- * <p>An immutable collection of {@link Metric} that consume a common class of {@link Pool} and return a common
- * class of {@link Statistic}.
+ * <p>An immutable collection of {@link Metric} that consume a common type of {@link Pool} and return a common
+ * type of {@link Statistic}.
  *
  * <p>For metrics that implement {@link Collectable} and whose method {@link Collectable#getCollectionOf()} returns a
  * common superclass (by {@link Metric#getMetricName()}), the intermediate output is computed once and applied to all 
@@ -44,48 +44,36 @@ import wres.metrics.categorical.ContingencyTable;
  * {@link MetricConstants} may be defined. These metrics are ignored during calculation.
  *
  * @author James Brown
- * @param <S> the input type
- * @param <T> the intermediate output type for {@link Collectable} metrics in this collection
- * @param <U> the output type
+ * @param <S> the pool data type
+ * @param <T> the intermediate statistics type for {@link Collectable} metrics in this collection
+ * @param <U> the statistics type
  */
 
 public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U extends Statistic<?>>
         implements Function<S, List<U>>
 {
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     static final Logger LOGGER = LoggerFactory.getLogger( MetricCollection.class );
 
-    /**
-     * A collection of {@link Metric} that are not {@link Collectable}.
-     */
-
+    /** A collection of {@link Metric} that are not {@link Collectable}. */
     private final Map<MetricConstants, Metric<S, U>> metrics;
 
-    /**
-     * A collection of {@link Metric} that are {@link Collectable}. The metrics are indexed by 
-     * {@link Collectable#getCollectionOf()}.
-     */
+    /** A collection of {@link Metric} that are {@link Collectable}. The metrics are indexed by
+     * {@link Collectable#getCollectionOf()}. */
 
     private final Map<MetricConstants, Map<MetricConstants, Collectable<S, T, U>>> collectableMetrics;
 
-    /**
-     * All metrics in the collection.
-     */
+    /** All metrics in the collection. */
 
     private final Set<MetricConstants> collected;
 
-    /**
-     * Executor service. By default, the {@link ForkJoinPool#commonPool()}
-     */
-
+    /** Executor service. By default, the {@link ForkJoinPool#commonPool()}. */
     private final ExecutorService metricPool;
 
     /**
      * Computes all metrics.
      *
+     * @see #apply(Pool, Set) 
      * @param pool the pool
      * @return statistics the statistics
      * @throws NullPointerException if the input is null
@@ -105,8 +93,9 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
     /**
      * Computes a subset of metrics.
      *
-     * @param pool the input
-     * @param metrics the metrics
+     * @see #apply(Pool)  
+     * @param pool the pool
+     * @param metrics the subset of metrics to calculate
      * @return the statistics
      * @throws NullPointerException if the input is null
      * @throws IllegalArgumentException if the subset is invalid
@@ -352,13 +341,13 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
 
                 Collectable<S, T, U> baseMetric = iterator.next();
                 CompletableFuture<T> baseFuture =
-                        CompletableFuture.supplyAsync( () -> baseMetric.getIntermediateStatistic( input ),
+                        CompletableFuture.supplyAsync( () -> baseMetric.getIntermediate( input ),
                                                        this.metricPool );
                 // Compute a final statistic for each statistic that depends on the intermediate one
                 for ( Map.Entry<MetricConstants, Collectable<S, T, U>> nextEntry : next.entrySet() )
                 {
                     Collectable<S, T, U> metric = nextEntry.getValue();
-                    Function<T, U> aggregator = statistic -> metric.aggregate( statistic, input );
+                    Function<T, U> aggregator = statistic -> metric.applyIntermediate( statistic, input );
                     CompletableFuture<U> future = baseFuture.thenApplyAsync( aggregator,
                                                                              this.metricPool );
                     metricFutures.add( future );

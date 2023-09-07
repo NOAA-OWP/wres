@@ -238,6 +238,60 @@ final class ProjectScriptGenerator
     }
 
     /**
+     * Creates a script that retrieves the distinct varaible names for a given side of data.
+     *
+     * @param database The database, not null
+     * @param projectId The project identifier
+     * @param orientation The side of data, not null
+     * @return the script
+     * @throws NullPointerException if any nullable input is null
+     */
+
+    static DataScripter createEnsembleLabelScript( Database database,
+                                                   long projectId,
+                                                   DatasetOrientation orientation )
+    {
+        Objects.requireNonNull( database );
+        Objects.requireNonNull( orientation );
+
+        DataScripter script = new DataScripter( database );
+
+        script.addLine( "SELECT ensemble_name" );
+        script.addLine( "FROM wres.ensemble E" );
+        script.addLine( "WHERE E.ensemble_id IN ( " );
+        script.addTab()
+              .addTab()
+              .addLine( "SELECT DISTINCT ensemble_id" );
+        script.addTab()
+              .addTab()
+              .addLine( "FROM wres.TimeSeries T" );
+        script.addTab()
+              .addTab()
+              .addLine( INNER_JOIN_WRES_PROJECT_SOURCE_PS );
+        script.addTab()
+              .addTab()
+              .addTab()
+              .addLine( "ON PS.source_id = T.source_id" );
+        script.addTab()
+              .addTab()
+              .addLine( WHERE_PS_PROJECT_IDQ );
+        script.addArgument( projectId );
+        script.addTab()
+              .addTab()
+              .addTab()
+              .addLine( "AND PS.member = ?" );
+        script.addArgument( orientation.name()
+                                       .toLowerCase() );
+        script.addTab()
+              .addTab()
+              .addLine( ")" );
+        script.addTab()
+              .addLine( "AND ensemble_name != 'default';" );
+
+        return script;
+    }
+
+    /**
      * Returns a script that checks whether the condition on the ensemble name is valid.
      *
      * @param database the database, not null

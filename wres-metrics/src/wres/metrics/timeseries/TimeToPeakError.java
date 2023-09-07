@@ -94,14 +94,16 @@ public class TimeToPeakError extends TimingError
             // Some events?
             if ( !next.getEvents().isEmpty() )
             {
-                Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, this.getRNG() );
+                Pair<Instant, Instant> peak = TimingErrorHelper.getTimeToPeak( next, this.getRandomNumberGenerator() );
 
                 // Duration.between is negative if the predicted/right or "end" is before the observed/left or "start"
                 Duration error = Duration.between( peak.getLeft(), peak.getRight() );
 
                 // Add the time-to-peak error against the first available reference time
                 Map<ReferenceTimeType, Instant> referenceTimes = next.getReferenceTimes();
-                Map.Entry<ReferenceTimeType, Instant> firstEntry = referenceTimes.entrySet().iterator().next();
+                Map.Entry<ReferenceTimeType, Instant> firstEntry = referenceTimes.entrySet()
+                                                                                 .iterator()
+                                                                                 .next();
                 Instant referenceTime = firstEntry.getValue();
                 ReferenceTimeType referenceTimeType = firstEntry.getKey();
 

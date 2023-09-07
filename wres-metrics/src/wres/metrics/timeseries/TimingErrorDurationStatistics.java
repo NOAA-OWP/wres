@@ -12,7 +12,6 @@ import java.util.function.ToDoubleFunction;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.VectorOfDoubles;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
@@ -45,7 +44,7 @@ public class TimingErrorDurationStatistics
      * The summary statistics and associated identifiers
      */
 
-    private final Map<MetricConstants, ToDoubleFunction<VectorOfDoubles>> statistics;
+    private final Map<MetricConstants, ToDoubleFunction<double[]>> statistics;
 
     /**
      * A map of score metric components by name.
@@ -99,7 +98,7 @@ public class TimingErrorDurationStatistics
 
         // Iterate through the statistics
         MetricConstants nextIdentifier;
-        for ( Entry<MetricConstants, ToDoubleFunction<VectorOfDoubles>> next : this.statistics.entrySet() )
+        for ( Entry<MetricConstants, ToDoubleFunction<double[]>> next : this.statistics.entrySet() )
         {
             nextIdentifier = next.getKey();
 
@@ -122,7 +121,7 @@ public class TimingErrorDurationStatistics
                 // Some loss of precision here, not consequential
                 Duration duration =
                         Duration.ofMillis( Math.round( this.statistics.get( nextIdentifier )
-                                                                      .applyAsDouble( VectorOfDoubles.of( input ) ) ) );
+                                                                      .applyAsDouble( input ) ) );
 
                 // Add statistic component
                 DurationScoreMetricComponent componentMetric = this.components.get( nextIdentifier );
@@ -181,7 +180,7 @@ public class TimingErrorDurationStatistics
             throw new MetricParameterException( "Specify one or more summary statistics." );
         }
 
-        Map<MetricConstants, ToDoubleFunction<VectorOfDoubles>> innerStatistics = new TreeMap<>();
+        Map<MetricConstants, ToDoubleFunction<double[]>> innerStatistics = new TreeMap<>();
         Map<MetricConstants, DurationScoreMetricComponent> innerComponents = new EnumMap<>( MetricConstants.class );
 
         // Set and validate the copy

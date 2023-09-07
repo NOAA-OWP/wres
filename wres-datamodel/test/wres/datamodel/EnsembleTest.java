@@ -14,7 +14,7 @@ import wres.datamodel.Ensemble.Labels;
 
 /**
  * Tests the {@link Ensemble}.
- * 
+ *
  * @author James Brown
  */
 final class EnsembleTest
@@ -75,7 +75,15 @@ final class EnsembleTest
     {
         Ensemble emptyLabels = Ensemble.of( 1, 2, 3, 4 );
 
-        Assertions.assertFalse( emptyLabels.getLabels().hasLabels() );
+        Assertions.assertFalse( emptyLabels.hasLabels() );
+    }
+
+    @Test
+    void testGetSortedEnsembleMembers()
+    {
+        Ensemble unsorted = Ensemble.of( new double[] { 1, 4, 3, Double.NaN, 2, 5 }, null, true );
+        double[] actual = unsorted.getSortedMembers();
+        assertArrayEquals( new double[] { 1, 2, 3, 4, 5, Double.NaN }, actual );
     }
 
     @Test

@@ -166,9 +166,9 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE ) )
         {
             this.discreteProbabilityScore =
-                    MetricFactory.ofDiscreteProbabilityScoreCollection( metricExecutor,
-                                                                        this.getMetrics( SampleDataGroup.DISCRETE_PROBABILITY,
-                                                                                         StatisticType.DOUBLE_SCORE ) );
+                    MetricFactory.ofDiscreteProbabilityScores( metricExecutor,
+                                                               this.getMetrics( SampleDataGroup.DISCRETE_PROBABILITY,
+                                                                                StatisticType.DOUBLE_SCORE ) );
 
             LOGGER.debug( "Created the discrete probability scores for processing. {}", this.discreteProbabilityScore );
         }
@@ -180,9 +180,9 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DIAGRAM ) )
         {
             this.discreteProbabilityDiagrams =
-                    MetricFactory.ofDiscreteProbabilityDiagramCollection( metricExecutor,
-                                                                          this.getMetrics( SampleDataGroup.DISCRETE_PROBABILITY,
-                                                                                           StatisticType.DIAGRAM ) );
+                    MetricFactory.ofDiscreteProbabilityDiagrams( metricExecutor,
+                                                                 this.getMetrics( SampleDataGroup.DISCRETE_PROBABILITY,
+                                                                                  StatisticType.DIAGRAM ) );
 
             LOGGER.debug( "Created the discrete probability diagrams for processing. {}",
                           this.discreteProbabilityDiagrams );
@@ -197,8 +197,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
             MetricConstants[] ensembleMetrics = this.getMetrics( SampleDataGroup.ENSEMBLE,
                                                                  StatisticType.DOUBLE_SCORE );
 
-            this.ensembleScore = MetricFactory.ofEnsembleScoreCollection( metricExecutor,
-                                                                          ensembleMetrics );
+            this.ensembleScore = MetricFactory.ofEnsembleScores( metricExecutor,
+                                                                 ensembleMetrics );
 
             // Create a set of metrics for when no baseline is available, assuming there is at least one metric
             // But, first, remove the CRPSS, which requires a baseline
@@ -211,8 +211,8 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
                 MetricConstants[] filteredArray =
                         filteredMetrics.toArray( new MetricConstants[0] );
 
-                this.ensembleScoreNoBaseline = MetricFactory.ofEnsembleScoreCollection( metricExecutor,
-                                                                                        filteredArray );
+                this.ensembleScoreNoBaseline = MetricFactory.ofEnsembleScores( metricExecutor,
+                                                                               filteredArray );
 
                 LOGGER.debug( "Created the ensemble scores for processing pairs without a baseline. {}",
                               this.ensembleScoreNoBaseline );
@@ -233,9 +233,9 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         // Ensemble input, multi-vector output
         if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.DIAGRAM ) )
         {
-            this.ensembleDiagrams = MetricFactory.ofEnsembleDiagramCollection( metricExecutor,
-                                                                               this.getMetrics( SampleDataGroup.ENSEMBLE,
-                                                                                                StatisticType.DIAGRAM ) );
+            this.ensembleDiagrams = MetricFactory.ofEnsembleDiagrams( metricExecutor,
+                                                                      this.getMetrics( SampleDataGroup.ENSEMBLE,
+                                                                                       StatisticType.DIAGRAM ) );
 
             LOGGER.debug( "Created the ensemble diagrams for processing. {}", this.ensembleDiagrams );
         }
@@ -246,9 +246,9 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         // Ensemble input, box-plot output
         if ( this.hasMetrics( SampleDataGroup.ENSEMBLE, StatisticType.BOXPLOT_PER_PAIR ) )
         {
-            this.ensembleBoxPlot = MetricFactory.ofEnsembleBoxPlotCollection( metricExecutor,
-                                                                              this.getMetrics( SampleDataGroup.ENSEMBLE,
-                                                                                               StatisticType.BOXPLOT_PER_PAIR ) );
+            this.ensembleBoxPlot = MetricFactory.ofEnsembleBoxplots( metricExecutor,
+                                                                     this.getMetrics( SampleDataGroup.ENSEMBLE,
+                                                                                      StatisticType.BOXPLOT_PER_PAIR ) );
 
             LOGGER.debug( "Created the ensemble box plots for processing. {}", this.ensembleBoxPlot );
         }
@@ -284,35 +284,36 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         // Statistics futures
         StatisticsStore.Builder futures = new StatisticsStore.Builder();
 
-        // Remove missing values. 
-        // TODO: when time-series metrics are supported, leave missings in place for time-series
-        // Also retain the time-series shape, where required
         // Add the ensemble average type used by this processor to the pool metadata.
         String typeName = this.getEnsembleAverageType()
                               .name();
         wres.statistics.generated.Pool.EnsembleAverageType averageType =
                 wres.statistics.generated.Pool.EnsembleAverageType.valueOf( typeName );
         UnaryOperator<PoolMetadata> metaMapper = unadjusted -> PoolMetadata.of( unadjusted, averageType );
-        Pool<Pair<Double, Ensemble>> unpacked = this.doWorkWithSlicingExecutor( () -> PoolSlicer.unpack( pool ) );
-        Pool<Pair<Double, Ensemble>> inputNoMissing =
-                this.doWorkWithSlicingExecutor( () -> PoolSlicer.transform( unpacked,
-                                                                            Slicer.leftAndEachOfRight( MissingValues::isNotMissingValue ),
-                                                                            metaMapper ) );
+        // Do the metadata transformation only with an identity function applied to the pooled data
+        Pool<TimeSeries<Pair<Double, Ensemble>>> adjustedPool
+                = PoolSlicer.transform( pool,
+                                        Function.identity(),
+                                        unadjusted -> PoolMetadata.of( unadjusted,
+                                                                       averageType ) );
+        Pool<Pair<Double, Ensemble>> unpacked =
+                this.doWorkWithSlicingExecutor( () -> PoolSlicer.unpack( adjustedPool ) );
+
 
         LOGGER.debug( "Computing ensemble statistics from {} pairs.",
-                      inputNoMissing.get()
-                                    .size() );
+                      unpacked.get()
+                              .size() );
 
         // Process the metrics that consume ensemble pairs
         if ( this.hasMetrics( SampleDataGroup.ENSEMBLE ) )
         {
-            this.processEnsemblePairs( inputNoMissing, futures );
+            this.processEnsemblePairs( unpacked, futures );
         }
 
         // Process the metrics that consume discrete probability pairs derived from the ensemble pairs
         if ( this.hasMetrics( SampleDataGroup.DISCRETE_PROBABILITY ) )
         {
-            this.processDiscreteProbabilityPairs( inputNoMissing, futures );
+            this.processDiscreteProbabilityPairs( unpacked, futures );
         }
 
         // Process the metrics that consume dichotomous pairs derived from the ensemble pairs
@@ -321,7 +322,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
             LOGGER.debug( "Encountered dichotomous metrics and decision thresholds, which means that dichtomous "
                           + "metrics will be computed for the ensemble pairs." );
 
-            this.processPairsForDichotomousMetrics( inputNoMissing, futures );
+            this.processPairsForDichotomousMetrics( unpacked, futures );
         }
 
         // Process the ensemble result, which do not yet include single-valued metrics

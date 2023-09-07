@@ -67,12 +67,12 @@ public class EquitableThreatScore extends ContingencyTableScore
     @Override
     public DoubleScoreStatisticOuter apply( final Pool<Pair<Boolean, Boolean>> pool )
     {
-        return aggregate( this.getIntermediateStatistic( pool ), pool );
+        return applyIntermediate( this.getIntermediate( pool ), pool );
     }
 
     @Override
-    public DoubleScoreStatisticOuter aggregate( final DoubleScoreStatisticOuter output,
-                                                Pool<Pair<Boolean, Boolean>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( final DoubleScoreStatisticOuter output,
+                                                        Pool<Pair<Boolean, Boolean>> pool )
     {
         this.is2x2ContingencyTable( output, this );
 

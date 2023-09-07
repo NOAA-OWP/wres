@@ -118,7 +118,7 @@ public final class ProbabilityOfDetectionTest
     public void testExceptionOnNullInput()
     {
         MetricCalculationException actual = assertThrows( MetricCalculationException.class,
-                                                          () -> this.pod.aggregate( null, null ) );
+                                                          () -> this.pod.applyIntermediate( null, null ) );
 
         assertEquals( "Specify non-null input to the '" + this.pod.getMetricNameString() + "'.", actual.getMessage() );
     }

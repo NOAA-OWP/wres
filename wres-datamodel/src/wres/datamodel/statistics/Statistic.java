@@ -7,7 +7,7 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 
 /**
- * <p>A {@link Statistic} is used to describe {@link Pool} or to infer something about the population from which
+ * <p>A {@link Statistic} is used to describe a {@link Pool} or to infer something about the population from which
  * it originates.
  *
  * @param <U> the type of statistic data

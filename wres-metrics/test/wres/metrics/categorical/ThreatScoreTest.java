@@ -118,7 +118,7 @@ public final class ThreatScoreTest
     public void testExceptionOnNullInput()
     {
         MetricCalculationException actual = assertThrows( MetricCalculationException.class,
-                                                          () -> this.ts.aggregate( null, null ) );
+                                                          () -> this.ts.applyIntermediate( null, null ) );
 
         assertEquals( "Specify non-null input to the '" + this.ts.getMetricNameString() + "'.", actual.getMessage() );
     }
