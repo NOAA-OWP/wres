@@ -1205,7 +1205,7 @@ public class ChartFactory
         if ( errorBars )
         {
             XYErrorRenderer errors = new XYErrorRenderer();
-            errors.setDrawXError( false );
+            errors.setDrawXError( true );
             errors.setDrawYError( true );
             errors.setCapLength( ChartFactory.DEFAULT_ERROR_BAR_CAP_LENGTH );
             renderer = errors;

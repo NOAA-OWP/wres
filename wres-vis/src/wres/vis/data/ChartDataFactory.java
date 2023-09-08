@@ -26,6 +26,8 @@ import org.jfree.data.time.FixedMillisecond;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
 import org.jfree.data.xy.XYDataset;
+import org.jfree.data.xy.XYIntervalSeries;
+import org.jfree.data.xy.XYIntervalSeriesCollection;
 import org.jfree.data.xy.YIntervalSeries;
 import org.jfree.data.xy.YIntervalSeriesCollection;
 import org.slf4j.Logger;
@@ -100,7 +102,7 @@ public class ChartDataFactory
                                                                                 .equals( key ) );
 
             String name = DataUtilities.toStringWithoutUnits( key );
-            YIntervalSeries nextSeries = ChartDataFactory.getYIntervalSeries( sliced, name, domainValue );
+            YIntervalSeries nextSeries = ChartDataFactory.getIntervalSeries( sliced, name, domainValue );
             dataset.addSeries( nextSeries );
         }
 
@@ -145,7 +147,7 @@ public class ChartDataFactory
                                                                         durationUnits );
             String name = leadDuration.toString();
 
-            YIntervalSeries nextSeries = ChartDataFactory.getYIntervalSeries( sliced, name, domainValue );
+            YIntervalSeries nextSeries = ChartDataFactory.getIntervalSeries( sliced, name, domainValue );
             dataset.addSeries( nextSeries );
         }
 
@@ -414,7 +416,7 @@ public class ChartDataFactory
                 Slicer.discover( statistics, next -> next.getPoolMetadata()
                                                          .getThresholds() );
 
-        YIntervalSeriesCollection dataset = new YIntervalSeriesCollection();
+        XYIntervalSeriesCollection dataset = new XYIntervalSeriesCollection();
 
         for ( OneOrTwoThresholds key : thresholds )
         {
@@ -435,7 +437,7 @@ public class ChartDataFactory
             if ( qualified.isEmpty() )
             {
                 String name = DataUtilities.toStringWithoutUnits( key );
-                YIntervalSeries nextSeries = ChartDataFactory.getYIntervalSeries( sliced,
+                XYIntervalSeries nextSeries = ChartDataFactory.getIntervalSeries( sliced,
                                                                                   name,
                                                                                   xDimension,
                                                                                   yDimension );
@@ -450,7 +452,7 @@ public class ChartDataFactory
                                                                              next -> next.getComponentNameQualifiers()
                                                                                          .stream()
                                                                                          .anyMatch( name::equals ) );
-                    YIntervalSeries nextSeries = ChartDataFactory.getYIntervalSeries( slicedInner,
+                    XYIntervalSeries nextSeries = ChartDataFactory.getIntervalSeries( slicedInner,
                                                                                       name,
                                                                                       xDimension,
                                                                                       yDimension );
@@ -512,7 +514,7 @@ public class ChartDataFactory
         SortedSet<TimeWindowOuter> timeWindows =
                 Slicer.discover( statistics, next -> next.getPoolMetadata().getTimeWindow() );
 
-        YIntervalSeriesCollection dataset = new YIntervalSeriesCollection();
+        XYIntervalSeriesCollection dataset = new XYIntervalSeriesCollection();
 
         for ( TimeWindowOuter key : timeWindows )
         {
@@ -536,7 +538,7 @@ public class ChartDataFactory
                                                                             durationUnits );
                 String name = leadDuration.toString();
 
-                YIntervalSeries nextSeries = ChartDataFactory.getYIntervalSeries( sliced,
+                XYIntervalSeries nextSeries = ChartDataFactory.getIntervalSeries( sliced,
                                                                                   name,
                                                                                   xDimension,
                                                                                   yDimension );
@@ -551,7 +553,7 @@ public class ChartDataFactory
                                                                              next -> next.getComponentNameQualifiers()
                                                                                          .stream()
                                                                                          .anyMatch( name::equals ) );
-                    YIntervalSeries nextSeries = ChartDataFactory.getYIntervalSeries( slicedInner,
+                    XYIntervalSeries nextSeries = ChartDataFactory.getIntervalSeries( slicedInner,
                                                                                       name,
                                                                                       xDimension,
                                                                                       yDimension );
@@ -913,9 +915,9 @@ public class ChartDataFactory
      * @return the series
      */
 
-    private static YIntervalSeries getYIntervalSeries( List<DoubleScoreComponentOuter> scores,
-                                                       String name,
-                                                       ToDoubleFunction<DoubleScoreComponentOuter> domainValue )
+    private static YIntervalSeries getIntervalSeries( List<DoubleScoreComponentOuter> scores,
+                                                      String name,
+                                                      ToDoubleFunction<DoubleScoreComponentOuter> domainValue )
     {
         ToDoubleFunction<DoubleScoreComponentOuter> toDouble = score ->
         {
@@ -990,7 +992,7 @@ public class ChartDataFactory
     }
 
     /**
-     * Creates an {@link YIntervalSeries} from the inputs.
+     * Creates an {@link XYIntervalSeries} from the inputs.
      * @param diagram the diagram
      * @param name the series name
      * @param xDimension the domain axis dimension
@@ -998,18 +1000,18 @@ public class ChartDataFactory
      * @return the series
      */
 
-    private static YIntervalSeries getYIntervalSeries( List<DiagramStatisticOuter> diagram,
+    private static XYIntervalSeries getIntervalSeries( List<DiagramStatisticOuter> diagram,
                                                        String name,
                                                        MetricDimension xDimension,
                                                        MetricDimension yDimension )
     {
-        ToDoubleFunction<DiagramStatisticOuter> toDouble = score ->
+        ToDoubleFunction<DiagramStatisticOuter> toDouble = statistic ->
         {
-            if ( !score.hasQuantile() )
+            if ( !statistic.hasQuantile() )
             {
                 return Double.NaN;
             }
-            return score.getSampleQuantile();
+            return statistic.getSampleQuantile();
         };
 
         Map<Double, List<DiagramStatisticOuter>> mappedByQuantile
@@ -1018,7 +1020,7 @@ public class ChartDataFactory
 
         List<DiagramStatisticOuter> nominal = mappedByQuantile.remove( Double.NaN );
 
-        YIntervalSeries series = new YIntervalSeries( name );
+        XYIntervalSeries series = new XYIntervalSeries( name );
 
         double min = mappedByQuantile.keySet()
                                      .stream()
@@ -1051,16 +1053,20 @@ public class ChartDataFactory
             String nameQualifier = nextNominal.getComponentNameQualifiers()
                                               .first();
 
-            DiagramStatisticComponent xData = nextNominal.getComponent( xDimension, nameQualifier );
+            DiagramStatisticComponent xNominal = nextNominal.getComponent( xDimension, nameQualifier );
+            DiagramStatisticComponent xLower = nextLower.getComponent( xDimension, nameQualifier );
+            DiagramStatisticComponent xUpper = nextUpper.getComponent( xDimension, nameQualifier );
             DiagramStatisticComponent yNominal = nextNominal.getComponent( yDimension, nameQualifier );
             DiagramStatisticComponent yLower = nextLower.getComponent( yDimension, nameQualifier );
             DiagramStatisticComponent yUpper = nextUpper.getComponent( yDimension, nameQualifier );
 
             // Add the series data
-            int valueCount = xData.getValuesCount();
+            int valueCount = xNominal.getValuesCount();
             for ( int j = 0; j < valueCount; j++ )
             {
-                series.add( xData.getValues( j ),
+                series.add( xNominal.getValues( j ),
+                            xLower.getValues( j ),
+                            xUpper.getValues( j ),
                             yNominal.getValues( j ),
                             yLower.getValues( j ),
                             yUpper.getValues( j ) );
