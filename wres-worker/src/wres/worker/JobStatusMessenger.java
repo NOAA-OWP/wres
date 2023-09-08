@@ -102,7 +102,8 @@ public class JobStatusMessenger implements Runnable
         return "job." + this.getJobId() + "." + TOPIC;
     }
 
-    private String getEvaluationId() {
+    private String getEvaluationId()
+    {
         return this.evaluationId;
     }
 
@@ -120,8 +121,6 @@ public class JobStatusMessenger implements Runnable
 
             while ( !evaluationStatus.equals( COMPLETED.toString() ) && !evaluationStatus.equals( CLOSED.toString() ) )
             {
-                LOGGER.info( "EVAL STATUS IS: " + evaluationStatus );
-
                 channel.exchangeDeclare( exchangeName, exchangeType, true );
 
                 this.sendMessage( channel, ALIVE );
@@ -156,8 +155,8 @@ public class JobStatusMessenger implements Runnable
         String url = String.format( STATUS_URI, this.getPort(), this.getEvaluationId() );
         WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( URI.create( url ) );
         return new BufferedReader( new InputStreamReader( fromWeb.getResponse() ) ).lines()
-                                                                                             .collect( Collectors.joining(
-                                                                                                     "\n" ) );
+                                                                                   .collect( Collectors.joining(
+                                                                                           "\n" ) );
     }
 
     /**
@@ -171,7 +170,7 @@ public class JobStatusMessenger implements Runnable
                 new AMQP.BasicProperties
                         .Builder()
                         .correlationId( this.getJobId() )
-                        .deliveryMode ( 2 )
+                        .deliveryMode( 2 )
                         .build();
 
         int order = this.getOrder().getAndIncrement();
