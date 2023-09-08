@@ -64,7 +64,7 @@ public class EvaluationService
 
     private static Thread timeoutThread;
 
-    private static final int FIVE_MINUTES_IN_MILISECONDS = 300000;
+    private static final int ONE_MINUTE_IN_MILLISECONDS = 60000;
 
     private final Evaluator evaluator;
 
@@ -268,7 +268,7 @@ public class EvaluationService
             {
                 try
                 {
-                    Thread.sleep( FIVE_MINUTES_IN_MILISECONDS );
+                    Thread.sleep( ONE_MINUTE_IN_MILLISECONDS );
                 }
                 catch ( InterruptedException e )
                 {

@@ -3,6 +3,7 @@ package wres.worker;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -144,6 +145,16 @@ class WresEvaluationProcessor implements Callable<Integer>
         // Open an evaluation for work
         String evaluationId = prepareEvaluationId();
 
+        if ( evaluationId.isEmpty() )
+        {
+            LOGGER.warn( "Unable to open a new evaluation" );
+            byte[] response = WresEvaluationProcessor.prepareResponse( HttpURLConnection.HTTP_BAD_REQUEST,
+                                                                       "Failed to open eval" );
+            this.sendResponse( response );
+            WresEvaluationProcessor.shutdownExecutor( executorService );
+            return META_FAILURE_CODE;
+        }
+
         // Set up way to publish the standard output of the process to broker
         // and bind process outputs to message publishers
         JobStandardStreamMessenger stdoutMessenger =
@@ -218,6 +229,10 @@ class WresEvaluationProcessor implements Callable<Integer>
         URI prepareEval = URI.create( String.format( OPEN_EVAL_URI, this.getPort() ) );
         try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval ) )
         {
+            if ( evaluationIdRequest.getStatusCode() == HttpURLConnection.HTTP_BAD_REQUEST )
+            {
+                return "";
+            }
             return new BufferedReader( new InputStreamReader( evaluationIdRequest.getResponse() ) ).lines()
                                                                                                    .collect(
                                                                                                            Collectors.joining(
