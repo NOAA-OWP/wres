@@ -239,8 +239,28 @@ public class WebClient
     }
 
     /**
-     * Get a pair of HTTP status and InputStream of body of given URI.
-     * @param uri The URI to GET and transform the body into an InputStream.
+     * Launches a post request against a given URI.
+     * @param uri The URI to POST
+     *
+     * @return A pair of the HTTP status (left) and InputStream of body (right).
+     *         NullInputStream on right when 4xx response.
+     * @throws IOException When sending/receiving fails; when non-2xx non-4xx
+     *                     response, when wrapping response to decompress fails.
+     * @throws IllegalArgumentException When non-http uri is passed in.
+     * @throws NullPointerException When any argument is null.
+     */
+
+    public ClientResponse postToWeb( URI uri )
+            throws IOException
+    {
+
+        return postToWeb( uri, "" );
+    }
+
+    /**
+     * Post a pair of HTTP status and InputStream of body of given URI.
+     * @param uri The URI to POST and transform the body into an InputStream.
+     * @param jobMessage The body contents we want to send in a post request
      *
      * @return A pair of the HTTP status (left) and InputStream of body (right).
      *         NullInputStream on right when 4xx response.
@@ -266,7 +286,7 @@ public class WebClient
 
         WebClientEvent monitorEvent = WebClientEvent.of( uri ); // Monitor with JFR
 
-        RequestBody b = RequestBody.create( jobMessage, MediaType.parse("text/xml") );
+        RequestBody body = RequestBody.create( jobMessage, MediaType.parse("text/xml") );
 
         try
         {
@@ -276,7 +296,7 @@ public class WebClient
 
             Request request = new Request.Builder()
                     .url( uri.toURL() )
-                    .post( b )
+                    .post( body )
                     .header( "Content-Type", "text/xml" )
 //                    .header( "User-Agent", this.getUserAgent() )
                     .build();
