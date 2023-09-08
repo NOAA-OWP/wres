@@ -39,9 +39,11 @@ public class JobStandardStreamMessenger implements Runnable
     /** A web client to help with reading data from the web. */
     private static final WebClient WEB_CLIENT = new WebClient();
 
-    private static final String stdOutUri = "http://localhost:%d/project/stdout";
+    /** A formatable string to compose the stdout request to the server */
+    private static final String STD_OUT_URI = "http://localhost:%d/evaluation/stdout/%s";
 
-    private static final String stdErrorUri = "http://localhost:%d/project/stderr";
+    /** A formatable string to compose the stderr request to the server */
+    private static final String STD_ERR_URI = "http://localhost:%d/evaluation/stderr/%s";
 
     /** Stream identifier. */
     public enum WhichStream
@@ -55,6 +57,8 @@ public class JobStandardStreamMessenger implements Runnable
     private final Connection connection;
     private final String exchangeName;
     private final String jobId;
+
+    private final String evaluationId;
     private final WhichStream whichStream;
 
     private final int port;
@@ -66,13 +70,15 @@ public class JobStandardStreamMessenger implements Runnable
                                 String exchangeName,
                                 String jobId,
                                 WhichStream whichStream,
-                                int port )
+                                int port,
+                                String evaluationId )
     {
         this.connection = connection;
         this.exchangeName = exchangeName;
         this.jobId = jobId;
         this.whichStream = whichStream;
         this.port = port;
+        this.evaluationId = evaluationId;
     }
 
     private Connection getConnection()
@@ -105,29 +111,34 @@ public class JobStandardStreamMessenger implements Runnable
         return "job." + this.getJobId() + "." + this.getWhichStream().name();
     }
 
-    private int getPort() {
+    private int getPort()
+    {
         return this.port;
+    }
+
+    private String getEvaluationId()
+    {
+        return this.evaluationId;
     }
 
     @Override
     public void run()
     {
-
         String url;
 
-        if (this.getWhichStream().equals( WhichStream.STDOUT ))
+        if ( this.getWhichStream().equals( WhichStream.STDOUT ) )
         {
-            url = String.format( stdOutUri, this.getPort() );
+            url = String.format( STD_OUT_URI, this.getPort(), this.getEvaluationId() );
         }
         else
         {
-            url = String.format( stdErrorUri, this.getPort() );
+            url = String.format( STD_ERR_URI, this.getPort(), this.getEvaluationId() );
         }
 
         WebClient.ClientResponse clientResponse;
         try
         {
-             clientResponse = WEB_CLIENT.getFromWeb( URI.create( url ) );
+            clientResponse = WEB_CLIENT.getFromWeb( URI.create( url ) );
         }
         catch ( IOException e )
         {
@@ -171,7 +182,7 @@ public class JobStandardStreamMessenger implements Runnable
                 new AMQP.BasicProperties
                         .Builder()
                         .correlationId( this.getJobId() )
-                        .deliveryMode ( 2 )
+                        .deliveryMode( 2 )
                         .build();
 
         int order = this.getOrder().getAndIncrement();

@@ -170,7 +170,7 @@ public class WebServer
         // Registering the ProjectService explicitly so that we can add constructor arguments
         ServletContainer servlet = new ServletContainer(
                 new ResourceConfig().register(
-                        new ProjectService( evaluator )
+                        new EvaluationService( evaluator )
                 )
         );
         dynamicHolder.setServlet( servlet );

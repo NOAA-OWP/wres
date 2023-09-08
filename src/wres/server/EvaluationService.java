@@ -4,6 +4,8 @@ import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
@@ -44,19 +46,20 @@ import wres.pipeline.UserInputException;
  * Allows retrieval of some CSV outputs for recent stuff.
  */
 
-@Path( "/project" )
-public class ProjectService
+@Path( "/evaluation" )
+public class EvaluationService
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( ProjectService.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationService.class );
 
     private static final Random RANDOM =
             new Random( System.currentTimeMillis() );
 
     private static final String LINE_TERMINATOR = "\n";
 
-    private static final AtomicReference<EvaluationStatusOuterClass.EvaluationStatus> evaluationStage = new AtomicReference<>( AWAITING );
+    private static final AtomicReference<EvaluationStatusOuterClass.EvaluationStatus> evaluationStage =
+            new AtomicReference<>( AWAITING );
 
-    private static final AtomicLong evaluationId = new AtomicLong(-1);
+    private static final AtomicLong evaluationId = new AtomicLong( -1 );
 
     private final Evaluator evaluator;
 
@@ -72,18 +75,18 @@ public class ProjectService
      * ProjectService constructor
      * @param evaluator The servers evaluator used to evaluate projects
      */
-    public ProjectService( Evaluator evaluator )
+    public EvaluationService( Evaluator evaluator )
     {
         this.evaluator = evaluator;
     }
 
 
     @GET
-    @Path( "/up" )
+    @Path( "/heartbeat" )
     @Produces( MediaType.TEXT_PLAIN )
-    public Response isUp()
+    public Response heartbeat()
     {
-        evaluationStage.set( OPENED );
+        evaluationStage.set( AWAITING );
         return Response.ok( "The Server is Up\n" )
                        .build();
     }
@@ -91,18 +94,34 @@ public class ProjectService
     @GET
     @Path( "/status/{id}" )
     @Produces( MediaType.TEXT_PLAIN )
-    public Response getStatus(@PathParam( "id" ) Long id)
+    public Response getStatus( @PathParam( "id" ) Long id )
 
     {
+//        if ( evaluationId.get() != id )
+//        {
+//            return Response.status( Response.Status.BAD_REQUEST )
+//                           .entity( "The id provided: " + id + " Does not match the ID of the current evaluation: "
+//                                    + evaluationId.get() )
+//                           .build();
+//        }
+
         return Response.ok( evaluationStage.get().toString() )
                        .build();
     }
 
     @GET
-    @Path( "/stdout" )
-    @Produces("application/octet-stream")
-    public Response getOutStream()
+    @Path( "/stdout/{id}" )
+    @Produces( "application/octet-stream" )
+    public Response getOutStream( @PathParam( "id" ) Long id )
     {
+        if ( evaluationId.get() != id )
+        {
+            return Response.status( Response.Status.BAD_REQUEST )
+                           .entity( "The id provided: " + id + " Does not match the ID of the current evaluation: "
+                                    + evaluationId.get() )
+                           .build();
+        }
+
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream( byteArrayOutputStream );
 
@@ -110,45 +129,12 @@ public class ProjectService
 
         StreamingOutput streamingOutput = outputStream -> {
             long offset = 0;
-            while (!evaluationStage.get().equals( COMPLETED ))
+            while ( !( evaluationStage.get().equals( COMPLETED ) || evaluationStage.get().equals( CLOSED ) ) )
             {
-                ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
+                ByteArrayInputStream byteArrayInputStream =
+                        new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
                 long skip = byteArrayInputStream.skip( offset );
-                if (offset == skip)
-                {
-                    outputStream.write( byteArrayInputStream.read() );
-                    outputStream.flush();
-                    offset++;
-                }
-            }
-            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
-            byteArrayInputStream.skip( offset );
-            outputStream.write( byteArrayInputStream.readAllBytes() );
-            outputStream.flush();
-            outputStream.close();
-        };
-
-        return Response.ok( streamingOutput )
-                .build();
-    }
-
-    @GET
-    @Path( "/stderr" )
-    @Produces("application/octet-stream")
-    public Response getErrorStream()
-    {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        PrintStream printStream = new PrintStream( byteArrayOutputStream );
-
-        System.setErr( printStream );
-
-        StreamingOutput streamingOutput = outputStream -> {
-            long offset = 0;
-            while (!evaluationStage.get().equals( COMPLETED ))
-            {
-                ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
-                long skip = byteArrayInputStream.skip( offset );
-                if (offset == skip)
+                if ( offset == skip )
                 {
                     outputStream.write( byteArrayInputStream.read() );
                     outputStream.flush();
@@ -167,9 +153,65 @@ public class ProjectService
     }
 
     @GET
-    @Path( "/prepareEvaluation" )
+    @Path( "/stderr/{id}" )
+    @Produces( "application/octet-stream" )
+    public Response getErrorStream( @PathParam( "id" ) Long id )
+    {
+        if ( evaluationId.get() != id )
+        {
+            return Response.status( Response.Status.BAD_REQUEST )
+                           .entity( "The id provided: " + id + " Does not match the ID of the current evaluation: "
+                                    + evaluationId.get() )
+                           .build();
+        }
+
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        PrintStream printStream = new PrintStream( byteArrayOutputStream );
+
+        System.setErr( printStream );
+
+        StreamingOutput streamingOutput = outputStream -> {
+            long offset = 0;
+            while ( !( evaluationStage.get().equals( COMPLETED ) || evaluationStage.get().equals( CLOSED ) ) )
+            {
+                ByteArrayInputStream byteArrayInputStream =
+                        new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
+                long skip = byteArrayInputStream.skip( offset );
+                if ( offset == skip )
+                {
+                    outputStream.write( byteArrayInputStream.read() );
+                    outputStream.flush();
+                    offset++;
+                }
+            }
+            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
+            byteArrayInputStream.skip( offset );
+            outputStream.write( byteArrayInputStream.readAllBytes() );
+            outputStream.flush();
+            outputStream.close();
+        };
+
+        return Response.ok( streamingOutput )
+                       .build();
+    }
+
+    @POST
+    @Path( "/open" )
     @Produces( MediaType.TEXT_PLAIN )
-    public Response prepareEvaluation() {
+    public Response openEvaluation()
+    {
+
+        if ( evaluationId.get() > 0 || !( evaluationStage.get().equals( CLOSED ) || evaluationStage.get()
+                                                                                                   .equals( AWAITING ) ) )
+        {
+            return Response.status( Response.Status.BAD_REQUEST )
+                           .entity( String.format(
+                                   "There was a project found with id: %d in state: %s. Please /close/{ID} this project first",
+                                   evaluationId.get(),
+                                   evaluationStage.get() ) )
+                           .build();
+        }
+
         // Guarantee a positive number. Using Math.abs would open up failure
         // in edge cases. A while loop seems complex. Thanks to Ted Hopp
         // on StackOverflow question id 5827023.
@@ -182,22 +224,48 @@ public class ProjectService
                        .build();
     }
 
+    @POST
+    @Path( "/close" )
+    @Produces( MediaType.TEXT_PLAIN )
+    public Response closeEvaluation()
+    {
+        // Set Atomic values to a state to accept new projects
+        evaluationStage.set( CLOSED );
+        evaluationId.set( -1 );
+
+        // Reset Standard Streams
+        System.setOut( new PrintStream( new FileOutputStream( FileDescriptor.out ) ) );
+        System.setErr( new PrintStream( new FileOutputStream( FileDescriptor.err ) ) );
+
+        return Response.ok( "Evaluation closed" )
+                       .build();
+    }
+
     /**
      * @param projectConfig the evaluation project declaration string
      * @return the state of the evaluation
      */
 
     @POST
-    @Path(  "/startEvaluation/{id}"  )
+    @Path( "/start/{id}" )
     @Consumes( MediaType.TEXT_XML )
-    @Produces("application/octet-stream")
-    public Response postProjectConfig(String projectConfig, @PathParam( "id" ) Long id )
+    @Produces( "application/octet-stream" )
+    public Response postStartEvaluation( String projectConfig, @PathParam( "id" ) Long id )
     {
+        if ( evaluationId.get() != id && evaluationStage.get().equals( OPENED ) )
+        {
+            evaluationStage.set( CLOSED );
+            return Response.status( Response.Status.BAD_REQUEST )
+                           .entity(
+                                   "There was not an evaluation opened to start. Please /close/{ID} any projects first and open a new one" )
+                           .build();
+        }
+
+        evaluationStage.set( ONGOING );
         long projectId = id;
         Set<java.nio.file.Path> outputPaths;
         try
         {
-            evaluationStage.set( ONGOING );
             ExecutionResult result = evaluator.evaluate( projectConfig );
             outputPaths = result.getResources();
             OUTPUTS.put( projectId, outputPaths );
@@ -235,7 +303,69 @@ public class ProjectService
 
         StreamingOutput streamingOutput = outputSream -> {
             Writer writer = new BufferedWriter( new OutputStreamWriter( outputSream ) );
-            for ( java.nio.file.Path path : outputPaths) {
+            for ( java.nio.file.Path path : outputPaths )
+            {
+                writer.write( path.toString() + LINE_TERMINATOR );
+            }
+            writer.flush();
+            writer.close();
+        };
+
+        return Response.ok( streamingOutput )
+                       .build();
+    }
+
+    /**
+     * A simplistic evaluate API, if using this call then the user will not have access to stdout, stderror or status
+     * The output paths written are returned to the user and not stored anywhere
+     *
+     * @param projectConfig the evaluation project declaration string
+     * @return the state of the evaluation
+     */
+    @POST
+    @Path( "/evaluate" )
+    @Consumes( MediaType.TEXT_XML )
+    @Produces( "application/octet-stream" )
+    public Response postEvaluate( String projectConfig )
+    {
+        Set<java.nio.file.Path> outputPaths;
+        try
+        {
+            ExecutionResult result = evaluator.evaluate( projectConfig );
+            outputPaths = result.getResources();
+        }
+        catch ( UserInputException e )
+        {
+            return Response.status( Response.Status.BAD_REQUEST )
+                           .entity( "I received something I could not parse. The top-level exception was: "
+                                    + e.getMessage() )
+                           .build();
+        }
+        catch ( InternalWresException iwe )
+        {
+            return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
+                           .entity( "WRES experienced an internal issue. The top-level exception was: "
+                                    + iwe.getMessage() )
+                           .build();
+        }
+        catch ( Exception e )
+        {
+            return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
+                           .entity( "WRES experienced an unexpected internal issue. The top-level exception was: "
+                                    + e.getMessage() )
+                           .build();
+        }
+
+        if ( outputPaths == null )
+        {
+            return Response.status( Response.Status.NOT_FOUND )
+                           .build();
+        }
+
+        StreamingOutput streamingOutput = outputSream -> {
+            Writer writer = new BufferedWriter( new OutputStreamWriter( outputSream ) );
+            for ( java.nio.file.Path path : outputPaths )
+            {
                 writer.write( path.toString() + LINE_TERMINATOR );
             }
             writer.flush();
@@ -316,7 +446,7 @@ public class ProjectService
                                    .build();
                 }
 
-                type = ProjectService.getContentType( path );
+                type = EvaluationService.getContentType( path );
 
                 return Response.ok( actualFile )
                                .type( type )

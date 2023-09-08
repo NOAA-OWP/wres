@@ -13,6 +13,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
+import javax.net.ssl.HttpsURLConnection;
+
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -36,9 +38,11 @@ class WresEvaluationProcessor implements Callable<Integer>
 
     private static final int META_FAILURE_CODE = 600;
 
-    private static final String START_EVAL_URI = "http://localhost:%d/project/startEvaluation/%s";
+    private static final String START_EVAL_URI = "http://localhost:%d/evaluation/start/%s";
 
-    private static final String PREPARE_EVAL_URI = "http://localhost:%d/project/prepareEvaluation";
+    private static final String OPEN_EVAL_URI = "http://localhost:%d/evaluation/open";
+
+    private static final String CLOSE_EVAL_URI = "http://localhost:%d/evaluation/close";
 
     private final String exchangeName;
     private final String jobId;
@@ -137,6 +141,8 @@ class WresEvaluationProcessor implements Callable<Integer>
 
         WebClient.ClientResponse evaluationPostRequest;
 
+        // Open an evaluation for work
+        String evaluationId = prepareEvaluationId();
 
         // Set up way to publish the standard output of the process to broker
         // and bind process outputs to message publishers
@@ -145,35 +151,40 @@ class WresEvaluationProcessor implements Callable<Integer>
                                                 this.getExchangeName(),
                                                 this.getJobId(),
                                                 JobStandardStreamMessenger.WhichStream.STDOUT,
-                                                this.getPort() );
+                                                this.getPort(),
+                                                evaluationId );
 
         JobStandardStreamMessenger stderrMessenger =
                 new JobStandardStreamMessenger( this.getConnection(),
                                                 this.getExchangeName(),
                                                 this.getJobId(),
                                                 JobStandardStreamMessenger.WhichStream.STDERR,
-                                                this.getPort() );
+                                                this.getPort(),
+                                                evaluationId );
+
         // Send process aliveness messages, like a heartbeat.
         JobStatusMessenger statusMessenger =
                 new JobStatusMessenger( this.getConnection(),
                                         this.getExchangeName(),
                                         this.getJobId(),
-                                        this.getPort() );
+                                        this.getPort(),
+                                        evaluationId );
+
+        executorService.submit( stdoutMessenger );
+        executorService.submit( stderrMessenger );
+        executorService.submit( statusMessenger );
 
         try
         {
-            executorService.submit( stdoutMessenger );
-            executorService.submit( stderrMessenger );
-            executorService.submit( statusMessenger );
 
-            URI startEvalURI = URI.create( String.format( START_EVAL_URI, this.getPort(), prepareEvaluationId()  ) );
+            URI startEvalURI = URI.create( String.format( START_EVAL_URI, this.getPort(), evaluationId ) );
             evaluationPostRequest =
                     WEB_CLIENT.postToWeb( startEvalURI, jobMessage );
 
         }
         catch ( IOException ioe )
         {
-            LOGGER.warn( "Failed to make post request {}.", ioe );
+            LOGGER.warn( "Failed to make post request {}", ioe );
             byte[] response = WresEvaluationProcessor.prepareMetaFailureResponse( ioe );
             this.sendResponse( response );
             WresEvaluationProcessor.shutdownExecutor( executorService );
@@ -191,6 +202,9 @@ class WresEvaluationProcessor implements Callable<Integer>
         response = WresEvaluationProcessor.prepareResponse( exitValue, null );
         this.sendResponse( response );
         WresEvaluationProcessor.shutdownExecutor( executorService );
+
+        // Close the evaluation before returning
+        closeEvaluation();
         return exitValue;
     }
 
@@ -199,14 +213,39 @@ class WresEvaluationProcessor implements Callable<Integer>
      * @return String representation of an evaluation id
      * @throws IOException
      */
-    private String prepareEvaluationId() throws IOException
+    private String prepareEvaluationId()
     {
-        URI prepareEval = URI.create( String.format( PREPARE_EVAL_URI, this.getPort() ) );
-        WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.getFromWeb( prepareEval );
-        return new BufferedReader( new InputStreamReader( evaluationIdRequest.getResponse() ) ).lines()
-                                                                                               .collect(
-                                                                                                       Collectors.joining(
-                                                                                                               "\n" ) );
+        URI prepareEval = URI.create( String.format( OPEN_EVAL_URI, this.getPort() ) );
+        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval ) )
+        {
+            return new BufferedReader( new InputStreamReader( evaluationIdRequest.getResponse() ) ).lines()
+                                                                                                   .collect(
+                                                                                                           Collectors.joining(
+                                                                                                                   "\n" ) );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    /**
+     * Helper method to close an evaluation to free up the server for the next execution
+     */
+    private void closeEvaluation()
+    {
+        try ( WebClient.ClientResponse clientResponse =
+                      WEB_CLIENT.postToWeb( URI.create( String.format( CLOSE_EVAL_URI, this.getPort() ) ) ) )
+        {
+            if ( clientResponse.getStatusCode() != HttpsURLConnection.HTTP_OK )
+            {
+                LOGGER.info( "Evaluation was not able to be closed" );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
 
@@ -324,7 +363,7 @@ class WresEvaluationProcessor implements Callable<Integer>
     }
 
     /**
-     * Attempts to send a message to the broker with a single line of output
+     * Attempts to send a message to the broker with a single line of output representing a path of output written by eval
      * @param path the path to send
      */
     private void sendOutputPath( Path path )
