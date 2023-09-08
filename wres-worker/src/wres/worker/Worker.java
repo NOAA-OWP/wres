@@ -15,6 +15,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.Map;
 import java.util.HashMap;
 
+import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 
 import com.rabbitmq.client.ConnectionFactory;
@@ -39,7 +40,8 @@ public class Worker
     private static final String RECV_QUEUE_NAME = "wres.job";
     private static volatile boolean killed = false;
 
-    private static final String serverUpURI = "http://localhost:%d/project/up";
+    /** A formatable string to compose the heartbeat request to the server */
+    private static final String SERVER_HEARTBEAT_URI = "http://localhost:%d/evaluation/heartbeat";
 
     private static final int DEFAULT_PORT = 8010;
 
@@ -171,6 +173,11 @@ public class Worker
         return factory;
     }
 
+    /**
+     * Uses the wresExecutable passed in to start a worker server wrapped in a ProcessBuilder
+     * @param wresExecutable
+     * @return a Process containing a worker server
+     */
     private static Process startWorkerServer( File wresExecutable )
     {
         List<String> result = new ArrayList<>();
@@ -205,6 +212,9 @@ public class Worker
         throw new InternalError( "Was unable to start up the worker server" );
     }
 
+    /**
+     * Gets a free port for the worker server to bind to
+     */
     private static void setFreePortOrDefault()
     {
         try
@@ -231,12 +241,19 @@ public class Worker
      */
     private static boolean isServerUp() throws IOException, URISyntaxException
     {
-        URI uri = new URI( String.format( serverUpURI, Worker.port ) );
+        URI uri = new URI( String.format( SERVER_HEARTBEAT_URI, Worker.port ) );
         WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( uri );
 
-        return fromWeb.getStatusCode() == 200;
+        return fromWeb.getStatusCode() == HttpsURLConnection.HTTP_OK;
     }
 
+    /**
+     * We call this function of the heartbeat of the server fails.
+     * If the server process is no longer alive, we destroy the process and start a new server
+     * @param oldServerProcess The old process we are checking alive status of
+     * @param wresExecutable the executable used to start a new server
+     * @return
+     */
     private static Process restartServerProcess( Process oldServerProcess, File wresExecutable )
     {
 

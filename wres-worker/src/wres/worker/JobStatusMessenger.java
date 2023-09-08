@@ -20,7 +20,6 @@ import static wres.messages.generated.JobStatus.job_status.Report.*;
 import static wres.messages.generated.EvaluationStatusOuterClass.EvaluationStatus.*;
 
 import wres.http.WebClient;
-import wres.messages.generated.EvaluationStatusOuterClass;
 import wres.messages.generated.JobStatus;
 
 
@@ -44,7 +43,8 @@ public class JobStatusMessenger implements Runnable
     private static final Logger LOGGER = LoggerFactory.getLogger( JobStatusMessenger.class );
     private static final String TOPIC = "status";
 
-    private static final String STATUS_URI = "http://localhost:%d/project/status/%s";
+    /** A formatable string to compose the status request to the server */
+    private static final String STATUS_URI = "http://localhost:%d/evaluation/status/%s";
 
     /** A web client to help with reading data from the web. */
     private static final WebClient WEB_CLIENT = new WebClient();
@@ -54,18 +54,22 @@ public class JobStatusMessenger implements Runnable
     private final String jobId;
     private final int port;
 
+    private final String evaluationId;
+
     /** Helps the consumer re-order messages received out-of-order */
     private final AtomicInteger order = new AtomicInteger( 0 );
 
     JobStatusMessenger( Connection connection,
                         String exchangeName,
                         String jobId,
-                        int port )
+                        int port,
+                        String evaluationId )
     {
         this.connection = connection;
         this.exchangeName = exchangeName;
         this.jobId = jobId;
         this.port = port;
+        this.evaluationId = evaluationId;
     }
 
     private Connection getConnection()
@@ -98,32 +102,33 @@ public class JobStatusMessenger implements Runnable
         return "job." + this.getJobId() + "." + TOPIC;
     }
 
+    private String getEvaluationId() {
+        return this.evaluationId;
+    }
+
     @Override
     public void run()
     {
+        String exchangeName = this.getExchangeName();
+        String exchangeType = "topic";
+
         try ( Channel channel = this.getConnection().createChannel() )
         {
             String evaluationStatus = getEvaluationStatus();
 
-            while ( !evaluationStatus.equals( COMPLETED.toString() ) )
+            this.sendMessage( channel, RECEIVED );
+
+            while ( !evaluationStatus.equals( COMPLETED.toString() ) && !evaluationStatus.equals( CLOSED.toString() ) )
             {
-                evaluationStatus = getEvaluationStatus();
-                String exchangeName = this.getExchangeName();
-                String exchangeType = "topic";
+                LOGGER.info( "EVAL STATUS IS: " + evaluationStatus );
 
                 channel.exchangeDeclare( exchangeName, exchangeType, true );
 
-                this.sendMessage( channel, RECEIVED );
-
-                while ( evaluationStatus.equals( ONGOING.toString() ) )
-                {
-                    evaluationStatus = getEvaluationStatus();
-                    this.sendMessage( channel, ALIVE );
-                    Thread.sleep( 1000 );
-                }
-
-                this.sendMessage( channel, DEAD );
+                this.sendMessage( channel, ALIVE );
+                Thread.sleep( 1000 );
+                evaluationStatus = getEvaluationStatus();
             }
+            this.sendMessage( channel, DEAD );
         }
         catch ( TimeoutException te )
         {
@@ -141,9 +146,14 @@ public class JobStatusMessenger implements Runnable
         LOGGER.info( "Finished sending {} for job {}", TOPIC, jobId );
     }
 
+    /**
+     * Method to get the status of an ongoing evaluation
+     * @return A string representing an EvaluationStatus
+     * @throws IOException
+     */
     private String getEvaluationStatus() throws IOException
     {
-        String url = String.format( STATUS_URI, this.getPort(), this.getJobId() );
+        String url = String.format( STATUS_URI, this.getPort(), this.getEvaluationId() );
         WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( URI.create( url ) );
         return new BufferedReader( new InputStreamReader( fromWeb.getResponse() ) ).lines()
                                                                                              .collect( Collectors.joining(
