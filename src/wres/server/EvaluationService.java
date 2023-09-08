@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashSet;
@@ -61,6 +62,10 @@ public class EvaluationService
 
     private static final AtomicLong evaluationId = new AtomicLong( -1 );
 
+    private static Thread timeoutThread;
+
+    private static final int FIVE_MINUTES_IN_MILISECONDS = 300000;
+
     private final Evaluator evaluator;
 
     /** A shared bag of output resource references by request id */
@@ -97,13 +102,15 @@ public class EvaluationService
     public Response getStatus( @PathParam( "id" ) Long id )
 
     {
-//        if ( evaluationId.get() != id )
-//        {
-//            return Response.status( Response.Status.BAD_REQUEST )
-//                           .entity( "The id provided: " + id + " Does not match the ID of the current evaluation: "
-//                                    + evaluationId.get() )
-//                           .build();
-//        }
+        //TODO activate when we have a persistant cache and async evaluations
+
+        //        if ( evaluationId.get() != id )
+        //        {
+        //            return Response.status( Response.Status.BAD_REQUEST )
+        //                           .entity( "The id provided: " + id + " Does not match the ID of the current evaluation: "
+        //                                    + evaluationId.get() )
+        //                           .build();
+        //        }
 
         return Response.ok( evaluationStage.get().toString() )
                        .build();
@@ -129,6 +136,7 @@ public class EvaluationService
 
         StreamingOutput streamingOutput = outputStream -> {
             long offset = 0;
+            Writer writer = new BufferedWriter( new OutputStreamWriter( outputStream ) );
             while ( !( evaluationStage.get().equals( COMPLETED ) || evaluationStage.get().equals( CLOSED ) ) )
             {
                 ByteArrayInputStream byteArrayInputStream =
@@ -136,16 +144,17 @@ public class EvaluationService
                 long skip = byteArrayInputStream.skip( offset );
                 if ( offset == skip )
                 {
-                    outputStream.write( byteArrayInputStream.read() );
-                    outputStream.flush();
-                    offset++;
+                    String bytes = new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 );
+                    writer.write( bytes );
+                    writer.flush();
+                    offset += bytes.length();
                 }
             }
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
             byteArrayInputStream.skip( offset );
-            outputStream.write( byteArrayInputStream.readAllBytes() );
-            outputStream.flush();
-            outputStream.close();
+            writer.write( new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 ) );
+            writer.flush();
+            writer.close();
         };
 
         return Response.ok( streamingOutput )
@@ -172,6 +181,7 @@ public class EvaluationService
 
         StreamingOutput streamingOutput = outputStream -> {
             long offset = 0;
+            Writer writer = new BufferedWriter( new OutputStreamWriter( outputStream ) );
             while ( !( evaluationStage.get().equals( COMPLETED ) || evaluationStage.get().equals( CLOSED ) ) )
             {
                 ByteArrayInputStream byteArrayInputStream =
@@ -179,16 +189,17 @@ public class EvaluationService
                 long skip = byteArrayInputStream.skip( offset );
                 if ( offset == skip )
                 {
-                    outputStream.write( byteArrayInputStream.read() );
-                    outputStream.flush();
-                    offset++;
+                    String bytes = new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 );
+                    writer.write( bytes );
+                    writer.flush();
+                    offset += bytes.length();
                 }
             }
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
             byteArrayInputStream.skip( offset );
-            outputStream.write( byteArrayInputStream.readAllBytes() );
-            outputStream.flush();
-            outputStream.close();
+            writer.write( new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 ) );
+            writer.flush();
+            writer.close();
         };
 
         return Response.ok( streamingOutput )
@@ -219,6 +230,8 @@ public class EvaluationService
         evaluationStage.set( OPENED );
         evaluationId.set( projectId );
 
+        evaluationTimeoutThread();
+
         return Response.ok( Response.Status.CREATED )
                        .entity( projectId )
                        .build();
@@ -229,6 +242,16 @@ public class EvaluationService
     @Produces( MediaType.TEXT_PLAIN )
     public Response closeEvaluation()
     {
+        close();
+        return Response.ok( "Evaluation closed" )
+                       .build();
+    }
+
+    private static void close()
+    {
+        // Project closed gracefully, stop the timeout thread
+        timeoutThread.interrupt();
+
         // Set Atomic values to a state to accept new projects
         evaluationStage.set( CLOSED );
         evaluationId.set( -1 );
@@ -236,9 +259,31 @@ public class EvaluationService
         // Reset Standard Streams
         System.setOut( new PrintStream( new FileOutputStream( FileDescriptor.out ) ) );
         System.setErr( new PrintStream( new FileOutputStream( FileDescriptor.err ) ) );
+    }
 
-        return Response.ok( "Evaluation closed" )
-                       .build();
+    private static void evaluationTimeoutThread()
+    {
+        Runnable timeoutRunnable = () -> {
+            while ( !evaluationStage.get().equals( CLOSED ) )
+            {
+                try
+                {
+                    Thread.sleep( FIVE_MINUTES_IN_MILISECONDS );
+                }
+                catch ( InterruptedException e )
+                {
+                    throw new RuntimeException( e );
+                }
+
+                if ( evaluationStage.get().equals( OPENED ) || evaluationStage.get().equals( COMPLETED ) )
+                {
+                    close();
+                }
+            }
+        };
+
+        timeoutThread = new Thread( timeoutRunnable );
+        timeoutThread.start();
     }
 
     /**
