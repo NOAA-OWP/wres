@@ -68,15 +68,15 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
     /**
      * Writes all output for one box plot type.
      *
-     * @param output the box plot output
+     * @param statistics the box plot output
      * @throws NullPointerException if the input is null
      * @throws CommaSeparatedWriteException if the output cannot be written
      */
 
     @Override
-    public Set<Path> apply( final List<BoxplotStatisticOuter> output )
+    public Set<Path> apply( List<BoxplotStatisticOuter> statistics )
     {
-        Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
+        Objects.requireNonNull( statistics, "Specify non-null input data when writing box plot outputs." );
 
         EvaluationDeclaration declaration = super.getDeclaration();
         if ( Objects.nonNull( declaration.validDatePools() )
@@ -85,7 +85,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             LOGGER.warn( "The legacy CSV format does not support box plot metrics alongside pooling window "
                          + "declaration. As such, {} diagram statistics will not be written to the legacy CSV format. "
                          + "Please consider declaring the CSV2 format instead, which supports all metrics.",
-                         output.size() );
+                         statistics.size() );
 
             return Collections.emptySet();
         }
@@ -94,7 +94,10 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
 
         LOGGER.debug( "Writer {} received {} box plot statistics to write as CSV.",
                       this,
-                      output.size() );
+                      statistics.size() );
+
+        // Remove statistics that represent quantiles of a sampling distribution
+        statistics = CommaSeparatedStatisticsWriter.filter( statistics );
 
         // Formatter
         Format formatter = declaration.decimalFormat();
@@ -106,7 +109,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             // for each group (e.g., one path for each window with DatasetOrientation.RIGHT data and one for
             // each window with DatasetOrientation.BASELINE data): #48287
             Map<DatasetOrientation, List<BoxplotStatisticOuter>> groups =
-                    Slicer.getStatisticsGroupedByContext( output );
+                    Slicer.getStatisticsGroupedByContext( statistics );
 
             for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
             {

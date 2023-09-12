@@ -70,7 +70,8 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
     public static ThresholdOuter of( Threshold threshold )
     {
-        return new ThresholdOuter.Builder( threshold ).build();
+        return new ThresholdOuter.Builder( threshold )
+                .build();
     }
 
     /**

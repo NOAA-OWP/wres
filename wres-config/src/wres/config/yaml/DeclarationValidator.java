@@ -1586,14 +1586,14 @@ public class DeclarationValidator
             }
 
             // Warning for small sample size
-            if ( samplingUncertainty.sampleSize() < 5000 )
+            if ( samplingUncertainty.sampleSize() < 1000 )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
                                                .setStatusLevel( StatusLevel.WARN )
                                                .setEventMessage( "The 'sample_size' associated with the "
                                                                  + "'sampling_uncertainty' is smaller than the "
-                                                                 + "recommended minimum of 5,000 samples ("
+                                                                 + "recommended minimum of 1,000 samples ("
                                                                  + samplingUncertainty.sampleSize()
                                                                  + "), which may lead to inaccurate estimates of the "
                                                                  + "sampling uncertainty. Please consider using a "

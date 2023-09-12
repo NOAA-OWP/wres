@@ -1669,11 +1669,11 @@ class EvaluationUtilities
                                                                                          doubleMapper,
                                                                                          null ) )
                                                   .toList();
-        TimeSeries<Double> consolidatedLeft = TimeSeriesSlicer.consolidate( leftSeries );
-        double[] data = consolidatedLeft.getEvents()
-                                        .stream()
-                                        .mapToDouble( Event::getValue )
-                                        .toArray();
+        double[] data = leftSeries.stream()
+                                  .flatMap( n -> n.getEvents()
+                                                  .stream() )
+                                  .mapToDouble( Event::getValue )
+                                  .toArray();
 
         return BlockSizeEstimator.getOptimalBlockSize( data );
     }

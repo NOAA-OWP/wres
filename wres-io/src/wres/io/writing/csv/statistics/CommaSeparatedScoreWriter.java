@@ -78,19 +78,22 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
     /**
      * Writes all output for one score type.
      *
-     * @param output the score output
+     * @param statistics the score output
      * @throws NullPointerException if the input is null
      * @throws CommaSeparatedWriteException if the output cannot be written
      */
 
     @Override
-    public Set<Path> apply( final List<T> output )
+    public Set<Path> apply( List<T> statistics )
     {
-        Objects.requireNonNull( output );
+        Objects.requireNonNull( statistics );
 
         LOGGER.debug( "Writer {} received {} score statistics to write to CSV.",
                       this,
-                      output.size() );
+                      statistics.size() );
+
+        // Remove statistics that represent quantiles of a sampling distribution
+        statistics = CommaSeparatedStatisticsWriter.filter( statistics );
 
         Set<Path> paths = new HashSet<>();
 
@@ -101,7 +104,7 @@ public class CommaSeparatedScoreWriter<S extends ScoreComponent<?>, T extends Sc
             // for each group (e.g., one path for each window with DatasetOrientation.RIGHT data and one for
             // each window with DatasetOrientation.BASELINE data): #48287
             Map<DatasetOrientation, List<T>> groups =
-                    Slicer.getStatisticsGroupedByContext( output );
+                    Slicer.getStatisticsGroupedByContext( statistics );
 
             for ( List<T> nextGroup : groups.values() )
             {

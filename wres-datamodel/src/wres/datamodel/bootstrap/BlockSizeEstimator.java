@@ -13,6 +13,8 @@ import org.apache.commons.math3.stat.descriptive.moment.Variance;
 import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
 import org.apache.commons.math3.transform.TransformType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Estimates the block size for the stationary bootstrap. The citation is: Patton, A. Politis, D.N. and White, H.
@@ -29,6 +31,9 @@ import org.apache.commons.math3.transform.TransformType;
  */
 public class BlockSizeEstimator
 {
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( BlockSizeEstimator.class );
+
     /** Fast Fourier Transform. */
     private static final FastFourierTransformer FAST_FOURIER_TRANSFORMER =
             new FastFourierTransformer( DftNormalization.STANDARD );
@@ -44,7 +49,6 @@ public class BlockSizeEstimator
      * @param data the sample data, required
      * @return the optimal block size estimate
      * @throws NullPointerException if the data is null
-     * @throws IllegalArgumentException if the data is invalid
      */
 
     public static int getOptimalBlockSize( double[] data )
@@ -55,10 +59,10 @@ public class BlockSizeEstimator
 
         if ( n < 2 )
         {
-            throw new IllegalArgumentException( "Cannot estimate the optimal block length from a dataset that contains "
-                                                + "fewer than 2 samples: "
-                                                + n
-                                                + "." );
+            LOGGER.warn( "Cannot estimate the optimal block length from a dataset that contains fewer than 2 samples: "
+                         + "{}. Proceeding with a block size of 1, but the stationary block bootstrap may not be "
+                         + "appropriate for estimating the sampling uncertainties in this context.", n );
+            return 1;
         }
 
         // Set some default values for required parameters based on Politis and White (2004, 2008)
@@ -158,8 +162,11 @@ public class BlockSizeEstimator
             bStar = bMax;
         }
 
-        if ( bStar < 1.0 )
+        if ( bStar < 1.0 || Double.isNaN( bStar ) )
         {
+            LOGGER.debug( "Could not determine a valid block size estimate from the sample autocorrelations. Assuming "
+                          + "a block size of 1 instead." );
+
             bStar = 1.0;
         }
 
@@ -262,7 +269,8 @@ public class BlockSizeEstimator
         fft = FAST_FOURIER_TRANSFORMER.transform( fft, TransformType.INVERSE );
 
         double[] correlations = new double[maxLag];
-        for ( int i = 0; i < maxLag; i++ )
+        int stop = Math.min( maxLag, fft.length - 1 );
+        for ( int i = 0; i < stop; i++ )
         {
             correlations[i] = fft[i + 1].getReal() / fft[0].getReal();
         }

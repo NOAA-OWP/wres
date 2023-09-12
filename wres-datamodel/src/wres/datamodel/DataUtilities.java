@@ -298,7 +298,7 @@ public final class DataUtilities
     }
 
     /**
-     * Takes a rawString and removes reserved characters, encodes, and replaces " " with "_"
+     * Takes a raw string and removes reserved characters, encodes, and replaces " " with "_".
      * Removes any non-alphanumeric symbols except for "-"
      *
      * @param rawString the potentially unsafe file string
@@ -527,7 +527,8 @@ public final class DataUtilities
             }
 
             return pool.getGeometryGroup()
-                       .getRegionName();
+                       .getRegionName()
+                       .replace( "-", "_" );
         }
 
         // Exactly one tuple

@@ -595,11 +595,10 @@ public class StationaryBootstrapResampler<T>
 
         if ( timeOffsets.size() > 1 )
         {
-            throw new IllegalArgumentException( "Cannot resample time-series whose earliest valid times are offset by "
-                                                + "a varying duration. Discovered the following time offsets among the "
-                                                + "supplied time-series: "
-                                                + timeOffsets
-                                                + "." );
+            LOGGER.warn( "Resampling time-series whose earliest valid times are offset by a varying duration. In "
+                         + "practice, these offsets will be assumed fixed at the smallest offset between time-series, "
+                         + "leading to a constant transition probability. Discovered the following time offsets among "
+                         + "the supplied time-series: {}.", timeOffsets );
         }
 
         // Cross-pair the main and baseline pairs with each other across all "mini pools". Resampling only works if

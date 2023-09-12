@@ -1,5 +1,7 @@
 package wres.io.writing.csv.statistics;
 
+import java.io.Serial;
+
 import wres.io.writing.WriteException;
 
 /**
@@ -8,34 +10,12 @@ import wres.io.writing.WriteException;
  * @author James Brown
  */
 
-public class CommaSeparatedWriteException extends WriteException
+class CommaSeparatedWriteException extends WriteException
 {
+    /** Serial identifier. */
 
-    /**
-     * Serial identifier.
-     */
-
+    @Serial
     private static final long serialVersionUID = -9113524805560375493L;
-
-    /**
-     * Constructs an {@link CommaSeparatedWriteException} with no message.
-     */
-
-    public CommaSeparatedWriteException()
-    {
-        super();
-    }
-
-    /**
-     * Constructs a {@link CommaSeparatedWriteException} with the specified message.
-     * 
-     * @param message the message.
-     */
-
-    public CommaSeparatedWriteException( final String message )
-    {
-        super( message );
-    }
 
     /**
      * Constructs a {@link CommaSeparatedWriteException} with the specified message.
@@ -48,5 +28,4 @@ public class CommaSeparatedWriteException extends WriteException
     {
         super( message, cause );
     }
-
 }
