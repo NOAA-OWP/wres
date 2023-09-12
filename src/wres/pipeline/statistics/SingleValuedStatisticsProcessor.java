@@ -692,7 +692,8 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
         int minimumSampleSize = super.getMinimumSampleSize();
 
         // Log and return an empty result if the sample size is too small
-        if ( pairs.get().size() < minimumSampleSize )
+        if ( pairs.get()
+                  .size() < minimumSampleSize )
         {
             if ( LOGGER.isDebugEnabled() )
             {
@@ -749,7 +750,6 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
             }
 
             return MetricFactory.ofSummaryStatisticsForTimingErrorMetrics( metricExecutor, localStatistics );
-
         }
 
         return null;

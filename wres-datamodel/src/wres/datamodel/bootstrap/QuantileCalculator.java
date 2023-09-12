@@ -14,16 +14,19 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.DoubleUnaryOperator;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 
 import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConstants;
+import wres.datamodel.MissingValues;
 import wres.datamodel.Slicer;
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.BoxplotStatistic;
@@ -49,6 +52,11 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( QuantileCalculator.class );
+
+    /** Filters durations. */
+    private static final UnaryOperator<Duration[]> DURATION_FILTER = durations -> Arrays.stream( durations )
+                                                                                        .filter( Objects::nonNull )
+                                                                                        .toArray( Duration[]::new );
 
     /** The cached samples of score statistics. */
     private final Map<DoubleScoreName, double[]> doubleScores;
@@ -114,7 +122,13 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
     {
         if ( !this.hasQuantiles.get() )
         {
-            throw new IllegalArgumentException( "The sample quantiles have not yet been calculated." );
+            throw new IllegalArgumentException( "The sample quantiles have not yet been calculated. Only "
+                                                + this.sampleIndexCompleted.get()
+                                                + " of the expected "
+                                                + this.sampleCount
+                                                + " samples have been registered with this quantile calculator, "
+                                                + this
+                                                + "." );
         }
 
         return Collections.unmodifiableList( this.quantiles );
@@ -129,6 +143,8 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
 
     public void add( Statistics statistics )
     {
+        Objects.requireNonNull( statistics );
+
         int index = this.sampleIndexStarted.getAndIncrement();
 
         if ( index + 1 > this.sampleCount )
@@ -203,6 +219,7 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
                 DurationScoreName name = new DurationScoreName( metricName,
                                                                 component.getMetric()
                                                                          .getName() );
+
                 Duration[] samples = this.durationScores.get( name );
                 // Check the slot exists
                 this.validateSlot( samples, name );
@@ -264,6 +281,16 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
                 Instant instant = MessageFactory.parse( statistic.getTime() );
                 Duration duration = MessageFactory.parse( statistic.getDuration() );
                 Duration[] durations = samples.get( instant );
+
+                // Slot doesn't exist, but this is a special case where mutation is allowed because the reference times
+                // present in duration diagrams can vary with each resample, depending on how thresholds slice their
+                // corresponding time-series
+                if ( Objects.isNull( durations ) )
+                {
+                    durations = new Duration[this.sampleCount];
+                    samples.put( instant, durations );
+                }
+
                 durations[index] = duration;
             }
         }
@@ -389,6 +416,11 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
                                                                          .getName() );
                 Duration[] samples = this.durationScores.get( name );
 
+                // Filter any null values and sort. Null values can occur if the pairs were empty, for example,
+                // and no duration errors were produced. Empty pairs can occur when slicing a realization by
+                // threshold.
+                samples = DURATION_FILTER.apply( samples );
+
                 // Sort
                 if ( sort )
                 {
@@ -466,15 +498,6 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
 
             Map<Instant, Duration[]> samples = this.durationDiagrams.get( metricName );
 
-            // Sort
-            if ( sort )
-            {
-                for ( Duration[] sample : samples.values() )
-                {
-                    Arrays.sort( sample );
-                }
-            }
-
             int componentCount = diagram.getStatisticsCount();
 
             for ( int i = 0; i < componentCount; i++ )
@@ -482,6 +505,18 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
                 DurationDiagramStatistic.PairOfInstantAndDuration.Builder pair = diagram.getStatisticsBuilder( i );
                 Instant instant = MessageFactory.parse( pair.getTime() );
                 Duration[] sample = samples.get( instant );
+
+                // Filter any null values and sort. Null values can occur if the pairs were empty, for example,
+                // and no duration errors were produced. Empty pairs can occur when slicing a realization by
+                // threshold.
+                sample = DURATION_FILTER.apply( sample );
+
+                // Sort
+                if ( sort )
+                {
+                    Arrays.sort( sample );
+                }
+
                 Duration quantile = this.getDurationQuantile( sample, probability );
                 com.google.protobuf.Duration quantileProto = MessageFactory.parse( quantile );
                 pair.setDuration( quantileProto );
@@ -737,6 +772,10 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
                                                                 component.getMetric()
                                                                          .getName() );
                     double[] placeholders = new double[sampleCount];
+
+                    // Fill with missings
+                    Arrays.fill( placeholders, MissingValues.DOUBLE );
+
                     slots.put( name, placeholders );
                 }
             }
@@ -775,6 +814,13 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
 
                     int valueCount = component.getValuesCount();
                     double[][] placeholders = new double[valueCount][sampleCount];
+
+                    // Fill with missings
+                    for ( double[] next : placeholders )
+                    {
+                        Arrays.fill( next, MissingValues.DOUBLE );
+                    }
+
                     slots.put( name, placeholders );
                 }
             }
@@ -825,9 +871,8 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
      * @return the duration diagram samples, to fill
      */
 
-    private Map<MetricName, Map<Instant, Duration[]>> createDurationDiagramSlots
-    ( List<DurationDiagramStatistic> diagramStatistics,
-      int sampleCount )
+    private Map<MetricName, Map<Instant, Duration[]>> createDurationDiagramSlots( List<DurationDiagramStatistic> diagramStatistics,
+                                                                                  int sampleCount )
     {
         Map<MetricName, Map<Instant, Duration[]>> slots = new EnumMap<>( MetricName.class );
         for ( DurationDiagramStatistic diagram : diagramStatistics )
@@ -840,7 +885,7 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
             if ( nextMetric.isSamplingUncertaintyAllowed() )
             {
                 List<DurationDiagramStatistic.PairOfInstantAndDuration> values = diagram.getStatisticsList();
-                Map<Instant, Duration[]> pairs = new HashMap<>();
+                Map<Instant, Duration[]> pairs = new ConcurrentHashMap<>();
                 for ( DurationDiagramStatistic.PairOfInstantAndDuration pair : values )
                 {
                     Instant instant = MessageFactory.parse( pair.getTime() );
@@ -848,7 +893,8 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
                     pairs.put( instant, durations );
                 }
 
-                slots.put( metricName, Collections.unmodifiableMap( pairs ) );
+                // Must remain mutable because structure is not fixed at instantiation time
+                slots.put( metricName, pairs );
             }
         }
 

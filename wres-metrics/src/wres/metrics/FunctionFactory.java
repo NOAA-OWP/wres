@@ -243,6 +243,7 @@ public class FunctionFactory
     /**
      * Return a function that computes the sum of square errors from a pool when using the mean left value as the
      * prediction.
+     * @param mapper the mapper to convert from pooled values to double values
      * @param <T> the pool data type
      * @return the function that computes the sum of square errors relative to the mean left value
      */

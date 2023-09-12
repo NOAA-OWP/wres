@@ -165,6 +165,20 @@ abstract class CommaSeparatedStatisticsWriter
     }
 
     /**
+     * Removes statistics that represent quantiles of a sampling distribution, which are not supported by the CSV
+     * format.
+     * @param statistics the statistics
+     * @return the filtered statistics
+     */
+
+    static <T extends Statistic<?>> List<T> filter( List<T> statistics )
+    {
+        return statistics.stream()
+                         .filter( s -> !s.hasQuantile() )
+                         .toList();
+    }
+
+    /**
      * Validates that the file object represented by the path does not already exist.
      *
      * @throws CommaSeparatedWriteException if the path exists

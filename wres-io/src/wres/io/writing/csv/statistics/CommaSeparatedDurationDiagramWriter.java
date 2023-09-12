@@ -63,15 +63,15 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
     /**
      * Writes all output for one box plot type.
      *
-     * @param output the box plot output
+     * @param statistics the box plot output
      * @throws NullPointerException if the input is null
      * @throws CommaSeparatedWriteException if the output cannot be written
      */
 
     @Override
-    public Set<Path> apply( final List<DurationDiagramStatisticOuter> output )
+    public Set<Path> apply( List<DurationDiagramStatisticOuter> statistics )
     {
-        Objects.requireNonNull( output, "Specify non-null input data when writing box plot outputs." );
+        Objects.requireNonNull( statistics, "Specify non-null input data when writing box plot outputs." );
 
         Set<Path> paths = new HashSet<>();
 
@@ -79,8 +79,11 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
         {
             LOGGER.debug( "Writer {} received {} duration diagram statistics to write to CSV.",
                           this,
-                          output.size() );
+                          statistics.size() );
         }
+
+        // Remove statistics that represent quantiles of a sampling distribution
+        statistics = CommaSeparatedStatisticsWriter.filter( statistics );
 
         // Write per time-window
         try
@@ -89,7 +92,7 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
             // for each group (e.g., one path for each window with DatasetOrientation.RIGHT data and one for
             // each window with DatasetOrientation.BASELINE data): #48287
             Map<DatasetOrientation, List<DurationDiagramStatisticOuter>> groups =
-                    Slicer.getStatisticsGroupedByContext( output );
+                    Slicer.getStatisticsGroupedByContext( statistics );
 
             for ( List<DurationDiagramStatisticOuter> nextGroup : groups.values() )
             {

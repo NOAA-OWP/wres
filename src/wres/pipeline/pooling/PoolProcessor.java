@@ -53,6 +53,9 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( PoolProcessor.class );
 
+    /** Empty statistics. */
+    private static final Statistics EMPTY_STATISTICS = Statistics.getDefaultInstance();
+
     /** The evaluation. */
     private final EvaluationMessager evaluation;
 
@@ -432,8 +435,19 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     {
         List<Statistics> statistics = new ArrayList<>();
 
+        // Sampling uncertainty requested?
         if ( Objects.nonNull( samplingUncertainty ) )
         {
+            // Cannot estimate the sampling uncertainties of an empty pool
+            if ( pool.get()
+                     .isEmpty() )
+            {
+                LOGGER.warn( "Cannot estimate the sampling uncertainties of an empty pool. The empty pool is: {}.",
+                             pool.getMetadata() );
+
+                return List.of();
+            }
+
             // Get the statistics processor for the sampling uncertainties
             Function<Pool<TimeSeries<Pair<L, R>>>, List<StatisticsStore>> processor =
                     this.getStatisticsProcessingTask( this.samplingUncertaintyMetricProcessors,
@@ -487,7 +501,6 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                 }
             }
 
-            // Add the completed quantiles
             quantileCalculators.values()
                                .forEach( n -> statistics.addAll( n.get() ) );
         }
@@ -514,18 +527,26 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                 nextStatistics.forEach( n -> byPool.put( this.getThreshold( n ), n ) );
             }
 
-            // Iterate through the pools and increment the corresponding calculators
-            for ( Map.Entry<OneOrTwoThresholds, Statistics> nextEntry : byPool.entrySet() )
+            // Iterate through the calculators and increment the statistics
+            for ( Map.Entry<OneOrTwoThresholds, QuantileCalculator> nextEntry : calculators.entrySet() )
             {
                 OneOrTwoThresholds nextThreshold = nextEntry.getKey();
-                QuantileCalculator calculator = calculators.get( nextThreshold );
+                QuantileCalculator calculator = nextEntry.getValue();
                 Statistics statistics = byPool.get( nextThreshold );
+
+                // If no statistics for this threshold/sample, then add the empty statistics to increment the calculator
+                if ( Objects.isNull( statistics ) )
+                {
+                    statistics = EMPTY_STATISTICS;
+                }
+
                 calculator.add( statistics );
             }
         }
         catch ( InterruptedException e )
         {
-            Thread.currentThread().interrupt();
+            Thread.currentThread()
+                  .interrupt();
 
             throw new WresProcessingException( "Interrupted while completing evaluation "
                                                + evaluation.getEvaluationId()
@@ -542,15 +563,21 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
     private OneOrTwoThresholds getThreshold( Statistics statistics )
     {
-        ThresholdOuter eventThreshold = ThresholdOuter.of( statistics.getPool()
-                                                                     .getEventThreshold() );
+        wres.statistics.generated.Pool pool = statistics.getPool();
+
+        // If no main pool, is there a baseline pool?
+        if( !statistics.hasPool()
+            && statistics.hasBaselinePool() )
+        {
+            pool = statistics.getBaselinePool();
+        }
+
+        ThresholdOuter eventThreshold = ThresholdOuter.of( pool.getEventThreshold() );
         ThresholdOuter decisionThreshold = null;
 
-        if ( statistics.getPool()
-                       .hasDecisionThreshold() )
+        if ( pool.hasDecisionThreshold() )
         {
-            decisionThreshold = ThresholdOuter.of( statistics.getPool()
-                                                             .getDecisionThreshold() );
+            decisionThreshold = ThresholdOuter.of( pool.getDecisionThreshold() );
         }
 
         return OneOrTwoThresholds.of( eventThreshold, decisionThreshold );
@@ -565,11 +592,18 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     private Map<OneOrTwoThresholds, QuantileCalculator> getQuantileCalculators( List<Statistics> statistics,
                                                                                 SamplingUncertainty samplingUncertainty )
     {
-        // Merge any metrics for corresponding thresholds
+        // Merge any statistics for corresponding thresholds
         BinaryOperator<Statistics> merger = ( first, second ) ->
         {
+            // Avoid duplicating basic pool information, just copy statistics
             Statistics.Builder merged = first.toBuilder();
-            merged.mergeFrom( second );
+            merged.addAllScores( second.getScoresList() );
+            merged.addAllDurationScores( second.getDurationScoresList() );
+            merged.addAllDiagrams( second.getDiagramsList() );
+            merged.addAllDurationDiagrams( second.getDurationDiagramsList() );
+            merged.addAllOneBoxPerPair( second.getOneBoxPerPairList() );
+            merged.addAllOneBoxPerPool( second.getOneBoxPerPoolList() );
+
             return merged.build();
         };
 

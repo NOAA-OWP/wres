@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.Immutable;
 import wres.io.writing.WriteException;
-import wres.io.writing.csv.statistics.CommaSeparatedWriteException;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.EvaluationStatus;
@@ -187,7 +186,7 @@ public class ProtobufWriter implements Function<Statistics,Set<Path>>
         private static final long serialVersionUID = 310749020741932142L;
 
         /**
-         * Constructs a {@link CommaSeparatedWriteException} with the specified message.
+         * Constructs a {@link ProtobufWriteException} with the specified message.
          * 
          * @param message the message.
          * @param cause the cause of the exception

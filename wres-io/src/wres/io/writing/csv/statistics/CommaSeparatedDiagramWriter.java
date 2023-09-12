@@ -68,15 +68,15 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
     /**
      * Writes all output for one diagram type.
      *
-     * @param output the diagram output
+     * @param statistics the diagram output
      * @throws NullPointerException if either input is null 
      * @throws CommaSeparatedWriteException if the output cannot be written
      */
 
     @Override
-    public Set<Path> apply( final List<DiagramStatisticOuter> output )
+    public Set<Path> apply( List<DiagramStatisticOuter> statistics )
     {
-        Objects.requireNonNull( output, "Specify non-null input data when writing diagram outputs." );
+        Objects.requireNonNull( statistics, "Specify non-null input data when writing diagram outputs." );
 
         EvaluationDeclaration declaration = super.getDeclaration();
         if ( Objects.nonNull( declaration.validDatePools() )
@@ -85,7 +85,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             LOGGER.warn( "The legacy CSV format does not support diagram metrics alongside pooling window declaration. "
                          + "As such, {} diagram statistics will not be written to the legacy CSV format. Please "
                          + "consider declaring the CSV2 format instead, which supports all metrics.",
-                         output.size() );
+                         statistics.size() );
 
             return Collections.emptySet();
         }
@@ -94,7 +94,10 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
         LOGGER.debug( "Writer {} received {} diagram statistics to write to CSV.",
                       this,
-                      output.size() );
+                      statistics.size() );
+
+        // Remove statistics that represent quantiles of a sampling distribution
+        statistics = CommaSeparatedStatisticsWriter.filter( statistics );
 
         // Formatter
         Format formatter = declaration.decimalFormat();
@@ -106,7 +109,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for
             // each window with LeftOrRightOrBaseline.BASELINE data): #48287
             Map<DatasetOrientation, List<DiagramStatisticOuter>> groups =
-                    Slicer.getStatisticsGroupedByContext( output );
+                    Slicer.getStatisticsGroupedByContext( statistics );
 
             for ( List<DiagramStatisticOuter> nextGroup : groups.values() )
             {
