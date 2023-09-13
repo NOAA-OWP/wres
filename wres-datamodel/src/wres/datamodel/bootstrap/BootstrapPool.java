@@ -1,18 +1,22 @@
 package wres.datamodel.bootstrap;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
 
 import wres.datamodel.pools.Pool;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesSlicer;
 
 /**
  * Stores the underlying time-series data within a {@link Pool} in an efficient format for bootstrap resampling.
@@ -24,7 +28,9 @@ import wres.datamodel.time.TimeSeries;
 class BootstrapPool<T>
 {
     /** The time-series mapped by number of events. Each list contains one or more time-series with at least as many
-     * events as the corresponding map key. Each inner list contains the events for one time-series.*/
+     * events as the corresponding map key. The time-series are time-ordered by the first valid time in the series. In
+     * other words, consecutive series are the "nearest" to each other in time. Each inner list contains the events
+     * for one time-series, also ordered by valid time.*/
     private final Map<Integer, List<List<Event<T>>>> timeSeriesEvents;
 
     /** The original pool. */
@@ -65,6 +71,49 @@ class BootstrapPool<T>
     }
 
     /**
+     * Returns the absolute durations between the first valid times in consecutive time-series, as well as between the
+     * first and last time-series.
+     * @return the time offsets
+     */
+
+    Set<Duration> getValidTimeOffsets()
+    {
+        Set<Duration> offsets = new HashSet<>();
+        for ( List<List<Event<T>>> next : this.timeSeriesEvents.values() )
+        {
+            if ( next.size() > 1 )
+            {
+                // Offsets between consecutive series
+                for ( int i = 1; i < next.size(); i++ )
+                {
+                    Instant first = next.get( i - 1 )
+                                        .get( 0 )
+                                        .getTime();
+                    Instant last = next.get( i )
+                                       .get( 0 )
+                                       .getTime();
+                    Duration offset = Duration.between( first, last )
+                                              .abs();
+                    offsets.add( offset );
+                }
+
+                // Offset between the first and last series, which is required because the resampling is circular
+                Instant first = next.get( 0 )
+                                    .get( 0 )
+                                    .getTime();
+                Instant last = next.get( next.size() - 1 )
+                                   .get( 0 )
+                                   .getTime();
+                Duration offset = Duration.between( first, last )
+                                          .abs();
+                offsets.add( offset );
+            }
+        }
+
+        return Collections.unmodifiableSet( offsets );
+    }
+
+    /**
      * @return the original pool
      */
     Pool<TimeSeries<T>> getPool()
@@ -85,14 +134,14 @@ class BootstrapPool<T>
         this.validatePoolStructure( pool );
 
         // Sort the time-series by number of events
-        SortedMap<Integer, List<TimeSeries<T>>> bySize = pool.get()
-                                                             .stream()
-                                                             .collect( Collectors.groupingBy( n -> n.getEvents()
-                                                                                                    .size(),
-                                                                                              TreeMap::new,
-                                                                                              Collectors.toList() ) );
+        SortedMap<Integer, List<TimeSeries<T>>> bySize = TimeSeriesSlicer.groupByEventCount( pool.get() );
 
         Map<Integer, List<List<Event<T>>>> innerTimeSeriesEvents = new HashMap<>();
+
+        // Sorter that sorts consecutive series by their first valid time
+        Comparator<TimeSeries<T>> sorter = Comparator.comparing( a -> a.getEvents()
+                                                                       .first()
+                                                                       .getTime() );
 
         for ( Map.Entry<Integer, List<TimeSeries<T>>> nextEntry : bySize.entrySet() )
         {
@@ -102,6 +151,10 @@ class BootstrapPool<T>
             for ( Map.Entry<Integer, List<TimeSeries<T>>> nextInnerEntry : submap.entrySet() )
             {
                 List<TimeSeries<T>> nextInner = nextInnerEntry.getValue();
+
+                // Sort by the first valid time in each series
+                nextInner.sort( sorter );
+
                 List<List<Event<T>>> unwrapped = nextInner.stream()
                                                           .map( n -> List.copyOf( n.getEvents() ) )
                                                           .toList();
@@ -112,6 +165,7 @@ class BootstrapPool<T>
         }
 
         this.timeSeriesEvents = Collections.unmodifiableMap( innerTimeSeriesEvents );
+
         this.pool = pool;
     }
 
@@ -129,6 +183,7 @@ class BootstrapPool<T>
             throw new IllegalArgumentException( "Cannot resample an empty pool." );
         }
 
+        // Check for consistency of the main and baseline pairs, where applicable
         if ( pool.hasBaseline() )
         {
             List<TimeSeries<T>> main = pool.get();

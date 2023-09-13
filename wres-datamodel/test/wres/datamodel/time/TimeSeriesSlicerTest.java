@@ -1449,27 +1449,32 @@ final class TimeSeriesSlicerTest
     }
 
     @Test
-    void testGetTimeOffsets()
+    void testGroupByEventCount()
     {
-        TimeSeries<Double> first =
+        TimeSeries<Double> one =
                 new TimeSeries.Builder<Double>()
                         .addEvent( Event.of( Instant.parse( "1988-10-04T17:00:00Z" ), 1.0 ) )
                         .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
                         .build();
-        TimeSeries<Double> second =
+        TimeSeries<Double> two =
                 new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T17:00:00Z" ), 1.0 ) )
                         .addEvent( Event.of( Instant.parse( "1988-10-04T18:00:00Z" ), 1.0 ) )
                         .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
                         .build();
-        TimeSeries<Double> third =
+        TimeSeries<Double> three =
                 new TimeSeries.Builder<Double>()
-                        .addEvent( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ), 1.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T17:00:00Z" ), 1.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T18:00:00Z" ), 1.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T19:00:00Z" ), 1.0 ) )
                         .setMetadata( TimeSeriesSlicerTest.getBoilerplateMetadata() )
                         .build();
+        List<TimeSeries<Double>> series = List.of( one, two, two, three, three, three );
 
-        SortedSet<Duration> actual = TimeSeriesSlicer.getTimeOffsets( List.of( first, third, second ) );
-        SortedSet<Duration> expected = new TreeSet<>( Set.of( Duration.ofHours( 1 ),
-                                                              Duration.ofHours( 6 ) ) );
+        Map<Integer, List<TimeSeries<Double>>> actual = TimeSeriesSlicer.groupByEventCount( series );
+        Map<Integer, List<TimeSeries<Double>>> expected = Map.of( 1, List.of( one ),
+                                                                  2, List.of( two, two ),
+                                                                  3, List.of( three, three, three ) );
         assertEquals( expected, actual );
     }
 
