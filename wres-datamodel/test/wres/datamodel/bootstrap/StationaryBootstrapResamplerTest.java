@@ -6,9 +6,10 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ForkJoinPool;
 
-import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.random.Well512a;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -30,6 +31,142 @@ import wres.statistics.generated.ReferenceTime;
  */
 class StationaryBootstrapResamplerTest
 {
+    @Test
+    void testResampleProducesExpectedPoolShapeForPoolWithOneSeries()
+    {
+        TimeSeries<Double> one =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T17:00:00Z" ), 1.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T18:00:00Z" ), 2.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T19:00:00Z" ), 3.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T20:00:00Z" ), 4.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T21:00:00Z" ), 5.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T22:00:00Z" ), 6.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T23:00:00Z" ), 7.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ), 8.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-05T01:00:00Z" ), 9.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-05T02:00:00Z" ), 10.0 ) )
+                        .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( null ) )
+                        .build();
+
+        Pool<TimeSeries<Double>> pool = Pool.of( List.of( one ), PoolMetadata.of() );
+
+        RandomGenerator randomGenerator = new Well512a();
+
+        StationaryBootstrapResampler<Double> resampler = StationaryBootstrapResampler.of( pool,
+                                                                                          2,
+                                                                                          randomGenerator,
+                                                                                          ForkJoinPool.commonPool() );
+        Pool<TimeSeries<Double>> actual = resampler.resample();
+
+        assertAll( () -> assertEquals( 1, pool.get()
+                                              .size() ),
+                   () -> assertEquals( 10, actual.get()
+                                                 .get( 0 )
+                                                 .getEvents()
+                                                 .size() ) );
+    }
+
+    @Test
+    void testResampleProducesExpectedPoolShapeWhenPoolContainsBaseline()
+    {
+        Instant first = Instant.parse( "1988-10-04T16:00:00Z" );
+        TimeSeries<Double> one =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T17:00:00Z" ), 1.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T18:00:00Z" ), 2.0 ) )
+                        .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( first ) )
+                        .build();
+
+        Instant second = Instant.parse( "1988-10-04T16:00:00Z" );
+        TimeSeries<Double> two =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T17:00:00Z" ), 4.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T18:00:00Z" ), 5.0 ) )
+                        .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( second ) )
+                        .build();
+
+        Pool<TimeSeries<Double>> pool = Pool.of( List.of( one ),
+                                                 PoolMetadata.of(),
+                                                 List.of( two ),
+                                                 PoolMetadata.of( true ),
+                                                 null );
+
+        RandomGenerator randomGenerator = new Well512a();
+
+        StationaryBootstrapResampler<Double> resampler = StationaryBootstrapResampler.of( pool,
+                                                                                          2,
+                                                                                          randomGenerator,
+                                                                                          ForkJoinPool.commonPool() );
+        Pool<TimeSeries<Double>> actual = resampler.resample();
+
+        assertAll( () -> assertEquals( 1, pool.get()
+                                              .size() ),
+                   () -> assertEquals( 1, pool.getBaselineData()
+                                              .get()
+                                              .size() ),
+                   () -> assertEquals( 2, actual.get()
+                                                .get( 0 )
+                                                .getEvents()
+                                                .size() ),
+                   () -> assertEquals( 2, actual.getBaselineData()
+                                                .get()
+                                                .get( 0 )
+                                                .getEvents()
+                                                .size() ) );
+    }
+
+
+    @Test
+    void testResampleProducesExpectedPoolShapeForPoolWithMultipleSeriesContainingSingleEvent()
+    {
+        Instant first = Instant.parse( "1988-10-04T16:00:00Z" );
+        TimeSeries<Double> one =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T17:00:00Z" ), 1.0 ) )
+                        .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( first ) )
+                        .build();
+
+        Instant second = Instant.parse( "1988-10-04T19:00:00Z" );
+        TimeSeries<Double> two =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T20:00:00Z" ), 4.0 ) )
+                        .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( second ) )
+                        .build();
+
+        Instant third = Instant.parse( "1988-10-04T22:00:00Z" );
+        TimeSeries<Double> three =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T23:00:00Z" ), 8.0 ) )
+                        .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( third ) )
+                        .build();
+
+        Pool<TimeSeries<Double>> pool = Pool.of( List.of( one, two, three ), PoolMetadata.of() );
+
+        RandomGenerator randomGenerator = new Well512a();
+
+        StationaryBootstrapResampler<Double> resampler = StationaryBootstrapResampler.of( pool,
+                                                                                          2,
+                                                                                          randomGenerator,
+                                                                                          ForkJoinPool.commonPool() );
+        Pool<TimeSeries<Double>> actual = resampler.resample();
+
+        assertAll( () -> assertEquals( 3, pool.get()
+                                              .size() ),
+                   () -> assertEquals( 1, actual.get()
+                                                .get( 0 )
+                                                .getEvents()
+                                                .size() ),
+                   () -> assertEquals( 1, actual.get()
+                                                .get( 1 )
+                                                .getEvents()
+                                                .size() ),
+                   () -> assertEquals( 1, actual.get()
+                                                .get( 2 )
+                                                .getEvents()
+                                                .size() ) );
+    }
+
     @Test
     void testResampleProducesExpectedPoolShapeForPoolWithMultipleSeriesOfDifferentLengths()
     {
@@ -64,12 +201,12 @@ class StationaryBootstrapResamplerTest
 
         Pool<TimeSeries<Double>> pool = Pool.of( List.of( one, two, three ), PoolMetadata.of() );
 
-        RandomGenerator randomGenerator = new MersenneTwister();
+        RandomGenerator randomGenerator = new Well512a();
 
         StationaryBootstrapResampler<Double> resampler = StationaryBootstrapResampler.of( pool,
                                                                                           2,
                                                                                           randomGenerator,
-                                                                                          null );
+                                                                                          ForkJoinPool.commonPool() );
         Pool<TimeSeries<Double>> actual = resampler.resample();
 
         assertAll( () -> assertEquals( 3, pool.get()
@@ -89,140 +226,103 @@ class StationaryBootstrapResamplerTest
     }
 
     @Test
-    void testResampleProducesExpectedPoolShapeForPoolWithOneSeries()
-    {
-        TimeSeries<Double> one =
-                new TimeSeries.Builder<Double>()
-                        .addEvent( Event.of( Instant.parse( "1988-10-04T17:00:00Z" ), 1.0 ) )
-                        .addEvent( Event.of( Instant.parse( "1988-10-04T18:00:00Z" ), 2.0 ) )
-                        .addEvent( Event.of( Instant.parse( "1988-10-04T19:00:00Z" ), 3.0 ) )
-                        .addEvent( Event.of( Instant.parse( "1988-10-04T20:00:00Z" ), 4.0 ) )
-                        .addEvent( Event.of( Instant.parse( "1988-10-04T21:00:00Z" ), 5.0 ) )
-                        .addEvent( Event.of( Instant.parse( "1988-10-04T22:00:00Z" ), 6.0 ) )
-                        .addEvent( Event.of( Instant.parse( "1988-10-04T23:00:00Z" ), 7.0 ) )
-                        .addEvent( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ), 8.0 ) )
-                        .addEvent( Event.of( Instant.parse( "1988-10-05T01:00:00Z" ), 9.0 ) )
-                        .addEvent( Event.of( Instant.parse( "1988-10-05T02:00:00Z" ), 10.0 ) )
-                        .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( null ) )
-                        .build();
-
-        Pool<TimeSeries<Double>> pool = Pool.of( List.of( one ), PoolMetadata.of() );
-
-        RandomGenerator randomGenerator = new MersenneTwister();
-
-        StationaryBootstrapResampler<Double> resampler = StationaryBootstrapResampler.of( pool,
-                                                                                          2,
-                                                                                          randomGenerator,
-                                                                                          null );
-        Pool<TimeSeries<Double>> actual = resampler.resample();
-
-        assertAll( () -> assertEquals( 1, pool.get()
-                                              .size() ),
-                   () -> assertEquals( 10, actual.get()
-                                                 .get( 0 )
-                                                 .getEvents()
-                                                 .size() ) );
-    }
-
-    @Test
-    void testResampleProducesExpectedPoolShapeForPoolWithMultipleSeriesContainingSingleEvent()
+    void testResampleContainsExpectedValuesForPoolWithMultipleSeriesOfDifferentLengths()
     {
         Instant first = Instant.parse( "1988-10-04T16:00:00Z" );
-        TimeSeries<Double> one =
+        TimeSeries<Double> oneOne =
                 new TimeSeries.Builder<Double>()
                         .addEvent( Event.of( Instant.parse( "1988-10-04T17:00:00Z" ), 1.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T18:00:00Z" ), 1.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T19:00:00Z" ), 1.0 ) )
                         .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( first ) )
                         .build();
 
-        Instant second = Instant.parse( "1988-10-04T19:00:00Z" );
-        TimeSeries<Double> two =
+        Instant second = Instant.parse( "1988-10-04T18:00:00Z" );
+        TimeSeries<Double> oneTwo =
                 new TimeSeries.Builder<Double>()
-                        .addEvent( Event.of( Instant.parse( "1988-10-04T20:00:00Z" ), 4.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T19:00:00Z" ), 2.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T20:00:00Z" ), 2.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T21:00:00Z" ), 2.0 ) )
                         .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( second ) )
                         .build();
 
-        Instant third = Instant.parse( "1988-10-04T22:00:00Z" );
-        TimeSeries<Double> three =
+        Instant third = Instant.parse( "1988-10-04T20:00:00Z" );
+        TimeSeries<Double> twoOne =
                 new TimeSeries.Builder<Double>()
-                        .addEvent( Event.of( Instant.parse( "1988-10-04T23:00:00Z" ), 8.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T21:00:00Z" ), 3.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T22:00:00Z" ), 3.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T23:00:00Z" ), 3.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ), 3.0 ) )
                         .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( third ) )
                         .build();
 
-        Pool<TimeSeries<Double>> pool = Pool.of( List.of( one, two, three ), PoolMetadata.of() );
+        Instant fourth = Instant.parse( "1988-10-04T22:00:00Z" );
+        TimeSeries<Double> twoTwo =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T23:00:00Z" ), 4.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ), 4.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-05T01:00:00Z" ), 4.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-05T02:00:00Z" ), 4.0 ) )
+                        .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( fourth ) )
+                        .build();
 
-        RandomGenerator randomGenerator = new MersenneTwister();
+        Pool<TimeSeries<Double>> pool = Pool.of( List.of( oneOne, oneTwo, twoOne, twoTwo ), PoolMetadata.of() );
+
+        // Fix the seed to generate an expected sequence
+        RandomGenerator randomGenerator = new Well512a( 123456 );
 
         StationaryBootstrapResampler<Double> resampler = StationaryBootstrapResampler.of( pool,
-                                                                                          2,
+                                                                                          1,
                                                                                           randomGenerator,
-                                                                                          null );
+                                                                                          ForkJoinPool.commonPool() );
+
+        // The time-series with 3 events can contain event values with any of numbers (1,2,3,4). The time-series with
+        // 4 events can only contain event values with numbers (3,4)
         Pool<TimeSeries<Double>> actual = resampler.resample();
 
-        assertAll( () -> assertEquals( 3, pool.get()
-                                              .size() ),
-                   () -> assertEquals( 1, actual.get()
-                                                .get( 0 )
-                                                .getEvents()
-                                                .size() ),
-                   () -> assertEquals( 1, actual.get()
-                                                .get( 1 )
-                                                .getEvents()
-                                                .size() ),
-                   () -> assertEquals( 1, actual.get()
-                                                .get( 2 )
-                                                .getEvents()
-                                                .size() ) );
-    }
-
-    @Test
-    void testResampleProducesExpectedPoolShapeWhenPoolContainsBaseline()
-    {
-        Instant first = Instant.parse( "1988-10-04T16:00:00Z" );
-        TimeSeries<Double> one =
+        TimeSeries<Double> oneOneExpected =
                 new TimeSeries.Builder<Double>()
-                        .addEvent( Event.of( Instant.parse( "1988-10-04T17:00:00Z" ), 1.0 ) )
-                        .addEvent( Event.of( Instant.parse( "1988-10-04T18:00:00Z" ), 2.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T17:00:00Z" ), 3.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T18:00:00Z" ), 1.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T19:00:00Z" ), 4.0 ) )
                         .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( first ) )
                         .build();
 
-        Instant second = Instant.parse( "1988-10-04T16:00:00Z" );
-        TimeSeries<Double> two =
+        TimeSeries<Double> oneTwoExpected =
                 new TimeSeries.Builder<Double>()
-                        .addEvent( Event.of( Instant.parse( "1988-10-04T17:00:00Z" ), 4.0 ) )
-                        .addEvent( Event.of( Instant.parse( "1988-10-04T18:00:00Z" ), 5.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T19:00:00Z" ), 2.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T20:00:00Z" ), 3.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T21:00:00Z" ), 3.0 ) )
                         .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( second ) )
                         .build();
 
-        Pool<TimeSeries<Double>> pool = Pool.of( List.of( one ),
-                                                 PoolMetadata.of(),
-                                                 List.of( two ),
-                                                 PoolMetadata.of( true ),
-                                                 null );
+        TimeSeries<Double> twoOneExpected =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T21:00:00Z" ), 3.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T22:00:00Z" ), 3.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T23:00:00Z" ), 4.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ), 3.0 ) )
+                        .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( third ) )
+                        .build();
 
-        RandomGenerator randomGenerator = new MersenneTwister();
+        TimeSeries<Double> twoTwoExpected =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T23:00:00Z" ), 4.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ), 3.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-05T01:00:00Z" ), 3.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-05T02:00:00Z" ), 4.0 ) )
+                        .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( fourth ) )
+                        .build();
 
-        StationaryBootstrapResampler<Double> resampler = StationaryBootstrapResampler.of( pool,
-                                                                                          2,
-                                                                                          randomGenerator,
-                                                                                          null );
-        Pool<TimeSeries<Double>> actual = resampler.resample();
+        Pool<TimeSeries<Double>> expected = Pool.of( List.of( oneOneExpected,
+                                                              oneTwoExpected,
+                                                              twoOneExpected,
+                                                              twoTwoExpected ),
+                                                     PoolMetadata.of() );
 
-        assertAll( () -> assertEquals( 1, pool.get()
-                                              .size() ),
-                   () -> assertEquals( 1, pool.getBaselineData()
-                                              .get()
-                                              .size() ),
-                   () -> assertEquals( 2, actual.get()
-                                                .get( 0 )
-                                                .getEvents()
-                                                .size() ),
-                   () -> assertEquals( 2, actual.getBaselineData()
-                                                .get()
-                                                .get( 0 )
-                                                .getEvents()
-                                                .size() ) );
+        assertEquals( expected, actual );
     }
-
+    
     @Test
     void testResampleProducesExpectedPoolShapeWhenPoolContainsMinipools()
     {
@@ -266,12 +366,12 @@ class StationaryBootstrapResamplerTest
                                                                               .addPool( poolTwo )
                                                                               .build();
 
-        RandomGenerator randomGenerator = new MersenneTwister();
+        RandomGenerator randomGenerator = new Well512a();
 
         StationaryBootstrapResampler<Double> resampler = StationaryBootstrapResampler.of( pool,
                                                                                           2,
                                                                                           randomGenerator,
-                                                                                          null );
+                                                                                          ForkJoinPool.commonPool() );
         Pool<TimeSeries<Double>> reampled = resampler.resample();
         List<Pool<TimeSeries<Double>>> actual = reampled.getMiniPools();
 
@@ -376,12 +476,12 @@ class StationaryBootstrapResamplerTest
                                                                               .addPool( poolTwo )
                                                                               .build();
 
-        RandomGenerator randomGenerator = new MersenneTwister();
+        RandomGenerator randomGenerator = new Well512a();
 
         StationaryBootstrapResampler<Double> resampler = StationaryBootstrapResampler.of( pool,
                                                                                           2,
                                                                                           randomGenerator,
-                                                                                          null );
+                                                                                          ForkJoinPool.commonPool() );
         Pool<TimeSeries<Double>> reampled = resampler.resample();
         List<Pool<TimeSeries<Double>>> actual = reampled.getMiniPools();
 

@@ -3,20 +3,25 @@ package wres.datamodel.bootstrap;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.SortedSet;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-import java.util.TreeSet;
 
 import org.apache.commons.math3.distribution.BinomialDistribution;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -85,14 +90,20 @@ public class StationaryBootstrapResampler<T>
     private final BinomialDistribution p;
 
     /** The probability, q, with which to sample the next time-series randomly, where 1-q is the probability with which
-     * to sample the time-series adjacent to the last sample. */
-    private final BinomialDistribution q;
+     * to sample the time-series adjacent to the last sample. There is one distribution for each gap between the first
+     * valid times of consecutive time-series, as well as between the last time-series and the first.*/
+    private final Map<Duration, BinomialDistribution> q;
 
     /** A random number generator. */
     private final RandomGenerator randomGenerator;
 
     /** A resample executor. */
     private final ExecutorService resampleExecutor;
+
+    /** Sorts time-series by the valid time of the first event, which is the ordering used for indexing. */
+    private final Comparator<TimeSeries<T>> sorter = Comparator.comparing( a -> a.getEvents()
+                                                                                 .first()
+                                                                                 .getTime() );
 
     /**
      * Create an instance.
@@ -172,42 +183,64 @@ public class StationaryBootstrapResampler<T>
      * Generates the indexes for resampling the pool.
      *
      * @param pool the pool
-     * @return the indexes to resample
+     * @return the indexes to resample, which are based on the size-ordered time-series in the pool
      */
 
     private List<ResampleIndexes> generateIndexesForResampling( BootstrapPool<T> pool )
     {
         // Build a list of sample indexes
-        List<TimeSeries<T>> poolSeries = pool.getPool()
-                                             .get();
+        List<TimeSeries<T>> series = pool.getPool()
+                                         .get();
 
-        // One set of resample indexes for each time-series, indicating where to obtain the event values for that series
-        List<ResampleIndexes> indexes = new ArrayList<>();
-        for ( int i = 0; i < poolSeries.size(); i++ )
+        // Group the time-series to resample based on the number of events within them and do the sampling separately
+        // for each group. The resampled indexes are relative to series within each group, which are ordered by the
+        // valid time of the first event within the group. For a given group, the source time-series for resampling
+        // must contain at least as many events as the number of events for time-series within the group. IMPORTANT:
+        // all indexing is performed relative to this size ordering, so resampling of the time-series must use the same
+        // ordering
+        Map<Integer, List<TimeSeries<T>>> seriesBySize = TimeSeriesSlicer.groupByEventCount( series );
+        List<List<TimeSeries<T>>> groupedBySize = new ArrayList<>();
+        for ( Map.Entry<Integer, List<TimeSeries<T>>> nextEntry : seriesBySize.entrySet() )
         {
-            TimeSeries<T> nextSeries = poolSeries.get( i );
-            ResampleIndexes nextIndexes;
-
-            // Forecast time-series which are probably non-stationary across lead durations, unless they are based
-            // on climatology
-            if ( !nextSeries.getReferenceTimes()
-                            .isEmpty() )
-            {
-                nextIndexes = this.generateIndexesForResamplingFromForecastSeries( nextSeries,
-                                                                                   i,
-                                                                                   pool,
-                                                                                   indexes );
-            }
-            // Non-forecast time-series (of which there is only one, as established on construction)
-            else
-            {
-                nextIndexes = this.generateIndexesForResamplingFromNonForecastSeries( nextSeries );
-            }
-
-            indexes.add( nextIndexes );
+            List<TimeSeries<T>> nextList = nextEntry.getValue();
+            nextList.sort( this.sorter );
+            groupedBySize.add( nextList );
         }
 
-        return Collections.unmodifiableList( indexes );
+        // One ResampledIndexes for each time-series, indicating where to obtain the event values for that series
+        List<ResampleIndexes> outerIndexes = new ArrayList<>();
+        for ( List<TimeSeries<T>> poolSeries : groupedBySize )
+        {
+            // Resampled indexes for the next group, which are relative to the grouped time-series
+            List<ResampleIndexes> innerIndexes = new ArrayList<>();
+            for ( int i = 0; i < poolSeries.size(); i++ )
+            {
+                TimeSeries<T> nextSeries = poolSeries.get( i );
+                ResampleIndexes nextIndexes;
+
+                // Forecast time-series which are probably non-stationary across lead durations, unless they are based
+                // on climatology
+                if ( !nextSeries.getReferenceTimes()
+                                .isEmpty() )
+                {
+                    nextIndexes = this.generateIndexesForResamplingFromForecastSeries( nextSeries,
+                                                                                       i,
+                                                                                       pool,
+                                                                                       innerIndexes );
+                }
+                // Non-forecast time-series (of which there is only one, as established on construction)
+                else
+                {
+                    nextIndexes = this.generateIndexesForResamplingFromNonForecastSeries( nextSeries );
+                }
+
+                innerIndexes.add( nextIndexes );
+            }
+
+            outerIndexes.addAll( innerIndexes );
+        }
+
+        return Collections.unmodifiableList( outerIndexes );
     }
 
     /**
@@ -231,6 +264,7 @@ public class StationaryBootstrapResampler<T>
                            .size();
 
         List<int[]> nextIndexes = new ArrayList<>();
+        // Can only sample from time-series with as many events as the template series
         List<List<Event<T>>> eventsToSample = pool.getTimeSeriesWithAtLeastThisManyEvents( events );
         int seriesCount = eventsToSample.size();
 
@@ -255,7 +289,8 @@ public class StationaryBootstrapResampler<T>
             {
                 nextSeriesIndex = this.getFirstSampleFromSeriesThatIsNotFirstSeries( seriesCount,
                                                                                      seriesIndex,
-                                                                                     indexes );
+                                                                                     indexes,
+                                                                                     eventsToSample );
             }
             // Event that is not the first event from a series that is not the first series
             else
@@ -317,34 +352,64 @@ public class StationaryBootstrapResampler<T>
      * @param seriesCount the number of time-series
      * @param seriesIndex the series index
      * @param indexes the indexes already sampled for other series
+     * @param eventsToSample the events to sample
      * @return the randomly chosen time-series index
      */
     private int getFirstSampleFromSeriesThatIsNotFirstSeries( int seriesCount,
                                                               int seriesIndex,
-                                                              List<ResampleIndexes> indexes )
+                                                              List<ResampleIndexes> indexes,
+                                                              List<List<Event<T>>> eventsToSample )
     {
-        int nextSeriesIndex;
+        // There should be a last series, by definition of this method being called
+        ResampleIndexes lastSeriesIndexes = indexes.get( seriesIndex - 1 );
+        int[] lastIndex = lastSeriesIndexes.indexes()
+                                           .get( 0 );
+
+        int lastSeriesIndex = lastIndex[0];
+        int nextSeriesIndex = lastSeriesIndex + 1;
+
+        // Find the appropriate transition probability distribution, which depends on the gap
+
+        // Gap when restarting the pool
+        if ( nextSeriesIndex >= seriesCount )
+        {
+            nextSeriesIndex = 0;
+        }
+
+        // Find the duration between the last index and next index
+        Instant first = eventsToSample.get( lastSeriesIndex )
+                                      .get( 0 )
+                                      .getTime();
+        Instant second = eventsToSample.get( nextSeriesIndex )
+                                       .get( 0 )
+                                       .getTime();
+
+        // Absolute gap
+        Duration gap = Duration.between( first, second )
+                               .abs();
+        BinomialDistribution sampler = this.q.get( gap );
+
+        if ( Objects.isNull( sampler ) )
+        {
+            // Default gap registered to Duration.ZERO. This occurs when no modal timestep could be determined from the
+            // data
+            sampler = this.q.get( Duration.ZERO );
+
+            // Still null?
+            if ( Objects.isNull( sampler ) )
+            {
+                throw new ResamplingException( "Failed to discover a sampler for a transition between time-series "
+                                               + "separated by "
+                                               + gap
+                                               + ". Samplers were available for the following durations: "
+                                               + this.q.keySet() );
+            }
+        }
 
         // Choose the next event from a randomly selected series with probability q
-        if ( this.q.sample() == 1 )
+        if ( sampler.sample() == 1 )
         {
             nextSeriesIndex = this.getRandomIndex( seriesCount );
-        }
-        // Choose the next event from the series "next" to the one used for the first index in the last series
-        // with probability 1-q
-        else
-        {
-            ResampleIndexes lastSeriesIndexes = indexes.get( seriesIndex - 1 );
-            int[] lastIndex = lastSeriesIndexes.indexes()
-                                               .get( 0 );
-
-            nextSeriesIndex = lastIndex[0] + 1;
-
-            // Wrap around to beginning of pool
-            if ( nextSeriesIndex >= seriesCount )
-            {
-                nextSeriesIndex = 0;
-            }
         }
 
         return nextSeriesIndex;
@@ -432,7 +497,7 @@ public class StationaryBootstrapResampler<T>
 
     /**
      * Generates a sample of a pool from the prescribed list of indexes, one set of indexes for each time-series in the
-     * pool.
+     * pool. The indexes use the ordering imposed by {@link #generateIndexesForResampling(BootstrapPool)}.
      *
      * @param pool the pool to resample
      * @param resampleIndexes the indexes to resample
@@ -446,13 +511,26 @@ public class StationaryBootstrapResampler<T>
         List<TimeSeries<T>> original = pool.getPool()
                                            .get();
 
+        // IMPORTANT: Use the same ordering that was used to generate the indexes
+        Map<Integer, List<TimeSeries<T>>> seriesBySize = TimeSeriesSlicer.groupByEventCount( original );
+        List<List<TimeSeries<T>>> groupedBySize = new ArrayList<>();
+        for ( Map.Entry<Integer, List<TimeSeries<T>>> nextEntry : seriesBySize.entrySet() )
+        {
+            List<TimeSeries<T>> nextList = nextEntry.getValue();
+            nextList.sort( this.sorter );
+            groupedBySize.add( nextList );
+        }
+        List<TimeSeries<T>> sizeOrder = groupedBySize.stream()
+                                                     .flatMap( Collection::stream )
+                                                     .toList();
+
         // Execute the time-series resampling in parallel as this can be time-consuming for large time-series, mainly
         // adding the time-series events to a sorted set. This will only improve performance when the series count is
         // greater than one, so not for a single, long, time-series
         List<CompletableFuture<TimeSeries<T>>> futures = new ArrayList<>();
-        for ( int i = 0; i < original.size(); i++ )
+        for ( int i = 0; i < sizeOrder.size(); i++ )
         {
-            TimeSeries<T> nextSeries = original.get( i );
+            TimeSeries<T> nextSeries = sizeOrder.get( i );
             UnaryOperator<TimeSeries<T>> resampler = this.getTimeSeriesResampler( pool, resampleIndexes, i );
             CompletableFuture<TimeSeries<T>> future =
                     CompletableFuture.supplyAsync( () -> resampler.apply( nextSeries ),
@@ -534,6 +612,7 @@ public class StationaryBootstrapResampler<T>
     {
         Objects.requireNonNull( pool );
         Objects.requireNonNull( randomGenerator );
+        Objects.requireNonNull( resampleExecutor );
 
         if ( meanBlockSizeInTimesteps <= 0 )
         {
@@ -555,11 +634,11 @@ public class StationaryBootstrapResampler<T>
         }
 
         // Obtain the constant duration between consecutive times
-        SortedSet<Duration> timesteps = pool.get()
-                                            .stream()
-                                            .flatMap( n -> TimeSeriesSlicer.getTimesteps( n )
-                                                                           .stream() )
-                                            .collect( Collectors.toCollection( TreeSet::new ) );
+        List<Duration> timesteps = pool.get()
+                                       .stream()
+                                       .flatMap( n -> TimeSeriesSlicer.getTimesteps( n )
+                                                                      .stream() )
+                                       .collect( Collectors.toCollection( ArrayList::new ) );
 
         if ( pool.hasBaseline() )
         {
@@ -584,23 +663,6 @@ public class StationaryBootstrapResampler<T>
                          + "unreliable. The following timesteps were discovered: {}.", timesteps );
         }
 
-        SortedSet<Duration> timeOffsets = new TreeSet<>( TimeSeriesSlicer.getTimeOffsets( pool.get() ) );
-
-        if ( pool.hasBaseline() )
-        {
-            SortedSet<Duration> baselineOffsets = TimeSeriesSlicer.getTimeOffsets( pool.getBaselineData()
-                                                                                       .get() );
-            timeOffsets.addAll( baselineOffsets );
-        }
-
-        if ( timeOffsets.size() > 1 )
-        {
-            LOGGER.warn( "Resampling time-series whose earliest valid times are offset by a varying duration. In "
-                         + "practice, these offsets will be assumed fixed at the smallest offset between time-series, "
-                         + "leading to a constant transition probability. Discovered the following time offsets among "
-                         + "the supplied time-series: {}.", timeOffsets );
-        }
-
         // Cross-pair the main and baseline pairs with each other across all "mini pools". Resampling only works if
         // there is a consistent structure across the main and baseline pairs and across "mini pools" because perfect
         // statistical dependence is assumed, i.e., one structure for everything.
@@ -608,36 +670,54 @@ public class StationaryBootstrapResampler<T>
 
         double pProb = 1.0 / meanBlockSizeInTimesteps;
         this.p = new BinomialDistribution( randomGenerator, 1, pProb );
-        double qProb = this.getTransitionProbabilityBetweenSeries( pProb,
-                                                                   timesteps,
-                                                                   timeOffsets,
-                                                                   meanBlockSizeInTimesteps );
-        this.q = new BinomialDistribution( randomGenerator, 1, qProb );
-
         this.randomGenerator = randomGenerator;
-
-        if ( Objects.isNull( resampleExecutor ) )
-        {
-            this.resampleExecutor = ForkJoinPool.commonPool();
-        }
-        else
-        {
-            this.resampleExecutor = resampleExecutor;
-        }
+        this.resampleExecutor = resampleExecutor;
 
         // Create the common structure to resample
         List<Pool<TimeSeries<T>>> miniPools = pool.getMiniPools();
         List<BootstrapPool<T>> innerMain = new ArrayList<>();
         List<BootstrapPool<T>> innerBaseline = new ArrayList<>();
+        Set<Duration> timeOffsets = new HashSet<>(); // Time offsets per bootstrap pool
         for ( Pool<TimeSeries<T>> nextMini : miniPools )
         {
             BootstrapPool<T> nextMain = BootstrapPool.of( nextMini );
+            timeOffsets.addAll( nextMain.getValidTimeOffsets() );
             innerMain.add( nextMain );
             if ( nextMini.hasBaseline() )
             {
                 BootstrapPool<T> nextBaseline = BootstrapPool.of( nextMini.getBaselineData() );
                 innerBaseline.add( nextBaseline );
+                timeOffsets.addAll( nextBaseline.getValidTimeOffsets() );
             }
+        }
+
+        // Calculate the modal timestep, if any
+        Duration timestep = this.getModalDuration( timesteps );
+
+        // If the modal timestep is null, interpret the meanBlockSizeInTimesteps as referring to the modal time offset
+        if ( Objects.isNull( timestep ) )
+        {
+            timestep = this.getModalDuration( timeOffsets );
+        }
+
+        if ( Objects.isNull( timestep ) || timestep.isZero() )
+        {
+            LOGGER.warn( "Discovered a mean block size of {} in time steps, but could not determine a non-zero time "
+                         + "step from which to calculate a transition probability between time-series. This is usually "
+                         + "an indication of sparse/irregular data, which may not be well-suited to the stationary "
+                         + "bootstrap and any sampling uncertainty estimates should be treated with extreme caution. "
+                         + "Using p = 1.0 / mean block size as the transition probability (p={})",
+                         meanBlockSizeInTimesteps,
+                         pProb );
+            this.q = Map.of( Duration.ZERO, this.p );
+        }
+        else
+        {
+            // Create the distributions to transition between time-series based on time offset of the first valid time
+            this.q = this.getTransitionProbabilitiesBetweenSeries( timestep,
+                                                                   timeOffsets,
+                                                                   meanBlockSizeInTimesteps,
+                                                                   this.randomGenerator );
         }
 
         this.main = Collections.unmodifiableList( innerMain );
@@ -656,11 +736,12 @@ public class StationaryBootstrapResampler<T>
             }
             LOGGER.debug( "Created a stationary bootstrap resampler with a mean block size of {} timesteps, a "
                           + "probability of {} for randomly sampling consecutive timesteps within the same "
-                          + "time-series, a probability of {} for randomly sampling consecutive time-series, "
-                          + "and a pool with {} main time-series and {} baseline time-series.",
+                          + "time-series, probabilities of {} for randomly sampling consecutive time-series depending"
+                          + "on the gap/duration between them, and a pool with {} main time-series and {} baseline "
+                          + "time-series.",
                           meanBlockSizeInTimesteps,
-                          pProb,
-                          qProb,
+                          this.p,
+                          this.q,
                           pool.get()
                               .size(),
                           baselineCount );
@@ -929,51 +1010,95 @@ public class StationaryBootstrapResampler<T>
     }
 
     /**
+     * Creates a binomial distribution with probability of success that is proportional to the time offset between
+     * time-series relative to the timestep of the data.
+     *
+     * @param timestep the timestep
+     * @param timeOffsets the time offsets
+     * @param meanBlockSizeInTimesteps the mean block size
+     * @param random the random number generator
+     * @return the distributions for calculating transition probabilities between time-series
+     */
+
+    private Map<Duration, BinomialDistribution> getTransitionProbabilitiesBetweenSeries( Duration timestep,
+                                                                                         Set<Duration> timeOffsets,
+                                                                                         long meanBlockSizeInTimesteps,
+                                                                                         RandomGenerator random )
+    {
+        Map<Duration, BinomialDistribution> returnMe = new HashMap<>();
+
+        if ( !timeOffsets.isEmpty() )
+        {
+            for ( Duration nextOffset : timeOffsets )
+            {
+                double qProb = this.getTransitionProbabilityBetweenSeries( timestep,
+                                                                           nextOffset,
+                                                                           meanBlockSizeInTimesteps );
+                BinomialDistribution b = new BinomialDistribution( random, 1, qProb );
+                returnMe.put( nextOffset, b );
+            }
+        }
+
+        return Collections.unmodifiableMap( returnMe );
+    }
+
+    /**
+     * Returns the modal duration from the input.
+     * @param durations the durations whose mode is required
+     * @return the modal duration
+     */
+
+    private Duration getModalDuration( Collection<Duration> durations )
+    {
+        return durations.stream()
+                        .collect( Collectors.groupingBy( Function.identity(),
+                                                         Collectors.counting() ) )
+                        .entrySet()
+                        .stream()
+                        .max( Map.Entry.comparingByValue() )
+                        .map( Map.Entry::getKey )
+                        .orElse( null );
+    }
+
+    /**
      * Calculates a transition probability between series based on the mean block size in timestep units and the number
      * of timesteps per offset between series.
      *
-     * @param pProb the transition probability between times within series
-     * @param timesteps the timesteps
-     * @param timeOffsets the time offsets
+     * @param timestep the timestep
+     * @param timeOffset the time offset
      * @param meanBlockSizeInTimesteps the mean block size in timesteps
      * @return the transition probability between series
      */
 
-    private double getTransitionProbabilityBetweenSeries( double pProb,
-                                                          SortedSet<Duration> timesteps,
-                                                          SortedSet<Duration> timeOffsets,
+    private double getTransitionProbabilityBetweenSeries( Duration timestep,
+                                                          Duration timeOffset,
                                                           long meanBlockSizeInTimesteps )
     {
-        double qProb = pProb;
-
-        // Find the number of timesteps per offset and use that to calculate a transition probability between series
-        if ( !timeOffsets.isEmpty()
-             && !timesteps.isEmpty() )
+        // If the offset is less than the timestep, return the timestep probability
+        if ( timeOffset.compareTo( timestep ) < 0 )
         {
-            Duration offset = timeOffsets.first();
-            Duration timestep = timesteps.first();
-
-            BigDecimal timestepDecimal = BigDecimal.valueOf( timestep.getSeconds() )
-                                                   .add( BigDecimal.valueOf( timestep.getNano(), 999_999 ) );
-
-            BigDecimal offsetDecimal = BigDecimal.valueOf( offset.getSeconds() )
-                                                 .add( BigDecimal.valueOf( offset.getNano(), 999_999 ) );
-
-            BigDecimal timestepsPerOffset = timestepDecimal.divide( offsetDecimal, RoundingMode.HALF_UP );
-
-            double meanBlocksPerOffset = timestepsPerOffset.doubleValue() * meanBlockSizeInTimesteps;
-
-            // If the number of blocks per offset is less than 1, adjust to 1, i.e., random sampling, because the block
-            // size does not capture even 1 offset between time-series
-            if ( meanBlocksPerOffset < 1.0 )
-            {
-                meanBlocksPerOffset = 1.0;
-            }
-
-            qProb = 1.0 / meanBlocksPerOffset;
+            return 1.0 / meanBlockSizeInTimesteps;
         }
 
-        return qProb;
+        // Find the number of timesteps per offset and use that to calculate a transition probability between series
+        BigDecimal timestepDecimal = BigDecimal.valueOf( timestep.getSeconds() )
+                                               .add( BigDecimal.valueOf( timestep.getNano(), 999_999 ) );
+
+        BigDecimal offsetDecimal = BigDecimal.valueOf( timeOffset.getSeconds() )
+                                             .add( BigDecimal.valueOf( timeOffset.getNano(), 999_999 ) );
+
+        BigDecimal timestepsPerOffset = timestepDecimal.divide( offsetDecimal, RoundingMode.HALF_UP );
+
+        double meanBlocksPerOffset = timestepsPerOffset.doubleValue() * meanBlockSizeInTimesteps;
+
+        // If the number of blocks per offset is less than 1, adjust to 1, i.e., random sampling, because the block
+        // size does not capture even 1 offset between time-series
+        if ( meanBlocksPerOffset < 1.0 )
+        {
+            meanBlocksPerOffset = 1.0;
+        }
+
+        return 1.0 / meanBlocksPerOffset;
     }
 
     /**

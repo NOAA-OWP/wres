@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -98,7 +99,6 @@ public final class TimeSeriesSlicer
             return false;
         };
     }
-
 
     /**
      * <p>Composes the input predicate as applying to the right side of any paired value within a time-series.
@@ -498,6 +498,28 @@ public final class TimeSeriesSlicer
     }
 
     /**
+     * Groups the time-series by number of events.
+     *
+     * @param <T> the type of time-series event value
+     * @param series the time-series to group by event count
+     * @return the time-series grouped by event count
+     * @throws NullPointerException if the input is null
+     */
+
+    public static <T> SortedMap<Integer, List<TimeSeries<T>>> groupByEventCount( Collection<TimeSeries<T>> series )
+    {
+        Objects.requireNonNull( series );
+
+        SortedMap<Integer, List<TimeSeries<T>>> grouped =
+                series.stream()
+                      .collect( Collectors.groupingBy( n -> n.getEvents()
+                                                             .size(),
+                                                       TreeMap::new,
+                                                       Collectors.toList() ) );
+        return Collections.unmodifiableSortedMap( grouped );
+    }
+
+    /**
      * Creates as many intervals as years within the supplied time series using the time scale, which must have one or
      * both month-day bookends defined. Each interval is right-closed.
      *
@@ -666,29 +688,6 @@ public final class TimeSeriesSlicer
     }
 
     /**
-     * Helper that returns the time offset between the first valid times of consecutive time-series in the inputs when
-     * the time-series are ordered by their first valid time.
-     *
-     * @param <T> the time-series event value type
-     * @param timeSeries the time-series
-     * @return the unique timesteps
-     * @throws NullPointerException if the input is null
-     */
-
-    public static <T> SortedSet<Duration> getTimeOffsets( Collection<TimeSeries<T>> timeSeries )
-    {
-        Objects.requireNonNull( timeSeries );
-
-        SortedSet<Instant> validTimes = timeSeries.stream()
-                                                  .map( n -> n.getEvents()
-                                                              .first()
-                                                              .getTime() )
-                                                  .collect( Collectors.toCollection( TreeSet::new ) );
-
-        return TimeSeriesSlicer.getTimesteps( validTimes );
-    }
-
-    /**
      * <p>Returns a regular sequence of times that are present in both time series and are consistent with the desired 
      * timescale and begin within the designated time window. If the desired timescale contains month-day bookends,
      * returns the empty set.
@@ -710,7 +709,7 @@ public final class TimeSeriesSlicer
      * @param left the left-ish time-series
      * @param right the right-ish time series
      * @param timeWindow the time window
-     * @param desiredTimeScale the optional desired time scale
+     * @param desiredTimeScale the optional desired timescale
      * @param frequency the optional frequency at which values should be sampled, defaults to the time scale period
      * @return a regular sequence of intersecting times
      * @throws NullPointerException if any input is null
@@ -894,7 +893,7 @@ public final class TimeSeriesSlicer
 
             for ( int i = 0; i < traceCount; i++ )
             {
-                Object label = i+1;
+                Object label = i + 1;
                 if ( ensemble.hasLabels() )
                 {
                     label = labels[i];
