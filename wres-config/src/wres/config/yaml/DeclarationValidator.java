@@ -2946,7 +2946,8 @@ public class DeclarationValidator
         }
 
         // If the season declaration is incomplete, then a period must be present
-        if ( !timeScaleInner.hasPeriod() && ( timeScaleInner.getStartDay() == 0 || timeScaleInner.getEndDay() == 0
+        if ( !timeScaleInner.hasPeriod() && ( timeScaleInner.getStartDay() == 0
+                                              || timeScaleInner.getEndDay() == 0
                                               || timeScaleInner.getStartMonth() == 0
                                               || timeScaleInner.getEndMonth() == 0 ) )
         {
@@ -2955,8 +2956,8 @@ public class DeclarationValidator
                                            .setStatusLevel( StatusLevel.ERROR )
                                            .setEventMessage( THE_TIME_SCALE_ASSOCIATED_WITH_THE
                                                              + orientation
-                                                             + " is not properly declared. The time scale period must "
-                                                             + "be declared explicitly or a time scale season "
+                                                             + " is not properly declared. The time scale 'period' "
+                                                             + "must be declared explicitly or a time scale season "
                                                              + "fully defined, else a valid combination of the two." )
                                            .build();
             events.add( event );
@@ -2972,7 +2973,7 @@ public class DeclarationValidator
                                            .setStatusLevel( StatusLevel.ERROR )
                                            .setEventMessage( THE_TIME_SCALE_ASSOCIATED_WITH_THE
                                                              + orientation
-                                                             + " is not properly declared. The period cannot be "
+                                                             + " is not properly declared. The 'period' cannot be "
                                                              + "declared alongside a fully defined season. Please "
                                                              + "remove the 'period' and 'unit' or remove the time "
                                                              + "scale season and try again." )
