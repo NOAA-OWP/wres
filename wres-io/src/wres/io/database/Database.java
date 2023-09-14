@@ -4,14 +4,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -59,12 +54,6 @@ public class Database
      * outside of other threads
      */
     private ThreadPoolExecutor sqlTasks;
-
-    /**
-     * Mapping between the number of a forecast value partition and its name
-     */
-    private final Map<Integer, String> timeSeriesValuePartitionNames =
-            new ConcurrentHashMap<>( 163 );
 
     /**
      * Creates an instance

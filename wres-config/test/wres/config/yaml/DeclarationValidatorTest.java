@@ -448,7 +448,7 @@ class DeclarationValidatorTest
                                                                                 + "both must be present",
                                                                         StatusLevel.ERROR ) ),
                    () -> assertTrue( DeclarationValidatorTest.contains( events,
-                                                                        "The time scale period must be "
+                                                                        "The time scale 'period' must be "
                                                                         + "declared explicitly or a time scale season "
                                                                         + "fully defined",
                                                                         StatusLevel.ERROR ) ),
