@@ -1,5 +1,6 @@
 package wres.config.yaml;
 
+import java.io.IOException;
 import java.net.URI;
 import java.time.Instant;
 import java.time.MonthDay;
@@ -1751,6 +1752,43 @@ class DeclarationValidatorTest
 
         assertTrue( DeclarationValidatorTest.contains( events,
                                                        "is larger than the reasonable maximum",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testInvalidDeclarationStringProducesSchemaValidationError() throws IOException
+    {
+        // #57969-86
+        String evaluation = """
+                label: NWM AnA Test
+                observed:
+                  label: USGS NWIS Instantaneous Streamflow Observations
+                  sources:
+                  - interface: usgs nwis
+                    uri: https://nwis.waterservices.usgs.gov/nwis/iv
+                  variable: '00060'
+                predicted:
+                  label: WRES NWM AnA
+                  sources:
+                  - interface: wrds nwm
+                    uri: https://***REMOVED***.***REMOVED***.***REMOVED***/api/nwm2.1/v2.0/ops/analysis_assim/
+                    parameters:
+                      unassimilated: 'true'
+                  variable: streamflow
+                unit: ft3/s
+                valid_dates:
+                  minimum: '2023-09-04T00:00:00Z'
+                  maximum: '2023-09-14T19:43:24Z'
+                analysis_durations:
+                  minimum_exclusive: -2
+                  maximum: 0
+                  unit: hours
+                """;
+
+        Set<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
+
+        assertTrue( DeclarationValidatorTest.contains( List.copyOf( events ),
+                                                       "is not defined in the schema",
                                                        StatusLevel.ERROR ) );
     }
 
