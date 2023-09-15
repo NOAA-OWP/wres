@@ -8,7 +8,6 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;

@@ -69,7 +69,7 @@ public class Evaluator
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( brokerConnectionFactory );
 
-        if ( systemSettings.isInDatabase() )
+        if ( systemSettings.isUseDatabase() )
         {
             Objects.requireNonNull( database );
         }
@@ -108,16 +108,16 @@ public class Evaluator
         }
         catch ( IOException e )
         {
-            LOGGER.error( "Failed to unmarshal  evaluation declaration from command line argument.", e );
+            LOGGER.error( "Failed to unmarshal evaluation declaration from command line argument.", e );
             UserInputException translated = new UserInputException( "The evaluation declaration was invalid.", e );
             failure.setFailed();
             failure.commit();
             return ExecutionResult.failure( translated );
         }
 
-        SystemSettings innerSystemSettings = this.getSystemSettings();
+        SystemSettings systemSettings = this.getSystemSettings();
 
-        if ( innerSystemSettings.isInMemory() )
+        if ( !systemSettings.isUseDatabase() )
         {
             LOGGER.info( "Running evaluation in memory." );
         }
@@ -165,7 +165,7 @@ public class Evaluator
                 .namingPattern( "Format Writing Thread %d" )
                 .build();
 
-        SystemSettings innerSystemSettings = this.getSystemSettings();
+        SystemSettings systemSettings = this.getSystemSettings();
 
         // Create some unbounded work queues. For evaluations that produce statistics faster than subscribers (e.g.,
         // statistics format writers) can consume them, production is flow controlled explicitly via the statistics
@@ -178,30 +178,30 @@ public class Evaluator
 
         // Create some thread pools to perform the work required by different parts of the evaluation pipeline
         // Thread pool that processes pools of pairs
-        ExecutorService poolExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumPoolThreads(),
-                                                               innerSystemSettings.getMaximumPoolThreads(),
-                                                               innerSystemSettings.poolObjectLifespan(),
+        ExecutorService poolExecutor = new ThreadPoolExecutor( systemSettings.getMaximumPoolThreads(),
+                                                               systemSettings.getMaximumPoolThreads(),
+                                                               systemSettings.getPoolObjectLifespan(),
                                                                TimeUnit.MILLISECONDS,
                                                                poolQueue,
                                                                poolFactory );
         // Thread pool that performs slicing/dicing and transforming of pooled data
-        ExecutorService slicingExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumSlicingThreads(),
-                                                                  innerSystemSettings.getMaximumSlicingThreads(),
+        ExecutorService slicingExecutor = new ThreadPoolExecutor( systemSettings.getMaximumSlicingThreads(),
+                                                                  systemSettings.getMaximumSlicingThreads(),
                                                                   0,
                                                                   TimeUnit.SECONDS,
                                                                   slicingQueue,
                                                                   slicingFactory );
         // Thread pool that processes metrics
-        ExecutorService metricExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumMetricThreads(),
-                                                                 innerSystemSettings.getMaximumMetricThreads(),
-                                                                 innerSystemSettings.poolObjectLifespan(),
+        ExecutorService metricExecutor = new ThreadPoolExecutor( systemSettings.getMaximumMetricThreads(),
+                                                                 systemSettings.getMaximumMetricThreads(),
+                                                                 systemSettings.getPoolObjectLifespan(),
                                                                  TimeUnit.MILLISECONDS,
                                                                  metricQueue,
                                                                  metricFactory );
         // Thread pool that generates products, such as statistics formats
-        ExecutorService productExecutor = new ThreadPoolExecutor( innerSystemSettings.getMaximumProductThreads(),
-                                                                  innerSystemSettings.getMaximumProductThreads(),
-                                                                  innerSystemSettings.poolObjectLifespan(),
+        ExecutorService productExecutor = new ThreadPoolExecutor( systemSettings.getMaximumProductThreads(),
+                                                                  systemSettings.getMaximumProductThreads(),
+                                                                  systemSettings.getPoolObjectLifespan(),
                                                                   TimeUnit.MILLISECONDS,
                                                                   productQueue,
                                                                   productFactory );
@@ -213,7 +213,7 @@ public class Evaluator
             ThreadFactory resamplingFactory = new BasicThreadFactory.Builder()
                     .namingPattern( "Sampling Uncertainty Thread %d" )
                     .build();
-            int threadCount = innerSystemSettings.getMaximumSamplingUncertaintyThreads();
+            int threadCount = systemSettings.getMaximumSamplingUncertaintyThreads();
             samplingUncertaintyExecutor = java.util.concurrent.Executors.newFixedThreadPool( threadCount,
                                                                                              resamplingFactory );
         }
@@ -221,10 +221,10 @@ public class Evaluator
         // Create database services if needed
         DatabaseServices databaseServices = null;
         DatabaseLockManager lockManager;
-        if ( innerSystemSettings.isInDatabase() )
+        if ( systemSettings.isUseDatabase() )
         {
             Database innerDatabase = this.getDatabase();
-            lockManager = DatabaseLockManager.from( innerSystemSettings,
+            lockManager = DatabaseLockManager.from( systemSettings,
                                                     innerDatabase::getRawConnection );
 
             databaseServices = new DatabaseServices( innerDatabase, lockManager );
@@ -268,7 +268,7 @@ public class Evaluator
 
             // Perform the evaluation
             Pair<Set<Path>, String> innerPathsAndProjectHash =
-                    EvaluationUtilities.evaluate( innerSystemSettings,
+                    EvaluationUtilities.evaluate( systemSettings,
                                                   databaseServices,
                                                   declaration,
                                                   executors,

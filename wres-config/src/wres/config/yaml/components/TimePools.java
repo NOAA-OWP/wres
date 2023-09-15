@@ -1,18 +1,13 @@
 package wres.config.yaml.components;
 
 import java.time.Duration;
-import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
-import wres.config.yaml.deserializers.LeadTimeIntervalDeserializer;
 import wres.config.yaml.deserializers.TimeIntervalDeserializer;
-import wres.config.yaml.serializers.ChronoUnitSerializer;
-import wres.config.yaml.serializers.LeadTimeIntervalSerializer;
 import wres.config.yaml.serializers.TimeIntervalSerializer;
 
 /**

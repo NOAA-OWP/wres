@@ -252,7 +252,7 @@ class GriddedMetadataSaver implements Callable<List<IngestResult>>
         final URI originalPath = this.fileName;
 
         SystemSettings settings = this.getSystemSettings();
-        this.fileName = Paths.get( settings.getNetCDFStorePath(),
+        this.fileName = Paths.get( settings.getNetcdfStorePath(),
                                    path.subpath( firstNameIndex, nameCount ).toString() )
                              .toUri();
 

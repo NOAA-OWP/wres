@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.components.Features;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Geometry;

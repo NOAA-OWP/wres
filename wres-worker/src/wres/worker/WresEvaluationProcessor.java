@@ -187,7 +187,6 @@ class WresEvaluationProcessor implements Callable<Integer>
 
         try
         {
-
             URI startEvalURI = URI.create( String.format( START_EVAL_URI, this.getPort(), evaluationId ) );
             evaluationPostRequest =
                     WEB_CLIENT.postToWeb( startEvalURI, jobMessage );

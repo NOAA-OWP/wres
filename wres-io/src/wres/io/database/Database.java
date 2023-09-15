@@ -5,14 +5,13 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
-import javax.sql.DataSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,17 +36,7 @@ public class Database
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( Database.class );
 
-    /**
-     * The standard priority set of connections to the database
-     */
-    private final DataSource connectionPool;
-
-    /**
-     * A higher priority set of connections to the database used for operations
-     * that absolutely need to operate within the database with little to no
-     * competition for resources. Should be used sparingly
-     */
-    private final DataSource highPriorityConnectionPool;
+    private final ConnectionSupplier connectionSupplier;
 
     /**
      * A separate thread executor used to schedule database communication
@@ -57,13 +46,12 @@ public class Database
 
     /**
      * Creates an instance
-     * @param systemSettings the system settings
+     * @param connectionSupplier A helper class to supply connection information as well as the SystemSettings
      */
-    public Database( SystemSettings systemSettings )
+    public Database( ConnectionSupplier connectionSupplier )
     {
-        this.systemSettings = systemSettings;
-        this.connectionPool = systemSettings.getConnectionPool();
-        this.highPriorityConnectionPool = systemSettings.getHighPriorityConnectionPool();
+        this.systemSettings = connectionSupplier.getSystemSettings();
+        this.connectionSupplier = connectionSupplier;
         this.sqlTasks = createService();
     }
 
@@ -151,7 +139,7 @@ public class Database
      */
     public Connection getConnection() throws SQLException
     {
-        return this.connectionPool.getConnection();
+        return this.connectionSupplier.getConnectionPool().getConnection();
     }
 
     /**
@@ -162,7 +150,7 @@ public class Database
     public Connection getHighPriorityConnection() throws SQLException
     {
         LOGGER.debug( "Retrieving a high priority database connection..." );
-        return this.highPriorityConnectionPool.getConnection();
+        return this.connectionSupplier.getHighPriorityConnectionPool().getConnection();
     }
 
     /**
@@ -172,10 +160,8 @@ public class Database
 
     public Connection getRawConnection()
     {
-        SystemSettings settings = this.getSystemSettings();
-        DatabaseSettings databaseSettings = settings.getDatabaseSettings();
-        String connectionString = databaseSettings.getConnectionString();
-        Properties properties = databaseSettings.getConnectionProperties();
+        String connectionString = this.getConnectionString();
+        Properties properties = getConnectionProperties();
 
         try
         {
@@ -188,12 +174,97 @@ public class Database
     }
 
     /**
+     * Creates the connection string used to access the database
+     * @return The connection string used to connect to the database of interest
+     */
+
+    public String getConnectionString()
+    {
+        DatabaseSettings databaseSettings = this.getSettings();
+        if ( Objects.nonNull( databaseSettings.getJdbcUrl() )
+             && !databaseSettings.getJdbcUrl().isBlank() )
+        {
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Using the jdbc url specified verbatim: '{}'",
+                              databaseSettings.getJdbcUrl() );
+            }
+
+            return databaseSettings.getJdbcUrl();
+        }
+
+        StringBuilder connectionString = new StringBuilder();
+        connectionString.append( "jdbc:" );
+        connectionString.append( databaseSettings.getDatabaseType() );
+
+        if ( databaseSettings.getDatabaseType() == DatabaseType.H2
+             && databaseSettings.isUseSSL() )
+        {
+            connectionString.append( ":ssl" );
+        }
+
+        connectionString.append( "://" );
+        connectionString.append( databaseSettings.getHost() );
+
+        connectionString.append( ":" );
+        connectionString.append( databaseSettings.getPort() );
+
+        connectionString.append( "/" );
+        connectionString.append( databaseSettings.getDatabaseName() );
+
+        return connectionString.toString();
+    }
+
+
+    /**
+     * @return the database connection properties
+     */
+
+    public Properties getConnectionProperties()
+    {
+        DatabaseSettings databaseConfiguration = this.systemSettings.getDatabaseConfiguration();
+        DatabaseType type = databaseConfiguration.getDatabaseType();
+        return databaseConfiguration.getDataSourceProperties().get( type );
+    }
+
+    /**
+     * @return whether database migration should be attempted
+     */
+
+    public boolean getAttemptToMigrate()
+    {
+        // Stop-gap measure between always-migrate and never-migrate.
+        boolean migrate = this.systemSettings.getDatabaseConfiguration().isAttemptToMigrate();
+        String attemptToMigrateSetting = System.getProperty( "wres.attemptToMigrate" );
+
+        if ( attemptToMigrateSetting != null
+             && !attemptToMigrateSetting.isBlank() )
+        {
+            if ( attemptToMigrateSetting.equalsIgnoreCase( "true" ) )
+            {
+                migrate = true;
+            }
+            else if ( attemptToMigrateSetting.equalsIgnoreCase( "false" ) )
+            {
+                migrate = false;
+            }
+            else
+            {
+                LOGGER.warn( "Value for wres.attemptToMigrate must be 'true' or 'false', not '{}'",
+                             attemptToMigrateSetting );
+            }
+        }
+
+        return migrate;
+    }
+
+    /**
      * @return the database settings
      */
 
     public DatabaseSettings getSettings()
     {
-        return this.systemSettings.getDatabaseSettings();
+        return this.systemSettings.getDatabaseConfiguration();
     }
 
     /**
@@ -218,7 +289,7 @@ public class Database
      */
     public DatabaseType getType()
     {
-        return this.getSystemSettings()
+        return this.getSystemSettings().getDatabaseConfiguration()
                    .getDatabaseType();
     }
 
@@ -349,14 +420,15 @@ public class Database
     {
         // Ensures that all created threads will be labeled "Database Thread"
         ThreadFactory factory = runnable -> new Thread( runnable, "Database Thread" );
-        ThreadPoolExecutor executor = new ThreadPoolExecutor( this.getSystemSettings()
-                                                                  .getDatabaseMaximumPoolSize(),
-                                                              this.getSystemSettings()
-                                                                  .getDatabaseMaximumPoolSize(),
-                                                              this.systemSettings.poolObjectLifespan(),
+        ThreadPoolExecutor executor = new ThreadPoolExecutor( this.systemSettings.getDatabaseConfiguration()
+                                                                                 .getMaxPoolSize(),
+                                                              this.systemSettings.getDatabaseConfiguration()
+                                                                                 .getMaxPoolSize(),
+                                                              this.systemSettings.getPoolObjectLifespan(),
                                                               TimeUnit.MILLISECONDS,
-                                                              new ArrayBlockingQueue<>( this.getSystemSettings()
-                                                                                            .getDatabaseMaximumPoolSize()
+                                                              new ArrayBlockingQueue<>( this.systemSettings
+                                                                                                .getDatabaseConfiguration()
+                                                                                                .getMaxPoolSize()
                                                                                         * 5 ),
                                                               factory );
 
@@ -385,7 +457,7 @@ public class Database
 
     /**
      * Closes the connection pools if they are {@link HikariDataSource}. Ideally, whatever created it should close it,
-     * so should probably abstract this to {@link SystemSettings}, but leaving it here for now. Ideally, it should not 
+     * so should probably abstract this to {@link SystemSettings}, but leaving it here for now. Ideally, it should not
      * be necessary at all. See #61680. 
      */
 
@@ -396,10 +468,10 @@ public class Database
         // Close out our database connection pools
         try
         {
-            if ( this.connectionPool.isWrapperFor( HikariDataSource.class ) )
+            if ( this.connectionSupplier.getConnectionPool().isWrapperFor( HikariDataSource.class ) )
             {
-                this.connectionPool.unwrap( HikariDataSource.class )
-                                   .close();
+                this.connectionSupplier.getConnectionPool().unwrap( HikariDataSource.class )
+                                       .close();
             }
         }
         catch ( SQLException e )
@@ -409,10 +481,10 @@ public class Database
 
         try
         {
-            if ( this.highPriorityConnectionPool.isWrapperFor( HikariDataSource.class ) )
+            if ( this.connectionSupplier.getHighPriorityConnectionPool().isWrapperFor( HikariDataSource.class ) )
             {
-                this.highPriorityConnectionPool.unwrap( HikariDataSource.class )
-                                               .close();
+                this.connectionSupplier.getHighPriorityConnectionPool().unwrap( HikariDataSource.class )
+                                       .close();
             }
         }
         catch ( SQLException e )
