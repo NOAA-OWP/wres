@@ -249,6 +249,8 @@ subprojects
 
 project(':wres-system')
 {
+    apply plugin: 'com.github.seanrl.jaxb'
+
     dependencies
     {
         implementation 'org.slf4j:slf4j-api:2.0.7'
@@ -261,6 +263,15 @@ project(':wres-system')
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
+
+        // For Java 9+ compatibility:
+        implementation 'jakarta.xml.bind:jakarta.xml.bind-api:2.3.3'
+
+        api 'org.jvnet.jaxb2_commons:jaxb2-basics-runtime:0.13.1'
+
+        // Builders
+        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.28'
+        annotationProcessor 'org.projectlombok:lombok:1.18.28'
 
         // Database drivers need to be on the runtime classpath in order to 
         // acquire connections initially. See #103431
@@ -370,6 +381,9 @@ project(':wres-io')
 
         // For Java 8 java.time support
         implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.15.2'
+
+        // Java Flight Recorder statistics for JDBC
+        implementation 'com.github.marschall:jfr-jdbc:0.4.0'
 
         implementation( 'edu.ucar:cdm-core:5.4.2' )
         {
@@ -1057,9 +1071,7 @@ project(':wres-worker')
 
     dependencies
     {
-        //TODO: REMOVE JUST FOR TESTING
         implementation project(':wres-http')
-
         implementation project( ':wres-messages' )
         implementation 'org.slf4j:slf4j-api:2.0.7'
         implementation 'com.rabbitmq:amqp-client:5.18.0'

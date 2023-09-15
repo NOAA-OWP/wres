@@ -275,7 +275,7 @@ class NwisReaderTest
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
                .thenReturn( 6 );
-        Mockito.when( systemSettings.poolObjectLifespan() )
+        Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
         NwisReader reader = NwisReader.of( systemSettings );
@@ -409,7 +409,7 @@ class NwisReaderTest
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
                .thenReturn( 6 );
-        Mockito.when( systemSettings.poolObjectLifespan() )
+        Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
         NwisReader reader = NwisReader.of( declaration, systemSettings );
@@ -556,7 +556,7 @@ class NwisReaderTest
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
                .thenReturn( 6 );
-        Mockito.when( systemSettings.poolObjectLifespan() )
+        Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
         NwisReader reader = NwisReader.of( declaration, systemSettings );

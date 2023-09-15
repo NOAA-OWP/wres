@@ -26,9 +26,11 @@ import org.slf4j.LoggerFactory;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.events.broker.BrokerUtilities;
 import wres.eventsbroker.embedded.EmbeddedBroker;
+import wres.io.database.ConnectionSupplier;
 import wres.io.database.Database;
 import wres.io.database.DatabaseOperations;
 import wres.pipeline.Evaluator;
+import wres.system.SettingsFactory;
 import wres.system.SystemSettings;
 
 /**
@@ -55,18 +57,18 @@ public class WebServer
      */
     private static EmbeddedBroker broker = null;
 
-    private static final SystemSettings SYSTEM_SETTINGS = SystemSettings.fromDefaultClasspathXmlFile();
+    private static final SystemSettings SYSTEM_SETTINGS = SettingsFactory.createSettingsFromDefaultXml();
+    
     private static Database database = null;
 
     // Migrate the database, as needed
     static
     {
-        if ( SYSTEM_SETTINGS.isInDatabase() )
+        if ( SYSTEM_SETTINGS.isUseDatabase() )
         {
-            database = new Database( SYSTEM_SETTINGS );
+            database = new Database( new ConnectionSupplier( SYSTEM_SETTINGS ) );
             // Migrate the database, as needed
-            if ( SYSTEM_SETTINGS.getDatabaseSettings()
-                                .getAttemptToMigrate() )
+            if ( database.getAttemptToMigrate() )
             {
                 try
                 {
@@ -167,7 +169,7 @@ public class WebServer
                                              WebServer.database,
                                              createBroker() );
 
-        // Registering the ProjectService explicitly so that we can add constructor arguments
+        // Registering the EvaluationService explicitly so that we can add constructor arguments
         ServletContainer servlet = new ServletContainer(
                 new ResourceConfig().register(
                         new EvaluationService( evaluator )

@@ -124,7 +124,7 @@ public class SourceLoader
         ThreadPoolExecutor readingExecutor =
                 new ThreadPoolExecutor( systemSettings.getMaximumReadThreads(),
                                         systemSettings.getMaximumReadThreads(),
-                                        systemSettings.poolObjectLifespan(),
+                                        systemSettings.getPoolObjectLifespan(),
                                         TimeUnit.MILLISECONDS,
                                         // Queue should be large enough to allow
                                         // join() call below to be reached with
@@ -389,7 +389,7 @@ public class SourceLoader
         // Until this special snowflake is addressed via #51232, there is no missing value mapping for declared missing
         // values beyond any mapping that is performed by the reader using inband missing value identifiers: #88859
         if ( source.isGridded() && this.getSystemSettings()
-                                       .isInDatabase() )
+                                       .isUseDatabase() )
         {
             // Empty stream, which will trigger source ingest only, not time-series reading/ingest
             Stream<TimeSeriesTuple> emptyStream = Stream.of();

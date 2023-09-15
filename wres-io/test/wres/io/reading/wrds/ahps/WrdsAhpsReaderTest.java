@@ -819,7 +819,7 @@ class WrdsAhpsReaderTest
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
                .thenReturn( 6 );
-        Mockito.when( systemSettings.poolObjectLifespan() )
+        Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
         WrdsAhpsReader reader = WrdsAhpsReader.of( systemSettings );
@@ -905,7 +905,7 @@ class WrdsAhpsReaderTest
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
                .thenReturn( 6 );
-        Mockito.when( systemSettings.poolObjectLifespan() )
+        Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
         WrdsAhpsReader reader = WrdsAhpsReader.of( systemSettings );
@@ -975,7 +975,7 @@ class WrdsAhpsReaderTest
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
                .thenReturn( 6 );
-        Mockito.when( systemSettings.poolObjectLifespan() )
+        Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
         WrdsAhpsReader reader = WrdsAhpsReader.of( declaration, systemSettings );
@@ -1075,7 +1075,7 @@ class WrdsAhpsReaderTest
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
                .thenReturn( 6 );
-        Mockito.when( systemSettings.poolObjectLifespan() )
+        Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
         WrdsAhpsReader reader = WrdsAhpsReader.of( declaration, systemSettings );

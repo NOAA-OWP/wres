@@ -428,10 +428,10 @@ public class TarredReader implements TimeSeriesReader
 
         ThreadFactory tarredSourceFactory = new BasicThreadFactory.Builder().namingPattern( "Tarred Reading Thread %d" )
                                                                             .build();
-        BlockingQueue<Runnable> tarredSourceQueue = new ArrayBlockingQueue<>( systemSettings.maximumArchiveThreads() );
-        this.executor = new ThreadPoolExecutor( systemSettings.maximumArchiveThreads(),
-                                                systemSettings.maximumArchiveThreads(),
-                                                systemSettings.poolObjectLifespan(),
+        BlockingQueue<Runnable> tarredSourceQueue = new ArrayBlockingQueue<>( systemSettings.getMaximumArchiveThreads() );
+        this.executor = new ThreadPoolExecutor( systemSettings.getMaximumArchiveThreads(),
+                                                systemSettings.getMaximumArchiveThreads(),
+                                                systemSettings.getPoolObjectLifespan(),
                                                 TimeUnit.MILLISECONDS,
                                                 tarredSourceQueue,
                                                 tarredSourceFactory );

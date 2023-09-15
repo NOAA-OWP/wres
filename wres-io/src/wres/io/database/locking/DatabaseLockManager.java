@@ -115,15 +115,15 @@ public interface DatabaseLockManager
     static DatabaseLockManager from( SystemSettings systemSettings,
                                      Supplier<Connection> connectionSupplier )
     {
-        if ( systemSettings.isInMemory() )
+        if ( !systemSettings.isUseDatabase() )
         {
             return new DatabaseLockManagerNoop();
         }
-        else if ( systemSettings.getDatabaseType() == DatabaseType.POSTGRESQL )
+        else if ( systemSettings.getDatabaseConfiguration().getDatabaseType() == DatabaseType.POSTGRESQL )
         {
             return new DatabaseLockManagerPostgres( connectionSupplier );
         }
-        else if ( systemSettings.getDatabaseType() == DatabaseType.H2 )
+        else if ( systemSettings.getDatabaseConfiguration().getDatabaseType() == DatabaseType.H2 )
         {
             return new DatabaseLockManagerNoop();
         }

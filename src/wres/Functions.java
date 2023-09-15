@@ -310,8 +310,8 @@ final class Functions
      */
     private static ExecutionResult cleanDatabase( SharedResources sharedResources )
     {
-        if ( sharedResources.systemSettings()
-                            .isInMemory() )
+        if ( !sharedResources.systemSettings()
+                             .isUseDatabase() )
         {
             throw new IllegalArgumentException( "This is an in-memory execution. Cannot clean a database because there "
                                                 + "is no database to clean." );
@@ -350,8 +350,8 @@ final class Functions
      */
     private static ExecutionResult migrateDatabase( SharedResources sharedResources )
     {
-        if ( sharedResources.systemSettings()
-                            .isInMemory() )
+        if ( !sharedResources.systemSettings()
+                            .isUseDatabase() )
         {
             throw new IllegalArgumentException(
                     "This is an in-memory execution. Cannot migrate a database because there "
@@ -794,7 +794,7 @@ final class Functions
                 Objects.requireNonNull( brokerConnectionFactory );
 
                 // If this complex operation involves a database, check that one exists
-                if ( systemSettings.isInDatabase() )
+                if ( systemSettings.isUseDatabase() )
                 {
                     Objects.requireNonNull( database );
                 }
