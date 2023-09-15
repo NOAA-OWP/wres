@@ -15,7 +15,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.Set;
 import java.util.StringJoiner;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -89,8 +88,8 @@ public class DatabaseOperations
         String host = databaseSettings.getHost();
         int port = databaseSettings.getPort();
         String username = databaseSettings.getUsername();
-        String connectionString = databaseSettings.getConnectionString();
-        Properties properties = databaseSettings.getConnectionProperties();
+        String connectionString = database.getConnectionString();
+        Properties properties = database.getConnectionProperties();
 
         boolean validURL = DatabaseOperations.isHostValid( host, port );
 
@@ -279,8 +278,7 @@ public class DatabaseOperations
             }
         }
 
-        if ( database.getSystemSettings()
-                     .getDatabaseType() == DatabaseType.POSTGRESQL )
+        if ( database.getSettings().getDatabaseType() == DatabaseType.POSTGRESQL )
         {
             DatabaseOperations.pgCopy( database,
                                        tableName,

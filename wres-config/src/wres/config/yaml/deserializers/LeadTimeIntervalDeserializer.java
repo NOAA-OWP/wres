@@ -2,13 +2,10 @@ package wres.config.yaml.deserializers;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Objects;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.yaml.components.LeadTimeInterval;

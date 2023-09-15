@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
 import wres.config.yaml.DeclarationFactory;
-import wres.config.yaml.deserializers.ThresholdSourcesDeserializer;
 import wres.config.yaml.deserializers.UriDeserializer;
 import wres.config.yaml.serializers.MissingValueSerializer;
 import wres.config.yaml.serializers.ThresholdDatasetOrientationSerializer;

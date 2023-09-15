@@ -59,7 +59,6 @@ public class EvaluationService
 
     private static final AtomicReference<EvaluationStatusOuterClass.EvaluationStatus> evaluationStage =
             new AtomicReference<>( AWAITING );
-
     private static final AtomicLong evaluationId = new AtomicLong( -1 );
 
     private static Thread timeoutThread;
@@ -92,7 +91,7 @@ public class EvaluationService
     public Response heartbeat()
     {
         evaluationStage.set( AWAITING );
-        return Response.ok( "The Server is Up\n" )
+        return Response.ok( "The Server is Up \n" )
                        .build();
     }
 
@@ -137,6 +136,7 @@ public class EvaluationService
         StreamingOutput streamingOutput = outputStream -> {
             long offset = 0;
             Writer writer = new BufferedWriter( new OutputStreamWriter( outputStream ) );
+            // While the evaluation hasn't completed continue pulling from the standard stream and sending to client
             while ( !( evaluationStage.get().equals( COMPLETED ) || evaluationStage.get().equals( CLOSED ) ) )
             {
                 ByteArrayInputStream byteArrayInputStream =
@@ -150,6 +150,7 @@ public class EvaluationService
                     offset += bytes.length();
                 }
             }
+            // After job status has flipped finish writting anything that may be left in the stream before closing
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
             byteArrayInputStream.skip( offset );
             writer.write( new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 ) );
@@ -182,6 +183,7 @@ public class EvaluationService
         StreamingOutput streamingOutput = outputStream -> {
             long offset = 0;
             Writer writer = new BufferedWriter( new OutputStreamWriter( outputStream ) );
+            // While the evaluation hasn't completed continue pulling from the standard stream and sending to client
             while ( !( evaluationStage.get().equals( COMPLETED ) || evaluationStage.get().equals( CLOSED ) ) )
             {
                 ByteArrayInputStream byteArrayInputStream =
@@ -195,6 +197,7 @@ public class EvaluationService
                     offset += bytes.length();
                 }
             }
+            // After job status has flipped finish writting anything that may be left in the stream before closing
             ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
             byteArrayInputStream.skip( offset );
             writer.write( new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 ) );
@@ -269,15 +272,15 @@ public class EvaluationService
                 try
                 {
                     Thread.sleep( ONE_MINUTE_IN_MILLISECONDS );
+                    if ( evaluationStage.get().equals( OPENED ) || evaluationStage.get().equals( COMPLETED ) )
+                    {
+                        close();
+                    }
                 }
-                catch ( InterruptedException e )
+                catch ( InterruptedException interruptedException )
                 {
-                    throw new RuntimeException( e );
-                }
-
-                if ( evaluationStage.get().equals( OPENED ) || evaluationStage.get().equals( COMPLETED ) )
-                {
-                    close();
+                    LOGGER.info( "Evaluation was closed so thread was interrupted {}", interruptedException );
+                    Thread.currentThread().interrupt();
                 }
             }
         };

@@ -21,7 +21,6 @@ import javax.crypto.spec.PBEKeySpec;
 import java.security.SecureRandom;
 
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;

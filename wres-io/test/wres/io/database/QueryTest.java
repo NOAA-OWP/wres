@@ -19,7 +19,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.database.Query;
+import wres.system.DatabaseType;
+import wres.system.SettingsFactory;
 import wres.system.SystemSettings;
 
 public class QueryTest
@@ -41,6 +42,19 @@ public class QueryTest
     public static void setup()
     {
         LOGGER.trace( "@BeforeClass began" );
+
+        for ( DatabaseType nextType : DatabaseType.values() )
+        {
+            try
+            {
+                Class.forName( nextType.getDriverClassName() );
+            }
+            catch ( ClassNotFoundException classError )
+            {
+                LOGGER.debug( "Failed to load the database driver class {}.", nextType.getDriverClassName() );
+            }
+        }
+
         // We need to create a test database so we aren't trying to reach out to a real, deployed database
         QueryTest.testDatabase = new TestDatabase( QueryTest.class.getName() );
         QueryTest.dataSource = QueryTest.testDatabase.getNewHikariDataSource();
@@ -51,7 +65,7 @@ public class QueryTest
     public void beforeEachTest() throws SQLException, DatabaseException
     {
         LOGGER.trace( "@Before began" );
-        this.systemSettings = SystemSettings.withDefaults();
+        this.systemSettings = SettingsFactory.defaultTest();
         this.rawConnection = DriverManager.getConnection( QueryTest.testDatabase.getJdbcString() );
 
         // Set up a bare bones database with only the schema

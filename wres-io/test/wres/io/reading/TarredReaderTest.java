@@ -142,9 +142,9 @@ class TarredReaderTest
                                                    DatasetOrientation.RIGHT );
 
             SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
-            Mockito.when( systemSettings.maximumArchiveThreads() )
+            Mockito.when( systemSettings.getMaximumArchiveThreads() )
                    .thenReturn( 5 );
-            Mockito.when( systemSettings.poolObjectLifespan() )
+            Mockito.when( systemSettings.getPoolObjectLifespan() )
                    .thenReturn( 30_000 );
 
             // Generator of internal format readers

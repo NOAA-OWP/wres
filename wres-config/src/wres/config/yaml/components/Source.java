@@ -13,11 +13,9 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
-import wres.config.yaml.deserializers.TimeScaleDeserializer;
 import wres.config.yaml.deserializers.UriDeserializer;
 import wres.config.yaml.deserializers.ZoneOffsetDeserializer;
 import wres.config.yaml.serializers.SourceSerializer;
-import wres.config.yaml.serializers.TimeScaleSerializer;
 import wres.config.yaml.serializers.ZoneOffsetSerializer;
 
 /**

@@ -22,8 +22,6 @@ import org.slf4j.LoggerFactory;
 
 import wres.messages.generated.Job;
 
-import static wres.messages.generated.Job.job.Verb;
-
 
 /**
  * The concrete class that does the work of taking a job message and creating

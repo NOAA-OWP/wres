@@ -167,7 +167,7 @@ class EvaluationUtilities
         Objects.requireNonNull( connections );
         Objects.requireNonNull( monitor );
 
-        if ( systemSettings.isInDatabase() )
+        if ( systemSettings.isUseDatabase() )
         {
             Objects.requireNonNull( databaseServices );
         }
@@ -398,7 +398,7 @@ class EvaluationUtilities
             TimeSeriesTracker timeSeriesTracker = TimeSeriesTracker.of();
 
             // Is the evaluation in a database? If so, use implementations that support a database
-            if ( systemSettings.isInDatabase() )
+            if ( systemSettings.isUseDatabase() )
             {
                 // Build the database caches/ORMs, if required
                 DatabaseCaches caches = DatabaseCaches.of( databaseServices.database() );

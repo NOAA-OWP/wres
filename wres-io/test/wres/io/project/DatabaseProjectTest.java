@@ -41,6 +41,7 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
+import wres.io.database.ConnectionSupplier;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.Features;
 import wres.io.database.details.EnsembleDetails;
@@ -55,6 +56,7 @@ import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
+import wres.system.DatabaseSettings;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
@@ -77,9 +79,17 @@ class DatabaseProjectTest
     @Mock
     private SystemSettings mockSystemSettings;
 
+    @Mock
+    private ConnectionSupplier mockConnectionSupplier;
+
     private wres.io.database.Database wresDatabase;
+
     @Mock
     private DatabaseCaches mockCaches;
+
+    @Mock
+    private DatabaseSettings mockDatabaseSettings;
+
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
     private Connection rawConnection;
@@ -107,16 +117,20 @@ class DatabaseProjectTest
         this.testDatabase.createWresSchema( this.rawConnection );
 
         // Substitute our H2 connection pool for both pools:
-        Mockito.when( this.mockSystemSettings.getConnectionPool() )
+        Mockito.when( this.mockSystemSettings.getDatabaseConfiguration() )
+               .thenReturn( this.mockDatabaseSettings );
+        Mockito.when( this.mockConnectionSupplier.getConnectionPool() )
                .thenReturn( this.dataSource );
-        Mockito.when( this.mockSystemSettings.getHighPriorityConnectionPool() )
+        Mockito.when( this.mockConnectionSupplier.getSystemSettings() )
+               .thenReturn( this.mockSystemSettings );
+        Mockito.when( this.mockConnectionSupplier.getHighPriorityConnectionPool() )
                .thenReturn( this.dataSource );
-        Mockito.when( this.mockSystemSettings.getDatabaseType() )
+        Mockito.when( this.mockSystemSettings.getDatabaseConfiguration().getDatabaseType() )
                .thenReturn( DatabaseType.H2 );
-        Mockito.when( this.mockSystemSettings.getDatabaseMaximumPoolSize() )
+        Mockito.when( this.mockDatabaseSettings.getMaxPoolSize() )
                .thenReturn( 10 );
 
-        this.wresDatabase = new wres.io.database.Database( this.mockSystemSettings );
+        this.wresDatabase = new wres.io.database.Database( this.mockConnectionSupplier );
 
         // Set up a liquibase database to run migrations against.
         this.liquibaseDatabase = this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );

@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockserver.model.HttpRequest.request;
 
-import java.io.InputStream;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Collections;
@@ -256,7 +255,7 @@ class WrdsNwmReaderTest
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
                .thenReturn( 6 );
-        Mockito.when( systemSettings.poolObjectLifespan() )
+        Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
         WrdsNwmReader reader = WrdsNwmReader.of( systemSettings );
@@ -334,7 +333,7 @@ class WrdsNwmReaderTest
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
                .thenReturn( 6 );
-        Mockito.when( systemSettings.poolObjectLifespan() )
+        Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
         WrdsNwmReader reader = WrdsNwmReader.of( systemSettings );
@@ -457,7 +456,7 @@ class WrdsNwmReaderTest
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
                .thenReturn( 6 );
-        Mockito.when( systemSettings.poolObjectLifespan() )
+        Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
         WrdsNwmReader reader = WrdsNwmReader.of( declaration, systemSettings );
@@ -550,7 +549,7 @@ class WrdsNwmReaderTest
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
                .thenReturn( 6 );
-        Mockito.when( systemSettings.poolObjectLifespan() )
+        Mockito.when( systemSettings.getPoolObjectLifespan() )
                .thenReturn( 30_000 );
 
         // Feature chunk size of 1, with 2 features requested
