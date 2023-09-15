@@ -245,7 +245,7 @@ public class SystemSettings extends XMLReader
     }
 
     /**
-     * @return A new instance of a connection pool that is built for the system wide configuration
+     * @return A new instance of a connection pool that is built for the system-wide configuration
      */
     public DataSource getConnectionPool()
     {

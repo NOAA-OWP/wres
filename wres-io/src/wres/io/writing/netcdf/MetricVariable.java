@@ -24,7 +24,7 @@ class MetricVariable
 
     private final ChronoUnit durationUnits;
     private final String variableName;
-    private final String metricName;
+    private final MetricNames metricNames;
     private final String longName;
     private final String measurementUnit;
     private final String firstCondition;
@@ -60,9 +60,9 @@ class MetricVariable
      * @return the metric name
      */
 
-    public String getMetricName()
+    public MetricNames getMetricName()
     {
-        return this.metricName;
+        return this.metricNames;
     }
 
     @Override
@@ -138,7 +138,7 @@ class MetricVariable
     {
         private String variableName;
         private TimeWindowOuter timeWindow;
-        private String metricName;
+        private MetricNames metricNames;
         private OneOrTwoThresholds thresholds;
         private String units;
         private TimeScaleOuter desiredTimeScale;
@@ -158,9 +158,9 @@ class MetricVariable
             return this;
         }
 
-        Builder setMetricName( String metricName )
+        Builder setMetricName( MetricNames metricNames )
         {
-            this.metricName = metricName;
+            this.metricNames = metricNames;
             return this;
         }
 
@@ -222,10 +222,10 @@ class MetricVariable
         this.variableName = builder.variableName;
         this.ensembleAverageType = builder.ensembleAverageType;
         this.sampleQuantile = builder.sampleQuantile;
-        this.metricName = builder.metricName;
+        this.metricNames = builder.metricNames;
 
         // Build the long_name. This should not contain numbers for the thresholds because they can vary by feature.
-        String fullName = builder.metricName + " " + this.getThreshold();
+        String fullName = builder.metricNames.metricName() + " " + this.getThreshold();
 
         // Primary threshold has a label? If so, ignore that when replacing numbers in the long_name.
         // See #85465.

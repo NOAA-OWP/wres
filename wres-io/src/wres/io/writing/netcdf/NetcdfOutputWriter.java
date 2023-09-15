@@ -603,12 +603,13 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         Map<String, Map<OneOrTwoThresholds, String>> returnMe = new TreeMap<>();
         for ( Map<MetricConstants, SortedSet<OneOrTwoThresholds>> nextMetrics : thresholds.values() )
         {
-            Map<String, SortedSet<OneOrTwoThresholds>> decomposed =
+            Map<MetricNames, SortedSet<OneOrTwoThresholds>> decomposed =
                     this.decomposeThresholdsByMetricForBlobCreation( nextMetrics, hasBaseline );
 
-            for ( Map.Entry<String, SortedSet<OneOrTwoThresholds>> nextEntry : decomposed.entrySet() )
+            for ( Map.Entry<MetricNames, SortedSet<OneOrTwoThresholds>> nextEntry : decomposed.entrySet() )
             {
-                String nextMetric = nextEntry.getKey();
+                String nextMetric = nextEntry.getKey()
+                                             .metricName();
                 SortedSet<OneOrTwoThresholds> nextThresholdsForMetric = nextEntry.getValue();
                 Map<OneOrTwoThresholds, String> namedThresholds = new HashMap<>();
                 nextThresholdsForMetric.forEach( next -> namedThresholds.put( next, thresholdMap.get( next ) ) );
@@ -866,7 +867,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                                            boolean hasBaseline,
                                                                            EnsembleAverageType ensembleAverageType )
     {
-        Map<String, SortedSet<OneOrTwoThresholds>> decomposed =
+        Map<MetricNames, SortedSet<OneOrTwoThresholds>> decomposed =
                 this.decomposeThresholdsByMetricForBlobCreation( thresholds, hasBaseline );
 
         LOGGER.debug( "Discovered these thresholds by metric for blob creation and ensemble average type {}: {}.",
@@ -891,18 +892,18 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         // One variable for each combination of metric and threshold. 
         // When forming threshold names, thresholds should be mapped to all metrics.
-        for ( Map.Entry<String, SortedSet<OneOrTwoThresholds>> nextEntry : decomposed.entrySet() )
+        for ( Map.Entry<MetricNames, SortedSet<OneOrTwoThresholds>> nextEntry : decomposed.entrySet() )
         {
-            String nextMetric = nextEntry.getKey();
+            MetricNames nextMetric = nextEntry.getKey();
             Set<OneOrTwoThresholds> nextThresholds = nextEntry.getValue();
 
             Map<OneOrTwoThresholds, String> nextMap = this.getStandardThresholdNames()
-                                                          .get( nextMetric );
+                                                          .get( nextMetric.metricName() );
 
             for ( OneOrTwoThresholds nextThreshold : nextThresholds )
             {
                 String thresholdName = nextMap.get( nextThreshold );
-                String variableName = nextMetric + "_" + thresholdName + append;
+                String variableName = nextMetric.metricName() + "_" + thresholdName + append;
 
                 MetricVariable.Builder nextVariable =
                         new MetricVariable.Builder().setVariableName( variableName )
@@ -941,10 +942,20 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                       nominal.getName(),
                       nominal );
 
-        MetricConstants metric = MetricConstants.valueOf( nominal.getMetricName() );
+        MetricNames metricNames = nominal.getMetricName();
+        MetricConstants metric;
+
+        if ( Objects.nonNull( metricNames.component() ) )
+        {
+            metric = metricNames.component();
+        }
+        else
+        {
+            metric = metricNames.metric();
+        }
 
         // Create a variable for each sample quantile, if this metric supports it
-        if( metric.isSamplingUncertaintyAllowed() )
+        if ( metric.isSamplingUncertaintyAllowed() )
         {
             Map<Double, String> quantileNames = this.getStandardQuantileNames();
             for ( Map.Entry<Double, String> next : quantileNames.entrySet() )
@@ -976,12 +987,12 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * @return the expanded thresholds-by-metric
      */
 
-    private Map<String, SortedSet<OneOrTwoThresholds>>
+    private Map<MetricNames, SortedSet<OneOrTwoThresholds>>
     decomposeThresholdsByMetricForBlobCreation( Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholdsByMetric,
                                                 boolean hasBaseline )
     {
 
-        Map<String, SortedSet<OneOrTwoThresholds>> returnMe = new TreeMap<>();
+        Map<MetricNames, SortedSet<OneOrTwoThresholds>> returnMe = new TreeMap<>();
 
         for ( Map.Entry<MetricConstants, SortedSet<OneOrTwoThresholds>> nextEntry : thresholdsByMetric.entrySet() )
         {
@@ -1010,12 +1021,16 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             // that are not relevant here
             if ( components.size() > 1 && nextMetric != MetricConstants.SAMPLE_SIZE )
             {
-                components.forEach( nextComponent -> returnMe.put( nextMetric.name() + "_" + nextComponent.name(),
+                components.forEach( nextComponent -> returnMe.put( new MetricNames( nextMetric,
+                                                                                    nextComponent,
+                                                                                   nextMetric.name()
+                                                                                   + "_"
+                                                                                   + nextComponent.name() ),
                                                                    nextThresholds ) );
             }
             else
             {
-                returnMe.put( nextMetric.name(), nextThresholds );
+                returnMe.put( new MetricNames( nextMetric, null, nextMetric.name() ), nextThresholds );
             }
         }
 
@@ -1329,9 +1344,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         {
             synchronized ( this.writeLock )
             {
-                Array netcdfValue;
-                Index ima;
-
                 // Open a writer to write to the path. Must be closed when closing the overall NetcdfOutputWriter instance
                 if ( Objects.isNull( this.writer ) )
                 {
@@ -1343,6 +1355,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
                 for ( NetcdfValueKey key : this.valuesToSave )
                 {
+                    Array netcdfValue;
+                    Index ima;
                     int[] shape = new int[key.origin().length];
                     Arrays.fill( shape, 1 );
 
@@ -1359,7 +1373,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
                         LOGGER.trace( "Value found for {}: {}", ima, value );
                         netcdfValue.setDouble( ima, value );
-
                     }
                     else
                     {

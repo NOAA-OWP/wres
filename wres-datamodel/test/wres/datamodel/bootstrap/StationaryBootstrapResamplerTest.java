@@ -86,9 +86,9 @@ class StationaryBootstrapResamplerTest
                         .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( second ) )
                         .build();
 
-        Pool<TimeSeries<Double>> pool = Pool.of( List.of( one ),
+        Pool<TimeSeries<Double>> pool = Pool.of( List.of( one, one ),
                                                  PoolMetadata.of(),
-                                                 List.of( two ),
+                                                 List.of( two, two ),
                                                  PoolMetadata.of( true ),
                                                  null );
 
@@ -100,9 +100,9 @@ class StationaryBootstrapResamplerTest
                                                                                           ForkJoinPool.commonPool() );
         Pool<TimeSeries<Double>> actual = resampler.resample();
 
-        assertAll( () -> assertEquals( 1, pool.get()
+        assertAll( () -> assertEquals( 2, pool.get()
                                               .size() ),
-                   () -> assertEquals( 1, pool.getBaselineData()
+                   () -> assertEquals( 2, pool.getBaselineData()
                                               .get()
                                               .size() ),
                    () -> assertEquals( 2, actual.get()
@@ -112,6 +112,15 @@ class StationaryBootstrapResamplerTest
                    () -> assertEquals( 2, actual.getBaselineData()
                                                 .get()
                                                 .get( 0 )
+                                                .getEvents()
+                                                .size() ),
+                   () -> assertEquals( 2, actual.get()
+                                                .get( 1 )
+                                                .getEvents()
+                                                .size() ),
+                   () -> assertEquals( 2, actual.getBaselineData()
+                                                .get()
+                                                .get( 1 )
                                                 .getEvents()
                                                 .size() ) );
     }
@@ -439,36 +448,49 @@ class StationaryBootstrapResamplerTest
                         .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( second ) )
                         .build();
 
+        TimeSeries<Double> baseTwo =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T23:00:00Z" ), 9.0 ) )
+                        .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( third ) )
+                        .build();
+
         Pool<TimeSeries<Double>> poolOne = Pool.of( List.of( one, two, three ),
                                                     PoolMetadata.of(),
-                                                    List.of( baseOne ),
+                                                    List.of( baseOne, baseTwo ),
                                                     PoolMetadata.of( true ),
                                                     null );
 
         TimeSeries<Double> four =
                 new TimeSeries.Builder<Double>()
-                        .addEvent( Event.of( Instant.parse( "1988-10-04T17:00:00Z" ), 11.0 ) )
-                        .addEvent( Event.of( Instant.parse( "1988-10-04T18:00:00Z" ), 12.0 ) )
-                        .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( first ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T20:00:00Z" ), 11.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T21:00:00Z" ), 12.0 ) )
+                        .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( second ) )
                         .build();
 
         TimeSeries<Double> five =
                 new TimeSeries.Builder<Double>()
-                        .addEvent( Event.of( Instant.parse( "1988-10-04T20:00:00Z" ), 14.0 ) )
-                        .addEvent( Event.of( Instant.parse( "1988-10-04T21:00:00Z" ), 15.0 ) )
-                        .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( second ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T23:00:00Z" ), 14.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ), 15.0 ) )
+                        .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( third ) )
                         .build();
 
-        TimeSeries<Double> baseTwo =
+        TimeSeries<Double> baseThree =
                 new TimeSeries.Builder<Double>()
                         .addEvent( Event.of( Instant.parse( "1988-10-04T20:00:00Z" ), 24.0 ) )
                         .addEvent( Event.of( Instant.parse( "1988-10-04T21:00:00Z" ), 25.0 ) )
                         .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( second ) )
                         .build();
 
+        TimeSeries<Double> baseFour =
+                new TimeSeries.Builder<Double>()
+                        .addEvent( Event.of( Instant.parse( "1988-10-04T23:00:00Z" ), 26.0 ) )
+                        .addEvent( Event.of( Instant.parse( "1988-10-05T00:00:00Z" ), 27.0 ) )
+                        .setMetadata( StationaryBootstrapResamplerTest.getBoilerplateMetadata( third ) )
+                        .build();
+
         Pool<TimeSeries<Double>> poolTwo = Pool.of( List.of( four, five ),
                                                     PoolMetadata.of(),
-                                                    List.of( baseTwo ),
+                                                    List.of( baseThree, baseFour ),
                                                     PoolMetadata.of( true ),
                                                     null );
 
@@ -487,37 +509,37 @@ class StationaryBootstrapResamplerTest
 
         assertAll( () -> assertEquals( 2, actual
                            .size() ),
-                   () -> assertEquals( 1, actual.get( 0 )
-                                                .get()
-                                                .size() ),
-                   () -> assertEquals( 1, actual.get( 0 )
-                                                .getBaselineData()
-                                                .get()
-                                                .size() ),
                    () -> assertEquals( 2, actual.get( 0 )
                                                 .get()
-                                                .get( 0 )
-                                                .getEvents()
                                                 .size() ),
                    () -> assertEquals( 2, actual.get( 0 )
                                                 .getBaselineData()
                                                 .get()
+                                                .size() ),
+                   () -> assertEquals( 1, actual.get( 0 )
+                                                .get()
                                                 .get( 0 )
                                                 .getEvents()
                                                 .size() ),
-                   () -> assertEquals( 1, actual.get( 1 )
-                                                .get()
-                                                .size() ),
-                   () -> assertEquals( 1, actual.get( 1 )
+                   () -> assertEquals( 1, actual.get( 0 )
                                                 .getBaselineData()
-                                                .get()
-                                                .size() ),
-                   () -> assertEquals( 2, actual.get( 1 )
                                                 .get()
                                                 .get( 0 )
                                                 .getEvents()
                                                 .size() ),
                    () -> assertEquals( 2, actual.get( 1 )
+                                                .get()
+                                                .size() ),
+                   () -> assertEquals( 2, actual.get( 1 )
+                                                .getBaselineData()
+                                                .get()
+                                                .size() ),
+                   () -> assertEquals( 1, actual.get( 1 )
+                                                .get()
+                                                .get( 0 )
+                                                .getEvents()
+                                                .size() ),
+                   () -> assertEquals( 1, actual.get( 1 )
                                                 .getBaselineData()
                                                 .get()
                                                 .get( 0 )

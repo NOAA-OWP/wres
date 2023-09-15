@@ -109,10 +109,10 @@ public class DeclarationValidator
     private static final String WHICH_ADMITS_THE_DATA_TYPES = "', which admits the data types ";
 
     /**
-     * Performs validation against the schema, followed by "business-logic" validation. First, reads the declaration
-     * string, then calls {@link #validate(JsonNode, JsonSchema)}, then finally calls
-     * {@link #validate(EvaluationDeclaration, boolean)}. This method is intended for a caller that wants to validate
-     * the declaration without performing any subsequent activities, such as executing an evaluation.
+     * Performs validation against the schema, followed by "business-logic" validation if there are no schema
+     * validation errors. First, reads the declaration string, then calls {@link #validate(JsonNode, JsonSchema)},
+     * then finally calls {@link #validate(EvaluationDeclaration, boolean)}. This method is intended for a caller that
+     * wants to validate the declaration without performing any subsequent activities, such as executing an evaluation.
      *
      * @param yaml a declaration string
      * @return any validation events encountered
@@ -143,11 +143,16 @@ public class DeclarationValidator
         Set<EvaluationStatusEvent> schemaEvents = DeclarationValidator.validate( declaration, schema );
         Set<EvaluationStatusEvent> events = new HashSet<>( schemaEvents );
 
-        EvaluationDeclaration deserialized = DeclarationFactory.deserialize( declaration );
+        // No schema validation errors? Then proceed to business logic, which requires deserialization and hence no
+        // schema validation errors: see #57969
+        if( schemaEvents.isEmpty() )
+        {
+            EvaluationDeclaration deserialized = DeclarationFactory.deserialize( declaration );
 
-        // Validate against business logic
-        List<EvaluationStatusEvent> businessEvents = DeclarationValidator.validate( deserialized );
-        events.addAll( businessEvents );
+            // Validate against business logic
+            List<EvaluationStatusEvent> businessEvents = DeclarationValidator.validate( deserialized );
+            events.addAll( businessEvents );
+        }
 
         return Collections.unmodifiableSet( events );
     }
@@ -255,9 +260,13 @@ public class DeclarationValidator
 
         if ( LOGGER.isDebugEnabled() )
         {
-            long warnCount = events.stream().filter( next -> next.getStatusLevel() == StatusLevel.WARN ).count();
+            long warnCount = events.stream()
+                                   .filter( next -> next.getStatusLevel() == StatusLevel.WARN )
+                                   .count();
 
-            long errorCount = events.stream().filter( next -> next.getStatusLevel() == StatusLevel.ERROR ).count();
+            long errorCount = events.stream()
+                                    .filter( next -> next.getStatusLevel() == StatusLevel.ERROR )
+                                    .count();
 
             LOGGER.debug( "Encountered {} validation messages, including {} warnings and {} errors.",
                           events.size(),

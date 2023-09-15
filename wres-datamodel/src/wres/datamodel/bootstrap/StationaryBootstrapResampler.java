@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.yaml.components.CrossPair;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.pairs.CrossPairs;
+import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesCrossPairer;
@@ -854,7 +855,7 @@ public class StationaryBootstrapResampler<T>
         Pool<TimeSeries<T>> crossPairedPool = poolBuilder.build();
 
         // Check that the cross-pairing has not led to empty pools
-        this.checkForEmptyPools( crossPairedPool, pool );
+        this.validateCrossPairedData( crossPairedPool, pool );
 
         // Report the effects of cross-pairing in terms of any time-series and events removed
         this.reportEffectsOfCrossPairing( crossPairedPool, pool );
@@ -863,65 +864,104 @@ public class StationaryBootstrapResampler<T>
     }
 
     /**
-     * Checks that there are no empty pools following cross-pairing that were not already present in the original pool.
+     * Checks that there are no empty pools following cross-pairing that were not already present in the original pool
+     * and that each sub-pool contains sufficient data for resampling.
      *
      * @param crossPairedPool the cross-paired pool
      * @param originalPool the original pool
      * @throws ResamplingException if cross pairing produced empty pools
      */
 
-    private void checkForEmptyPools( Pool<TimeSeries<T>> crossPairedPool,
-                                     Pool<TimeSeries<T>> originalPool )
+    private void validateCrossPairedData( Pool<TimeSeries<T>> crossPairedPool,
+                                          Pool<TimeSeries<T>> originalPool )
     {
         List<Pool<TimeSeries<T>>> miniPoolsCross = crossPairedPool.getMiniPools();
         List<Pool<TimeSeries<T>>> miniPoolsOrig = originalPool.getMiniPools();
 
-        String start = "When attempting to resample the pooled data, discovered that there were no common time-series "
-                       + "and associated events across the ";
-        String end = " pairs within the sub-pools that compose the overall pool. Resampling requires at least some "
-                     + "common time-series events because the same events are resampled across the sub-pools, "
-                     + "including the main and baseline datasets, where applicable. When estimating the sampling "
-                     + "uncertainties, please ensure that there are some common time-series across the datasets that "
-                     + "compose each pool or remove the sampling uncertainty assessment.";
+        String start = "When attempting to resample the pooled data, discovered insufficient overlapping samples "
+                       + "for the ";
+        String end = " pairs across the sub-pools that compose the overall pool. Resampling requires at least two "
+                     + "samples and, practically speaking, many more for reliable uncertainty estimation. Please "
+                     + "ensure that there are some common time-series across the datasets that compose each pool or "
+                     + "remove the sampling uncertainty assessment. The following sub-pools failed to produce two or "
+                     + "more overlapping samples: ";
 
         boolean mainError = false;
         boolean baselineError = false;
 
+        List<FeatureGroup> failures = new ArrayList<>();
         for ( int i = 0; i < miniPoolsCross.size(); i++ )
         {
-            if ( miniPoolsCross.get( i )
-                               .get()
-                               .isEmpty() != miniPoolsOrig.get( i )
-                                                          .get()
-                                                          .isEmpty() )
+            // Check for consistent empty/full status of datasets following cross-pairing
+            if ( this.isNotConsistentlyEmptyOrFull( miniPoolsCross.get( i )
+                                                                  .get(), miniPoolsOrig.get( i )
+                                                                                       .get() ) )
             {
                 mainError = true;
+                failures.add( miniPoolsOrig.get( i )
+                                           .getMetadata()
+                                           .getFeatureGroup() );
             }
 
-            if ( crossPairedPool.hasBaseline() && miniPoolsCross.get( i )
-                                                                .getBaselineData()
-                                                                .get()
-                                                                .isEmpty() != miniPoolsOrig.get( i )
-                                                                                           .getBaselineData()
-                                                                                           .get()
-                                                                                           .isEmpty() )
+            if ( crossPairedPool.hasBaseline()
+                 && this.isNotConsistentlyEmptyOrFull( miniPoolsCross.get( i )
+                                                                     .getBaselineData()
+                                                                     .get(), miniPoolsOrig.get( i )
+                                                                                          .getBaselineData()
+                                                                                          .get() ) )
             {
                 baselineError = true;
+                failures.add( miniPoolsOrig.get( i )
+                                           .getBaselineData()
+                                           .getMetadata()
+                                           .getFeatureGroup() );
+            }
+
+            // Check for insufficient data - can check the main pairs only due to cross-pairing
+            if ( this.hasInsufficientData( miniPoolsCross.get( i )
+                                                         .get() ) )
+            {
+                mainError = true;
+                failures.add( miniPoolsOrig.get( i )
+                                           .getMetadata()
+                                           .getFeatureGroup() );
             }
         }
 
         if ( mainError && baselineError )
         {
-            throw new ResamplingException( start + "main and baseline" + end );
+            throw new ResamplingException( start + "main and baseline" + end + failures );
         }
         else if ( mainError )
         {
-            throw new ResamplingException( start + "main" + end );
+            throw new ResamplingException( start + "main" + end + failures );
         }
         else if ( baselineError )
         {
-            throw new ResamplingException( start + "baseline" + end );
+            throw new ResamplingException( start + "baseline" + end + failures );
         }
+    }
+
+    /**
+     * @return whether the empty status of the two time-series collections is consistent
+     */
+
+    private boolean isNotConsistentlyEmptyOrFull( List<TimeSeries<T>> first, List<TimeSeries<T>> second )
+    {
+        return first.isEmpty() != second.isEmpty();
+    }
+
+    /**
+     * @return whether there is insufficient time-series data for sampling uncertainty estimation
+     */
+
+    private boolean hasInsufficientData( List<TimeSeries<T>> data )
+    {
+        // The time-series are forecasts and there is only one of them
+        return data.size() == 1 && !data.get( 0 )
+                                        .getMetadata()
+                                        .getReferenceTimes()
+                                        .isEmpty();
     }
 
     /**
