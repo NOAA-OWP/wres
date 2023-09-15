@@ -27,8 +27,10 @@ import org.slf4j.LoggerFactory;
 
 import wres.io.data.DataBuilder;
 import wres.io.data.DataProvider;
+import wres.io.database.ConnectionSupplier;
 import wres.io.database.details.SourceDetails;
 import wres.io.database.TestDatabase;
+import wres.system.DatabaseSettings;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
@@ -41,6 +43,10 @@ public class DataSourcesTest
     private HikariDataSource dataSource;
 
     private @Mock SystemSettings mockSystemSettings;
+
+    private @Mock ConnectionSupplier mockConnectionSupplier;
+
+    private @Mock DatabaseSettings mockDatabaseSettings;
     private wres.io.database.Database wresDatabase;
 
     private Connection rawConnection;
@@ -61,16 +67,21 @@ public class DataSourcesTest
         // Set up a bare bones database with only the schema
         this.testDatabase.createWresSchema( this.rawConnection );
 
-        Mockito.when( this.mockSystemSettings.getConnectionPool() )
-               .thenReturn( this.dataSource );
-        Mockito.when( this.mockSystemSettings.getHighPriorityConnectionPool() )
-               .thenReturn( this.dataSource );
-        Mockito.when( this.mockSystemSettings.getDatabaseType() )
+        Mockito.when( this.mockSystemSettings.getDatabaseConfiguration() )
+               .thenReturn( this.mockDatabaseSettings );
+        Mockito.when( this.mockDatabaseSettings.getDatabaseType() )
                .thenReturn( DatabaseType.H2 );
-        Mockito.when( this.mockSystemSettings.getDatabaseMaximumPoolSize() )
+        Mockito.when( this.mockDatabaseSettings.getMaxPoolSize() )
                .thenReturn( 10 );
+        Mockito.when( this.mockConnectionSupplier.getConnectionPool() )
+               .thenReturn( this.dataSource );
+        Mockito.when( this.mockConnectionSupplier.getHighPriorityConnectionPool() )
+               .thenReturn( this.dataSource );
+        Mockito.when( this.mockConnectionSupplier.getSystemSettings() )
+               .thenReturn( this.mockSystemSettings );
 
-        this.wresDatabase = new wres.io.database.Database( this.mockSystemSettings );
+        this.wresDatabase = new wres.io.database.Database( this.mockConnectionSupplier );
+
         LOGGER.debug( "'@Before' ended" );
     }
 

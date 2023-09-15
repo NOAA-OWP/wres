@@ -2,13 +2,10 @@ package wres.config.yaml.serializers;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
-import java.util.Objects;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-
-import wres.config.yaml.components.DecimalFormatPretty;
 
 /**
  * Serializes a decimal format string.

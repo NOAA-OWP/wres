@@ -1789,7 +1789,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         ThreadPoolExecutor executorInner =
                 new ThreadPoolExecutor( this.systemSettings.getMaximumIngestThreads(),
                                         this.systemSettings.getMaximumIngestThreads(),
-                                        this.systemSettings.poolObjectLifespan(),
+                                        this.systemSettings.getPoolObjectLifespan(),
                                         TimeUnit.MILLISECONDS,
                                         // Queue should be large enough to allow
                                         // join() call below to be reached with

@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 
 import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.components.DatasetOrientation;
-import wres.config.yaml.components.ThresholdOrientation;
 
 /**
  * Only serializes a {@link DatasetOrientation} that is not default.

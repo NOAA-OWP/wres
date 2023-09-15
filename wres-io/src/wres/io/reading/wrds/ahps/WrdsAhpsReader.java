@@ -614,7 +614,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
                 new ArrayBlockingQueue<>( systemSettings.getMaximumWebClientThreads() );
         this.executor = new ThreadPoolExecutor( systemSettings.getMaximumWebClientThreads(),
                                                 systemSettings.getMaximumWebClientThreads(),
-                                                systemSettings.poolObjectLifespan(),
+                                                systemSettings.getPoolObjectLifespan(),
                                                 TimeUnit.MILLISECONDS,
                                                 webClientQueue,
                                                 webClientFactory );

@@ -828,7 +828,7 @@ public class Query
 
         if ( this.useCursor )
         {
-            int fetchSize = this.systemSettings.fetchSize();
+            int fetchSize = this.systemSettings.getFetchSize();
             
             // #103431
             if ( fetchSize > this.maxRows )

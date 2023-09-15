@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.TimePools;
 
 /**

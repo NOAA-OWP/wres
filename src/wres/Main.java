@@ -21,10 +21,12 @@ import wres.events.broker.BrokerUtilities;
 import wres.events.broker.CouldNotLoadBrokerConfigurationException;
 import wres.eventsbroker.embedded.CouldNotStartEmbeddedBrokerException;
 import wres.eventsbroker.embedded.EmbeddedBroker;
+import wres.io.database.ConnectionSupplier;
 import wres.io.database.Database;
 import wres.io.database.DatabaseOperations;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
+import wres.system.SettingsFactory;
 import wres.system.SystemSettings;
 
 /**
@@ -47,7 +49,7 @@ public class Main
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( Main.class );
     /** System settings. */
-    private static final SystemSettings SYSTEM_SETTINGS = SystemSettings.fromDefaultClasspathXmlFile();
+    private static final SystemSettings SYSTEM_SETTINGS = SettingsFactory.createSettingsFromDefaultXml();
     /** Software version information. */
     private static final Version version = new Version( SYSTEM_SETTINGS );
 
@@ -245,7 +247,7 @@ public class Main
             Instant endedExecution = Instant.now();
 
             // Log the execution to the database if a database is used
-            if ( SYSTEM_SETTINGS.isInDatabase() )
+            if ( SYSTEM_SETTINGS.isUseDatabase() )
             {
                 // Log both the operation and the args
                 String[] argsToLog = new String[args.length + 1];
@@ -334,13 +336,12 @@ public class Main
     private static Database getAndMigrateDatabaseIfRequired()
     {
         Database database = null;
-        if ( SYSTEM_SETTINGS.isInDatabase() )
+        if ( SYSTEM_SETTINGS.isUseDatabase() )
         {
-            database = new Database( SYSTEM_SETTINGS );
+            database = new Database( new ConnectionSupplier( SYSTEM_SETTINGS ) );
 
             // Migrate the database, as needed
-            if ( SYSTEM_SETTINGS.getDatabaseSettings()
-                                .getAttemptToMigrate() )
+            if ( database.getAttemptToMigrate() )
             {
                 try
                 {
