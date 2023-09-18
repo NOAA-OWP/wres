@@ -79,7 +79,7 @@ class QuantileCalculatorTest
             next.getScoresBuilder( 0 )
                 .getStatisticsBuilder( 0 )
                 .setValue( i );
-            calculator.add( next.build() );
+            calculator.add( List.of( next.build() ) );
         }
 
         List<Statistics> actual = calculator.get();
@@ -178,7 +178,7 @@ class QuantileCalculatorTest
                 .getStatisticsBuilder( 1 )
                 .clearValues()
                 .addAllValues( second );
-            calculator.add( next.build() );
+            calculator.add( List.of( next.build() ) );
         }
 
         List<Statistics> actual = calculator.get();
@@ -264,7 +264,7 @@ class QuantileCalculatorTest
                 .getStatisticsBuilder( 0 )
                 .setValue( Duration.newBuilder()
                                    .setSeconds( i * 60 * 60 ) );
-            calculator.add( next.build() );
+            calculator.add( List.of( next.build() ) );
         }
 
         List<Statistics> actual = calculator.get();
@@ -358,7 +358,7 @@ class QuantileCalculatorTest
             next.getDurationDiagramsBuilder( 0 )
                 .getStatisticsBuilder( 2 )
                 .setDuration( thirdDuration );
-            calculator.add( next.build() );
+            calculator.add( List.of( next.build() ) );
         }
 
         List<Statistics> actual = calculator.get();
@@ -463,7 +463,7 @@ class QuantileCalculatorTest
                 .setValue( i );
 
             // Multithreaded add
-            Runnable runnable = () -> calculator.add( next.build() );
+            Runnable runnable = () -> calculator.add( List.of( next.build() ) );
             Future<?> future = executor.submit( runnable );
             futures.add( future );
         }
@@ -544,7 +544,7 @@ class QuantileCalculatorTest
             next.getScoresBuilder( 0 )
                 .getStatisticsBuilder( 0 )
                 .setValue( i );
-            calculator.add( next.build() );
+            calculator.add( List.of( next.build() ) );
         }
 
         List<Statistics> actual = calculator.get();

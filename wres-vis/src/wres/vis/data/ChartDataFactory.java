@@ -765,7 +765,12 @@ public class ChartDataFactory
                         Slicer.filter( finalSlice,
                                        next -> next.hasQuantile()
                                                && Math.abs( next.getSampleQuantile() - lower.getAsDouble() ) < 0.0001 );
-                TimeSeries lowerChartSeries = ChartDataFactory.getSeries( lowerSeries, seriesName, graphicShape );
+                TimeSeries lowerChartSeries = ChartDataFactory.getSeries( lowerSeries,
+                                                                          seriesName
+                                                                          + " (Q="
+                                                                          + lower.getAsDouble()
+                                                                          + ")",
+                                                                          graphicShape );
                 collection.addSeries( lowerChartSeries );
 
                 // Nominal
@@ -780,7 +785,12 @@ public class ChartDataFactory
                         Slicer.filter( finalSlice,
                                        next -> next.hasQuantile()
                                                && Math.abs( next.getSampleQuantile() - upper.getAsDouble() ) < 0.0001 );
-                TimeSeries upperChartSeries = ChartDataFactory.getSeries( upperSeries, seriesName, graphicShape );
+                TimeSeries upperChartSeries = ChartDataFactory.getSeries( upperSeries,
+                                                                          seriesName
+                                                                          + " (Q="
+                                                                          + upper.getAsDouble()
+                                                                          + ")",
+                                                                          graphicShape );
                 collection.addSeries( upperChartSeries );
             }
             // Regular series

@@ -5,18 +5,19 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
+import java.util.TreeMap;
 
 import wres.datamodel.pools.Pool;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
+import wres.statistics.generated.ReferenceTime;
 
 /**
  * Stores the underlying time-series data within a {@link Pool} in an efficient format for bootstrap resampling.
@@ -31,10 +32,13 @@ class BootstrapPool<T>
      * events as the corresponding map key. The time-series are time-ordered by the first valid time in the series. In
      * other words, consecutive series are the "nearest" to each other in time. Each inner list contains the events
      * for one time-series, also ordered by valid time.*/
-    private final Map<Integer, List<List<Event<T>>>> timeSeriesEvents;
+    private final SortedMap<Integer, List<List<Event<T>>>> timeSeriesEvents;
 
     /** The original pool. */
     private final Pool<TimeSeries<T>> pool;
+
+    /** Whether the pool contains forecasts. */
+    private final boolean hasForecasts;
 
     /**
      * Creates an instance.
@@ -71,6 +75,17 @@ class BootstrapPool<T>
     }
 
     /**
+     * Returns the time-series with all events present
+     *
+     * @return the time-series with at least the number if requested events
+     */
+
+    List<List<Event<T>>> getTimeSeriesWithAllEvents()
+    {
+        return this.timeSeriesEvents.get( this.timeSeriesEvents.firstKey() );
+    }
+
+    /**
      * Returns the absolute durations between the first valid times in consecutive time-series, as well as between the
      * first and last time-series.
      * @return the time offsets
@@ -79,6 +94,9 @@ class BootstrapPool<T>
     Set<Duration> getValidTimeOffsets()
     {
         Set<Duration> offsets = new HashSet<>();
+
+        // Are the time-series forecasts? If so, the gap is based on the first valid time in adjacent series, else the
+        // first and last valid times
         for ( List<List<Event<T>>> next : this.timeSeriesEvents.values() )
         {
             if ( next.size() > 1 )
@@ -86,9 +104,20 @@ class BootstrapPool<T>
                 // Offsets between consecutive series
                 for ( int i = 1; i < next.size(); i++ )
                 {
-                    Instant first = next.get( i - 1 )
-                                        .get( 0 )
-                                        .getTime();
+                    Instant first;
+                    List<Event<T>> firstSeries = next.get( i - 1 );
+
+                    if ( this.hasForecasts() )
+                    {
+                        first = firstSeries.get( 0 )
+                                           .getTime();
+                    }
+                    else
+                    {
+                        first = firstSeries.get( firstSeries.size() - 1 )
+                                           .getTime();
+                    }
+
                     Instant last = next.get( i )
                                        .get( 0 )
                                        .getTime();
@@ -101,9 +130,20 @@ class BootstrapPool<T>
                 Instant first = next.get( 0 )
                                     .get( 0 )
                                     .getTime();
-                Instant last = next.get( next.size() - 1 )
-                                   .get( 0 )
-                                   .getTime();
+                List<Event<T>> lastSeries = next.get( next.size() - 1 );
+                Instant last;
+
+                if ( this.hasForecasts() )
+                {
+                    last = lastSeries.get( 0 )
+                                     .getTime();
+                }
+                else
+                {
+                    last = lastSeries.get( lastSeries.size() - 1 )
+                                     .getTime();
+                }
+
                 Duration offset = Duration.between( first, last )
                                           .abs();
                 offsets.add( offset );
@@ -122,6 +162,15 @@ class BootstrapPool<T>
     }
 
     /**
+     * @return whether the pool contains forecast time-series
+     */
+
+    boolean hasForecasts()
+    {
+        return this.hasForecasts;
+    }
+
+    /**
      * Creates a bootstrap pool from the input.
      * @param pool the pool
      * @throws NullPointerException if the pool is null
@@ -136,7 +185,7 @@ class BootstrapPool<T>
         // Sort the time-series by number of events
         SortedMap<Integer, List<TimeSeries<T>>> bySize = TimeSeriesSlicer.groupByEventCount( pool.get() );
 
-        Map<Integer, List<List<Event<T>>>> innerTimeSeriesEvents = new HashMap<>();
+        SortedMap<Integer, List<List<Event<T>>>> innerTimeSeriesEvents = new TreeMap<>();
 
         // Sorter that sorts consecutive series by their first valid time
         Comparator<TimeSeries<T>> sorter = Comparator.comparing( a -> a.getEvents()
@@ -164,9 +213,12 @@ class BootstrapPool<T>
             innerTimeSeriesEvents.put( nextCount, Collections.unmodifiableList( events ) );
         }
 
-        this.timeSeriesEvents = Collections.unmodifiableMap( innerTimeSeriesEvents );
-
+        this.timeSeriesEvents = Collections.unmodifiableSortedMap( innerTimeSeriesEvents );
         this.pool = pool;
+        this.hasForecasts = this.pool.get()
+                                     .stream()
+                                     .anyMatch( n -> n.getReferenceTimes()
+                                                      .containsKey( ReferenceTime.ReferenceTimeType.T0 ) );
     }
 
     /**

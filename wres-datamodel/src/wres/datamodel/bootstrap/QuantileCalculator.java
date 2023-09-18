@@ -135,13 +135,13 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
     }
 
     /**
-     * Adds a sample statistic to the internal store.
+     * Adds the statistics corresponding to one logical sample/realization to the internal store.
      * @param statistics the sample
      * @throws NullPointerException if the statistics is null
      * @throws IllegalArgumentException if this instance has been completed and no further statistics are expected
      */
 
-    public void add( Statistics statistics )
+    public void add( List<Statistics> statistics )
     {
         Objects.requireNonNull( statistics );
 
@@ -155,14 +155,18 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
                                                 + "." );
         }
 
-        // Add the double score statistics
-        this.addDoubleScores( statistics.getScoresList(), index );
-        // Add the duration score statistics
-        this.addDurationScores( statistics.getDurationScoresList(), index );
-        // Add the diagrams
-        this.addDiagrams( statistics.getDiagramsList(), index );
-        // Add the duration diagrams
-        this.addDurationDiagrams( statistics.getDurationDiagramsList(), index );
+        // Add the statistics
+        for( Statistics next : statistics )
+        {
+            // Add the double score statistics
+            this.addDoubleScores( next.getScoresList(), index );
+            // Add the duration score statistics
+            this.addDurationScores( next.getDurationScoresList(), index );
+            // Add the diagrams
+            this.addDiagrams( next.getDiagramsList(), index );
+            // Add the duration diagrams
+            this.addDurationDiagrams( next.getDurationDiagramsList(), index );
+        }
 
         LOGGER.debug( "Added sample statistics for index {} of {} in thread {}.",
                       index + 1,
@@ -655,7 +659,7 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
         // Add the nominal statistics
         if ( addNominal )
         {
-            this.add( nominal );
+            this.add( List.of( nominal ) );
         }
     }
 

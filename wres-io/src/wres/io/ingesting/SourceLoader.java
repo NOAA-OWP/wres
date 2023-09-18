@@ -674,14 +674,15 @@ public class SourceLoader
 
         Source source = dataSource.getSource();
 
-        //Define path matcher based on the source's pattern, if provided.
-        final PathMatcher matcher;
+        // Define path matcher based on the source's pattern, if provided.
+        PathMatcher matcher;
 
         String pattern = source.pattern();
 
         if ( !( pattern == null || pattern.isEmpty() ) )
         {
-            matcher = FileSystems.getDefault().getPathMatcher( "glob:" + pattern );
+            matcher = FileSystems.getDefault()
+                                 .getPathMatcher( "glob:" + pattern );
         }
         else
         {
@@ -696,7 +697,7 @@ public class SourceLoader
 
                 File testFile = path.toFile();
 
-                //File must be a file and match the pattern, if the pattern is defined.
+                // File must be a file and match the pattern, if the pattern is defined.
                 if ( testFile.isFile() && ( ( matcher == null ) || matcher.matches( path ) ) )
                 {
                     DataDisposition disposition = DataSource.detectFormat( path.toUri() );
@@ -738,9 +739,11 @@ public class SourceLoader
         //none of the files.  
         if ( returnMe.isEmpty() )
         {
-            throw new PreIngestException( "The pattern of \"" + pattern
-                                          + "\" does not yield any files within the provided "
-                                          + "source path and is therefore not a valid source." );
+            throw new PreIngestException( "Could not find any valid source files within the directory '"
+                                          + dataSource.getUri()
+                                          + "'. The following pattern filter was used (null if no filter): \""
+                                          + pattern
+                                          + "\"." );
         }
 
         return Collections.unmodifiableSet( returnMe );
@@ -761,7 +764,7 @@ public class SourceLoader
         {
             String start = "The skipped sources are: ";
             List<File> logMe = unmatchedByPattern;
-            if( unmatchedByPattern.size() > 100 )
+            if ( unmatchedByPattern.size() > 100 )
             {
                 start = "The first 100 skipped sources are: ";
                 logMe = unmatchedByPattern.subList( 0, 100 );

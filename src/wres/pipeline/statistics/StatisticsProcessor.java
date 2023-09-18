@@ -186,8 +186,12 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
         }
 
         // Are there any metrics that do not accept thresholds and is this a threshold other than "all data"?
-        if ( collection.getMetrics().stream().anyMatch( next -> !next.isAThresholdMetric() )
-             && !ThresholdOuter.ALL_DATA.equals( pairs.getMetadata().getThresholds().first() ) )
+        if ( collection.getMetrics()
+                       .stream()
+                       .anyMatch( next -> !next.isAThresholdMetric() )
+             && !ThresholdOuter.ALL_DATA.equals( pairs.getMetadata()
+                                                      .getThresholds()
+                                                      .first() ) )
         {
             Set<MetricConstants> filteredInner = all.stream()
                                                     .filter( next -> !next.isAThresholdMetric() )

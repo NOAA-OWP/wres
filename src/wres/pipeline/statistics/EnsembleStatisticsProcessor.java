@@ -290,6 +290,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
         wres.statistics.generated.Pool.EnsembleAverageType averageType =
                 wres.statistics.generated.Pool.EnsembleAverageType.valueOf( typeName );
         UnaryOperator<PoolMetadata> metaMapper = unadjusted -> PoolMetadata.of( unadjusted, averageType );
+
         // Do the metadata transformation only with an identity function applied to the pooled data
         Pool<TimeSeries<Pair<Double, Ensemble>>> adjustedPool
                 = PoolSlicer.transform( pool,

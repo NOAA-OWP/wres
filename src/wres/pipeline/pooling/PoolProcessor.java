@@ -53,9 +53,6 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( PoolProcessor.class );
 
-    /** Empty statistics. */
-    private static final Statistics EMPTY_STATISTICS = Statistics.getDefaultInstance();
-
     /** The evaluation. */
     private final EvaluationMessager evaluation;
 
@@ -520,11 +517,25 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         try
         {
             // Split the statistics by threshold pool
-            Map<OneOrTwoThresholds, Statistics> byPool = new HashMap<>();
+            Map<OneOrTwoThresholds, List<Statistics>> byPool = new HashMap<>();
             for ( StatisticsStore nextStore : stores )
             {
                 List<Statistics> nextStatistics = MessageFactory.getStatistics( nextStore );
-                nextStatistics.forEach( n -> byPool.put( this.getThreshold( n ), n ) );
+                for ( Statistics s : nextStatistics )
+                {
+                    OneOrTwoThresholds thresholds = this.getThreshold( s );
+                    if ( byPool.containsKey( thresholds ) )
+                    {
+                        byPool.get( thresholds )
+                              .add( s );
+                    }
+                    else
+                    {
+                        List<Statistics> newStatistics = new ArrayList<>();
+                        newStatistics.add( s );
+                        byPool.put( thresholds, newStatistics );
+                    }
+                }
             }
 
             // Iterate through the calculators and increment the statistics
@@ -532,14 +543,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             {
                 OneOrTwoThresholds nextThreshold = nextEntry.getKey();
                 QuantileCalculator calculator = nextEntry.getValue();
-                Statistics statistics = byPool.get( nextThreshold );
-
-                // If no statistics for this threshold/sample, then add the empty statistics to increment the calculator
-                if ( Objects.isNull( statistics ) )
-                {
-                    statistics = EMPTY_STATISTICS;
-                }
-
+                List<Statistics> statistics = byPool.get( nextThreshold );
                 calculator.add( statistics );
             }
         }
@@ -566,8 +570,8 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         wres.statistics.generated.Pool pool = statistics.getPool();
 
         // If no main pool, is there a baseline pool?
-        if( !statistics.hasPool()
-            && statistics.hasBaselinePool() )
+        if ( !statistics.hasPool()
+             && statistics.hasBaselinePool() )
         {
             pool = statistics.getBaselinePool();
         }
