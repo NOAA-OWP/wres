@@ -154,7 +154,7 @@ public class StationaryBootstrapResampler<T>
 
         // Generate the common indexes to resample across mini pools and both the main/baseline pairs. This assumes
         // perfect statistical dependence across the mini pools and main/baseline pairs
-        List<ResampleIndexes> indexes = this.generateIndexesForResampling( this.main.get( 0 ) );
+        List<ResampleIndexes> indexes = this.generateResampleIndexes( this.main.get( 0 ) );
 
         // Generate the samples using the common sample structure/indexes across the mini-pools and main/baseline series
         for ( int i = 0; i < this.main.size(); i++ )
@@ -192,7 +192,7 @@ public class StationaryBootstrapResampler<T>
      * @return the indexes to resample, which are based on the size-ordered time-series in the pool
      */
 
-    private List<ResampleIndexes> generateIndexesForResampling( BootstrapPool<T> pool )
+    private List<ResampleIndexes> generateResampleIndexes( BootstrapPool<T> pool )
     {
         // Build a list of sample indexes
         List<TimeSeries<T>> series = pool.getPool()
@@ -229,15 +229,18 @@ public class StationaryBootstrapResampler<T>
                 if ( !nextSeries.getReferenceTimes()
                                 .isEmpty() )
                 {
-                    nextIndexes = this.generateIndexesForResamplingFromForecastSeries( nextSeries,
-                                                                                       i,
-                                                                                       pool,
-                                                                                       innerIndexes );
+                    nextIndexes = this.generateResampleIndexesForForecastSeries( nextSeries,
+                                                                                 i,
+                                                                                 pool,
+                                                                                 innerIndexes );
                 }
                 // Non-forecast time-series (of which there is only one, as established on construction)
                 else
                 {
-                    nextIndexes = this.generateIndexesForResamplingFromNonForecastSeries( nextSeries );
+                    nextIndexes = this.generateResampleIndexesForNonForecastSeries( nextSeries,
+                                                                                    i,
+                                                                                    pool,
+                                                                                    innerIndexes );
                 }
 
                 innerIndexes.add( nextIndexes );
@@ -261,10 +264,10 @@ public class StationaryBootstrapResampler<T>
      * @return the resample indexes for the current time-series
      */
 
-    private ResampleIndexes generateIndexesForResamplingFromForecastSeries( TimeSeries<T> series,
-                                                                            int seriesIndex,
-                                                                            BootstrapPool<T> pool,
-                                                                            List<ResampleIndexes> indexes )
+    private ResampleIndexes generateResampleIndexesForForecastSeries( TimeSeries<T> series,
+                                                                      int seriesIndex,
+                                                                      BootstrapPool<T> pool,
+                                                                      List<ResampleIndexes> indexes )
     {
         int events = series.getEvents()
                            .size();
@@ -443,51 +446,224 @@ public class StationaryBootstrapResampler<T>
      * is unconstrained, except for the constraints of statistical dependence imposed by the bootstrap resampling
      * itself.
      *
-     * @param series the time-series to resample
+     * @param seriesIndex the series index
+     * @param pool the pool
+     * @param indexes the existing resampled indexes
      * @return the resample indexes for the current time-series
      */
 
-    private ResampleIndexes generateIndexesForResamplingFromNonForecastSeries( TimeSeries<T> series )
+    private ResampleIndexes generateResampleIndexesForNonForecastSeries( TimeSeries<T> series,
+                                                                         int seriesIndex,
+                                                                         BootstrapPool<T> pool,
+                                                                         List<ResampleIndexes> indexes )
     {
-        int events = series.getEvents()
-                           .size();
+        int eventCount = series.getEvents()
+                               .size();
+        // Non-forecast series are all exchangeable, no lead-time dependence
+        List<List<Event<T>>> eventsToSample = pool.getTimeSeriesWithAllEvents();
+        int seriesCount = eventsToSample.size();
 
         List<int[]> nextIndexes = new ArrayList<>();
-        for ( int eventIndex = 0; eventIndex < events; eventIndex++ )
+        for ( int eventIndex = 0; eventIndex < eventCount; eventIndex++ )
         {
+            int nextSeriesIndex;
             int nextEventIndex;
 
-            // Very first sample, select an event randomly
-            if ( eventIndex == 0 )
+            // Very first sample, so select a series and event randomly
+            if ( seriesIndex == 0
+                 && eventIndex == 0 )
             {
-                nextEventIndex = this.getRandomIndex( events );
+                nextSeriesIndex = this.getRandomIndex( seriesCount );
+                int seriesEventCount = eventsToSample.get( nextSeriesIndex )
+                                                     .size();
+                nextEventIndex = this.getRandomIndex( seriesEventCount );
             }
-            // Remaining events in the first series
+            // Start of a new series or continuation of an existing series
             else
             {
-                // Choose the next event at random with probability p
-                if ( this.p.sample() == 1 )
+                // Find the index of the last sample taken
+                int[] lastIndex;
+
+                // Last sample comes from the local cache of indexes
+                if ( eventIndex > 0 )
                 {
-                    nextEventIndex = this.getRandomIndex( events );
+                    lastIndex = nextIndexes.get( eventIndex - 1 );
                 }
-                // Choose the event next to the last index with probability 1-p
+                // Last sample comes from the global cache of indexes
                 else
                 {
-                    int[] lastIndex = nextIndexes.get( eventIndex - 1 );
-                    nextEventIndex = lastIndex[1] + 1;
-
-                    // Wrap the series
-                    if ( nextEventIndex >= events )
-                    {
-                        nextEventIndex = 0;
-                    }
+                    ResampleIndexes cachedIndex = indexes.get( seriesIndex - 1 );
+                    List<int[]> lastIndexes = cachedIndex.indexes();
+                    lastIndex = lastIndexes.get( lastIndexes.size() - 1 );
                 }
+
+                int[] nextIndex = this.generateResampleIndexForNonForecastSeries( lastIndex,
+                                                                                  eventsToSample,
+                                                                                  seriesCount );
+                nextSeriesIndex = nextIndex[0];
+                nextEventIndex = nextIndex[1];
             }
 
-            nextIndexes.add( new int[] { 0, nextEventIndex } );
+            nextIndexes.add( new int[] { nextSeriesIndex, nextEventIndex } );
         }
 
         return new ResampleIndexes( nextIndexes );
+    }
+
+    /**
+     * Generates a resample index for a non-forecast time-series relative to the last sampled index.
+     * @param lastIndex the last sampled index
+     * @param eventsToSample the events to sample
+     * @param seriesCount the number of time-series
+     * @return the resample index
+     */
+
+    private int[] generateResampleIndexForNonForecastSeries( int[] lastIndex,
+                                                             List<List<Event<T>>> eventsToSample,
+                                                             int seriesCount )
+    {
+        int[] index;
+
+        // Only one series
+        if ( seriesCount == 1 )
+        {
+            index = this.generateResampleIndexWithinSeriesForNonForecastSeries( lastIndex,
+                                                                                eventsToSample,
+                                                                                seriesCount );
+        }
+        // Some values left to sample in the last series
+        else if ( lastIndex[1] + 1 < eventsToSample.get( lastIndex[0] )
+                                                   .size() )
+        {
+            index = this.generateResampleIndexWithinSeriesForNonForecastSeries( lastIndex,
+                                                                                eventsToSample,
+                                                                                seriesCount );
+        }
+        // No values left to sample in the last series, so need to move to a new series
+        else
+        {
+            index = this.generateResampleIndexFromAnotherSeriesForNonForecastSeries( lastIndex,
+                                                                                     eventsToSample,
+                                                                                     seriesCount );
+        }
+
+        return index;
+    }
+
+    /**
+     * Generates a resample index for a non-forecast time-series relative to the last sampled index where the sample
+     * comes from the same series as the last sample.
+     *
+     * @param lastIndex the last sampled index
+     * @param eventsToSample the events to sample
+     * @param seriesCount the number of time-series
+     * @return the resample index
+     */
+
+    private int[] generateResampleIndexWithinSeriesForNonForecastSeries( int[] lastIndex,
+                                                                         List<List<Event<T>>> eventsToSample,
+                                                                         int seriesCount )
+    {
+        int nextSeriesIndex;
+        int nextEventIndex;
+
+        // Sample the next value randomly with probability p
+        if ( this.p.sample() == 1 )
+        {
+            nextSeriesIndex = this.getRandomIndex( seriesCount );
+            int seriesEventCount = eventsToSample.get( nextSeriesIndex )
+                                                 .size();
+            nextEventIndex = this.getRandomIndex( seriesEventCount );
+        }
+        else
+        {
+            nextSeriesIndex = lastIndex[0];
+            nextEventIndex = lastIndex[1] + 1;
+            int seriesEventCount = eventsToSample.get( nextSeriesIndex )
+                                                 .size();
+
+            // Wrap the series
+            if ( nextEventIndex >= seriesEventCount )
+            {
+                nextEventIndex = 0;
+            }
+        }
+
+        return new int[] { nextSeriesIndex, nextEventIndex };
+    }
+
+    /**
+     * Generates a resample index for a non-forecast time-series relative to the last sampled index where the sample
+     * comes from different series than the last sample.
+     * @param lastIndex the last sampled index
+     * @param eventsToSample the events to sample
+     * @param seriesCount the number of time-series
+     * @return the resample index
+     */
+
+    private int[] generateResampleIndexFromAnotherSeriesForNonForecastSeries( int[] lastIndex,
+                                                                              List<List<Event<T>>> eventsToSample,
+                                                                              int seriesCount )
+    {
+        int nextSeriesIndex;
+        int nextEventIndex;
+
+        // Find the duration between the last index and next index
+        Instant first = eventsToSample.get( lastIndex[0] )
+                                      .get( lastIndex[1] )
+                                      .getTime();
+        int nextSeries = lastIndex[0] + 1;
+
+        // Circular sampling, so return to first series in pool if needed
+        if ( nextSeries >= seriesCount )
+        {
+            nextSeries = 0;
+        }
+
+        Instant second = eventsToSample.get( nextSeries )
+                                       .get( 0 ) // First event
+                                       .getTime();
+
+        // Absolute gap
+        Duration gap = Duration.between( first, second )
+                               .abs();
+
+        BinomialDistribution sampler = this.q.get( gap );
+
+        if ( Objects.isNull( sampler ) )
+        {
+            // Default gap registered to Duration.ZERO. This occurs when no modal timestep could be determined from the
+            // data
+            sampler = this.q.get( Duration.ZERO );
+
+            // Still null?
+            if ( Objects.isNull( sampler ) )
+            {
+                throw new ResamplingException(
+                        "Failed to discover a sampler for a transition between time-series "
+                        + "separated by "
+                        + gap
+                        + ". Samplers were available for the following durations: "
+                        + this.q.keySet() );
+            }
+        }
+
+        // Choose the next event from a randomly selected series with probability q
+        if ( sampler.sample() == 1 )
+        {
+            nextSeriesIndex = this.getRandomIndex( seriesCount );
+            int seriesEventCount = eventsToSample.get( nextSeriesIndex )
+                                                 .size();
+            nextEventIndex = this.getRandomIndex( seriesEventCount );
+        }
+        // Choose the first event from the next series
+        else
+        {
+            nextSeriesIndex = nextSeries;
+            nextEventIndex = 0;
+        }
+
+        return new int[] { nextSeriesIndex, nextEventIndex };
     }
 
     /**
@@ -498,12 +674,18 @@ public class StationaryBootstrapResampler<T>
 
     private int getRandomIndex( int upperBoundExclusive )
     {
+        // Zero-based indexing
+        if ( upperBoundExclusive == 1 )
+        {
+            return 0;
+        }
+
         return this.randomGenerator.nextInt( upperBoundExclusive );
     }
 
     /**
      * Generates a sample of a pool from the prescribed list of indexes, one set of indexes for each time-series in the
-     * pool. The indexes use the ordering imposed by {@link #generateIndexesForResampling(BootstrapPool)}.
+     * pool. The indexes use the ordering imposed by {@link #generateResampleIndexes(BootstrapPool)}.
      *
      * @param pool the pool to resample
      * @param resampleIndexes the indexes to resample
@@ -584,7 +766,15 @@ public class StationaryBootstrapResampler<T>
             ResampleIndexes indexes = resampleIndexes.get( seriesIndex );
             List<Event<T>> events = new ArrayList<>( nextSeries.getEvents() );
             int eventCount = events.size();
-            List<List<Event<T>>> eventsToSample = pool.getTimeSeriesWithAtLeastThisManyEvents( eventCount );
+            List<List<Event<T>>> eventsToSample;
+            if ( pool.hasForecasts() )
+            {
+                eventsToSample = pool.getTimeSeriesWithAtLeastThisManyEvents( eventCount );
+            }
+            else
+            {
+                eventsToSample = pool.getTimeSeriesWithAllEvents();
+            }
 
             for ( int j = 0; j < eventCount; j++ )
             {
@@ -624,19 +814,6 @@ public class StationaryBootstrapResampler<T>
         {
             throw new IllegalArgumentException( "The mean block size for the stationary bootstrap must be greater than "
                                                 + "zero but was: " + meanBlockSizeInTimesteps + "." );
-        }
-
-        // Cannot have more than one non-forecast time-series in a pool: consolidate them first
-        long nonForecastCount = pool.get()
-                                    .stream()
-                                    .filter( n -> n.getReferenceTimes()
-                                                   .isEmpty() )
-                                    .count();
-        if ( nonForecastCount > 1 )
-        {
-            throw new IllegalArgumentException( "Cannot resample a pool that contains more than one non-forecast "
-                                                + "time-series. These time-series should be consolidated prior to "
-                                                + "resampling." );
         }
 
         // Obtain the constant duration between consecutive times
