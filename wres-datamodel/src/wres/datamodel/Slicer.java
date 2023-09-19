@@ -651,26 +651,32 @@ public final class Slicer
                 return sorted[0];
             }
 
+            // Remove any trailing NaN from the sorted array
+            double[] sortedFinal = Slicer.stripNaNFromSortedArray( sorted );
+
             // Estimate the position
-            double pos = probability * ( sorted.length + 1.0 );
+            double pos = probability * ( sortedFinal.length + 1.0 );
+
             //Lower bound
             if ( pos < 1.0 )
             {
-                return sorted[0];
+                return sortedFinal[0];
             }
+
             // Upper bound
-            else if ( pos >= sorted.length )
+            else if ( pos >= sortedFinal.length )
             {
-                return sorted[sorted.length - 1];
+                return sortedFinal[sortedFinal.length - 1];
             }
+
             // Contained: use linear interpolation
             else
             {
                 double floorPos = Math.floor( pos );
                 double dif = pos - floorPos;
                 int intPos = ( int ) floorPos;
-                double lower = sorted[intPos - 1];
-                double upper = sorted[intPos];
+                double lower = sortedFinal[intPos - 1];
+                double upper = sortedFinal[intPos];
                 return lower + dif * ( upper - lower );
             }
         };
@@ -878,6 +884,35 @@ public final class Slicer
             bd = bd.setScale( digits, RoundingMode.HALF_UP );
             return bd.doubleValue();
         };
+    }
+
+    /**
+     * Strips {@link Double#NaN} from the sorted input array where all such instances are trailing.
+     * @param sorted the sorted input array with trailing {@link Double#NaN}, if any
+     * @return the filtered array
+     */
+
+    private static double[] stripNaNFromSortedArray( double[] sorted )
+    {
+        if ( sorted.length == 0
+             || !Double.isNaN( sorted[sorted.length - 1] ) )
+        {
+            return sorted;
+        }
+
+        int stop = sorted.length - 1;
+
+        for ( int i = sorted.length - 2; i >= 0; i-- )
+        {
+            if ( !Double.isNaN( sorted[i] ) )
+            {
+                break;
+            }
+            stop = i;
+        }
+        double[] returnMe = new double[stop];
+        System.arraycopy( sorted, 0, returnMe, 0, stop );
+        return returnMe;
     }
 
     /**

@@ -11,7 +11,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.OptionalDouble;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -181,7 +180,7 @@ public class ChartDataFactory
                                                                                               .getLatestLeadDuration() ) );
 
         // Build the TimeSeriesCollection
-        TimeSeriesCollection returnMe = new TimeSeriesCollection();
+        YIntervalSeriesCollection returnMe = new YIntervalSeriesCollection();
 
         // Filter by times if each series should contain issued or valid pools, else do not filter
         SortedSet<Pair<Instant, Instant>> times = new TreeSet<>();
@@ -716,28 +715,13 @@ public class ChartDataFactory
      * @param durationUnits the duration units
      */
 
-    private static void addSeriesForPoolingWindow( TimeSeriesCollection collection,
+    private static void addSeriesForPoolingWindow( YIntervalSeriesCollection collection,
                                                    List<DoubleScoreComponentOuter> slice,
                                                    Pair<Duration, Duration> leadDurations,
                                                    Pair<Instant, Instant> poolingTimes,
                                                    GraphicShape graphicShape,
                                                    ChronoUnit durationUnits )
     {
-        // Error bars? If so, find the lower and upper quantile
-        OptionalDouble lower = slice.stream()
-                                    .map( n -> n.getSampleQuantile() )
-                                    .filter( Objects::nonNull )
-                                    .mapToDouble( Double::doubleValue )
-                                    .min();
-        OptionalDouble upper = slice.stream()
-                                    .map( n -> n.getSampleQuantile() )
-                                    .filter( Objects::nonNull )
-                                    .mapToDouble( Double::doubleValue )
-                                    .max();
-
-        boolean errorBars = lower.isPresent()
-                            && upper.isPresent();
-
         // Filter by threshold
         SortedSet<OneOrTwoThresholds> thresholds =
                 Slicer.discover( slice, next -> next.getPoolMetadata().getThresholds() );
@@ -757,81 +741,18 @@ public class ChartDataFactory
                                                                                 nextThreshold,
                                                                                 durationUnits );
 
-            // Error bars?
-            if ( errorBars )
+            ToDoubleFunction<DoubleScoreComponentOuter> mapper = score ->
             {
-                // Lower
-                List<DoubleScoreComponentOuter> lowerSeries =
-                        Slicer.filter( finalSlice,
-                                       next -> next.hasQuantile()
-                                               && Math.abs( next.getSampleQuantile() - lower.getAsDouble() ) < 0.0001 );
-                TimeSeries lowerChartSeries = ChartDataFactory.getSeries( lowerSeries,
-                                                                          seriesName
-                                                                          + " (Q="
-                                                                          + lower.getAsDouble()
-                                                                          + ")",
-                                                                          graphicShape );
-                collection.addSeries( lowerChartSeries );
+                Instant midpoint =
+                        ChartDataFactory.getMidpointBetweenTimes( score.getPoolMetadata()
+                                                                       .getTimeWindow(),
+                                                                  graphicShape == GraphicShape.ISSUED_DATE_POOLS );
+                return midpoint.toEpochMilli();
+            };
 
-                // Nominal
-                List<DoubleScoreComponentOuter> nominal =
-                        Slicer.filter( finalSlice,
-                                       next -> !next.hasQuantile() );
-                TimeSeries nominalChartSeries = ChartDataFactory.getSeries( nominal, seriesName, graphicShape );
-                collection.addSeries( nominalChartSeries );
-
-                // Upper
-                List<DoubleScoreComponentOuter> upperSeries =
-                        Slicer.filter( finalSlice,
-                                       next -> next.hasQuantile()
-                                               && Math.abs( next.getSampleQuantile() - upper.getAsDouble() ) < 0.0001 );
-                TimeSeries upperChartSeries = ChartDataFactory.getSeries( upperSeries,
-                                                                          seriesName
-                                                                          + " (Q="
-                                                                          + upper.getAsDouble()
-                                                                          + ")",
-                                                                          graphicShape );
-                collection.addSeries( upperChartSeries );
-            }
-            // Regular series
-            else
-            {
-                TimeSeries series = ChartDataFactory.getSeries( finalSlice, seriesName, graphicShape );
-                collection.addSeries( series );
-            }
+            YIntervalSeries series = ChartDataFactory.getIntervalSeries( finalSlice, seriesName, mapper );
+            collection.addSeries( series );
         }
-    }
-
-    /**
-     * Generates a time-series for a chart from the inputs.
-     * @param scores the scores
-     * @param seriesName the series name
-     * @param graphicShape the graphics shape
-     * @return the time-series to chart
-     */
-
-    private static TimeSeries getSeries( List<DoubleScoreComponentOuter> scores,
-                                         String seriesName,
-                                         GraphicShape graphicShape )
-    {
-        TimeSeries series = new TimeSeries( seriesName );
-
-        // Loop through the slice, forming a time series from the issued time or valid time pooling
-        // windows and corresponding values.
-        for ( DoubleScoreComponentOuter nextDouble : scores )
-        {
-            Instant midpoint =
-                    ChartDataFactory.getMidpointBetweenTimes( nextDouble.getPoolMetadata()
-                                                                        .getTimeWindow(),
-                                                              graphicShape == GraphicShape.ISSUED_DATE_POOLS );
-
-            FixedMillisecond time = new FixedMillisecond( midpoint.toEpochMilli() );
-            Double value = nextDouble.getStatistic()
-                                     .getValue();
-            series.add( time, value );
-        }
-
-        return series;
     }
 
     /**

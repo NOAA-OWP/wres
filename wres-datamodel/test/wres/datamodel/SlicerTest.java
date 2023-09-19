@@ -139,7 +139,7 @@ class SlicerTest
         double expectedD = 8924.920568373052;
         double expectedE = 0.0;
 
-        //Test for equality
+        // Test for equality
         DoubleUnaryOperator qFA = Slicer.getQuantileFunction( sorted );
         DoubleUnaryOperator qFB = Slicer.getQuantileFunction( sortedB );
 
@@ -149,9 +149,35 @@ class SlicerTest
         assertEquals( expectedD, qFA.applyAsDouble( testD ), 7 );
         assertEquals( expectedE, qFB.applyAsDouble( testE ), 7 );
 
-        //Check exceptional cases
+        // Check exceptional cases
         assertThrows( IllegalArgumentException.class, () -> qFA.applyAsDouble( -0.1 ) );
         assertThrows( IllegalArgumentException.class, () -> qFA.applyAsDouble( 1.1 ) );
+    }
+
+    @Test
+    void testGetQuantileFromProbabilityForSortedArrayWithNaNEntries()
+    {
+        double[] sorted = new double[] {
+                1.5,
+                4.9,
+                6.3,
+                27,
+                43.3,
+                433.9,
+                1012.6,
+                2009.8,
+                7001.4,
+                12038.5,
+                17897.2,
+                Double.NaN,
+                Double.NaN
+        };
+
+        double testC = 7.0 / 11.0;
+        double expectedC = 1647.1818181818185;
+
+        DoubleUnaryOperator qFA = Slicer.getQuantileFunction( sorted );
+        assertEquals( expectedC, qFA.applyAsDouble( testC ), 7 );
     }
 
     /**
