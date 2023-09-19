@@ -1460,7 +1460,7 @@ public class ChartFactory
         }
 
         if ( !quantiles.isEmpty()
-             && this.canShowErrorBars( metricName, chartType ) )
+             && this.canShowErrorBars( metricName ) )
         {
             double minimum = quantiles.stream()
                                       .mapToDouble( Double::doubleValue )
@@ -1503,17 +1503,15 @@ public class ChartFactory
 
     /**
      * @param metricName the metric name
-     * @param chartType the chart type
      * @return whether error bars can be displayed
      */
 
-    private boolean canShowErrorBars( MetricConstants metricName, ChartType chartType )
+    private boolean canShowErrorBars( MetricConstants metricName )
     {
         return metricName.isSamplingUncertaintyAllowed()
                // Disallowed for graphics
                && !metricName.isInGroup( StatisticType.DURATION_SCORE )
-               && !metricName.isInGroup( StatisticType.DURATION_DIAGRAM )
-               && chartType != ChartType.POOLING_WINDOW;
+               && !metricName.isInGroup( StatisticType.DURATION_DIAGRAM );
     }
 
     /**
