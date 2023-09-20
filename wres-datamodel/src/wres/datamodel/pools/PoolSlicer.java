@@ -399,21 +399,22 @@ public class PoolSlicer
     }
 
     /**
-     * Counts the number of pairs in a pool of time-series.
+     * Counts the number of time-series events in the main pool.
      * 
      * @param <U> the type of time-series data
      * @param pool the pool
-     * @return the number of pairs
+     * @return the number of events
      * @throws NullPointerException if the input is null
      */
 
-    public static <U> int getPairCount( Pool<TimeSeries<U>> pool )
+    public static <U> int getEventCount( Pool<TimeSeries<U>> pool )
     {
         Objects.requireNonNull( pool );
 
         return pool.get()
                    .stream()
-                   .mapToInt( next -> next.getEvents().size() )
+                   .mapToInt( next -> next.getEvents()
+                                          .size() )
                    .sum();
     }
 

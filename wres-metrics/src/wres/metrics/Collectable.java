@@ -6,24 +6,22 @@ import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.Statistic;
 
 /**
- * An interface that allows for a final metric output to be derived from an intermediate output, thereby
- * avoiding the need to recompute intermediate outputs that are common to several metrics. See also
- * {@link MetricCollection}, which collects together metrics with common dependencies and exploits this interface to
- * share intermediate statistics between them, computing each intermediate statistic only once. When forming a 
- * {@link Collectable}, it is best to form the largest collection possible for which some intermediate result is 
- * relatively expensive to compute because that result will be re-used across all instances that depend on it. For 
- * example, the root mean square error, the mean square error and the sum of square errors all depend on the sum of 
- * square errors, but the root mean square error also depends on the mean square error. In this case, it is better to 
- * form a larger collection of three metrics with the sum of square errors as the intermediate statistic, since this 
- * will maximize re-use.
+ * An interface that allows for a statistic to be derived from one or more intermediate statistics, thereby avoiding the
+ * need to recompute intermediate statistics that are common to several metrics. See also {@link MetricCollection},
+ * which collects together metrics with common dependencies and exploits this interface to share intermediate statistics
+ * between them, computing each intermediate statistic only once. When forming a {@link Collectable}, it is best to form
+ * the largest collection possible for which some intermediate statistic is relatively expensive to compute because that
+ * result will be re-used across all instances that depend on it. For example, the root-mean-square error, the mean
+ * square error and the sum of square errors all depend on the sum of square errors, but the root-mean-square error also
+ * depends on the mean square error. In this case, it is better to form a larger collection of three metrics with the
+ * sum of square errors as the intermediate statistic, as this will maximize re-use.
  *
- * @param <S> the input type
- * @param <T> the intermediate output type
- * @param <U> the final output type
+ * @param <S> the pooled data type from which the statistics are computed
+ * @param <T> the intermediate statistic type
+ * @param <U> the final statistic type
  * @author James Brown
  */
-public interface Collectable<S extends Pool<?>, T extends Statistic<?>, U extends Statistic<?>>
-        extends Metric<S, U>
+public interface Collectable<S extends Pool<?>, T extends Statistic<?>, U extends Statistic<?>> extends Metric<S, U>
 {
     /**
      * Computes a statistic from an intermediate statistic and a pool, which may be used to compute other statistics
@@ -52,8 +50,9 @@ public interface Collectable<S extends Pool<?>, T extends Statistic<?>, U extend
     T getIntermediate( S pool );
 
     /**
-     * Returns the {@link Metric#getMetricName()} of the metric whose output forms the input to this metric. Metrics with common
-     * intermediate inputs are collected by the name of the metric that produces the intermediate input.
+     * Returns the {@link Metric#getMetricName()} of the metric whose statistic forms the input to this metric. Metrics
+     * with common intermediate statistics are collected by the name of the metric that produces the intermediate
+     * statistic.
      *
      * @return the {@link Metric#getMetricName()} of the metric whose output forms the input to this metric
      */

@@ -641,18 +641,20 @@ public final class Slicer
                 throw new IllegalArgumentException( "The input probability is not within the unit interval: "
                                                     + probability );
             }
-            if ( sorted.length == 0 )
-            {
-                return Double.NaN;
-            }
-            // Single item
-            if ( sorted.length == 1 )
-            {
-                return sorted[0];
-            }
 
             // Remove any trailing NaN from the sorted array
             double[] sortedFinal = Slicer.stripNaNFromSortedArray( sorted );
+
+            if ( sortedFinal.length == 0 )
+            {
+                return Double.NaN;
+            }
+
+            // Single item
+            if ( sortedFinal.length == 1 )
+            {
+                return sortedFinal[0];
+            }
 
             // Estimate the position
             double pos = probability * ( sortedFinal.length + 1.0 );
