@@ -52,7 +52,8 @@ public class SettingsFactory
             SystemSettings systemSettings = ( SystemSettings ) unmarshaller.unmarshal( xmlInputStream );
 
             // Get database configurations and convert to builder
-            DatabaseSettings.DatabaseSettingsBuilder databaseBuilder = systemSettings.getDatabaseConfiguration().toBuilder();
+            DatabaseSettings.DatabaseSettingsBuilder databaseBuilder =
+                    systemSettings.getDatabaseConfiguration().toBuilder();
 
             // Apply database overrides
             applyDatabaseSystemPropertyOverrides( databaseBuilder );
@@ -85,7 +86,8 @@ public class SettingsFactory
      * Method for construction of default settings used in testing
      * @return SystemSettings
      */
-    public static SystemSettings defaultTest() {
+    public static SystemSettings defaultTest()
+    {
         DatabaseSettings.DatabaseSettingsBuilder builder = DatabaseSettings.builder();
         applyDatabaseSystemPropertyOverrides( builder );
         builder.password( getPasswordOverrides( DatabaseSettings.builder().build() ) );
@@ -94,7 +96,8 @@ public class SettingsFactory
         return SystemSettings.builder().databaseConfiguration( builder.build() ).build();
     }
 
-    private static void applySystemPropertyOverrides( SystemSettingsBuilder systemBuilder, SystemSettings systemSettings )
+    private static void applySystemPropertyOverrides( SystemSettingsBuilder systemBuilder,
+                                                      SystemSettings systemSettings )
     {
         String maxIngestThreads = System.getProperty( "wres.maximumIngestThreads" );
         if ( maxIngestThreads != null )
@@ -113,7 +116,6 @@ public class SettingsFactory
                              systemSettings.getMaximumIngestThreads() );
             }
         }
-
 
         String useDatabaseString = System.getProperty( "wres.useDatabase" );
         if ( Objects.nonNull( useDatabaseString ) )

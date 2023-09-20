@@ -249,8 +249,7 @@ public class WebClient
     public ClientResponse postToWeb( URI uri )
             throws IOException
     {
-
-        return postToWeb( uri, "" );
+        return postToWeb( uri, new byte[0] );
     }
 
     /**
@@ -266,7 +265,7 @@ public class WebClient
      * @throws NullPointerException When any argument is null.
      */
 
-    public ClientResponse postToWeb( URI uri, String jobMessage )
+    public ClientResponse postToWeb( URI uri, byte[] jobMessage )
             throws IOException
     {
         Objects.requireNonNull( uri );
@@ -282,7 +281,7 @@ public class WebClient
 
         WebClientEvent monitorEvent = WebClientEvent.of( uri ); // Monitor with JFR
 
-        RequestBody body = RequestBody.create( jobMessage, MediaType.parse("text/xml") );
+        RequestBody body = RequestBody.create( jobMessage, MediaType.parse( "text/xml" ) );
 
         try
         {
@@ -294,7 +293,7 @@ public class WebClient
                     .url( uri.toURL() )
                     .post( body )
                     .header( "Content-Type", "text/xml" )
-//                    .header( "User-Agent", this.getUserAgent() )
+                    //                    .header( "User-Agent", this.getUserAgent() )
                     .build();
 
 
@@ -388,20 +387,20 @@ public class WebClient
             else
             {
                 throw new IOException( "Failed to get data from "
-                                           + uri
-                                           + " due to status code "
-                                           + httpStatus
-                                           + " after "
-                                           + duration );
+                                       + uri
+                                       + " due to status code "
+                                       + httpStatus
+                                       + " after "
+                                       + duration );
             }
         }
         else
         {
             throw new IOException( "Failed to get data from "
-                                       + uri
-                                       + " due to repeated failures (see "
-                                       + "WARN messages above) after "
-                                       + duration );
+                                   + uri
+                                   + " due to repeated failures (see "
+                                   + "WARN messages above) after "
+                                   + duration );
         }
 
         return new ClientResponse( httpResponse );
@@ -442,14 +441,14 @@ public class WebClient
             {
                 LOGGER.warn( "Retrying {} in a bit due to {}.", uri, ioe.toString() );
             }
-//            else
-//            {
-//                // Unrecoverable. If truly recoverable, add code to the method
-//                // called shouldRetryIndividualException().
-//                throw new Exception( "Unrecoverable exception when getting data from "
-//                                           + uri,
-//                                           ioe );
-//            }
+            //            else
+            //            {
+            //                // Unrecoverable. If truly recoverable, add code to the method
+            //                // called shouldRetryIndividualException().
+            //                throw new Exception( "Unrecoverable exception when getting data from "
+            //                                           + uri,
+            //                                           ioe );
+            //            }
         }
         finally
         {
