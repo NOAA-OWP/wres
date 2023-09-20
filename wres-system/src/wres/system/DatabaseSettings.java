@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.Value;
+import lombok.experimental.NonFinal;
 
 /**
  * <p>Contains access to configured settings and objects for accessing the database
@@ -88,7 +89,7 @@ public class DatabaseSettings
     @XmlElement( name = "name" )
     String databaseName = "wres";
     @Builder.Default
-    @XmlElement( name = "database_type" )
+    @NonFinal
     DatabaseType databaseType = DatabaseType.POSTGRESQL;
     @Builder.Default
     @XmlElement( name = "certificate_file_to_trust" )
@@ -122,6 +123,11 @@ public class DatabaseSettings
     @Builder.Default
     @XmlElement( name = "connectionTimeoutMs" )
     int connectionTimeoutMs = 18000000;
+
+    @XmlElement( name = "database_type" )
+    private void setDatabaseType( String databaseType ) {
+        this.databaseType = DatabaseType.valueOf( databaseType );
+    }
 
     // Dummy class to allow javadoc task to find the builder created by lombok
     public static class DatabaseSettingsBuilder{}

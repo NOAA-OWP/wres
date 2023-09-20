@@ -180,18 +180,29 @@ public class Worker
      */
     private static Process startWorkerServer( File wresExecutable )
     {
-        List<String> result = new ArrayList<>();
+        String javaOpts = " ";
+        List<String> serverProcessString = new ArrayList<>();
+
+        // Pass through additional java options set in the environment for this
+        // inner worker process, as distinct from this shim process.
+        String innerJavaOpts = System.getenv( "INNER_JAVA_OPTS" );
+
+        if ( innerJavaOpts != null && innerJavaOpts.length() > 0 )
+        {
+            javaOpts =  innerJavaOpts;
+        }
 
         String executable = wresExecutable
                 .getPath();
 
         setFreePortOrDefault();
 
-        result.add( executable );
-        result.add( "server" );
-        result.add( String.valueOf( Worker.port ) );
+        serverProcessString.add( executable );
+        serverProcessString.add( "server" );
+        serverProcessString.add( String.valueOf( Worker.port ) );
 
-        ProcessBuilder processBuilder = new ProcessBuilder( result );
+        ProcessBuilder processBuilder = new ProcessBuilder( serverProcessString );
+        processBuilder.environment().put( "JAVA_OPTS", javaOpts );
 
         Process process;
 
