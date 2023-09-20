@@ -12,6 +12,7 @@ import java.io.PrintStream;
 import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Random;
@@ -19,6 +20,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -37,10 +39,19 @@ import org.slf4j.LoggerFactory;
 import static wres.messages.generated.EvaluationStatusOuterClass.EvaluationStatus.*;
 
 import wres.ExecutionResult;
+import wres.events.broker.BrokerConnectionFactory;
+import wres.io.database.ConnectionSupplier;
+import wres.io.database.Database;
+import wres.io.database.DatabaseOperations;
+import wres.io.database.locking.DatabaseLockManager;
 import wres.messages.generated.EvaluationStatusOuterClass;
+import wres.messages.generated.Job;
 import wres.pipeline.Evaluator;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
+import wres.system.DatabaseSettings;
+import wres.system.DatabaseType;
+import wres.system.SystemSettings;
 
 /**
  * Accepts projects in the body of http request and executes them.
@@ -65,7 +76,6 @@ public class EvaluationService
 
     private static final int ONE_MINUTE_IN_MILLISECONDS = 60000;
 
-    private final Evaluator evaluator;
 
     /** A shared bag of output resource references by request id */
     // The cache is here for expedience, this information could be persisted
@@ -75,16 +85,37 @@ public class EvaluationService
                                                                                 .maximumSize( 100 )
                                                                                 .build();
 
+    private SystemSettings systemSettings;
+
+    private Database database;
+
+    private final BrokerConnectionFactory broker;
+
+    private Evaluator evaluator;
+
     /**
-     * ProjectService constructor
-     * @param evaluator The servers evaluator used to evaluate projects
+     * Constructor
+     * @param systemSettings The system settings passed along from the server
+     * @param database The initial database created for us by the server
+     * @param broker The broker to deal with connections
      */
-    public EvaluationService( Evaluator evaluator )
+    public EvaluationService( SystemSettings systemSettings,
+                              Database database,
+                              BrokerConnectionFactory broker )
     {
-        this.evaluator = evaluator;
+        this.systemSettings = systemSettings;
+        this.database = database;
+        this.broker = broker;
+        this.evaluator = new Evaluator( systemSettings,
+                                        database,
+                                        broker );
     }
 
 
+    /**
+     * Function to simply track the good status of the server
+     * @return Good Response
+     */
     @GET
     @Path( "/heartbeat" )
     @Produces( MediaType.TEXT_PLAIN )
@@ -95,11 +126,15 @@ public class EvaluationService
                        .build();
     }
 
+    /**
+     * Gets the status of a specific Evaluation
+     * @param id The ID of the Evaluation to check the status of (Must exist)
+     * @return The Atomic evaluationStage of the Evaluation
+     */
     @GET
     @Path( "/status/{id}" )
     @Produces( MediaType.TEXT_PLAIN )
     public Response getStatus( @PathParam( "id" ) Long id )
-
     {
         //TODO activate when we have a persistant cache and async evaluations
 
@@ -115,18 +150,23 @@ public class EvaluationService
                        .build();
     }
 
+    /**
+     * Redirect the standard out stream and return that to the user
+     * @param id ID of the evaluation we are trying to track with this
+     * @return A Response containing a StreamingOutput
+     */
     @GET
     @Path( "/stdout/{id}" )
     @Produces( "application/octet-stream" )
     public Response getOutStream( @PathParam( "id" ) Long id )
     {
-        if ( evaluationId.get() != id )
-        {
-            return Response.status( Response.Status.BAD_REQUEST )
-                           .entity( "The id provided: " + id + " Does not match the ID of the current evaluation: "
-                                    + evaluationId.get() )
-                           .build();
-        }
+        //        if ( evaluationId.get() != id )
+        //        {
+        //            return Response.status( Response.Status.BAD_REQUEST )
+        //                           .entity( "The id provided: " + id + " Does not match the ID of the current evaluation: "
+        //                                    + evaluationId.get() )
+        //                           .build();
+        //        }
 
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream( byteArrayOutputStream );
@@ -162,6 +202,11 @@ public class EvaluationService
                        .build();
     }
 
+    /**
+     * Redirect the standard err stream and return that to the user
+     * @param id ID of the evaluation we are trying to track with this
+     * @return A Response containing a StreamingOutput
+     */
     @GET
     @Path( "/stderr/{id}" )
     @Produces( "application/octet-stream" )
@@ -209,6 +254,10 @@ public class EvaluationService
                        .build();
     }
 
+    /**
+     * Creates an ID for an evaluation we plan to execute and sets status to OPEN
+     * @return ID of evaluation to run
+     */
     @POST
     @Path( "/open" )
     @Produces( MediaType.TEXT_PLAIN )
@@ -240,6 +289,88 @@ public class EvaluationService
                        .build();
     }
 
+    /**
+     * Kicks off a database Migration
+     * @return Good response
+     */
+    @POST
+    @Path( "/migrateDatabase" )
+    @Produces( MediaType.TEXT_PLAIN )
+    public Response migrateDatabase()
+    {
+        if ( !systemSettings.isUseDatabase() )
+        {
+            throw new IllegalArgumentException(
+                    "This is an in-memory execution. Cannot migrate a database because there "
+                    + "is no database to migrate." );
+        }
+
+        try
+        {
+            //The migrateDatabase method deals with database locking, so we don't need to worry about that here
+            DatabaseOperations.migrateDatabase( database );
+        }
+        catch ( SQLException se )
+        {
+            String message = "Failed to migrate the database.";
+            LOGGER.error( message, se );
+            InternalWresException e = new InternalWresException( message, se );
+            return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
+                           .entity( "Unable to migrate the database with the error: "
+                                    + e.getMessage() )
+                           .build();
+        }
+        return Response.ok( "Database Cleaned" )
+                       .build();
+    }
+
+    /**
+     * Kicks off a database Clean
+     * @return Good response
+     */
+    @POST
+    @Path( "/cleanDatabase" )
+    @Produces( MediaType.TEXT_PLAIN )
+    public Response cleanDatabase()
+    {
+        if ( !systemSettings.isUseDatabase() )
+        {
+            throw new IllegalArgumentException( "This is an in-memory execution. Cannot clean a database because there "
+                                                + "is no database to clean." );
+        }
+
+        DatabaseLockManager lockManager =
+                DatabaseLockManager.from( systemSettings,
+                                          () -> database.getRawConnection() );
+
+        try
+        {
+            lockManager.lockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+            DatabaseOperations.cleanDatabase( database );
+            lockManager.unlockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+        }
+        catch ( SQLException se )
+        {
+            String message = "Failed to clean the database.";
+            LOGGER.error( message, se );
+            InternalWresException e = new InternalWresException( message, se );
+            return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
+                           .entity( "Unable to clean the database with the error: "
+                                    + e.getMessage() )
+                           .build();
+        }
+        finally
+        {
+            lockManager.shutdown();
+        }
+        return Response.ok( "Database Cleaned" )
+                       .build();
+    }
+
+    /**
+     * Closes an evaluation that was Opened (Wont interupt ongoing evaluations)
+     * @return Good Response
+     */
     @POST
     @Path( "/close" )
     @Produces( MediaType.TEXT_PLAIN )
@@ -264,6 +395,10 @@ public class EvaluationService
         System.setErr( new PrintStream( new FileOutputStream( FileDescriptor.err ) ) );
     }
 
+    /**
+     * Creates a thread that will time out stale evaluations if they do not change status as expected in a prompt manner
+     * This is used to stop worker servers from being occupied by an errant Evaluation
+     */
     private static void evaluationTimeoutThread()
     {
         Runnable timeoutRunnable = () -> {
@@ -290,19 +425,81 @@ public class EvaluationService
     }
 
     /**
-     * @param projectConfig the evaluation project declaration string
+     * If the job contains database information different from the current database then change what database we are using
+     * @param job The job we are about to evaluate
+     */
+    private void swapDatabaseIfNeeded( Job.job job )
+    {
+
+        String databaseName = job.getDatabaseName();
+        String databaseHost = job.getDatabaseHost();
+        String databasePort = job.getDatabasePort();
+
+        LOGGER.info( "1.2" );
+
+        DatabaseSettings databaseConfiguration = systemSettings.getDatabaseConfiguration();
+
+        if ( !databaseName.isEmpty()
+             && !databaseHost.isEmpty()
+             && !databasePort.isEmpty()
+             && ( !databaseName.equals( databaseConfiguration.getDatabaseName() )
+                  || !databaseHost.equals( databaseConfiguration.getHost() )
+                  || !databasePort.equals( String.valueOf( databaseConfiguration.getPort() ) ) ) )
+        {
+            DatabaseSettings newDatabaseSettings = databaseConfiguration.toBuilder()
+                                                                        .databaseName( databaseName )
+                                                                        .host( databaseHost )
+                                                                        .port( Integer.parseInt( databasePort ) )
+                                                                        .build();
+
+            systemSettings = systemSettings.toBuilder().databaseConfiguration( newDatabaseSettings ).build();
+
+            if ( systemSettings.isUseDatabase() )
+            {
+                database = new Database( new ConnectionSupplier( systemSettings ) );
+                // Migrate the database, as needed
+                if ( database.getAttemptToMigrate() )
+                {
+                    try
+                    {
+                        DatabaseOperations.migrateDatabase( database );
+                    }
+                    catch ( SQLException e )
+                    {
+                        throw new IllegalStateException( "Failed to migrate the WRES database.", e );
+                    }
+                }
+            }
+            evaluator = new Evaluator( systemSettings, database, broker );
+        }
+    }
+
+    /**
+     * Starts an opened Evaluation
+     * @param message job message containing the evaluation and database settings
      * @return the state of the evaluation
      */
-
     @POST
     @Path( "/start/{id}" )
-    @Consumes( MediaType.TEXT_XML )
     @Produces( "application/octet-stream" )
-    public Response postStartEvaluation( String projectConfig, @PathParam( "id" ) Long id )
+    public Response startEvaluation( byte[] message, @PathParam( "id" ) Long id )
     {
+        // Convert the raw message into a job
+        Job.job jobMessage;
+        try
+        {
+            jobMessage = Job.job.parseFrom( message );
+        }
+        catch ( InvalidProtocolBufferException ipbe )
+        {
+            throw new IllegalArgumentException( "Bad message received: " + message, ipbe );
+        }
+
+        // Checks if database information has changed in the jobMessage and swap to that database
+        swapDatabaseIfNeeded( jobMessage );
+
         if ( evaluationId.get() != id && evaluationStage.get().equals( OPENED ) )
         {
-            evaluationStage.set( CLOSED );
             return Response.status( Response.Status.BAD_REQUEST )
                            .entity(
                                    "There was not an evaluation opened to start. Please /close/{ID} any projects first and open a new one" )
@@ -314,7 +511,7 @@ public class EvaluationService
         Set<java.nio.file.Path> outputPaths;
         try
         {
-            ExecutionResult result = evaluator.evaluate( projectConfig );
+            ExecutionResult result = evaluator.evaluate( jobMessage.getProjectConfig() );
             outputPaths = result.getResources();
             OUTPUTS.put( projectId, outputPaths );
         }
@@ -425,6 +622,7 @@ public class EvaluationService
     }
 
     /**
+     * (DEPRECATED)
      * @param id the evaluation job identifier
      * @return the evaluation results
      */
@@ -450,6 +648,7 @@ public class EvaluationService
     }
 
     /**
+     * (DEPRECATED)
      * @param id the evaluation job identifier
      * @param resourceName the resource name
      * @return the resource

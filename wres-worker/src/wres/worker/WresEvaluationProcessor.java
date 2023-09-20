@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
@@ -24,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.http.WebClient;
+import wres.messages.generated.Job;
 import wres.messages.generated.JobOutput;
 import wres.messages.generated.JobResult;
 
@@ -45,13 +47,17 @@ class WresEvaluationProcessor implements Callable<Integer>
 
     private static final String CLOSE_EVAL_URI = "http://localhost:%d/evaluation/close";
 
+    private static final String CLEAN_DATABASE_URI = "http://localhost:%d/evaluation/cleanDatabase";
+
+    private static final String MIGRATE_DATABASE_URI = "http://localhost:%d/evaluation/migrateDatabase";
+
     private final String exchangeName;
     private final String jobId;
     private final Connection connection;
 
     private final int port;
 
-    private final String jobMessage;
+    private final byte[] jobMessage;
 
     /** A web client to help with reading data from the web. */
     private static final WebClient WEB_CLIENT = new WebClient();
@@ -66,7 +72,7 @@ class WresEvaluationProcessor implements Callable<Integer>
                              String jobId,
                              Connection connection,
                              Envelope envelope,
-                             String jobMessage,
+                             byte[] jobMessage,
                              int port )
     {
         this.exchangeName = exchangeName;
@@ -125,8 +131,26 @@ class WresEvaluationProcessor implements Callable<Integer>
 
     public Integer call()
     {
-        // Check to see if there is any command at all.
-        if ( this.jobMessage.isEmpty() )
+        Job.job job;
+        try
+        {
+            job = Job.job.parseFrom( this.jobMessage );
+        }
+        catch ( InvalidProtocolBufferException ipbe )
+        {
+            throw new IllegalArgumentException( "Bad message received", ipbe );
+        }
+
+        // Check if the Job is to manipulate the database in some way
+        if (job.getVerb().equals( Job.job.Verb.CLEANDATABASE )) {
+            return manipulateDatabase( CLEAN_DATABASE_URI );
+        }
+        if (job.getVerb().equals( Job.job.Verb.MIGRATEDATABASE )) {
+            return manipulateDatabase( MIGRATE_DATABASE_URI );
+        }
+
+        // Check to see if there is any command at all
+        if ( job.getProjectConfig().isEmpty() )
         {
             UnsupportedOperationException problem =
                     new UnsupportedOperationException( "Could not execute due to invalid message." );
@@ -188,8 +212,9 @@ class WresEvaluationProcessor implements Callable<Integer>
         try
         {
             URI startEvalURI = URI.create( String.format( START_EVAL_URI, this.getPort(), evaluationId ) );
+            LOGGER.info( String.format( "Starting evaluation: %s",  startEvalURI ) );
             evaluationPostRequest =
-                    WEB_CLIENT.postToWeb( startEvalURI, jobMessage );
+                    WEB_CLIENT.postToWeb( startEvalURI, this.jobMessage );
 
         }
         catch ( IOException ioe )
@@ -230,12 +255,42 @@ class WresEvaluationProcessor implements Callable<Integer>
         {
             if ( evaluationIdRequest.getStatusCode() == HttpURLConnection.HTTP_BAD_REQUEST )
             {
+                // Return empty project ID when we do not get a good response from the server
                 return "";
             }
             return new BufferedReader( new InputStreamReader( evaluationIdRequest.getResponse() ) ).lines()
                                                                                                    .collect(
                                                                                                            Collectors.joining(
                                                                                                                    "\n" ) );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    /**
+     * Helper method to enable database modification methods to be called like CLEAN and MIGRATE
+     * @return String representation of an evaluation id
+     * @throws IOException
+     */
+    private int manipulateDatabase(String uriToCall)
+    {
+        URI prepareEval = URI.create( String.format( uriToCall, this.getPort() ) );
+        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval ) )
+        {
+            String serverResponse = new BufferedReader( new InputStreamReader( evaluationIdRequest.getResponse() ) ).lines()
+                                                                                                             .collect(
+                                                                                                                     Collectors.joining(
+                                                                                                                             "\n" ) );
+            if ( evaluationIdRequest.getStatusCode() == HttpURLConnection.HTTP_INTERNAL_ERROR )
+            {
+                LOGGER.error( String.format( "Unable to manipulate database with the following response for the server: %s", serverResponse ) );
+                return META_FAILURE_CODE;
+            }
+
+            LOGGER.info( String.format( "Database manipulated successfully with the following server response: %s", serverResponse ) );
+            return evaluationIdRequest.getStatusCode();
         }
         catch ( IOException e )
         {

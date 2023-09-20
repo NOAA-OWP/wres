@@ -29,7 +29,6 @@ import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.io.database.ConnectionSupplier;
 import wres.io.database.Database;
 import wres.io.database.DatabaseOperations;
-import wres.pipeline.Evaluator;
 import wres.system.SettingsFactory;
 import wres.system.SystemSettings;
 
@@ -58,7 +57,7 @@ public class WebServer
     private static EmbeddedBroker broker = null;
 
     private static final SystemSettings SYSTEM_SETTINGS = SettingsFactory.createSettingsFromDefaultXml();
-    
+
     private static Database database = null;
 
     // Migrate the database, as needed
@@ -164,15 +163,11 @@ public class WebServer
         dynamicHolder.setInitParameter( "jakarta.ws.rs.Application",
                                         JaxRSApplication.class.getCanonicalName() );
 
-        // Creating evaluator for the project Service
-        Evaluator evaluator = new Evaluator( WebServer.SYSTEM_SETTINGS,
-                                             WebServer.database,
-                                             createBroker() );
 
         // Registering the EvaluationService explicitly so that we can add constructor arguments
         ServletContainer servlet = new ServletContainer(
                 new ResourceConfig().register(
-                        new EvaluationService( evaluator )
+                        new EvaluationService( WebServer.SYSTEM_SETTINGS, WebServer.database, createBroker() )
                 )
         );
         dynamicHolder.setServlet( servlet );
