@@ -119,7 +119,7 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
 
         joiner.add( "LEFT IN " + unit );
 
-        int pairCount = PoolSlicer.getPairCount( pairs );
+        int pairCount = PoolSlicer.getEventCount( pairs );
         if ( pairCount > 0 )
         {
             for ( String nextName : this.getRightValueNames() )

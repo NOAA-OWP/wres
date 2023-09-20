@@ -544,6 +544,11 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                 OneOrTwoThresholds nextThreshold = nextEntry.getKey();
                 QuantileCalculator calculator = nextEntry.getValue();
                 List<Statistics> statistics = byPool.get( nextThreshold );
+                // No statistics? Increment the calculator
+                if( Objects.isNull( statistics ) )
+                {
+                    statistics = Collections.emptyList();
+                }
                 calculator.add( statistics );
             }
         }

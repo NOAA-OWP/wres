@@ -232,7 +232,7 @@ class PoolSlicerTest
     {
         Pool<TimeSeries<Boolean>> pool = Pool.of( List.of(), PoolMetadata.of() );
 
-        assertEquals( 0, PoolSlicer.getPairCount( pool ) );
+        assertEquals( 0, PoolSlicer.getEventCount( pool ) );
 
 
         SortedSet<Event<Boolean>> eventsOne = new TreeSet<>();
@@ -258,7 +258,7 @@ class PoolSlicerTest
                                                  eventsTwo ) ),
                          PoolMetadata.of() );
 
-        assertEquals( 3, PoolSlicer.getPairCount( anotherPool ) );
+        assertEquals( 3, PoolSlicer.getEventCount( anotherPool ) );
     }
 
     @Test

@@ -237,7 +237,7 @@ public abstract class PairsWriter<L, R>
         try
         {
             // Write contents if available
-            if ( PoolSlicer.getPairCount( pairs ) > 0 )
+            if ( PoolSlicer.getEventCount( pairs ) > 0 )
             {
                 // Get the column names
                 SortedSet<String> columnNames = this.getRightValueNames();
@@ -338,7 +338,7 @@ public abstract class PairsWriter<L, R>
                         LOGGER.debug( "{} time-series of pairs containing {} pairs written to {} for feature group {} "
                                       + "at time window {}.",
                                       pairs.get().size(),
-                                      PoolSlicer.getPairCount( pairs ),
+                                      PoolSlicer.getEventCount( pairs ),
                                       this.getPath(),
                                       pairs.getMetadata().getFeatureGroup(),
                                       timeWindow );

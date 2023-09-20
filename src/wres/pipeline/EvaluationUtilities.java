@@ -1577,20 +1577,18 @@ class EvaluationUtilities
     private static ToIntFunction<Pool<TimeSeries<Pair<Double, Ensemble>>>> getEnsembleTraceCountEstimator()
     {
         return pool -> {
+            // Estimate the number of traces using the largest of the first ensemble events in each time-series
+            List<TimeSeries<Pair<Double, Ensemble>>> series = pool.get();
+            int traceCount = series.stream()
+                                   .mapToInt( next -> next.getEvents()
+                                                          .first()
+                                                          .getValue()
+                                                          .getRight()
+                                                          .size() )
+                                   .max()
+                                   .orElse( 0 );
 
-            // Estimate the number of traces using the first time-series in the pool only
-            int traceCount = pool.get()
-                                 .stream()
-                                 .mapToInt( next -> next.getEvents()
-                                                        .first()
-                                                        .getValue()
-                                                        .getValue()
-                                                        .size() )
-                                 .max()
-                                 .orElse( 0 );
-
-            return traceCount * pool.get()
-                                    .size();
+            return traceCount * series.size();
         };
     }
 

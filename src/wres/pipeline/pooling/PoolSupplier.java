@@ -247,7 +247,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
         if ( LOGGER.isDebugEnabled() )
         {
-            int pairCount = PoolSlicer.getPairCount( returnMe );
+            int pairCount = PoolSlicer.getEventCount( returnMe );
 
             LOGGER.debug( "Finished creating pool {}, which contains {} time-series and {} pairs.",
                           this.getMetadata(),
@@ -775,7 +775,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
         if ( LOGGER.isDebugEnabled() )
         {
-            int pairCount = PoolSlicer.getPairCount( pool );
+            int pairCount = PoolSlicer.getEventCount( pool );
 
             LOGGER.debug( "Finished creating pool, which contains {} time-series and {} pairs "
                           + "and has this metadata: {}.",

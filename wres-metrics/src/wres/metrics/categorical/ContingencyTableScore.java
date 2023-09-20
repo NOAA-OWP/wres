@@ -24,17 +24,10 @@ import wres.metrics.Score;
 abstract class ContingencyTableScore implements Score<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter>,
         Collectable<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
 {
-
-    /**
-     * A {@link ContingencyTable} to compute.
-     */
-
+    /** A {@link ContingencyTable} to compute. */
     private final ContingencyTable table;
 
-    /**
-     * Null string warning, used in several places.
-     */
-
+    /** Null string warning, used in several places. */
     private final String nullString = "Specify non-null input to the '" + this + "'.";
 
     @Override

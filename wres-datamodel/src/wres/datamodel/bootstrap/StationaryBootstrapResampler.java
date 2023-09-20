@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -106,11 +105,6 @@ public class StationaryBootstrapResampler<T>
     /** A resample executor. */
     private final ExecutorService resampleExecutor;
 
-    /** Sorts time-series by the valid time of the first event, which is the ordering used for indexing. */
-    private final Comparator<TimeSeries<T>> sorter = Comparator.comparing( a -> a.getEvents()
-                                                                                 .first()
-                                                                                 .getTime() );
-
     /**
      * Create an instance.
      * @param <T> the type of time-series event
@@ -194,24 +188,13 @@ public class StationaryBootstrapResampler<T>
 
     private List<ResampleIndexes> generateResampleIndexes( BootstrapPool<T> pool )
     {
-        // Build a list of sample indexes
-        List<TimeSeries<T>> series = pool.getPool()
-                                         .get();
-
         // Group the time-series to resample based on the number of events within them and do the sampling separately
         // for each group. The resampled indexes are relative to series within each group, which are ordered by the
         // valid time of the first event within the group. For a given group, the source time-series for resampling
         // must contain at least as many events as the number of events for time-series within the group. IMPORTANT:
         // all indexing is performed relative to this size ordering, so resampling of the time-series must use the same
         // ordering
-        Map<Integer, List<TimeSeries<T>>> seriesBySize = TimeSeriesSlicer.groupByEventCount( series );
-        List<List<TimeSeries<T>>> groupedBySize = new ArrayList<>();
-        for ( Map.Entry<Integer, List<TimeSeries<T>>> nextEntry : seriesBySize.entrySet() )
-        {
-            List<TimeSeries<T>> nextList = nextEntry.getValue();
-            nextList.sort( this.sorter );
-            groupedBySize.add( nextList );
-        }
+        List<List<TimeSeries<T>>> groupedBySize = pool.getOrderedTimeSeries();
 
         // One ResampledIndexes for each time-series, indicating where to obtain the event values for that series
         List<ResampleIndexes> outerIndexes = new ArrayList<>();
@@ -696,18 +679,8 @@ public class StationaryBootstrapResampler<T>
     {
         List<TimeSeries<T>> resampledPool = new ArrayList<>();
 
-        List<TimeSeries<T>> original = pool.getPool()
-                                           .get();
-
         // IMPORTANT: Use the same ordering that was used to generate the indexes
-        Map<Integer, List<TimeSeries<T>>> seriesBySize = TimeSeriesSlicer.groupByEventCount( original );
-        List<List<TimeSeries<T>>> groupedBySize = new ArrayList<>();
-        for ( Map.Entry<Integer, List<TimeSeries<T>>> nextEntry : seriesBySize.entrySet() )
-        {
-            List<TimeSeries<T>> nextList = nextEntry.getValue();
-            nextList.sort( this.sorter );
-            groupedBySize.add( nextList );
-        }
+        List<List<TimeSeries<T>>> groupedBySize = pool.getOrderedTimeSeries();
         List<TimeSeries<T>> sizeOrder = groupedBySize.stream()
                                                      .flatMap( Collection::stream )
                                                      .toList();

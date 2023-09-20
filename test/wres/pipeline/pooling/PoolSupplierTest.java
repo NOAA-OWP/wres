@@ -1020,7 +1020,7 @@ class PoolSupplierTest
 
         Pool<TimeSeries<Pair<Double, Double>>> poolActual = poolSupplier.get();
 
-        assertEquals( 28, PoolSlicer.getPairCount( poolActual ) );
+        assertEquals( 28, PoolSlicer.getEventCount( poolActual ) );
         assertEquals( 4, poolActual.get().size() );
     }
 

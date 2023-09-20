@@ -37,6 +37,12 @@ class BootstrapPool<T>
     /** The original pool. */
     private final Pool<TimeSeries<T>> pool;
 
+    /** The time-series in the original pool, sorted for indexing and resampling. There is one list for each collection
+     * of time-series with the same number of events, ordered from the smallest to the largest number of events. Within
+     * each list, the time-series are ordered by the first valid time in the time-series, again in ascending order. */
+
+    private final List<List<TimeSeries<T>>> ordered;
+
     /** Whether the pool contains forecasts. */
     private final boolean hasForecasts;
 
@@ -83,6 +89,20 @@ class BootstrapPool<T>
     List<List<Event<T>>> getTimeSeriesWithAllEvents()
     {
         return this.timeSeriesEvents.get( this.timeSeriesEvents.firstKey() );
+    }
+
+    /**
+     * Returns the time-series from the original pool in a consistent order for index generation and resampling. There
+     * is one inner list for each collection of time-series with a fixed number of events, arranged in ascending order.
+     * Each inner list contains the time-series with the prescribed number of events in ascending order of the valid
+     * time of the first event in the time-series.
+     *
+     * @return the ordered time-series
+     */
+
+    List<List<TimeSeries<T>>> getOrderedTimeSeries()
+    {
+        return this.ordered;
     }
 
     /**
@@ -182,15 +202,23 @@ class BootstrapPool<T>
 
         this.validatePoolStructure( pool );
 
-        // Sort the time-series by number of events
-        SortedMap<Integer, List<TimeSeries<T>>> bySize = TimeSeriesSlicer.groupByEventCount( pool.get() );
-
-        SortedMap<Integer, List<List<Event<T>>>> innerTimeSeriesEvents = new TreeMap<>();
-
+        // Sort the time-series by number of events and then by valid time
         // Sorter that sorts consecutive series by their first valid time
         Comparator<TimeSeries<T>> sorter = Comparator.comparing( a -> a.getEvents()
                                                                        .first()
                                                                        .getTime() );
+        SortedMap<Integer, List<TimeSeries<T>>> bySize = TimeSeriesSlicer.groupByEventCount( pool.get() );
+        List<List<TimeSeries<T>>> groupedBySize = new ArrayList<>();
+        for ( Map.Entry<Integer, List<TimeSeries<T>>> nextEntry : bySize.entrySet() )
+        {
+            List<TimeSeries<T>> nextList = nextEntry.getValue();
+            nextList.sort( sorter );
+            groupedBySize.add( nextList );
+        }
+
+        this.ordered = Collections.unmodifiableList( groupedBySize );
+
+        SortedMap<Integer, List<List<Event<T>>>> innerTimeSeriesEvents = new TreeMap<>();
 
         for ( Map.Entry<Integer, List<TimeSeries<T>>> nextEntry : bySize.entrySet() )
         {

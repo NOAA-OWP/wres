@@ -109,14 +109,17 @@ public class EvaluationEvent extends Event
     {
         if ( Objects.nonNull( pool ) )
         {
-            this.seriesCountRightInternal.addAndGet( pool.get().size() );
-            this.pairCountRightInternal.addAndGet( PoolSlicer.getPairCount( pool ) );
+            this.seriesCountRightInternal.addAndGet( pool.get()
+                                                         .size() );
+            this.pairCountRightInternal.addAndGet( PoolSlicer.getEventCount( pool ) );
             this.traceCountRightInternal.addAndGet( traceCount );
 
             if ( pool.hasBaseline() )
             {
-                this.seriesCountBaselineInternal.addAndGet( pool.getBaselineData().get().size() );
-                this.pairCountBaselineInternal.addAndGet( PoolSlicer.getPairCount( pool.getBaselineData() ) );
+                this.seriesCountBaselineInternal.addAndGet( pool.getBaselineData()
+                                                                .get()
+                                                                .size() );
+                this.pairCountBaselineInternal.addAndGet( PoolSlicer.getEventCount( pool.getBaselineData() ) );
                 this.traceCountBaselineInternal.addAndGet( traceCountBaseline );
             }
         }
