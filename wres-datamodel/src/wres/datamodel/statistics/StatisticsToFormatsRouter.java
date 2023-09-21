@@ -345,18 +345,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         try
         {
             // Split the statistics into two groups as there may be separate statistics for a baseline
-            Function<? super Statistics, DatasetOrientation> classifier = statistic -> {
-                if ( !statistic.hasPool() && statistic.hasBaselinePool() )
-                {
-                    return DatasetOrientation.BASELINE;
-                }
-
-                return DatasetOrientation.RIGHT;
-            };
-
-            Map<DatasetOrientation, List<Statistics>> groups =
-                    statistics.stream()
-                              .collect( Collectors.groupingBy( classifier ) );
+            Map<DatasetOrientation, List<Statistics>> groups = Slicer.getGroupedStatistics( statistics );
 
             // Iterate the types
             for ( Map.Entry<DatasetOrientation, List<Statistics>> nextEntry : groups.entrySet() )

@@ -75,7 +75,7 @@ public class DurationDiagramGraphicsWriter extends GraphicsWriter
             // for each group (e.g., one path for each window with DatasetOrientation.RIGHT data and one for
             // each window with DatasetOrientation.BASELINE data): #48287
             Map<DatasetOrientation, List<DurationDiagramStatisticOuter>> groups =
-                    Slicer.getStatisticsGroupedByContext( filtered );
+                    Slicer.getGroupedStatistics( filtered );
 
             for ( List<DurationDiagramStatisticOuter> nextGroup : groups.values() )
             {

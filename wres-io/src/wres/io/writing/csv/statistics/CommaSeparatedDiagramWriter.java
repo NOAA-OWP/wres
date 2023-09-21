@@ -109,7 +109,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
             // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for
             // each window with LeftOrRightOrBaseline.BASELINE data): #48287
             Map<DatasetOrientation, List<DiagramStatisticOuter>> groups =
-                    Slicer.getStatisticsGroupedByContext( statistics );
+                    Slicer.getGroupedStatistics( statistics );
 
             for ( List<DiagramStatisticOuter> nextGroup : groups.values() )
             {

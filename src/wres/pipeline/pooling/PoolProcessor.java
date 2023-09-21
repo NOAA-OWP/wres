@@ -2,6 +2,7 @@ package wres.pipeline.pooling;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +22,9 @@ import org.apache.commons.math3.random.Well512a;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.SamplingUncertainty;
+import wres.datamodel.Slicer;
 import wres.datamodel.bootstrap.QuantileCalculator;
 import wres.datamodel.bootstrap.StationaryBootstrapResampler;
 import wres.datamodel.messages.EvaluationStatusMessage;
@@ -468,7 +471,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                           pool.getMetadata() );
 
             // Create the quantile calculators, one for each threshold
-            Map<OneOrTwoThresholds, QuantileCalculator> quantileCalculators =
+            Map<OneOrTwoThresholds, Map<DatasetOrientation, QuantileCalculator>> quantileCalculators =
                     this.getQuantileCalculators( nominalStatistics, samplingUncertainty );
 
             // Create the resampling structure
@@ -498,7 +501,11 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                 }
             }
 
+            // Calculate the quantiles
             quantileCalculators.values()
+                               .stream()
+                               .flatMap( n -> n.values()
+                                               .stream() )
                                .forEach( n -> statistics.addAll( n.get() ) );
         }
 
@@ -512,44 +519,34 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
      */
 
     private void updateSampleStatistics( List<StatisticsStore> stores,
-                                         Map<OneOrTwoThresholds, QuantileCalculator> calculators )
+                                         Map<OneOrTwoThresholds, Map<DatasetOrientation, QuantileCalculator>> calculators )
     {
         try
         {
-            // Split the statistics by threshold pool
-            Map<OneOrTwoThresholds, List<Statistics>> byPool = new HashMap<>();
-            for ( StatisticsStore nextStore : stores )
-            {
-                List<Statistics> nextStatistics = MessageFactory.getStatistics( nextStore );
-                for ( Statistics s : nextStatistics )
-                {
-                    OneOrTwoThresholds thresholds = this.getThreshold( s );
-                    if ( byPool.containsKey( thresholds ) )
-                    {
-                        byPool.get( thresholds )
-                              .add( s );
-                    }
-                    else
-                    {
-                        List<Statistics> newStatistics = new ArrayList<>();
-                        newStatistics.add( s );
-                        byPool.put( thresholds, newStatistics );
-                    }
-                }
-            }
+            // Split the statistics by threshold and dataset orientation
+            Map<OneOrTwoThresholds, Map<DatasetOrientation, List<Statistics>>> grouped = this.groupStatistics( stores );
 
             // Iterate through the calculators and increment the statistics
-            for ( Map.Entry<OneOrTwoThresholds, QuantileCalculator> nextEntry : calculators.entrySet() )
+            for ( Map.Entry<OneOrTwoThresholds, Map<DatasetOrientation, QuantileCalculator>> nextEntry : calculators.entrySet() )
             {
                 OneOrTwoThresholds nextThreshold = nextEntry.getKey();
-                QuantileCalculator calculator = nextEntry.getValue();
-                List<Statistics> statistics = byPool.get( nextThreshold );
-                // No statistics? Increment the calculator
-                if ( Objects.isNull( statistics ) )
+                Map<DatasetOrientation, QuantileCalculator> orientedCalculators = nextEntry.getValue();
+                Map<DatasetOrientation, List<Statistics>> statistics = grouped.get( nextThreshold );
+
+                for ( Map.Entry<DatasetOrientation, List<Statistics>> nextOrientation : statistics.entrySet() )
                 {
-                    statistics = Collections.emptyList();
+                    DatasetOrientation orientation = nextOrientation.getKey();
+                    List<Statistics> nextStatistics = nextOrientation.getValue();
+                    QuantileCalculator calculator = orientedCalculators.get( orientation );
+
+                    // No statistics? Increment the calculator
+                    if ( Objects.isNull( nextStatistics ) )
+                    {
+                        nextStatistics = Collections.emptyList();
+                    }
+
+                    calculator.add( nextStatistics );
                 }
-                calculator.add( statistics );
             }
         }
         catch ( InterruptedException e )
@@ -561,6 +558,78 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                                                + evaluation.getEvaluationId()
                                                + ".",
                                                e );
+        }
+    }
+
+    /**
+     * Groups the statistics by threshold and dataset orientation.
+     * @param stores the statistics
+     * @return the mapped statistics
+     * @throws InterruptedException if the statistics could not be acquired from a store
+     */
+
+    private Map<OneOrTwoThresholds, Map<DatasetOrientation, List<Statistics>>> groupStatistics( List<StatisticsStore> stores )
+            throws InterruptedException
+    {
+        Map<OneOrTwoThresholds, Map<DatasetOrientation, List<Statistics>>> byPool = new HashMap<>();
+        for ( StatisticsStore nextStore : stores )
+        {
+            List<Statistics> nextStatistics = MessageFactory.getStatistics( nextStore );
+
+            Map<DatasetOrientation, List<Statistics>> grouped = Slicer.getGroupedStatistics( nextStatistics );
+
+            for ( Map.Entry<DatasetOrientation, List<Statistics>> nextGroup : grouped.entrySet() )
+            {
+                DatasetOrientation orientation = nextGroup.getKey();
+                List<Statistics> nextStatisticGroup = nextGroup.getValue();
+                this.incrementStatisticsGroup( byPool, nextStatisticGroup, orientation );
+            }
+        }
+
+        return Collections.unmodifiableMap( byPool );
+    }
+
+    /**
+     * Increments the specified grouping, adding statistics by threshold and dataset orientation.
+     * @param byPool the group to increment
+     * @param nextStatisticGroup the next statistics group
+     * @param orientation the dataset orientation
+     */
+
+    private void incrementStatisticsGroup( Map<OneOrTwoThresholds, Map<DatasetOrientation, List<Statistics>>> byPool,
+                                           List<Statistics> nextStatisticGroup,
+                                           DatasetOrientation orientation )
+    {
+        // Iterate the statistics in the next group and add to the overall group
+        for ( Statistics s : nextStatisticGroup )
+        {
+            OneOrTwoThresholds thresholds = this.getThreshold( s );
+
+            // Existing statistics for this threshold?
+            if ( byPool.containsKey( thresholds ) )
+            {
+                Map<DatasetOrientation, List<Statistics>> nextOrientation = byPool.get( thresholds );
+
+                // Existing statistics for this dataset orientation?
+                if ( nextOrientation.containsKey( orientation ) )
+                {
+                    nextOrientation.get( orientation ).add( s );
+                }
+                else
+                {
+                    List<Statistics> newStatistics = new ArrayList<>();
+                    newStatistics.add( s );
+                    nextOrientation.put( orientation, newStatistics );
+                }
+            }
+            else
+            {
+                List<Statistics> newStatistics = new ArrayList<>();
+                newStatistics.add( s );
+                Map<DatasetOrientation, List<Statistics>> newGroup = new EnumMap<>( DatasetOrientation.class );
+                newGroup.put( orientation, newStatistics );
+                byPool.put( thresholds, newGroup );
+            }
         }
     }
 
@@ -598,8 +667,8 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
      * @return the quantile calculators
      */
 
-    private Map<OneOrTwoThresholds, QuantileCalculator> getQuantileCalculators( List<Statistics> statistics,
-                                                                                SamplingUncertainty samplingUncertainty )
+    private Map<OneOrTwoThresholds, Map<DatasetOrientation, QuantileCalculator>> getQuantileCalculators( List<Statistics> statistics,
+                                                                                                         SamplingUncertainty samplingUncertainty )
     {
         // Merge any statistics for corresponding thresholds
         BinaryOperator<Statistics> merger = ( first, second ) ->
@@ -616,18 +685,46 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             return merged.build();
         };
 
-        Map<OneOrTwoThresholds, Statistics> merged = statistics.stream()
-                                                               .collect( Collectors.toUnmodifiableMap( this::getThreshold,
-                                                                                                       Function.identity(),
-                                                                                                       merger ) );
+        // Are there separate statistics for a baseline pool?
+        Map<DatasetOrientation, List<Statistics>> grouped = Slicer.getGroupedStatistics( statistics );
 
-        return merged.entrySet()
-                     .stream()
-                     .collect( Collectors.toUnmodifiableMap( Map.Entry::getKey,
-                                                             n -> QuantileCalculator.of( n.getValue(),
-                                                                                         samplingUncertainty.sampleSize(),
-                                                                                         samplingUncertainty.quantiles(),
-                                                                                         true ) ) );
+        Map<OneOrTwoThresholds, Map<DatasetOrientation, QuantileCalculator>> returnMe = new HashMap<>();
+
+        for ( Map.Entry<DatasetOrientation, List<Statistics>> nextStatistics : grouped.entrySet() )
+        {
+            DatasetOrientation orientation = nextStatistics.getKey();
+            List<Statistics> innerStatistics = nextStatistics.getValue();
+
+            Map<OneOrTwoThresholds, Statistics> merged =
+                    innerStatistics.stream()
+                                   .collect( Collectors.toUnmodifiableMap( this::getThreshold,
+                                                                           Function.identity(),
+                                                                           merger ) );
+
+            for ( Map.Entry<OneOrTwoThresholds, Statistics> nextEntry : merged.entrySet() )
+            {
+                OneOrTwoThresholds key = nextEntry.getKey();
+                Statistics mergedStatistics = nextEntry.getValue();
+                QuantileCalculator calculator = QuantileCalculator.of( mergedStatistics,
+                                                                       samplingUncertainty.sampleSize(),
+                                                                       samplingUncertainty.quantiles(),
+                                                                       true );
+
+                if ( returnMe.containsKey( key ) )
+                {
+                    returnMe.get( key )
+                            .put( orientation, calculator );
+                }
+                else
+                {
+                    Map<DatasetOrientation, QuantileCalculator> newMap = new EnumMap<>( DatasetOrientation.class );
+                    newMap.put( orientation, calculator );
+                    returnMe.put( key, newMap );
+                }
+            }
+        }
+
+        return Collections.unmodifiableMap( returnMe );
     }
 
     /**
@@ -757,7 +854,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                 returnMe.add( nextStatistics );
 
                 // Estimate the trace count where required
-                if( Objects.nonNull( traceCountEstimator ) )
+                if ( Objects.nonNull( traceCountEstimator ) )
                 {
                     int baselineTraceCount = 0;
                     if ( pool.hasBaseline() )

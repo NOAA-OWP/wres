@@ -114,7 +114,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
             // for each group (e.g., one path for each window with DatasetOrientation.RIGHT data and one for
             // each window with DatasetOrientation.BASELINE data): #48287
             Map<DatasetOrientation, List<BoxplotStatisticOuter>> groups =
-                    Slicer.getStatisticsGroupedByContext( filtered );
+                    Slicer.getGroupedStatistics( filtered );
 
             for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
             {
@@ -158,7 +158,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
             // for each group (e.g., one path for each window with DatasetOrientation.RIGHT data and one for
             // each window with DatasetOrientation.BASELINE data): #48287
             Map<DatasetOrientation, List<BoxplotStatisticOuter>> groups =
-                    Slicer.getStatisticsGroupedByContext( filtered );
+                    Slicer.getGroupedStatistics( filtered );
 
             for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
             {
