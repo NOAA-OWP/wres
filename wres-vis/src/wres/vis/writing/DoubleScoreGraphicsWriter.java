@@ -88,7 +88,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                 // for each group (e.g., one path for each window with LeftOrRightOrBaseline.RIGHT data and one for 
                 // each window with LeftOrRightOrBaseline.BASELINE data): #48287
                 Map<DatasetOrientation, List<DoubleScoreStatisticOuter>> groups =
-                        Slicer.getStatisticsGroupedByContext( filtered );
+                        Slicer.getGroupedStatistics( filtered );
 
                 for ( List<DoubleScoreStatisticOuter> nextGroup : groups.values() )
                 {

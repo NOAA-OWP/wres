@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -44,6 +45,7 @@ import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.space.Feature;
 
 import wres.config.yaml.components.ThresholdType;
+import wres.statistics.generated.Statistics;
 
 /**
  * A utility class for slicing/dicing and transforming datasets.
@@ -795,13 +797,12 @@ public final class Slicer
      * Returns a map of statistics grouped by their {@link DatasetOrientation}.
      *
      * @param <T> the type of statistic
-     * @param input the input list of statistics
+     * @param statistics the input list of statistics
      * @return the statistics grouped by context
      */
 
-    public static <T extends Statistic<?>> Map<DatasetOrientation, List<T>> getStatisticsGroupedByContext( List<T> input )
+    public static <T extends Statistic<?>> Map<DatasetOrientation, List<T>> getGroupedStatistics( List<T> statistics )
     {
-
         Function<? super T, DatasetOrientation> classifier = statistic -> {
             if ( statistic.getPoolMetadata()
                           .getPool()
@@ -814,10 +815,34 @@ public final class Slicer
         };
 
         Map<DatasetOrientation, List<T>> groups =
-                input.stream()
+                statistics.stream()
                      .collect( Collectors.groupingBy( classifier ) );
 
         return Collections.unmodifiableMap( groups );
+    }
+
+    /**
+     * Returns a map of statistics grouped by their {@link DatasetOrientation}.
+     *
+     * @param statistics the input list of statistics
+     * @return the statistics grouped by context
+     */
+
+    public static Map<DatasetOrientation, List<Statistics>> getGroupedStatistics( Collection<Statistics> statistics )
+    {
+        // Split the statistics into two groups as there may be separate statistics for a baseline
+        Function<? super Statistics, DatasetOrientation> classifier = statistic -> {
+            if ( !statistic.hasPool()
+                 && statistic.hasBaselinePool() )
+            {
+                return DatasetOrientation.BASELINE;
+            }
+
+            return DatasetOrientation.RIGHT;
+        };
+
+        return statistics.stream()
+                          .collect( Collectors.groupingBy( classifier ) );
     }
 
     /**

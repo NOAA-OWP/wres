@@ -92,7 +92,7 @@ public class CommaSeparatedDurationDiagramWriter extends CommaSeparatedStatistic
             // for each group (e.g., one path for each window with DatasetOrientation.RIGHT data and one for
             // each window with DatasetOrientation.BASELINE data): #48287
             Map<DatasetOrientation, List<DurationDiagramStatisticOuter>> groups =
-                    Slicer.getStatisticsGroupedByContext( statistics );
+                    Slicer.getGroupedStatistics( statistics );
 
             for ( List<DurationDiagramStatisticOuter> nextGroup : groups.values() )
             {

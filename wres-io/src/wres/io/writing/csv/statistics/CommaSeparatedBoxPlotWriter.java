@@ -109,7 +109,7 @@ public class CommaSeparatedBoxPlotWriter extends CommaSeparatedStatisticsWriter
             // for each group (e.g., one path for each window with DatasetOrientation.RIGHT data and one for
             // each window with DatasetOrientation.BASELINE data): #48287
             Map<DatasetOrientation, List<BoxplotStatisticOuter>> groups =
-                    Slicer.getStatisticsGroupedByContext( statistics );
+                    Slicer.getGroupedStatistics( statistics );
 
             for ( List<BoxplotStatisticOuter> nextGroup : groups.values() )
             {
