@@ -448,7 +448,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             // Get the statistics processor for the sampling uncertainties
             Function<Pool<TimeSeries<Pair<L, R>>>, List<StatisticsStore>> processor =
                     this.getStatisticsProcessingTask( this.samplingUncertaintyMetricProcessors,
-                                                      this.traceCountEstimator );
+                                                      null );  // No need to estimate trace count
 
             int sampleSize = samplingUncertainty.sampleSize();
 
@@ -545,7 +545,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                 QuantileCalculator calculator = nextEntry.getValue();
                 List<Statistics> statistics = byPool.get( nextThreshold );
                 // No statistics? Increment the calculator
-                if( Objects.isNull( statistics ) )
+                if ( Objects.isNull( statistics ) )
                 {
                     statistics = Collections.emptyList();
                 }
@@ -735,8 +735,11 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             List<StatisticsStore> returnMe = new ArrayList<>();
 
             // No data in the composition
-            if ( pool.get().isEmpty()
-                 && ( !pool.hasBaseline() || pool.getBaselineData().get().isEmpty() ) )
+            if ( pool.get()
+                     .isEmpty()
+                 && ( !pool.hasBaseline() || pool.getBaselineData()
+                                                 .get()
+                                                 .isEmpty() ) )
             {
                 LOGGER.debug( "Empty pool discovered for {}: no statistics will be produced.", pool.getMetadata() );
 
@@ -753,14 +756,18 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                 StatisticsStore nextStatistics = this.getStatistics( processor, pool );
                 returnMe.add( nextStatistics );
 
-                int baselineTraceCount = 0;
-                if ( pool.hasBaseline() )
+                // Estimate the trace count where required
+                if( Objects.nonNull( traceCountEstimator ) )
                 {
-                    Pool<TimeSeries<Pair<L, R>>> baseline = pool.getBaselineData();
-                    baselineTraceCount = traceCountEstimator.applyAsInt( baseline );
-                }
+                    int baselineTraceCount = 0;
+                    if ( pool.hasBaseline() )
+                    {
+                        Pool<TimeSeries<Pair<L, R>>> baseline = pool.getBaselineData();
+                        baselineTraceCount = traceCountEstimator.applyAsInt( baseline );
+                    }
 
-                this.monitor.registerPool( pool, traceCountEstimator.applyAsInt( pool ), baselineTraceCount );
+                    this.monitor.registerPool( pool, traceCountEstimator.applyAsInt( pool ), baselineTraceCount );
+                }
             }
 
             return Collections.unmodifiableList( returnMe );
