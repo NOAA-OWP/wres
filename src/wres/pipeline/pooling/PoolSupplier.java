@@ -943,10 +943,10 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
     }
 
     /**
-     * Adjusts the input metadata to represent the supplied feature and time scale.
+     * Adjusts the input metadata to represent the supplied feature and timescale.
      * @param metadata the input metadata
      * @param feature the feature to use when adjusting the input metadata
-     * @param timeScale the time-scale
+     * @param timeScale the timescale
      * @return the adjusted metadata
      */
 
@@ -1305,10 +1305,25 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
         TimeSeries<R> scaledRight = rightOrBaseline;
 
+        // No events on one or both sides? Stop here.
+        if ( scaledLeft.getEvents()
+                       .isEmpty() || scaledRight.getEvents()
+                                                .isEmpty() )
+        {
+            LOGGER.debug( "Skipping the creation of series pairs because one or more time-series had no events to "
+                          + "pair." );
+
+            // Return the empty pairs
+            return new TimeSeriesPlusValidation<>( Map.of(),
+                                                   Map.of(),
+                                                   List.of() );
+        }
+
         boolean upscaleLeft = Objects.nonNull( desiredTimeScale )
                               && Objects.nonNull( left.getTimeScale() )
                               && TimeScaleOuter.isRescalingRequired( left.getTimeScale(), desiredTimeScale )
                               && !desiredTimeScale.equals( left.getTimeScale() );
+
         boolean upscaleRight = Objects.nonNull( desiredTimeScale )
                                && Objects.nonNull( rightOrBaseline.getTimeScale() )
                                && TimeScaleOuter.isRescalingRequired( rightOrBaseline.getTimeScale(),
@@ -1436,7 +1451,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         // Snip the pairs to the pool boundary
         TimeSeries<Pair<L, R>> snippedPairs = TimeSeriesSlicer.snip( pairs, timeWindow );
 
-        // Log the pairing 
+        // Log the pairing
         if ( LOGGER.isTraceEnabled() )
         {
             LOGGER.trace( "While pairing {} time-series {}, "
@@ -1474,8 +1489,37 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                                                          Map.Entry::getValue ) );
 
         // Do we also need to generate baseline pairs using the right as a template?
+        Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> generatedBaseline =
+                this.getGeneratedBaseline( orientation,
+                                           rightOrBaselineTransformers,
+                                           featureTuples,
+                                           scaledAndTransformedLeft,
+                                           scaledAndTransformedRight );
+
+        return new TimeSeriesPlusValidation<>( pairsToSave,
+                                               generatedBaseline,
+                                               statusEvents );
+    }
+
+    /**
+     * Creates a generated baseline dataset, as needed.
+     * @param orientation the dataset orientation
+     * @param rightOrBaselineTransformers the right or baseline transformers
+     * @param featureTuples the features
+     * @param scaledAndTransformedLeft the scaled and transformed left-ish time-series
+     * @param scaledAndTransformedRight the scaled and transformed right-ish time-series
+     * @return the generated baseline time-series, if needed
+     */
+
+    private Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> getGeneratedBaseline( DatasetOrientation orientation,
+                                                                                  Transformers<R> rightOrBaselineTransformers,
+                                                                                  Set<FeatureTuple> featureTuples,
+                                                                                  TimeSeries<L> scaledAndTransformedLeft,
+                                                                                  TimeSeries<R> scaledAndTransformedRight )
+    {
         Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> generatedBaseline = new HashMap<>();
-        if ( this.hasBaselineGenerator() && orientation == DatasetOrientation.RIGHT )
+        if ( this.hasBaselineGenerator()
+             && orientation == DatasetOrientation.RIGHT )
         {
             generatedBaseline = this.getGeneratedBaselinePairs( rightOrBaselineTransformers,
                                                                 featureTuples,
@@ -1483,9 +1527,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                                                                 scaledAndTransformedRight );
         }
 
-        return new TimeSeriesPlusValidation<>( pairsToSave,
-                                               generatedBaseline,
-                                               statusEvents );
+        return Collections.unmodifiableMap( generatedBaseline );
     }
 
     /**
