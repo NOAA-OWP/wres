@@ -27,12 +27,16 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.ws.rs.core.StreamingOutput;
+import jakarta.ws.rs.sse.OutboundSseEvent;
+import jakarta.ws.rs.sse.Sse;
+import jakarta.ws.rs.sse.SseEventSink;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +80,6 @@ public class EvaluationService
 
     private static final int ONE_MINUTE_IN_MILLISECONDS = 60000;
 
-
     /** A shared bag of output resource references by request id */
     // The cache is here for expedience, this information could be persisted
     // elsewhere, such as a database or a local file. Cleanup of outputs is a
@@ -92,7 +95,6 @@ public class EvaluationService
     private final BrokerConnectionFactory broker;
 
     private Evaluator evaluator;
-
     /**
      * Constructor
      * @param systemSettings The system settings passed along from the server
@@ -121,6 +123,7 @@ public class EvaluationService
     @Produces( MediaType.TEXT_PLAIN )
     public Response heartbeat()
     {
+        // We heartbeat the server before accepting a new job, set status to AWAITING
         evaluationStage.set( AWAITING );
         return Response.ok( "The Server is Up \n" )
                        .build();
@@ -151,107 +154,80 @@ public class EvaluationService
     }
 
     /**
-     * Redirect the standard out stream and return that to the user
+     * Redirect the standard err stream and return that to the user and sends out SSE for each line
      * @param id ID of the evaluation we are trying to track with this
-     * @return A Response containing a StreamingOutput
      */
     @GET
     @Path( "/stdout/{id}" )
-    @Produces( "application/octet-stream" )
-    public Response getOutStream( @PathParam( "id" ) Long id )
-    {
-        //        if ( evaluationId.get() != id )
-        //        {
-        //            return Response.status( Response.Status.BAD_REQUEST )
-        //                           .entity( "The id provided: " + id + " Does not match the ID of the current evaluation: "
-        //                                    + evaluationId.get() )
-        //                           .build();
-        //        }
+    @Produces(MediaType.SERVER_SENT_EVENTS)
+    public void getOutStream( @PathParam( "id" ) Long id, @Context SseEventSink eventSink, @Context Sse sse) {
+        // Get the stream for the evaluation ID if we allow async exectutions in the future
 
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream( byteArrayOutputStream );
 
         System.setOut( printStream );
 
-        StreamingOutput streamingOutput = outputStream -> {
+        new Thread(() -> {
             long offset = 0;
-            Writer writer = new BufferedWriter( new OutputStreamWriter( outputStream ) );
             // While the evaluation hasn't completed continue pulling from the standard stream and sending to client
             while ( !( evaluationStage.get().equals( COMPLETED ) || evaluationStage.get().equals( CLOSED ) ) )
             {
                 ByteArrayInputStream byteArrayInputStream =
                         new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
                 long skip = byteArrayInputStream.skip( offset );
-                if ( offset == skip )
+                String bytes = new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 );
+                if ( offset == skip && !bytes.isEmpty() )
                 {
-                    String bytes = new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 );
-                    writer.write( bytes );
-                    writer.flush();
                     offset += bytes.length();
+                    final OutboundSseEvent event = sse.newEventBuilder()
+                                                      .name("standard-out-stream")
+                                                      .data(String.class, bytes)
+                                                      .build();
+                    eventSink.send(event);
                 }
             }
-            // After job status has flipped finish writting anything that may be left in the stream before closing
-            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
-            byteArrayInputStream.skip( offset );
-            writer.write( new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 ) );
-            writer.flush();
-            writer.close();
-        };
-
-        return Response.ok( streamingOutput )
-                       .build();
+            eventSink.close();
+        }).start();
     }
 
     /**
-     * Redirect the standard err stream and return that to the user
+     * Redirect the standard err stream and return that to the user and sends out SSE for each line
      * @param id ID of the evaluation we are trying to track with this
-     * @return A Response containing a StreamingOutput
      */
     @GET
     @Path( "/stderr/{id}" )
     @Produces( "application/octet-stream" )
-    public Response getErrorStream( @PathParam( "id" ) Long id )
+    public void getErrorStream( @PathParam( "id" ) Long id, @Context SseEventSink eventSink, @Context Sse sse )
     {
-        if ( evaluationId.get() != id )
-        {
-            return Response.status( Response.Status.BAD_REQUEST )
-                           .entity( "The id provided: " + id + " Does not match the ID of the current evaluation: "
-                                    + evaluationId.get() )
-                           .build();
-        }
+        // Get the stream for the evaluation ID if we allow async exectutions in the future
 
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream( byteArrayOutputStream );
 
         System.setErr( printStream );
 
-        StreamingOutput streamingOutput = outputStream -> {
+        new Thread(() -> {
             long offset = 0;
-            Writer writer = new BufferedWriter( new OutputStreamWriter( outputStream ) );
             // While the evaluation hasn't completed continue pulling from the standard stream and sending to client
             while ( !( evaluationStage.get().equals( COMPLETED ) || evaluationStage.get().equals( CLOSED ) ) )
             {
                 ByteArrayInputStream byteArrayInputStream =
                         new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
                 long skip = byteArrayInputStream.skip( offset );
-                if ( offset == skip )
+                String bytes = new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 );
+                if ( offset == skip && !bytes.isEmpty() )
                 {
-                    String bytes = new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 );
-                    writer.write( bytes );
-                    writer.flush();
                     offset += bytes.length();
+                    final OutboundSseEvent event = sse.newEventBuilder()
+                                                      .name("standard-error-stream")
+                                                      .data(String.class, bytes)
+                                                      .build();
+                    eventSink.send(event);
                 }
             }
-            // After job status has flipped finish writting anything that may be left in the stream before closing
-            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
-            byteArrayInputStream.skip( offset );
-            writer.write( new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 ) );
-            writer.flush();
-            writer.close();
-        };
-
-        return Response.ok( streamingOutput )
-                       .build();
+            eventSink.close();
+        }).start();
     }
 
     /**
@@ -434,8 +410,6 @@ public class EvaluationService
         String databaseName = job.getDatabaseName();
         String databaseHost = job.getDatabaseHost();
         String databasePort = job.getDatabasePort();
-
-        LOGGER.info( "1.2" );
 
         DatabaseSettings databaseConfiguration = systemSettings.getDatabaseConfiguration();
 

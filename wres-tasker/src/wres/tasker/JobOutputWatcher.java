@@ -21,7 +21,7 @@ class JobOutputWatcher implements Runnable
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobOutputWatcher.class );
 
-    private static final String TOPIC = "output";
+    private static final String TOPIC = "OUTPUT";
     private static final int LOCAL_Q_SIZE = 100;
 
     /**
