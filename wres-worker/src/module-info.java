@@ -9,4 +9,5 @@ module wres.worker
     requires org.slf4j;
     requires wres.messages;
     requires wres.http;
+    requires jakarta.ws.rs;
 }
