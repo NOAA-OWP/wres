@@ -20,7 +20,7 @@ class JobStatusWatcher implements Runnable
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobStatusWatcher.class );
 
-    private static final String TOPIC = "status";
+    private static final String TOPIC = "STATUS";
     private static final int LOCAL_Q_SIZE = 5;
 
     /**

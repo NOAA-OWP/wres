@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -21,6 +22,10 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Envelope;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+
+import jakarta.ws.rs.sse.SseEventSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +55,30 @@ class WresEvaluationProcessor implements Callable<Integer>
     private static final String CLEAN_DATABASE_URI = "http://localhost:%d/evaluation/cleanDatabase";
 
     private static final String MIGRATE_DATABASE_URI = "http://localhost:%d/evaluation/migrateDatabase";
+
+    private static final String STDOUT_URI = "http://localhost:%d/evaluation/stdout/%s";
+
+    private static final String STDERR_URI = "http://localhost:%d/evaluation/stderr/%s";
+
+    /** Stream identifier. */
+    public enum WhichStream
+    {
+        /** Standard out. */
+        STDOUT,
+        /** Standard error. */
+        STDERR,
+        /** job output files. */
+        OUTPUT,
+        /** Exit codes. */
+        EXITCODE;
+
+    }
+
+    /** Helps the consumer re-order the stdErr stream */
+    private final AtomicInteger stdErrorOrder = new AtomicInteger( 0 );
+
+    /** Helps the consumer re-order the stdOut stream */
+    private final AtomicInteger stdOutOrder = new AtomicInteger( 0 );
 
     private final String exchangeName;
     private final String jobId;
@@ -88,9 +117,9 @@ class WresEvaluationProcessor implements Callable<Integer>
         return this.exchangeName;
     }
 
-    private String getRoutingKey()
+    private String getRoutingKey( WhichStream whichStream )
     {
-        return "job." + this.getJobId() + ".output";
+        return "job." + this.getJobId() + "." + whichStream.name();
     }
 
     private String getJobId()
@@ -101,6 +130,18 @@ class WresEvaluationProcessor implements Callable<Integer>
     private Connection getConnection()
     {
         return this.connection;
+    }
+
+    private AtomicInteger getOrder( WhichStream whichStream )
+    {
+        if ( whichStream.equals( WhichStream.STDERR ) )
+        {
+            return this.stdErrorOrder;
+        }
+        else
+        {
+            return this.stdOutOrder;
+        }
     }
 
     private Envelope getEnvelope()
@@ -142,10 +183,12 @@ class WresEvaluationProcessor implements Callable<Integer>
         }
 
         // Check if the Job is to manipulate the database in some way
-        if (job.getVerb().equals( Job.job.Verb.CLEANDATABASE )) {
+        if ( job.getVerb().equals( Job.job.Verb.CLEANDATABASE ) )
+        {
             return manipulateDatabase( CLEAN_DATABASE_URI );
         }
-        if (job.getVerb().equals( Job.job.Verb.MIGRATEDATABASE )) {
+        if ( job.getVerb().equals( Job.job.Verb.MIGRATEDATABASE ) )
+        {
             return manipulateDatabase( MIGRATE_DATABASE_URI );
         }
 
@@ -157,14 +200,13 @@ class WresEvaluationProcessor implements Callable<Integer>
             LOGGER.warn( "", problem );
             byte[] response =
                     WresEvaluationProcessor.prepareMetaFailureResponse( new UnsupportedOperationException( problem ) );
-            this.sendResponse( response );
+            this.sendMessage( response, WhichStream.EXITCODE );
             return META_FAILURE_CODE;
         }
 
         // Use one Thread per messenger:
-        ExecutorService executorService = Executors.newFixedThreadPool( 3 );
+        ExecutorService executorService = Executors.newFixedThreadPool( 1 );
 
-        WebClient.ClientResponse evaluationPostRequest;
 
         // Open an evaluation for work
         String evaluationId = prepareEvaluationId();
@@ -172,30 +214,12 @@ class WresEvaluationProcessor implements Callable<Integer>
         if ( evaluationId.isEmpty() )
         {
             LOGGER.warn( "Unable to open a new evaluation" );
-            byte[] response = WresEvaluationProcessor.prepareResponse( HttpURLConnection.HTTP_BAD_REQUEST,
-                                                                       "Failed to open eval" );
-            this.sendResponse( response );
+            byte[] response = WresEvaluationProcessor.prepareExitResponse( HttpURLConnection.HTTP_BAD_REQUEST,
+                                                                           "Failed to open eval" );
+            this.sendMessage( response, WhichStream.EXITCODE );
             WresEvaluationProcessor.shutdownExecutor( executorService );
             return META_FAILURE_CODE;
         }
-
-        // Set up way to publish the standard output of the process to broker
-        // and bind process outputs to message publishers
-        JobStandardStreamMessenger stdoutMessenger =
-                new JobStandardStreamMessenger( this.getConnection(),
-                                                this.getExchangeName(),
-                                                this.getJobId(),
-                                                JobStandardStreamMessenger.WhichStream.STDOUT,
-                                                this.getPort(),
-                                                evaluationId );
-
-        JobStandardStreamMessenger stderrMessenger =
-                new JobStandardStreamMessenger( this.getConnection(),
-                                                this.getExchangeName(),
-                                                this.getJobId(),
-                                                JobStandardStreamMessenger.WhichStream.STDERR,
-                                                this.getPort(),
-                                                evaluationId );
 
         // Send process aliveness messages, like a heartbeat.
         JobStatusMessenger statusMessenger =
@@ -205,42 +229,71 @@ class WresEvaluationProcessor implements Callable<Integer>
                                         this.getPort(),
                                         evaluationId );
 
-        executorService.submit( stdoutMessenger );
-        executorService.submit( stderrMessenger );
         executorService.submit( statusMessenger );
-
-        try
+        WebClient.ClientResponse evaluationPostRequest = null;
+        URI startEvalURI = URI.create( String.format( START_EVAL_URI, this.getPort(), evaluationId ) );
+        try ( Client client = ClientBuilder.newClient();
+              SseEventSource outSource = SseEventSource
+                      .target(
+                              client.target( String.format( STDOUT_URI, this.getPort(), evaluationId ) )
+                      ).build();
+              SseEventSource errSource = SseEventSource
+                      .target(
+                              client.target( String.format( STDERR_URI, this.getPort(), evaluationId ) )
+                      ).build();
+        )
         {
-            URI startEvalURI = URI.create( String.format( START_EVAL_URI, this.getPort(), evaluationId ) );
-            LOGGER.info( String.format( "Starting evaluation: %s",  startEvalURI ) );
-            evaluationPostRequest =
-                    WEB_CLIENT.postToWeb( startEvalURI, this.jobMessage );
+            outSource.register( event -> this.sendMessage(
+                    prepareStdStreamMessage( event.readData( String.class ), WhichStream.STDOUT ),
+                    WhichStream.STDOUT ) );
+            errSource.register( event -> this.sendMessage(
+                    prepareStdStreamMessage( event.readData( String.class ), WhichStream.STDERR ),
+                    WhichStream.STDERR ) );
+            errSource.open();
+            outSource.open();
 
+            LOGGER.info( String.format( "Starting evaluation: %s", startEvalURI ) );
+            evaluationPostRequest = WEB_CLIENT.postToWeb( startEvalURI, jobMessage );
+
+            // Go through the output paths returned from the evaluation post request and send them to the broker
+            new BufferedReader(
+                    new InputStreamReader( evaluationPostRequest.getResponse() ) )
+                    .lines()
+                    .forEach( out -> this.sendMessage(
+                                      prepareOutputPathMessage( Paths.get( out ) ), WhichStream.OUTPUT
+                              )
+                    );
+
+            int exitValue = evaluationPostRequest.getStatusCode();
+            LOGGER.info( "Request exited with http code: {}", exitValue );
+            byte[] response = WresEvaluationProcessor.prepareExitResponse( exitValue, null );
+            this.sendMessage( response, WhichStream.EXITCODE );
+            closeEvaluation();
+            WresEvaluationProcessor.shutdownExecutor( executorService );
+            return exitValue;
         }
         catch ( IOException ioe )
         {
             LOGGER.warn( "Failed to make post request {}", ioe );
             byte[] response = WresEvaluationProcessor.prepareMetaFailureResponse( ioe );
-            this.sendResponse( response );
+            this.sendMessage( response, WhichStream.EXITCODE );
             WresEvaluationProcessor.shutdownExecutor( executorService );
             return META_FAILURE_CODE;
         }
-
-        // Go through the output paths returned from the evaluation post request and send them to the broker
-        new BufferedReader( new InputStreamReader( evaluationPostRequest.getResponse() ) ).lines()
-                                                                                          .forEach( out -> this.sendOutputPath(
-                                                                                                  Paths.get( out ) ) );
-
-        int exitValue = evaluationPostRequest.getStatusCode();
-        LOGGER.info( "Request exited with http code: {}", exitValue );
-        byte[] response;
-        response = WresEvaluationProcessor.prepareResponse( exitValue, null );
-        this.sendResponse( response );
-        WresEvaluationProcessor.shutdownExecutor( executorService );
-
-        // Close the evaluation before returning
-        closeEvaluation();
-        return exitValue;
+        finally
+        {
+            try
+            {
+                if ( evaluationPostRequest != null )
+                {
+                    evaluationPostRequest.close();
+                }
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
     }
 
     /**
@@ -258,10 +311,9 @@ class WresEvaluationProcessor implements Callable<Integer>
                 // Return empty project ID when we do not get a good response from the server
                 return "";
             }
-            return new BufferedReader( new InputStreamReader( evaluationIdRequest.getResponse() ) ).lines()
-                                                                                                   .collect(
-                                                                                                           Collectors.joining(
-                                                                                                                   "\n" ) );
+            return new BufferedReader(
+                    new InputStreamReader( evaluationIdRequest.getResponse() )
+            ).lines().collect( Collectors.joining( "\n" ) );
         }
         catch ( IOException e )
         {
@@ -274,22 +326,21 @@ class WresEvaluationProcessor implements Callable<Integer>
      * @return String representation of an evaluation id
      * @throws IOException
      */
-    private int manipulateDatabase(String uriToCall)
+    private int manipulateDatabase( String uriToCall )
     {
         URI prepareEval = URI.create( String.format( uriToCall, this.getPort() ) );
         try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval ) )
         {
-            String serverResponse = new BufferedReader( new InputStreamReader( evaluationIdRequest.getResponse() ) ).lines()
-                                                                                                             .collect(
-                                                                                                                     Collectors.joining(
-                                                                                                                             "\n" ) );
             if ( evaluationIdRequest.getStatusCode() == HttpURLConnection.HTTP_INTERNAL_ERROR )
             {
-                LOGGER.error( String.format( "Unable to manipulate database with the following response for the server: %s", serverResponse ) );
+                LOGGER.error( String.format(
+                        "Unable to manipulate database with the following response for the server: %s",
+                        evaluationIdRequest ) );
                 return META_FAILURE_CODE;
             }
 
-            LOGGER.info( String.format( "Database manipulated successfully with the following server response: %s", serverResponse ) );
+            LOGGER.info( String.format( "Database manipulated successfully with the following server response: %s",
+                                        evaluationIdRequest ) );
             return evaluationIdRequest.getStatusCode();
         }
         catch ( IOException e )
@@ -326,7 +377,7 @@ class WresEvaluationProcessor implements Callable<Integer>
      * @return raw message indicating job exit code
      */
 
-    private static byte[] prepareResponse( int exitCode, String detail )
+    private static byte[] prepareExitResponse( int exitCode, String detail )
     {
         String resolvedDetail = "";
 
@@ -352,16 +403,16 @@ class WresEvaluationProcessor implements Callable<Integer>
 
     private static byte[] prepareMetaFailureResponse( Exception e )
     {
-        return WresEvaluationProcessor.prepareResponse( META_FAILURE_CODE, e.toString() );
+        return WresEvaluationProcessor.prepareExitResponse( META_FAILURE_CODE, e.toString() );
     }
 
     /**
-     * Attempts to send a message with job results to the queue specified in job
+     * Attempts to send a message to the broker
      * @param message the message to send.
      */
-    private void sendResponse( byte[] message )
+    private void sendMessage( byte[] message, WhichStream whichStream )
     {
-        AMQP.BasicProperties resultProperties =
+        AMQP.BasicProperties properties =
                 new AMQP.BasicProperties
                         .Builder()
                         .correlationId( this.getJobId() )
@@ -370,27 +421,56 @@ class WresEvaluationProcessor implements Callable<Integer>
 
         try ( Channel channel = this.getConnection().createChannel() )
         {
-            String theExchangeName = this.getExchangeName();
             String exchangeType = "topic";
-            String routingKey = "job." + this.getJobId() + ".exitCode";
-
-            channel.exchangeDeclare( theExchangeName, exchangeType, true );
-
-            channel.basicPublish( theExchangeName,
-                                  routingKey,
-                                  resultProperties,
+            channel.exchangeDeclare( this.getExchangeName(), exchangeType, true );
+            channel.basicPublish( this.getExchangeName(),
+                                  this.getRoutingKey( whichStream ),
+                                  properties,
                                   message );
-            LOGGER.info( "Seems like I published to exchange {}, key {}",
-                         theExchangeName, routingKey );
         }
-        catch ( IOException ioe )
+        catch ( IOException | TimeoutException ioe )
         {
-            LOGGER.warn( "Sending this message failed: {}", message, ioe );
+            LOGGER.warn( "Sending the output to {} failed: {}", message, this.getRoutingKey( whichStream ), ioe );
         }
-        catch ( TimeoutException te )
-        {
-            LOGGER.warn( "Timed out sending this message: {}", message, te );
-        }
+    }
+
+    /**
+     * Prepares a message containing standard stream information
+     * @param line the stdStream message to send
+     * @param whichStream Whether this is stdOut or stdErr
+     * @return byte array to send
+     */
+    private byte[] prepareStdStreamMessage( String line, WhichStream whichStream )
+    {
+        int order = this.getOrder( whichStream ).getAndIncrement();
+
+        wres.messages.generated.JobStandardStream.job_standard_stream message
+                = wres.messages.generated.JobStandardStream.job_standard_stream
+                .newBuilder()
+                .setIndex( order )
+                .setText( line.trim() )
+                .build();
+
+        return message.toByteArray();
+    }
+
+    /**
+     * Prepares the message to send of the output
+     * @param path the path of output to send as a message
+     * @return the byte array of the output path to send
+     */
+    private byte[] prepareOutputPathMessage( Path path )
+    {
+        URI theOutputResource = path.toUri();
+
+        LOGGER.info( "Sending output uri {} to broker.", theOutputResource );
+
+        JobOutput.job_output jobOutputMessage = JobOutput.job_output
+                .newBuilder()
+                .setResource( theOutputResource.toString() )
+                .build();
+
+        return jobOutputMessage.toByteArray();
     }
 
     private static void shutdownExecutor( ExecutorService executorService )
@@ -428,42 +508,6 @@ class WresEvaluationProcessor implements Callable<Integer>
             LOGGER.warn( "Executor did not shut down in {} {}, forcing down.",
                          wait, waitUnit );
             executorService.shutdownNow();
-        }
-    }
-
-    /**
-     * Attempts to send a message to the broker with a single line of output representing a path of output written by eval
-     * @param path the path to send
-     */
-    private void sendOutputPath( Path path )
-    {
-        LOGGER.info( "Sending output path {} to broker.", path );
-        AMQP.BasicProperties properties =
-                new AMQP.BasicProperties
-                        .Builder()
-                        .correlationId( this.getJobId() )
-                        .deliveryMode( 2 )
-                        .build();
-
-        URI theOutputResource = path.toUri();
-
-        LOGGER.info( "Sending output uri {} to broker.", theOutputResource );
-
-        JobOutput.job_output jobOutputMessage = JobOutput.job_output
-                .newBuilder()
-                .setResource( theOutputResource.toString() )
-                .build();
-        try ( Channel channel = this.getConnection().createChannel(); )
-        {
-
-            channel.basicPublish( this.getExchangeName(),
-                                  this.getRoutingKey(),
-                                  properties,
-                                  jobOutputMessage.toByteArray() );
-        }
-        catch ( IOException | TimeoutException ioe )
-        {
-            LOGGER.warn( "Sending this output failed: {}", jobOutputMessage, ioe );
         }
     }
 }

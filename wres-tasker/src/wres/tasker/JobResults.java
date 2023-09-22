@@ -382,7 +382,7 @@ class JobResults
             int resultValue = Integer.MIN_VALUE;
             String exchangeName = this.getJobStatusExchangeName();
             String exchangeType = "topic";
-            String bindingKey = "job." + jobId + ".exitCode";
+            String bindingKey = "job." + jobId + ".EXITCODE";
             String queueName = null;
             Channel channel = null;
 
