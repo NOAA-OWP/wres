@@ -33,7 +33,7 @@ import wres.config.yaml.components.FeatureAuthority;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.ReadException;
 import wres.io.reading.ReaderUtilities;
-import wres.io.reading.web.WebClient;
+import wres.http.WebClient;
 
 /**
  * <p>A feature service implementation for the WRDS feature service, which enables bulk lookup of features for

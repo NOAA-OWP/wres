@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.wrds.nwm.NwmRootDocument;
-import wres.io.reading.web.WebClient;
+import wres.http.WebClient;
 
 public class WrdsNwmTest
 {
