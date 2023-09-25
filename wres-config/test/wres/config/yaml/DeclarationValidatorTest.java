@@ -1729,9 +1729,8 @@ class DeclarationValidatorTest
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
         assertTrue( DeclarationValidatorTest.contains( events,
-                                                       "'sample_size' associated with the "
-                                                       + "'sampling_uncertainty' is smaller than the recommended"
-                                                       + " minimum",
+                                                       "This may lead to inaccurate estimates of the sampling "
+                                                       + "uncertainty",
                                                        StatusLevel.WARN ) );
     }
 

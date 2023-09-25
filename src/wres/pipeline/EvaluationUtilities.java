@@ -529,11 +529,11 @@ class EvaluationUtilities
             evaluationDescription = EvaluationUtilities.setAnalyzedUnitsAndVariableNames( evaluationDescription,
                                                                                           project );
 
-            // Build the evaluation description for messaging. In future, there may be a desire to build the evaluation
-            // description prior to ingest, in order to message the status of ingest to client applications. In order
-            // to build an evaluation description before ingest, those parts of the evaluation description that depend
-            // on the data would need to be part of the pool description instead (e.g., the measurement units). Indeed,
-            // the timescale is part of the pool description for this reason.
+            // Build the evaluation description for messaging. In the future, there may be a desire to build the
+            // evaluation description prior to ingest, in order to message the status of ingest to client applications.
+            // In order to build an evaluation description before ingest, those parts of the evaluation description that
+            // depend on the data would need to be part of the pool description instead (e.g., the measurement units).
+            // Indeed, the timescale is part of the pool description for this reason.
             evaluation = EvaluationMessager.of( evaluationDescription,
                                                 connections,
                                                 EvaluationUtilities.CLIENT_ID,

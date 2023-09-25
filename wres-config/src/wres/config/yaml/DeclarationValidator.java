@@ -145,7 +145,7 @@ public class DeclarationValidator
 
         // No schema validation errors? Then proceed to business logic, which requires deserialization and hence no
         // schema validation errors: see #57969
-        if( schemaEvents.isEmpty() )
+        if ( schemaEvents.isEmpty() )
         {
             EvaluationDeclaration deserialized = DeclarationFactory.deserialize( declaration );
 
@@ -1601,14 +1601,15 @@ public class DeclarationValidator
                         = EvaluationStatusEvent.newBuilder()
                                                .setStatusLevel( StatusLevel.WARN )
                                                .setEventMessage( "The 'sample_size' associated with the "
-                                                                 + "'sampling_uncertainty' is smaller than the "
-                                                                 + "recommended minimum of 1,000 samples ("
+                                                                 + "'sampling_uncertainty' is "
                                                                  + samplingUncertainty.sampleSize()
-                                                                 + "), which may lead to inaccurate estimates of the "
-                                                                 + "sampling uncertainty. Please consider using a "
-                                                                 + "larger 'sample_size', which will increase the "
-                                                                 + "evaluation runtime, but should lead to a more "
-                                                                 + "accurate estimate of the sampling uncertainty." )
+                                                                 + ", which is smaller than the recommended minimum of "
+                                                                 + "1,000 samples. This may lead to inaccurate "
+                                                                 + "estimates of the sampling uncertainty. Please "
+                                                                 + "consider using a larger 'sample_size', which will "
+                                                                 + "increase the evaluation runtime, but should lead "
+                                                                 + "to a more accurate estimate of the sampling "
+                                                                 + "uncertainty." )
                                                .build();
                 events.add( event );
             }
