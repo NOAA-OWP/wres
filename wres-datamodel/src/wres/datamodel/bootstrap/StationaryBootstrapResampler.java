@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -115,6 +116,7 @@ public class StationaryBootstrapResampler<T>
      * @return an instance
      * @throws NullPointerException if any required input is null
      * @throws IllegalArgumentException if the block size is less than or equal to zero or the pairs are invalid
+     * @throws InsufficientDataForResamplingException if resampling cannot be performed due to lack of data
      */
 
     public static <T> StationaryBootstrapResampler<T> of( Pool<TimeSeries<T>> pool,
@@ -132,6 +134,7 @@ public class StationaryBootstrapResampler<T>
      * Generates a realization of the pool.
      *
      * @return a realization
+     * @throws ResamplingException if an exception was enountered on resampling
      */
 
     public Pool<TimeSeries<T>> resample()
@@ -387,13 +390,14 @@ public class StationaryBootstrapResampler<T>
             // data
             sampler = this.q.get( Duration.ZERO );
 
-            // Still null?
+            // Still null? This is an internal error.
             if ( Objects.isNull( sampler ) )
             {
                 throw new ResamplingException( "Failed to discover a sampler for a transition between time-series "
                                                + "separated by "
                                                + gap
-                                               + ". Samplers were available for the following durations: "
+                                               + ", which is an internal error. Samplers were available for the "
+                                               + "following durations: "
                                                + this.q.keySet() );
             }
         }
@@ -710,7 +714,8 @@ public class StationaryBootstrapResampler<T>
         }
         catch ( InterruptedException e )
         {
-            Thread.currentThread().interrupt();
+            Thread.currentThread()
+                  .interrupt();
             throw new ResamplingException( "Encountered an error while attempting to resample a time-series.", e );
         }
         catch ( ExecutionException e )
@@ -822,7 +827,16 @@ public class StationaryBootstrapResampler<T>
         // Cross-pair the main and baseline pairs with each other across all "mini pools". Resampling only works if
         // there is a consistent structure across the main and baseline pairs and across "mini pools" because perfect
         // statistical dependence is assumed, i.e., one structure for everything.
-        pool = this.getCrossPairedTimeSeries( pool );
+        Pool<TimeSeries<T>> crossPool = this.getCrossPairedTimeSeries( pool );
+
+        // Check that the cross-pairing has not led to empty pools
+        this.validateCrossPairedData( crossPool, pool );
+
+        // Report the effects of cross-pairing in terms of any time-series and events removed
+        this.reportEffectsOfCrossPairing( crossPool, pool );
+
+        // Set reference
+        this.pool = crossPool;
 
         double pProb = 1.0 / meanBlockSizeInTimesteps;
         this.p = new BinomialDistribution( randomGenerator, 1, pProb );
@@ -830,7 +844,7 @@ public class StationaryBootstrapResampler<T>
         this.resampleExecutor = resampleExecutor;
 
         // Create the common structure to resample
-        List<Pool<TimeSeries<T>>> miniPools = pool.getMiniPools();
+        List<Pool<TimeSeries<T>>> miniPools = this.pool.getMiniPools();
         List<BootstrapPool<T>> innerMain = new ArrayList<>();
         List<BootstrapPool<T>> innerBaseline = new ArrayList<>();
         Set<Duration> timeOffsets = new HashSet<>(); // Time offsets per bootstrap pool
@@ -879,16 +893,14 @@ public class StationaryBootstrapResampler<T>
         this.main = Collections.unmodifiableList( innerMain );
         this.baseline = Collections.unmodifiableList( innerBaseline );
 
-        this.pool = pool;
-
         if ( LOGGER.isDebugEnabled() )
         {
             int baselineCount = 0;
-            if ( pool.hasBaseline() )
+            if ( this.pool.hasBaseline() )
             {
-                baselineCount = pool.getBaselineData()
-                                    .get()
-                                    .size();
+                baselineCount = this.pool.getBaselineData()
+                                         .get()
+                                         .size();
             }
             LOGGER.debug( "Created a stationary bootstrap resampler with a mean block size of {} timesteps, a "
                           + "probability of {} for randomly sampling consecutive timesteps within the same "
@@ -898,8 +910,8 @@ public class StationaryBootstrapResampler<T>
                           meanBlockSizeInTimesteps,
                           this.p,
                           this.q,
-                          pool.get()
-                              .size(),
+                          this.pool.get()
+                                   .size(),
                           baselineCount );
         }
     }
@@ -924,7 +936,7 @@ public class StationaryBootstrapResampler<T>
 
         // Take the main time-series from the first mini-pool and cross-pair against all other main and baseline pairs
         // from all other mini-pools. Then use this to cross-pair the main and baseline time-series across all other
-        // mini-pools.  If the structure is changed following cross pairing, then warn about this.
+        // mini-pools.
         Pool<TimeSeries<T>> firstPool = miniPools.get( 0 );
         List<TimeSeries<T>> first = firstPool.get();
         for ( int i = 1; i < miniPools.size(); i++ )
@@ -1002,15 +1014,7 @@ public class StationaryBootstrapResampler<T>
             poolBuilder.addPool( nextPoolBuilder.build() );
         }
 
-        Pool<TimeSeries<T>> crossPairedPool = poolBuilder.build();
-
-        // Check that the cross-pairing has not led to empty pools
-        this.validateCrossPairedData( crossPairedPool, pool );
-
-        // Report the effects of cross-pairing in terms of any time-series and events removed
-        this.reportEffectsOfCrossPairing( crossPairedPool, pool );
-
-        return crossPairedPool;
+        return poolBuilder.build();
     }
 
     /**
@@ -1019,7 +1023,7 @@ public class StationaryBootstrapResampler<T>
      *
      * @param crossPairedPool the cross-paired pool
      * @param originalPool the original pool
-     * @throws ResamplingException if cross pairing produced empty pools
+     * @throws InsufficientDataForResamplingException if there was insufficient data for resampling
      */
 
     private void validateCrossPairedData( Pool<TimeSeries<T>> crossPairedPool,
@@ -1039,7 +1043,7 @@ public class StationaryBootstrapResampler<T>
         boolean mainError = false;
         boolean baselineError = false;
 
-        List<FeatureGroup> failures = new ArrayList<>();
+        Set<FeatureGroup> failures = new TreeSet<>();
         for ( int i = 0; i < miniPoolsCross.size(); i++ )
         {
             // Check for consistent empty/full status of datasets following cross-pairing
@@ -1080,15 +1084,15 @@ public class StationaryBootstrapResampler<T>
 
         if ( mainError && baselineError )
         {
-            throw new ResamplingException( start + "main and baseline" + end + failures );
+            throw new InsufficientDataForResamplingException( start + "main and baseline" + end + failures );
         }
         else if ( mainError )
         {
-            throw new ResamplingException( start + "main" + end + failures );
+            throw new InsufficientDataForResamplingException( start + "main" + end + failures );
         }
         else if ( baselineError )
         {
-            throw new ResamplingException( start + "baseline" + end + failures );
+            throw new InsufficientDataForResamplingException( start + "baseline" + end + failures );
         }
     }
 

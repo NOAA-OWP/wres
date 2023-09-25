@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.SamplingUncertainty;
 import wres.datamodel.Slicer;
+import wres.datamodel.bootstrap.InsufficientDataForResamplingException;
 import wres.datamodel.bootstrap.QuantileCalculator;
 import wres.datamodel.bootstrap.StationaryBootstrapResampler;
 import wres.datamodel.messages.EvaluationStatusMessage;
@@ -476,11 +477,23 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
             // Create the resampling structure
             RandomGenerator randomGenerator = new Well512a( seed );
-            StationaryBootstrapResampler<Pair<L, R>> resampler =
-                    StationaryBootstrapResampler.of( pool,
-                                                     optimalBlockSize,
-                                                     randomGenerator,
-                                                     this.samplingUncertaintyExecutor );
+
+            StationaryBootstrapResampler<Pair<L, R>> resampler;
+            try
+            {
+                resampler = StationaryBootstrapResampler.of( pool,
+                                                             optimalBlockSize,
+                                                             randomGenerator,
+                                                             this.samplingUncertaintyExecutor );
+            }
+            // Errors encountered on building a resampler due to lack of data are permitted
+            catch ( InsufficientDataForResamplingException e )
+            {
+                LOGGER.warn( "Unable to calculate the sampling uncertainties for pool {}. The cause is: {}.",
+                             this.poolRequest,
+                             e.getMessage() );
+                return List.of();
+            }
 
             // Iterate the samples and register the statistics for quantile calculation
             for ( int i = 0; i < sampleSize; i++ )
