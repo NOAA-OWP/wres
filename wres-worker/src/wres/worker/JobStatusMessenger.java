@@ -41,7 +41,7 @@ import wres.messages.generated.JobStatus;
 public class JobStatusMessenger implements Runnable
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobStatusMessenger.class );
-    private static final String TOPIC = "status";
+    private static final String TOPIC = "STATUS";
 
     /** A formatable string to compose the status request to the server */
     private static final String STATUS_URI = "http://localhost:%d/evaluation/status/%s";
