@@ -2,12 +2,16 @@ package wres.worker;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +46,8 @@ public class Worker
 
     /** A formatable string to compose the heartbeat request to the server */
     private static final String SERVER_HEARTBEAT_URI = "http://localhost:%d/evaluation/heartbeat";
+
+    private static final Duration CALL_TIMEOUT = Duration.ofMinutes( 1 );
 
     private static final int DEFAULT_PORT = 8010;
 
@@ -118,10 +124,10 @@ public class Worker
                 {
                     if ( !isServerUp() )
                     {
-                        // Server is not up, destroy and restart the process
-                        serverProcess = restartServerProcess( serverProcess, wresExecutable );
                         // Refuse the job and requeue it to allow time for the server to start up
                         receiveChannel.basicNack( wresEvaluationProcessor.getDeliveryTag(), false, true);
+                        // Server is not up after retrying, killing shim and allowing Docker to attempt a restart
+                        throw new InternalError( "Was unable to reach the worker server" );
                     }
                     else
                     {
@@ -132,6 +138,9 @@ public class Worker
                     }
                 }
             }
+
+            // When we break from this while loop it means the worker-shim is killed, kill its server too
+            killServerProcess(serverProcess);
         }
         catch ( IOException | TimeoutException | InterruptedException e )
         {
@@ -220,6 +229,8 @@ public class Worker
             throw new RuntimeException( e );
         }
 
+        // We cannot start a worker-server, kill the worker-shim
+        Worker.killed = true;
         throw new InternalError( "Was unable to start up the worker server" );
     }
 
@@ -246,16 +257,16 @@ public class Worker
 
 
     /**
-     * Method to check if the server is reachable
+     * Method to check if the server is reachable which exponential backoff retries
      * @return boolean value if the server returns 200 (HTTP.OK)
      * @throws IOException
      */
     private static boolean isServerUp() throws IOException, URISyntaxException
     {
         URI uri = new URI( String.format( SERVER_HEARTBEAT_URI, Worker.port ) );
-        WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( uri );
+        WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( uri, CALL_TIMEOUT );
 
-        return fromWeb.getStatusCode() == HttpsURLConnection.HTTP_OK;
+        return fromWeb.getStatusCode() == HttpURLConnection.HTTP_OK;
     }
 
     /**
@@ -267,13 +278,14 @@ public class Worker
      */
     private static Process restartServerProcess( Process oldServerProcess, File wresExecutable )
     {
+        killServerProcess( oldServerProcess );
+        return startWorkerServer( wresExecutable );
+    }
 
+    private static void killServerProcess( Process oldServerProcess ) {
         if ( oldServerProcess.isAlive() )
         {
             oldServerProcess.destroy();
         }
-
-        return startWorkerServer( wresExecutable );
-
     }
 }
