@@ -58,7 +58,7 @@ import wres.io.reading.ReaderUtilities;
 import wres.io.reading.TimeSeriesReader;
 import wres.io.reading.TimeSeriesTuple;
 import wres.io.reading.waterml.WatermlReader;
-import wres.io.reading.web.WebClient;
+import wres.http.WebClient;
 import wres.statistics.generated.GeometryTuple;
 import wres.system.SystemSettings;
 

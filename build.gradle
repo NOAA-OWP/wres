@@ -1532,6 +1532,13 @@ project(':wres-http')
         implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.0'
         implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.0'
         implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0'
+
+        // Mocking help
+        testImplementation 'org.mockito:mockito-inline:5.2.0'
+
+        // JUnit 5 API and runtime
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.3'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.3'
     }
 
     // Facilitate unit tests with JUnit
