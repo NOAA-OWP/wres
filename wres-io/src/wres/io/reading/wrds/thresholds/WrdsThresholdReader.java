@@ -45,7 +45,7 @@ import wres.io.reading.wrds.geography.Location;
 import wres.io.reading.wrds.geography.LocationRootVersionDocument;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.ReaderUtilities;
-import wres.io.reading.web.WebClient;
+import wres.http.WebClient;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.Threshold;
 
