@@ -7,6 +7,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -59,6 +60,8 @@ class WresEvaluationProcessor implements Callable<Integer>
     private static final String STDOUT_URI = "http://localhost:%d/evaluation/stdout/%s";
 
     private static final String STDERR_URI = "http://localhost:%d/evaluation/stderr/%s";
+
+    private static final Duration CALL_TIMEOUT = Duration.ofMinutes( 2 );
 
     /** Stream identifier. */
     public enum WhichStream
@@ -230,8 +233,10 @@ class WresEvaluationProcessor implements Callable<Integer>
                                         evaluationId );
 
         executorService.submit( statusMessenger );
+
         WebClient.ClientResponse evaluationPostRequest = null;
         URI startEvalURI = URI.create( String.format( START_EVAL_URI, this.getPort(), evaluationId ) );
+
         try ( Client client = ClientBuilder.newClient();
               SseEventSource outSource = SseEventSource
                       .target(
@@ -253,7 +258,7 @@ class WresEvaluationProcessor implements Callable<Integer>
             outSource.open();
 
             LOGGER.info( String.format( "Starting evaluation: %s", startEvalURI ) );
-            evaluationPostRequest = WEB_CLIENT.postToWeb( startEvalURI, jobMessage );
+            evaluationPostRequest = WEB_CLIENT.postToWeb( startEvalURI, jobMessage, CALL_TIMEOUT );
 
             // Go through the output paths returned from the evaluation post request and send them to the broker
             new BufferedReader(
@@ -304,7 +309,7 @@ class WresEvaluationProcessor implements Callable<Integer>
     private String prepareEvaluationId()
     {
         URI prepareEval = URI.create( String.format( OPEN_EVAL_URI, this.getPort() ) );
-        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval ) )
+        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval, CALL_TIMEOUT ) )
         {
             if ( evaluationIdRequest.getStatusCode() == HttpURLConnection.HTTP_BAD_REQUEST )
             {
@@ -329,7 +334,7 @@ class WresEvaluationProcessor implements Callable<Integer>
     private int manipulateDatabase( String uriToCall )
     {
         URI prepareEval = URI.create( String.format( uriToCall, this.getPort() ) );
-        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval ) )
+        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval, CALL_TIMEOUT ) )
         {
             if ( evaluationIdRequest.getStatusCode() == HttpURLConnection.HTTP_INTERNAL_ERROR )
             {
@@ -355,7 +360,7 @@ class WresEvaluationProcessor implements Callable<Integer>
     private void closeEvaluation()
     {
         try ( WebClient.ClientResponse clientResponse =
-                      WEB_CLIENT.postToWeb( URI.create( String.format( CLOSE_EVAL_URI, this.getPort() ) ) ) )
+                      WEB_CLIENT.postToWeb( URI.create( String.format( CLOSE_EVAL_URI, this.getPort() ) ), CALL_TIMEOUT ) )
         {
             if ( clientResponse.getStatusCode() != HttpsURLConnection.HTTP_OK )
             {

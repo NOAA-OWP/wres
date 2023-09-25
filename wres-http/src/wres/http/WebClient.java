@@ -146,13 +146,14 @@ public class WebClient
 
     public ClientResponse getFromWeb( URI uri ) throws IOException
     {
-        return this.getFromWeb( uri, DEFAULT_RETRY_STATES );
+        return this.getFromWeb( uri, DEFAULT_RETRY_STATES, MAX_RETRY_DURATION );
     }
 
     /**
-     * Get a pair of HTTP status and InputStream of body of given URI.
+     * Get a pair of HTTP status and InputStream of body of given URI, using
+     * the default retry http status codes.
      * @param uri The URI to GET and transform the body into an InputStream.
-     * @param retryOn A list of http status codes that should cause a retry.
+     * @param timeout custom timeout for the call
      * @return A pair of the HTTP status (left) and InputStream of body (right).
      *         NullInputStream on right when 4xx response.
      * @throws IOException When sending/receiving fails; when non-2xx non-4xx
@@ -161,7 +162,25 @@ public class WebClient
      * @throws NullPointerException When any argument is null.
      */
 
-    public ClientResponse getFromWeb( URI uri, List<Integer> retryOn )
+    public ClientResponse getFromWeb( URI uri, Duration timeout ) throws IOException
+    {
+        return this.getFromWeb( uri, DEFAULT_RETRY_STATES, timeout );
+    }
+
+    /**
+     * Get a pair of HTTP status and InputStream of body of given URI.
+     * @param uri The URI to GET and transform the body into an InputStream.
+     * @param retryOn A list of http status codes that should cause a retry.
+     * @param timeout on a call
+     * @return A pair of the HTTP status (left) and InputStream of body (right).
+     *         NullInputStream on right when 4xx response.
+     * @throws IOException When sending/receiving fails; when non-2xx non-4xx
+     *                     response, when wrapping response to decompress fails.
+     * @throws IllegalArgumentException When non-http uri is passed in.
+     * @throws NullPointerException When any argument is null.
+     */
+
+    public ClientResponse getFromWeb( URI uri, List<Integer> retryOn, Duration timeout )
             throws IOException
     {
         Objects.requireNonNull( uri );
@@ -211,7 +230,7 @@ public class WebClient
                     Thread.sleep( sleepMillis );
                     httpResponse = tryRequest( request, retryCount );
                     Instant now = Instant.now();
-                    retry = start.plus( MAX_RETRY_DURATION )
+                    retry = start.plus( timeout )
                                  .isAfter( now );
 
                     // Exponential backoff to be nice to the server.
@@ -237,7 +256,7 @@ public class WebClient
     /**
      * Launches a post request against a given URI.
      * @param uri The URI to POST
-     *
+     * @param timeout the timeout of this call
      * @return A pair of the HTTP status (left) and InputStream of body (right).
      *         NullInputStream on right when 4xx response.
      * @throws IOException When sending/receiving fails; when non-2xx non-4xx
@@ -246,17 +265,17 @@ public class WebClient
      * @throws NullPointerException When any argument is null.
      */
 
-    public ClientResponse postToWeb( URI uri )
+    public ClientResponse postToWeb( URI uri, Duration timeout )
             throws IOException
     {
-        return postToWeb( uri, new byte[0] );
+        return postToWeb( uri, new byte[0], timeout );
     }
 
     /**
      * Post a pair of HTTP status and InputStream of body of given URI.
      * @param uri The URI to POST and transform the body into an InputStream.
      * @param jobMessage The body contents we want to send in a post request
-     *
+     * @param timeout the timeout of this call
      * @return A pair of the HTTP status (left) and InputStream of body (right).
      *         NullInputStream on right when 4xx response.
      * @throws IOException When sending/receiving fails; when non-2xx non-4xx
@@ -265,7 +284,7 @@ public class WebClient
      * @throws NullPointerException When any argument is null.
      */
 
-    public ClientResponse postToWeb( URI uri, byte[] jobMessage )
+    public ClientResponse postToWeb( URI uri, byte[] jobMessage, Duration timeout )
             throws IOException
     {
         Objects.requireNonNull( uri );
@@ -319,7 +338,7 @@ public class WebClient
                     Thread.sleep( sleepMillis );
                     httpResponse = tryRequest( request, retryCount );
                     Instant now = Instant.now();
-                    retry = start.plus( MAX_RETRY_DURATION )
+                    retry = start.plus( timeout )
                                  .isAfter( now );
 
                     // Exponential backoff to be nice to the server.
