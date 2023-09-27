@@ -112,6 +112,12 @@ public class Tasker
             {
                 request.getResponse().addHeader( "X-Frame-Options", "DENY" );
             }
+            if ( request.getResponse()
+                        .getHeader( "strict-transport-security" ) == null )
+            {
+                request.getResponse()
+                       .addHeader( "strict-transport-security", "max-age=31536000; includeSubDomains; preload;" );
+            }
         }
     };
 
