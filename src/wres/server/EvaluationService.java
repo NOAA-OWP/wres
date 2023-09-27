@@ -55,6 +55,7 @@ import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
 import wres.system.DatabaseSettings;
 import wres.system.DatabaseType;
+import wres.system.SettingsFactory;
 import wres.system.SystemSettings;
 
 /**
@@ -95,6 +96,7 @@ public class EvaluationService
     private final BrokerConnectionFactory broker;
 
     private Evaluator evaluator;
+
     /**
      * Constructor
      * @param systemSettings The system settings passed along from the server
@@ -159,8 +161,9 @@ public class EvaluationService
      */
     @GET
     @Path( "/stdout/{id}" )
-    @Produces(MediaType.SERVER_SENT_EVENTS)
-    public void getOutStream( @PathParam( "id" ) Long id, @Context SseEventSink eventSink, @Context Sse sse) {
+    @Produces( MediaType.SERVER_SENT_EVENTS )
+    public void getOutStream( @PathParam( "id" ) Long id, @Context SseEventSink eventSink, @Context Sse sse )
+    {
         // Get the stream for the evaluation ID if we allow async exectutions in the future
 
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -168,7 +171,7 @@ public class EvaluationService
 
         System.setOut( printStream );
 
-        new Thread(() -> {
+        new Thread( () -> {
             long offset = 0;
             // While the evaluation hasn't completed continue pulling from the standard stream and sending to client
             while ( !( evaluationStage.get().equals( COMPLETED ) || evaluationStage.get().equals( CLOSED ) ) )
@@ -181,14 +184,14 @@ public class EvaluationService
                 {
                     offset += bytes.length();
                     final OutboundSseEvent event = sse.newEventBuilder()
-                                                      .name("standard-out-stream")
-                                                      .data(String.class, bytes)
+                                                      .name( "standard-out-stream" )
+                                                      .data( String.class, bytes )
                                                       .build();
-                    eventSink.send(event);
+                    eventSink.send( event );
                 }
             }
             eventSink.close();
-        }).start();
+        } ).start();
     }
 
     /**
@@ -207,7 +210,7 @@ public class EvaluationService
 
         System.setErr( printStream );
 
-        new Thread(() -> {
+        new Thread( () -> {
             long offset = 0;
             // While the evaluation hasn't completed continue pulling from the standard stream and sending to client
             while ( !( evaluationStage.get().equals( COMPLETED ) || evaluationStage.get().equals( CLOSED ) ) )
@@ -220,14 +223,14 @@ public class EvaluationService
                 {
                     offset += bytes.length();
                     final OutboundSseEvent event = sse.newEventBuilder()
-                                                      .name("standard-error-stream")
-                                                      .data(String.class, bytes)
+                                                      .name( "standard-error-stream" )
+                                                      .data( String.class, bytes )
                                                       .build();
-                    eventSink.send(event);
+                    eventSink.send( event );
                 }
             }
             eventSink.close();
-        }).start();
+        } ).start();
     }
 
     /**
@@ -406,7 +409,6 @@ public class EvaluationService
      */
     private void swapDatabaseIfNeeded( Job.job job )
     {
-
         String databaseName = job.getDatabaseName();
         String databaseHost = job.getDatabaseHost();
         String databasePort = job.getDatabasePort();
@@ -420,17 +422,27 @@ public class EvaluationService
                   || !databaseHost.equals( databaseConfiguration.getHost() )
                   || !databasePort.equals( String.valueOf( databaseConfiguration.getPort() ) ) ) )
         {
-            DatabaseSettings newDatabaseSettings = databaseConfiguration.toBuilder()
-                                                                        .databaseName( databaseName )
-                                                                        .host( databaseHost )
-                                                                        .port( Integer.parseInt( databasePort ) )
-                                                                        .build();
+            DatabaseSettings.DatabaseSettingsBuilder builder = databaseConfiguration.toBuilder();
+            DatabaseSettings newDatabaseSettings = builder
+                    .databaseName( databaseName )
+                    .host( databaseHost )
+                    .port( Integer.parseInt( databasePort ) )
+                    .build();
 
-            systemSettings = systemSettings.toBuilder().databaseConfiguration( newDatabaseSettings ).build();
+            // DatabaseSettings have fields that are conditionally created in respect to host, port, and name; update those here
+            String passwordOverrides = SettingsFactory.getPasswordOverrides( newDatabaseSettings );
+            if ( passwordOverrides != null )
+            {
+                builder.password( passwordOverrides );
+            }
+
+            builder.dataSourceProperties( SettingsFactory.createDatasourceProperties( newDatabaseSettings ) );
+
+            this.systemSettings = systemSettings.toBuilder().databaseConfiguration( builder.build() ).build();
 
             if ( systemSettings.isUseDatabase() )
             {
-                database = new Database( new ConnectionSupplier( systemSettings ) );
+                this.database = new Database( new ConnectionSupplier( systemSettings ) );
                 // Migrate the database, as needed
                 if ( database.getAttemptToMigrate() )
                 {
@@ -444,7 +456,7 @@ public class EvaluationService
                     }
                 }
             }
-            evaluator = new Evaluator( systemSettings, database, broker );
+            this.evaluator = new Evaluator( this.systemSettings, this.database, broker );
         }
     }
 
