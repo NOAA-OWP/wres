@@ -62,7 +62,12 @@ public class SettingsFactory
             {
                 overrideDatabaseAttributesUsingJdbcUrl( databaseBuilder, jdbcUrl );
             }
-            databaseBuilder.password( getPasswordOverrides( systemSettings.getDatabaseConfiguration() ) );
+
+            String passwordOverrides = getPasswordOverrides( systemSettings.getDatabaseConfiguration() );
+            if ( passwordOverrides != null )
+            {
+                databaseBuilder.password( passwordOverrides );
+            }
             databaseBuilder.dataSourceProperties( createDatasourceProperties( systemSettings.getDatabaseConfiguration() ) );
 
             // Get system configurations and convert to a builder
@@ -634,7 +639,7 @@ public class SettingsFactory
      * If there is no value it returns null which is the default value of password
      */
 
-    private static String getPasswordOverrides( DatabaseSettings databaseSettings )
+    public static String getPasswordOverrides( DatabaseSettings databaseSettings )
     {
         // Intended order of passphrase precedence:
         // 1) -Dwres.password (but perhaps we should remove this)
@@ -686,7 +691,7 @@ public class SettingsFactory
     }
 
     /** To be called after setting member variables based on wres config */
-    private static Map<DatabaseType, Properties> createDatasourceProperties( DatabaseSettings databaseSettings )
+    public static Map<DatabaseType, Properties> createDatasourceProperties( DatabaseSettings databaseSettings )
     {
         Map<DatabaseType, Properties> mapping = new EnumMap<>( DatabaseType.class );
         Map<String, String> commonProperties = new TreeMap<>();
