@@ -316,7 +316,8 @@ class EvaluationUtilities
             // Clean-up an empty output directory: #67088
             try ( Stream<Path> outputs = Files.list( outputDirectory ) )
             {
-                if ( outputs.findAny().isEmpty() )
+                if ( outputs.findAny()
+                            .isEmpty() )
                 {
                     // Will only succeed for an empty directory
                     boolean status = Files.deleteIfExists( outputDirectory );
@@ -327,7 +328,7 @@ class EvaluationUtilities
                 }
             }
 
-            // Close the evaluation always (even if stopped on exception)
+            // Close the evaluation messager always (even if stopped on exception)
             try
             {
                 if ( Objects.nonNull( evaluation ) )

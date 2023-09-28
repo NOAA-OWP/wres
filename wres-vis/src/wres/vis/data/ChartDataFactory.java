@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
 
@@ -37,6 +38,7 @@ import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricDimension;
 import wres.config.MetricConstants.StatisticType;
+import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.statistics.DurationScoreStatisticOuter;
@@ -243,6 +245,7 @@ public class ChartDataFactory
                                                           .getLatestValidTime()
                                                           .equals( nextTime.getRight() ) );
                 }
+                // Slice by issued time if the series should contain valid times
                 else if ( graphicShape == GraphicShape.VALID_DATE_POOLS )
                 {
                     slice = Slicer.filter( slice,
@@ -724,7 +727,8 @@ public class ChartDataFactory
     {
         // Filter by threshold
         SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( slice, next -> next.getPoolMetadata().getThresholds() );
+                Slicer.discover( slice, next -> next.getPoolMetadata()
+                                                    .getThresholds() );
         for ( OneOrTwoThresholds nextThreshold : thresholds )
         {
             // Slice the data by threshold.  The resulting data will still contain potentially
@@ -887,19 +891,45 @@ public class ChartDataFactory
             upper = mappedByQuantile.get( max );
         }
 
-        for ( int i = 0; i < nominal.size(); i++ )
+        // Map the results by time window and threshold to correlate nominal and quantile values
+        Map<PoolMetadata, DoubleScoreComponentOuter> nominalMapped
+                = nominal.stream()
+                         .collect( Collectors.toMap( s -> s.getPoolMetadata(),
+                                                     Function.identity() ) );
+        Map<PoolMetadata, DoubleScoreComponentOuter> lowerMapped
+                = lower.stream()
+                         .collect( Collectors.toMap( s -> s.getPoolMetadata(),
+                                                     Function.identity() ) );
+        Map<PoolMetadata, DoubleScoreComponentOuter> upperMapped
+                = upper.stream()
+                       .collect( Collectors.toMap( s -> s.getPoolMetadata(),
+                                                   Function.identity() ) );
+
+        for ( Map.Entry<PoolMetadata,DoubleScoreComponentOuter> next : nominalMapped.entrySet() )
         {
-            DoubleScoreComponentOuter nextNominal = nominal.get( i );
-            DoubleScoreComponentOuter nextLower = lower.get( i );
-            DoubleScoreComponentOuter nextUpper = upper.get( i );
+            PoolMetadata nextMeta = next.getKey();
+            DoubleScoreComponentOuter nextNominal = next.getValue();
 
             double domainAxisValue = domainValue.applyAsDouble( nextNominal );
             double nominalValue = nextNominal.getStatistic()
                                              .getValue();
-            double lowerValue = nextLower.getStatistic()
-                                         .getValue();
-            double upperValue = nextUpper.getStatistic()
-                                         .getValue();
+
+            double lowerValue = nominalValue;
+            double upperValue = nominalValue;
+
+            if( lowerMapped.containsKey( nextMeta ) )
+            {
+                DoubleScoreComponentOuter nextLower = lowerMapped.get( nextMeta );
+                lowerValue = nextLower.getStatistic()
+                                      .getValue();
+            }
+
+            if( upperMapped.containsKey( nextMeta ) )
+            {
+                DoubleScoreComponentOuter nextUpper = upperMapped.get( nextMeta );
+                upperValue = nextUpper.getStatistic()
+                                      .getValue();
+            }
 
             if ( Double.isInfinite( nominalValue ) )
             {
