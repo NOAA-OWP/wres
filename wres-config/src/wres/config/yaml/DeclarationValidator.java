@@ -1547,13 +1547,13 @@ public class DeclarationValidator
             EvaluationStatusEvent warn
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.WARN )
-                                           .setEventMessage( "The evaluation included 'sampling_uncertainty' "
-                                                             + "declaration, which will be delivered using a "
-                                                             + "resampling scheme that is computationally expensive. "
-                                                             + "This option should be used with care and the "
-                                                             + "evaluation may take significantly longer to complete "
-                                                             + "than an equivalent evaluation without the "
-                                                             + "'sampling_uncertainty' declaration." )
+                                           .setEventMessage( "The evaluation requested the 'sampling_uncertainty' "
+                                                             + "option which will be delivered using a resampling "
+                                                             + "scheme that is computationally expensive. This option "
+                                                             + "should be used with care and the evaluation may take "
+                                                             + "significantly longer to complete than an equivalent "
+                                                             + "evaluation without the 'sampling_uncertainty' "
+                                                             + "declaration." )
                                            .build();
             events.add( warn );
 
@@ -1634,6 +1634,28 @@ public class DeclarationValidator
                                                                  + "using excessive resources." )
                                                .build();
                 events.add( event );
+            }
+
+            if ( Objects.isNull( declaration.crossPair() )
+                 && DeclarationUtilities.hasBaseline( declaration ) )
+            {
+                EvaluationStatusEvent crossPair
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.WARN )
+                                               .setEventMessage( "The evaluation requested the 'sampling_uncertainty' "
+                                                                 + "option and contains a 'baseline' dataset, but does "
+                                                                 + "not request cross-pairing of the 'predicted' and "
+                                                                 + "'baseline' datasets ('cross_pair: fuzzy'). This is "
+                                                                 + "allowed, but can lead to the nominal value of any "
+                                                                 + "skill metrics falling outside of the prescribed "
+                                                                 + "confidence intervals because cross-pairing is "
+                                                                 + "always performed for the resampled data. More "
+                                                                 + "generally, skill calculations can be misleading "
+                                                                 + "unless the 'predicted' and 'baseline' pairs are "
+                                                                 + "coincident in time, which is enforced by "
+                                                                 + "cross-pairing." )
+                                               .build();
+                events.add( crossPair );
             }
         }
 

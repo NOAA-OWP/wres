@@ -60,6 +60,7 @@ import wres.statistics.generated.Pool;
  * @param thresholdSources the threshold service
  * @param ensembleAverageType the type of ensemble average to use
  * @param minimumSampleSize the minimum sample size for which metrics should be computed
+ * @param sampleUncertainty a request for sampling uncertainty estimation
  * @param season the season
  * @param values the valid values
  * @param metrics the metrics
@@ -154,6 +155,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
      * @param thresholdSources the threshold service
      * @param ensembleAverageType the type of ensemble average to use
      * @param minimumSampleSize the minimum sample size for which metrics should be computed
+     * @param sampleUncertainty a request for sampling uncertainty estimation
      * @param season the season
      * @param values the valid values
      * @param metrics the metrics

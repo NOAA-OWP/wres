@@ -1735,6 +1735,30 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testSamplingUncertaintyWithoutCrossPairingProducesWarning()
+    {
+        SamplingUncertainty samplingUncertainty = SamplingUncertaintyBuilder.builder()
+                                                                            .sampleSize( 1000 )
+                                                                            .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( this.defaultDataset )
+                                                         .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .baseline( baseline )
+                                            .sampleUncertainty( samplingUncertainty )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "This is allowed, but can lead to the nominal value",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
     void testSamplingUncertaintySampleSizeIsTooLargeProducesError()
     {
         SamplingUncertainty samplingUncertainty = SamplingUncertaintyBuilder.builder()
