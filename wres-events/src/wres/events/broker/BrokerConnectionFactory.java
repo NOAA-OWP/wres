@@ -13,6 +13,7 @@ import jakarta.jms.Connection;
 import jakarta.jms.ConnectionFactory;
 import jakarta.jms.Destination;
 import jakarta.jms.JMSException;
+
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
@@ -25,7 +26,7 @@ import net.jcip.annotations.GuardedBy;
 /**
  * <p>Manages connections to an AMQP broker. The basic configuration is contained in a JNDI properties file on the 
  * classpath.
- * 
+ *
  * @author James Brown
  */
 
@@ -101,7 +102,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
     /**
      * <p>Returns an instance of a factory, which is created with supplied properties and a default number of message 
      * retries, {@link #DEFAULT_MAXIMUM_MESSAGE_RETRIES}.
-     * 
+     *
      * @param properties the broker connection properties, cannot be null
      * @return an instance
      * @throws CouldNotLoadBrokerConfigurationException if the broker configuration could not be found
@@ -117,7 +118,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
     /**
      * <p>Returns an instance of a factory, which is created with supplied properties and a maximum number of 
      * message retries.
-     * 
+     *
      * @param properties the broker connection properties, cannot be null
      * @param maximumMessageRetries the maximum number of message retries, must be greater than or equal to zero
      * @return an instance
@@ -135,7 +136,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
     /**
      * Returns a {@link Connection}, which must be closed on completion. Calling {@link #close()} will close all 
      * connections issued by this factory that have not been closed already.
-     * 
+     *
      * @throws FailedToAcquireConnectionException if a connection could not be acquired for any reason
      */
 
@@ -151,6 +152,9 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
         try
         {
             Connection connection = this.connectionFactory.createConnection();
+
+            LOGGER.debug( "Created a broker connection: {}.", connection );
+
             this.addConnectionToPool( connection );
 
             return connection;
@@ -163,7 +167,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
 
     /**
      * Returns a destination from the present context.
-     * 
+     *
      * @param name the destination name
      * @return the destination
      * @throws NamingException if the destination does not exist
@@ -174,7 +178,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
     {
         Objects.requireNonNull( name );
 
-        return (Destination) this.context.lookup( name );
+        return ( Destination ) this.context.lookup( name );
     }
 
     /**
@@ -185,35 +189,42 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
     @Override
     public void close() throws IOException
     {
-        LOGGER.info( "Closing broker connection factory {} and all associated broker connections.", this );
-
-        // Flag closed
-        this.isClosed = true;
-
-        // Close connections
-        synchronized ( this.connectionPoolLock )
+        if ( !this.isClosed() )
         {
-            for ( Connection connectionToClose : this.connectionPool )
-            {
-                try
-                {
-                    connectionToClose.close();
+            LOGGER.info( "Closing broker connection factory {} and all associated broker connections.", this );
 
-                    LOGGER.debug( "Successfully called close on connection {}. This may happen more than once.",
-                                  connectionToClose );
-                }
-                catch ( JMSException e )
+            // Flag closed
+            this.isClosed = true;
+
+            // Close connections
+            synchronized ( this.connectionPoolLock )
+            {
+                for ( Connection connectionToClose : this.connectionPool )
                 {
-                    LOGGER.warn( "Failed to close a broker connection. This message may be repeated for other "
-                                 + "connections." );
+                    try
+                    {
+                        connectionToClose.close();
+
+                        LOGGER.debug( "Successfully called close on connection {}.",
+                                      connectionToClose );
+                    }
+                    catch ( JMSException e )
+                    {
+                        LOGGER.warn( "Failed to close a broker connection. This message may be repeated for other "
+                                     + "connections." );
+                    }
                 }
             }
+        }
+        else
+        {
+            LOGGER.debug( "All broker connections are closed." );
         }
     }
 
     /**
      * Returns the maximum number of times a message will be resent on consumption failure.
-     * 
+     *
      * @return the maximum retry count for resending messages
      */
 
@@ -255,7 +266,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
      * Tests the connection with exponential back-off, up to the prescribed number of retries. If the properties 
      * contain a binding url that configures its own retries, then these retries will nest. Thus, to delegate retries
      * to the broker (based on the declared burl), request zero retries in this context. 
-     * 
+     *
      * @param properties the connection properties
      * @param retries the number of retries
      * @throws BrokerConnectionException if the connection fails, possibly after retries
@@ -374,7 +385,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
 
     /**
      * Gets a connection factory from the supplied context.
-     * 
+     *
      * @param connectionUrl the connection string
      * @param context the context
      * @param connectionPropertyName the connection property name
@@ -395,7 +406,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
 
         try
         {
-            return (ConnectionFactory) context.lookup( factoryName );
+            return ( ConnectionFactory ) context.lookup( factoryName );
         }
         catch ( NamingException e )
         {
@@ -408,7 +419,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
 
     /**
      * Constructs a new instances and creates an embedded broker as necessary.
-     * 
+     *
      * @param properties the broker connection properties, cannot be null
      * @param maximumMessageRetries the maximum number of message retries
      * @throws CouldNotLoadBrokerConfigurationException if the broker configuration could not be found
@@ -468,7 +479,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
 
     /**
      * A runtime exception indicating a failure to load the configuration needed to connect to a broker.
-     * 
+     *
      * @author James Brown
      */
 
@@ -483,7 +494,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
 
         /**
          * Constructs a {@link CouldNotLoadBrokerConfigurationException} with the specified message.
-         * 
+         *
          * @param message the message.
          */
 
@@ -494,7 +505,7 @@ public class BrokerConnectionFactory implements Closeable, Supplier<Connection>
 
         /**
          * Constructs a {@link CouldNotLoadBrokerConfigurationException} with the specified message and cause.
-         * 
+         *
          * @param message the message.
          * @param cause the cause of the exception
          */

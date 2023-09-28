@@ -1487,21 +1487,23 @@ public class EvaluationMessager implements Closeable
     }
 
     /**
-     * Closes a publisher gracefully.
+     * Closes a closeable gracefully.
      *
-     * @param publisher the publisher to close
+     * @param closeable the closeable to close
      */
 
-    private void closeGracefully( MessagePublisher publisher )
+    private void closeGracefully( Closeable closeable )
     {
         try
         {
-            publisher.close();
-            LOGGER.debug( "Closed publisher {} in evaluation {}.", publisher, this );
+            closeable.close();
+            LOGGER.debug( "Closed messaging component {} in evaluation {}.", closeable, this );
         }
         catch ( IOException e )
         {
-            String message = "Encountered an error while attempting to close a publisher associated with evaluation "
+            String message = "Encountered an error while attempting to close messaging component "
+                             + closeable
+                             + " for evaluation "
                              + this.getEvaluationId();
 
             LOGGER.error( message, e );

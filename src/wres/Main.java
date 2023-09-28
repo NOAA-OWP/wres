@@ -226,8 +226,11 @@ public class Main
             broker = EmbeddedBroker.of( brokerConnectionProperties, false );
         }
 
-        try ( BrokerConnectionFactory brokerConnectionFactory =
-                      BrokerConnectionFactory.of( brokerConnectionProperties ) )
+        // Create the broker connection factory
+        BrokerConnectionFactory brokerConnectionFactory =
+                BrokerConnectionFactory.of( brokerConnectionProperties );
+
+        try
         {
             List<String> argList = Arrays.stream( args )
                                          .toList();
@@ -276,24 +279,30 @@ public class Main
         {
             LOGGER.warn( "Failed to create the broker connections.", e );
         }
-        catch ( IOException e )
-        {
-            LOGGER.warn( "Failed to destroy the broker connections.", e );
-        }
         finally
         {
             LOGGER.info( "Closing the application..." );
+            try
+            {
+                LOGGER.info( "Closing broker connections..." );
+                brokerConnectionFactory.close();
+            }
+            catch ( IOException e )
+            {
+                LOGGER.warn( "Failed to destroy the broker connections.", e );
+            }
+
             if ( SYSTEM_SETTINGS.isInDatabase() && Objects.nonNull( database ) )
             {
                 // #81660
                 if ( Objects.nonNull( result ) && result.succeeded() )
                 {
-                    LOGGER.info( "Terminating database activities..." );
+                    LOGGER.info( "Closing database activities..." );
                     database.shutdown();
                 }
                 else
                 {
-                    LOGGER.info( "Forcefully terminating database activities (you may see some errors)..." );
+                    LOGGER.info( "Forcefully closing database activities (you may see some errors)..." );
                     List<Runnable> abandoned = database.forceShutdown( 6, TimeUnit.SECONDS );
                     LOGGER.info( "Abandoned {} database tasks.", abandoned.size() );
                 }

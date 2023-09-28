@@ -184,7 +184,7 @@ class GraphicsClient
                        try
                        {
                            LOGGER.info( "Closing embedded broker {}.", brokerToClose );
-                           brokerConnections.close();
+                           brokerToClose.close();
                        }
                        catch ( IOException e )
                        {

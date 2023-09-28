@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
@@ -546,18 +547,15 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                 Map<DatasetOrientation, QuantileCalculator> orientedCalculators = nextEntry.getValue();
                 Map<DatasetOrientation, List<Statistics>> statistics = grouped.get( nextThreshold );
 
+                // Add an empty slot for each dataset orientation that has no statistics for this sample/threshold in
+                // order to increment the calculator
+                statistics = this.fillMissing( statistics, orientedCalculators.keySet() );
+
                 for ( Map.Entry<DatasetOrientation, List<Statistics>> nextOrientation : statistics.entrySet() )
                 {
                     DatasetOrientation orientation = nextOrientation.getKey();
                     List<Statistics> nextStatistics = nextOrientation.getValue();
                     QuantileCalculator calculator = orientedCalculators.get( orientation );
-
-                    // No statistics? Increment the calculator
-                    if ( Objects.isNull( nextStatistics ) )
-                    {
-                        nextStatistics = Collections.emptyList();
-                    }
-
                     calculator.add( nextStatistics );
                 }
             }
@@ -572,6 +570,37 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                                                + ".",
                                                e );
         }
+    }
+
+    /**
+     * Adds an empty list of statistics for each dataset orientation that is missing from the map of statistics.
+     *
+     * @param statistics the map of statistics
+     * @param orientations the orientations for which statistics are expected
+     * @return the statistics with missings filled as empty
+     */
+
+    private Map<DatasetOrientation, List<Statistics>> fillMissing( Map<DatasetOrientation, List<Statistics>> statistics,
+                                                                   Set<DatasetOrientation> orientations )
+    {
+        Map<DatasetOrientation, List<Statistics>> returnMe = new EnumMap<>( DatasetOrientation.class );
+
+        // Add the existing, non-null statistics
+        if ( Objects.nonNull( statistics ) )
+        {
+            statistics.entrySet()
+                      .stream()
+                      .filter( v -> Objects.nonNull( v.getValue() ) )
+                      .forEach( v -> returnMe.put( v.getKey(), v.getValue() ) );
+        }
+
+        // Add an empty placeholder for each dataset orientation without any statistics
+        for ( DatasetOrientation next : orientations )
+        {
+            returnMe.computeIfAbsent( next, d -> List.of() );
+        }
+
+        return Collections.unmodifiableMap( returnMe );
     }
 
     /**
