@@ -55,6 +55,7 @@ class StationaryBootstrapResamplerTest
 
         StationaryBootstrapResampler<Double> resampler = StationaryBootstrapResampler.of( pool,
                                                                                           2,
+                                                                                          Duration.ofHours( 1 ),
                                                                                           randomGenerator,
                                                                                           ForkJoinPool.commonPool() );
         Pool<TimeSeries<Double>> actual = resampler.resample();
@@ -96,6 +97,7 @@ class StationaryBootstrapResamplerTest
 
         StationaryBootstrapResampler<Double> resampler = StationaryBootstrapResampler.of( pool,
                                                                                           2,
+                                                                                          Duration.ofHours( 1 ),
                                                                                           randomGenerator,
                                                                                           ForkJoinPool.commonPool() );
         Pool<TimeSeries<Double>> actual = resampler.resample();
@@ -156,6 +158,7 @@ class StationaryBootstrapResamplerTest
 
         StationaryBootstrapResampler<Double> resampler = StationaryBootstrapResampler.of( pool,
                                                                                           2,
+                                                                                          Duration.ofHours( 3 ),
                                                                                           randomGenerator,
                                                                                           ForkJoinPool.commonPool() );
         Pool<TimeSeries<Double>> actual = resampler.resample();
@@ -214,6 +217,7 @@ class StationaryBootstrapResamplerTest
 
         StationaryBootstrapResampler<Double> resampler = StationaryBootstrapResampler.of( pool,
                                                                                           2,
+                                                                                          Duration.ofHours( 2 ),
                                                                                           randomGenerator,
                                                                                           ForkJoinPool.commonPool() );
         Pool<TimeSeries<Double>> actual = resampler.resample();
@@ -282,6 +286,7 @@ class StationaryBootstrapResamplerTest
 
         StationaryBootstrapResampler<Double> resampler = StationaryBootstrapResampler.of( pool,
                                                                                           1,
+                                                                                          Duration.ofHours( 2 ),
                                                                                           randomGenerator,
                                                                                           ForkJoinPool.commonPool() );
 
@@ -379,6 +384,7 @@ class StationaryBootstrapResamplerTest
 
         StationaryBootstrapResampler<Double> resampler = StationaryBootstrapResampler.of( pool,
                                                                                           2,
+                                                                                          Duration.ofHours( 3 ),
                                                                                           randomGenerator,
                                                                                           ForkJoinPool.commonPool() );
         Pool<TimeSeries<Double>> reampled = resampler.resample();
@@ -502,6 +508,7 @@ class StationaryBootstrapResamplerTest
 
         StationaryBootstrapResampler<Double> resampler = StationaryBootstrapResampler.of( pool,
                                                                                           2,
+                                                                                          Duration.ofHours( 3 ),
                                                                                           randomGenerator,
                                                                                           ForkJoinPool.commonPool() );
         Pool<TimeSeries<Double>> reampled = resampler.resample();

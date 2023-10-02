@@ -1,5 +1,6 @@
 package wres.pipeline.pooling;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -14,7 +15,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
-import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -95,7 +95,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     private final SamplingUncertainty samplingUncertainty;
 
     /** The stationary bootstrap block size estimator. */
-    private final ToLongFunction<Pool<TimeSeries<Pair<L, R>>>> blockSize;
+    private final Function<Pool<TimeSeries<Pair<L, R>>>, Pair<Long, Duration>> blockSize;
 
     /** The sampling uncertainty executor. */
     private final ExecutorService samplingUncertaintyExecutor;
@@ -196,7 +196,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         private SamplingUncertainty samplingUncertainty;
 
         /** The stationary bootstrap block size estimator. */
-        private ToLongFunction<Pool<TimeSeries<Pair<L, R>>>> blockSize;
+        private Function<Pool<TimeSeries<Pair<L, R>>>, Pair<Long, Duration>> blockSize;
 
         /** The pool request or description. */
         private PoolRequest poolRequest;
@@ -343,7 +343,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
          * @param blockSize the bootstrap block size estimator
          * @return this builder
          */
-        public Builder<L, R> setSamplingUncertaintyBlockSize( ToLongFunction<Pool<TimeSeries<Pair<L, R>>>> blockSize )
+        public Builder<L, R> setSamplingUncertaintyBlockSize( Function<Pool<TimeSeries<Pair<L, R>>>, Pair<Long, Duration>> blockSize )
         {
             this.blockSize = blockSize;
             return this;
@@ -380,7 +380,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
     private List<Statistics> createStatistics( Pool<TimeSeries<Pair<L, R>>> pool,
                                                SamplingUncertainty samplingUncertainty,
-                                               ToLongFunction<Pool<TimeSeries<Pair<L, R>>>> blockSizeEstimator )
+                                               Function<Pool<TimeSeries<Pair<L, R>>>, Pair<Long, Duration>> blockSizeEstimator )
     {
         // Compute the statistics
         Function<Pool<TimeSeries<Pair<L, R>>>, List<StatisticsStore>> processor =
@@ -432,7 +432,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
     private List<Statistics> getSamplingUncertaintyStatistics( Pool<TimeSeries<Pair<L, R>>> pool,
                                                                SamplingUncertainty samplingUncertainty,
-                                                               ToLongFunction<Pool<TimeSeries<Pair<L, R>>>> blockSizeEstimator,
+                                                               Function<Pool<TimeSeries<Pair<L, R>>>, Pair<Long, Duration>> blockSizeEstimator,
                                                                List<Statistics> nominalStatistics )
     {
         List<Statistics> statistics = new ArrayList<>();
@@ -458,7 +458,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             int sampleSize = samplingUncertainty.sampleSize();
 
             // Estimate the optimal block sizes from the data
-            long optimalBlockSize = blockSizeEstimator.applyAsLong( pool );
+            Pair<Long, Duration> optimalBlockSize = blockSizeEstimator.apply( pool );
 
             // Seed the random number generator and report to aid reproduction
             // TODO: may help to abstract and inject into this class for easier reproduction of entire evaluations
@@ -483,7 +483,8 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             try
             {
                 resampler = StationaryBootstrapResampler.of( pool,
-                                                             optimalBlockSize,
+                                                             optimalBlockSize.getLeft(),
+                                                             optimalBlockSize.getRight(),
                                                              randomGenerator,
                                                              this.samplingUncertaintyExecutor );
             }

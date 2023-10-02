@@ -10,6 +10,8 @@ import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.text.DecimalFormat;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -17,7 +19,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
-import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -37,6 +38,7 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.GeneratedBaselines;
 import wres.datamodel.Ensemble;
 import wres.datamodel.bootstrap.BlockSizeEstimator;
+import wres.datamodel.bootstrap.InsufficientDataForResamplingException;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolRequest;
@@ -46,7 +48,6 @@ import wres.datamodel.thresholds.MetricsAndThresholds;
 import wres.datamodel.thresholds.ThresholdSlicer;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesStore;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.events.EvaluationMessager;
@@ -122,12 +123,12 @@ class EvaluationUtilities
             EvaluationUtilities.getSingleValuedTraceCountEstimator();
 
     /** A block size estimator for the stationary bootstrap as applied to single-valued pools.*/
-    private static final ToLongFunction<Pool<TimeSeries<Pair<Double, Double>>>> SINGLE_VALUED_BLOCK_SIZE_ESTIMATOR =
-            EvaluationUtilities::getOptimalBlockSizeForStationaryBootstrap;
+    private static final Function<Pool<TimeSeries<Pair<Double, Double>>>, Pair<Long, Duration>>
+            SINGLE_VALUED_BLOCK_SIZE_ESTIMATOR = EvaluationUtilities::getOptimalBlockSizeForStationaryBootstrap;
 
     /** A block size estimator for the stationary bootstrap as applied to ensemble pools.*/
-    private static final ToLongFunction<Pool<TimeSeries<Pair<Double, Ensemble>>>> ENSEMBLE_BLOCK_SIZE_ESTIMATOR =
-            EvaluationUtilities::getOptimalBlockSizeForStationaryBootstrap;
+    private static final Function<Pool<TimeSeries<Pair<Double, Ensemble>>>, Pair<Long, Duration>>
+            ENSEMBLE_BLOCK_SIZE_ESTIMATOR = EvaluationUtilities::getOptimalBlockSizeForStationaryBootstrap;
 
     /** Re-used string. */
     private static final String PERFORMING_RETRIEVAL_WITH_AN_IN_MEMORY_RETRIEVER_FACTORY =
@@ -1617,41 +1618,46 @@ class EvaluationUtilities
      * @param pool the pool
      * @return the optimal block size for the stationary bootstrap
      */
-    private static <R> long getOptimalBlockSizeForStationaryBootstrap( Pool<TimeSeries<Pair<Double, R>>> pool )
+    private static <R> Pair<Long, Duration> getOptimalBlockSizeForStationaryBootstrap( Pool<TimeSeries<Pair<Double, R>>> pool )
     {
         List<Pool<TimeSeries<Pair<Double, R>>>> miniPools = pool.getMiniPools();
 
-        List<Long> blockSizes = new ArrayList<>();
+        List<Pair<Long, Duration>> blockSizes = new ArrayList<>();
         for ( Pool<TimeSeries<Pair<Double, R>>> next : miniPools )
         {
-            long nextMain = EvaluationUtilities.getOptimalBlockSizesForStationaryBootstrap( next.get() );
+            Pair<Long, Duration> nextMain =
+                    EvaluationUtilities.getOptimalBlockSizesForStationaryBootstrap( next.get() );
             blockSizes.add( nextMain );
             if ( next.hasBaseline() )
             {
                 List<TimeSeries<Pair<Double, R>>> baseline = next.getBaselineData()
                                                                  .get();
-                long nextBaseline = EvaluationUtilities.getOptimalBlockSizesForStationaryBootstrap( baseline );
+                Pair<Long, Duration> nextBaseline =
+                        EvaluationUtilities.getOptimalBlockSizesForStationaryBootstrap( baseline );
                 blockSizes.add( nextBaseline );
             }
         }
 
-        double optimalBlockSizeReal =
-                blockSizes.stream()
-                          .mapToLong( Long::longValue )
-                          .average()
-                          .orElseThrow( () -> new WresProcessingException( "Failed to estimate the optimal block size "
-                                                                           + "for the stationary bootstrap." ) );
+        double total = 0;
+        Duration totalDuration = Duration.ZERO;
+        for ( Pair<Long, Duration> next : blockSizes )
+        {
+            total += next.getLeft();
+            totalDuration = totalDuration.plus( next.getValue() );
+        }
 
-        long optimalBlockSize = ( long ) Math.ceil( optimalBlockSizeReal );
+        long optimalBlockSize = ( long ) Math.ceil( total / blockSizes.size() );
+        Duration averageDuration = totalDuration.dividedBy( blockSizes.size() );
 
-        LOGGER.debug( "Determined an optimal block size of {} timesteps for applying the stationary bootstrap to the "
-                      + "pool with metadata: {}. This is an average of the optimal block sizes across all observed "
+        LOGGER.debug( "Determined an optimal block size of {} timesteps of {} for applying the stationary bootstrap to "
+                      + "the pool with metadata: {}. This is an average of the optimal block sizes across all observed "
                       + "time-series within the pool, which included the following block sizes: {}.",
                       optimalBlockSize,
+                      averageDuration,
                       pool.getMetadata(),
                       blockSizes );
 
-        return optimalBlockSize;
+        return Pair.of( optimalBlockSize, averageDuration );
     }
 
     /**
@@ -1660,21 +1666,51 @@ class EvaluationUtilities
      * @param pool the pool
      * @return the optimal block size for the stationary bootstrap
      */
-    private static <T> long getOptimalBlockSizesForStationaryBootstrap( List<TimeSeries<Pair<Double, T>>> pool )
+    private static <T> Pair<Long, Duration> getOptimalBlockSizesForStationaryBootstrap( List<TimeSeries<Pair<Double, T>>> pool )
     {
-        Function<Pair<Double, T>, Double> doubleMapper = Pair::getLeft;
-        List<TimeSeries<Double>> leftSeries = pool.stream()
-                                                  .map( n -> TimeSeriesSlicer.transform( n,
-                                                                                         doubleMapper,
-                                                                                         null ) )
-                                                  .toList();
-        double[] data = leftSeries.stream()
-                                  .flatMap( n -> n.getEvents()
-                                                  .stream() )
-                                  .mapToDouble( Event::getValue )
-                                  .toArray();
+        SortedMap<Instant, Double> consolidated = pool.stream()
+                                                      .flatMap( n -> n.getEvents()
+                                                                      .stream() )
+                                                      .collect( Collectors.toMap( Event::getTime, e -> e.getValue()
+                                                                                                        .getLeft(),
+                                                                                  ( a, b ) -> a, TreeMap::new ) );
 
-        return BlockSizeEstimator.getOptimalBlockSize( data );
+        double[] data = new double[consolidated.size()];
+        List<Duration> durations = new ArrayList<>();
+        Instant last = null;
+        int index = 0;
+        for ( Map.Entry<Instant, Double> next : consolidated.entrySet() )
+        {
+            data[index] = next.getValue();
+            Instant time = next.getKey();
+
+            if ( index > 0 )
+            {
+                Duration between = Duration.between( last, time );
+                durations.add( between );
+            }
+
+            last = time;
+            index++;
+        }
+
+        long optimalBlockSize = BlockSizeEstimator.getOptimalBlockSize( data );
+
+        // Find the corresponding timestep, which is the modal timestep
+        Duration modalTimestep =
+                durations.stream()
+                         .collect( Collectors.groupingBy( Function.identity(),
+                                                          Collectors.counting() ) )
+                         .entrySet()
+                         .stream()
+                         .max( Map.Entry.comparingByValue() )
+                         .map( Map.Entry::getKey )
+                         .orElseThrow( () -> new InsufficientDataForResamplingException( "Insufficient data to "
+                                                                                         + "calculate the optimal "
+                                                                                         + "block size for the "
+                                                                                         + "stationary bootstrap." ) );
+
+        return Pair.of( optimalBlockSize, modalTimestep );
     }
 
     /**

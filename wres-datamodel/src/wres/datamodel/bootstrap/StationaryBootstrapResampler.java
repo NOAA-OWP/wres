@@ -6,7 +6,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -19,7 +18,6 @@ import java.util.TreeSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
@@ -111,21 +109,24 @@ public class StationaryBootstrapResampler<T>
      * @param <T> the type of time-series event
      * @param pool the pool to resample, required
      * @param meanBlockSizeInTimesteps the mean block size in timestep units, which must be greater than zero
+     * @param timestep the timestep
      * @param randomGenerator the random number generator to use when sampling block sizes, required
      * @param resampleExecutor an executor service for resampling work, optional
      * @return an instance
      * @throws NullPointerException if any required input is null
-     * @throws IllegalArgumentException if the block size is less than or equal to zero or the pairs are invalid
+     * @throws IllegalArgumentException if the block size or timestep or pairs are invalid
      * @throws InsufficientDataForResamplingException if resampling cannot be performed due to lack of data
      */
 
     public static <T> StationaryBootstrapResampler<T> of( Pool<TimeSeries<T>> pool,
                                                           long meanBlockSizeInTimesteps,
+                                                          Duration timestep,
                                                           RandomGenerator randomGenerator,
                                                           ExecutorService resampleExecutor )
     {
         return new StationaryBootstrapResampler<>( pool,
                                                    meanBlockSizeInTimesteps,
+                                                   timestep,
                                                    randomGenerator,
                                                    resampleExecutor );
     }
@@ -686,7 +687,7 @@ public class StationaryBootstrapResampler<T>
         // IMPORTANT: Use the same ordering that was used to generate the indexes
         List<List<TimeSeries<T>>> groupedBySize = pool.getOrderedTimeSeries();
         List<TimeSeries<T>> sizeOrder = groupedBySize.stream()
-                                                     .flatMap( Collection::stream )
+                                                     .flatMap( List::stream )
                                                      .toList();
 
         // Execute the time-series resampling in parallel as this can be time-consuming for large time-series, mainly
@@ -772,21 +773,24 @@ public class StationaryBootstrapResampler<T>
     /**
      * Creates an instance.
      * @param pool the pool to resample, required
-     * @param meanBlockSizeInTimesteps the block size, which must be greater than zero
+     * @param meanBlockSizeInTimesteps the block size in timestep units, which must be greater than zero
+     * @param timestep the timestep
      * @param randomGenerator the random number generator to use when sampling block sizes, required
      * @param resampleExecutor an executor service for resampling work
      * @throws NullPointerException if any required input is null
-     * @throws IllegalArgumentException if the block size is less than or equal to zero or the pairs are invalid
+     * @throws IllegalArgumentException if the block size or timestep or pairs are invalid
      */
 
     private StationaryBootstrapResampler( Pool<TimeSeries<T>> pool,
                                           long meanBlockSizeInTimesteps,
+                                          Duration timestep,
                                           RandomGenerator randomGenerator,
                                           ExecutorService resampleExecutor )
     {
         Objects.requireNonNull( pool );
         Objects.requireNonNull( randomGenerator );
         Objects.requireNonNull( resampleExecutor );
+        Objects.requireNonNull( timestep );
 
         if ( meanBlockSizeInTimesteps <= 0 )
         {
@@ -794,34 +798,45 @@ public class StationaryBootstrapResampler<T>
                                                 + "zero but was: " + meanBlockSizeInTimesteps + "." );
         }
 
-        // Obtain the constant duration between consecutive times
-        List<Duration> timesteps = pool.get()
-                                       .stream()
-                                       .flatMap( n -> TimeSeriesSlicer.getTimesteps( n )
-                                                                      .stream() )
-                                       .collect( Collectors.toCollection( ArrayList::new ) );
-
-        if ( pool.hasBaseline() )
+        if ( timestep.isZero()
+             || timestep.isNegative() )
         {
-            pool.getBaselineData()
-                .get()
-                .stream()
-                .flatMap( n -> TimeSeriesSlicer.getTimesteps( n )
-                                               .stream() )
-                .forEach( timesteps::add );
+            throw new IllegalArgumentException( "The mean block size for the stationary bootstrap must be greater than "
+                                                + "zero but was: " + meanBlockSizeInTimesteps + "." );
         }
 
         // Warn about missing data or irregular time-series. Perhaps more sophistication could be introduced in future
         // to account for missing data, but the current approach assumes regular time-series without a lot of missing
         // data. Warn, but allow because even a single missing event among many could trigger this check
-        if ( timesteps.size() > 1 )
+        if ( LOGGER.isWarnEnabled() )
         {
-            LOGGER.warn( "While resampling a pool to estimate the sampling uncertainties of the statistics, discovered "
-                         + "more than one timestep among the time-series present, which may be caused by missing data "
-                         + "or irregular time-series. The resampling technique assumes regular timeseries with a "
-                         + "consistent transition probability between adjacent times. If the time-series contain a lot "
-                         + "of missing data or irregular time-series, the sampling uncertainty estimates may be "
-                         + "unreliable. The following timesteps were discovered: {}.", timesteps );
+            // Obtain the constant duration between consecutive times
+            Set<Duration> timesteps = pool.get()
+                                          .stream()
+                                          .flatMap( n -> TimeSeriesSlicer.getTimesteps( n )
+                                                                         .stream() )
+                                          .collect( Collectors.toCollection( TreeSet::new ) );
+
+            if ( pool.hasBaseline() )
+            {
+                pool.getBaselineData()
+                    .get()
+                    .stream()
+                    .flatMap( n -> TimeSeriesSlicer.getTimesteps( n )
+                                                   .stream() )
+                    .forEach( timesteps::add );
+            }
+
+            if ( timesteps.size() > 1 )
+            {
+                LOGGER.warn( "While resampling a pool to estimate the sampling uncertainties of the statistics, "
+                             + "discovered more than one timestep among the time-series present, which may be caused "
+                             + "by missing data or irregular time-series. The resampling technique assumes regular "
+                             + "timeseries with a consistent transition probability between adjacent times. If the "
+                             + "time-series contain a lot of missing data or irregular time-series, the sampling "
+                             + "uncertainty estimates may be unreliable. The following timesteps were discovered: {}.",
+                        timesteps );
+            }
         }
 
         // Cross-pair the main and baseline pairs with each other across all "mini pools". Resampling only works if
@@ -861,34 +876,13 @@ public class StationaryBootstrapResampler<T>
             }
         }
 
-        // Calculate the modal timestep, if any
-        Duration timestep = this.getModalDuration( timesteps );
+        Set<Duration> uniqueTimeOffsets = new HashSet<>( timeOffsets );
 
-        // If the modal timestep is null, interpret the meanBlockSizeInTimesteps as referring to the modal time offset
-        if ( Objects.isNull( timestep ) )
-        {
-            timestep = this.getModalDuration( timeOffsets );
-        }
-
-        if ( Objects.isNull( timestep ) || timestep.isZero() )
-        {
-            LOGGER.warn( "Discovered a mean block size of {} in time steps, but could not determine a non-zero time "
-                         + "step from which to calculate a transition probability between time-series. This is usually "
-                         + "an indication of sparse/irregular data, which may not be well-suited to the stationary "
-                         + "bootstrap and any sampling uncertainty estimates should be treated with extreme caution. "
-                         + "Using p = 1.0 / mean block size as the transition probability (p={})",
-                         meanBlockSizeInTimesteps,
-                         pProb );
-            this.q = Map.of( Duration.ZERO, this.p );
-        }
-        else
-        {
-            // Create the distributions to transition between time-series based on time offset of the first valid time
-            this.q = this.getTransitionProbabilitiesBetweenSeries( timestep,
-                                                                   timeOffsets,
-                                                                   meanBlockSizeInTimesteps,
-                                                                   this.randomGenerator );
-        }
+        // Create the distributions to transition between time-series based on time offset of the first valid time
+        this.q = this.getTransitionProbabilitiesBetweenSeries( timestep,
+                                                               uniqueTimeOffsets,
+                                                               meanBlockSizeInTimesteps,
+                                                               this.randomGenerator );
 
         this.main = Collections.unmodifiableList( innerMain );
         this.baseline = Collections.unmodifiableList( innerBaseline );
@@ -902,14 +896,22 @@ public class StationaryBootstrapResampler<T>
                                          .get()
                                          .size();
             }
-            LOGGER.debug( "Created a stationary bootstrap resampler with a mean block size of {} timesteps, a "
-                          + "probability of {} for randomly sampling consecutive timesteps within the same "
-                          + "time-series, probabilities of {} for randomly sampling consecutive time-series depending"
-                          + "on the gap/duration between them, and a pool with {} main time-series and {} baseline "
-                          + "time-series.",
+
+            Map<Duration, Double> qProbs = this.q.entrySet()
+                                                 .stream()
+                                                 .collect( Collectors.toMap( Map.Entry::getKey,
+                                                                             n -> n.getValue()
+                                                                                   .getProbabilityOfSuccess() ) );
+
+            LOGGER.debug( "Created a stationary bootstrap resampler with a mean block size of {} timesteps, a modal "
+                          + "timestep of {}, a probability of {} for randomly sampling consecutive timesteps within "
+                          + "the same time-series, probabilities of {} for randomly sampling consecutive time-series "
+                          + "depending on the gap/duration between them, and a pool with {} main time-series and {} "
+                          + "baseline time-series.",
                           meanBlockSizeInTimesteps,
-                          this.p,
-                          this.q,
+                          timestep,
+                          pProb,
+                          qProbs,
                           this.pool.get()
                                    .size(),
                           baselineCount );
@@ -1239,24 +1241,6 @@ public class StationaryBootstrapResampler<T>
         }
 
         return Collections.unmodifiableMap( returnMe );
-    }
-
-    /**
-     * Returns the modal duration from the input.
-     * @param durations the durations whose mode is required
-     * @return the modal duration
-     */
-
-    private Duration getModalDuration( Collection<Duration> durations )
-    {
-        return durations.stream()
-                        .collect( Collectors.groupingBy( Function.identity(),
-                                                         Collectors.counting() ) )
-                        .entrySet()
-                        .stream()
-                        .max( Map.Entry.comparingByValue() )
-                        .map( Map.Entry::getKey )
-                        .orElse( null );
     }
 
     /**
