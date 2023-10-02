@@ -12,6 +12,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import wres.datamodel.pools.Pool;
 import wres.datamodel.time.Event;
@@ -28,6 +32,9 @@ import wres.statistics.generated.ReferenceTime;
  */
 class BootstrapPool<T>
 {
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( BootstrapPool.class );
+
     /** The time-series mapped by number of events. Each list contains one or more time-series with at least as many
      * events as the corresponding map key. The time-series are time-ordered by the first valid time in the series. In
      * other words, consecutive series are the "nearest" to each other in time. Each inner list contains the events
@@ -239,6 +246,21 @@ class BootstrapPool<T>
             }
 
             innerTimeSeriesEvents.put( nextCount, Collections.unmodifiableList( events ) );
+        }
+
+        // Log the structure
+        if ( LOGGER.isDebugEnabled() )
+        {
+            SortedMap<Integer, Integer> sortedSeries =
+                    innerTimeSeriesEvents.entrySet()
+                                         .stream()
+                                         .collect( Collectors.toMap( Map.Entry::getKey, n -> n.getValue()
+                                                                                              .size(),
+                                                                     ( a, b ) -> a,
+                                                                     TreeMap::new ) );
+
+            LOGGER.debug( "Created a bootstrap pool with the following time-series structure to sample (event count="
+                          + "number of time-series with at least that event count): {}.", sortedSeries );
         }
 
         this.timeSeriesEvents = Collections.unmodifiableSortedMap( innerTimeSeriesEvents );

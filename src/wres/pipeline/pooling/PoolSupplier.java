@@ -696,7 +696,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         Objects.requireNonNull( rightData,
                                 "Right data is expected for the creation of pool " + this.getMetadata() + "." );
 
-        // Obtain the desired time-scale
+        // Obtain the desired timescale
         TimeScaleOuter desiredTimeScaleToUse = this.getDesiredTimeScale();
 
         // Get the paired frequency
@@ -790,7 +790,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
     /**
      * @param mainPairs the main pairs indexed by feature tuple
      * @param basePairs the baseline pairs, optional, indexed by feature tuple
-     * @param desiredTimeScale the desired time-scale, optional
+     * @param desiredTimeScale the desired timescale, optional
      * @param statusMessages and evaluation status messages
      * @return the pool of pairs
      */
