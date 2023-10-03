@@ -442,9 +442,10 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         {
             // Cannot estimate the sampling uncertainties of an empty pool
             if ( pool.get()
-                     .isEmpty() )
+                     .isEmpty() || pool.get()
+                                       .size() == 1 )
             {
-                LOGGER.warn( "Cannot estimate the sampling uncertainties of an empty pool. The empty pool is: {}.",
+                LOGGER.warn( "Insufficient data to estimate the sampling uncertainties of pool: {}.",
                              pool.getMetadata() );
 
                 return List.of();
