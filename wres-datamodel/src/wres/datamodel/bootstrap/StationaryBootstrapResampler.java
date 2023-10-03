@@ -1,7 +1,5 @@
 package wres.datamodel.bootstrap;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -276,7 +274,7 @@ public class StationaryBootstrapResampler<T>
                 nextSeriesIndex = this.getFirstSampleFromFirstSeries( seriesCount );
             }
             // Remaining events in the first series
-            else if ( seriesIndex == 0 )
+            else if ( seriesIndex == 0 )   // && eventIndex > 0 implied
             {
                 nextSeriesIndex = this.getSampleThatIsNotFirstFromFirstSeries( seriesCount, eventIndex, nextIndexes );
             }
@@ -343,7 +341,7 @@ public class StationaryBootstrapResampler<T>
     }
 
     /**
-     * Generate a resample index for the first sample from the first series.
+     * Generate a resample index for the first sample from a series that is not the first series.
      *
      * @param seriesCount the number of time-series
      * @param seriesIndex the series index
@@ -364,46 +362,39 @@ public class StationaryBootstrapResampler<T>
         int lastSeriesIndex = lastIndex[0];
         int nextSeriesIndex = lastSeriesIndex + 1;
 
-        // Find the appropriate transition probability distribution, which depends on the gap
+        // Find the appropriate transition probability distribution, which depends on the gap. If the next index is
+        // greater than the last available index, then circle back to the first index
+        BinomialDistribution sampler;
 
-        // Gap when restarting the pool
+        // Gap when restarting the pool. In this case, assume the default transition probability of p, rather than the
+        // potentially much larger q that corresponds to the gap between the first and last value in the series. This
+        // is debatable, but is the approach adopted in Politis and Romano (1994), albeit for a single,
+        // observation-like time-series. To use the appropriate q probability instead, simply calculate the gap as
+        // normal - the corresponding distribution should be available, as the gap between the first and last series is
+        // among those created
         if ( nextSeriesIndex >= seriesCount )
         {
             nextSeriesIndex = 0;
+            sampler = this.p;
         }
-
-        // Find the duration between the last index and next index
-        Instant first = eventsToSample.get( lastSeriesIndex )
-                                      .get( 0 )
-                                      .getTime();
-        Instant second = eventsToSample.get( nextSeriesIndex )
-                                       .get( 0 )
-                                       .getTime();
-
-        // Absolute gap
-        Duration gap = Duration.between( first, second )
-                               .abs();
-        BinomialDistribution sampler = this.q.get( gap );
-
-        if ( Objects.isNull( sampler ) )
+        // Gap when not restarting the pool
+        else
         {
-            // Default gap registered to Duration.ZERO. This occurs when no modal timestep could be determined from the
-            // data
-            sampler = this.q.get( Duration.ZERO );
+            // Find the duration between the last index and next index
+            Instant first = eventsToSample.get( lastSeriesIndex )
+                                          .get( 0 )
+                                          .getTime();
+            Instant second = eventsToSample.get( nextSeriesIndex )
+                                           .get( 0 )
+                                           .getTime();
 
-            // Still null? This is an internal error.
-            if ( Objects.isNull( sampler ) )
-            {
-                throw new ResamplingException( "Failed to discover a sampler for a transition between time-series "
-                                               + "separated by "
-                                               + gap
-                                               + ", which is an internal error. Samplers were available for the "
-                                               + "following durations: "
-                                               + this.q.keySet() );
-            }
+            // Absolute gap
+            Duration gap = Duration.between( first, second )
+                                   .abs();
+            sampler = this.q.get( gap );
         }
 
-        // Choose the next event from a randomly selected series with probability q
+        // Choose the next event from a randomly selected series?
         if ( sampler.sample() == 1 )
         {
             nextSeriesIndex = this.getRandomIndex( seriesCount );
@@ -602,38 +593,28 @@ public class StationaryBootstrapResampler<T>
                                       .getTime();
         int nextSeries = lastIndex[0] + 1;
 
-        // Circular sampling, so return to first series in pool if needed
+        // Circular sampling, so return to first series in pool if needed. In this case, assume the default transition
+        // probability of p, rather than the potentially much larger q that corresponds to the gap between the first
+        // and last value in the series. This is debatable, but is the approach adopted in Politis and Romano (1994).
+        // To use the appropriate q probability instead, simply calculate the gap as normal - the corresponding
+        // distribution should be available, as the gap between the first and last series is among those created
+        BinomialDistribution sampler;
         if ( nextSeries >= seriesCount )
         {
             nextSeries = 0;
+            sampler = this.p;
         }
-
-        Instant second = eventsToSample.get( nextSeries )
-                                       .get( 0 ) // First event
-                                       .getTime();
-
-        // Absolute gap
-        Duration gap = Duration.between( first, second )
-                               .abs();
-
-        BinomialDistribution sampler = this.q.get( gap );
-
-        if ( Objects.isNull( sampler ) )
+        else
         {
-            // Default gap registered to Duration.ZERO. This occurs when no modal timestep could be determined from the
-            // data
-            sampler = this.q.get( Duration.ZERO );
+            Instant second = eventsToSample.get( nextSeries )
+                                           .get( 0 ) // First event
+                                           .getTime();
 
-            // Still null?
-            if ( Objects.isNull( sampler ) )
-            {
-                throw new ResamplingException(
-                        "Failed to discover a sampler for a transition between time-series "
-                        + "separated by "
-                        + gap
-                        + ". Samplers were available for the following durations: "
-                        + this.q.keySet() );
-            }
+            // Absolute gap
+            Duration gap = Duration.between( first, second )
+                                   .abs();
+
+            sampler = this.q.get( gap );
         }
 
         // Choose the next event from a randomly selected series with probability q
@@ -831,11 +812,13 @@ public class StationaryBootstrapResampler<T>
             {
                 LOGGER.warn( "While resampling a pool to estimate the sampling uncertainties of the statistics, "
                              + "discovered more than one timestep among the time-series present, which may be caused "
-                             + "by missing data or irregular time-series. The resampling technique assumes regular "
+                             + "by missing data or irregular timesteps. The resampling technique assumes regular "
                              + "timeseries with a consistent transition probability between adjacent times. If the "
                              + "time-series contain a lot of missing data or irregular time-series, the sampling "
-                             + "uncertainty estimates may be unreliable. The following timesteps were discovered: {}.",
-                        timesteps );
+                             + "uncertainty estimates may be unreliable. The following timesteps were discovered: {}."
+                             + " The pool is: {}.",
+                             timesteps,
+                             pool.getMetadata() );
             }
         }
 
@@ -1264,15 +1247,14 @@ public class StationaryBootstrapResampler<T>
         }
 
         // Find the number of timesteps per offset and use that to calculate a transition probability between series
-        BigDecimal timestepDecimal = BigDecimal.valueOf( timestep.getSeconds() )
-                                               .add( BigDecimal.valueOf( timestep.getNano(), 999_999 ) );
-
-        BigDecimal offsetDecimal = BigDecimal.valueOf( timeOffset.getSeconds() )
-                                             .add( BigDecimal.valueOf( timeOffset.getNano(), 999_999 ) );
-
-        BigDecimal timestepsPerOffset = timestepDecimal.divide( offsetDecimal, RoundingMode.HALF_UP );
-
-        double meanBlocksPerOffset = timestepsPerOffset.doubleValue() * meanBlockSizeInTimesteps;
+        // Could perform this calculation with BigDecimal, creating in seconds and then adding the nanosecond part with
+        // scale 999_999, but that is probably overkill relative to the big assumptions made with sampling uncertainty
+        // estimation, and operations on BigDecimal dramatically increase runtime complexity. Use millisecond precision
+        // instead
+        double timestepDecimal = timestep.toMillis();
+        double offsetDecimal = timeOffset.toMillis();
+        double timestepsPerOffset = timestepDecimal / offsetDecimal;
+        double meanBlocksPerOffset = timestepsPerOffset * meanBlockSizeInTimesteps;
 
         // If the number of blocks per offset is less than 1, adjust to 1, i.e., random sampling, because the block
         // size does not capture even 1 offset between time-series

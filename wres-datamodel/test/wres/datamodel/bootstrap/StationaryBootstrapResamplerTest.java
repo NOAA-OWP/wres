@@ -31,6 +31,7 @@ import wres.statistics.generated.ReferenceTime;
  */
 class StationaryBootstrapResamplerTest
 {
+
     @Test
     void testResampleProducesExpectedPoolShapeForPoolWithOneSeries()
     {
