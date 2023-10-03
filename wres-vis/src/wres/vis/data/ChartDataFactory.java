@@ -998,7 +998,7 @@ public class ChartDataFactory
         List<DiagramStatisticOuter> upper = nominal;
 
         // Quantiles available and this is not a sample size
-        if ( max > min && yDimension != MetricDimension.SAMPLE_SIZE )
+        if ( max > min )
         {
             lower = mappedByQuantile.get( min );
             upper = mappedByQuantile.get( max );
