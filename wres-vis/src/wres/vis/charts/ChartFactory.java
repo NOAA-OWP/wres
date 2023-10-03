@@ -941,7 +941,7 @@ public class ChartFactory
         // The reliability plot controls the legend, so remove legend items from the sample size plot
         LegendItemCollection noLegendItems = new LegendItemCollection();
         sampleSizePlot.setFixedLegendItems( noLegendItems );
-        this.setSeriesColorAndShape( sampleSizePlot, false );
+        this.setSeriesColorAndShape( sampleSizePlot, !quantiles.isEmpty() );
 
         CombinedDomainXYPlot combinedPlot = new CombinedDomainXYPlot( domainAxis );
         combinedPlot.setGap( 5.0 );
