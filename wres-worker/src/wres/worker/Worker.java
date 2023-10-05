@@ -51,8 +51,6 @@ public class Worker
 
     private static final int DEFAULT_PORT = 8010;
 
-    private static int port;
-
     /** A web client to help with reading data from the web. */
     private static final WebClient WEB_CLIENT = new WebClient();
 
@@ -110,7 +108,7 @@ public class Worker
 
             JobReceiver receiver = new JobReceiver( receiveChannel,
                                                     processToLaunch,
-                                                    Worker.port );
+                                                    DEFAULT_PORT );
 
             receiveChannel.basicConsume( RECV_QUEUE_NAME, false, receiver );
 
@@ -124,8 +122,6 @@ public class Worker
                 {
                     if ( !isServerUp() )
                     {
-                        // Refuse the job and requeue it to allow time for the server to start up
-                        receiveChannel.basicNack( wresEvaluationProcessor.getDeliveryTag(), false, true);
                         // Server is not up after retrying, killing shim and allowing Docker to attempt a restart
                         throw new InternalError( "Was unable to reach the worker server" );
                     }
@@ -133,7 +129,7 @@ public class Worker
                     {
                         // Launch WRES if the consumer found a message saying so.
                         wresEvaluationProcessor.call();
-                        // Tell broker it is OK to get more messages by acknowledging
+                        // Ack that this shim got and processed the message from the queue and remove that message
                         receiveChannel.basicAck( wresEvaluationProcessor.getDeliveryTag(), false );
                     }
                 }
@@ -204,11 +200,9 @@ public class Worker
         String executable = wresExecutable
                 .getPath();
 
-        setFreePortOrDefault();
-
         serverProcessString.add( executable );
         serverProcessString.add( "server" );
-        serverProcessString.add( String.valueOf( Worker.port ) );
+        serverProcessString.add( String.valueOf( DEFAULT_PORT ) );
 
         ProcessBuilder processBuilder = new ProcessBuilder( serverProcessString );
         processBuilder.environment().put( "JAVA_OPTS", javaOpts );
@@ -234,27 +228,6 @@ public class Worker
         throw new InternalError( "Was unable to start up the worker server" );
     }
 
-    /**
-     * Gets a free port for the worker server to bind to
-     */
-    private static void setFreePortOrDefault()
-    {
-        try
-        {
-            ServerSocket serverSocket = new ServerSocket( 0 );
-            Worker.port = serverSocket.getLocalPort();
-            serverSocket.close();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Unable to find free port with exception: {}", e );
-        }
-        if ( Worker.port == 0 )
-        {
-            Worker.port = DEFAULT_PORT;
-        }
-    }
-
 
     /**
      * Method to check if the server is reachable which exponential backoff retries
@@ -263,23 +236,10 @@ public class Worker
      */
     private static boolean isServerUp() throws IOException, URISyntaxException
     {
-        URI uri = new URI( String.format( SERVER_HEARTBEAT_URI, Worker.port ) );
+        URI uri = new URI( String.format( SERVER_HEARTBEAT_URI, DEFAULT_PORT ) );
         WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( uri, CALL_TIMEOUT );
 
         return fromWeb.getStatusCode() == HttpURLConnection.HTTP_OK;
-    }
-
-    /**
-     * We call this function of the heartbeat of the server fails.
-     * If the server process is no longer alive, we destroy the process and start a new server
-     * @param oldServerProcess The old process we are checking alive status of
-     * @param wresExecutable the executable used to start a new server
-     * @return
-     */
-    private static Process restartServerProcess( Process oldServerProcess, File wresExecutable )
-    {
-        killServerProcess( oldServerProcess );
-        return startWorkerServer( wresExecutable );
     }
 
     private static void killServerProcess( Process oldServerProcess ) {

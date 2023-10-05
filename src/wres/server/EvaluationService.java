@@ -13,8 +13,10 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -174,7 +176,7 @@ public class EvaluationService
         new Thread( () -> {
             long offset = 0;
             // While the evaluation hasn't completed continue pulling from the standard stream and sending to client
-            while ( !( evaluationStage.get().equals( COMPLETED ) || evaluationStage.get().equals( CLOSED ) ) )
+            while ( !evaluationStage.get().equals( CLOSED ) )
             {
                 ByteArrayInputStream byteArrayInputStream =
                         new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
@@ -200,7 +202,7 @@ public class EvaluationService
      */
     @GET
     @Path( "/stderr/{id}" )
-    @Produces( "application/octet-stream" )
+    @Produces( MediaType.SERVER_SENT_EVENTS )
     public void getErrorStream( @PathParam( "id" ) Long id, @Context SseEventSink eventSink, @Context Sse sse )
     {
         // Get the stream for the evaluation ID if we allow async exectutions in the future
@@ -213,7 +215,7 @@ public class EvaluationService
         new Thread( () -> {
             long offset = 0;
             // While the evaluation hasn't completed continue pulling from the standard stream and sending to client
-            while ( !( evaluationStage.get().equals( COMPLETED ) || evaluationStage.get().equals( CLOSED ) ) )
+            while ( !evaluationStage.get().equals( CLOSED ) )
             {
                 ByteArrayInputStream byteArrayInputStream =
                         new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
@@ -493,16 +495,29 @@ public class EvaluationService
         }
 
         evaluationStage.set( ONGOING );
-        long projectId = id;
         Set<java.nio.file.Path> outputPaths;
         try
         {
             ExecutionResult result = evaluator.evaluate( jobMessage.getProjectConfig() );
+
+            if ( result.failed() ) {
+                evaluationStage.set( COMPLETED );
+
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                PrintStream printStream = new PrintStream(outputStream);
+                result.getException().printStackTrace(printStream);
+
+                return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
+                               .entity( "WRES experienced an internal issue. The top-level exception was:\n "
+                                        + outputStream )
+                               .build();
+            }
+
             outputPaths = result.getResources();
-            OUTPUTS.put( projectId, outputPaths );
         }
         catch ( UserInputException e )
         {
+            evaluationStage.set( COMPLETED );
             return Response.status( Response.Status.BAD_REQUEST )
                            .entity( "I received something I could not parse. The top-level exception was: "
                                     + e.getMessage() )
@@ -510,6 +525,7 @@ public class EvaluationService
         }
         catch ( InternalWresException iwe )
         {
+            evaluationStage.set( COMPLETED );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "WRES experienced an internal issue. The top-level exception was: "
                                     + iwe.getMessage() )
