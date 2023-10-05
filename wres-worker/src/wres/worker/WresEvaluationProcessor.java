@@ -8,6 +8,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,6 +27,7 @@ import com.rabbitmq.client.Envelope;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.sse.SseEventSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +49,8 @@ class WresEvaluationProcessor implements Callable<Integer>
 
     private static final int META_FAILURE_CODE = 600;
 
+    private static final int EXIT_FAILURE_CODE = 601;
+
     private static final String START_EVAL_URI = "http://localhost:%d/evaluation/start/%s";
 
     private static final String OPEN_EVAL_URI = "http://localhost:%d/evaluation/open";
@@ -60,6 +64,8 @@ class WresEvaluationProcessor implements Callable<Integer>
     private static final String STDOUT_URI = "http://localhost:%d/evaluation/stdout/%s";
 
     private static final String STDERR_URI = "http://localhost:%d/evaluation/stderr/%s";
+
+    private static final List<Integer> RETRY_STATES = List.of( Response.Status.REQUEST_TIMEOUT.getStatusCode() );
 
     private static final Duration CALL_TIMEOUT = Duration.ofMinutes( 2 );
 
@@ -169,11 +175,11 @@ class WresEvaluationProcessor implements Callable<Integer>
     /**
      * Execute the process assigned, return the exit code or 600+ if something
      * went wrong talking to the broker.
-     * @return exit code of process or META_FAILURE_CODE (600+) if broker
-     * communication failed.
+     * @return exit code of process
+     * META_FAILURE_CODE (600) if communication failed.
      */
 
-    public Integer call()
+    public Integer call() throws IOException
     {
         Job.job job;
         try
@@ -210,7 +216,6 @@ class WresEvaluationProcessor implements Callable<Integer>
                                         evaluationId );
         executorService.submit( statusMessenger );
 
-
         try ( Client client = ClientBuilder.newClient();
               SseEventSource outSource = SseEventSource
                       .target(
@@ -219,7 +224,7 @@ class WresEvaluationProcessor implements Callable<Integer>
               SseEventSource errSource = SseEventSource
                       .target(
                               client.target( String.format( STDERR_URI, this.getPort(), evaluationId ) )
-                      ).build();
+                      ).build()
         )
         {
             // Set up error and std out stream listeners
@@ -252,16 +257,17 @@ class WresEvaluationProcessor implements Callable<Integer>
             LOGGER.info( "Request exited with http code: {}", exitValue );
             byte[] response = WresEvaluationProcessor.prepareExitResponse( exitValue, null );
             this.sendMessage( response, WhichStream.EXITCODE );
-            closeEvaluation();
             WresEvaluationProcessor.shutdownExecutor( executorService );
+            closeEvaluation();
             return exitValue;
         }
-        catch ( IOException ioe )
+        catch ( EvaluationProcessingException epe )
         {
-            LOGGER.warn( "Failed to make post request {}", ioe );
-            byte[] response = WresEvaluationProcessor.prepareMetaFailureResponse( ioe );
+            LOGGER.warn( String.format( "Failed to finish the evaluation with log: \n %s", epe ) );
+            byte[] response = WresEvaluationProcessor.prepareMetaFailureResponse( epe );
             this.sendMessage( response, WhichStream.EXITCODE );
             WresEvaluationProcessor.shutdownExecutor( executorService );
+            closeEvaluation();
             return META_FAILURE_CODE;
         }
     }
@@ -274,7 +280,9 @@ class WresEvaluationProcessor implements Callable<Integer>
     private String prepareEvaluationId()
     {
         URI prepareEval = URI.create( String.format( OPEN_EVAL_URI, this.getPort() ) );
-        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval, CALL_TIMEOUT ) )
+        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval,
+                                                                                   CALL_TIMEOUT,
+                                                                                   RETRY_STATES ) )
         {
             if ( evaluationIdRequest.getStatusCode() == HttpURLConnection.HTTP_BAD_REQUEST )
             {
@@ -287,7 +295,7 @@ class WresEvaluationProcessor implements Callable<Integer>
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new EvaluationProcessingException( "Unable to prepare the eval ID", e );
         }
     }
 
@@ -296,9 +304,8 @@ class WresEvaluationProcessor implements Callable<Integer>
      * @param evaluationId the ID opened for this job
      * @param job the job contents
      * @return and int holding the return value of the call
-     * @throws IOException
      */
-    private int startEvaluation( String evaluationId, Job.job job ) throws IOException
+    private int startEvaluation( String evaluationId, Job.job job )
     {
         // Check to see if there is any command at all
         if ( job.getProjectConfig().isEmpty() )
@@ -316,19 +323,40 @@ class WresEvaluationProcessor implements Callable<Integer>
         LOGGER.info( String.format( "Starting evaluation: %s", startEvalURI ) );
 
         try (
-                WebClient.ClientResponse clientResponse = WEB_CLIENT.postToWeb( startEvalURI, jobMessage, CALL_TIMEOUT )
+                WebClient.ClientResponse clientResponse = WEB_CLIENT.postToWeb( startEvalURI,
+                                                                                jobMessage,
+                                                                                CALL_TIMEOUT,
+                                                                                RETRY_STATES )
         )
         {
-            // Go through the output paths returned from the evaluation post request and send them to the broker
-            new BufferedReader(
-                    new InputStreamReader( clientResponse.getResponse() ) )
-                    .lines()
-                    .forEach( out -> this.sendMessage(
-                                      prepareOutputPathMessage( Paths.get( out ) ), WhichStream.OUTPUT
-                              )
-                    );
+            if ( clientResponse.getStatusCode() != 200 )
+            {
+                // The response was not good, post the resulting exception to the error listener
+                String stackTrace = new BufferedReader(
+                        new InputStreamReader( clientResponse.getResponse() ) )
+                        .lines().collect( Collectors.joining( "\n" ) );
+
+                this.sendMessage( prepareStdStreamMessage( stackTrace, WhichStream.STDERR ), WhichStream.STDERR );
+
+                LOGGER.warn( "Request failed out with the following stack:\n " + stackTrace );
+            }
+            else
+            {
+                // Go through the output paths returned from the evaluation post request and send them to the broker
+                new BufferedReader(
+                        new InputStreamReader( clientResponse.getResponse() ) )
+                        .lines()
+                        .forEach( out -> this.sendMessage(
+                                          prepareOutputPathMessage( Paths.get( out ) ), WhichStream.OUTPUT
+                                  )
+                        );
+            }
 
             return clientResponse.getStatusCode();
+        }
+        catch ( IOException e )
+        {
+            throw new EvaluationProcessingException( "Unable to run an evaluation", e );
         }
     }
 
@@ -337,10 +365,12 @@ class WresEvaluationProcessor implements Callable<Integer>
      * @return String representation of an evaluation id
      * @throws IOException
      */
-    private int manipulateDatabase( String uriToCall ) throws IOException
+    private int manipulateDatabase( String uriToCall )
     {
         URI prepareEval = URI.create( String.format( uriToCall, this.getPort() ) );
-        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval, CALL_TIMEOUT ) )
+        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval,
+                                                                                   CALL_TIMEOUT,
+                                                                                   RETRY_STATES ) )
         {
             if ( evaluationIdRequest.getStatusCode() == HttpURLConnection.HTTP_INTERNAL_ERROR )
             {
@@ -351,6 +381,10 @@ class WresEvaluationProcessor implements Callable<Integer>
             LOGGER.info( "Database manipulated successfully" );
             return evaluationIdRequest.getStatusCode();
         }
+        catch ( IOException e )
+        {
+            throw new EvaluationProcessingException( "Unable to manipulate the database", e );
+        }
     }
 
     /**
@@ -360,7 +394,7 @@ class WresEvaluationProcessor implements Callable<Integer>
     {
         try ( WebClient.ClientResponse clientResponse =
                       WEB_CLIENT.postToWeb( URI.create( String.format( CLOSE_EVAL_URI, this.getPort() ) ),
-                                            CALL_TIMEOUT ) )
+                                            CALL_TIMEOUT, RETRY_STATES ) )
         {
             if ( clientResponse.getStatusCode() != HttpsURLConnection.HTTP_OK )
             {
@@ -369,7 +403,7 @@ class WresEvaluationProcessor implements Callable<Integer>
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new EvaluationProcessingException( "Unable to close the evaluation", e );
         }
     }
 

@@ -80,6 +80,7 @@ public class WebClient
                                             .followRedirects( true )
                                             .connectTimeout( CONNECT_TIMEOUT )
                                             .callTimeout( REQUEST_TIMEOUT )
+                                            .pingInterval( Duration.ofSeconds( 1 ) )
                                             .readTimeout( REQUEST_TIMEOUT )
                                             .build();
         this.trackTimings = trackTimings;
@@ -265,10 +266,10 @@ public class WebClient
      * @throws NullPointerException When any argument is null.
      */
 
-    public ClientResponse postToWeb( URI uri, Duration timeout )
+    public ClientResponse postToWeb( URI uri, Duration timeout, List<Integer> retryStates )
             throws IOException
     {
-        return postToWeb( uri, new byte[0], timeout );
+        return postToWeb( uri, new byte[0], timeout, retryStates );
     }
 
     /**
@@ -284,11 +285,11 @@ public class WebClient
      * @throws NullPointerException When any argument is null.
      */
 
-    public ClientResponse postToWeb( URI uri, byte[] jobMessage, Duration timeout )
+    public ClientResponse postToWeb( URI uri, byte[] jobMessage, Duration timeout, List<Integer> retryStates )
             throws IOException
     {
         Objects.requireNonNull( uri );
-        Objects.requireNonNull( DEFAULT_RETRY_STATES );
+        Objects.requireNonNull( retryStates );
 
         if ( !uri.getScheme().startsWith( "http" ) )
         {
@@ -296,7 +297,7 @@ public class WebClient
                     "Must pass an http uri, got " + uri );
         }
 
-        LOGGER.debug( "getFromWeb {}", uri );
+        LOGGER.debug( "postToWeb {}", uri );
 
         WebClientEvent monitorEvent = WebClientEvent.of( uri ); // Monitor with JFR
 
@@ -323,17 +324,14 @@ public class WebClient
 
             while ( retry )
             {
-                // When a tolerable exception happened (httpResponse is null)
-                // or the status is something we need to retry:
-                if ( Objects.isNull( httpResponse )
-                     || DEFAULT_RETRY_STATES.contains( httpResponse.code() ) )
+                // the status is something we need to retry:
+                if ( !Objects.isNull( httpResponse )
+                     && retryStates.contains( httpResponse.code() ) )
                 {
-                    if ( Objects.nonNull( httpResponse ) )
-                    {
-                        LOGGER.warn( "Retrying {} in a bit due to HTTP status {}.",
-                                     uri,
-                                     httpResponse.code() );
-                    }
+
+                    LOGGER.warn( "Retrying {} in a bit due to HTTP status {}.",
+                                 uri,
+                                 httpResponse.code() );
 
                     Thread.sleep( sleepMillis );
                     httpResponse = tryRequest( request, retryCount );
@@ -351,7 +349,33 @@ public class WebClient
                 }
             }
 
-            return this.validateResponse( httpResponse, uri, retryCount, monitorEvent, start );
+            // Do custome validation as the validate function throws errors on 500
+            Instant end = Instant.now();
+            Duration duration = Duration.between( start, end );
+
+            if ( Objects.nonNull( httpResponse )
+                 && Objects.nonNull( httpResponse.body() ) )
+            {
+                int httpStatus = httpResponse.code();
+
+                monitorEvent.setHttpResponseCode( httpStatus );
+                monitorEvent.setRetryCount( retryCount );
+                monitorEvent.commit();
+
+                LOGGER.debug( "Got response from {} in {}.",
+                              uri,
+                              duration );
+            }
+            else
+            {
+                throw new IOException( "Failed to get data from "
+                                       + uri
+                                       + " due to repeated failures (see "
+                                       + "WARN messages above) after "
+                                       + duration );
+            }
+
+            return new ClientResponse( httpResponse );
         }
         catch ( InterruptedException ie )
         {
@@ -460,14 +484,14 @@ public class WebClient
             {
                 LOGGER.warn( "Retrying {} in a bit due to {}.", uri, ioe.toString() );
             }
-            //            else
-            //            {
-            //                // Unrecoverable. If truly recoverable, add code to the method
-            //                // called shouldRetryIndividualException().
-            //                throw new Exception( "Unrecoverable exception when getting data from "
-            //                                           + uri,
-            //                                           ioe );
-            //            }
+            else
+            {
+                // Unrecoverable. If truly recoverable, add code to the method
+                // called shouldRetryIndividualException().
+                throw new HttpRetrievalException( "Unrecoverable exception when getting data from "
+                                           + uri,
+                                           ioe );
+            }
         }
         finally
         {

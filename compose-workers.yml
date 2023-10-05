@@ -53,6 +53,8 @@ services:
         cap_drop:
          - ALL
         read_only: true
+        healthcheck:
+          start_period: 1m
         networks:
             wres_net:
     eventsbroker:
