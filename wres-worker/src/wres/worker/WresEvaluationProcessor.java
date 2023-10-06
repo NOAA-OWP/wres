@@ -49,8 +49,6 @@ class WresEvaluationProcessor implements Callable<Integer>
 
     private static final int META_FAILURE_CODE = 600;
 
-    private static final int EXIT_FAILURE_CODE = 601;
-
     private static final String START_EVAL_URI = "http://localhost:%d/evaluation/start/%s";
 
     private static final String OPEN_EVAL_URI = "http://localhost:%d/evaluation/open";

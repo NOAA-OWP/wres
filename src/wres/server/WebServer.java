@@ -226,6 +226,12 @@ public class WebServer
         }
         finally
         {
+            if ( SYSTEM_SETTINGS.isUseDatabase() && Objects.nonNull( database ) )
+            {
+                LOGGER.info( "Terminating database activities..." );
+                database.shutdown();
+            }
+
             if ( Objects.nonNull( broker ) )
             {
                 try
