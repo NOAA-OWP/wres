@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.ProtocolStringList;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -71,7 +73,7 @@ import wres.system.SystemSettings;
  */
 
 @Path( "/evaluation" )
-public class EvaluationService
+public class EvaluationService implements ServletContextListener
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationService.class );
 
@@ -293,6 +295,7 @@ public class EvaluationService
 
         try
         {
+            LOGGER.info( systemSettings.toString() );
             //The migrateDatabase method deals with database locking, so we don't need to worry about that here
             DatabaseOperations.migrateDatabase( database );
         }
@@ -331,6 +334,7 @@ public class EvaluationService
 
         try
         {
+            LOGGER.info( systemSettings.toString() );
             lockManager.lockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
             DatabaseOperations.cleanDatabase( database );
             lockManager.unlockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
@@ -482,6 +486,12 @@ public class EvaluationService
 
             if ( systemSettings.isUseDatabase() )
             {
+                if ( Objects.nonNull( database ) )
+                {
+                    LOGGER.info( "Terminating current database connections" );
+                    database.shutdown();
+                }
+
                 this.database = new Database( new ConnectionSupplier( systemSettings ) );
                 // Migrate the database, as needed
                 if ( database.getAttemptToMigrate() )
@@ -539,6 +549,10 @@ public class EvaluationService
         Set<java.nio.file.Path> outputPaths;
         try
         {
+            // Print system setting at the top of the job log to help debug
+            LOGGER.info( systemSettings.toString() );
+
+            // Execute an evaluation
             ExecutionResult result = evaluator.evaluate( jobMessage.getProjectConfig() );
 
             logInDatabaseIfNeeded( jobMessage, result, beganExecution );
@@ -799,5 +813,15 @@ public class EvaluationService
         }
 
         return Collections.unmodifiableSet( resources );
+    }
+
+    @Override
+    public void contextDestroyed( ServletContextEvent event ) {
+        // Perform action during application's shutdown
+        if ( systemSettings.isUseDatabase() && Objects.nonNull( database ) )
+        {
+            LOGGER.info( "Terminating database activities..." );
+            database.shutdown();
+        }
     }
 }
