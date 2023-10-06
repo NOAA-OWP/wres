@@ -13,9 +13,12 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.sql.SQLException;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
@@ -23,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.ProtocolStringList;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -45,6 +49,7 @@ import org.slf4j.LoggerFactory;
 import static wres.messages.generated.EvaluationStatusOuterClass.EvaluationStatus.*;
 
 import wres.ExecutionResult;
+import wres.Main;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.io.database.ConnectionSupplier;
 import wres.io.database.Database;
@@ -293,15 +298,15 @@ public class EvaluationService
         }
         catch ( SQLException se )
         {
-            String message = "Failed to migrate the database.";
-            LOGGER.error( message, se );
-            InternalWresException e = new InternalWresException( message, se );
+            String errorMessage = "Failed to migrate the database.";
+            LOGGER.error( errorMessage, se );
+            InternalWresException e = new InternalWresException( errorMessage, se );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "Unable to migrate the database with the error: "
                                     + e.getMessage() )
                            .build();
         }
-        return Response.ok( "Database Cleaned" )
+        return Response.ok( "Database Migrated" )
                        .build();
     }
 
@@ -332,9 +337,9 @@ public class EvaluationService
         }
         catch ( SQLException se )
         {
-            String message = "Failed to clean the database.";
-            LOGGER.error( message, se );
-            InternalWresException e = new InternalWresException( message, se );
+            String errorMessage = "Failed to clean the database.";
+            LOGGER.error( errorMessage, se );
+            InternalWresException e = new InternalWresException( errorMessage, se );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "Unable to clean the database with the error: "
                                     + e.getMessage() )
@@ -403,6 +408,39 @@ public class EvaluationService
 
         timeoutThread = new Thread( timeoutRunnable );
         timeoutThread.start();
+    }
+
+    /**
+     * Logs the evaluation into the database if we are using one
+     * @param jobMessage The job message used by the evaluation
+     * @param result The result of the execution
+     * @param beganExecution When the evaluation started
+     */
+    private void logInDatabaseIfNeeded( Job.job jobMessage, ExecutionResult result, Instant beganExecution ) {
+        // Log the execution to the database if a database is used
+        if ( this.systemSettings.isUseDatabase() )
+        {
+            Instant endedExecution = Instant.now();
+            // Log both the operation and the args
+            List<String> argList = new ArrayList<>();
+            argList.add( jobMessage.getVerb().toString() );
+            argList.addAll(jobMessage.getAdditionalArgumentsList().stream().toList());
+
+            DatabaseOperations.LogParameters logParameters =
+                    new DatabaseOperations.LogParameters( argList,
+                                                          result.getName(),
+                                                          result.getDeclaration(),
+                                                          result.getHash(),
+                                                          beganExecution,
+                                                          endedExecution,
+                                                          result.failed(),
+                                                          result.getException(),
+                                                          Main.getVersion() );
+
+            DatabaseOperations.logExecution( database,
+                                             logParameters );
+        }
+
     }
 
     /**
@@ -494,15 +532,22 @@ public class EvaluationService
                            .build();
         }
 
+        //Used for logging
+        Instant beganExecution = Instant.now();
+
         evaluationStage.set( ONGOING );
         Set<java.nio.file.Path> outputPaths;
         try
         {
             ExecutionResult result = evaluator.evaluate( jobMessage.getProjectConfig() );
 
+            logInDatabaseIfNeeded( jobMessage, result, beganExecution );
+
+            // If the result failed add the stack trace to the response and return
             if ( result.failed() ) {
                 evaluationStage.set( COMPLETED );
 
+                // Add failure stack trace to failed job entity
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                 PrintStream printStream = new PrintStream(outputStream);
                 result.getException().printStackTrace(printStream);
@@ -529,13 +574,6 @@ public class EvaluationService
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "WRES experienced an internal issue. The top-level exception was: "
                                     + iwe.getMessage() )
-                           .build();
-        }
-        catch ( Exception e )
-        {
-            return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
-                           .entity( "WRES experienced an unexpected internal issue. The top-level exception was: "
-                                    + e.getMessage() )
                            .build();
         }
 
