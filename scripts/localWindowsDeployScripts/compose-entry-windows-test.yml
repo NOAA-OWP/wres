@@ -1,0 +1,169 @@
+version: '2.3'
+networks:
+    wres_net:
+        driver: bridge
+        enable_ipv6: false
+        ipam:
+            driver: default
+            config:
+                - subnet: 172.19.254.64/26
+                  gateway: 172.19.254.65
+
+services:
+    persister:
+        image: "wres/wres-redis:20230925-0506c3a-dev"
+        restart: always
+        volumes:
+         # For the job data
+         - //c/path/to/this/folder/deploy/wres_share/job_data:/data
+        # Use the redis.conf for configuration (helps avoid rdb snapshots)
+        command: /etc/redis/redis.conf
+        mem_limit: 3072m
+        read_only: true
+        networks:
+            wres_net:
+        # Allow 15 minutes for startup before marking unhealthy
+        healthcheck:
+            start_period: 15m
+    tasker:
+        ports:
+         - "443:8443"
+        image: "wres/wres-tasker:20230925-0506c3a-dev"
+        restart: always
+        depends_on:
+            broker:
+                condition: service_healthy
+            persister:
+                condition: service_healthy
+        volumes:
+         # To read and delete user output data created by worker:
+         - //c/path/to/this/folder/deploy/wres_share/evaluations:/mnt/wres_share/evaluations
+         # To write and delete user input data posted by callers:
+         - //c/path/to/this/folder/deploy/wres_share/input_data:/mnt/wres_share/input_data
+         # For certificates and keys that correspond to them:
+         - //c/path/to/this/folder/wres_secrets:/wres_secrets:ro
+         # To write heap dump files:
+         - //c/path/to/this/folder/deploy/wres_share/heap_dumps/tasker:/mnt/wres_share/heap_dumps/tasker
+        environment:
+         # Make sure to pass through WRES_TASKER_SERVER_P12 to tasker at runtime
+         - JAVA_OPTS=-Dwres.adminToken=${WRES_ADMIN_TOKEN} -Dwres.broker=broker -Dwres.redisHost=persister -Dwres.trustStore=${WRES_TRUST_STORE} -Dwres.taskerPathToServerP12=/wres_secrets/***REMOVED***wres-dev_server_private_key_and_x509_cert.p12 -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/input_data -Dwres.dataDirectDiskThreshold=90 -Dwres.numberOfWorkers=1 -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/tasker -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/tasker/java_pid%p.hprof /mnt/wres_share/heap_dumps/tasker/java_pid%p_$$CON_HOSTNAME.hprof; chmod 775 /mnt/wres_share/heap_dumps/tasker/java_pid%p_$$CON_HOSTNAME.hprof'
+         - LANG=C.UTF-8
+        # Tasker JVM should have 340m max heap specified at launch
+        # The total limit includes stack space which depends on Thread count
+        mem_limit: 1390m
+        cap_drop:
+         - ALL
+        read_only: true
+        networks:
+            wres_net:
+    broker:
+        hostname: localhost
+        ports:
+         - "5671:5671"
+         - "15671:15671"
+        image: "wres/wres-broker:20230925-0506c3a-dev"
+        restart: always
+        volumes:
+         # For certificates and keys that correspond to them:
+         - //c/path/to/this/folder/wres_secrets:/wres_secrets:ro
+         # To support durable queues after a cycling down and up.
+         - //c/path/to/this/folder/deploy/wres_share/rabbitmq/:/var/lib/rabbitmq/
+        environment:
+         - JAVA_OPTS= -Dwres.environment=-dev
+         - RABBITMQ_CONFIG_FILE=rabbitmq.conf
+        # rabbitmq.conf should have 360m specified as high watermark
+        mem_limit: 720m
+        cap_drop:
+         - ALL
+        networks:
+            wres_net:
+        # Allow 5 minutes for startup before marking unhealthy
+        healthcheck:
+            start_period: 5m
+    worker:
+        image: "wres/wres-worker:20231006-14b6bf3-dev"
+        restart: always
+        depends_on:
+            broker:
+                condition: service_healthy
+            eventsbroker:
+                condition: service_started
+        volumes:
+         # To write user output data:
+         - //c/path/to/this/folder/deploy/wres_share/evaluations:/mnt/wres_share/evaluations
+         # To read user input data written by tasker:
+         - //c/path/to/this/folder/deploy/wres_share/input_data:/mnt/wres_share/input_data:ro
+         # To read test input data:
+         - //c/path/to/this/folder/deploy/wres_share/systests:/mnt/wres_share/systests:ro
+         # For certificates, keys that correspond to them, and .pgpass:
+         - //c/path/to/this/folder/wres_secrets:/wres_secrets:ro
+         # To write heap dumps (worker-shim process):
+         - //c/path/to/this/folder/deploy/wres_share/heap_dumps/worker-shim:/mnt/wres_share/heap_dumps/worker-shim
+         # To write heap dumps (core WRES process):
+         - //c/path/to/this/folder/deploy/wres_share/evaluations:/mnt/wres_share/heap_dumps/wres
+         # For logs (inside container, avoid writing to read-only /home)
+         - /container_home
+        environment:
+         - JAVA_OPTS=-Dwres.broker=broker -Dcom.redhat.fips=false -Dwres.useDatabase=true -Dwres.trustStore=${WRES_TRUST_STORE} -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/worker-shim -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/worker-shim/java_pid%p.hprof /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_$$CON_HOSTNAME.hprof; chmod 775 /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_$$CON_HOSTNAME.hprof'
+         - PGPASSFILE=/wres_secrets/.pgpass
+         # Use caller-specified db hostname from env var WRES_DB_FQDN.
+         # Do not auto-liquibase-migrate on each evaluation. This requires an
+         # administrator to run the migration(s) during or after deployment.
+         # Write heap dumps to the root of the volume above.
+         # Override the broker address and port in the binding URL of the event.properties.
+         - INNER_JAVA_OPTS=-Xmx8192m -Xms8192m -Dwres.maxPoolSize=13 -Dwres.startBroker=false -Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dwres.useDatabase=true -Dwres.databaseHost=host.docker.internal -Dwres.wrdsCertificateFileToTrust=${WRDS_CA_FILE} -Dwres.certificateFileToTrust=${WRES_DB_CA_FILE} -Dwres.wrdsCertificateFileToTrust=${WRDS_CA_FILE} -Dwres.externalGraphics=true -Dwres.featureBatchSize=1 -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/evaluations -Dwres.databaseName=wres2 -Dwres.username=wres_user -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/wres -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/wres/java_pid%p.hprof /mnt/wres_share/heap_dumps/wres/java_pid%p_boopE.hprof; chmod 775 /mnt/wres_share/heap_dumps/wres/java_pid%p_boopE.hprof'
+         - LANG=C.UTF-8
+        # Shim JVM should have 64m max heap, core JVM should have 2560m max heap
+        mem_limit: 9216m
+        cap_drop:
+         - ALL
+        read_only: true
+        healthcheck:
+          start_period: 1m
+        networks:
+            wres_net:
+    eventsbroker:
+        expose:
+         - 5673
+        ports:
+         - 15673:15673
+        image: "wres/wres-eventsbroker:20230925-0506c3a-dev"
+        restart: always
+        volumes:
+         # For heap-dump files
+         - //c/path/to/this/folder/deploy/wres_share/heap_dumps/eventsbroker:/mnt/wres_share/heap_dumps/eventsbroker
+         # For certificates and keys that correspond to them
+         - //c/path/to/this/folder/wres_secrets:/wres_secrets:ro
+        environment:
+         - BROKER_WORK=/container_home
+         - JAVA_ARGS=-XX:+PrintClassHistogram -XX:+UseG1GC -XX:+UseStringDeduplication -Xms2048m -Xmx2048m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=//c/path/to/this/folder/deploy/wres_share/heap_dumps/eventsbroker -Dcom.redhat.fips=false
+         - LANG=C.UTF-8
+        # Broker heap is 2048m in JAVA_ARGS
+        mem_limit: 2560m
+        cap_drop:
+         - ALL
+        read_only: false
+        networks:
+            wres_net:
+    graphics:
+        depends_on:
+            eventsbroker:
+                condition: service_started
+        image: "wres/wres-graphics:20230925-0506c3a-dev"
+        restart: always
+        volumes:
+         # To write graphics outputs
+         - //c/path/to/this/folder/deploy/wres_share/evaluations:/mnt/wres_share/evaluations
+         # To write heap dumps
+         - //c/path/to/this/folder/deploy/wres_share/heap_dumps/graphics:/mnt/wres_share/heap_dumps/graphics
+        environment:
+         # Override the broker address and port in the binding URL of the event.properties
+         - JAVA_OPTS=-Dwres.startBroker=false -Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/evaluations -Xms3640m -Xmx3640m -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/graphics -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/graphics/java_pid%p.hprof /mnt/wres_share/heap_dumps/graphics/java_pid%p_$$CON_HOSTNAME.hprof;
+         - LANG=C.UTF-8
+        # Graphics limit is 3640m in JAVA_OPTS
+        mem_limit: 4096m
+        cap_drop:
+         - ALL
+        read_only: true
+        networks:
+            wres_net:
