@@ -294,7 +294,7 @@ public class Main
                 LOGGER.warn( "Failed to destroy the broker connections.", e );
             }
 
-            if ( SYSTEM_SETTINGS.isInDatabase() && Objects.nonNull( database ) )
+            if ( SYSTEM_SETTINGS.isUseDatabase() && Objects.nonNull( database ) )
             {
                 // #81660
                 if ( Objects.nonNull( result ) && result.succeeded() )
