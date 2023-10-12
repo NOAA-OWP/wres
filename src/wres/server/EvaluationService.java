@@ -15,7 +15,6 @@ import java.nio.file.Files;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -26,7 +25,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.ProtocolStringList;
+import jakarta.inject.Singleton;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
 import jakarta.ws.rs.Consumes;
@@ -73,6 +72,7 @@ import wres.system.SystemSettings;
  */
 
 @Path( "/evaluation" )
+@Singleton
 public class EvaluationService implements ServletContextListener
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationService.class );
@@ -104,7 +104,7 @@ public class EvaluationService implements ServletContextListener
 
     private final BrokerConnectionFactory broker;
 
-    private Evaluator evaluator;
+    private static Evaluator evaluator;
 
     /**
      * Constructor
@@ -119,9 +119,13 @@ public class EvaluationService implements ServletContextListener
         this.systemSettings = systemSettings;
         this.database = database;
         this.broker = broker;
-        this.evaluator = new Evaluator( systemSettings,
-                                        database,
-                                        broker );
+        setEvaluator( systemSettings, database, broker );
+    }
+
+    private static void setEvaluator(SystemSettings systemSettings, Database database, BrokerConnectionFactory broker) {
+        evaluator = new Evaluator( systemSettings,
+                       database,
+                       broker );
     }
 
 
@@ -482,7 +486,7 @@ public class EvaluationService implements ServletContextListener
 
             builder.dataSourceProperties( SettingsFactory.createDatasourceProperties( newDatabaseSettings ) );
 
-            this.systemSettings = systemSettings.toBuilder().databaseConfiguration( builder.build() ).build();
+            systemSettings = systemSettings.toBuilder().databaseConfiguration( builder.build() ).build();
 
             if ( systemSettings.isUseDatabase() )
             {
@@ -492,7 +496,7 @@ public class EvaluationService implements ServletContextListener
                     database.shutdown();
                 }
 
-                this.database = new Database( new ConnectionSupplier( systemSettings ) );
+                database = new Database( new ConnectionSupplier( systemSettings ) );
                 // Migrate the database, as needed
                 if ( database.getAttemptToMigrate() )
                 {
@@ -506,7 +510,7 @@ public class EvaluationService implements ServletContextListener
                     }
                 }
             }
-            this.evaluator = new Evaluator( this.systemSettings, this.database, broker );
+            evaluator = new Evaluator( systemSettings, database, broker );
         }
     }
 
@@ -627,11 +631,17 @@ public class EvaluationService implements ServletContextListener
     @Produces( "application/octet-stream" )
     public Response postEvaluate( String projectConfig )
     {
-        Set<java.nio.file.Path> outputPaths;
+        long projectId;
         try
         {
+            // Guarantee a positive number. Using Math.abs would open up failure
+            // in edge cases. A while loop seems complex. Thanks to Ted Hopp
+            // on StackOverflow question id 5827023.
+            projectId = RANDOM.nextLong() & Long.MAX_VALUE;
+
             ExecutionResult result = evaluator.evaluate( projectConfig );
-            outputPaths = result.getResources();
+            Set<java.nio.file.Path> outputPaths = result.getResources();
+            OUTPUTS.put( projectId, outputPaths );
         }
         catch ( UserInputException e )
         {
@@ -655,23 +665,29 @@ public class EvaluationService implements ServletContextListener
                            .build();
         }
 
-        if ( outputPaths == null )
-        {
-            return Response.status( Response.Status.NOT_FOUND )
-                           .build();
-        }
+        //TODO: Swap to not using cache once we can find root cause of files not being written
 
-        StreamingOutput streamingOutput = outputSream -> {
-            Writer writer = new BufferedWriter( new OutputStreamWriter( outputSream ) );
-            for ( java.nio.file.Path path : outputPaths )
-            {
-                writer.write( path.toString() + LINE_TERMINATOR );
-            }
-            writer.flush();
-            writer.close();
-        };
+//        if ( outputPaths == null )
+//        {
+//            return Response.status( Response.Status.NOT_FOUND )
+//                           .build();
+//        }
+//
+//
+//        StreamingOutput streamingOutput = outputSream -> {
+//            Writer writer = new BufferedWriter( new OutputStreamWriter( outputSream ) );
+//            for ( java.nio.file.Path path : outputPaths )
+//            {
+//                writer.write( path.toString() + LINE_TERMINATOR );
+//            }
+//            writer.flush();
+//            writer.close();
+//        };
 
-        return Response.ok( streamingOutput )
+        return Response.ok( "I received project " + projectId
+                            + ", and successfully ran it. Visit /project/"
+                            + projectId
+                            + " for more." )
                        .build();
     }
 
