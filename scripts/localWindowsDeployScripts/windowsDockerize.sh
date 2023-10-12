@@ -10,24 +10,25 @@
 # - Set up the directory structure laid out in the compose-entry/worker yml files
 # - Set up all certs
 # - Create a .env (See example) file for all of the vars described in the yml file generated and all certs required
-# - This script will generate yml files (With the wrong data paths), but I was unable to get that to work
-#   Look at compose-entry-windows-test.yml in this dir to see changes I needed to make
 # - run the following commands to correct the line endings of the two scripts used to create docker containers:
 # sed 's/\r$//' scripts/localWindowsDeployScripts/windowsDockerize.sh
 # sed 's/\r$//' scripts/localWindowsDeployScripts/windowsVersions.sh
+# - This script will generate yml files (With the wrong data paths)
+#   Look at compose-entry-windows-test.yml in this dir to see changes I needed to make
 #
 # USAGE:
 # - From the main level of the dir run ./scripts/localWindowsDeployScripts/windowsDockerize.sh
-# - Update your compose yml files to point to the new containers made by the script
+# - Update your compose yml files to point to the new containers made by the script (If there are any, only needed after commits/pulls)
+# -- Or create your own templates and update the file names at the bottom of this file
 # - run the compose up docker command. Similar to one like this:
 # docker-compose -f compose-entry-windows-test.yml up --scale worker=1 --scale eventsbroker=1 --scale graphics=1
 #
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # THIS IS FOR ASSISTANCE ONLY, DO NOT PUSH THE FILES CREATED BY THIS OR THE UPDATED DOCKER FILES
-# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #
 # BEFORE PUSH:
 # Stage all changes you have made, these is roughly the sequence I was following
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #
 # git restore --staged *
 # git add ALL_FILES_I_WANT_COMMITED
@@ -116,6 +117,13 @@ echo "Built wres/wres-graphics:$graphics_version -- $graphics_image_id"
 echo "Displaying most recent 20 docker images"
 docker image ls | head -n 21
 
+
+#=============================================================
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# IF YOU CREATE YOUR OWN TEMPLATES THEN YOU CAN UPDATE THIS SECTION
+# TO HAVE THIS SCRIPT AUTOMATICALLY CREATE NEW COMPOSE FILES
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#=============================================================
 
 cp compose-entry.template.yml compose-entry-windows.yml
 sed -i "s/TASKER_IMAGE/${tasker_version}/" compose-entry-windows.yml
