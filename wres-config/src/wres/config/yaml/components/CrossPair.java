@@ -1,25 +1,26 @@
 package wres.config.yaml.components;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Objects;
 
-import wres.config.yaml.DeclarationUtilities;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Enumeration for cross-pairing.
  * @author James Brown
  */
-public enum CrossPair
+public record CrossPair( @JsonProperty( "method" ) CrossPairMethod method,
+                         @JsonProperty( "scope" ) CrossPairScope scope )
 {
-    /** Exact cross-pairing. */
-    @JsonProperty( "exact" )
-    EXACT,
-    /** Fuzzy cross-pairing. */
-    @JsonProperty( "fuzzy" )
-    FUZZY;
-
-    @Override
-    public String toString()
+    /**
+     * Set the defaults.
+     * @param method the cross-pairing method.
+     * @param scope the scope of cross-pairing.
+     */
+    public CrossPair
     {
-        return DeclarationUtilities.fromEnumName( this.name() );
+        if ( Objects.isNull( method ) )
+        {
+            method = CrossPairMethod.EXACT;
+        }
     }
 }

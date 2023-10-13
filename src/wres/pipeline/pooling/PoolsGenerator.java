@@ -136,7 +136,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
 
     /** A shim to map from a baseline-ish dataset to a right-ish dataset.
      * TODO: remove this shim when pools support different types of right and baseline data. */
-    private final Function<TimeSeries<B>,TimeSeries<R>> baselineShim;
+    private final Function<TimeSeries<B>, TimeSeries<R>> baselineShim;
 
     @Override
     public List<Supplier<Pool<TimeSeries<Pair<L, R>>>>> get()
@@ -225,7 +225,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         private Function<Set<Feature>, BaselineGenerator<R>> baselineGenerator;
 
         /** A shim to map from a baseline-ish dataset to a right-ish dataset. */
-        private Function<TimeSeries<B>,TimeSeries<R>> baselineShim;
+        private Function<TimeSeries<B>, TimeSeries<R>> baselineShim;
 
         /**
          * @param project the project
@@ -509,7 +509,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
          * @return the builder
          */
 
-        Builder<L,R,B> setBaselineShim( Function<TimeSeries<B>,TimeSeries<R>> baselineShim )
+        Builder<L, R, B> setBaselineShim( Function<TimeSeries<B>, TimeSeries<R>> baselineShim )
         {
             this.baselineShim = baselineShim;
 
@@ -552,7 +552,10 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                         .setRightUpscaler( this.getRightUpscaler() )
                         .setBaselineUpscaler( this.getBaselineUpscaler() )
                         .setPairer( this.getPairer() )
-                        .setCrossPairer( this.getCrossPairer() )
+                        .setCrossPairer( this.getCrossPairer(),
+                                         this.getProject()
+                                             .getDeclaration()
+                                             .crossPair() )
                         .setLeftTimeShift( this.getLeftTimeShift() )
                         .setRightTimeShift( this.getRightTimeShift() )
                         .setBaselineTimeShift( this.getBaselineTimeShift() )
@@ -1220,7 +1223,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
      * @return the baseline shim
      */
 
-    private Function<TimeSeries<B>,TimeSeries<R>> getBaselineShim()
+    private Function<TimeSeries<B>, TimeSeries<R>> getBaselineShim()
     {
         return this.baselineShim;
     }

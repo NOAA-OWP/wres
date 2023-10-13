@@ -32,6 +32,8 @@ import wres.config.MetricConstants;
 import wres.config.yaml.components.AnalysisTimes;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.CrossPair;
+import wres.config.yaml.components.CrossPairMethod;
+import wres.config.yaml.components.CrossPairScope;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
@@ -1087,8 +1089,35 @@ class DeclarationFactoryTest
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
                                                                      .left( this.observedDataset )
                                                                      .right( this.predictedDataset )
-                                                                     .crossPair( CrossPair.EXACT )
+                                                                     .crossPair( new CrossPair( CrossPairMethod.EXACT,
+                                                                                                null ) )
                                                                      .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithCrossPairMethodExactAndScopeAcrossFeatures() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                cross_pair:
+                  method: exact
+                  scope: across features
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        EvaluationDeclaration expected =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .crossPair( new CrossPair( CrossPairMethod.EXACT,
+                                                                       CrossPairScope.ACROSS_FEATURES ) )
+                                            .build();
 
         assertEquals( expected, actual );
     }
@@ -2531,8 +2560,35 @@ class DeclarationFactoryTest
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
                                                                        .left( this.observedDataset )
                                                                        .right( this.predictedDataset )
-                                                                       .crossPair( CrossPair.EXACT )
+                                                                       .crossPair( new CrossPair( CrossPairMethod.EXACT,
+                                                                                                  null ) )
                                                                        .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testSerializeWithCrossPairMethodFuzzyAndScopeWithinFeatures() throws IOException
+    {
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                cross_pair:
+                  method: fuzzy
+                  scope: within features
+                  """;
+
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .crossPair( new CrossPair( CrossPairMethod.FUZZY,
+                                                                       CrossPairScope.WITHIN_FEATURES ) )
+                                            .build();
 
         String actual = DeclarationFactory.from( evaluation );
 

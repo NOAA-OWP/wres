@@ -1625,10 +1625,20 @@ class EvaluationUtilities
         List<Pair<Long, Duration>> blockSizes = new ArrayList<>();
         for ( Pool<TimeSeries<Pair<Double, R>>> next : miniPools )
         {
-            Pair<Long, Duration> nextMain =
-                    EvaluationUtilities.getOptimalBlockSizesForStationaryBootstrap( next.get() );
-            blockSizes.add( nextMain );
-            if ( next.hasBaseline() )
+            // Main data with sufficient samples
+            if( next.get()
+                    .size() > 1 )
+            {
+                Pair<Long, Duration> nextMain =
+                        EvaluationUtilities.getOptimalBlockSizesForStationaryBootstrap( next.get() );
+                blockSizes.add( nextMain );
+            }
+
+            // Baseline data with sufficient samples
+            if ( next.hasBaseline()
+                 && next.getBaselineData()
+                        .get()
+                        .size() > 1 )
             {
                 List<TimeSeries<Pair<Double, R>>> baseline = next.getBaselineData()
                                                                  .get();

@@ -69,6 +69,7 @@ import wres.config.yaml.components.AnalysisTimes;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.CrossPair;
+import wres.config.yaml.components.CrossPairMethod;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
@@ -593,10 +594,10 @@ public class DeclarationMigrator
         if ( Objects.nonNull( crossPair ) )
         {
             LOGGER.debug( "Encountered cross pairing declaration to migrate: {}.", crossPair );
-            CrossPair crossPairMigrated = CrossPair.FUZZY;
+            CrossPair crossPairMigrated = new CrossPair( CrossPairMethod.FUZZY, null );
             if ( crossPair.isExact() )
             {
-                crossPairMigrated = CrossPair.EXACT;
+                crossPairMigrated = new CrossPair( CrossPairMethod.EXACT, null );
             }
             LOGGER.debug( "Migrated this cross-pairing option: {}.", crossPairMigrated );
             builder.crossPair( crossPairMigrated );

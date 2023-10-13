@@ -22,6 +22,9 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import wres.config.yaml.components.CrossPair;
+import wres.config.yaml.components.CrossPairMethod;
+import wres.config.yaml.components.CrossPairScope;
 import wres.config.yaml.components.GeneratedBaseline;
 import wres.config.yaml.components.GeneratedBaselineBuilder;
 import wres.datamodel.Climatology;
@@ -190,6 +193,9 @@ class PoolSupplierTest
     /** Forecast that encompasses a second feature */
     private TimeSeries<Double> forecastFive;
 
+    /** Another forecast that encompasses a second feature */
+    private TimeSeries<Double> forecastSix;
+
     /** Desired time scale. */
     private TimeScaleOuter desiredTimeScale;
 
@@ -198,6 +204,9 @@ class PoolSupplierTest
 
     /** Metadata for a multi-feature pool. */
     private PoolMetadata multiFeatureMetadata;
+
+    /** Metadata for a another multi-feature pool. */
+    private PoolMetadata anotherMultiFeatureMetadata;
 
     /** An upscaler. */
     private TimeSeriesUpscaler<Double> upscaler;
@@ -454,6 +463,12 @@ class PoolSupplierTest
                                                 .addEvent( Event.of( T2551_03_18T21_00_00Z, 11.0 ) )
                                                 .build();
 
+        this.forecastSix =
+                new TimeSeries.Builder<Double>().setMetadata( forecastFiveMetadata )
+                                                .addEvent( Event.of( T2551_03_17T15_00_00Z, 1.0 ) )
+                                                .addEvent( Event.of( T2551_03_17T18_00_00Z, 2.0 ) )
+                                                .build();
+
         // Desired time scale
         this.desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 3 ), TimeScaleFunction.MEAN );
 
@@ -495,6 +510,24 @@ class PoolSupplierTest
                                                                              false );
 
         this.multiFeatureMetadata = PoolMetadata.of( evaluation, anotherPool );
+
+        GeometryTuple oneMoreGeoTuple = MessageFactory.getGeometryTuple( ANOTHER_FEATURE,
+                                                                         ANOTHER_FEATURE,
+                                                                         ANOTHER_FEATURE );
+        FeatureTuple oneMoreFeatureTuple = FeatureTuple.of( oneMoreGeoTuple );
+
+        GeometryGroup oneMoreGeoGroup = MessageFactory.getGeometryGroup( "BAR_GROUP",
+                                                                         Set.of( featureTuple,
+                                                                                 oneMoreFeatureTuple ) );
+        FeatureGroup oneMoreFeatureGroup = FeatureGroup.of( oneMoreGeoGroup );
+
+        wres.statistics.generated.Pool oneMorePool = MessageFactory.getPool( oneMoreFeatureGroup,
+                                                                             null,
+                                                                             null,
+                                                                             null,
+                                                                             false );
+
+        this.anotherMultiFeatureMetadata = PoolMetadata.of( evaluation, oneMorePool );
 
         // Upscaler
         this.upscaler = TimeSeriesOfDoubleUpscaler.of();
@@ -1032,7 +1065,8 @@ class PoolSupplierTest
                                        this.observationsThree ) );
         Supplier<Stream<TimeSeries<Double>>> obsSupplier = CachingRetriever.of( this.observationRetriever );
 
-        Mockito.when( this.forecastRetriever.get() ).thenReturn( Stream.of( this.forecastOne, this.forecastFive ) );
+        Mockito.when( this.forecastRetriever.get() )
+               .thenReturn( Stream.of( this.forecastOne, this.forecastFive ) );
 
         Supplier<Stream<TimeSeries<Double>>> forcSupplierOne = this.forecastRetriever;
 
@@ -1144,20 +1178,101 @@ class PoolSupplierTest
 
         List<TimeSeries<Pair<Double, Double>>> series = poolOneActual.get();
 
-        assertAll( () -> assertEquals( 3, poolOneActual.get().size() ),
+        assertAll( () -> assertEquals( 3, poolOneActual.get()
+                                                       .size() ),
                    () -> assertTrue( series.contains( timeSeriesOne ) ),
                    () -> assertTrue( series.contains( timeSeriesTwo ) ),
                    () -> assertTrue( series.contains( timeSeriesThree ) ) );
     }
 
     @Test
+    void testGetReturnsPoolThatContainsTwoPairsInTwoSeriesAcrossTwoFeaturesWithCrossPairing()
+    {
+        Mockito.when( this.observationRetriever.get() )
+               .thenReturn( Stream.of( this.observations,
+                                       this.observationsThree ) );
+        Supplier<Stream<TimeSeries<Double>>> obsSupplier = CachingRetriever.of( this.observationRetriever );
+
+        Mockito.when( this.forecastRetriever.get() )
+               .thenReturn( Stream.of( this.forecastOne, this.forecastSix ) );
+
+        Supplier<Stream<TimeSeries<Double>>> forcSupplierOne = this.forecastRetriever;
+
+        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( T2551_03_17T00_00_00Z, //2551-03-17T00:00:00Z
+                                                                         T2551_03_17T13_00_00Z, //2551-03-17T13:00:00Z
+                                                                         Duration.ofHours( 0 ),
+                                                                         Duration.ofHours( 23 ) );
+        TimeWindowOuter poolOneWindow = TimeWindowOuter.of( inner );
+
+        PoolMetadata poolOneMetadata = PoolMetadata.of( this.anotherMultiFeatureMetadata,
+                                                        poolOneWindow,
+                                                        this.desiredTimeScale );
+
+        TimeSeriesCrossPairer<Pair<Double, Double>> crossPairer = TimeSeriesCrossPairer.of();
+        CrossPair crossPair = new CrossPair( CrossPairMethod.EXACT, CrossPairScope.ACROSS_FEATURES );
+
+        Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolOneSupplier =
+                new PoolSupplier.Builder<Double, Double, Double>().setLeft( obsSupplier )
+                                                                  .setRight( forcSupplierOne )
+                                                                  .setLeftUpscaler( this.upscaler )
+                                                                  .setPairer( this.pairer )
+                                                                  .setDesiredTimeScale( this.desiredTimeScale )
+                                                                  .setCrossPairer( crossPairer, crossPair )
+                                                                  .setMetadata( poolOneMetadata )
+                                                                  .setBaselineShim( Function.identity() )
+                                                                  .build();
+
+        Pool<TimeSeries<Pair<Double, Double>>> poolOneActual = poolOneSupplier.get();
+
+        // Two time-series expected with L/R feature correlations of DRRC2-DRRC2 and DRRC3-DRRC3
+        TimeSeriesMetadata timeSeriesMetadataOne =
+                getBoilerplateMetadataWithT0AndTimeScale( T2551_03_17T12_00_00Z,
+                                                          FEATURE,
+                                                          this.desiredTimeScale );
+        TimeSeries<Pair<Double, Double>> timeSeriesOne =
+                new TimeSeries.Builder<Pair<Double, Double>>().setMetadata( timeSeriesMetadataOne )
+                                                              .addEvent( Event.of( T2551_03_17T15_00_00Z,
+                                                                                   Pair.of( 409.6666666666667,
+                                                                                            73.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_17T18_00_00Z,
+                                                                                   Pair.of( 428.3333333333333,
+                                                                                            79.0 ) ) )
+                                                              .build();
+
+        TimeSeriesMetadata timeSeriesMetadataTwo =
+                getBoilerplateMetadataWithT0AndTimeScale( T2551_03_17T12_00_00Z,
+                                                          ANOTHER_FEATURE,
+                                                          this.desiredTimeScale );
+
+        TimeSeries<Pair<Double, Double>> timeSeriesTwo =
+                new TimeSeries.Builder<Pair<Double, Double>>().setMetadata( timeSeriesMetadataTwo )
+                                                              .addEvent( Event.of( T2551_03_17T15_00_00Z,
+                                                                                   Pair.of( 409.6666666666667,
+                                                                                            1.0 ) ) )
+                                                              .addEvent( Event.of( T2551_03_17T18_00_00Z,
+                                                                                   Pair.of( 428.3333333333333,
+                                                                                            2.0 ) ) )
+                                                              .build();
+
+        List<TimeSeries<Pair<Double, Double>>> series = poolOneActual.get();
+
+
+        assertAll( () -> assertEquals( 2, poolOneActual.get()
+                                                       .size() ),
+                   () -> assertTrue( series.contains( timeSeriesOne ) ),
+                   () -> assertTrue( series.contains( timeSeriesTwo ) ) );
+    }
+
+    @Test
     void testGetReturnsPoolThatContainsSevenPairsInOneSeriesWithPersistenceBaselineAndCrossPairing()
     {
         // Pool One actual        
-        Mockito.when( this.observationRetriever.get() ).thenReturn( Stream.of( this.observations ) );
+        Mockito.when( this.observationRetriever.get() )
+               .thenReturn( Stream.of( this.observations ) );
         Supplier<Stream<TimeSeries<Double>>> obsSupplier = CachingRetriever.of( this.observationRetriever );
 
-        Mockito.when( this.forecastRetriever.get() ).thenReturn( Stream.of( this.forecastOne ) );
+        Mockito.when( this.forecastRetriever.get() )
+               .thenReturn( Stream.of( this.forecastOne ) );
 
         Supplier<Stream<TimeSeries<Double>>> forcSupplierOne = this.forecastRetriever;
 
@@ -1189,13 +1304,14 @@ class PoolSupplierTest
         Function<Set<Feature>, BaselineGenerator<Double>> featuredBaselineGenerator = in -> baselineGenerator;
 
         TimeSeriesCrossPairer<Pair<Double, Double>> crossPairer = TimeSeriesCrossPairer.of();
+        CrossPair crossPair = new CrossPair( CrossPairMethod.EXACT, null );
 
         Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolOneSupplier =
                 new PoolSupplier.Builder<Double, Double, Double>().setLeft( obsSupplier )
                                                                   .setRight( forcSupplierOne )
                                                                   .setLeftUpscaler( this.upscaler )
                                                                   .setPairer( this.pairer )
-                                                                  .setCrossPairer( crossPairer )
+                                                                  .setCrossPairer( crossPairer, crossPair )
                                                                   .setBaselineGenerator( featuredBaselineGenerator )
                                                                   .setDesiredTimeScale( this.desiredTimeScale )
                                                                   .setMetadata( poolOneMetadata )
@@ -1272,7 +1388,7 @@ class PoolSupplierTest
     /**
      * Produces time-series metadata from the inputs.
      * @param featureKey the feature
-     * @param timeScale the time scale
+     * @param timeScale the timescale
      * @return the metadata
      */
 

@@ -13,6 +13,7 @@ import wres.datamodel.time.TimeSeries;
  * A collection of cross-pairs whose pairs are accessible.
  *
  * @param <T> the time-series event value type
+ * @author James Brown
  */
 
 public class CrossPairs<T>
