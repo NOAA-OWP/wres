@@ -3,15 +3,12 @@ package wres.worker;
 import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.ServerSocket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -19,7 +16,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.Map;
 import java.util.HashMap;
 
-import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 
 import com.rabbitmq.client.ConnectionFactory;
@@ -156,6 +152,10 @@ public class Worker
         }
     }
 
+    /**
+     * Helper method to create a ConnectionFactory
+     * @return ConnectionFactory
+     */
     private static ConnectionFactory createConnectionFactory()
     {
         // Determine the actual broker name, whether from -D or default
@@ -232,7 +232,7 @@ public class Worker
     /**
      * Method to check if the server is reachable which exponential backoff retries
      * @return boolean value if the server returns 200 (HTTP.OK)
-     * @throws IOException
+     * @throws IOException, URISyntaxException
      */
     private static boolean isServerUp() throws IOException, URISyntaxException
     {

@@ -139,6 +139,9 @@ class WresEvaluationProcessor implements Callable<Integer>
         return this.connection;
     }
 
+    /**
+     * provides and atomic order for the SSE messages received for std out and error. This helps us order them on the client
+     */
     private AtomicInteger getOrder( WhichStream whichStream )
     {
         if ( whichStream.equals( WhichStream.STDERR ) )
@@ -179,6 +182,8 @@ class WresEvaluationProcessor implements Callable<Integer>
 
     public Integer call() throws IOException
     {
+
+        // Convert the job message into a job to see if we need to migrate or clean the database
         Job.job job;
         try
         {
@@ -195,6 +200,7 @@ class WresEvaluationProcessor implements Callable<Integer>
         // Open an evaluation for work
         String evaluationId = prepareEvaluationId();
 
+        // Halt evaluation if we are unable to open a project successfully
         if ( evaluationId.isEmpty() )
         {
             LOGGER.warn( "Unable to open a new evaluation" );
@@ -327,6 +333,7 @@ class WresEvaluationProcessor implements Callable<Integer>
                                                                                 RETRY_STATES )
         )
         {
+            // The job failed for some reason
             if ( clientResponse.getStatusCode() != 200 )
             {
                 // The response was not good, post the resulting exception to the error listener
@@ -361,7 +368,6 @@ class WresEvaluationProcessor implements Callable<Integer>
     /**
      * Helper method to enable database modification methods to be called like CLEAN and MIGRATE
      * @return String representation of an evaluation id
-     * @throws IOException
      */
     private int manipulateDatabase( String uriToCall )
     {

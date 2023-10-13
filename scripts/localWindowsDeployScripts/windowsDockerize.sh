@@ -11,8 +11,8 @@
 # - Set up all certs
 # - Create a .env (See example) file for all of the vars described in the yml file generated and all certs required
 # - run the following commands to correct the line endings of the two scripts used to create docker containers:
-# sed 's/\r$//' scripts/localWindowsDeployScripts/windowsDockerize.sh
-# sed 's/\r$//' scripts/localWindowsDeployScripts/windowsVersions.sh
+# sed -i 's/\r$//' scripts/localWindowsDeployScripts/windowsDockerize.sh
+# sed -i 's/\r$//' scripts/localWindowsDeployScripts/windowsVersions.sh
 # - This script will generate yml files (With the wrong data paths)
 #   Look at compose-entry-windows-test.yml in this dir to see changes I needed to make
 #

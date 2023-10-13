@@ -67,8 +67,23 @@ import wres.system.SettingsFactory;
 import wres.system.SystemSettings;
 
 /**
- * Accepts projects in the body of http request and executes them.
- * Allows retrieval of some CSV outputs for recent stuff.
+ * There are two main functions supported by this resource:
+ * - Simple Evaluations
+ * evaluation/evaluate allows a user to pass along a project config and receive output
+ *
+ * - Complete Evaluations
+ * evaluation/open
+ * evaluation/start
+ * evaluation/close
+ *
+ * Takes in a job message as a byte[] and can support features like sending std out/error and database management
+ * but it must be opened and closed by the caller and sent as a job instead of just a project config
+ *
+ * NOTE: Currently there is a 1:1 relationship between a server and an evaluation. That is to say each server can only
+ * serve 1 evaluation at a time. For this reason we are currently using Atomic variables to track certain states and
+ * information on an evaluation.
+ *
+ * TODO: Swap to using a persistant cache to support async/multiple simultaneous evaluations
  */
 
 @Path( "/evaluation" )
@@ -79,8 +94,6 @@ public class EvaluationService implements ServletContextListener
 
     private static final Random RANDOM =
             new Random( System.currentTimeMillis() );
-
-    private static final String LINE_TERMINATOR = "\n";
 
     private static final AtomicReference<EvaluationStatusOuterClass.EvaluationStatus> evaluationStage =
             new AtomicReference<>( AWAITING );
@@ -169,7 +182,7 @@ public class EvaluationService implements ServletContextListener
     }
 
     /**
-     * Redirect the standard err stream and return that to the user and sends out SSE for each line
+     * Redirect the standard out stream and return that to the user and sends out SSE for each line
      * @param id ID of the evaluation we are trying to track with this
      */
     @GET
@@ -177,34 +190,18 @@ public class EvaluationService implements ServletContextListener
     @Produces( MediaType.SERVER_SENT_EVENTS )
     public void getOutStream( @PathParam( "id" ) Long id, @Context SseEventSink eventSink, @Context Sse sse )
     {
-        // Get the stream for the evaluation ID if we allow async exectutions in the future
+        //TODO Get the stream for the evaluation ID if we allow async executions in the future
+        //TODO Possibly add evaluation status check here as well. No need to check now as you can have unlimited listeners
 
+        // Create new stream to redirect output to
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream( byteArrayOutputStream );
 
+        // redirect the error stream
         System.setOut( printStream );
 
-        new Thread( () -> {
-            long offset = 0;
-            // While the evaluation hasn't completed continue pulling from the standard stream and sending to client
-            while ( !evaluationStage.get().equals( CLOSED ) )
-            {
-                ByteArrayInputStream byteArrayInputStream =
-                        new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
-                long skip = byteArrayInputStream.skip( offset );
-                String bytes = new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 );
-                if ( offset == skip && !bytes.isEmpty() )
-                {
-                    offset += bytes.length();
-                    final OutboundSseEvent event = sse.newEventBuilder()
-                                                      .name( "standard-out-stream" )
-                                                      .data( String.class, bytes )
-                                                      .build();
-                    eventSink.send( event );
-                }
-            }
-            eventSink.close();
-        } ).start();
+        // Start the SSE thread sending messages to the called sink for std out
+        startSSEThread(byteArrayOutputStream, eventSink, sse);
     }
 
     /**
@@ -216,38 +213,24 @@ public class EvaluationService implements ServletContextListener
     @Produces( MediaType.SERVER_SENT_EVENTS )
     public void getErrorStream( @PathParam( "id" ) Long id, @Context SseEventSink eventSink, @Context Sse sse )
     {
-        // Get the stream for the evaluation ID if we allow async exectutions in the future
+        //TODO Get the stream for the evaluation ID if we allow async executions in the future
+        //TODO Possibly add evaluation status check here as well. No need to check now as you can have unlimited listeners
 
+        // Create new stream to redirect output to
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         PrintStream printStream = new PrintStream( byteArrayOutputStream );
 
+        // redirect the error stream
         System.setErr( printStream );
 
-        new Thread( () -> {
-            long offset = 0;
-            // While the evaluation hasn't completed continue pulling from the standard stream and sending to client
-            while ( !evaluationStage.get().equals( CLOSED ) )
-            {
-                ByteArrayInputStream byteArrayInputStream =
-                        new ByteArrayInputStream( byteArrayOutputStream.toByteArray() );
-                long skip = byteArrayInputStream.skip( offset );
-                String bytes = new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 );
-                if ( offset == skip && !bytes.isEmpty() )
-                {
-                    offset += bytes.length();
-                    final OutboundSseEvent event = sse.newEventBuilder()
-                                                      .name( "standard-error-stream" )
-                                                      .data( String.class, bytes )
-                                                      .build();
-                    eventSink.send( event );
-                }
-            }
-            eventSink.close();
-        } ).start();
+        // Start the SSE thread sending messages to the called sink for std err
+        startSSEThread(byteArrayOutputStream, eventSink, sse);
     }
 
     /**
      * Creates an ID for an evaluation we plan to execute and sets status to OPEN
+     * If a project is not started within 1 minutes, a thread will put the status to closed
+     *
      * @return ID of evaluation to run
      */
     @POST
@@ -274,10 +257,126 @@ public class EvaluationService implements ServletContextListener
         evaluationStage.set( OPENED );
         evaluationId.set( projectId );
 
+        // Start a timer to prevent abandonded jobs from blocking the queue
         evaluationTimeoutThread();
 
         return Response.ok( Response.Status.CREATED )
                        .entity( projectId )
+                       .build();
+    }
+
+
+    /**
+     * Closes an evaluation that was Opened (Wont interupt ongoing evaluations)
+     * @return Good Response
+     */
+    @POST
+    @Path( "/close" )
+    @Produces( MediaType.TEXT_PLAIN )
+    public Response closeEvaluation()
+    {
+        close();
+        return Response.ok( "Evaluation closed" )
+                       .build();
+    }
+
+    /**
+     * Starts an opened Evaluation
+     * @param message job message containing the evaluation and database settings
+     * @return the state of the evaluation
+     */
+    @POST
+    @Path( "/start/{id}" )
+    @Produces( "application/octet-stream" )
+    public Response startEvaluation( byte[] message, @PathParam( "id" ) Long id )
+    {
+        // Convert the raw message into a job
+        Job.job jobMessage;
+        try
+        {
+            jobMessage = Job.job.parseFrom( message );
+        }
+        catch ( InvalidProtocolBufferException ipbe )
+        {
+            throw new IllegalArgumentException( "Bad message received: " + message, ipbe );
+        }
+
+        // Checks if database information has changed in the jobMessage and swap to that database
+        swapDatabaseIfNeeded( jobMessage );
+
+        // Check that this evaluation should be ran
+        if ( evaluationId.get() != id && evaluationStage.get().equals( OPENED ) )
+        {
+            return Response.status( Response.Status.BAD_REQUEST )
+                           .entity(
+                                   "There was not an evaluation opened to start. Please /close/{ID} any projects first and open a new one" )
+                           .build();
+        }
+
+        //Used for logging
+        Instant beganExecution = Instant.now();
+
+        evaluationStage.set( ONGOING );
+        Set<java.nio.file.Path> outputPaths;
+        try
+        {
+            // Print system setting at the top of the job log to help debug
+            LOGGER.info( systemSettings.toString() );
+
+            // Execute an evaluation
+            ExecutionResult result = evaluator.evaluate( jobMessage.getProjectConfig() );
+
+            logInDatabaseIfNeeded( jobMessage, result, beganExecution );
+
+            // If the result failed add the stack trace to the response and return
+            if ( result.failed() ) {
+                evaluationStage.set( COMPLETED );
+
+                // Add failure stack trace to failed job entity
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                PrintStream printStream = new PrintStream(outputStream);
+                result.getException().printStackTrace(printStream);
+
+                return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
+                               .entity( "WRES experienced an internal issue. The top-level exception was:\n "
+                                        + outputStream )
+                               .build();
+            }
+
+            // get files written
+            outputPaths = result.getResources();
+        }
+        catch ( UserInputException e )
+        {
+            evaluationStage.set( COMPLETED );
+            return Response.status( Response.Status.BAD_REQUEST )
+                           .entity( "I received something I could not parse. The top-level exception was: "
+                                    + e.getMessage() )
+                           .build();
+        }
+        catch ( InternalWresException iwe )
+        {
+            evaluationStage.set( COMPLETED );
+            return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
+                           .entity( "WRES experienced an internal issue. The top-level exception was: "
+                                    + iwe.getMessage() )
+                           .build();
+        }
+
+        evaluationStage.set( COMPLETED );
+
+        // Put output paths in a stream to send to user
+        StreamingOutput streamingOutput = outputSream -> {
+            Writer writer = new BufferedWriter( new OutputStreamWriter( outputSream ) );
+            for ( java.nio.file.Path path : outputPaths )
+            {
+                writer.write( path.toString() + "\n" );
+            }
+            writer.flush();
+            writer.close();
+        };
+
+        return Response.ok( streamingOutput )
                        .build();
     }
 
@@ -362,19 +461,202 @@ public class EvaluationService implements ServletContextListener
     }
 
     /**
-     * Closes an evaluation that was Opened (Wont interupt ongoing evaluations)
-     * @return Good Response
+     * A simplistic evaluate API, if using this call then the user will not have access to stdout, stderror or status
+     * The output paths written are returned to the user and not stored anywhere
+     *
+     * @param projectConfig the evaluation project declaration string
+     * @return the state of the evaluation
      */
     @POST
-    @Path( "/close" )
-    @Produces( MediaType.TEXT_PLAIN )
-    public Response closeEvaluation()
+    @Path( "/evaluate" )
+    @Consumes( MediaType.TEXT_XML )
+    @Produces( "application/octet-stream" )
+    public Response postEvaluate( String projectConfig )
     {
-        close();
-        return Response.ok( "Evaluation closed" )
+        long projectId;
+        try
+        {
+            // Guarantee a positive number. Using Math.abs would open up failure
+            // in edge cases. A while loop seems complex. Thanks to Ted Hopp
+            // on StackOverflow question id 5827023.
+            projectId = RANDOM.nextLong() & Long.MAX_VALUE;
+
+            ExecutionResult result = evaluator.evaluate( projectConfig );
+            Set<java.nio.file.Path> outputPaths = result.getResources();
+            OUTPUTS.put( projectId, outputPaths );
+        }
+        catch ( UserInputException e )
+        {
+            return Response.status( Response.Status.BAD_REQUEST )
+                           .entity( "I received something I could not parse. The top-level exception was: "
+                                    + e.getMessage() )
+                           .build();
+        }
+        catch ( InternalWresException iwe )
+        {
+            return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
+                           .entity( "WRES experienced an internal issue. The top-level exception was: "
+                                    + iwe.getMessage() )
+                           .build();
+        }
+        catch ( Exception e )
+        {
+            return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
+                           .entity( "WRES experienced an unexpected internal issue. The top-level exception was: "
+                                    + e.getMessage() )
+                           .build();
+        }
+
+        //TODO: Swap to not using cache once we can find root cause of files not being written
+
+//        if ( outputPaths == null )
+//        {
+//            return Response.status( Response.Status.NOT_FOUND )
+//                           .build();
+//        }
+//
+//
+//        StreamingOutput streamingOutput = outputSream -> {
+//            Writer writer = new BufferedWriter( new OutputStreamWriter( outputSream ) );
+//            for ( java.nio.file.Path path : outputPaths )
+//            {
+//                writer.write( path.toString() + "\n" );
+//            }
+//            writer.flush();
+//            writer.close();
+//        };
+
+        return Response.ok( "I received project " + projectId
+                            + ", and successfully ran it. Visit /project/"
+                            + projectId
+                            + " for more." )
                        .build();
     }
 
+    /**
+     * (DEPRECATED)
+     * @param id the evaluation job identifier
+     * @return the evaluation results
+     */
+
+    @GET
+    @Path( "/{id}" )
+    @Produces( MediaType.TEXT_PLAIN )
+    public Response getProjectResults( @PathParam( "id" ) Long id )
+    {
+        Set<java.nio.file.Path> paths = OUTPUTS.getIfPresent( id );
+
+        if ( paths == null )
+        {
+            return Response.status( Response.Status.NOT_FOUND )
+                           .entity( "Could not find job " + id )
+                           .build();
+        }
+
+        Set<String> resources = getSetOfResources( id, paths );
+
+        return Response.ok( "Here are result resources: " + resources )
+                       .build();
+    }
+
+    /**
+     * (DEPRECATED)
+     * @param id the evaluation job identifier
+     * @param resourceName the resource name
+     * @return the resource
+     */
+
+    @GET
+    @Path( "/{id}/{resourceName}" )
+    public Response getProjectResource( @PathParam( "id" ) Long id,
+                                        @PathParam( "resourceName" ) String resourceName )
+    {
+        Set<java.nio.file.Path> paths = OUTPUTS.getIfPresent( id );
+        String type = MediaType.TEXT_PLAIN_TYPE.getType();
+
+        if ( paths == null )
+        {
+            return Response.status( Response.Status.NOT_FOUND )
+                           .entity( "Could not find project " + id )
+                           .build();
+        }
+
+        for ( java.nio.file.Path path : paths )
+        {
+            if ( path.getFileName().toString().equals( resourceName ) )
+            {
+                File actualFile = path.toFile();
+
+                if ( !actualFile.exists() )
+                {
+                    return Response.status( Response.Status.NOT_FOUND )
+                                   .entity( "Could not see resource "
+                                            + resourceName
+                                            + "." )
+                                   .build();
+                }
+
+                if ( !actualFile.canRead() )
+                {
+                    return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
+                                   .entity( "Found but could not read resource "
+                                            + resourceName
+                                            + "." )
+                                   .build();
+                }
+
+                type = EvaluationService.getContentType( path );
+
+                return Response.ok( actualFile )
+                               .type( type )
+                               .build();
+            }
+        }
+
+        return Response.status( Response.Status.NOT_FOUND )
+                       .type( type )
+                       .entity( "Could not find resource " + resourceName
+                                + " from project "
+                                + id )
+                       .build();
+    }
+
+
+    /**
+     * Creates a thread that will send messages from the stream to the calling sink until the current project is marked closed
+     */
+    private void startSSEThread( ByteArrayOutputStream redirectStream, SseEventSink eventSink, Sse sse ) {
+        // Start a thread that will send of SSEs until the current project has reached a closed state
+        new Thread( () -> {
+            long offset = 0;
+            // While the evaluation hasn't completed continue pulling from the standard stream and sending to client
+            while ( !evaluationStage.get().equals( CLOSED ) )
+            {
+                ByteArrayInputStream byteArrayInputStream =
+                        new ByteArrayInputStream( redirectStream.toByteArray() );
+                // Skip the content in the message already sent
+                long skip = byteArrayInputStream.skip( offset );
+                String bytes = new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 );
+
+                // If we skipped successfully and the resulting string isn't empty send SSE
+                if ( offset == skip && !bytes.isEmpty() )
+                {
+                    offset += bytes.length();
+                    final OutboundSseEvent event = sse.newEventBuilder()
+                                                      .name( "standard-out-stream" )
+                                                      .data( String.class, bytes )
+                                                      .build();
+                    eventSink.send( event );
+                }
+            }
+            // Close the calling sink when evaluation is closed
+            eventSink.close();
+        } ).start();
+    }
+
+    /**
+     * Closes the current evaluation by setting all atomic values to expected states and resetting standard streams
+     */
     private static void close()
     {
         // Project closed gracefully, stop the timeout thread
@@ -515,271 +797,6 @@ public class EvaluationService implements ServletContextListener
     }
 
     /**
-     * Starts an opened Evaluation
-     * @param message job message containing the evaluation and database settings
-     * @return the state of the evaluation
-     */
-    @POST
-    @Path( "/start/{id}" )
-    @Produces( "application/octet-stream" )
-    public Response startEvaluation( byte[] message, @PathParam( "id" ) Long id )
-    {
-        // Convert the raw message into a job
-        Job.job jobMessage;
-        try
-        {
-            jobMessage = Job.job.parseFrom( message );
-        }
-        catch ( InvalidProtocolBufferException ipbe )
-        {
-            throw new IllegalArgumentException( "Bad message received: " + message, ipbe );
-        }
-
-        // Checks if database information has changed in the jobMessage and swap to that database
-        swapDatabaseIfNeeded( jobMessage );
-
-        if ( evaluationId.get() != id && evaluationStage.get().equals( OPENED ) )
-        {
-            return Response.status( Response.Status.BAD_REQUEST )
-                           .entity(
-                                   "There was not an evaluation opened to start. Please /close/{ID} any projects first and open a new one" )
-                           .build();
-        }
-
-        //Used for logging
-        Instant beganExecution = Instant.now();
-
-        evaluationStage.set( ONGOING );
-        Set<java.nio.file.Path> outputPaths;
-        try
-        {
-            // Print system setting at the top of the job log to help debug
-            LOGGER.info( systemSettings.toString() );
-
-            // Execute an evaluation
-            ExecutionResult result = evaluator.evaluate( jobMessage.getProjectConfig() );
-
-            logInDatabaseIfNeeded( jobMessage, result, beganExecution );
-
-            // If the result failed add the stack trace to the response and return
-            if ( result.failed() ) {
-                evaluationStage.set( COMPLETED );
-
-                // Add failure stack trace to failed job entity
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                PrintStream printStream = new PrintStream(outputStream);
-                result.getException().printStackTrace(printStream);
-
-                return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
-                               .entity( "WRES experienced an internal issue. The top-level exception was:\n "
-                                        + outputStream )
-                               .build();
-            }
-
-            outputPaths = result.getResources();
-        }
-        catch ( UserInputException e )
-        {
-            evaluationStage.set( COMPLETED );
-            return Response.status( Response.Status.BAD_REQUEST )
-                           .entity( "I received something I could not parse. The top-level exception was: "
-                                    + e.getMessage() )
-                           .build();
-        }
-        catch ( InternalWresException iwe )
-        {
-            evaluationStage.set( COMPLETED );
-            return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
-                           .entity( "WRES experienced an internal issue. The top-level exception was: "
-                                    + iwe.getMessage() )
-                           .build();
-        }
-
-        evaluationStage.set( COMPLETED );
-
-        if ( outputPaths == null )
-        {
-            return Response.status( Response.Status.NOT_FOUND )
-                           .entity( "Could not find job " + id )
-                           .build();
-        }
-
-        StreamingOutput streamingOutput = outputSream -> {
-            Writer writer = new BufferedWriter( new OutputStreamWriter( outputSream ) );
-            for ( java.nio.file.Path path : outputPaths )
-            {
-                writer.write( path.toString() + LINE_TERMINATOR );
-            }
-            writer.flush();
-            writer.close();
-        };
-
-        return Response.ok( streamingOutput )
-                       .build();
-    }
-
-    /**
-     * A simplistic evaluate API, if using this call then the user will not have access to stdout, stderror or status
-     * The output paths written are returned to the user and not stored anywhere
-     *
-     * @param projectConfig the evaluation project declaration string
-     * @return the state of the evaluation
-     */
-    @POST
-    @Path( "/evaluate" )
-    @Consumes( MediaType.TEXT_XML )
-    @Produces( "application/octet-stream" )
-    public Response postEvaluate( String projectConfig )
-    {
-        long projectId;
-        try
-        {
-            // Guarantee a positive number. Using Math.abs would open up failure
-            // in edge cases. A while loop seems complex. Thanks to Ted Hopp
-            // on StackOverflow question id 5827023.
-            projectId = RANDOM.nextLong() & Long.MAX_VALUE;
-
-            ExecutionResult result = evaluator.evaluate( projectConfig );
-            Set<java.nio.file.Path> outputPaths = result.getResources();
-            OUTPUTS.put( projectId, outputPaths );
-        }
-        catch ( UserInputException e )
-        {
-            return Response.status( Response.Status.BAD_REQUEST )
-                           .entity( "I received something I could not parse. The top-level exception was: "
-                                    + e.getMessage() )
-                           .build();
-        }
-        catch ( InternalWresException iwe )
-        {
-            return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
-                           .entity( "WRES experienced an internal issue. The top-level exception was: "
-                                    + iwe.getMessage() )
-                           .build();
-        }
-        catch ( Exception e )
-        {
-            return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
-                           .entity( "WRES experienced an unexpected internal issue. The top-level exception was: "
-                                    + e.getMessage() )
-                           .build();
-        }
-
-        //TODO: Swap to not using cache once we can find root cause of files not being written
-
-//        if ( outputPaths == null )
-//        {
-//            return Response.status( Response.Status.NOT_FOUND )
-//                           .build();
-//        }
-//
-//
-//        StreamingOutput streamingOutput = outputSream -> {
-//            Writer writer = new BufferedWriter( new OutputStreamWriter( outputSream ) );
-//            for ( java.nio.file.Path path : outputPaths )
-//            {
-//                writer.write( path.toString() + LINE_TERMINATOR );
-//            }
-//            writer.flush();
-//            writer.close();
-//        };
-
-        return Response.ok( "I received project " + projectId
-                            + ", and successfully ran it. Visit /project/"
-                            + projectId
-                            + " for more." )
-                       .build();
-    }
-
-    /**
-     * (DEPRECATED)
-     * @param id the evaluation job identifier
-     * @return the evaluation results
-     */
-
-    @GET
-    @Path( "/{id}" )
-    @Produces( MediaType.TEXT_PLAIN )
-    public Response getProjectResults( @PathParam( "id" ) Long id )
-    {
-        Set<java.nio.file.Path> paths = OUTPUTS.getIfPresent( id );
-
-        if ( paths == null )
-        {
-            return Response.status( Response.Status.NOT_FOUND )
-                           .entity( "Could not find job " + id )
-                           .build();
-        }
-
-        Set<String> resources = getSetOfResources( id, paths );
-
-        return Response.ok( "Here are result resources: " + resources )
-                       .build();
-    }
-
-    /**
-     * (DEPRECATED)
-     * @param id the evaluation job identifier
-     * @param resourceName the resource name
-     * @return the resource
-     */
-
-    @GET
-    @Path( "/{id}/{resourceName}" )
-    public Response getProjectResource( @PathParam( "id" ) Long id,
-                                        @PathParam( "resourceName" ) String resourceName )
-    {
-        Set<java.nio.file.Path> paths = OUTPUTS.getIfPresent( id );
-        String type = MediaType.TEXT_PLAIN_TYPE.getType();
-
-        if ( paths == null )
-        {
-            return Response.status( Response.Status.NOT_FOUND )
-                           .entity( "Could not find project " + id )
-                           .build();
-        }
-
-        for ( java.nio.file.Path path : paths )
-        {
-            if ( path.getFileName().toString().equals( resourceName ) )
-            {
-                File actualFile = path.toFile();
-
-                if ( !actualFile.exists() )
-                {
-                    return Response.status( Response.Status.NOT_FOUND )
-                                   .entity( "Could not see resource "
-                                            + resourceName
-                                            + "." )
-                                   .build();
-                }
-
-                if ( !actualFile.canRead() )
-                {
-                    return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
-                                   .entity( "Found but could not read resource "
-                                            + resourceName
-                                            + "." )
-                                   .build();
-                }
-
-                type = EvaluationService.getContentType( path );
-
-                return Response.ok( actualFile )
-                               .type( type )
-                               .build();
-            }
-        }
-
-        return Response.status( Response.Status.NOT_FOUND )
-                       .type( type )
-                       .entity( "Could not find resource " + resourceName
-                                + " from project "
-                                + id )
-                       .build();
-    }
-
-    /**
      * Examines the content type of the resource at the path.
      * @param path the path
      * @return the content type
@@ -831,6 +848,13 @@ public class EvaluationService implements ServletContextListener
         return Collections.unmodifiableSet( resources );
     }
 
+    /**
+     * Since the database can be different than the one provided at creation through the database clean and swap
+     * tear down the current database upon the destruction of this servlet
+     *
+     * @param event the ServletContextEvent containing the ServletContext that is being destroyed
+     *
+     */
     @Override
     public void contextDestroyed( ServletContextEvent event ) {
         // Perform action during application's shutdown
