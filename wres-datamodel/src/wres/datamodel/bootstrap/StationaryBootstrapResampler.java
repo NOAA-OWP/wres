@@ -24,7 +24,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.CrossPair;
+import wres.config.yaml.components.CrossPairMethod;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.pairs.CrossPairs;
 import wres.datamodel.space.FeatureGroup;
@@ -917,7 +917,7 @@ public class StationaryBootstrapResampler<T>
         }
 
         LOGGER.debug( "The pool to resample contains {} mini-pools.", miniPools.size() );
-        TimeSeriesCrossPairer<T> crossPairer = TimeSeriesCrossPairer.of( CrossPair.FUZZY );
+        TimeSeriesCrossPairer<T> crossPairer = TimeSeriesCrossPairer.of( CrossPairMethod.FUZZY );
 
         // Take the main time-series from the first mini-pool and cross-pair against all other main and baseline pairs
         // from all other mini-pools. Then use this to cross-pair the main and baseline time-series across all other

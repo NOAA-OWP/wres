@@ -25,6 +25,8 @@ import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.ThreadSafe;
 
+import wres.config.yaml.components.CrossPair;
+import wres.config.yaml.components.CrossPairScope;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.Climatology;
 import wres.datamodel.baselines.BaselineGenerator;
@@ -48,7 +50,7 @@ import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesUpscaler;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.units.NoSuchUnitConversionException;
-import wres.pipeline.pooling.RescalingEvent.RescalingType;
+import wres.pipeline.pooling.PoolRescalingEvent.RescalingType;
 import wres.io.retrieving.DataAccessException;
 import wres.statistics.generated.GeometryGroup;
 
@@ -95,6 +97,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
     /** An optional cross-pairer to ensure that the main pairs and baseline pairs are coincident in time. */
     private final TimeSeriesCrossPairer<Pair<L, R>> crossPairer;
 
+    /** The cross-pairing declaration, if any. */
+    private final CrossPair crossPair;
+
     /** Upscaler for left-type data. Optional on construction, but may be exceptional if absent and later required. */
     private final TimeSeriesUpscaler<L> leftUpscaler;
 
@@ -104,7 +109,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
     /** Upscaler for baseline-type data. Optional on construction, but may be exceptional if later required. */
     private final TimeSeriesUpscaler<R> baselineUpscaler;
 
-    /** The desired time-scale. */
+    /** The desired timescale. */
     private final TimeScaleOuter desiredTimeScale;
 
     /** Metadata for the mains pairs. */
@@ -353,6 +358,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         /** An optional cross-pairer to ensure that the main pairs and baseline pairs are coincident in time. */
         private TimeSeriesCrossPairer<Pair<L, R>> crossPairer;
 
+        /** The cross-pairing declaration, if any. */
+        private CrossPair crossPair;
+
         /** A shim to map from a baseline-ish dataset to a right-ish dataset. */
         private Function<TimeSeries<B>, TimeSeries<R>> baselineShim;
 
@@ -424,11 +432,14 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
         /**
          * @param crossPairer the cross-pairer to set
+         * @param crossPair the cross-pairing declaration to set
          * @return the builder
          */
-        Builder<L, R, B> setCrossPairer( TimeSeriesCrossPairer<Pair<L, R>> crossPairer )
+        Builder<L, R, B> setCrossPairer( TimeSeriesCrossPairer<Pair<L, R>> crossPairer,
+                                         CrossPair crossPair )
         {
             this.crossPairer = crossPairer;
+            this.crossPair = crossPair;
 
             return this;
         }
@@ -755,16 +766,16 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                 validationEvents.addAll( basePairsPlus.getEvaluationStatusMessages() );
                 basePairs = basePairsPlus.getTimeSeries();
             }
+        }
 
-            // Cross-pair the main and baseline pairs?
-            if ( Objects.nonNull( this.crossPairer ) )
-            {
-                Pair<Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>, Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>>
-                        cp = this.getCrossPairs( mainPairs, basePairs );
+        // Cross-pair the main/baseline pairs and/or various sub-pools?
+        if ( Objects.nonNull( this.getCrossPairer() ) )
+        {
+            Pair<Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>, Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>>
+                    cp = this.getCrossPairs( this.getCrossPairer(), this.getCrossPair(), mainPairs, basePairs );
 
-                mainPairs = cp.getLeft();
-                basePairs = cp.getRight();
-            }
+            mainPairs = cp.getLeft();
+            basePairs = cp.getRight();
         }
 
         // Create the pool from the paired time-series
@@ -1343,9 +1354,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         // Upscale left?
         if ( upscaleLeft )
         {
-            RescalingEvent rescalingMonitor = RescalingEvent.of( RescalingType.UPSCALED, // Monitor
-                                                                 DatasetOrientation.LEFT,
-                                                                 left.getMetadata() );
+            PoolRescalingEvent rescalingMonitor = PoolRescalingEvent.of( RescalingType.UPSCALED, // Monitor
+                                                                         DatasetOrientation.LEFT,
+                                                                         left.getMetadata() );
 
             rescalingMonitor.begin();
 
@@ -1388,9 +1399,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         // Upscale right?
         if ( upscaleRight )
         {
-            RescalingEvent rescalingMonitor = RescalingEvent.of( RescalingType.UPSCALED, // Monitor
-                                                                 orientation,
-                                                                 rightOrBaseline.getMetadata() );
+            PoolRescalingEvent rescalingMonitor = PoolRescalingEvent.of( RescalingType.UPSCALED, // Monitor
+                                                                         orientation,
+                                                                         rightOrBaseline.getMetadata() );
 
             rescalingMonitor.begin();
 
@@ -1628,19 +1639,48 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
     }
 
     /**
-     * Performs cross-pairing of the inputs
+     * Performs cross-pairing of the main and baseline datasets.
+     * @param crossPairer the cross-pairer function
+     * @param crossPair the cross-pairing declaration
      * @param mainPairs the main pairs
      * @param basePairs the baseline pairs
      * @return the cross-pairs
      */
 
     private Pair<Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>, Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>>
-    getCrossPairs( Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> mainPairs,
+    getCrossPairs( TimeSeriesCrossPairer<Pair<L, R>> crossPairer,
+                   CrossPair crossPair,
+                   Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> mainPairs,
                    Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> basePairs )
+    {
+        // Cross-pairing across all features?
+        if ( crossPair.scope() == CrossPairScope.ACROSS_FEATURES )
+        {
+            return this.getCrossPairsFull( crossPairer, mainPairs, basePairs );
+        }
+
+        // Cross-pairing per feature
+        return this.getCrossPairsPartial( crossPairer, mainPairs, basePairs );
+    }
+
+    /**
+     * Performs cross-pairing of the main and baseline datasets for each feature separately.
+     *
+     * @see #getCrossPairsFull(TimeSeriesCrossPairer, Map, Map)
+     * @param crossPairer the cross-pairer function
+     * @param mainPairs the main pairs
+     * @param basePairs the baseline pairs
+     * @return the cross-pairs
+     */
+
+    private Pair<Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>, Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>>
+    getCrossPairsPartial( TimeSeriesCrossPairer<Pair<L, R>> crossPairer,
+                          Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> mainPairs,
+                          Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> basePairs )
     {
         LOGGER.debug( "Conducting cross-pairing of {} and {}.",
                       this.getMetadata(),
-                      this.baselineMetadata );
+                      this.getBaselineMetadata() );
 
         Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> mainPairsCrossed = new HashMap<>();
         Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> basePairsCrossed = new HashMap<>();
@@ -1653,7 +1693,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
             if ( basePairs.containsKey( nextFeature ) )
             {
                 List<TimeSeries<Pair<L, R>>> nextBasePairs = basePairs.get( nextFeature );
-                CrossPairs<Pair<L, R>> crossPairs = this.crossPairer.apply( nextMainPairs, nextBasePairs );
+                CrossPairs<Pair<L, R>> crossPairs = crossPairer.apply( nextMainPairs, nextBasePairs );
                 mainPairsCrossed.put( nextFeature, crossPairs.getFirstPairs() );
                 basePairsCrossed.put( nextFeature, crossPairs.getSecondPairs() );
             }
@@ -1677,6 +1717,66 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         }
 
         return Pair.of( mainPairsCrossed, basePairsCrossed );
+    }
+
+    /**
+     * Performs cross-pairing of the main and baseline datasets for all features together. In other words, only those
+     * times that are present in both the main and baseline datasets across all features will be retained.
+     *
+     * @see #getCrossPairsPartial(TimeSeriesCrossPairer, Map, Map)
+     * @param crossPairer the cross-pairer function
+     * @param mainPairs the main pairs
+     * @param basePairs the baseline pairs
+     * @return the cross-pairs
+     */
+
+    private Pair<Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>, Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>>
+    getCrossPairsFull( TimeSeriesCrossPairer<Pair<L, R>> crossPairer,
+                       Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> mainPairs,
+                       Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> basePairs )
+    {
+        List<List<TimeSeries<Pair<L, R>>>> combined = new ArrayList<>( mainPairs.values() );
+        // Add the base pairs, if available
+        if ( Objects.nonNull( basePairs ) )
+        {
+            combined.addAll( basePairs.values() );
+        }
+
+        List<TimeSeries<Pair<L, R>>> first = combined.get( 0 );
+        for ( int i = 1; i < combined.size(); i++ )
+        {
+            List<TimeSeries<Pair<L, R>>> next = combined.get( i );
+            first = crossPairer.apply( first, next )
+                               .getFirstPairs();
+        }
+
+        // Cross-pair all main pairs against the first set of pairs
+        Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> mainFinal = new HashMap<>();
+        for ( Map.Entry<FeatureTuple, List<TimeSeries<Pair<L, R>>>> nextEntry : mainPairs.entrySet() )
+        {
+            FeatureTuple nextFeature = nextEntry.getKey();
+            List<TimeSeries<Pair<L, R>>> nextPairs = nextEntry.getValue();
+            CrossPairs<Pair<L, R>> crossPaired = crossPairer.apply( nextPairs, first );
+            mainFinal.put( nextFeature, crossPaired.getFirstPairs() );
+        }
+        mainFinal = Collections.unmodifiableMap( mainFinal );
+
+        // Cross-pair all baseline pairs against the first set of pairs
+        Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> baseFinal = null;
+        if ( Objects.nonNull( basePairs ) )
+        {
+            baseFinal = new HashMap<>();
+            for ( Map.Entry<FeatureTuple, List<TimeSeries<Pair<L, R>>>> nextEntry : basePairs.entrySet() )
+            {
+                FeatureTuple nextFeature = nextEntry.getKey();
+                List<TimeSeries<Pair<L, R>>> nextPairs = nextEntry.getValue();
+                CrossPairs<Pair<L, R>> crossPaired = crossPairer.apply( nextPairs, first );
+                baseFinal.put( nextFeature, crossPaired.getFirstPairs() );
+            }
+            baseFinal = Collections.unmodifiableMap( baseFinal );
+        }
+
+        return Pair.of( mainFinal, baseFinal );
     }
 
     /**
@@ -1734,9 +1834,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
     }
 
     /**
-     * Returns the period from the prescribed time scale or <code>null</code> if the time scale is <code>null</code>.
+     * Returns the period from the prescribed timescale or <code>null</code> if the timescale is <code>null</code>.
      *
-     * @return the period associated with the time scale or null
+     * @return the period associated with the timescale or null
      */
 
     private Duration getPeriodFromTimeScale( TimeScaleOuter timeScale )
@@ -2004,6 +2104,24 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
     }
 
     /**
+     * @return the cross-pairer
+     */
+
+    private TimeSeriesCrossPairer<Pair<L, R>> getCrossPairer()
+    {
+        return this.crossPairer;
+    }
+
+    /**
+     * @return the cross-pairer declaration
+     */
+
+    private CrossPair getCrossPair()
+    {
+        return this.crossPair;
+    }
+
+    /**
      * @return the metadata.
      */
 
@@ -2161,6 +2279,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         this.baselineTransformer = builder.baselineTransformer;
         this.frequency = builder.frequency;
         this.crossPairer = builder.crossPairer;
+        this.crossPair = builder.crossPair;
         this.leftFilter = builder.leftFilter;
         this.rightFilter = builder.rightFilter;
         this.baselineFilter = builder.baselineFilter;
@@ -2246,10 +2365,18 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         }
 
         // Cannot supply two baseline sources
-        if ( Objects.nonNull( this.baseline ) && Objects.nonNull( this.baselineGenerator ) )
+        if ( Objects.nonNull( this.baseline )
+             && Objects.nonNull( this.baselineGenerator ) )
         {
             throw new IllegalArgumentException( messageStart + "cannot add a baseline data source and a baseline "
                                                 + "generator to the same pool: only one is required." );
+        }
+
+        // The cross pairing function and declaration should both be present or absent
+        if ( Objects.nonNull( this.crossPairer ) != Objects.nonNull( this.crossPair ) )
+        {
+            throw new IllegalArgumentException( messageStart + "either set the cross-pairing function and declaration "
+                                                + "or set neither." );
         }
     }
 

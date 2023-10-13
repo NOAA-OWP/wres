@@ -60,6 +60,7 @@ import wres.config.yaml.components.AnalysisTimesBuilder;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.CrossPair;
+import wres.config.yaml.components.CrossPairMethod;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.DatasetOrientation;
@@ -566,7 +567,8 @@ class DeclarationMigratorTest
                                                                      .leadTimePools( leadTimePools )
                                                                      .season( season )
                                                                      .values( values )
-                                                                     .crossPair( CrossPair.FUZZY )
+                                                                     .crossPair( new CrossPair( CrossPairMethod.FUZZY,
+                                                                                                null ) )
                                                                      .unit( "dogfish" )
                                                                      .build();
 

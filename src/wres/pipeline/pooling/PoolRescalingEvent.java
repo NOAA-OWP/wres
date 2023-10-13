@@ -16,10 +16,10 @@ import wres.datamodel.time.TimeSeriesMetadata;
  * @author James Brown
  */
 
-@Name( "wres.pipeline.pooling.RescalingEvent" )
-@Label( "Rescaling Event" )
+@Name( "wres.pipeline.pooling.PoolRescalingEvent" )
+@Label( "Pool Rescaling Event" )
 @Category( { "Java Application", "Water Resources Evaluation Service", "Core", "Pooling", "Rescaling" } )
-class RescalingEvent extends Event
+class PoolRescalingEvent extends Event
 {
     /**
      * Type of rescaling performed.
@@ -27,7 +27,7 @@ class RescalingEvent extends Event
     enum RescalingType
     {
         UPSCALED,
-        DOWNSCALED;
+        DOWNSCALED
     }
 
     @Label( "Type" )
@@ -50,9 +50,9 @@ class RescalingEvent extends Event
      * @throws NullPointerException if any input is null
      */
 
-    static RescalingEvent of( RescalingType type, DatasetOrientation lrb, TimeSeriesMetadata seriesMetadata )
+    static PoolRescalingEvent of( RescalingType type, DatasetOrientation lrb, TimeSeriesMetadata seriesMetadata )
     {
-        return new RescalingEvent( type, lrb, seriesMetadata );
+        return new PoolRescalingEvent( type, lrb, seriesMetadata );
     }
 
     /**
@@ -63,7 +63,7 @@ class RescalingEvent extends Event
      * @throws NullPointerException if any input is null
      */
 
-    private RescalingEvent( RescalingType type, DatasetOrientation lrb, TimeSeriesMetadata seriesMetadata )
+    private PoolRescalingEvent( RescalingType type, DatasetOrientation lrb, TimeSeriesMetadata seriesMetadata )
     {
         Objects.requireNonNull( type );
         Objects.requireNonNull( lrb );

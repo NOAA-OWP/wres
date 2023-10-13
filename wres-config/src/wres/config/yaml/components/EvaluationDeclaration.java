@@ -15,6 +15,7 @@ import io.soabase.recordbuilder.core.RecordBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.deserializers.CrossPairDeserializer;
 import wres.config.yaml.deserializers.DecimalFormatDeserializer;
 import wres.config.yaml.deserializers.DurationDeserializer;
 import wres.config.yaml.deserializers.MetricsDeserializer;
@@ -22,6 +23,7 @@ import wres.config.yaml.deserializers.ThresholdSetsDeserializer;
 import wres.config.yaml.deserializers.ThresholdSourcesDeserializer;
 import wres.config.yaml.deserializers.ThresholdsDeserializer;
 import wres.config.yaml.serializers.ChronoUnitSerializer;
+import wres.config.yaml.serializers.CrossPairSerializer;
 import wres.config.yaml.serializers.DecimalFormatSerializer;
 import wres.config.yaml.serializers.DurationSerializer;
 import wres.config.yaml.serializers.EnsembleAverageTypeSerializer;
@@ -92,6 +94,8 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonSerialize( using = DurationSerializer.class )
                                      @JsonDeserialize( using = DurationDeserializer.class )
                                      @JsonProperty( "pair_frequency" ) Duration pairFrequency,
+                                     @JsonSerialize( using = CrossPairSerializer.class )
+                                     @JsonDeserialize( using = CrossPairDeserializer.class )
                                      @JsonProperty( "cross_pair" ) CrossPair crossPair,
                                      @JsonSerialize( using = ThresholdsSerializer.class )
                                      @JsonDeserialize( using = ThresholdsDeserializer.class )

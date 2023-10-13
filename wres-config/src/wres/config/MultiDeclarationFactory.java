@@ -211,8 +211,9 @@ public class MultiDeclarationFactory
         // Permissive check because a string without <?xml version="1.0" encoding="UTF-8"?> will still parse correctly,
         // even though the content type will not be detected correctly. The first check deals with that scenario and
         // the second check deals with a correctly detected content type.
-        return declarationString.startsWith( "<project" ) || ( "application".equals( mediaType.getType() )
-                                                               && "xml".equals( mediaType.getSubtype() ) );
+        return declarationString.startsWith( "<project" )
+               || ( "application".equals( mediaType.getType() )
+                    && "xml".equals( mediaType.getSubtype() ) );
     }
 
     /**

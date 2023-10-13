@@ -126,7 +126,7 @@ definitions:
       pair_frequency:
         "$ref": "#/definitions/PairFrequency"
       cross_pair:
-        "$ref": "#/definitions/CrossPairEnum"
+        "$ref": "#/definitions/CrossPair"
       ensemble_average:
         "$ref": "#/definitions/EnsembleAverageEnum"
       season:
@@ -408,6 +408,27 @@ definitions:
         "$ref": "#/definitions/EnsembleAverageEnum"
     required:
       - name
+
+  CrossPair:
+    title: Cross-pairing of time-series for consistency
+    description: "Applies cross-pairing to the time-series within an evaluation
+    to ensure that the same reference times and valid times are present across
+    some or all of the datasets within the evaluation, depending on the type of 
+    cross-pairing chosen."
+    anyOf:
+      - "$ref": "#/definitions/CrossPairEnum"
+      - "$ref": "#/definitions/CrossPairFull"
+
+  CrossPairFull:
+    type: object
+    additionalProperties: false
+    properties:
+      method:
+        "$ref": "#/definitions/CrossPairEnum"
+      scope:
+        "$ref": "#/definitions/CrossPairScopeEnum"
+    required:
+      - method
 
   Source:
     title: A data source.
@@ -805,6 +826,8 @@ definitions:
         type: integer
       unit:
         "$ref": "#/definitions/DurationEnum"
+    required:
+      - unit
 
   TimePools:
     title: The temporal boundaries of a pool of data to evaluate.
@@ -1375,21 +1398,34 @@ definitions:
 
   CrossPairEnum:
     title: The cross-pairing methodology.
-    description: "Controls cross-pairing of observed-predicted ('main') pairs 
-    with observed-baseline ('baseline') pairs. If one of these options is 
-    present, evaluates common pairs by reference time and valid time. If 
-    absent, retains all pairs of each type. Only applies when a baseline is 
-    declared. With fuzzy matching, each time-series in the main set of pairs is 
-    matched with a time-series in the baseline set of pairs (and vice versa) 
-    according to the total duration between all reference times of a 
-    corresponding type. In other words, if there is an exact match, that will 
-    be used, else the time-series whose reference times are nearest overall. 
-    Once a time-series has been matched, it cannot be re-used. Always uses 
-    exact matching for valid times."
+    description: "Controls cross-pairing of time-series. If one of these options 
+    is present, evaluates common events by reference time and valid time. If 
+    absent, retains all events of each type. With fuzzy matching, each time-
+    series is matched with its nearest, corresponding, time-series according to 
+    the total duration between all reference times of a corresponding type. In 
+    other words, if there is an exact match, that will be used, else the time-
+    series whose reference times are nearest overall. Once a time-series has 
+    been matched, it cannot be re-used. Always uses exact matching for valid 
+    times. The scope of the cross-pairing always includes the predicted and 
+    baseline datasets, where defined, and may be further controlled using the 
+    'scope' parameter."
     type: string
     enum:
       - exact
       - fuzzy
+
+  CrossPairScopeEnum:
+    title: The scope of cross-pairing.
+    description: "Controls the scope of cross-pairing. When applied 'within 
+    features', only those time-series with a common geographic feature will be 
+    cross-paired with each other. When applied 'across features', all of the 
+    time-series within a feature group will be cross-paired with each other and 
+    only those time-series and events retained that are present for all 
+    geographic features."
+    type: string
+    enum:
+      - within features
+      - across features
 
   EnsembleAverageEnum:
     title: The ensemble averaging function.
