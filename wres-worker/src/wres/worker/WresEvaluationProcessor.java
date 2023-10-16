@@ -49,6 +49,9 @@ class WresEvaluationProcessor implements Callable<Integer>
 
     private static final int META_FAILURE_CODE = 600;
 
+    /** Flag to indicate whether to also send output to system.out, system.err*/
+    private static final boolean STREAM_PASS_THROUGH = true;
+
     private static final String START_EVAL_URI = "http://localhost:%d/evaluation/start/%s";
 
     private static final String OPEN_EVAL_URI = "http://localhost:%d/evaluation/open";
@@ -493,6 +496,19 @@ class WresEvaluationProcessor implements Callable<Integer>
                 .setIndex( order )
                 .setText( line.trim() )
                 .build();
+
+        // Pass through messages so they appear in docker logs as well if true
+        if ( STREAM_PASS_THROUGH )
+        {
+            if ( whichStream.equals( WhichStream.STDERR ) )
+            {
+                System.err.println( line );
+            }
+            else if ( whichStream.equals( WhichStream.OUTPUT ) )
+            {
+                System.out.println( line );
+            }
+        }
 
         return message.toByteArray();
     }
