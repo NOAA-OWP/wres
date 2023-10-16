@@ -148,8 +148,9 @@ public class ScenarioHelper
             broker = EmbeddedBroker.of( connectionProperties, true ); // Allow dynamic binding
         }
 
-        try ( BrokerConnectionFactory brokerConnectionFactory = BrokerConnectionFactory.of( connectionProperties ) )
+        try
         {
+            BrokerConnectionFactory brokerConnectionFactory = BrokerConnectionFactory.of( connectionProperties );
             Evaluator wresEvaluation = new Evaluator( SYSTEM_SETTINGS,
                                                       DATABASE,
                                                       brokerConnectionFactory );
@@ -163,10 +164,6 @@ public class ScenarioHelper
             }
 
             paths = result.getResources();
-        }
-        catch ( IOException e )
-        {
-            LOGGER.warn( "Failed to close a broker connection factory.", e );
         }
         finally
         {

@@ -791,11 +791,6 @@ class EvaluationMessagerTest
     @AfterAll
     static void runAfterAllTests() throws IOException
     {
-        if ( Objects.nonNull( EvaluationMessagerTest.connections ) )
-        {
-            EvaluationMessagerTest.connections.close();
-        }
-
         if ( Objects.nonNull( EvaluationMessagerTest.broker ) )
         {
             EvaluationMessagerTest.broker.close();

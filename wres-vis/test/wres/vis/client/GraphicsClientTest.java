@@ -1,7 +1,5 @@
 package wres.vis.client;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -12,6 +10,7 @@ import java.util.Properties;
 import java.util.Set;
 
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,7 +44,7 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
 
 /**
  * Tests the {@link GraphicsClient}.
- * 
+ *
  * @author James Brown
  */
 
@@ -120,15 +119,14 @@ class GraphicsClientTest
     }
 
     @Test
-    void publishAndConsumeOneEvaluationWithAnExternalGraphicsSubscriber()
-            throws IOException, InterruptedException
+    void publishAndConsumeOneEvaluationWithAnExternalGraphicsSubscriber() throws IOException
     {
         // Create the consumers upfront
         // Consumers simply dump to an actual output store for comparison with the expected output
         Set<Path> actualPathsWritten;
 
         // Open an evaluation, closing on completion
-        Path basePath = null;
+        Path basePath;
 
         GraphicsClient graphics = GraphicsClient.of( GraphicsClientTest.connections );
 
@@ -138,7 +136,7 @@ class GraphicsClientTest
         try ( // This is the evaluation instance that declares png output
               EvaluationMessager evaluation = EvaluationMessager.of( this.oneEvaluation,
                                                                      GraphicsClientTest.connections,
-                                                                     "aClient" ); )
+                                                                     "aClient" ) )
         {
 
             // Publish the statistics to a "feature" group
@@ -166,15 +164,17 @@ class GraphicsClientTest
                                           basePath.resolve( "DRRC2_DRRC2_DRRC2_HEFS_MEAN_ERROR.png" ),
                                           basePath.resolve( "DRRC2_DRRC2_DRRC2_HEFS_MEAN_SQUARE_ERROR.png" ) );
 
-        assertEquals( expectedPaths, actualPathsWritten );
+        Assertions.assertEquals( expectedPaths, actualPathsWritten );
 
         // Clean up by deleting the paths written
         for ( Path next : actualPathsWritten )
         {
-            next.toFile().delete();
+            boolean ignored = next.toFile()
+                                  .delete();
         }
 
-        basePath.toFile().delete();
+        boolean ignored = basePath.toFile()
+                                  .delete();
     }
 
     /**
@@ -227,8 +227,10 @@ class GraphicsClientTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 1.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN )
-                                                                                                                       .setUnits( CMS ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN )
+                                                                                                                       .setUnits(
+                                                                                                                               CMS ) ) )
                                     .build();
 
         DoubleScoreStatistic two =
@@ -237,8 +239,10 @@ class GraphicsClientTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 2.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN )
-                                                                                                                       .setUnits( CMS ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN )
+                                                                                                                       .setUnits(
+                                                                                                                               CMS ) ) )
                                     .build();
 
         DoubleScoreStatistic three =
@@ -248,8 +252,10 @@ class GraphicsClientTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 3.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN )
-                                                                                                                       .setUnits( CMS ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN )
+                                                                                                                       .setUnits(
+                                                                                                                               CMS ) ) )
                                     .build();
 
         return Statistics.newBuilder()
@@ -263,11 +269,6 @@ class GraphicsClientTest
     @AfterAll
     static void runAfterAllTests() throws IOException
     {
-        if ( Objects.nonNull( GraphicsClientTest.connections ) )
-        {
-            GraphicsClientTest.connections.close();
-        }
-
         if ( Objects.nonNull( GraphicsClientTest.broker ) )
         {
             GraphicsClientTest.broker.close();

@@ -167,18 +167,6 @@ class GraphicsClient
                    // Close the resources
                    graphics.stop();
 
-                   try
-                   {
-                       LOGGER.info( "Closing broker connections {}.", brokerConnections );
-                       brokerConnections.close();
-                   }
-                   catch ( IOException e )
-                   {
-                       LOGGER.error( "Failed to close the broker connections associated with graphics client {}.",
-                                     graphics );
-
-                   }
-
                    if ( Objects.nonNull( brokerToClose ) )
                    {
                        try
@@ -220,7 +208,6 @@ class GraphicsClient
             exitCode = 1;
 
             Thread.currentThread().interrupt();
-
         }
         catch ( GraphicsClientException f )
         {
@@ -574,7 +561,6 @@ class GraphicsClient
         {
             super( message, cause );
         }
-
     }
 
 }
