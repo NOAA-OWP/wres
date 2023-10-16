@@ -27,7 +27,8 @@ public class SourceSerializer extends JsonSerializer<Source>
                                       .uri( source.uri() )
                                       .build();
         // URI only
-        if ( compare.equals( source ) && Objects.nonNull( source.uri() ) )
+        if ( compare.equals( source )
+             && Objects.nonNull( source.uri() ) )
         {
             writer.writeString( source.uri()
                                       .toString() );

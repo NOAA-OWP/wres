@@ -95,7 +95,7 @@ class EvaluationSubscriberTest
             }
         };
 
-        SubscriberStatus status = null;
+        SubscriberStatus status;
 
         try ( EvaluationSubscriber subscriber = EvaluationSubscriber.of( consumer,
                                                                          Executors.newSingleThreadExecutor(),
@@ -105,7 +105,7 @@ class EvaluationSubscriberTest
                                            EvaluationSubscriberTest.connections.getDestination( "evaluation" ) );
               MessagePublisher statsPublisher =
                       MessagePublisher.of( EvaluationSubscriberTest.connections,
-                                           EvaluationSubscriberTest.connections.getDestination( "statistics" ) ); )
+                                           EvaluationSubscriberTest.connections.getDestination( "statistics" ) ) )
         {
 
             Map<MessageProperty, String> properties = new EnumMap<>( MessageProperty.class );
@@ -175,7 +175,7 @@ class EvaluationSubscriberTest
             }
         };
 
-        SubscriberStatus status = null;
+        SubscriberStatus status;
 
         try ( EvaluationSubscriber subscriber = EvaluationSubscriber.of( consumer,
                                                                          Executors.newSingleThreadExecutor(),
@@ -188,7 +188,7 @@ class EvaluationSubscriberTest
                                            EvaluationSubscriberTest.connections.getDestination( "statistics" ) );
               MessagePublisher statusPublisher =
                       MessagePublisher.of( EvaluationSubscriberTest.connections,
-                                           EvaluationSubscriberTest.connections.getDestination( "status" ) ); )
+                                           EvaluationSubscriberTest.connections.getDestination( "status" ) ) )
         {
 
             Map<MessageProperty, String> properties = new EnumMap<>( MessageProperty.class );
@@ -235,11 +235,6 @@ class EvaluationSubscriberTest
     @AfterAll
     static void runAfterAllTests() throws IOException
     {
-        if ( Objects.nonNull( EvaluationSubscriberTest.connections ) )
-        {
-            EvaluationSubscriberTest.connections.close();
-        }
-
         if ( Objects.nonNull( EvaluationSubscriberTest.broker ) )
         {
             EvaluationSubscriberTest.broker.close();

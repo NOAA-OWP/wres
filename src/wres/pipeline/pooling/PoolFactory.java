@@ -1037,7 +1037,7 @@ public class PoolFactory
         CrossPair crossPair = declaration.crossPair();
         if ( Objects.nonNull( crossPair ) )
         {
-            crossPairer = TimeSeriesCrossPairer.of( crossPair );
+            crossPairer = TimeSeriesCrossPairer.of( crossPair.method() );
         }
 
         return crossPairer;
