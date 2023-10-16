@@ -40,9 +40,9 @@ class BrokerConnectionFactoryTest
         Properties properties = BrokerUtilities.getBrokerConnectionProperties( "eventbroker.properties" );
         
         // Create and start the broker, clean up on completion
-        try (  EmbeddedBroker broker = EmbeddedBroker.of( properties, true );
-               BrokerConnectionFactory factory = BrokerConnectionFactory.of( properties, 2 ); )
+        try (  EmbeddedBroker ignored = EmbeddedBroker.of( properties, true ) )
         {
+            BrokerConnectionFactory factory = BrokerConnectionFactory.of( properties, 2 );
             Topic evaluationTopic = (Topic) factory.getDestination( "evaluation" );
             Topic evaluationStatusTopic = (Topic) factory.getDestination( "status" );
             Topic statisticsTopic = (Topic) factory.getDestination( "statistics" );
@@ -60,7 +60,7 @@ class BrokerConnectionFactoryTest
                   MessageConsumer evaluationConsumer = session.createConsumer( evaluationTopic, messageSelector );
                   MessageConsumer evaluationStatusConsumer = session.createConsumer( evaluationStatusTopic,
                                                                                      messageSelector );
-                  MessageConsumer statisticsConsumer = session.createConsumer( statisticsTopic, messageSelector ); )
+                  MessageConsumer statisticsConsumer = session.createConsumer( statisticsTopic, messageSelector ) )
             {
                 // Latches to identify when consumption is complete
                 CountDownLatch evaluationConsumerCount = new CountDownLatch( 1 );

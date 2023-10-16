@@ -165,7 +165,7 @@ public class WebServer
         // Creating evaluator for the project Service
         Evaluator evaluator = new Evaluator( WebServer.SYSTEM_SETTINGS,
                                              WebServer.database,
-                                             createBroker() );
+                                             WebServer.createBroker() );
 
         // Registering the ProjectService explicitly so that we can add constructor arguments
         ServletContainer servlet = new ServletContainer(

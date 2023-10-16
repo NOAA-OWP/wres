@@ -247,13 +247,12 @@ class EvaluationUtilities
                                                                .build();
 
             // Open an evaluation, to be closed on completion or stopped on exception
-            Pair<EvaluationMessager, String> evaluationAndProjectHash =
-                    EvaluationUtilities.evaluate( evaluationDetails,
-                                                  databaseServices,
-                                                  executors,
-                                                  connections,
-                                                  sharedWriters,
-                                                  netcdfWriters );
+            Pair<EvaluationMessager, String> evaluationAndProjectHash = EvaluationUtilities.evaluate( evaluationDetails,
+                                                                                                      databaseServices,
+                                                                                                      executors,
+                                                                                                      connections,
+                                                                                                      sharedWriters,
+                                                                                                      netcdfWriters );
             evaluation = evaluationAndProjectHash.getLeft();
             projectHash = evaluationAndProjectHash.getRight();
 
@@ -261,10 +260,10 @@ class EvaluationUtilities
             evaluation.await();
 
             // Since the netcdf consumers are created here, they should be destroyed here. An attempt should be made to 
-            // close the netcdf writers before the finally block because these writers employ a delayed write, which 
+            // close the netcdf writers before the finally clause because these writers employ a delayed write, which
             // could still fail exceptionally. Such a failure should stop the evaluation exceptionally. For further 
             // context see #81790-21 and the detailed description in EvaluationMessager.await(), which clarifies that
-            // awaiting for an evaluation to complete does not mean that all consumers have finished their work, only
+            // awaiting an evaluation to complete does not mean that all consumers have finished their work, only
             // that they have received all expected messages. If this contract is insufficient (e.g., because of a
             // delayed write implementation), then it may be necessary to promote the underlying consumer/s to an
             // external/outer subscriber that is responsible for messaging its own lifecycle, rather than delegating
@@ -312,7 +311,19 @@ class EvaluationUtilities
         finally
         {
             // Close the netCDF writers if not closed
-            EvaluationUtilities.closeNetcdfWriters( netcdfWriters, evaluation, evaluationId );
+            for ( NetcdfOutputWriter writer : netcdfWriters )
+            {
+                try
+                {
+                    writer.close();
+                }
+                catch ( IOException we )
+                {
+                    // Forcibly stop the evaluation messager if writing failed
+                    EvaluationUtilities.forceStop( evaluation, we, evaluationId );
+                    LOGGER.warn( "Failed to close a netcdf writer.", we );
+                }
+            }
 
             // Clean-up an empty output directory: #67088
             try ( Stream<Path> outputs = Files.list( outputDirectory ) )
@@ -596,12 +607,21 @@ class EvaluationUtilities
 
             throw new WresProcessingException( "Project failed to complete with the following error: ", internalError );
         }
-        // Close an evaluation that failed
+        // Close an evaluation messager that failed. An evaluation messager that succeeded is returned
         finally
         {
-            if ( Objects.nonNull( evaluation ) && evaluation.isFailed() )
+            if ( Objects.nonNull( evaluation )
+                 && evaluation.isFailed() )
             {
-                evaluation.close();
+                try
+                {
+                    evaluation.close();
+                }
+                catch ( IOException e )
+                {
+                    String message = "Failed to close evaluation " + evaluation.getEvaluationId() + ".";
+                    LOGGER.warn( message, e );
+                }
             }
         }
     }
@@ -640,7 +660,7 @@ class EvaluationUtilities
      * @param error the error
      * @param evaluationId the evaluation identifier
      */
-    private static void forceStop( EvaluationMessager evaluation, RuntimeException error, String evaluationId )
+    private static void forceStop( EvaluationMessager evaluation, Exception error, String evaluationId )
     {
         if ( Objects.nonNull( evaluation ) )
         {
@@ -648,37 +668,6 @@ class EvaluationUtilities
             LOGGER.debug( FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR, evaluationId );
 
             evaluation.stop( error );
-        }
-    }
-
-    /**
-     * Closes the netcdf writers.
-     * @param netcdfWriters the writers to close
-     * @param evaluation the evaluation messager
-     * @param evaluationId the evaluation identifier
-     */
-
-    private static void closeNetcdfWriters( List<NetcdfOutputWriter> netcdfWriters,
-                                            EvaluationMessager evaluation,
-                                            String evaluationId )
-    {
-        for ( NetcdfOutputWriter writer : netcdfWriters )
-        {
-            try
-            {
-                writer.close();
-            }
-            catch ( IOException we )
-            {
-                if ( Objects.nonNull( evaluation ) )
-                {
-                    LOGGER.debug( FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR,
-                                  evaluationId );
-
-                    evaluation.stop( we );
-                }
-                LOGGER.warn( "Failed to close a netcdf writer.", we );
-            }
         }
     }
 
@@ -1626,8 +1615,8 @@ class EvaluationUtilities
         for ( Pool<TimeSeries<Pair<Double, R>>> next : miniPools )
         {
             // Main data with sufficient samples
-            if( next.get()
-                    .size() > 1 )
+            if ( next.get()
+                     .size() > 1 )
             {
                 Pair<Long, Duration> nextMain =
                         EvaluationUtilities.getOptimalBlockSizesForStationaryBootstrap( next.get() );
