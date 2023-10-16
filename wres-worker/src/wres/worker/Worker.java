@@ -119,6 +119,8 @@ public class Worker
                     if ( !isServerUp() )
                     {
                         // Server is not up after retrying, killing shim and allowing Docker to attempt a restart
+                        LOGGER.error( "Unable to reach the server" );
+                        killServerProcess( serverProcess );
                         throw new InternalError( "Was unable to reach the worker server" );
                     }
                     else
@@ -132,7 +134,7 @@ public class Worker
             }
 
             // When we break from this while loop it means the worker-shim is killed, kill its server too
-            killServerProcess(serverProcess);
+            killServerProcess( serverProcess );
         }
         catch ( IOException | TimeoutException | InterruptedException e )
         {
@@ -194,7 +196,7 @@ public class Worker
 
         if ( innerJavaOpts != null && innerJavaOpts.length() > 0 )
         {
-            javaOpts =  innerJavaOpts;
+            javaOpts = innerJavaOpts;
         }
 
         String executable = wresExecutable
@@ -211,7 +213,9 @@ public class Worker
 
         try
         {
-            process = processBuilder.start();
+            // Start the server inheriting the IO so we can see it in the docker logs.
+            // Projects will redirect this to themselves when they run
+            process = processBuilder.inheritIO().start();
 
             if ( process.isAlive() )
             {
@@ -242,7 +246,8 @@ public class Worker
         return fromWeb.getStatusCode() == HttpURLConnection.HTTP_OK;
     }
 
-    private static void killServerProcess( Process oldServerProcess ) {
+    private static void killServerProcess( Process oldServerProcess )
+    {
         if ( oldServerProcess.isAlive() )
         {
             oldServerProcess.destroy();

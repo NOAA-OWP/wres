@@ -63,12 +63,12 @@ public class SettingsFactory
                 overrideDatabaseAttributesUsingJdbcUrl( databaseBuilder, jdbcUrl );
             }
 
-            String passwordOverrides = getPasswordOverrides( systemSettings.getDatabaseConfiguration() );
+            String passwordOverrides = getPasswordOverrides( databaseBuilder.build() );
             if ( passwordOverrides != null )
             {
                 databaseBuilder.password( passwordOverrides );
             }
-            databaseBuilder.dataSourceProperties( createDatasourceProperties( systemSettings.getDatabaseConfiguration() ) );
+            databaseBuilder.dataSourceProperties( createDatasourceProperties( databaseBuilder.build() ) );
 
             // Get system configurations and convert to a builder
             SystemSettingsBuilder systemBuilder = systemSettings.toBuilder();
