@@ -27,7 +27,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import wres.events.broker.BrokerConnectionFactory;
@@ -68,8 +67,7 @@ class MessagePublisherTest
     }
 
     @Test
-    void publishOneMessage()
-            throws IOException, NamingException, JMSException, InterruptedException
+    void publishOneMessage() throws IOException, NamingException, JMSException
     {
         // Create and start a broker and open an evaluation, closing on completion
         try ( MessagePublisher publisher =
@@ -103,8 +101,7 @@ class MessagePublisherTest
     }
 
     @Test
-    void publishOneMessageSucceedsAfterOneRetry()
-            throws IOException, NamingException, JMSException, InterruptedException
+    void publishOneMessageSucceedsAfterOneRetry() throws IOException, NamingException, JMSException
     {
         // Goal: mock a MessageProducer whose send method needs to be invoked
         BrokerConnectionFactory mockFactory = Mockito.mock( BrokerConnectionFactory.class );
@@ -131,13 +128,9 @@ class MessagePublisherTest
 
         // Create an answer that records an actual message when MessageProducer::send is invoked
         AtomicBoolean invokedAsExpected = new AtomicBoolean();
-        Answer<Object> answer = new Answer<Object>()
-        {
-            public Object answer( InvocationOnMock invocation ) throws JMSException
-            {
-                invokedAsExpected.set( true );
-                return null;
-            }
+        Answer<Object> answer = invocation -> {
+            invokedAsExpected.set( true );
+            return null;
         };
 
         BytesMessage bytesMessage = realSession.createBytesMessage();
@@ -186,11 +179,6 @@ class MessagePublisherTest
     @AfterAll
     static void runAfterAllTests() throws IOException
     {
-        if ( Objects.nonNull( MessagePublisherTest.connections ) )
-        {
-            MessagePublisherTest.connections.close();
-        }
-
         if ( Objects.nonNull( MessagePublisherTest.broker ) )
         {
             MessagePublisherTest.broker.close();

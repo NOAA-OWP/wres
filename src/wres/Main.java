@@ -229,8 +229,7 @@ public class Main
         }
 
         // Create the broker connection factory
-        BrokerConnectionFactory brokerConnectionFactory =
-                BrokerConnectionFactory.of( brokerConnectionProperties );
+        BrokerConnectionFactory brokerConnectionFactory = BrokerConnectionFactory.of( brokerConnectionProperties );
 
         try
         {
@@ -284,15 +283,6 @@ public class Main
         finally
         {
             LOGGER.info( "Closing the application..." );
-            try
-            {
-                LOGGER.info( "Closing broker connections..." );
-                brokerConnectionFactory.close();
-            }
-            catch ( IOException e )
-            {
-                LOGGER.warn( "Failed to destroy the broker connections.", e );
-            }
 
             if ( SYSTEM_SETTINGS.isUseDatabase() && Objects.nonNull( database ) )
             {

@@ -394,11 +394,6 @@ class EvaluationStatusTrackerTest
     @AfterAll
     static void runAfterAllTests() throws IOException
     {
-        if ( Objects.nonNull( EvaluationStatusTrackerTest.connections ) )
-        {
-            EvaluationStatusTrackerTest.connections.close();
-        }
-
         if ( Objects.nonNull( EvaluationStatusTrackerTest.broker ) )
         {
             EvaluationStatusTrackerTest.broker.close();

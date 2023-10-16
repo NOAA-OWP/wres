@@ -163,7 +163,6 @@ public class WebServer
         dynamicHolder.setInitParameter( "jakarta.ws.rs.Application",
                                         JaxRSApplication.class.getCanonicalName() );
 
-
         // Registering the EvaluationService explicitly so that we can add constructor arguments
         ServletContainer servlet = new ServletContainer(
                 new ResourceConfig().register(

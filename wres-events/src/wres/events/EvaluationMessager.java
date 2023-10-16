@@ -641,14 +641,12 @@ public class EvaluationMessager implements Closeable
 
         LOGGER.debug( "Closing evaluation {}.", this.getEvaluationId() );
 
-        // Close the publishers gracefully
+        // Close the resources gracefully
         this.closeGracefully( this.evaluationPublisher );
         this.closeGracefully( this.evaluationStatusPublisher );
         this.closeGracefully( this.statisticsPublisher );
         this.closeGracefully( this.pairsPublisher );
-
-        // Close the tracker
-        this.statusTracker.close();
+        this.closeGracefully( this.statusTracker );
 
         // Cancel otherwise the current instance will persist in cluster-server mode: #103066
         this.timer.cancel();

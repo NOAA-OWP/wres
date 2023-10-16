@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.config.yaml.components.CrossPair;
+import wres.config.yaml.components.CrossPairMethod;
 import wres.datamodel.pools.pairs.CrossPairs;
 import wres.datamodel.pools.pairs.PairingException;
 import wres.datamodel.time.TimeSeries.Builder;
@@ -36,11 +36,11 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesCrossPairer.class );
 
-    /** Cross-pair mode. */
-    private final CrossPair crossPair;
+    /** Cross-pair method. */
+    private final CrossPairMethod crossPair;
 
     /**
-     * Creates an instance of a cross pairer using {@link wres.config.yaml.components.CrossPair#FUZZY} matching by
+     * Creates an instance of a cross pairer using {@link wres.config.yaml.components.CrossPairMethod#FUZZY} matching by
      * reference time.
      *
      * @param <T> the time-series event value type
@@ -49,11 +49,11 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
 
     public static <T> TimeSeriesCrossPairer<T> of()
     {
-        return new TimeSeriesCrossPairer<>( CrossPair.FUZZY );
+        return new TimeSeriesCrossPairer<>( CrossPairMethod.FUZZY );
     }
 
     /**
-     * Creates an instance of a cross pairer using a prescribed {@link wres.config.yaml.components.CrossPair}.
+     * Creates an instance of a cross pairer using a prescribed {@link wres.config.yaml.components.CrossPairMethod}.
      *
      * @param <T> the time-series event value type
      * @param crossPair the match mode for reference times
@@ -61,7 +61,7 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
      * @throws NullPointerException if the match mode is null
      */
 
-    public static <T> TimeSeriesCrossPairer<T> of( CrossPair crossPair )
+    public static <T> TimeSeriesCrossPairer<T> of( CrossPairMethod crossPair )
     {
         return new TimeSeriesCrossPairer<>( crossPair );
     }
@@ -130,7 +130,7 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
      * @throws NullPointerException if the match mode is null
      */
 
-    private TimeSeriesCrossPairer( CrossPair crossPair )
+    private TimeSeriesCrossPairer( CrossPairMethod crossPair )
     {
         Objects.requireNonNull( crossPair );
 
@@ -261,7 +261,7 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
 
         // Return the empty time-series if nothing found or if the duration error is not zero when exact matching
         if ( Objects.isNull( nearest )
-             || ( this.crossPair == CrossPair.EXACT && !Duration.ZERO.equals( durationError ) ) )
+             || ( this.crossPair == CrossPairMethod.EXACT && !Duration.ZERO.equals( durationError ) ) )
         {
             if ( LOGGER.isDebugEnabled() )
             {
