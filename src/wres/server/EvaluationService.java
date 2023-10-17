@@ -387,7 +387,7 @@ public class EvaluationService implements ServletContextListener
     @POST
     @Path( "/migrateDatabase" )
     @Produces( MediaType.TEXT_PLAIN )
-    public Response migrateDatabase()
+    public Response migrateDatabase( byte[] message )
     {
         if ( !systemSettings.isUseDatabase() )
         {
@@ -396,22 +396,39 @@ public class EvaluationService implements ServletContextListener
                     + "is no database to migrate." );
         }
 
+        //Used for logging
+        Instant beganExecution = Instant.now();
+
+        // Convert the raw message into a job
+        Job.job jobMessage;
+        try
+        {
+            jobMessage = Job.job.parseFrom( message );
+        }
+        catch ( InvalidProtocolBufferException ipbe )
+        {
+            throw new IllegalArgumentException( "Bad message received: " + message, ipbe );
+        }
+
         try
         {
             LOGGER.info( systemSettings.toString() );
             //The migrateDatabase method deals with database locking, so we don't need to worry about that here
             DatabaseOperations.migrateDatabase( database );
+            logInDatabaseIfNeeded( jobMessage, ExecutionResult.success(), beganExecution );
         }
         catch ( SQLException se )
         {
             String errorMessage = "Failed to migrate the database.";
             LOGGER.error( errorMessage, se );
             InternalWresException e = new InternalWresException( errorMessage, se );
+            logInDatabaseIfNeeded( jobMessage, ExecutionResult.failure( se ), beganExecution );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "Unable to migrate the database with the error: "
                                     + e.getMessage() )
                            .build();
         }
+
         return Response.ok( "Database Migrated" )
                        .build();
     }
@@ -423,12 +440,26 @@ public class EvaluationService implements ServletContextListener
     @POST
     @Path( "/cleanDatabase" )
     @Produces( MediaType.TEXT_PLAIN )
-    public Response cleanDatabase()
+    public Response cleanDatabase( byte[] message )
     {
         if ( !systemSettings.isUseDatabase() )
         {
             throw new IllegalArgumentException( "This is an in-memory execution. Cannot clean a database because there "
                                                 + "is no database to clean." );
+        }
+
+        //Used for logging
+        Instant beganExecution = Instant.now();
+
+        // Convert the raw message into a job
+        Job.job jobMessage;
+        try
+        {
+            jobMessage = Job.job.parseFrom( message );
+        }
+        catch ( InvalidProtocolBufferException ipbe )
+        {
+            throw new IllegalArgumentException( "Bad message received: " + message, ipbe );
         }
 
         DatabaseLockManager lockManager =
@@ -441,12 +472,14 @@ public class EvaluationService implements ServletContextListener
             lockManager.lockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
             DatabaseOperations.cleanDatabase( database );
             lockManager.unlockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
+            logInDatabaseIfNeeded( jobMessage, ExecutionResult.success(), beganExecution );
         }
         catch ( SQLException se )
         {
             String errorMessage = "Failed to clean the database.";
             LOGGER.error( errorMessage, se );
             InternalWresException e = new InternalWresException( errorMessage, se );
+            logInDatabaseIfNeeded( jobMessage, ExecutionResult.failure( se ), beganExecution );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "Unable to clean the database with the error: "
                                     + e.getMessage() )
@@ -456,6 +489,7 @@ public class EvaluationService implements ServletContextListener
         {
             lockManager.shutdown();
         }
+
         return Response.ok( "Database Cleaned" )
                        .build();
     }

@@ -376,6 +376,7 @@ class WresEvaluationProcessor implements Callable<Integer>
     {
         URI prepareEval = URI.create( String.format( uriToCall, this.getPort() ) );
         try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval,
+                                                                                   jobMessage,
                                                                                    CALL_TIMEOUT,
                                                                                    RETRY_STATES ) )
         {
