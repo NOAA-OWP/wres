@@ -340,6 +340,8 @@ class EvaluationUtilities
                 }
             }
 
+            LOGGER.info( "Wrote the following output: {}", resources );
+
             // Close the evaluation messager always (even if stopped on exception)
             try
             {
@@ -359,8 +361,6 @@ class EvaluationUtilities
             {
                 resources.addAll( evaluation.getPathsWrittenBySubscribers() );
             }
-
-            LOGGER.info( "Wrote the following output: {}", resources );
         }
     }
 
