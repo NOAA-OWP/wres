@@ -773,34 +773,39 @@ public class EvaluationService implements ServletContextListener
      */
     private void swapDatabaseIfNeeded( Job.job job )
     {
+        boolean databaseChangeDetected = false;
         String databaseName = job.getDatabaseName();
         String databaseHost = job.getDatabaseHost();
         String databasePort = job.getDatabasePort();
 
         DatabaseSettings databaseConfiguration = systemSettings.getDatabaseConfiguration();
+        DatabaseSettings.DatabaseSettingsBuilder builder = databaseConfiguration.toBuilder();
 
-        if ( !databaseName.isEmpty()
-             && !databaseHost.isEmpty()
-             && !databasePort.isEmpty()
-             && ( !databaseName.equals( databaseConfiguration.getDatabaseName() )
-                  || !databaseHost.equals( databaseConfiguration.getHost() )
-                  || !databasePort.equals( String.valueOf( databaseConfiguration.getPort() ) ) ) )
+        // Attempt to apply any changes detected
+        if ( !databaseName.isEmpty() && !databaseName.equals( databaseConfiguration.getDatabaseName() ) ) {
+            builder.databaseName( databaseName );
+            databaseChangeDetected = true;
+        }
+        if ( !databaseHost.isEmpty() && !databaseHost.equals( databaseConfiguration.getHost() ) ) {
+            builder.host( databaseHost );
+            databaseChangeDetected = true;
+        }
+        if ( !databasePort.isEmpty() && !databasePort.equals( String.valueOf( databaseConfiguration.getPort() ) ) ) {
+            builder.port( Integer.parseInt( databasePort ) );
+            databaseChangeDetected = true;
+        }
+
+        // If we did change something, update Evaluator
+        if ( databaseChangeDetected )
         {
-            DatabaseSettings.DatabaseSettingsBuilder builder = databaseConfiguration.toBuilder();
-            DatabaseSettings newDatabaseSettings = builder
-                    .databaseName( databaseName )
-                    .host( databaseHost )
-                    .port( Integer.parseInt( databasePort ) )
-                    .build();
-
             // DatabaseSettings have fields that are conditionally created in respect to host, port, and name; update those here
-            String passwordOverrides = SettingsFactory.getPasswordOverrides( newDatabaseSettings );
+            String passwordOverrides = SettingsFactory.getPasswordOverrides( builder.build() );
             if ( passwordOverrides != null )
             {
                 builder.password( passwordOverrides );
             }
 
-            builder.dataSourceProperties( SettingsFactory.createDatasourceProperties( newDatabaseSettings ) );
+            builder.dataSourceProperties( SettingsFactory.createDatasourceProperties( builder.build() ) );
 
             systemSettings = systemSettings.toBuilder().databaseConfiguration( builder.build() ).build();
 
