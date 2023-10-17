@@ -166,7 +166,7 @@ public class WebServer
         // Registering the EvaluationService explicitly so that we can add constructor arguments
         ServletContainer servlet = new ServletContainer(
                 new ResourceConfig().register(
-                        new EvaluationService( WebServer.SYSTEM_SETTINGS, WebServer.database, createBroker() )
+                        new EvaluationService( WebServer.SYSTEM_SETTINGS, WebServer.database, WebServer.createBroker() )
                 )
         );
         dynamicHolder.setServlet( servlet );
