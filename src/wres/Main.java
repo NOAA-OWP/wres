@@ -3,7 +3,6 @@ package wres;
 import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.sql.SQLException;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -120,12 +119,6 @@ public class Main
         };
 
         Thread.setDefaultUncaughtExceptionHandler( handler );
-
-        Runtime.getRuntime().addShutdownHook( new Thread( () -> {
-            Instant endedExecution = Instant.now();
-            Duration duration = Duration.between( beganExecution, endedExecution );
-            LOGGER.info( "The function '{}' took {}", finalFunction, duration );
-        } ) );
 
         String pid = MDC.get( "pid" );
 
