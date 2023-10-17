@@ -340,6 +340,14 @@ class EvaluationUtilities
                 }
             }
 
+            // Add the paths written by external subscribers
+            if ( Objects.nonNull( evaluation ) )
+            {
+                resources.addAll( evaluation.getPathsWrittenBySubscribers() );
+            }
+
+            LOGGER.info( "Wrote the following output: {}", resources );
+
             // Close the evaluation messager always (even if stopped on exception)
             try
             {
@@ -353,14 +361,6 @@ class EvaluationUtilities
                 String message = "Failed to close evaluation " + evaluationId + ".";
                 LOGGER.warn( message, e );
             }
-
-            // Add the paths written by external subscribers
-            if ( Objects.nonNull( evaluation ) )
-            {
-                resources.addAll( evaluation.getPathsWrittenBySubscribers() );
-            }
-
-            LOGGER.info( "Wrote the following output: {}", resources );
         }
     }
 
