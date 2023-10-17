@@ -16,6 +16,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -25,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.ProtocolStringList;
 import jakarta.inject.Singleton;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
@@ -135,10 +137,11 @@ public class EvaluationService implements ServletContextListener
         setEvaluator( systemSettings, database, broker );
     }
 
-    private static void setEvaluator(SystemSettings systemSettings, Database database, BrokerConnectionFactory broker) {
+    private static void setEvaluator( SystemSettings systemSettings, Database database, BrokerConnectionFactory broker )
+    {
         evaluator = new Evaluator( systemSettings,
-                       database,
-                       broker );
+                                   database,
+                                   broker );
     }
 
 
@@ -201,7 +204,7 @@ public class EvaluationService implements ServletContextListener
         System.setOut( printStream );
 
         // Start the SSE thread sending messages to the called sink for std out
-        startSSEThread(byteArrayOutputStream, eventSink, sse);
+        startSSEThread( byteArrayOutputStream, eventSink, sse );
     }
 
     /**
@@ -224,7 +227,7 @@ public class EvaluationService implements ServletContextListener
         System.setErr( printStream );
 
         // Start the SSE thread sending messages to the called sink for std err
-        startSSEThread(byteArrayOutputStream, eventSink, sse);
+        startSSEThread( byteArrayOutputStream, eventSink, sse );
     }
 
     /**
@@ -300,7 +303,6 @@ public class EvaluationService implements ServletContextListener
         {
             throw new IllegalArgumentException( "Bad message received: " + message, ipbe );
         }
-
         // Checks if database information has changed in the jobMessage and swap to that database
         swapDatabaseIfNeeded( jobMessage );
 
@@ -321,7 +323,7 @@ public class EvaluationService implements ServletContextListener
         try
         {
             // Print system setting at the top of the job log to help debug
-            LOGGER.info( systemSettings.toString() );
+            logJobHeaderInformation( message );
 
             // Execute an evaluation
             ExecutionResult result = evaluator.evaluate( jobMessage.getProjectConfig() );
@@ -329,13 +331,14 @@ public class EvaluationService implements ServletContextListener
             logInDatabaseIfNeeded( jobMessage, result, beganExecution );
 
             // If the result failed add the stack trace to the response and return
-            if ( result.failed() ) {
+            if ( result.failed() )
+            {
                 evaluationStage.set( COMPLETED );
 
                 // Add failure stack trace to failed job entity
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                PrintStream printStream = new PrintStream(outputStream);
-                result.getException().printStackTrace(printStream);
+                PrintStream printStream = new PrintStream( outputStream );
+                result.getException().printStackTrace( printStream );
 
                 return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                                .entity( "WRES experienced an internal issue. The top-level exception was:\n "
@@ -349,6 +352,7 @@ public class EvaluationService implements ServletContextListener
         catch ( UserInputException e )
         {
             evaluationStage.set( COMPLETED );
+            logInDatabaseIfNeeded( jobMessage, ExecutionResult.failure( e ), beganExecution );
             return Response.status( Response.Status.BAD_REQUEST )
                            .entity( "I received something I could not parse. The top-level exception was: "
                                     + e.getMessage() )
@@ -357,6 +361,7 @@ public class EvaluationService implements ServletContextListener
         catch ( InternalWresException iwe )
         {
             evaluationStage.set( COMPLETED );
+            logInDatabaseIfNeeded( jobMessage, ExecutionResult.failure( iwe ), beganExecution );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "WRES experienced an internal issue. The top-level exception was: "
                                     + iwe.getMessage() )
@@ -412,7 +417,7 @@ public class EvaluationService implements ServletContextListener
 
         try
         {
-            LOGGER.info( systemSettings.toString() );
+            logJobHeaderInformation( message );
             //The migrateDatabase method deals with database locking, so we don't need to worry about that here
             DatabaseOperations.migrateDatabase( database );
             logInDatabaseIfNeeded( jobMessage, ExecutionResult.success(), beganExecution );
@@ -468,7 +473,7 @@ public class EvaluationService implements ServletContextListener
 
         try
         {
-            LOGGER.info( systemSettings.toString() );
+            logJobHeaderInformation( message );
             lockManager.lockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
             DatabaseOperations.cleanDatabase( database );
             lockManager.unlockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
@@ -543,22 +548,22 @@ public class EvaluationService implements ServletContextListener
 
         //TODO: Swap to not using cache once we can find root cause of files not being written
 
-//        if ( outputPaths == null )
-//        {
-//            return Response.status( Response.Status.NOT_FOUND )
-//                           .build();
-//        }
-//
-//
-//        StreamingOutput streamingOutput = outputSream -> {
-//            Writer writer = new BufferedWriter( new OutputStreamWriter( outputSream ) );
-//            for ( java.nio.file.Path path : outputPaths )
-//            {
-//                writer.write( path.toString() + "\n" );
-//            }
-//            writer.flush();
-//            writer.close();
-//        };
+        //        if ( outputPaths == null )
+        //        {
+        //            return Response.status( Response.Status.NOT_FOUND )
+        //                           .build();
+        //        }
+        //
+        //
+        //        StreamingOutput streamingOutput = outputSream -> {
+        //            Writer writer = new BufferedWriter( new OutputStreamWriter( outputSream ) );
+        //            for ( java.nio.file.Path path : outputPaths )
+        //            {
+        //                writer.write( path.toString() + "\n" );
+        //            }
+        //            writer.flush();
+        //            writer.close();
+        //        };
 
         return Response.ok( "I received project " + projectId
                             + ", and successfully ran it. Visit /project/"
@@ -659,7 +664,8 @@ public class EvaluationService implements ServletContextListener
     /**
      * Creates a thread that will send messages from the stream to the calling sink until the current project is marked closed
      */
-    private void startSSEThread( ByteArrayOutputStream redirectStream, SseEventSink eventSink, Sse sse ) {
+    private void startSSEThread( ByteArrayOutputStream redirectStream, SseEventSink eventSink, Sse sse )
+    {
         // Start a thread that will send of SSEs until the current project has reached a closed state
         new Thread( () -> {
             long offset = 0;
@@ -677,7 +683,7 @@ public class EvaluationService implements ServletContextListener
                 {
                     offset += bytes.length();
                     final OutboundSseEvent event = sse.newEventBuilder()
-                                                      .name( "standard-out-stream" )
+                                                      .name( "standard-stream-message" )
                                                       .data( String.class, bytes )
                                                       .build();
                     eventSink.send( event );
@@ -740,7 +746,8 @@ public class EvaluationService implements ServletContextListener
      * @param result The result of the execution
      * @param beganExecution When the evaluation started
      */
-    private void logInDatabaseIfNeeded( Job.job jobMessage, ExecutionResult result, Instant beganExecution ) {
+    private void logInDatabaseIfNeeded( Job.job jobMessage, ExecutionResult result, Instant beganExecution )
+    {
         // Log the execution to the database if a database is used
         if ( this.systemSettings.isUseDatabase() )
         {
@@ -748,7 +755,7 @@ public class EvaluationService implements ServletContextListener
             // Log both the operation and the args
             List<String> argList = new ArrayList<>();
             argList.add( jobMessage.getVerb().toString() );
-            argList.addAll(jobMessage.getAdditionalArgumentsList().stream().toList());
+            argList.addAll( jobMessage.getAdditionalArgumentsList().stream().toList() );
 
             DatabaseOperations.LogParameters logParameters =
                     new DatabaseOperations.LogParameters( argList,
@@ -767,6 +774,34 @@ public class EvaluationService implements ServletContextListener
 
     }
 
+    private void logJobHeaderInformation( byte[] message )
+    {
+        // Convert the raw message into a job
+        Job.job jobMessage;
+        try
+        {
+            jobMessage = Job.job.parseFrom( message );
+        }
+        catch ( InvalidProtocolBufferException ipbe )
+        {
+            throw new IllegalArgumentException( "Bad message received: " + message, ipbe );
+        }
+
+        //Remove password information from the System Settings
+        DatabaseSettings.DatabaseSettingsBuilder databaseBuilder =
+                systemSettings.getDatabaseConfiguration().toBuilder();
+        databaseBuilder.password( "[Omitted]" );
+        databaseBuilder.dataSourceProperties( new HashMap<>() );
+
+        //Log redacted system settings
+        LOGGER.info( systemSettings.toBuilder()
+                                   .databaseConfiguration( databaseBuilder.build() )
+                                   .build().toString() );
+
+        ProtocolStringList additionalArgumentsList = jobMessage.getAdditionalArgumentsList();
+        LOGGER.info( "JAVA_OPTS: " + additionalArgumentsList + jobMessage.getAdditionalArgumentsCount() );
+    }
+
     /**
      * If the job contains database information different from the current database then change what database we are using
      * @param job The job we are about to evaluate
@@ -782,15 +817,18 @@ public class EvaluationService implements ServletContextListener
         DatabaseSettings.DatabaseSettingsBuilder builder = databaseConfiguration.toBuilder();
 
         // Attempt to apply any changes detected
-        if ( !databaseName.isEmpty() && !databaseName.equals( databaseConfiguration.getDatabaseName() ) ) {
+        if ( !databaseName.isEmpty() && !databaseName.equals( databaseConfiguration.getDatabaseName() ) )
+        {
             builder.databaseName( databaseName );
             databaseChangeDetected = true;
         }
-        if ( !databaseHost.isEmpty() && !databaseHost.equals( databaseConfiguration.getHost() ) ) {
+        if ( !databaseHost.isEmpty() && !databaseHost.equals( databaseConfiguration.getHost() ) )
+        {
             builder.host( databaseHost );
             databaseChangeDetected = true;
         }
-        if ( !databasePort.isEmpty() && !databasePort.equals( String.valueOf( databaseConfiguration.getPort() ) ) ) {
+        if ( !databasePort.isEmpty() && !databasePort.equals( String.valueOf( databaseConfiguration.getPort() ) ) )
+        {
             builder.port( Integer.parseInt( databasePort ) );
             databaseChangeDetected = true;
         }
@@ -895,7 +933,8 @@ public class EvaluationService implements ServletContextListener
      *
      */
     @Override
-    public void contextDestroyed( ServletContextEvent event ) {
+    public void contextDestroyed( ServletContextEvent event )
+    {
         // Perform action during application's shutdown
         if ( systemSettings.isUseDatabase() && Objects.nonNull( database ) )
         {

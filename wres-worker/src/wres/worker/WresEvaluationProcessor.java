@@ -326,6 +326,23 @@ class WresEvaluationProcessor implements Callable<Integer>
             return META_FAILURE_CODE;
         }
 
+        // print project declaration now as it loses spacing when going to server
+        //TODO: THIS IS A WORK AROUND, LOOK INTO WHY POSTING THIS REMOVES SPACING
+        String projectDeclaration = String.format( "Project declaration:%s%s%s%s%s",
+                                                   System.lineSeparator(),
+                                                   "-----------------------",
+                                                   System.lineSeparator(),
+                                                   job.getProjectConfig(),
+                                                   System.lineSeparator() );
+
+        String startEvaluationMessages = String.format( "%sEvaluation Messages %s%s%s",
+                                                        System.lineSeparator(),
+                                                        System.lineSeparator(),
+                                                        "-----------------------",
+                                                        System.lineSeparator() );
+        this.sendMessage( prepareStdStreamMessage( projectDeclaration + startEvaluationMessages, WhichStream.STDOUT ),
+                          WhichStream.STDOUT );
+
         URI startEvalURI = URI.create( String.format( START_EVAL_URI, this.getPort(), evaluationId ) );
         LOGGER.info( String.format( "Starting evaluation: %s", startEvalURI ) );
 
@@ -497,7 +514,6 @@ class WresEvaluationProcessor implements Callable<Integer>
                 .setIndex( order )
                 .setText( line.trim() )
                 .build();
-
         // Pass through messages so they appear in docker logs as well if true
         if ( STREAM_PASS_THROUGH )
         {
