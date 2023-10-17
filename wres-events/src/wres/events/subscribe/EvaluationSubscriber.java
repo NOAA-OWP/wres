@@ -27,6 +27,7 @@ import jakarta.jms.MessageConsumer;
 import jakarta.jms.MessageListener;
 import jakarta.jms.Session;
 import jakarta.jms.Topic;
+
 import javax.naming.NamingException;
 
 import org.slf4j.Logger;
@@ -37,6 +38,7 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.google.protobuf.InvalidProtocolBufferException;
 
 import net.jcip.annotations.ThreadSafe;
+
 import wres.events.EvaluationEventException;
 import wres.events.EvaluationEventUtilities;
 import wres.events.QueueType;
@@ -52,11 +54,11 @@ import wres.statistics.generated.Evaluation;
 
 /**
  * <p>Abstracts a subscription to evaluation messages. A subscriber contains one {@link EvaluationConsumer} for each 
- * evaluation in progress, which is mapped against its unique evaluation identifier. The {@link EvaluationConsumer} 
+ * evaluation in progress, which is mapped against its unique evaluation identifier. The {@link EvaluationConsumer}
  * consumes all of the messages related to one evaluation and the subscriber ensures that these messages are routed to 
  * the correct consumer. It also handles retries and other administrative tasks that satisfy the contract for a 
  * well-behaving subscriber. Specifically, a well-behaving subscriber (or one of its consumer instances, as applicable):
- * 
+ *
  * <ol>
  * <li>Notifies any listening clients with an {@link EvaluationStatus} message that contains
  * {@link CompletionStatus#READY_TO_CONSUME} and the formats fulfilled by the subscriber.</li>
@@ -71,13 +73,13 @@ import wres.statistics.generated.Evaluation;
  * <li>Periodically updates any listening clients with an {@link EvaluationStatus} message that contains
  * {@link CompletionStatus#CONSUMPTION_ONGOING} to indicate that the subscriber is healthy/alive.</li>
  * </ol>
- * 
+ *
  * <p>Optionally, a booking strategy may be implemented (see {@link #subscriberOfferer}) whereby the subscriber only 
  * accepts one evaluation at any one time and does not offer services until that evaluation has completed.
- * 
+ *
  * <p>When an evaluation succeeds, the {@link EvaluationConsumer} reports on its success to all listening clients with 
  * a {@link CompletionStatus#CONSUMPTION_COMPLETE_REPORTED_SUCCESS}.
- * 
+ *
  * @author James Brown
  */
 
@@ -113,7 +115,7 @@ public class EvaluationSubscriber implements Closeable
 
     private static final String ACKNOWLEDGED_MESSAGE_FOR_EVALUATION =
             "Subscriber {} has acknowledged (ACK-ed) a message from a {} queue with messageId {}, correlationId {} "
-                                                                      + "and groupId {}.";
+            + "and groupId {}.";
 
     /**
      * String representation of the {@link MessageProperty#CONSUMER_ID}.
@@ -258,7 +260,7 @@ public class EvaluationSubscriber implements Closeable
 
     /**
      * Creates an instance without durable subscribers.
-     * 
+     *
      * @param consumerFactory the consumer factory
      * @param executorService the executor
      * @param broker the broker connection factory
@@ -277,7 +279,7 @@ public class EvaluationSubscriber implements Closeable
     /**
      * Creates an instance without durable subscribers and a prescribed evaluation identifier. The subscriber will only
      * offer to the identified evaluation and no others.
-     * 
+     *
      * @param consumerFactory the consumer factory
      * @param executorService the executor
      * @param broker the broker connection factory
@@ -297,7 +299,7 @@ public class EvaluationSubscriber implements Closeable
 
     /**
      * Creates an instance where the durability of the subscribers is supplied.
-     * 
+     *
      * @param consumerFactory the consumer factory
      * @param executorService the executor
      * @param broker the broker connection factory
@@ -349,7 +351,7 @@ public class EvaluationSubscriber implements Closeable
                                    + "subscriber "
                                    + this.getClientId()
                                    + ".";
-        
+
         try
         {
             this.consumerConnection.close();
@@ -378,7 +380,7 @@ public class EvaluationSubscriber implements Closeable
         {
             String message =
                     "Failed to close a publisher of evaluation status messages in subscriber " + this.getClientId()
-                             + ".";
+                    + ".";
 
             LOGGER.warn( message, e );
         }
@@ -550,7 +552,7 @@ public class EvaluationSubscriber implements Closeable
     {
         return message -> {
 
-            BytesMessage receivedBytes = (BytesMessage) message;
+            BytesMessage receivedBytes = ( BytesMessage ) message;
             String messageId = null;
             com.google.protobuf.Message messageBody = null;
             String correlationId = null;
@@ -566,7 +568,7 @@ public class EvaluationSubscriber implements Closeable
                 // Ignore status messages about consumers
                 if ( this.shouldIForwardThisMessageForConsumption( message, QueueType.EVALUATION_STATUS_QUEUE ) )
                 {
-                    int messageLength = (int) receivedBytes.getBodyLength();
+                    int messageLength = ( int ) receivedBytes.getBodyLength();
 
                     // Create the byte array to hold the message
                     byte[] messageContainer = new byte[messageLength];
@@ -607,9 +609,9 @@ public class EvaluationSubscriber implements Closeable
             {
                 String failureMessage =
                         "While processing an evaluation status message, encountered an exception that will "
-                                        + "stop evaluation "
-                                        + correlationId
-                                        + ".";
+                        + "stop evaluation "
+                        + correlationId
+                        + ".";
 
                 LOGGER.error( failureMessage, e );
 
@@ -634,7 +636,7 @@ public class EvaluationSubscriber implements Closeable
     private MessageListener getStatisticsListener()
     {
         return message -> {
-            BytesMessage receivedBytes = (BytesMessage) message;
+            BytesMessage receivedBytes = ( BytesMessage ) message;
             String messageId = null;
             com.google.protobuf.Message messageBody = null;
             String correlationId = null;
@@ -658,7 +660,7 @@ public class EvaluationSubscriber implements Closeable
                     EvaluationConsumer consumer = this.getOrCreateNewEvaluationConsumer( correlationId );
 
                     // Create the byte array to hold the message
-                    int messageLength = (int) receivedBytes.getBodyLength();
+                    int messageLength = ( int ) receivedBytes.getBodyLength();
 
                     byte[] messageContainer = new byte[messageLength];
 
@@ -702,8 +704,8 @@ public class EvaluationSubscriber implements Closeable
             {
                 String failureMessage =
                         "While processing a statistics message, encountered an exception that will stop evaluation "
-                                        + correlationId
-                                        + ".";
+                        + correlationId
+                        + ".";
 
                 LOGGER.error( failureMessage, e );
 
@@ -724,7 +726,7 @@ public class EvaluationSubscriber implements Closeable
     /**
      * Consumes an {@link EvaluationStatus} message and returns the consumer used, else offers services if a consumer is 
      * required.
-     * 
+     *
      * @param statusEvent the evaluation status message
      * @param evaluationId the evaluation identifier
      * @param message the originating message
@@ -798,7 +800,7 @@ public class EvaluationSubscriber implements Closeable
 
     /**
      * Registers an evaluation complete when the consumption is complete.
-     * 
+     *
      * @param consumer the consumer
      * @param evaluationId the evaluation identifier
      * @throws EvaluationEventException if the evaluation could not be notified as successful
@@ -832,7 +834,7 @@ public class EvaluationSubscriber implements Closeable
     {
         return message -> {
 
-            BytesMessage receivedBytes = (BytesMessage) message;
+            BytesMessage receivedBytes = ( BytesMessage ) message;
             String messageId = null;
             com.google.protobuf.Message messageBody = null;
             String correlationId = null;
@@ -857,7 +859,7 @@ public class EvaluationSubscriber implements Closeable
                     EvaluationConsumer consumer = this.getOrCreateNewEvaluationConsumer( correlationId );
 
                     // Create the byte array to hold the message
-                    int messageLength = (int) receivedBytes.getBodyLength();
+                    int messageLength = ( int ) receivedBytes.getBodyLength();
 
                     byte[] messageContainer = new byte[messageLength];
 
@@ -898,8 +900,8 @@ public class EvaluationSubscriber implements Closeable
             {
                 String failureMessage =
                         "While processing an evaluation message, encountered an exception that will stop evaluation "
-                                        + correlationId
-                                        + ".";
+                        + correlationId
+                        + ".";
 
                 LOGGER.error( failureMessage, e );
 
@@ -921,7 +923,7 @@ public class EvaluationSubscriber implements Closeable
      * Checks whether a message should be forwarded to a consumer attached to this subscriber. A message should be 
      * forwarded if all expected metadata is present and the evaluation is being handled by this subscriber and neither
      * the evaluation nor the subscriber has failed.
-     * 
+     *
      * @return true if a message should be forward to a consumer, otherwise false
      * @throws JMSException if the status could not be determined
      * @throws IllegalArgumentException if the queue type is unrecognized
@@ -1010,13 +1012,13 @@ public class EvaluationSubscriber implements Closeable
 
     /**
      * <p>Attempts to recover the session.
-     * 
+     *
      * <p>A well-behaving consumer cleans up after itself. Thus, it is considered a consumer bug if the consumer reports
      * a failure to overwrite on attempting a retry when the consumer failed exceptionally on an earlier attempt. By way 
      * of example, if a consumer writes path A and then immediately fails, triggering this method, any failure of the
      * consumer to support the retry and overwrite A (because it already exists) is considered a bug in the consumer. A
      * consumer must be "retry friendly", which means that it must clean up before throwing an exception.
-     * 
+     *
      * @param messageId the message identifier for the exceptional consumption
      * @param message the message
      * @param evaluationId the correlation identifier for the exceptional consumption
@@ -1100,7 +1102,7 @@ public class EvaluationSubscriber implements Closeable
 
     /**
      * Attempts to recover a session on failure.
-     * 
+     *
      * @param messageId the message identifier for the exceptional consumption
      * @param message the message body
      * @param evaluationId the correlation identifier for the exceptional consumption
@@ -1121,7 +1123,7 @@ public class EvaluationSubscriber implements Closeable
         try
         {
             // Exponential back-off, which includes a PT2S wait before the first attempt
-            Thread.sleep( (long) Math.pow( 2, retryCount ) * 1000 );
+            Thread.sleep( ( long ) Math.pow( 2, retryCount ) * 1000 );
 
             String errorMessage = "While attempting to consume a message with identifier " + messageId
                                   + " and correlation identifier "
@@ -1280,7 +1282,7 @@ public class EvaluationSubscriber implements Closeable
     {
         Objects.requireNonNull( evaluationId,
                                 "Cannot request an evaluation consumer for an evaluation with a "
-                                              + "missing identifier." );
+                                + "missing identifier." );
 
         // Function that creates a new evaluation
         // TODO: handle the situation whereby construction throws an exception because this will fail to notify the
@@ -1466,7 +1468,7 @@ public class EvaluationSubscriber implements Closeable
 
     /**
      * Returns a consumer.
-     * 
+     *
      * @param session the session
      * @param topic the topic
      * @param name the name of the subscriber
@@ -1511,12 +1513,13 @@ public class EvaluationSubscriber implements Closeable
 
     private boolean hasTimedOut( EvaluationConsumer evaluationConsumer )
     {
-        return EvaluationSubscriber.EVALUATION_TIMEOUT.compareTo( evaluationConsumer.getDurationSinceLastProgress() ) < 0;
+        return EvaluationSubscriber.EVALUATION_TIMEOUT.compareTo( evaluationConsumer.getDurationSinceLastProgress() )
+               < 0;
     }
 
     /**
      * Registers an evaluation as timed out on inactivity.
-     * 
+     *
      * @param evaluationConsumer the evaluation consumer
      */
 
@@ -1552,7 +1555,7 @@ public class EvaluationSubscriber implements Closeable
 
     /**
      * Builds a subscriber.
-     * 
+     *
      * @param consumerFactory the consumer factory
      * @param executorService the executor
      * @param broker the broker connection factory
@@ -1707,52 +1710,50 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
-         * Listen for failures on a connection.
-         */
+     * Listen for failures on a connection.
+     */
 
-        private record ConnectionExceptionListener( EvaluationSubscriber subscriber, String connectionId )
+    private record ConnectionExceptionListener( EvaluationSubscriber subscriber, String connectionId )
             implements ExceptionListener
+    {
+        /**
+         * Create an instance.
+         * @param subscriber the subscriber
+         * @param connectionId the connection identifier
+         */
+        private ConnectionExceptionListener
         {
+            Objects.requireNonNull( subscriber );
+        }
 
-            @Override
-            public void onException( JMSException exception )
+        @Override
+        public void onException( JMSException exception )
+        {
+            // Ignore errors on connections encountered during the shutdown sequence
+            if ( !this.subscriber.isClosing.get() )
             {
-                // Ignore errors on connections encountered during the shutdown sequence
-                if ( !this.subscriber.isClosing.get() )
+                String message = "Encountered an error on connection " + this.connectionId
+                                 + " owned by subscriber "
+                                 + this.subscriber.getClientId()
+                                 + ". If a failover policy was "
+                                 + "configured on the connection factory (e.g., connection retries), then that "
+                                 + "policy was exhausted before this error was thrown. As such, the error is not "
+                                 + "recoverable and the subscriber will now stop.";
+
+                UnrecoverableSubscriberException propagate = new UnrecoverableSubscriberException( message,
+                                                                                                   exception );
+
+                try
                 {
-                    String message = "Encountered an error on connection " + this.connectionId
-                                     + " owned by subscriber "
-                                     + this.subscriber.getClientId()
-                                     + ". If a failover policy was "
-                                     + "configured on the connection factory (e.g., connection retries), then that "
-                                     + "policy was exhausted before this error was thrown. As such, the error is not "
-                                     + "recoverable and the subscriber will now stop.";
-
-                    UnrecoverableSubscriberException propagate = new UnrecoverableSubscriberException( message,
-                                                                                                       exception );
-
-                    try
-                    {
-
-                        this.subscriber.markSubscriberFailed( propagate );
-                    }
-                    catch ( UnrecoverableSubscriberException e )
-                    {
-                        // Do nothing as the exception is rethrown always.
-                    }
+                    this.subscriber.markSubscriberFailed( propagate );
+                }
+                catch ( UnrecoverableSubscriberException e )
+                {
+                    // Do nothing as the exception is rethrown always.
                 }
             }
-
-            /**
-             * Create an instance.
-             * @param subscriber the subscriber
-             * @param connectionId the connection identifier
-             */
-            private ConnectionExceptionListener
-            {
-                Objects.requireNonNull( subscriber );
-
-            }
         }
+
+    }
 
 }
