@@ -15,6 +15,7 @@ import java.util.TimerTask;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -86,176 +87,131 @@ import wres.statistics.generated.Evaluation;
 @ThreadSafe
 public class EvaluationSubscriber implements Closeable
 {
+    /** Enumeration of connection types used by this subscriber. */
+    private enum ConnectionType
+    {
+        /** Connection for publishing status messages. */
+        STATUS_MESSAGE_PUBLISHER,
+        /** Connection for consuming status messages. */
+        STATUS_MESSAGE_CONSUMER,
+        /** Connection for consuming statistics messages. */
+        STATISTICS_MESSAGE_CONSUMER
+    }
+
+    /** Re-used string. */
     private static final String SUBSCRIBER_REJECTED_MESSAGE = "Subscriber {} rejected message {} from the {} queue.";
 
+    /** Re-used string. */
     private static final String SUBSCRIBER_ACCEPTED_MESSAGE = "Subscriber {} accepted message {} on the {} queue.";
 
+    /** Re-used string. */
     private static final String SUBSCRIBER = "Subscriber ";
 
+    /** Re-used string. */
     private static final String ENCOUNTERED_AN_EXCEPTION_THAT_WILL_STOP_THE_SUBSCRIBER =
             "encountered an exception that will stop the subscriber.";
 
+    /** Re-used string. */
     private static final String AN_EVALUATION = "an evaluation";
 
+    /** Re-used string. */
     private static final String AN_EVALUATION_STATUS = "an evaluation status";
 
+    /** Re-used string. */
     private static final String A_STATISTICS = "a statistics";
 
+    /** Re-used string. */
     private static final String IN_SUBSCRIBER = " in subscriber ";
 
+    /** Re-used string. */
     private static final String EVALUATION = "evaluation ";
 
+    /** Re-used string. */
     private static final String SUBSCRIBER_HAS_CLAIMED_OWNERSHIP_OF_MESSAGE_FOR_EVALUATION =
             "Subscriber {} has claimed ownership of {} message with messageId {} for evaluation {}.";
 
+    /** Re-used string. */
     private static final String ENCOUNTERED_AN_ERROR_WHILE_ATTEMPTING_TO_REMOVE_A_DURABLE_SUBSCRIPTION_FOR =
             "Encountered an error while attempting to remove a durable subscription for ";
 
+    /** Re-used string. */
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationSubscriber.class );
 
+    /** Re-used string. */
     private static final String ACKNOWLEDGED_MESSAGE_FOR_EVALUATION =
             "Subscriber {} has acknowledged (ACK-ed) a message from a {} queue with messageId {}, correlationId {} "
             + "and groupId {}.";
 
-    /**
-     * String representation of the {@link MessageProperty#CONSUMER_ID}.
-     */
-
+    /** String representation of the {@link MessageProperty#CONSUMER_ID}. */
     private static final String CONSUMER_ID_STRING = MessageProperty.CONSUMER_ID.toString();
 
-    /**
-     * String representation of the {@link MessageProperty#JMSX_GROUP_ID}.
-     */
-
+    /** String representation of the {@link MessageProperty#JMSX_GROUP_ID}. */
     private static final String GROUP_ID_STRING = MessageProperty.JMSX_GROUP_ID.toString();
 
-    /**
-     * The frequency with which to publish a subscriber-alive message in ms.
-     */
-
+    /** The frequency with which to publish a subscriber-alive message in ms. */
     private static final long NOTIFY_ALIVE_MILLISECONDS = 100_000;
 
-    /**
-     * Duration to wait before an evaluation is timed out on lack of progress by a publisher.  A well-behaving publisher 
-     * regularly publishes an {@link CompletionStatus#EVALUATION_ONGOING}.
-     */
-
+    /** Duration to wait before an evaluation is timed out on lack of progress by a publisher.  A well-behaving publisher
+     * regularly publishes an {@link CompletionStatus#EVALUATION_ONGOING}. */
     private static final Duration EVALUATION_TIMEOUT = Duration.ofMinutes( 120 );
 
-    /**
-     * Is true to use durable subscribers, false for temporary subscribers, which are auto-deleted.
-     */
-
+    /** Is true to use durable subscribers, false for temporary subscribers, which are auto-deleted. */
     private final boolean durableSubscribers;
 
-    /**
-     * Re-usable status message indicating the consumer is alive with the completion status 
-     * {@link CompletionStatus#CONSUMPTION_ONGOING}.
-     */
-
+    /** Re-usable status message indicating the consumer is alive with the completion status
+     * {@link CompletionStatus#CONSUMPTION_ONGOING}. */
     private final EvaluationStatus consumerIsAlive;
 
-    /**
-     * Manages the offering of services.
-     */
-
+    /** Manages the offering of services. */
     private final SubscriberOfferer subscriberOfferer;
 
-    /**
-     * The formats supported as strings.
-     */
-
+    /** The formats supported as strings. */
     private final Collection<String> formatStrings;
 
-    /**
-     * A publisher for {@link EvaluationStatus} messages.
-     */
-
+    /** A publisher for {@link EvaluationStatus} messages. */
     private final MessagePublisher evaluationStatusPublisher;
 
-    /**
-     * A session for evaluation description messages.
-     */
-
+    /** A session for evaluation description messages. */
     private final Session evaluationDescriptionSession;
 
-    /**
-     * A session for statistics messages.
-     */
-
+    /** A session for statistics messages. */
     private final Session statisticsSession;
 
-    /**
-     * A session for evaluation status messages.
-     */
-
+    /** A session for evaluation status messages. */
     private final Session statusSession;
 
-    /**
-     * A consumer connection for all messages except statistics messages (see also 
-     * {@link #statisticsConsumerConnection}).
-     */
-
+    /** A consumer connection for all messages except statistics messages (see also
+     * {@link #statisticsConsumerConnection}). */
     private final Connection consumerConnection;
 
-    /**
-     * A statistics consumer connection.
-     */
+    /** A statistics consumer connection. */
+    private final AtomicReference<Connection> statisticsConsumerConnection;
 
-    private final Connection statisticsConsumerConnection;
-
-    /**
-     * Client status.
-     */
-
+    /** Client status. */
     private final SubscriberStatus status;
 
-    /**
-     * The evaluations by unique id.
-     */
-
+    /** The evaluations by unique id. */
     private final Cache<String, EvaluationConsumer> evaluations;
 
-    /**
-     * Actual number of retries attempted per evaluation.
-     */
-
+    /** Actual number of retries attempted per evaluation. */
     private final Cache<String, AtomicInteger> retriesAttempted;
 
-    /**
-     * An executor service for writing work.
-     */
-
+    /** An executor service for writing work. */
     private final ExecutorService executorService;
 
-    /**
-     * Is <code>true</code> is the subscriber has failed unrecoverably.
-     */
-
+    /** Is <code>true</code> is the subscriber has failed unrecoverably. */
     private final AtomicBoolean isFailedUnrecoverably;
 
-    /**
-     * Is <code>true</code> is the subscriber has failed unrecoverably.
-     */
-
+    /** Is <code>true</code> is the subscriber has failed unrecoverably. */
     private final AtomicBoolean isClosing;
 
-    /**
-     * The factory that supplies consumers for evaluations.
-     */
-
+    /** The factory that supplies consumers for evaluations. */
     private final ConsumerFactory consumerFactory;
 
-    /**
-     * A timer task to publish information about the status of the subscriber.
-     */
-
+    /** A timer task to publish information about the status of the subscriber. */
     private final Timer timer;
 
-    /**
-     * Number of retries allowed.
-     */
-
+    /** Number of retries allowed. */
     private final int maximumRetries;
 
     /**
@@ -364,7 +320,8 @@ public class EvaluationSubscriber implements Closeable
 
         try
         {
-            this.statisticsConsumerConnection.close();
+            this.statisticsConsumerConnection.get()
+                                             .close();
             LOGGER.debug( "Closed connection {} in subscriber {}.", this.statisticsConsumerConnection, this );
         }
         catch ( JMSException e )
@@ -1558,7 +1515,7 @@ public class EvaluationSubscriber implements Closeable
      *
      * @param consumerFactory the consumer factory
      * @param executorService the executor
-     * @param broker the broker connection factory
+     * @param brokerConnectionFactory the broker connection factory
      * @param durableSubscribers is true to create a subscriber whose corresponding broker nodes are durable
      * @param evaluationToServe an optional identifier if an evaluation to serve with this subscriber
      * @throws NullPointerException if any input is null
@@ -1567,13 +1524,13 @@ public class EvaluationSubscriber implements Closeable
 
     private EvaluationSubscriber( ConsumerFactory consumerFactory,
                                   ExecutorService executorService,
-                                  BrokerConnectionFactory broker,
+                                  BrokerConnectionFactory brokerConnectionFactory,
                                   boolean durableSubscribers,
                                   String evaluationToServe )
     {
         Objects.requireNonNull( consumerFactory );
         Objects.requireNonNull( executorService );
-        Objects.requireNonNull( broker );
+        Objects.requireNonNull( brokerConnectionFactory );
 
         this.consumerFactory = consumerFactory;
         this.executorService = executorService;
@@ -1584,7 +1541,7 @@ public class EvaluationSubscriber implements Closeable
 
         this.status = new SubscriberStatus( this.getClientId() );
         this.timer = new Timer( true );
-        this.maximumRetries = broker.getMaximumMessageRetries();
+        this.maximumRetries = brokerConnectionFactory.getMaximumMessageRetries();
 
         // Create the subscriber offerer to offer format writing services
         EvaluationStatus serviceOffer = EvaluationStatus.newBuilder()
@@ -1607,37 +1564,48 @@ public class EvaluationSubscriber implements Closeable
         try
         {
             Topic evaluationStatusTopic =
-                    ( Topic ) broker.getDestination( QueueType.EVALUATION_STATUS_QUEUE.toString() );
-            Topic evaluationTopic = ( Topic ) broker.getDestination( QueueType.EVALUATION_QUEUE.toString() );
-            Topic statisticsTopic = ( Topic ) broker.getDestination( QueueType.STATISTICS_QUEUE.toString() );
+                    ( Topic ) brokerConnectionFactory.getDestination( QueueType.EVALUATION_STATUS_QUEUE.toString() );
+            Topic evaluationTopic =
+                    ( Topic ) brokerConnectionFactory.getDestination( QueueType.EVALUATION_QUEUE.toString() );
+            Topic statisticsTopic =
+                    ( Topic ) brokerConnectionFactory.getDestination( QueueType.STATISTICS_QUEUE.toString() );
 
-            // The broker connection factory is responsible for closing these
-            this.consumerConnection = broker.get();
+            // Create several connections, which must be closed on closure of this subscriber
+            this.consumerConnection = brokerConnectionFactory.get();
             LOGGER.debug( "Created connection {} in subscriber {}.", this.consumerConnection, this );
 
-            this.statisticsConsumerConnection = broker.get();
+            this.statisticsConsumerConnection = new AtomicReference<>( brokerConnectionFactory.get() );
             LOGGER.debug( "Created connection {} in subscriber {}.", this.statisticsConsumerConnection, this );
 
-            // Register an exception listener for each connection
+            // Create a publisher with its own connection exception listener
             ConnectionExceptionListener publisherConnectionListener =
-                    new ConnectionExceptionListener( this, EvaluationEventUtilities.getId() );
+                    new ConnectionExceptionListener( this,
+                                                     EvaluationEventUtilities.getId(),
+                                                     ConnectionType.STATUS_MESSAGE_PUBLISHER );
 
-            this.evaluationStatusPublisher = MessagePublisher.of( broker,
+            this.evaluationStatusPublisher = MessagePublisher.of( brokerConnectionFactory,
                                                                   evaluationStatusTopic,
                                                                   publisherConnectionListener );
 
+            // Add a listener for failed consumer connections
             ConnectionExceptionListener consumerConnectionListener =
-                    new ConnectionExceptionListener( this, EvaluationEventUtilities.getId() );
+                    new ConnectionExceptionListener( this,
+                                                     EvaluationEventUtilities.getId(),
+                                                     ConnectionType.STATUS_MESSAGE_CONSUMER );
             this.consumerConnection.setExceptionListener( consumerConnectionListener );
             ConnectionExceptionListener statisticsConsumerConnectionListener =
-                    new ConnectionExceptionListener( this, EvaluationEventUtilities.getId() );
-            this.statisticsConsumerConnection.setExceptionListener( statisticsConsumerConnectionListener );
+                    new ConnectionExceptionListener( this,
+                                                     EvaluationEventUtilities.getId(),
+                                                     ConnectionType.STATISTICS_MESSAGE_CONSUMER );
+            this.statisticsConsumerConnection.get()
+                                             .setExceptionListener( statisticsConsumerConnectionListener );
 
             // Client acknowledges
             this.evaluationDescriptionSession = this.consumerConnection.createSession( false,
                                                                                        Session.CLIENT_ACKNOWLEDGE );
             this.statusSession = this.consumerConnection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
-            this.statisticsSession = this.statisticsConsumerConnection.createSession( false,
+            this.statisticsSession = this.statisticsConsumerConnection.get()
+                                                                      .createSession( false,
                                                                                       Session.CLIENT_ACKNOWLEDGE );
 
             MessageConsumer evaluationStatusConsumer = this.getMessageConsumer( this.statusSession,
@@ -1687,7 +1655,8 @@ public class EvaluationSubscriber implements Closeable
             LOGGER.info( "Started the connections for subscriber {}...",
                          this.getClientId() );
             this.consumerConnection.start();
-            this.statisticsConsumerConnection.start();
+            this.statisticsConsumerConnection.get()
+                                             .start();
         }
         catch ( JMSException | NamingException e )
         {
@@ -1710,29 +1679,32 @@ public class EvaluationSubscriber implements Closeable
     }
 
     /**
-     * Listen for failures on a connection.
+     * Listens for failures on a connection and handles them.
+     *
+     * @param subscriber the message subscriber
+     * @param connectionId the connection identifier
+     * @param connectionType the connection type
      */
 
-    private record ConnectionExceptionListener( EvaluationSubscriber subscriber, String connectionId )
+    private record ConnectionExceptionListener( EvaluationSubscriber subscriber,
+                                                String connectionId,
+                                                ConnectionType connectionType )
             implements ExceptionListener
     {
-        /**
-         * Create an instance.
-         * @param subscriber the subscriber
-         * @param connectionId the connection identifier
-         */
-        private ConnectionExceptionListener
-        {
-            Objects.requireNonNull( subscriber );
-        }
-
         @Override
         public void onException( JMSException exception )
         {
             // Ignore errors on connections encountered during the shutdown sequence
             if ( !this.subscriber.isClosing.get() )
             {
+                LOGGER.warn( "Encountered an exception on connection {} of type {} managed by subscriber {}. The "
+                             + "subscriber will be marked failed and closed.",
+                             this.connectionId,
+                             this.connectionType,
+                             this.subscriber.getClientId() );
+
                 String message = "Encountered an error on connection " + this.connectionId
+                                 + " of type " + this.connectionType()
                                  + " owned by subscriber "
                                  + this.subscriber.getClientId()
                                  + ". If a failover policy was "
@@ -1754,6 +1726,14 @@ public class EvaluationSubscriber implements Closeable
             }
         }
 
+        /**
+         * Create an instance.
+         * @param subscriber the subscriber
+         * @param connectionId the connection identifier
+         */
+        private ConnectionExceptionListener
+        {
+            Objects.requireNonNull( subscriber );
+        }
     }
-
 }

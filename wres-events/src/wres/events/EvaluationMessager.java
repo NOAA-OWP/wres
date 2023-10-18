@@ -82,170 +82,104 @@ import wres.statistics.generated.Statistics;
 @ThreadSafe
 public class EvaluationMessager implements Closeable
 {
-    /**
-     * Default name for the queue on the amq.topic that accepts evaluation messages.
-     */
-
+    /** Default name for the queue on the amq.topic that accepts evaluation messages. */
     private static final String EVALUATION_QUEUE = QueueType.EVALUATION_QUEUE.toString();
 
-    /**
-     * Default name for the queue on the amq.topic that accepts evaluation status messages.
-     */
-
+    /** Default name for the queue on the amq.topic that accepts evaluation status messages. */
     private static final String EVALUATION_STATUS_QUEUE = QueueType.EVALUATION_STATUS_QUEUE.toString();
 
-    /**
-     * Default name for the queue on the amq.topic that accepts statistics messages.
-     */
-
+    /** Default name for the queue on the amq.topic that accepts statistics messages. */
     private static final String STATISTICS_QUEUE = QueueType.STATISTICS_QUEUE.toString();
 
-    /**
-     * Default name for the queue on the amq.topic that accepts pairs messages.
-     */
-
+    /** Default name for the queue on the amq.topic that accepts pairs messages. */
     private static final String PAIRS_QUEUE = QueueType.PAIRS_QUEUE.toString();
 
-    /**
-     * Logger. 
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationMessager.class );
 
+    /** Re-used string. */
     private static final String EVALUATION_STRING = "EvaluationMessager ";
 
+    /** Re-used string. */
     private static final String ENCOUNTERED_AN_ERROR = ", encountered an error: ";
 
+    /** Re-used string. */
     private static final String WHILE_ATTEMPTING_TO_PUBLISH_A_MESSAGE_TO_EVALUATION = "While attempting to publish a "
                                                                                       + "message to evaluation ";
 
+    /** Re-used string. */
     private static final String DISCOVERED_AN_EVALUATION_MESSAGE_WITH_MISSING_INFORMATION =
             " discovered an evaluation message with missing information. ";
 
+    /** Re-used string. */
     private static final String WHILE_PUBLISHING_TO_EVALUATION = "While publishing to evaluation ";
 
+    /** Re-used string. */
     private static final String PUBLICATION_COMPLETE_ERROR = "Publication to this evaluation has been notified "
                                                              + "complete and no further messages may be published.";
 
-    /**
-     * The frequency with which to publish an evaluation-alive message in ms.
-     */
-
+    /** The frequency with which to publish an evaluation-alive message in ms. */
     private static final long NOTIFY_ALIVE_MILLISECONDS = 100_000;
 
-    /**
-     * A status message indicating that the evaluation is ongoing.
-     */
-
+    /** A status message indicating that the evaluation is ongoing. */
     private final EvaluationStatus statusOngoing;
 
-    /**
-     * A publisher for {@link wres.statistics.generated.Evaluation} messages.
-     */
-
+    /** A publisher for {@link wres.statistics.generated.Evaluation} messages. */
     private final MessagePublisher evaluationPublisher;
 
-    /**
-     * A publisher for {@link EvaluationStatus} messages.
-     */
-
+    /** A publisher for {@link EvaluationStatus} messages. */
     private final MessagePublisher evaluationStatusPublisher;
 
-    /**
-     * A publisher for {@link Statistics} messages.
-     */
-
+    /** A publisher for {@link Statistics} messages. */
     private final MessagePublisher statisticsPublisher;
 
-    /**
-     * A publisher for {@link Pairs} messages.
-     */
-
+    /** A publisher for {@link Pairs} messages. */
     private final MessagePublisher pairsPublisher;
 
-    /**
-     * A unique identifier for the evaluation.
-     */
-
+    /** A unique identifier for the evaluation. */
     private final String evaluationId;
 
-    /**
-     * The identifier of the messaging client responsible for creating this evaluation.
-     */
-
+    /** The identifier of the messaging client responsible for creating this evaluation. */
     private final String clientId;
 
-    /**
-     * The total message count, excluding evaluation status messages. This is one more than the number of statistics
-     * messages because an evaluation begins with an evaluation description message. This is mutable state.
-     */
-
+    /** The total message count, excluding evaluation status messages. This is one more than the number of statistics
+     * messages because an evaluation begins with an evaluation description message. This is mutable state. */
     private final AtomicInteger messageCount;
 
-    /**
-     * The total number of evaluation status messages. This is mutable state.
-     */
-
+    /** The total number of evaluation status messages. This is mutable state. */
     private final AtomicInteger statusMessageCount;
 
-    /**
-     * The total number of pairs messages. This is mutable state.
-     */
-
+    /** The total number of pairs messages. This is mutable state. */
     private final AtomicInteger pairsMessageCount;
 
-    /**
-     * A record of the message groups to which messages have been published, together with the number of statistics 
+    /** A record of the message groups to which messages have been published, together with the number of statistics
      * messages published against that identifier. When a group has been marked complete, the message count is set to
-     * a negative number so that the completion state is transparent to publishers for validation purposes.
-     */
-
+     * a negative number so that the completion state is transparent to publishers for validation purposes. */
     private final Map<String, AtomicInteger> messageGroups;
 
-    /**
-     * Is <code>true</code> when publication is complete. Upon completion, an evaluation status message is sent to 
+    /** Is <code>true</code> when publication is complete. Upon completion, an evaluation status message is sent to
      * notify completion, which includes the expected shape of the evaluation, and no further messages can be published 
-     * with the public methods of this instance.
-     */
-
+     * with the public methods of this instance. */
     private final AtomicBoolean publicationComplete;
 
-    /**
-     * Is <code>true</code> if the evaluation has been stopped.
-     */
-
+    /** Is <code>true</code> if the evaluation has been stopped. */
     private final AtomicBoolean isStopped;
 
-    /**
-     * Is <code>true</code> if the evaluation has been closed.
-     */
-
+    /** Is <code>true</code> if the evaluation has been closed. */
     private final AtomicBoolean isClosed;
 
-    /**
-     * An object that contains a completion status message and a latch that counts to zero when an evaluation has been 
-     * notified complete.
-     */
-
+    /** An object that contains a completion status message and a latch that counts to zero when an evaluation has been
+     * notified complete. */
     private final EvaluationStatusTracker statusTracker;
 
-    /**
-     * The status of the evaluation on exit. A non-zero exit status corresponds to failure. Initialized with a 
-     * negative status.
-     */
-
+    /** The status of the evaluation on exit. A non-zero exit status corresponds to failure. Initialized with a
+     * negative status. */
     private final AtomicInteger exitCode = new AtomicInteger( -1 );
 
-    /**
-     * Producer flow controller.
-     */
-
+    /** Producer flow controller. */
     private final ProducerFlowController flowController;
 
-    /**
-     * A timer task to publish information about the status of the evaluation.
-     */
-
+    /** A timer task to publish information about the status of the evaluation. */
     private final Timer timer;
 
     /**

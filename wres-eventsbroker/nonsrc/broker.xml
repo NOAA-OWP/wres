@@ -159,7 +159,7 @@ under the License.
                     See https://issues.apache.org/jira/browse/ARTEMIS-1644 for more information. -->
 
          <!-- AMQP Acceptor.  Listens on default AMQP port for AMQP traffic.-->
-         <acceptor name="amqp">tcp://0.0.0.0:${activemq.remoting.amqp.port}?remotingThreads=20;tcpSendBufferSize=1048576;tcpReceiveBufferSize=1048576;protocols=AMQP;useEpoll=true;amqpCredits=1000;amqpLowCredits=300;amqpMinLargeMessageSize=102400;amqpDuplicateDetection=false</acceptor>
+         <acceptor name="amqp">tcp://0.0.0.0:${activemq.remoting.amqp.port}?amqpIdleTimeout=0;remotingThreads=20;tcpSendBufferSize=1048576;tcpReceiveBufferSize=1048576;protocols=AMQP;useEpoll=true;amqpCredits=1000;amqpLowCredits=300;amqpMinLargeMessageSize=102400;amqpDuplicateDetection=false</acceptor>
 
       </acceptors>
 
