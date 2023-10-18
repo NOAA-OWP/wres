@@ -519,11 +519,11 @@ class WresEvaluationProcessor implements Callable<Integer>
         {
             if ( whichStream.equals( WhichStream.STDERR ) )
             {
-                System.err.println( line );
+                LOGGER.error( line );
             }
             else if ( whichStream.equals( WhichStream.OUTPUT ) )
             {
-                System.out.println( line );
+                LOGGER.info( line );
             }
         }
 
