@@ -96,7 +96,7 @@ final class Functions
     /**
      * Looks for a named operation.
      * @param operation the operation
-     * @return an result that may contain the operation
+     * @return a result that may contain the operation
      */
     private static Optional<Entry<WresFunction, Function<SharedResources, ExecutionResult>>> getOperation( String operation )
     {
@@ -209,19 +209,19 @@ final class Functions
         functions.put( new WresFunction( "-e",
                                          "execute",
                                          "Executes an evaluation with the declaration supplied as a path or "
-                                         + "string. Example usage: execute /foo/bar/project.xml", false ),
+                                         + "string. Example usage: execute /foo/bar/evaluation.yml", false ),
                        Functions::execute );
         functions.put( new WresFunction( "-h", "help", "Prints this help information.", true ),
                        Functions::printCommands );
         functions.put( new WresFunction( "-i",
                                          "ingest",
                                          "Ingests data supplied in a declaration path or string. Example "
-                                         + "usage: ingest /foo/bar/project.xml", false ),
+                                         + "usage: ingest /foo/bar/evaluation.yml", false ),
                        Functions::ingest );
         functions.put( new WresFunction( "-m",
                                          "migrate",
                                          "Migrates a project declaration from XML (old-style) to YAML "
-                                         + "(new style). Example usage: migrate /foo/bar/project_config.xml", true ),
+                                         + "(new style). Example usage: migrate /foo/bar/evaluation.yml", true ),
                        Functions::migrate );
         functions.put( new WresFunction( "-md", "migratedatabase", "Migrate the WRES database.", false ),
                        Functions::migrateDatabase );
@@ -230,7 +230,7 @@ final class Functions
                                          "Migrates a project declaration from XML (old-style) to YAML "
                                          + "(new style). In addition, if the declaration references any external "
                                          + "sources of CSV thresholds, these will be migrated inline to the "
-                                         + "declaration. Example usage: migrateinline /foo/bar/project_config.xml",
+                                         + "declaration. Example usage: migrateinline /foo/bar/evaluation.yml",
                                          true ),
                        Functions::migrateInline );
         functions.put( new WresFunction( "-r", "refreshdatabase", "Refreshes the database.", false ),
@@ -240,7 +240,7 @@ final class Functions
         functions.put( new WresFunction( "-v",
                                          "validate",
                                          "Validates the declaration supplied as a path or string. Example "
-                                         + "usage: validate /foo/bar/project.xml", true ),
+                                         + "usage: validate /foo/bar/evaluation.yml", true ),
                        Functions::validate );
         functions.put( new WresFunction( "-vg",
                                          "validategrid",
@@ -267,7 +267,7 @@ final class Functions
         if ( args.size() != 1 )
         {
             String message = "Please supply a (single) path to a project declaration file to evaluate, like this: "
-                             + "bin/wres.bat execute c:/path/to/project_config.xml";
+                             + "bin/wres.bat execute c:/path/to/evaluation.yml";
             LOGGER.error( message );
             UserInputException e = new UserInputException( message );
             return ExecutionResult.failure( e ); // Or return 400 - Bad Request (see #41467)
