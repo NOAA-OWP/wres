@@ -38,72 +38,44 @@ import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 @ThreadSafe
 class SubscriberNegotiator
 {
-    private static final String WHILE_COMPLETING_EVALUATION = "While completing evaluation ";
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( SubscriberNegotiator.class );
 
-    /**
-     * The frequency between updates that the evaluation is ready to receive subscription offers from consumers that
-     * deliver output formats.
-     */
+    /** Re-used string. */
+    private static final String WHILE_COMPLETING_EVALUATION = "While completing evaluation ";
 
+    /** The frequency between updates that the evaluation is ready to receive subscription offers from consumers that
+     * deliver output formats. */
     private static final long READY_TO_RECEIVE_CONSUMERS_UPDATE_FREQUENCY = 5_000;
 
-    /**
-     * An RNG to randomly pick a subscriber among the valid offers, which guarantees that work is distributed evenly
-     * among the client subscribers, asymptotically.
-     */
-
+    /** An RNG to randomly pick a subscriber among the valid offers, which guarantees that work is distributed evenly
+     * among the client subscribers, asymptotically. */
     private static final Random SUBSCRIBER_RESOLVER = new Random();
 
-    /**
-     * The negotiation period after receipt of the first valid offer during which other valid offers to deliver formats 
-     * will be considered. The period is in milliseconds and adds latency, so must be kept short. See #82939-27.
-     */
-
+    /** The negotiation period after receipt of the first valid offer during which other valid offers to deliver formats
+     * will be considered. The period is in milliseconds and adds latency, so must be kept short. See #82939-27. */
     private static final int NEGOTIATION_PERIOD = 100;
 
-    /**
-     * A map of subscription offers (by subscriber identifier) for each format.
-     */
-
+    /** A map of subscription offers (by subscriber identifier) for each format. */
     private final Map<Format, Set<String>> subscriptionOffers;
 
-    /**
-     * The set of formats required by the evaluation.
-     */
-
+    /** The set of formats required by the evaluation. */
     private final Set<Format> formatsRequired;
 
-    /**
-     * One latch for each format required. The count of each latch is initially one. When a subscriber arrives that can
-     * deliver the format, the corresponding latch is counted down.
-     */
-
+    /** One latch for each format required. The count of each latch is initially one. When a subscriber arrives that can
+     * deliver the format, the corresponding latch is counted down. */
     private final Map<Format, TimedCountDownLatch> formatNegotiationLatches;
 
-    /**
-     * The timeout for all subscribers to be negotiated.
-     */
-
+    /** The timeout for all subscribers to be negotiated. */
     private final long timeoutDuringNegotiation;
 
-    /**
-     * The units for the timeout associated with the negotiation of all subscriptions.
-     */
-
+    /** The units for the timeout associated with the negotiation of all subscriptions. */
     private final TimeUnit timeoutDuringNegotiationUnits;
 
-    /**
-     * The evaluation.
-     */
-
+    /** The evaluation. */
     private final EvaluationMessager evaluation;
 
-    /**
-     * Determines whether subscription offers from format writers are viable. 
-     */
-
+    /** Determines whether subscription offers from format writers are viable. */
     private final SubscriberApprover subscriberApprover;
 
     /**
@@ -481,7 +453,7 @@ class SubscriberNegotiator
         // and a fair competition will pick one at random
         Optional<Map.Entry<Long, Set<String>>> max = map.entrySet()
                                                         .stream()
-                                                        .max( ( a, b ) -> a.getKey().compareTo( b.getKey() ) );
+                                                        .max( Map.Entry.comparingByKey() );
 
         // Must be at least one - see exception on entry - but guard nonetheless
         max.ifPresent( longSetEntry -> returnMe.addAll( longSetEntry.getValue() ) );
