@@ -39,7 +39,7 @@ import wres.eventsbroker.embedded.EmbeddedBroker;
 /**
  * A long-running graphics client that encapsulates one graphics subscriber, which consumes statistics and writes them 
  * to graphics.
- * 
+ *
  * @author James Brown
  */
 
@@ -189,8 +189,10 @@ class GraphicsClient
                                 + "statistics across {} evaluations.",
                                 graphics,
                                 duration,
-                                graphics.getSubscriberStatus().getStatisticsCount(),
-                                graphics.getSubscriberStatus().getEvaluationCount() );
+                                graphics.getSubscriberStatus()
+                                        .getStatisticsCount(),
+                                graphics.getSubscriberStatus()
+                                        .getEvaluationCount() );
                } ) );
 
         try
@@ -207,13 +209,22 @@ class GraphicsClient
 
             exitCode = 1;
 
-            Thread.currentThread().interrupt();
+            Thread.currentThread()
+                  .interrupt();
         }
         catch ( GraphicsClientException f )
         {
             LOGGER.error( "Encountered an internal error in a WRES Graphics Client, which will now shut down.", f );
 
-            exitCode = 1;
+            exitCode = 2;
+        }
+
+        // Failed subscriber?
+        if ( graphics.getGraphicsSubscriber()
+                     .getSubscriberStatus()
+                     .isFailed() )
+        {
+            exitCode = 3;
         }
 
         System.exit( exitCode );
@@ -552,7 +563,7 @@ class GraphicsClient
 
         /**
          * Builds a {@link GraphicsClientException} with the specified message.
-         * 
+         *
          * @param message the message.
          * @param cause the cause of the exception
          */

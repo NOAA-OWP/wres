@@ -1347,7 +1347,6 @@ class EvaluationStatusTracker implements Closeable
 
     private record ConnectionExceptionListener( EvaluationStatusTracker statusTracker ) implements ExceptionListener
     {
-
         @Override
         public void onException( JMSException exception )
         {
@@ -1379,8 +1378,6 @@ class EvaluationStatusTracker implements Closeable
         private ConnectionExceptionListener
         {
             Objects.requireNonNull( statusTracker );
-
         }
-
     }
 }

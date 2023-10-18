@@ -5,9 +5,16 @@ import time
 import re
 
 # Environment variables to provide defaults if URL or cert are not provided at the command line.
-WRES_URL = os.getenv('WRES_URL')
+WRES_HOST_NAME = os.getenv('WRES_HOST_NAME')
 WRES_CA_FILE = os.getenv('WRES_CA_FILE')
 
+#==============================================================================
+# The two functions, below, are used to support the evaluation. The function
+# obtain_file_list obtains the list of files indicated by one of the data
+# posting options, --observed, --predicted, or --baseline. The function 
+# post_data_files posts the data files for a specific job and side, left  
+# (observed), right (predicted), and baseline.
+#==============================================================================
 
 def obtain_file_list(file_argument) -> list:
     """
@@ -76,8 +83,8 @@ parser = argparse.ArgumentParser(
                     description='Calls a cluster instance of the WRES, such as the COWRES.',
                     epilog='Not sure if an epilog in the help will be needed, but this is where it would go.')
 parser.add_argument('filename',          help='Declaration filename')
-parser.add_argument('-u', '--host',      help='Cluster WRES instance host (without the http prefix)')
-parser.add_argument('-c', '--cert',      help='The certificate .pem file to authenticate the WRES instance.')
+parser.add_argument('-u', '--host',      help='Cluster WRES instance host (without the http prefix); defaults to WRES_HOST_NAME environment variable.')
+parser.add_argument('-c', '--cert',      help='The certificate .pem file to authenticate the WRES instance; defaults to WRES_CA_FOLE environment variable.')
 parser.add_argument('-o', '--output',    help='Directory where output is to be written.', default=".")
 parser.add_argument('-l', '--observed',  help='Data to post for the observed sources either one file or a directory.')
 parser.add_argument('-p', '--predicted', help='Data to post for the predicted sources either one file or a directory.')
@@ -89,7 +96,7 @@ args = parser.parse_args()
 # Declartion filename is required.
 declaration_filename = args.filename
 
-# The URL is not required if we have the environment variable available to us.
+# The host name is not required if we have the environment variable available to us.
 host = args.host
 if host is None:
     host = WRES_HOST_NAME
@@ -101,7 +108,7 @@ if host is None:
 wres_ca_file = args.cert
 if wres_ca_file is None:
     wres_ca_file = WRES_CA_FILE
-    if howres_ca_filest is None:
+    if wres_ca_file is None:
         print('Certificate was not specified as argument or environment variable. Aborting!')
         exit(1)
 
@@ -133,6 +140,7 @@ except Exception as e:
 #==============================================================================
 
 # Read the declaration into memory.
+print ( f"Reading the declaration file, {declaration_filename}..." )
 with open(declaration_filename,'r') as decfile:
     evaluation = decfile.read()
 if evaluation is None:
@@ -150,6 +158,7 @@ if data_posted:
 # the service may need to include postInput if data is to be posted. If the 
 # evaluation is successfully posted, then obtain the location URL from the response.
 #====================================================================================
+print( "Posting the declaration to the WRES host {host}..." )
 data = { 'projectConfig': evaluation }
 if data_posted:
     data = { 'projectConfig': evaluation, 
@@ -185,6 +194,8 @@ print( "The location of the resource created by server was " + job_location )
 
 # Handle the posted data files if any were specified by the user. This uses the 
 # post_data_files function near the top of this script.
+if data_posted:
+    print( "Posting data for the evaluation..." )
 try:
     post_data_files(observed_files, job_location, "left")
 except Exception as e:
@@ -245,6 +256,7 @@ if evaluation_status != "COMPLETED_REPORTED_SUCCESS":
 # beginning of the code with the name of each output image/file. This is necessary
 # for the request.get to pull each of the files on the /output url.
 #==============================================================================
+print( "Evaluation succeeded. Obtaining the list of outputs and downloading the files..." )
 response = requests.get(job_location + "/output/", allow_redirects=True,
                         verify = wres_ca_file,
                         headers = { 'Accept': 'text/html' })
@@ -263,17 +275,17 @@ for result in results:
    with open(filename, "wb") as f:
             f.write(r.content)
 
-print("Files have been dowloaded and are located at:")
-print( output_folder )
+print( f"Files have been downloaded to the directory {output_folder}." )
    
 #==============================================================================
 # Fifth: after completing the evaluation, and retrieving any data from it, it is
 # important to clean up resources created by the evaluation. Therefore we 
 # DELETE the output data through the service API.
 #==============================================================================
+print( f"Posting a delete request for the job {job_location}..." )
 remove_output = requests.delete( url = job_location + "/output",
                  verify = wres_ca_file )
-print( "The last status code in the response for the data posting was "
+print( "The last status code in the response for deleting the evaluation was "
        + str( remove_output.status_code ) )
        
 print( "" )
