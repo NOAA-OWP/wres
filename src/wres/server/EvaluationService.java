@@ -13,6 +13,7 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -198,7 +199,7 @@ public class EvaluationService implements ServletContextListener
 
         // Create new stream to redirect output to
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        PrintStream printStream = new PrintStream( byteArrayOutputStream );
+        PrintStream printStream = new PrintStream( byteArrayOutputStream, false, StandardCharsets.UTF_8 );
 
         // redirect the error stream
         System.setOut( printStream );
@@ -328,7 +329,7 @@ public class EvaluationService implements ServletContextListener
             // Execute an evaluation
             ExecutionResult result = evaluator.evaluate( jobMessage.getProjectConfig() );
 
-            logInDatabaseIfNeeded( jobMessage, result, beganExecution );
+            logJobFinishInformation( jobMessage, result, beganExecution );
 
             // If the result failed add the stack trace to the response and return
             if ( result.failed() )
@@ -352,7 +353,7 @@ public class EvaluationService implements ServletContextListener
         catch ( UserInputException e )
         {
             evaluationStage.set( COMPLETED );
-            logInDatabaseIfNeeded( jobMessage, ExecutionResult.failure( e ), beganExecution );
+            logJobFinishInformation( jobMessage, ExecutionResult.failure( e ), beganExecution );
             return Response.status( Response.Status.BAD_REQUEST )
                            .entity( "I received something I could not parse. The top-level exception was: "
                                     + e.getMessage() )
@@ -361,14 +362,12 @@ public class EvaluationService implements ServletContextListener
         catch ( InternalWresException iwe )
         {
             evaluationStage.set( COMPLETED );
-            logInDatabaseIfNeeded( jobMessage, ExecutionResult.failure( iwe ), beganExecution );
+            logJobFinishInformation( jobMessage, ExecutionResult.failure( iwe ), beganExecution );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "WRES experienced an internal issue. The top-level exception was: "
                                     + iwe.getMessage() )
                            .build();
         }
-
-        evaluationStage.set( COMPLETED );
 
         // Put output paths in a stream to send to user
         StreamingOutput streamingOutput = outputSream -> {
@@ -380,6 +379,8 @@ public class EvaluationService implements ServletContextListener
             writer.flush();
             writer.close();
         };
+
+        evaluationStage.set( COMPLETED );
 
         return Response.ok( streamingOutput )
                        .build();
@@ -420,14 +421,14 @@ public class EvaluationService implements ServletContextListener
             logJobHeaderInformation( message );
             //The migrateDatabase method deals with database locking, so we don't need to worry about that here
             DatabaseOperations.migrateDatabase( database );
-            logInDatabaseIfNeeded( jobMessage, ExecutionResult.success(), beganExecution );
+            logJobFinishInformation( jobMessage, ExecutionResult.success(), beganExecution );
         }
         catch ( SQLException se )
         {
             String errorMessage = "Failed to migrate the database.";
             LOGGER.error( errorMessage, se );
             InternalWresException e = new InternalWresException( errorMessage, se );
-            logInDatabaseIfNeeded( jobMessage, ExecutionResult.failure( se ), beganExecution );
+            logJobFinishInformation( jobMessage, ExecutionResult.failure( se ), beganExecution );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "Unable to migrate the database with the error: "
                                     + e.getMessage() )
@@ -477,14 +478,14 @@ public class EvaluationService implements ServletContextListener
             lockManager.lockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
             DatabaseOperations.cleanDatabase( database );
             lockManager.unlockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
-            logInDatabaseIfNeeded( jobMessage, ExecutionResult.success(), beganExecution );
+            logJobFinishInformation( jobMessage, ExecutionResult.success(), beganExecution );
         }
         catch ( SQLException se )
         {
             String errorMessage = "Failed to clean the database.";
             LOGGER.error( errorMessage, se );
             InternalWresException e = new InternalWresException( errorMessage, se );
-            logInDatabaseIfNeeded( jobMessage, ExecutionResult.failure( se ), beganExecution );
+            logJobFinishInformation( jobMessage, ExecutionResult.failure( se ), beganExecution );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "Unable to clean the database with the error: "
                                     + e.getMessage() )
@@ -741,13 +742,21 @@ public class EvaluationService implements ServletContextListener
     }
 
     /**
-     * Logs the evaluation into the database if we are using one
+     * Logs information about the end of a job
      * @param jobMessage The job message used by the evaluation
      * @param result The result of the execution
      * @param beganExecution When the evaluation started
      */
-    private void logInDatabaseIfNeeded( Job.job jobMessage, ExecutionResult result, Instant beganExecution )
+    private void logJobFinishInformation( Job.job jobMessage, ExecutionResult result, Instant beganExecution )
     {
+        // Log timing of execution
+        if ( LOGGER.isInfoEnabled() )
+        {
+            Instant endedExecution = Instant.now();
+            Duration duration = Duration.between( beganExecution, endedExecution );
+            LOGGER.info( "The function '{}' took {}", jobMessage.getVerb(), duration );
+        }
+
         // Log the execution to the database if a database is used
         if ( this.systemSettings.isUseDatabase() )
         {
@@ -799,7 +808,7 @@ public class EvaluationService implements ServletContextListener
                                    .build().toString() );
 
         ProtocolStringList additionalArgumentsList = jobMessage.getAdditionalArgumentsList();
-        LOGGER.info( "JAVA_OPTS: " + additionalArgumentsList + jobMessage.getAdditionalArgumentsCount() );
+        LOGGER.info( "JAVA_OPTS: " + additionalArgumentsList );
     }
 
     /**

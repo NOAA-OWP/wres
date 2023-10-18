@@ -80,7 +80,7 @@ public class WebClient
                                             .followRedirects( true )
                                             .connectTimeout( CONNECT_TIMEOUT )
                                             .callTimeout( REQUEST_TIMEOUT )
-                                            .pingInterval( Duration.ofSeconds( 1 ) )
+                                            .pingInterval( Duration.ofSeconds( 10 ) )
                                             .readTimeout( REQUEST_TIMEOUT )
                                             .build();
         this.trackTimings = trackTimings;
@@ -301,7 +301,7 @@ public class WebClient
 
         WebClientEvent monitorEvent = WebClientEvent.of( uri ); // Monitor with JFR
 
-        RequestBody body = RequestBody.create( jobMessage, MediaType.parse( "text/xml" ) );
+        RequestBody body = RequestBody.create( jobMessage, MediaType.parse( "text/plain; charset=utf-8" ) );
 
         try
         {
@@ -320,7 +320,14 @@ public class WebClient
             monitorEvent.begin();
 
             Instant start = Instant.now();
-            Response httpResponse = tryRequest( request, retryCount );
+
+            // set to not timeout on post requests (We have very long evaluations and dont want to timeout the call)
+            OkHttpClient noTimeoutClient = this.httpClient.newBuilder()
+                                                          .callTimeout( Duration.ZERO )
+                                                          .readTimeout( Duration.ZERO )
+                                                          .build();
+
+            Response httpResponse = tryRequest( request, retryCount, noTimeoutClient );
 
             while ( retry )
             {
@@ -334,7 +341,7 @@ public class WebClient
                                  httpResponse.code() );
 
                     Thread.sleep( sleepMillis );
-                    httpResponse = tryRequest( request, retryCount );
+                    httpResponse = tryRequest( request, retryCount, noTimeoutClient );
                     Instant now = Instant.now();
                     retry = start.plus( timeout )
                                  .isAfter( now );
@@ -455,8 +462,19 @@ public class WebClient
      * @param retryCount The number of times this request has been retried
      * @return The response if successful, null if retriable.
      */
-
     private Response tryRequest( Request request, int retryCount )
+    {
+        return tryRequest( request, retryCount, this.getHttpClient() );
+    }
+
+    /**
+     *
+     * @param request The request to attempt
+     * @param retryCount The number of times this request has been retried
+     * @param httpClient Override for the httpClient
+     * @return The response if successful, null if retriable.
+     */
+    private Response tryRequest( Request request, int retryCount, OkHttpClient httpClient )
     {
         HttpUrl uri = request.url();
         TimingInformation timing = new TimingInformation( uri );
@@ -464,9 +482,8 @@ public class WebClient
 
         try
         {
-            httpResponse = this.getHttpClient()
-                               .newCall( request )
-                               .execute();
+            httpResponse = httpClient.newCall( request )
+                                     .execute();
 
             if ( LOGGER.isDebugEnabled() )
             {
@@ -489,8 +506,8 @@ public class WebClient
                 // Unrecoverable. If truly recoverable, add code to the method
                 // called shouldRetryIndividualException().
                 throw new HttpRetrievalException( "Unrecoverable exception when getting data from "
-                                           + uri,
-                                           ioe );
+                                                  + uri,
+                                                  ioe );
             }
         }
         finally
