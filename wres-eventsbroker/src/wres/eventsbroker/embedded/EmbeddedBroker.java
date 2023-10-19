@@ -235,7 +235,7 @@ public class EmbeddedBroker implements Closeable
 
             if ( LOGGER.isInfoEnabled() )
             {
-                LOGGER.info( "Started an embedded broker with {} transport on port: {}. The full binding URL is: {}.",
+                LOGGER.info( "Started an embedded broker with {} transport on port: {}. The short binding URL is: {}.",
                              DEFAULT_PROTOCOL.toUpperCase(),
                              this.getMessagingPort(),
                              this.burl );
