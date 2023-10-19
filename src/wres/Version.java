@@ -1,11 +1,17 @@
 package wres;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeSet;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import wres.server.EvaluationService;
+import wres.system.DatabaseSettings;
 import wres.system.SystemSettings;
 
 /**
@@ -13,6 +19,7 @@ import wres.system.SystemSettings;
  */
 public class Version
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( Version.class );
     private static final String UNKNOWN_VERSION = "unknown";
     private final Package rawPackage;
     private final SystemSettings systemSettings;
@@ -91,19 +98,26 @@ public class Version
         String firstProperty = iterator.next();
         iterator.remove();
 
+        //Remove password information from the System Settings
+        DatabaseSettings.DatabaseSettingsBuilder databaseBuilder =
+                this.systemSettings.getDatabaseConfiguration().toBuilder();
+        databaseBuilder.password( "[Omitted]" );
+        databaseBuilder.dataSourceProperties( new HashMap<>() );
+
         final String MIB = "MiB";
         final long MEGABYTE = 1024 * 1024;
         s.add( "Processors: " + runtime.availableProcessors() );
         s.add( "Max Memory: " + ( runtime.maxMemory() / MEGABYTE ) + MIB );
         s.add( "Free Memory: " + ( runtime.freeMemory() / MEGABYTE ) + MIB );
         s.add( "Total Memory: " + ( runtime.totalMemory() / MEGABYTE ) + MIB );
-        s.add( "WRES System Settings: " + this.systemSettings.toString() );
+        s.add( "WRES System Settings: " + this.systemSettings.toBuilder()
+                                                             .databaseConfiguration( databaseBuilder.build() )
+                                                             .build() );
         s.add( "Java System Properties: " + firstProperty );
         
         for ( String propertyName : sortedPropertyNames )
         {
             String lowerCaseName = propertyName.toLowerCase();
-
             // Avoid printing passphrases or passwords or passes of any kind,
             // avoid printing full classpath, ignore separators, ignore printers
             // and ignore some extraneous sun/oracle directories
