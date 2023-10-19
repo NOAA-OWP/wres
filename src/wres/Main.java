@@ -387,7 +387,7 @@ public class Main
      * @return a verbose runtime description
      */
 
-    private static String getVerboseRuntimeDescription()
+    public static String getVerboseRuntimeDescription()
     {
         return version.getVerboseRuntimeDescription();
     }

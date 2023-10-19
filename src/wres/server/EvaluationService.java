@@ -324,7 +324,7 @@ public class EvaluationService implements ServletContextListener
         try
         {
             // Print system setting at the top of the job log to help debug
-            logJobHeaderInformation( message );
+            logJobHeaderInformation();
 
             // Execute an evaluation
             ExecutionResult result = evaluator.evaluate( jobMessage.getProjectConfig() );
@@ -418,7 +418,7 @@ public class EvaluationService implements ServletContextListener
 
         try
         {
-            logJobHeaderInformation( message );
+            logJobHeaderInformation();
             //The migrateDatabase method deals with database locking, so we don't need to worry about that here
             DatabaseOperations.migrateDatabase( database );
             logJobFinishInformation( jobMessage, ExecutionResult.success(), beganExecution );
@@ -474,7 +474,7 @@ public class EvaluationService implements ServletContextListener
 
         try
         {
-            logJobHeaderInformation( message );
+            logJobHeaderInformation();
             lockManager.lockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
             DatabaseOperations.cleanDatabase( database );
             lockManager.unlockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
@@ -783,32 +783,14 @@ public class EvaluationService implements ServletContextListener
 
     }
 
-    private void logJobHeaderInformation( byte[] message )
+    private void logJobHeaderInformation()
     {
-        // Convert the raw message into a job
-        Job.job jobMessage;
-        try
+        // Print some information about the software version and runtime
+        if ( LOGGER.isInfoEnabled() )
         {
-            jobMessage = Job.job.parseFrom( message );
+            LOGGER.info( Main.getVersionDescription() );
+            LOGGER.info( Main.getVerboseRuntimeDescription() );
         }
-        catch ( InvalidProtocolBufferException ipbe )
-        {
-            throw new IllegalArgumentException( "Bad message received: " + message, ipbe );
-        }
-
-        //Remove password information from the System Settings
-        DatabaseSettings.DatabaseSettingsBuilder databaseBuilder =
-                systemSettings.getDatabaseConfiguration().toBuilder();
-        databaseBuilder.password( "[Omitted]" );
-        databaseBuilder.dataSourceProperties( new HashMap<>() );
-
-        //Log redacted system settings
-        LOGGER.info( systemSettings.toBuilder()
-                                   .databaseConfiguration( databaseBuilder.build() )
-                                   .build().toString() );
-
-        ProtocolStringList additionalArgumentsList = jobMessage.getAdditionalArgumentsList();
-        LOGGER.info( "JAVA_OPTS: " + additionalArgumentsList );
     }
 
     /**
