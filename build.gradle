@@ -880,6 +880,9 @@ project(':wres-config')
         jaxb 'org.glassfish.jaxb:jaxb-xjc:2.3.8'
         jaxb 'com.github.sabomichal:immutable-xjc-plugin:1.7.1'
 
+        // Legacy version required by ancient JAXB dependencies
+        implementation 'jakarta.activation:jakarta.activation-api:1.2.2'
+
         // To accurately detect mime types of files.
         implementation 'org.apache.tika:tika-core:2.9.0'
 
