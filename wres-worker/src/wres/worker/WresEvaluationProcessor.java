@@ -261,7 +261,7 @@ class WresEvaluationProcessor implements Callable<Integer>
                 exitValue = startEvaluation( evaluationId, job );
             }
 
-            LOGGER.info( "Request exited with http code: {}", exitValue );
+            LOGGER.info( String.format( "Request exited with http code: %s for job: %s", exitValue, jobId ) );
             byte[] response = WresEvaluationProcessor.prepareExitResponse( exitValue, null );
             this.sendMessage( response, WhichStream.EXITCODE );
             WresEvaluationProcessor.shutdownExecutor( executorService );
@@ -270,7 +270,7 @@ class WresEvaluationProcessor implements Callable<Integer>
         }
         catch ( EvaluationProcessingException epe )
         {
-            LOGGER.warn( String.format( "Failed to finish the evaluation with log: \n %s", epe ) );
+            LOGGER.warn( String.format( "Failed to finish the evaluation for job: %s with log: \n %s", jobId, epe ) );
             byte[] response = WresEvaluationProcessor.prepareMetaFailureResponse( epe );
             this.sendMessage( response, WhichStream.EXITCODE );
             WresEvaluationProcessor.shutdownExecutor( executorService );
@@ -507,25 +507,27 @@ class WresEvaluationProcessor implements Callable<Integer>
     private byte[] prepareStdStreamMessage( String line, WhichStream whichStream )
     {
         int order = this.getOrder( whichStream ).getAndIncrement();
+        String trimmedOutput = line.trim();
 
-        wres.messages.generated.JobStandardStream.job_standard_stream message
-                = wres.messages.generated.JobStandardStream.job_standard_stream
-                .newBuilder()
-                .setIndex( order )
-                .setText( line.trim() )
-                .build();
         // Pass through messages so they appear in docker logs as well if true
         if ( STREAM_PASS_THROUGH )
         {
             if ( whichStream.equals( WhichStream.STDERR ) )
             {
-                LOGGER.error( line );
+                LOGGER.error( trimmedOutput );
             }
-            else if ( whichStream.equals( WhichStream.OUTPUT ) )
+            if ( whichStream.equals( WhichStream.STDOUT ) )
             {
-                LOGGER.info( line );
+                LOGGER.info( trimmedOutput );
             }
         }
+
+        wres.messages.generated.JobStandardStream.job_standard_stream message
+                = wres.messages.generated.JobStandardStream.job_standard_stream
+                .newBuilder()
+                .setIndex( order )
+                .setText( trimmedOutput )
+                .build();
 
         return message.toByteArray();
     }

@@ -49,6 +49,8 @@ services:
          - /mnt/wres_keys:/wres_secrets:ro
          # To write heap dump files:
          - /mnt/wres_share/heap_dumps/tasker:/mnt/wres_share/heap_dumps/tasker
+         # Writing all log outputs:
+         - /mnt/wres_share/logs/tasker/:/mnt/wres_share/logs/tasker/
         environment:
          # Make sure to pass through WRES_TASKER_SERVER_P12 to tasker at runtime
          - JAVA_OPTS=-Dwres.adminToken=${WRES_ADMIN_TOKEN} -Dwres.broker=broker -Dwres.redisHost=persister -Dwres.trustStore=${WRES_TRUST_STORE} -Dwres.taskerPathToServerP12=${WRES_TASKER_SERVER_P12} -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/input_data -Dwres.dataDirectDiskThreshold=90 -Dwres.numberOfWorkers=5 -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/tasker -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/tasker/java_pid%p.hprof /mnt/wres_share/heap_dumps/tasker/java_pid%p_$$CON_HOSTNAME.hprof; chmod 775 /mnt/wres_share/heap_dumps/tasker/java_pid%p_$$CON_HOSTNAME.hprof'
@@ -109,6 +111,8 @@ services:
          - /mnt/wres_share/heap_dumps/wres:/mnt/wres_share/heap_dumps/wres
          # For logs (inside container, avoid writing to read-only /home)
          - /container_home
+         # Writing all log outputs:
+         - /mnt/wres_share/logs/worker/:/mnt/wres_share/logs/worker/
         environment:
          - JAVA_OPTS=-Dwres.broker=broker -Dcom.redhat.fips=false -Dwres.trustStore=${WRES_TRUST_STORE} -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/worker-shim -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/worker-shim/java_pid%p.hprof /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_$$CON_HOSTNAME.hprof; chmod 775 /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_$$CON_HOSTNAME.hprof'
          - PGPASSFILE=/wres_secrets/.pgpass
