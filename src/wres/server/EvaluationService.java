@@ -29,7 +29,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import jakarta.inject.Singleton;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
-import jakarta.websocket.server.ServerEndpoint;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
