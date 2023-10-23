@@ -27,7 +27,10 @@ import com.rabbitmq.client.Envelope;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
 
+import jakarta.ws.rs.core.GenericType;
+import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.sse.InboundSseEvent;
 import jakarta.ws.rs.sse.SseEventSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -507,7 +510,9 @@ class WresEvaluationProcessor implements Callable<Integer>
     private byte[] prepareStdStreamMessage( String line, WhichStream whichStream )
     {
         int order = this.getOrder( whichStream ).getAndIncrement();
-        String trimmedOutput = line.trim();
+
+        //TODO Remove double tab replace work around
+        String trimmedOutput = line.replaceAll( "\t{2}", "  " ).trim();
 
         // Pass through messages so they appear in docker logs as well if true
         if ( STREAM_PASS_THROUGH )
