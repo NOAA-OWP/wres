@@ -118,7 +118,7 @@ public class EvaluationService implements ServletContextListener
 
     private final BrokerConnectionFactory broker;
 
-    private static Evaluator evaluator;
+    private Evaluator evaluator;
 
     /**
      * Constructor
@@ -133,16 +133,10 @@ public class EvaluationService implements ServletContextListener
         this.systemSettings = systemSettings;
         this.database = database;
         this.broker = broker;
-        setEvaluator( systemSettings, database, broker );
-    }
-
-    private static void setEvaluator( SystemSettings systemSettings, Database database, BrokerConnectionFactory broker )
-    {
         evaluator = new Evaluator( systemSettings,
                                    database,
                                    broker );
     }
-
 
     /**
      * Function to simply track the good status of the server
@@ -302,8 +296,6 @@ public class EvaluationService implements ServletContextListener
         {
             throw new IllegalArgumentException( "Bad message received: " + message, ipbe );
         }
-        // Checks if database information has changed in the jobMessage and swap to that database
-        swapDatabaseIfNeeded( jobMessage );
 
         // Check that this evaluation should be ran
         if ( evaluationId.get() != id && evaluationStage.get().equals( OPENED ) )
@@ -321,6 +313,11 @@ public class EvaluationService implements ServletContextListener
         Set<java.nio.file.Path> outputPaths;
         try
         {
+            // Checks if database information has changed in the jobMessage and swap to that database
+            swapDatabaseIfNeeded( jobMessage );
+
+            LOGGER.info( "MONKEY: " + evaluator.toString() );
+
             // Print system setting at the top of the job log to help debug
             logJobHeaderInformation();
 
@@ -416,6 +413,9 @@ public class EvaluationService implements ServletContextListener
 
         try
         {
+            // Checks if database information has changed in the jobMessage and swap to that database
+            swapDatabaseIfNeeded( jobMessage );
+
             logJobHeaderInformation();
             //The migrateDatabase method deals with database locking, so we don't need to worry about that here
             DatabaseOperations.migrateDatabase( database );
@@ -472,6 +472,9 @@ public class EvaluationService implements ServletContextListener
 
         try
         {
+            // Checks if database information has changed in the jobMessage and swap to that database
+            swapDatabaseIfNeeded( jobMessage );
+
             logJobHeaderInformation();
             lockManager.lockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
             DatabaseOperations.cleanDatabase( database );
