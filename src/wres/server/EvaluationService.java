@@ -29,6 +29,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import jakarta.inject.Singleton;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
+import jakarta.websocket.server.ServerEndpoint;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
@@ -88,6 +89,7 @@ import wres.system.SystemSettings;
  */
 
 @Path( "/evaluation" )
+//@ServerEndpoint( "/evaluation" )
 @Singleton
 public class EvaluationService implements ServletContextListener
 {
@@ -684,9 +686,12 @@ public class EvaluationService implements ServletContextListener
                 if ( offset == skip && !bytes.isEmpty() )
                 {
                     offset += bytes.length();
+                    // TODO: Fix leading whitespace removal issue
+                    // https://github.com/spring-projects/spring-framework/issues/27473
+                    // There is an issue where all leading whitespace is not being removed instead of just the first space
+                    // convert the double space to tabs before sending this to the shim
                     final OutboundSseEvent event = sse.newEventBuilder()
-                                                      .name( "standard-stream-message" )
-                                                      .data( String.class, bytes )
+                                                      .data( String.class, bytes.replaceAll( " {2}", "\t\t" ) )
                                                       .build();
                     eventSink.send( event );
                 }
