@@ -1243,7 +1243,7 @@ project(':wres-tasker')
         implementation 'org.apache.tika:tika-core:2.9.0'
 
         // To persist job metadata while keeping it relatively fast
-        implementation( 'org.redisson:redisson:3.24.1' )
+        implementation( 'org.redisson:redisson:3.18.0' )
         {
             // Because of CVE-2022-24823. TODO: remove when Redisson catches up
             exclude group: 'io.netty'
