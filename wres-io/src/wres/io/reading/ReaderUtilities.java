@@ -957,8 +957,8 @@ public class ReaderUtilities
             specifiedLatest = dates.maximum();
         }
 
-        // If the evaluation has a baseline data source and EITHER this is the baseline dataset OR this data source is
-        // the same as the baseline data source (i.e., duplicated), compare with the valid dates above and user the
+        // If the evaluation has a climatological baseline and EITHER this is the baseline dataset OR this data source
+        // is the same as the baseline data source (i.e., duplicated), compare with the valid dates above and use the
         // longer of the two intervals. See #118435
         if ( ReaderUtilities.isBaselineOrHasSameDatasetAsBaseline( dataSource, declaration )
              && DeclarationUtilities.hasGeneratedBaseline( declaration.baseline() )
@@ -1036,7 +1036,11 @@ public class ReaderUtilities
     {
         return dataSource.getDatasetOrientation() == DatasetOrientation.BASELINE
                || ( DeclarationUtilities.hasBaseline( declaration )
-                    && declaration.baseline().dataset().equals( dataSource.getContext() ) );
+                    && declaration.baseline()
+                                  .dataset()
+                                  .sources()  // #121751
+                                  .equals( dataSource.getContext()
+                                                     .sources() ) );
     }
 
     /**
