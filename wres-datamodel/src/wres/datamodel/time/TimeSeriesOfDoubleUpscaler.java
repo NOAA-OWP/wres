@@ -140,6 +140,7 @@ public class TimeSeriesOfDoubleUpscaler implements TimeSeriesUpscaler<Double>
         TimeScaleOuter timeScaleToUse = desiredTimeScale;
         if ( scaleAndUnitChange )
         {
+            // Intermediate step to form the time-average, hence TimeScaleFunction.MEAN
             timeScaleToUse = TimeScaleOuter.of( desiredTimeScale.getPeriod(), TimeScaleFunction.MEAN );
         }
 
@@ -153,7 +154,7 @@ public class TimeSeriesOfDoubleUpscaler implements TimeSeriesUpscaler<Double>
                                                                                      endsAt,
                                                                                      this.isLenient() );
 
-        // Special handling when accumulating a volumetric flow because this creates a volume, so finalize that part
+        // Special handling when changing unit dimension through upscaling (e.g., volumetric flow to volume)
         if ( scaleAndUnitChange )
         {
             rescaled = this.doTimeIntegralConversion( rescaled,
@@ -247,15 +248,15 @@ public class TimeSeriesOfDoubleUpscaler implements TimeSeriesUpscaler<Double>
                                                                           desiredUnit );
 
         // Create a converted time-series
-        // Update the units and time scale function
+        // Update the units and timescale function
         UnaryOperator<TimeSeriesMetadata> metaMapper =
                 RescalingHelper.getMetadataMapper( seriesToIntegrate.getMetadata(),
                                                    desiredTimeScale,
                                                    desiredUnitString );
 
-        TimeSeries<Double> volumeSeries = TimeSeriesSlicer.transform( seriesToIntegrate, converter, metaMapper );
+        TimeSeries<Double> integralSeries = TimeSeriesSlicer.transform( seriesToIntegrate, converter, metaMapper );
 
-        return RescaledTimeSeriesPlusValidation.of( volumeSeries, validationEvents );
+        return RescaledTimeSeriesPlusValidation.of( integralSeries, validationEvents );
     }
 
     /**

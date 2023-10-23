@@ -158,9 +158,9 @@ public class PoolFactory
 
     /**
      * <p>Create pools for single-valued data. This method will attempt to retrieve and re-use data that is common to
-     * multiple pools. In particular, it will cache the climatological data for all pool requests that belong to a 
+     * multiple pools. In particular, it will cache the climatological data for all pool requests that belong to a
      * single feature group because the climatological data is shared across feature groups. The order returned is the
-     * intended execution order for optimal heap usage because pools with data affinities are grouped together. The 
+     * intended execution order for optimal heap usage because pools with data affinities are grouped together. The
      * order returned may differ from the order of pool requests received.
      *
      * <p>TODO: further optimize to re-use datasets that are shared between multiple feature groups, other than
@@ -240,9 +240,9 @@ public class PoolFactory
 
     /**
      * <p>Create pools for ensemble data. This method will attempt to retrieve and re-use data that is common to multiple
-     * pools. In particular, it will cache the climatological data for all pool requests that belong to a single 
-     * feature group because the climatological data is shared across feature groups. The order returned is the intended 
-     * execution order for optimal heap usage because pools with data affinities are grouped together. The order 
+     * pools. In particular, it will cache the climatological data for all pool requests that belong to a single
+     * feature group because the climatological data is shared across feature groups. The order returned is the intended
+     * execution order for optimal heap usage because pools with data affinities are grouped together. The order
      * returned may differ from the order of pool requests received.
      *
      * <p>TODO: further optimize to re-use datasets that are shared between multiple feature groups, other than
@@ -435,8 +435,8 @@ public class PoolFactory
 
     /**
      * <p>Create pools for single-valued data. This method will attempt to retrieve and re-use data that is common to
-     * multiple pools. Thus, it is generally better to provide a list of pool requests that represent connected pools, 
-     * such as pools that all belong to the same feature group, rather than supplying a single pool or a long list of 
+     * multiple pools. Thus, it is generally better to provide a list of pool requests that represent connected pools,
+     * such as pools that all belong to the same feature group, rather than supplying a single pool or a long list of
      * unconnected pools, such as pools that belong to many feature groups.
      *
      * <p>TODO: analyze the pool requests and find groups with shared data, i.e., automatically analyze/optimize. In
@@ -590,10 +590,10 @@ public class PoolFactory
     }
 
     /**
-     * Create pools for ensemble data. This method will attempt to retrieve and re-use data that is common to multiple 
-     * pools. Thus, it is generally better to provide a list of pool requests that represent connected pools, such as 
-     * pools that all belong to the same feature group, rather than supplying a single pool or a long list of 
-     * unconnected pools, such as pools that belong to many feature groups. Specifically, it will cache the 
+     * Create pools for ensemble data. This method will attempt to retrieve and re-use data that is common to multiple
+     * pools. Thus, it is generally better to provide a list of pool requests that represent connected pools, such as
+     * pools that all belong to the same feature group, rather than supplying a single pool or a long list of
+     * unconnected pools, such as pools that belong to many feature groups. Specifically, it will cache the
      * climatological data for all pool requests if climatological data is needed.
      *
      * @param project the project for which pools are required, not null
@@ -891,7 +891,7 @@ public class PoolFactory
     }
 
     /**
-     * Composes the raw suppliers with feature group information based on the pool requests, which are ordered 
+     * Composes the raw suppliers with feature group information based on the pool requests, which are ordered
      * identically to the suppliers.
      *
      * @param <T> the type of supplied data
@@ -930,7 +930,7 @@ public class PoolFactory
 
     /**
      * Unpacks each supplier and pairs it with the original request that produced it. The only difference between the
-     * original request and the corresponding request attached to the supplier and obtained from 
+     * original request and the corresponding request attached to the supplier and obtained from
      * {@link SupplierWithPoolRequest#poolRequest()} is the pool identifier and it is friendly to preserve these
      * identifiers, which are otherwise destroyed by feature-batching.
      *
@@ -972,7 +972,7 @@ public class PoolFactory
     }
 
     /**
-     * Generates the {@link PoolRequest} associated with a particular {@link FeatureGroup} in order to drive pool 
+     * Generates the {@link PoolRequest} associated with a particular {@link FeatureGroup} in order to drive pool
      * creation.
      *
      * @param evaluation the evaluation description
@@ -1210,23 +1210,24 @@ public class PoolFactory
                 Unit<?> desiredUnit = Units.getUnit( desiredUnitString, aliases );
 
                 // Does the unit conversion involve a special time integration? If so, this is a type of upscaling 
-                // because it involves a change in time scale function, as well as in the measurement units, and should 
+                // because it involves a change in timescale function, as well as in the measurement units, and should
                 // be deferred to that activity. In other words, supply an identity converter here and log
-                if ( Objects.nonNull( existingTimeScale )
-                     && !existingTimeScale.equalsOrInstantaneous( desiredTimeScale )
-                     && Units.isSupportedTimeIntegralConversion( existingUnit, desiredUnit ) )
+                if ( Objects.nonNull( existingTimeScale )  // Existing timescale defined
+                     && !existingTimeScale.equalsOrInstantaneous( desiredTimeScale ) // Upscaling needed
+                     && Units.isSupportedTimeIntegralConversion( existingUnit, desiredUnit ) ) // Time integral unit
                 {
                     LOGGER.debug( "Encountered a request to convert {} to {}. Since these two units involve different "
-                                  + "dimensions, this is a non-standard unit conversion that additionally involves a "
-                                  + "time-integration. The time integration step is part of an upscaling operation and "
-                                  + "is, therefore, deferred. It is assumed that the upscaler will also convert the "
-                                  + "units. Based on that assumption, creating an identity converter instead.",
+                                  + "dimensions, this is a non-standard unit conversion that additionally involves "
+                                  + "integration over time. The time integration step is part of an upscaling "
+                                  + "operation and is, therefore, deferred. It is assumed that the upscaler will also "
+                                  + "convert the units. Based on that assumption, creating an identity converter "
+                                  + "instead.",
                                   existingUnitString,
                                   desiredUnitString );
 
                     converter = in -> in;
                 }
-                // Regular converter that does not depend on time integration
+                // No upscaling requested
                 else
                 {
                     // Attempting to perform a unit conversion that cannot be solved without upscaling, so warn because 
@@ -1235,12 +1236,12 @@ public class PoolFactory
                     {
                         LOGGER.warn( "Encountered a request to convert {} to {}. Since these two units involve "
                                      + "different dimensions, this is a non-standard unit conversion that additionally "
-                                     + "involves a time-integration. This time integration problem can be solved by "
+                                     + "involves integration over time. This time integration problem can be solved by "
                                      + "upscaling, but no appropriate declaration was found to implement upscaling. "
                                      + "The existing time scale was {} and the desired time scale was {}. An error may "
                                      + "follow when attempting to convert between incommensurate units. If you "
                                      + "intended to solve this unit conversion problem by upscaling, please declare an "
-                                     + "appropriate desiredTimeScale and try again.",
+                                     + "appropriate evaluation time scale and try again.",
                                      existingUnitString,
                                      desiredUnitString,
                                      existingTimeScale,
@@ -1677,7 +1678,7 @@ public class PoolFactory
 
     /**
      * Checks the project declaration and throws an exception when the declared type is inconsistent with the type of
-     * pools requested. 
+     * pools requested.
      *
      * @param project the project
      * @param ensemble is true if ensemble pools were requested, false for single-valued pools
@@ -1886,7 +1887,7 @@ public class PoolFactory
     }
 
     /**
-     * Tests whether the pools are suitable for feature-batched retrieval; they are suitable if an identical set of 
+     * Tests whether the pools are suitable for feature-batched retrieval; they are suitable if an identical set of
      * pools is associated with every feature group, except for the feature group information itself.
      *
      * @param requests the pool requests
@@ -1980,7 +1981,7 @@ public class PoolFactory
     }
 
     /**
-     * Decomposes a list of pool suppliers that supply the pairs associated with all feature tuples in the specified 
+     * Decomposes a list of pool suppliers that supply the pairs associated with all feature tuples in the specified
      * feature groups into suppliers that supply the pairs for each feature tuple separately.
      *
      * @param <L> the left-ish data type
@@ -2068,9 +2069,9 @@ public class PoolFactory
     }
 
     /**
-     * Sorts a list of feature-batched pools for optimal execution. It is assumed that all of the features in the 
+     * Sorts a list of feature-batched pools for optimal execution. It is assumed that all of the features in the
      * supplied list belong to the same feature batch and, therefore, have strong data affinities. The sorting places
-     * the suppliers in order of feature-tuple and then time window order to minimize heap usage. Pools should 
+     * the suppliers in order of feature-tuple and then time window order to minimize heap usage. Pools should
      * complete in an order that ensures common datasets become eligible for gc as soon as possible.
      *
      * @param <L> the left-ish data type

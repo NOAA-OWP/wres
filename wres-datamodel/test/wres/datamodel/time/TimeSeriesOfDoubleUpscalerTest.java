@@ -851,7 +851,7 @@ public class TimeSeriesOfDoubleUpscalerTest
         endsAt.add( fourth );
         endsAt.add( sixth );
 
-        // The desired scale: mean over PT2H
+        // The desired scale: total over PT2H
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 2 ), TimeScaleFunction.TOTAL );
 
         TimeSeries<Double> actual = this.upscaler.upscale( timeSeries,
@@ -860,7 +860,7 @@ public class TimeSeriesOfDoubleUpscalerTest
                                                            "m3" )
                                                  .getTimeSeries();
 
-        // Create the expected series with the desired time scale
+        // Create the expected series with the desired timescale
         TimeSeriesMetadata expectedMetadata =
                 TimeSeriesOfDoubleUpscalerTest.getBoilerplateMetadataWithTimeScale( desiredTimeScale )
                                               .toBuilder()

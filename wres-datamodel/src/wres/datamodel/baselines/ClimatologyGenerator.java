@@ -3,7 +3,6 @@ package wres.datamodel.baselines;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoField;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -86,8 +85,7 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
      * Provides an instance.
      *
      * @param climatologySource the climatology data source, required
-     * @param upscaler the temporal upscaler, which is required if the template series has a larger scale than the
-     *                 climatologySource
+     * @param upscaler the upscaler to use when the template series has a larger timescale than the source data
      * @param desiredUnit the desired measurement unit, required
      * @return an instance
      * @throws NullPointerException if any required input is null
@@ -109,8 +107,7 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
      * Provides an instance.
      *
      * @param climatologySource the climatology data source, required
-     * @param upscaler the temporal upscaler, which is required if the template series has a larger scale than the
-     *                 climatologySource
+     * @param upscaler the upscaler to use when the template series has a larger timescale than the source data
      * @param desiredUnit the desired measurement unit, required
      * @param parameters the parameters
      * @return an instance
@@ -143,23 +140,6 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
     {
         Objects.requireNonNull( template );
 
-        if ( template.getEvents()
-                     .isEmpty() )
-        {
-            LOGGER.trace( WHILE_GENERATING_A_CLIMATOLOGY_TIME_SERIES_USING_INPUT_SERIES,
-                          template.hashCode(),
-                          ", discovered that the input series had no events (i.e., was empty). Returning the empty "
-                          + "time-series." );
-
-            // Adjust the template metadata to use source units
-            TimeSeries<Double> source = this.getClimatologySourceForTemplate( template );
-            String sourceUnit = source.getMetadata()
-                                      .getUnit();
-            TimeSeriesMetadata adjusted = this.getAdjustedMetadata( template.getMetadata(), sourceUnit );
-
-            return TimeSeries.of( adjusted );
-        }
-
         // Upscale?
         TimeScaleOuter desiredTimeScale = template.getTimeScale();
         if ( Objects.nonNull( desiredTimeScale )
@@ -184,6 +164,23 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
     {
         LOGGER.trace( "Generating climatology for a time-series where upscaling is not required." );
 
+        if ( template.getEvents()
+                     .isEmpty() )
+        {
+            LOGGER.trace( WHILE_GENERATING_A_CLIMATOLOGY_TIME_SERIES_USING_INPUT_SERIES,
+                          template.hashCode(),
+                          ", discovered that the input series had no events (i.e., was empty). Returning the empty "
+                          + "time-series." );
+
+            // Adjust the template metadata to use source units
+            TimeSeries<Double> source = this.getClimatologySourceForTemplate( template );
+            String sourceUnit = source.getMetadata()
+                                      .getUnit();
+            TimeSeriesMetadata adjusted = this.getAdjustedMetadata( template.getMetadata(), sourceUnit );
+
+            return TimeSeries.of( adjusted );
+        }
+
         TimeSeries<Double> source = this.getClimatologySourceForTemplate( template );
         Map<Instant, Event<Double>> eventsToSearch = source.getEvents()
                                                            .stream()
@@ -193,10 +190,10 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
         SortedSet<Instant> times = new TreeSet<>( eventsToSearch.keySet() );
         int start = times.first()
                          .atZone( ZONE_ID )
-                         .get( ChronoField.YEAR );
+                         .getYear();
         int stop = times.last()
                         .atZone( ZONE_ID )
-                        .get( ChronoField.YEAR ) + 1;  // Render upper bound inclusive
+                        .getYear() + 1;  // Render upper bound inclusive
         Set<Integer> years = IntStream.range( start, stop )
                                       .boxed()
                                       .collect( Collectors.toSet() );
@@ -223,7 +220,7 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
                 Instant targetTime = time.withYear( year )
                                          .toInstant();
                 // Skip the source event at the same time, aka verifying observation
-                if ( year != time.get( ChronoField.YEAR )
+                if ( year != time.getYear()
                      && this.isAdmissable( targetTime ) )
                 {
                     Event<Double> targetEvent = eventsToSearch.get( targetTime );
@@ -261,20 +258,23 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
 
     private TimeSeries<Ensemble> getClimatologyWithUpscaling( TimeSeries<?> template )
     {
+        // Do not optimize for empty time-series as upscaling can change the measurement units: #121751
+
         LOGGER.trace( "Generating climatology for a time-series where upscaling is required." );
 
         // Identify the valid times for which upscaled values are required
         TimeSeries<Double> source = this.getClimatologySourceForTemplate( template );
+
         // Identify the superset of years with climatology values
         SortedSet<Event<Double>> events = source.getEvents();
         int start = events.first()
                           .getTime()
                           .atZone( ZONE_ID )
-                          .get( ChronoField.YEAR );
+                          .getYear();
         int stop = events.last()
                          .getTime()
                          .atZone( ZONE_ID )
-                         .get( ChronoField.YEAR ) + 1;  // Render upper bound inclusive
+                         .getYear() + 1;  // Render upper bound inclusive
         Set<Integer> years = IntStream.range( start, stop )
                                       .boxed()
                                       .collect( Collectors.toSet() );
@@ -295,7 +295,7 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
                                          .toInstant();
 
                 // Skip the source event at the same time, aka verifying observation
-                if ( year != time.get( ChronoField.YEAR )
+                if ( year != time.getYear()
                      && this.isAdmissable( targetTime ) )
                 {
                     targetTimes.add( targetTime );
@@ -332,8 +332,7 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
 
         TimeSeries<Double> rescaledSeries = rescaled.getTimeSeries();
 
-        return this.getEnsembleSeriesFromRescaledSeries( source,
-                                                         template.getMetadata(),
+        return this.getEnsembleSeriesFromRescaledSeries( template.getMetadata(),
                                                          rescaledSeries,
                                                          ensembleTimes );
     }
@@ -341,22 +340,20 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
     /**
      * Generates an ensemble time-series from a rescaled single-valued time-series that contains all the rescaled
      * events at each valid time.
-     * @param sourceSeries the time-series from which the rescaled events were generated
      * @param templateMetadata the metadata of the template time-series
      * @param rescaledSeries the rescaled time-series
      * @param ensembleTimes the times of the ensemble events to compose, with one collection per ensemble valid time
      * @return the ensemble time-series
      */
 
-    private TimeSeries<Ensemble> getEnsembleSeriesFromRescaledSeries( TimeSeries<Double> sourceSeries,
-                                                                      TimeSeriesMetadata templateMetadata,
+    private TimeSeries<Ensemble> getEnsembleSeriesFromRescaledSeries( TimeSeriesMetadata templateMetadata,
                                                                       TimeSeries<Double> rescaledSeries,
                                                                       Map<Instant, SortedSet<Instant>> ensembleTimes )
     {
 
         // Adjust the template metadata to use source units
-        String sourceUnit = sourceSeries.getMetadata()
-                                        .getUnit();
+        String sourceUnit = rescaledSeries.getMetadata()
+                                          .getUnit();
         TimeSeriesMetadata adjusted = this.getAdjustedMetadata( templateMetadata, sourceUnit );
         TimeSeries.Builder<Ensemble> builder = new TimeSeries.Builder<Ensemble>().setMetadata( adjusted );
 
@@ -378,7 +375,7 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
                 for ( Instant nextEnsembleTime : nextEnsembleTimes )
                 {
                     ZonedDateTime time = nextEnsembleTime.atZone( ZONE_ID );
-                    int year = time.get( ChronoField.YEAR );
+                    int year = time.getYear();
                     String label = Integer.toString( year );
                     labelStrings[count] = label;
                     double member = MissingValues.DOUBLE;
@@ -472,8 +469,7 @@ public class ClimatologyGenerator implements BaselineGenerator<Ensemble>
      * Hidden constructor.
      *
      * @param climatologySource the source data for the climatology values, not null
-     * @param upscaler the temporal upscaler, which is required if the template series has a larger scale than the
-     *                 climatologySource
+     * @param upscaler the upscaler to use when the template series has a larger timescale than the source data
      * @param desiredUnit the desired measurement unit, not null
      * @param parameters the parameters
      * @throws NullPointerException if any required input is null

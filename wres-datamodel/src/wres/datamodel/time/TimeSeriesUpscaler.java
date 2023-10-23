@@ -28,7 +28,7 @@ public interface TimeSeriesUpscaler<T>
      * 
      * @see #upscale(TimeSeries, TimeScaleOuter, SortedSet, String)
      * @param timeSeries the time-series to upscale
-     * @param desiredTimeScale the desired time scale
+     * @param desiredTimeScale the desired timescale
      * @param desiredUnit the desired measurement unit
      * @return an upscaled time-series, plus any validation events
      * @throws RescalingException if the time-series could not be upscaled
@@ -46,7 +46,7 @@ public interface TimeSeriesUpscaler<T>
      * should end, the behavior matches the unconditional case, {@link #upscale(TimeSeries, TimeScaleOuter, String)}.
      * 
      * @param timeSeries the time-series to upscale
-     * @param desiredTimeScale the desired time scale
+     * @param desiredTimeScale the desired timescale
      * @param desiredUnit the desired measurement unit
      * @param endsAt the time at which each upscaled value should end, sorted to allow implementations to exploit order
      * @return an upscaled time-series with (up to) as many events as times in endAt, plus and validation events

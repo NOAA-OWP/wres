@@ -377,11 +377,14 @@ definitions:
     means that the persisted value at all forecast valid times is the value 
     from the persistence source that is 3 steps prior to the forecast reference 
     time."
-    name:
-      const: "persistence"
-    order:
-      type: integer
-      minimum: 0
+    type: object
+    additionalProperties: false
+    properties:
+      name:
+        const: "persistence"
+      order:
+        type: integer
+        minimum: 0
     required:
       - name
 

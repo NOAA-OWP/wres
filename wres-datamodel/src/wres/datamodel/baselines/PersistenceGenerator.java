@@ -155,23 +155,6 @@ public class PersistenceGenerator<T> implements BaselineGenerator<T>
 
         Map<ReferenceTimeType, Instant> referenceTimes = template.getReferenceTimes();
 
-        if ( template.getEvents()
-                     .isEmpty() )
-        {
-            LOGGER.trace( WHILE_GENERATING_A_PERSISTENCE_TIME_SERIES_USING_INPUT_SERIES,
-                          template.hashCode(),
-                          ", discovered that the input series had no events (i.e., was empty). Returning the empty "
-                          + "time-series." );
-
-            // Adjust the template metadata to use source units
-            TimeSeries<T> source = this.getPersistenceSourceForTemplate( template );
-            String sourceUnit = source.getMetadata()
-                                      .getUnit();
-            TimeSeriesMetadata adjusted = this.getAdjustedMetadata( template.getMetadata(), sourceUnit );
-
-            return TimeSeries.of( adjusted );
-        }
-
         // No reference times, so not a forecast. Compute persistence with respect to valid time.
         if ( referenceTimes.isEmpty() )
         {
@@ -227,6 +210,13 @@ public class PersistenceGenerator<T> implements BaselineGenerator<T>
         LOGGER.trace( "Generating persistence for a time-series with a reference time where upscaling is not "
                       + "required." );
 
+        // Optimize for empty series
+        if ( template.getEvents()
+                     .isEmpty() )
+        {
+            return this.getEmptySeries( template );
+        }
+
         // Put the persistence values into a list. There are at least N+1 values in the list, established at 
         // construction
         TimeSeries<T> persistenceSeries = this.getPersistenceSourceForTemplate( template );
@@ -267,8 +257,10 @@ public class PersistenceGenerator<T> implements BaselineGenerator<T>
         }
 
         T persistenceValue = persistenceEvent.getValue();
-
-        return this.getPersistenceTimeSeriesFromTemplateAndPersistenceValue( template, persistenceValue );
+        return this.getPersistenceTimeSeriesFromTemplateAndPersistenceValue( template,
+                                                                             // Source unit
+                                                                             this.persistenceSourceMetadata.getUnit(),
+                                                                             persistenceValue );
     }
 
     /**
@@ -280,6 +272,8 @@ public class PersistenceGenerator<T> implements BaselineGenerator<T>
 
     private TimeSeries<T> getPersistenceForFirstReferenceTimeWithUpscaling( TimeSeries<?> template )
     {
+        // Do not optimize for empty time-series as upscaling can change the measurement units: #121751
+
         LOGGER.trace( "Generating persistence for a time-series with a reference time where upscaling is required." );
 
         Map<ReferenceTimeType, Instant> referenceTimes = template.getReferenceTimes();
@@ -337,7 +331,11 @@ public class PersistenceGenerator<T> implements BaselineGenerator<T>
             {
                 T persistenceValue = targetEvent.get()
                                                 .getValue();
-                return this.getPersistenceTimeSeriesFromTemplateAndPersistenceValue( template, persistenceValue );
+                return this.getPersistenceTimeSeriesFromTemplateAndPersistenceValue( template,
+                                                                                     // Upscaled source unit
+                                                                                     upscaled.getMetadata()
+                                                                                             .getUnit(),
+                                                                                     persistenceValue );
             }
             else
             {
@@ -386,34 +384,42 @@ public class PersistenceGenerator<T> implements BaselineGenerator<T>
                                                                                     List.of( persistenceEventTime ),
                                                                                     this.desiredUnit );
 
-            if ( !upscaled.getEvents().isEmpty() )
+            if ( !upscaled.getEvents()
+                          .isEmpty() )
             {
                 persistenceValue = upscaled.getEvents()
                                            .first()
                                            .getValue();
             }
 
-            return this.getPersistenceTimeSeriesFromTemplateAndPersistenceValue( template, persistenceValue );
+            return this.getPersistenceTimeSeriesFromTemplateAndPersistenceValue( template,
+                                                                                 // Upscaled source unit
+                                                                                 upscaled.getMetadata()
+                                                                                         .getUnit(),
+                                                                                 persistenceValue );
         }
     }
 
     /**
      * Generates a persistence time-series from a template time-series and a persistence value.
      * @param template the template
+     * @param measurementUnit the measurement unit, which may differ from the template unit
      * @param persistenceValue the persistence value
      * @return the persistence time-series
      */
 
     private TimeSeries<T> getPersistenceTimeSeriesFromTemplateAndPersistenceValue( TimeSeries<?> template,
+                                                                                   String measurementUnit,
                                                                                    T persistenceValue )
     {
         // Adjust the template metadata because the persisted values are in the same measurement units as the 
         // persistence source
-        TimeSeriesMetadata adjusted = this.getAdjustedMetadata( template.getMetadata(), this.getSourceUnit() );
+        TimeSeriesMetadata adjusted = this.getAdjustedMetadata( template.getMetadata(), measurementUnit );
         Builder<T> builder = new Builder<T>().setMetadata( adjusted );
 
         // Persistence value admissible?
-        if ( ( Objects.isNull( persistenceValue ) || !this.admissibleValue.test( persistenceValue ) ) )
+        if ( ( Objects.isNull( persistenceValue )
+               || !this.admissibleValue.test( persistenceValue ) ) )
         {
             LOGGER.trace( "While generating a persistence time-series for {}, discovered that the persistent value of "
                           + "{} was inadmissible. Unable to create a persistence time-series from the input series. "
@@ -466,6 +472,13 @@ public class PersistenceGenerator<T> implements BaselineGenerator<T>
     {
         LOGGER.trace( "Generating persistence for multiple valid times where upscaling is not required." );
 
+        // Optimize for empty series
+        if ( template.getEvents()
+                     .isEmpty() )
+        {
+            return this.getEmptySeries( template );
+        }
+
         // Put the persistence values into a list. There are at least N+1 values in the list, established at 
         // construction
         TimeSeries<T> persistenceSeries = this.getPersistenceSourceForTemplate( template );
@@ -514,6 +527,8 @@ public class PersistenceGenerator<T> implements BaselineGenerator<T>
 
     private TimeSeries<T> getPersistenceForEachValidTimeWithUpscaling( TimeSeries<?> template )
     {
+        // Do not optimize for empty time-series as upscaling can change the measurement units: #121751
+
         LOGGER.trace( "Generating persistence for multiple valid times where upscaling is required." );
 
         TimeScaleOuter timeScale = template.getTimeScale();
@@ -616,6 +631,27 @@ public class PersistenceGenerator<T> implements BaselineGenerator<T>
 
             return this.mapUpscaledEventsToValidTimes( pairedTimes, upscaled );
         }
+    }
+
+    /**
+     * Generates an empty time-series with the correct (source) units from the template series.
+     * @param template the template time-series
+     * @return the empty time-series with correct units
+     */
+    private TimeSeries<T> getEmptySeries( TimeSeries<?> template )
+    {
+        LOGGER.trace( WHILE_GENERATING_A_PERSISTENCE_TIME_SERIES_USING_INPUT_SERIES,
+                      template.hashCode(),
+                      ", discovered that the input series had no events (i.e., was empty). Returning the empty "
+                      + "time-series." );
+
+        // Adjust the template metadata to use source units
+        TimeSeries<T> source = this.getPersistenceSourceForTemplate( template );
+        String sourceUnit = source.getMetadata()
+                                  .getUnit();
+        TimeSeriesMetadata adjusted = this.getAdjustedMetadata( template.getMetadata(), sourceUnit );
+
+        return TimeSeries.of( adjusted );
     }
 
     /**
@@ -866,21 +902,12 @@ public class PersistenceGenerator<T> implements BaselineGenerator<T>
     }
 
     /**
-     * @return the time-scale of the persistence source
+     * @return the timescale of the persistence source
      */
 
     private TimeScaleOuter getSourceTimeScale()
     {
         return this.persistenceSourceMetadata.getTimeScale();
-    }
-
-    /**
-     * @return the measurement unit of the persistence source
-     */
-
-    private String getSourceUnit()
-    {
-        return this.persistenceSourceMetadata.getUnit();
     }
 
     /**
