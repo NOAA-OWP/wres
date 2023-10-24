@@ -1,7 +1,6 @@
 <configuration>
     <!-- Some prefer timestamps, thread name, level, class name, etc. -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-
         <!-- Stop multiple JVMs from stepping on one another, see #52867 -->
         <prudent>true</prudent>
         <define name="hostname"
@@ -13,7 +12,7 @@
                  interleaving multiple users running wres at same time.
                  Does not prevent multiple instances of wres from interleaving. -->
             <!-- Roll over when a new day starts. -->
-            <fileNamePattern>/mnt/wres_share/logs/worker/${hostname}/wres-worker.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>/mnt/wres_share/logs/worker/wres-worker_${hostname}.%d{yyyy-MM-dd}.log</fileNamePattern>
             <!-- Keep at most 10 years of rolled files (see next comment) -->
             <maxHistory>3653</maxHistory>
 
@@ -21,6 +20,7 @@
                  requires the maxHistory to be set to work. The idea is that
                  totalSizeCap will be hit more frequently than maxHistory. -->
             <totalSizeCap>2048MB</totalSizeCap>
+            <cleanHistoryOnStart> true </cleanHistoryOnStart>
         </rollingPolicy>
         <encoder>
             <!-- %exception{full}: full stacktrace in log file.

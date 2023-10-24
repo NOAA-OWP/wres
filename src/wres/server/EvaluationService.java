@@ -35,16 +35,13 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.ws.rs.core.StreamingOutput;
-import jakarta.ws.rs.sse.OutboundSseEvent;
-import jakarta.ws.rs.sse.Sse;
-import jakarta.ws.rs.sse.SseEventSink;
+import org.glassfish.jersey.server.ChunkedOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -179,49 +176,53 @@ public class EvaluationService implements ServletContextListener
     }
 
     /**
-     * Redirect the standard out stream and return that to the user and sends out SSE for each line
+     * Redirect the standard out stream and return that to the user in a ChunkedOutput
      * @param id ID of the evaluation we are trying to track with this
      */
     @GET
     @Path( "/stdout/{id}" )
-    @Produces( MediaType.SERVER_SENT_EVENTS )
-    public void getOutStream( @PathParam( "id" ) Long id, @Context SseEventSink eventSink, @Context Sse sse )
+    public ChunkedOutput<String> getOutStream( @PathParam( "id" ) Long id )
     {
         //TODO Get the stream for the evaluation ID if we allow async executions in the future
         //TODO Possibly add evaluation status check here as well. No need to check now as you can have unlimited listeners
 
+        final ChunkedOutput<String> output = new ChunkedOutput<>(String.class);
+
         // Create new stream to redirect output to
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        PrintStream printStream = new PrintStream( byteArrayOutputStream, false, StandardCharsets.UTF_8 );
+        PrintStream printStream = new PrintStream( byteArrayOutputStream, true, StandardCharsets.UTF_8 );
 
-        // redirect the error stream
+        // redirect the out stream
         System.setOut( printStream );
 
-        // Start the SSE thread sending messages to the called sink for std out
-        startSSEThread( byteArrayOutputStream, eventSink, sse );
+        // Start the thread that will send the information from the byteArrayOutputStream to the output ChunkedOutput we are returning
+        startChunkedOutputThread( byteArrayOutputStream, output );
+        return output;
     }
 
     /**
-     * Redirect the standard err stream and return that to the user and sends out SSE for each line
+     * Redirect the standard err stream and return that to the user in a ChunkedOutput
      * @param id ID of the evaluation we are trying to track with this
      */
     @GET
     @Path( "/stderr/{id}" )
-    @Produces( MediaType.SERVER_SENT_EVENTS )
-    public void getErrorStream( @PathParam( "id" ) Long id, @Context SseEventSink eventSink, @Context Sse sse )
+    public ChunkedOutput<String> getErrorStream( @PathParam( "id" ) Long id )
     {
         //TODO Get the stream for the evaluation ID if we allow async executions in the future
         //TODO Possibly add evaluation status check here as well. No need to check now as you can have unlimited listeners
 
+        final ChunkedOutput<String> output = new ChunkedOutput<>(String.class);
+
         // Create new stream to redirect output to
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        PrintStream printStream = new PrintStream( byteArrayOutputStream );
+        PrintStream printStream = new PrintStream( byteArrayOutputStream, true, StandardCharsets.UTF_8 );
 
         // redirect the error stream
         System.setErr( printStream );
 
-        // Start the SSE thread sending messages to the called sink for std err
-        startSSEThread( byteArrayOutputStream, eventSink, sse );
+        // Start the thread that will send the information from the byteArrayOutputStream to the output ChunkedOutput we are returning
+        startChunkedOutputThread( byteArrayOutputStream, output );
+        return output;
     }
 
     /**
@@ -317,8 +318,6 @@ public class EvaluationService implements ServletContextListener
             // Checks if database information has changed in the jobMessage and swap to that database
             swapDatabaseIfNeeded( jobMessage );
 
-            LOGGER.info( "MONKEY: " + evaluator.toString() );
-
             // Print system setting at the top of the job log to help debug
             logJobHeaderInformation();
 
@@ -327,19 +326,16 @@ public class EvaluationService implements ServletContextListener
 
             logJobFinishInformation( jobMessage, result, beganExecution );
 
-            // If the result failed add the stack trace to the response and return
+            // If the result failed, print the stack trace and return the exception
             if ( result.failed() )
             {
+                // Print the stack exception so it is stored in the stdOut of the job
+                result.getException().printStackTrace();
+
                 evaluationStage.set( COMPLETED );
-
-                // Add failure stack trace to failed job entity
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                PrintStream printStream = new PrintStream( outputStream );
-                result.getException().printStackTrace( printStream );
-
                 return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                                .entity( "WRES experienced an internal issue. The top-level exception was:\n "
-                                        + outputStream )
+                                        + result.getException() )
                                .build();
             }
 
@@ -665,38 +661,39 @@ public class EvaluationService implements ServletContextListener
 
 
     /**
-     * Creates a thread that will send messages from the stream to the calling sink until the current project is marked closed
+     * Creates a thread that will send messages from the stream to the provided ChunkedOutput
      */
-    private void startSSEThread( ByteArrayOutputStream redirectStream, SseEventSink eventSink, Sse sse )
+    private void startChunkedOutputThread( ByteArrayOutputStream redirectStream, ChunkedOutput<String> output )
     {
-        // Start a thread that will send of SSEs until the current project has reached a closed state
         new Thread( () -> {
-            long offset = 0;
-            // While the evaluation hasn't completed continue pulling from the standard stream and sending to client
-            while ( !evaluationStage.get().equals( CLOSED ) )
-            {
-                ByteArrayInputStream byteArrayInputStream =
-                        new ByteArrayInputStream( redirectStream.toByteArray() );
-                // Skip the content in the message already sent
-                long skip = byteArrayInputStream.skip( offset );
-                String bytes = new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 );
+            try {
+                int offset = 0;
 
-                // If we skipped successfully and the resulting string isn't empty send SSE
-                if ( offset == skip && !bytes.isEmpty() )
+                while ( !evaluationStage.get().equals( CLOSED ) )
                 {
-                    offset += bytes.length();
-                    // TODO: Fix leading whitespace removal issue
-                    // https://github.com/spring-projects/spring-framework/issues/27473
-                    // There is an issue where all leading whitespace is not being removed instead of just the first space
-                    // convert the double space to tabs before sending this to the shim
-                    final OutboundSseEvent event = sse.newEventBuilder()
-                                                      .data( String.class, bytes.replaceAll( " {2}", "\t\t" ) )
-                                                      .build();
-                    eventSink.send( event );
+                    ByteArrayInputStream byteArrayInputStream =
+                            new ByteArrayInputStream( redirectStream.toByteArray() );
+                    // Skip the content in the message already sent
+                    long skip = byteArrayInputStream.skip( offset );
+                    String bytes = new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 );
+
+                    // If we skipped successfully and the resulting string isn't empty send SSE
+                    if ( offset == skip && !bytes.isEmpty() )
+                    {
+                        offset += bytes.length();
+                        output.write( bytes );
+                    }
+                }
+            } catch (IOException e){
+                e.printStackTrace();
+            }
+            finally {
+                try {
+                    output.close();
+                } catch (IOException e){
+                    e.printStackTrace();
                 }
             }
-            // Close the calling sink when evaluation is closed
-            eventSink.close();
         } ).start();
     }
 
