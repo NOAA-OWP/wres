@@ -58,7 +58,7 @@ plugins
     id 'com.adarshr.test-logger' version '4.0.0'
 
     // To discover library versions with known vulnerabilities
-    id 'org.owasp.dependencycheck' version '8.4.0'
+    id 'org.owasp.dependencycheck' version '8.4.2'
     
     // Task to assist in downloading artifacts
     id 'de.undercouch.download' version '5.5.0'
