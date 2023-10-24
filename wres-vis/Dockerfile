@@ -1,5 +1,5 @@
 # From a base image, make updates
-FROM registry.access.redhat.com/ubi8/ubi:8.8-1009
+FROM registry.access.redhat.com/ubi8/ubi:8.8-1067.1698056881
 
 RUN dnf install -y \
     java-17-openjdk-headless-1:17.0.8.0.7-2.el8 \
