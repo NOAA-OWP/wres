@@ -1,7 +1,7 @@
 FROM registry.access.redhat.com/ubi8/ubi:8.8-1067.1698056881
 
 RUN dnf install -y \
-    java-17-openjdk-headless-1:17.0.8.0.7-2.el8 \
+    java-17-openjdk-headless-1:17.0.9.0.9-2.el8 \
     unzip-6.0-46.el8 \
     procps-ng-3.3.15-13.el8 \
     iproute-5.18.0-1.1.el8_8 \
