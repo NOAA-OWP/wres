@@ -14,7 +14,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -24,14 +23,8 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Envelope;
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.ClientBuilder;
 
-import jakarta.ws.rs.core.GenericType;
-import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.sse.InboundSseEvent;
-import jakarta.ws.rs.sse.SseEventSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,9 +45,6 @@ class WresEvaluationProcessor implements Callable<Integer>
 
     private static final int META_FAILURE_CODE = 600;
 
-    /** Flag to indicate whether to also send output to system.out, system.err*/
-    private static final boolean STREAM_PASS_THROUGH = true;
-
     private static final String START_EVAL_URI = "http://localhost:%d/evaluation/start/%s";
 
     private static final String OPEN_EVAL_URI = "http://localhost:%d/evaluation/open";
@@ -65,10 +55,6 @@ class WresEvaluationProcessor implements Callable<Integer>
 
     private static final String MIGRATE_DATABASE_URI = "http://localhost:%d/evaluation/migrateDatabase";
 
-    private static final String STDOUT_URI = "http://localhost:%d/evaluation/stdout/%s";
-
-    private static final String STDERR_URI = "http://localhost:%d/evaluation/stderr/%s";
-
     private static final List<Integer> RETRY_STATES = List.of( Response.Status.REQUEST_TIMEOUT.getStatusCode() );
 
     private static final Duration CALL_TIMEOUT = Duration.ofMinutes( 2 );
@@ -76,22 +62,11 @@ class WresEvaluationProcessor implements Callable<Integer>
     /** Stream identifier. */
     public enum WhichStream
     {
-        /** Standard out. */
-        STDOUT,
-        /** Standard error. */
-        STDERR,
         /** job output files. */
         OUTPUT,
         /** Exit codes. */
-        EXITCODE;
-
+        EXITCODE
     }
-
-    /** Helps the consumer re-order the stdErr stream */
-    private final AtomicInteger stdErrorOrder = new AtomicInteger( 0 );
-
-    /** Helps the consumer re-order the stdOut stream */
-    private final AtomicInteger stdOutOrder = new AtomicInteger( 0 );
 
     private final String exchangeName;
     private final String jobId;
@@ -145,21 +120,6 @@ class WresEvaluationProcessor implements Callable<Integer>
         return this.connection;
     }
 
-    /**
-     * provides and atomic order for the SSE messages received for std out and error. This helps us order them on the client
-     */
-    private AtomicInteger getOrder( WhichStream whichStream )
-    {
-        if ( whichStream.equals( WhichStream.STDERR ) )
-        {
-            return this.stdErrorOrder;
-        }
-        else
-        {
-            return this.stdOutOrder;
-        }
-    }
-
     private Envelope getEnvelope()
     {
         return this.envelope;
@@ -201,7 +161,7 @@ class WresEvaluationProcessor implements Callable<Integer>
         }
 
         // Use one Thread per messenger:
-        ExecutorService executorService = Executors.newFixedThreadPool( 1 );
+        ExecutorService executorService = Executors.newFixedThreadPool( 3 );
 
         // Open an evaluation for work
         String evaluationId = prepareEvaluationId();
@@ -217,6 +177,24 @@ class WresEvaluationProcessor implements Callable<Integer>
             return META_FAILURE_CODE;
         }
 
+        // Set up way to publish the standard output of the process to broker
+        // and bind process outputs to message publishers
+        JobStandardStreamMessenger stdoutMessenger =
+                new JobStandardStreamMessenger( this.getConnection(),
+                                                this.getExchangeName(),
+                                                this.getJobId(),
+                                                JobStandardStreamMessenger.WhichStream.STDOUT,
+                                                this.getPort(),
+                                                evaluationId );
+
+        JobStandardStreamMessenger stderrMessenger =
+                new JobStandardStreamMessenger( this.getConnection(),
+                                                this.getExchangeName(),
+                                                this.getJobId(),
+                                                JobStandardStreamMessenger.WhichStream.STDERR,
+                                                this.getPort(),
+                                                evaluationId );
+
         // Send process aliveness messages, like a heartbeat.
         JobStatusMessenger statusMessenger =
                 new JobStatusMessenger( this.getConnection(),
@@ -224,29 +202,12 @@ class WresEvaluationProcessor implements Callable<Integer>
                                         this.getJobId(),
                                         this.getPort(),
                                         evaluationId );
+        executorService.submit( stdoutMessenger );
+        executorService.submit( stderrMessenger );
         executorService.submit( statusMessenger );
 
-        try ( Client client = ClientBuilder.newClient();
-              SseEventSource outSource = SseEventSource
-                      .target(
-                              client.target( String.format( STDOUT_URI, this.getPort(), evaluationId ) )
-                      ).build();
-              SseEventSource errSource = SseEventSource
-                      .target(
-                              client.target( String.format( STDERR_URI, this.getPort(), evaluationId ) )
-                      ).build()
-        )
+        try
         {
-            // Set up error and std out stream listeners
-            outSource.register( event -> this.sendMessage(
-                    prepareStdStreamMessage( event.readData( String.class ), WhichStream.STDOUT ),
-                    WhichStream.STDOUT ) );
-            errSource.register( event -> this.sendMessage(
-                    prepareStdStreamMessage( event.readData( String.class ), WhichStream.STDERR ),
-                    WhichStream.STDERR ) );
-            errSource.open();
-            outSource.open();
-
             int exitValue = META_FAILURE_CODE;
             // Check if the Job is to manipulate the database in some way
             if ( job.getVerb().equals( Job.job.Verb.CLEANDATABASE ) )
@@ -329,23 +290,6 @@ class WresEvaluationProcessor implements Callable<Integer>
             return META_FAILURE_CODE;
         }
 
-        // print project declaration now as it loses spacing when going to server
-        //TODO: THIS IS A WORK AROUND, LOOK INTO WHY POSTING THIS REMOVES SPACING
-        String projectDeclaration = String.format( "Project declaration:%s%s%s%s%s",
-                                                   System.lineSeparator(),
-                                                   "-----------------------",
-                                                   System.lineSeparator(),
-                                                   job.getProjectConfig(),
-                                                   System.lineSeparator() );
-
-        String startEvaluationMessages = String.format( "%sEvaluation Messages %s%s%s",
-                                                        System.lineSeparator(),
-                                                        System.lineSeparator(),
-                                                        "-----------------------",
-                                                        System.lineSeparator() );
-        this.sendMessage( prepareStdStreamMessage( projectDeclaration + startEvaluationMessages, WhichStream.STDOUT ),
-                          WhichStream.STDOUT );
-
         URI startEvalURI = URI.create( String.format( START_EVAL_URI, this.getPort(), evaluationId ) );
         LOGGER.info( String.format( "Starting evaluation: %s", startEvalURI ) );
 
@@ -356,19 +300,8 @@ class WresEvaluationProcessor implements Callable<Integer>
                                                                                 RETRY_STATES )
         )
         {
-            // The job failed for some reason
-            if ( clientResponse.getStatusCode() != 200 )
-            {
-                // The response was not good, post the resulting exception to the error listener
-                String stackTrace = new BufferedReader(
-                        new InputStreamReader( clientResponse.getResponse() ) )
-                        .lines().collect( Collectors.joining( "\n" ) );
-
-                this.sendMessage( prepareStdStreamMessage( stackTrace, WhichStream.STDERR ), WhichStream.STDERR );
-
-                LOGGER.warn( "Request failed out with the following stack:\n " + stackTrace );
-            }
-            else
+            // The job succeeded and sent output
+            if ( clientResponse.getStatusCode() == 200 )
             {
                 // Go through the output paths returned from the evaluation post request and send them to the broker
                 new BufferedReader(
@@ -499,42 +432,6 @@ class WresEvaluationProcessor implements Callable<Integer>
         {
             LOGGER.warn( "Sending the output to {} failed: {}", message, this.getRoutingKey( whichStream ), ioe );
         }
-    }
-
-    /**
-     * Prepares a message containing standard stream information
-     * @param line the stdStream message to send
-     * @param whichStream Whether this is stdOut or stdErr
-     * @return byte array to send
-     */
-    private byte[] prepareStdStreamMessage( String line, WhichStream whichStream )
-    {
-        int order = this.getOrder( whichStream ).getAndIncrement();
-
-        //TODO Remove double tab replace work around
-        String trimmedOutput = line.replaceAll( "\t{2}", "  " ).trim();
-
-        // Pass through messages so they appear in docker logs as well if true
-        if ( STREAM_PASS_THROUGH )
-        {
-            if ( whichStream.equals( WhichStream.STDERR ) )
-            {
-                LOGGER.error( trimmedOutput );
-            }
-            if ( whichStream.equals( WhichStream.STDOUT ) )
-            {
-                LOGGER.info( trimmedOutput );
-            }
-        }
-
-        wres.messages.generated.JobStandardStream.job_standard_stream message
-                = wres.messages.generated.JobStandardStream.job_standard_stream
-                .newBuilder()
-                .setIndex( order )
-                .setText( trimmedOutput )
-                .build();
-
-        return message.toByteArray();
     }
 
     /**
