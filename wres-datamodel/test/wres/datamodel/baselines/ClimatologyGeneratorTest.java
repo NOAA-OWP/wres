@@ -52,6 +52,8 @@ class ClimatologyGeneratorTest
     private TimeSeries<Double> climatology;
     /** A climatology generator. */
     private ClimatologyGenerator generator;
+    /** A climatology generator with a change of unit dimension from volumetric flow to volume. */
+    private ClimatologyGenerator volumeGenerator;
     /** variable name. */
     private static final String STREAMFLOW = "STREAMFLOW";
     /** Measurement unit. */
@@ -85,6 +87,10 @@ class ClimatologyGeneratorTest
         this.generator = ClimatologyGenerator.of( () -> Stream.of( this.climatology ),
                                                   TimeSeriesOfDoubleUpscaler.of(),
                                                   CMS );
+
+        this.volumeGenerator = ClimatologyGenerator.of( () -> Stream.of( this.climatology ),
+                                                        TimeSeriesOfDoubleUpscaler.of(),
+                                                        "[acr_br].[ft_i]" );
     }
 
     @Test
@@ -292,6 +298,43 @@ class ClimatologyGeneratorTest
         TimeSeries<Ensemble> expected =
                 new TimeSeries.Builder<Ensemble>().addEvent( Event.of( T1983_01_01T18_00_00Z, first ) )
                                                   .setMetadata( metadataOne )
+                                                  .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testApplyWithUpscalingFromVolumetricFlowToVolume()
+    {
+        // Forecast time scale
+        TimeScaleOuter existingTimeScale =
+                TimeScaleOuter.of( Duration.ofHours( 12 ), TimeScale.TimeScaleFunction.TOTAL );
+        TimeSeriesMetadata metadataOne = TimeSeriesMetadata.of( Map.of( ReferenceTime.ReferenceTimeType.UNKNOWN,
+                                                                        T1983_01_01T06_00_00Z ),
+                                                                existingTimeScale,
+                                                                STREAMFLOW,
+                                                                FAKE,
+                                                                CMS );
+
+        // Forecast, which does not overlap with climatology
+        TimeSeries<Ensemble> forecast =
+                new TimeSeries.Builder<Ensemble>().addEvent( Event.of( T1983_01_01T18_00_00Z, Ensemble.of( 1.0 ) ) )
+                                                  .setMetadata( metadataOne )
+                                                  .build();
+
+        TimeSeries<Ensemble> actual = this.volumeGenerator.apply( forecast );
+
+        Ensemble.Labels labelStrings = Ensemble.Labels.of( "1980", "1981", "1982" );
+
+        double[] one = new double[] { 11032.202514633556, 12187.957063785643, 12713.300040672957 };
+        Ensemble first = Ensemble.of( one, labelStrings );
+
+        TimeSeriesMetadata expectedMetadata = new TimeSeriesMetadata.Builder( metadataOne ).setUnit( "[acr_br].[ft_i]" )
+                                                                                           .build();
+
+        TimeSeries<Ensemble> expected =
+                new TimeSeries.Builder<Ensemble>().addEvent( Event.of( T1983_01_01T18_00_00Z, first ) )
+                                                  .setMetadata( expectedMetadata )
                                                   .build();
 
         assertEquals( expected, actual );
