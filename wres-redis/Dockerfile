@@ -1,4 +1,4 @@
-FROM redis:6.2.13-alpine3.18
+FROM redis:6.2.14-alpine3.18
 
 # See comments in main/worker/root wres Dockerfile
 # Instead, very manually create user and group:
