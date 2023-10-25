@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import javax.xml.XMLConstants;
 import javax.xml.bind.JAXBContext;
@@ -150,6 +151,11 @@ public class ProjectConfigPlus
     public static ProjectConfigPlus from( String rawConfig, String origin )
             throws IOException
     {
+        Objects.requireNonNull( rawConfig );
+
+        // Trim the string
+        rawConfig = rawConfig.trim();
+
         ProjectConfig projectConfig;
 
         ProjValidationEventHandler validationEventCollector = new ProjValidationEventHandler();

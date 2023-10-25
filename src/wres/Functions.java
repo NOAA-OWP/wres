@@ -124,14 +124,16 @@ final class Functions
         if ( LOGGER.isInfoEnabled() )
         {
             StringJoiner joiner = new StringJoiner( " " );
-            if ( !sharedResources.arguments()
-                                 .contains( operation ) )
+            if( Objects.nonNull( sharedResources ) )
             {
-                joiner.add( operation );
+                if ( !sharedResources.arguments()
+                                     .contains( operation ) )
+                {
+                    joiner.add( operation );
+                }
+                sharedResources.arguments()
+                               .forEach( joiner::add );
             }
-            sharedResources.arguments()
-                           .forEach( joiner::add );
-
             String report = Functions.curtail( joiner.toString() );
 
             LOGGER.info( "Executing: {}", report );
