@@ -43,6 +43,7 @@ import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 import org.yaml.snakeyaml.nodes.Tag;
+import org.yaml.snakeyaml.parser.ParserException;
 import org.yaml.snakeyaml.representer.Representer;
 import org.yaml.snakeyaml.resolver.Resolver;
 
@@ -361,10 +362,10 @@ public class DeclarationFactory
      * Deserializes a YAML string into a {@link JsonNode} for further processing.
      * @param yaml the yaml string
      * @return the node
-     * @throws JsonProcessingException if the string could not be deserialized
+     * @throws IOException if the string could not be deserialized
      */
 
-    static JsonNode deserialize( String yaml ) throws JsonProcessingException
+    static JsonNode deserialize( String yaml ) throws IOException
     {
         // Unfortunately, Jackson does not currently resolve anchors/references, despite using SnakeYAML under the
         // hood. Instead, use SnakeYAML to create a resolved string first. This is highly inefficient and undesirable
@@ -382,15 +383,22 @@ public class DeclarationFactory
                                    new CustomResolver() );
 
         // Deserialize with SnakeYAML
-        Object resolvedYaml = snakeYaml.load( yaml );
+        try
+        {
+            Object resolvedYaml = snakeYaml.load( yaml );
 
-        // Serialize
-        String resolvedYamlString =
-                DESERIALIZER.writerWithDefaultPrettyPrinter()
-                            .writeValueAsString( resolvedYaml );
+            // Serialize
+            String resolvedYamlString =
+                    DESERIALIZER.writerWithDefaultPrettyPrinter()
+                                .writeValueAsString( resolvedYaml );
 
-        // Deserialize with Jackson now that any anchors/references are resolved
-        return DESERIALIZER.readTree( resolvedYamlString );
+            // Deserialize with Jackson now that any anchors/references are resolved
+            return DESERIALIZER.readTree( resolvedYamlString );
+        }
+        catch ( ParserException e )
+        {
+            throw new IOException( "Failed to deserialize a YAML string.", e );
+        }
     }
 
     /**
