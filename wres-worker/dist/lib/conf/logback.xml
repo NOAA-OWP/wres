@@ -12,7 +12,7 @@
                  interleaving multiple users running wres at same time.
                  Does not prevent multiple instances of wres from interleaving. -->
             <!-- Roll over when a new day starts. -->
-            <fileNamePattern>/mnt/wres_share/logs/worker/wres-worker_${hostname}.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>/mnt/wres_share/logs/worker/${hostname}/wres-worker.%d{yyyy-MM-dd}.log</fileNamePattern>
             <!-- Keep at most 10 years of rolled files (see next comment) -->
             <maxHistory>3653</maxHistory>
 
