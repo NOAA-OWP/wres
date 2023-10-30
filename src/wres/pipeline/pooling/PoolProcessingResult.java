@@ -13,7 +13,7 @@ import wres.datamodel.pools.PoolRequest;
  * @author James Brown
  */
 
-class PoolProcessingResult
+public class PoolProcessingResult
 {
     enum Status
     {

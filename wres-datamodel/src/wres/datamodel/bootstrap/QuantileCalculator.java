@@ -28,6 +28,9 @@ import org.slf4j.LoggerFactory;
 import wres.config.MetricConstants;
 import wres.datamodel.MissingValues;
 import wres.datamodel.Slicer;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.ThresholdOuter;
+import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramMetric;
@@ -38,12 +41,18 @@ import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Pool;
 import wres.statistics.generated.Statistics;
 
 /**
  * Accepts sample quantiles as they are computed and, once all expected samples have been received, calculates the
  * quantiles of the sampling distribution that were requested on construction. Once calculated, the object becomes
- * "read only" so that no further samples can be added and {@link #get()} returns the calculated quantiles.
+ * "read only" so that no further samples can be added and {@link #get()} returns the calculated quantiles. Samples are
+ * added incrementally using {@link #add(List)}. Only those statistics for which corresponding statistics were available
+ * on construction will be incremented. In some cases, resampling may generate novel subsets of data and corresponding
+ * statistics that were not available for the original sample (e.g., because a minimum sample size constraint was
+ * exceeded for a high threshold when resampling). These statistics are logged, but ignored. In other words, the
+ * structure used to instantiate this class is the structure for which quantiles will be provided.
  *
  * @author James Brown
  */
@@ -156,7 +165,7 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
         }
 
         // Add the statistics
-        for( Statistics next : statistics )
+        for ( Statistics next : statistics )
         {
             // Add the double score statistics
             this.addDoubleScores( next.getScoresList(), index );
@@ -199,9 +208,12 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
                                                             component.getMetric()
                                                                      .getName() );
                 double[] samples = this.doubleScores.get( name );
+
                 // Check the slot exists
-                this.validateSlot( samples, name );
-                samples[index] = component.getValue();
+                if ( this.validateSlot( samples, name ) )
+                {
+                    samples[index] = component.getValue();
+                }
             }
         }
     }
@@ -225,9 +237,12 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
                                                                          .getName() );
 
                 Duration[] samples = this.durationScores.get( name );
+
                 // Check the slot exists
-                this.validateSlot( samples, name );
-                samples[index] = MessageFactory.parse( component.getValue() );
+                if ( this.validateSlot( samples, name ) )
+                {
+                    samples[index] = MessageFactory.parse( component.getValue() );
+                }
             }
         }
     }
@@ -251,12 +266,15 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
                                                              .getName(),
                                                     component.getName() );
                 double[][] samples = this.diagrams.get( name );
+
                 // Check the slot exists
-                this.validateSlot( samples, name );
-                int valuesCount = component.getValuesCount();
-                for ( int i = 0; i < valuesCount; i++ )
+                if ( this.validateSlot( samples, name ) )
                 {
-                    samples[i][index] = component.getValues( i );
+                    int valuesCount = component.getValuesCount();
+                    for ( int i = 0; i < valuesCount; i++ )
+                    {
+                        samples[i][index] = component.getValues( i );
+                    }
                 }
             }
         }
@@ -276,46 +294,78 @@ public class QuantileCalculator implements Supplier<List<Statistics>>
                                            .getName();
 
             Map<Instant, Duration[]> samples = this.durationDiagrams.get( metricName );
+
             // Check the slot exists
-            this.validateSlot( samples, metricName );
-            int valuesCount = diagram.getStatisticsCount();
-            for ( int i = 0; i < valuesCount; i++ )
+            if ( this.validateSlot( samples, metricName ) )
             {
-                DurationDiagramStatistic.PairOfInstantAndDuration statistic = diagram.getStatistics( i );
-                Instant instant = MessageFactory.parse( statistic.getTime() );
-                Duration duration = MessageFactory.parse( statistic.getDuration() );
-                Duration[] durations = samples.get( instant );
-
-                // Slot doesn't exist, but this is a special case where mutation is allowed because the reference times
-                // present in duration diagrams can vary with each resample, depending on how thresholds slice their
-                // corresponding time-series
-                if ( Objects.isNull( durations ) )
+                int valuesCount = diagram.getStatisticsCount();
+                for ( int i = 0; i < valuesCount; i++ )
                 {
-                    durations = new Duration[this.sampleCount];
-                    samples.put( instant, durations );
-                }
+                    DurationDiagramStatistic.PairOfInstantAndDuration statistic = diagram.getStatistics( i );
+                    Instant instant = MessageFactory.parse( statistic.getTime() );
+                    Duration duration = MessageFactory.parse( statistic.getDuration() );
+                    Duration[] durations = samples.get( instant );
 
-                durations[index] = duration;
+                    // Slot doesn't exist, but this is a special case where mutation is allowed because the reference times
+                    // present in duration diagrams can vary with each resample, depending on how thresholds slice their
+                    // corresponding time-series
+                    if ( Objects.isNull( durations ) )
+                    {
+                        durations = new Duration[this.sampleCount];
+                        samples.put( instant, durations );
+                    }
+
+                    durations[index] = duration;
+                }
             }
         }
     }
 
     /**
-     * Throws an exception in encountering an empty slot for a statistic received at runtime.
+     * Logs statistics for which a slot was unavailable on construction.
      * @param slot the slot data to check for nullity
      * @param name the name of the statistic
+     * @return whether the slot is available
      */
-    private void validateSlot( Object slot, Object name )
+    private boolean validateSlot( Object slot, Object name )
     {
-        if ( Objects.isNull( slot ) )
+        if ( Objects.isNull( slot )
+             && LOGGER.isDebugEnabled() )
         {
-            throw new ResamplingException( "Encountered an internal error when conducting quantile "
-                                           + "estimation. Could not find a slot in the quantile calculator "
-                                           + "for a supplied statistic: "
-                                           + name
-                                           + ". This probably occurred because the quantile calculator was not "
-                                           + "instantiated with all required statistics." );
+            Pool pool;
+            if ( this.nominal.hasPool() )
+            {
+                pool = this.nominal.getPool();
+            }
+            else
+            {
+                pool = this.nominal.getBaselinePool();
+            }
+
+            TimeWindowOuter timeWindow = TimeWindowOuter.of( pool.getTimeWindow() );
+            OneOrTwoThresholds thresholds;
+
+            ThresholdOuter eventThreshold = ThresholdOuter.of( pool.getEventThreshold() );
+            if ( pool.hasDecisionThreshold() )
+            {
+                ThresholdOuter decisionThreshold = ThresholdOuter.of( pool.getDecisionThreshold() );
+                thresholds = OneOrTwoThresholds.of( eventThreshold, decisionThreshold );
+            }
+            else
+            {
+                thresholds = OneOrTwoThresholds.of( eventThreshold );
+            }
+
+            LOGGER.debug( "When estimating quantiles for time window {} and threshold {}, encountered resampled "
+                          + "statistics for the {}, which were not available for the original dataset. This can happen "
+                          + "when the resampled data meets a constraint that was not met for the original data, such "
+                          + "as a minimum sample size constraint. These statistics will not contribute to the sampling "
+                          + "uncertainty estimates. Quantiles are only estimated for the subsets of data that produced "
+                          + "nominal statistics and not for any novel subsets of data or statistics created upon "
+                          + "resampling.", timeWindow, thresholds, name );
         }
+
+        return Objects.nonNull( slot );
     }
 
     /**
