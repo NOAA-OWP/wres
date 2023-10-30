@@ -33,7 +33,6 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 class PersistenceGeneratorTest
 {
-
     private static final String STREAMFLOW = "STREAMFLOW";
     private static final String CMS = "CMS";
     private static final String DISCHARGE = "DISCHARGE";
@@ -694,6 +693,56 @@ class PersistenceGeneratorTest
 
         TimeSeries<Double> expected = new Builder<Double>().addEvent( Event.of( T2551_03_18T18_00_00Z, 3.0 ) )
                                                            .addEvent( Event.of( T2551_03_18T21_00_00Z, 6.0 ) )
+                                                           .setMetadata( newMetadata )
+                                                           .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testApplyToSimulationsWithUpscalingFromVolumetricFlowToVolume()
+    {
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
+                                                             TimeScaleOuter.of( Duration.ofHours( 1 ),
+                                                                                TimeScaleFunction.MEAN ),
+                                                             STREAMFLOW,
+                                                             FAKE2,
+                                                             CMS );
+
+        TimeSeries.Builder<Double> series = new Builder<Double>().addEvent( Event.of( T2551_03_18T12_00_00Z, 1.0 ) )
+                                                                 .addEvent( Event.of( T2551_03_18T13_00_00Z, 2.0 ) )
+                                                                 .addEvent( Event.of( T2551_03_18T14_00_00Z, 3.0 ) )
+                                                                 .addEvent( Event.of( T2551_03_18T15_00_00Z, 4.0 ) )
+                                                                 .addEvent( Event.of( T2551_03_18T16_00_00Z, 5.0 ) )
+                                                                 .addEvent( Event.of( T2551_03_18T17_00_00Z, 6.0 ) )
+                                                                 .addEvent( Event.of( T2551_03_18T18_00_00Z, 7.0 ) )
+                                                                 .addEvent( Event.of( T2551_03_18T19_00_00Z, 8.0 ) )
+                                                                 .addEvent( Event.of( T2551_03_18T20_00_00Z, 9.0 ) )
+                                                                 .addEvent( Event.of( T2551_03_18T21_00_00Z, 10.0 ) )
+                                                                 .setMetadata( metadata );
+
+        PersistenceGenerator<Double> generator = PersistenceGenerator.of( () -> Stream.of( series.build() ),
+                                                                          TimeSeriesOfDoubleUpscaler.of(),
+                                                                          Double::isFinite,
+                                                                          "[acr_br].[ft_i]" );
+
+        TimeSeriesMetadata newMetadata = TimeSeriesMetadata.of( Map.of(),
+                                                                TimeScaleOuter.of( Duration.ofHours( 3 ),
+                                                                                   TimeScaleFunction.TOTAL ),
+                                                                STREAMFLOW,
+                                                                FAKE2,
+                                                                "[acr_br].[ft_i]" );
+
+        TimeSeries<Double> toGenerate = new Builder<Double>().addEvent( Event.of( T2551_03_18T15_00_00Z, 1.0 ) )
+                                                             .addEvent( Event.of( T2551_03_18T18_00_00Z, 1.0 ) )
+                                                             .addEvent( Event.of( T2551_03_18T21_00_00Z, 1.0 ) )
+                                                             .setMetadata( newMetadata )
+                                                             .build();
+
+        TimeSeries<Double> actual = generator.apply( toGenerate );
+
+        TimeSeries<Double> expected = new Builder<Double>().addEvent( Event.of( T2551_03_18T18_00_00Z, 26.26714884436561 ) )
+                                                           .addEvent( Event.of( T2551_03_18T21_00_00Z, 52.53429768873122 ) )
                                                            .setMetadata( newMetadata )
                                                            .build();
 

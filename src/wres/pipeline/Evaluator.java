@@ -108,7 +108,7 @@ public class Evaluator
         }
         catch ( IOException e )
         {
-            LOGGER.error( "Failed to unmarshal evaluation declaration from command line argument.", e );
+            LOGGER.error( "Failed to read an evaluation declaration from the command line argument.", e );
             UserInputException translated = new UserInputException( "The evaluation declaration was invalid.", e );
             failure.setFailed();
             failure.commit();

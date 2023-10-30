@@ -117,7 +117,7 @@ public class DeclarationValidator
      * @param yaml a declaration string
      * @return any validation events encountered
      * @throws NullPointerException if the input string is null
-     * @throws IOException if the declaration or schema could not be read
+     * @throws IOException if the schema could not be read
      */
 
     public static Set<EvaluationStatusEvent> validate( String yaml ) throws IOException
@@ -134,7 +134,25 @@ public class DeclarationValidator
         }
 
         // Get the declaration node
-        JsonNode declaration = DeclarationFactory.deserialize( yaml );
+        JsonNode declaration;
+
+        try
+        {
+            declaration = DeclarationFactory.deserialize( yaml );
+        }
+        catch ( IOException e )
+        {
+            EvaluationStatusEvent error =
+                    EvaluationStatusEvent.newBuilder()
+                                         .setStatusLevel( StatusLevel.ERROR )
+                                         .setEventMessage( "Encountered invalid YAML: please fix the YAML and try "
+                                                           + "again. The cause of the error was: \n"
+                                                           + e.getCause()
+                                                              .getMessage() )
+                                         .build();
+
+            return Set.of( error );
+        }
 
         // Get the schema
         JsonSchema schema = DeclarationFactory.getSchema();

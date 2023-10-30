@@ -1815,6 +1815,45 @@ class DeclarationValidatorTest
                                                        StatusLevel.ERROR ) );
     }
 
+    @Test
+    void testInvalidYamlProducesError() throws IOException
+    {
+        // #120626: invalid spacing of minimum_exclusive
+        String evaluation = """
+                label: NWM AnA Test
+                observed:
+                  label: USGS NWIS Instantaneous Streamflow Observations
+                  sources:
+                  - interface: usgs nwis
+                    uri: https://nwis.waterservices.usgs.gov/nwis/iv
+                  variable: '00060'
+                predicted:
+                  label: WRES NWM AnA
+                  sources:
+                  - interface: wrds nwm
+                    uri: https://foo/api/nwm2.1/v2.0/ops/analysis_assim/
+                    parameters:
+                      unassimilated: 'true'
+                  variable: streamflow
+                unit: ft3/s
+                valid_dates:
+                  minimum: '2023-09-04T00:00:00Z'
+                  maximum: '2023-09-14T19:43:24Z'
+                analysis_durations:
+                    minimum_exclusive: -2
+                  maximum: 0
+                  unit: hours
+                feature_service:
+                  uri: https://foo/api/location/v3.0/metadata
+                  """;
+
+        Set<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
+
+        assertTrue( DeclarationValidatorTest.contains( List.copyOf( events ),
+                                                       "invalid YAML",
+                                                       StatusLevel.ERROR ) );
+    }
+
     /**
      * @param events the events to check
      * @param message the message sequence that should appear in one or more messages
