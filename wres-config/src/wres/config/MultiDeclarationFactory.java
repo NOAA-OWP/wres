@@ -213,7 +213,9 @@ public class MultiDeclarationFactory
         // the second check deals with a correctly detected content type.
         return declarationString.startsWith( "<project" )
                || ( "application".equals( mediaType.getType() )
-                    && "xml".equals( mediaType.getSubtype() ) );
+                    && "xml".equals( mediaType.getSubtype() ) )
+               || declarationString.trim()
+                                   .startsWith( "<?xml" ); // When tika fails
     }
 
     /**

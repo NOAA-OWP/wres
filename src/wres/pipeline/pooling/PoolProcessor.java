@@ -558,7 +558,29 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                     DatasetOrientation orientation = nextOrientation.getKey();
                     List<Statistics> nextStatistics = nextOrientation.getValue();
                     QuantileCalculator calculator = orientedCalculators.get( orientation );
-                    calculator.add( nextStatistics );
+
+                    // Quantile calculator available?
+                    if ( Objects.nonNull( calculator ) )
+                    {
+                        calculator.add( nextStatistics );
+                    }
+                    // Log a missing quantile calculator, which can happen when resampling generates novel data for
+                    // which nominal statistics were unavailable. This is rare, but can happen, for example, when a
+                    // minimum sample size is required for the nominal statistics and the resampled pairs meets the
+                    // condition, but the nominal pairs do not
+                    else if ( LOGGER.isDebugEnabled() )
+                    {
+                        LOGGER.debug( "Discovered sample statistics for which a quantile calculator was unavailable."
+                                      + " This can happen when resampling produces a dataset that meets some "
+                                      + "constraint (e.g., a minimum sample size) that was not met for the dataset "
+                                      + "that produced the nominal statistics and for which the quantiles are "
+                                      + "calculated. These statistics will not contribute towards sampling uncertainty "
+                                      + "estimation. The pool metadata is: {}. The quantile calculator was missing for "
+                                      + "threshold {} and dataset orientation {}.",
+                                      this.poolRequest.getMetadata(),
+                                      nextThreshold,
+                                      orientation );
+                    }
                 }
             }
         }
