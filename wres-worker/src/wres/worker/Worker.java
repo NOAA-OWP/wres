@@ -38,6 +38,12 @@ public class Worker
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( Worker.class );
     private static final String RECV_QUEUE_NAME = "wres.job";
+
+    /**
+     * This code is used to signal something happened to the worker-server mid-evaluation.
+     * We return this code instead of an exception so we can dequeue the job that likely caused this
+     */
+    private static final int META_FAILURE_CODE = 600;
     private static volatile boolean killed = false;
 
     /** A formatable string to compose the heartbeat request to the server */
@@ -126,15 +132,26 @@ public class Worker
                     else
                     {
                         // Launch WRES if the consumer found a message saying so.
-                        wresEvaluationProcessor.call();
+                        Integer responseCode = wresEvaluationProcessor.call();
                         // Ack that this shim got and processed the message from the queue and remove that message
                         receiveChannel.basicAck( wresEvaluationProcessor.getDeliveryTag(), false );
+
+                        // Something happened to the worker-server while evaluating, look for meta failure and throw exception
+                        // We do this instead of passing the exception to be able to dequeue the job that caused this
+                        if ( responseCode == META_FAILURE_CODE ) {
+                            throw new EvaluationProcessingException( "Something happened to the worker-server while processing the evaluation" );
+                        }
                     }
                 }
             }
 
             // When we break from this while loop it means the worker-shim is killed, kill its server too
             killServerProcess( serverProcess );
+        }
+        catch ( EvaluationProcessingException epe )
+        {
+            LOGGER.error( "There was an issue with the server while processing an evaluation" );
+            throw epe;
         }
         catch ( IOException | TimeoutException | InterruptedException e )
         {
