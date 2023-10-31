@@ -65,7 +65,9 @@ class WresEvaluationProcessor implements Callable<Integer>
         /** job output files. */
         OUTPUT,
         /** Exit codes. */
-        EXITCODE
+        EXITCODE,
+
+        STDOUT
     }
 
     private final String exchangeName;
@@ -232,13 +234,22 @@ class WresEvaluationProcessor implements Callable<Integer>
             closeEvaluation();
             return exitValue;
         }
+        // There was a meta exception processing an evaluation and the server is in a bad state
+        // return meta failure code so the container can be restarted and job dequeued
         catch ( EvaluationProcessingException epe )
         {
-            LOGGER.warn( String.format( "Failed to finish the evaluation for job: %s with log: \n %s", jobId, epe ) );
+            String error = "!!!!----------------------------------------------------------------------------------!!!!\n\n"
+                    + "This Evaluation has failed due to an unrecoverable issue within the WRES system.\n"
+                    + "This is indicative of something bad happening within our system and you should reach out to the wres team.\n"
+                    + "Open a wres-user support ticket and the team can help you determine the root cause\n"
+                           + "https://vlab.***REMOVED***/redmine/projects/wres-user-support/issues/new\n\n"
+                    +  "!!!!----------------------------------------------------------------------------------!!!!\n";
+            this.sendMessage( prepareStdStreamMessage( error ), WhichStream.STDOUT );
+
+            LOGGER.error( String.format( "Failed to finish the evaluation for job: %s with log: \n %s", jobId, epe ) );
             byte[] response = WresEvaluationProcessor.prepareMetaFailureResponse( epe );
             this.sendMessage( response, WhichStream.EXITCODE );
             WresEvaluationProcessor.shutdownExecutor( executorService );
-            closeEvaluation();
             return META_FAILURE_CODE;
         }
     }
@@ -404,6 +415,18 @@ class WresEvaluationProcessor implements Callable<Integer>
     private static byte[] prepareMetaFailureResponse( Exception e )
     {
         return WresEvaluationProcessor.prepareExitResponse( META_FAILURE_CODE, e.toString() );
+    }
+
+    private static byte[] prepareStdStreamMessage( String line )
+    {
+        LOGGER.info( line );
+        wres.messages.generated.JobStandardStream.job_standard_stream message
+                = wres.messages.generated.JobStandardStream.job_standard_stream
+                .newBuilder()
+                .setText( line )
+                .build();
+
+        return message.toByteArray();
     }
 
     /**
