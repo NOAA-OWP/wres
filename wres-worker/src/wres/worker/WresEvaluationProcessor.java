@@ -239,9 +239,9 @@ class WresEvaluationProcessor implements Callable<Integer>
         catch ( EvaluationProcessingException epe )
         {
             String error = "!!!!----------------------------------------------------------------------------------!!!!\n\n"
-                    + "This Evaluation has failed due to an unrecoverable issue within the WRES system.\n"
-                    + "This is indicative of something bad happening within our system and you should reach out to the wres team.\n"
-                    + "Open a wres-user support ticket and the team can help you determine the root cause\n"
+                    + "This evaluation has failed due to an unrecoverable problem within the WRES.\n"
+                    + "Please do not resubmit your evaluation.\n"
+                    + "Instead, please report this issue by opening a ticket in the WRES User Support project:\n"
                            + "https://vlab.***REMOVED***/redmine/projects/wres-user-support/issues/new\n\n"
                     +  "!!!!----------------------------------------------------------------------------------!!!!\n";
             this.sendMessage( prepareStdStreamMessage( error ), WhichStream.STDOUT );
