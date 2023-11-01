@@ -58,7 +58,7 @@ public class SettingsFactory
             // Apply database overrides
             applyDatabaseSystemPropertyOverrides( databaseBuilder );
             String jdbcUrl;
-            if ( ( jdbcUrl = systemSettings.getDatabaseConfiguration().getJdbcUrl() ) != null )
+            if ( ( jdbcUrl = databaseBuilder.build().getJdbcUrl() ) != null )
             {
                 overrideDatabaseAttributesUsingJdbcUrl( databaseBuilder, jdbcUrl );
             }
