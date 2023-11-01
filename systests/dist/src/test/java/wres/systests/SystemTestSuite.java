@@ -10,8 +10,10 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.time.Duration;
 
+import wres.io.database.ConnectionSupplier;
 import wres.io.database.Database;
 import wres.io.database.DatabaseOperations;
+import wres.system.SettingsFactory;
 import wres.system.SystemSettings;
 
 @RunWith( SystemTestsSuiteRunner.class )
@@ -102,12 +104,12 @@ public class SystemTestSuite
     @BeforeClass
     public static void runBeforeAllTests() throws SQLException
     {
-        SystemSettings systemSettings = SystemSettings.fromDefaultClasspathXmlFile();
-        if ( !systemSettings.isInMemory() )
+        SystemSettings systemSettings = SettingsFactory.createSettingsFromDefaultXml();
+        if ( systemSettings.isUseDatabase() )
         {
             String dbName = System.getProperty( "wres.databaseName" );
             LOGGER.info( "Cleaning the test database instance {}...", dbName );
-            Database database = new Database( systemSettings );
+            Database database = new Database( new ConnectionSupplier( systemSettings ) );
             Instant started = Instant.now();
             DatabaseOperations.cleanDatabase( database );
             Instant stopped = Instant.now();
