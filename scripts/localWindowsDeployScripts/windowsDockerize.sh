@@ -43,7 +43,7 @@
 
 # Attempt to auto-detect the versions needed.
 all_versions=$( scripts/localWindowsDeployScripts/windowsVersions.sh )
-echo all_versions
+echo "$all_versions"
 overall_version=$( echo "$all_versions" | grep "^Main version" | cut -d' ' -f3 )
 tasker_version=$( echo "$all_versions" | grep "^wres-tasker version" | cut -d' ' -f3 )
 broker_version=$( echo "$all_versions" | grep "^wres-broker version" | cut -d' ' -f3 )
@@ -100,7 +100,6 @@ echo "Built wres/wres-redis:$redis_version -- $redis_image_id"
 # Build and tag the eventsbroker image
 echo "Building events broker image..."
 pushd wres-eventsbroker
-echo "$( docker build --build-arg version=$eventsbroker_version --quiet --tag wres/wres-eventsbroker:$eventsbroker_version . )"
 eventsbroker_image_id=$( docker build --build-arg version=$eventsbroker_version --quiet --tag wres/wres-eventsbroker:$eventsbroker_version . )
 popd
 

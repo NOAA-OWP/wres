@@ -26,6 +26,7 @@ public class WrdsAhpsTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WrdsAhpsTest.class );
     private static final String WRDS_HOSTNAME;
+    private static final Duration MAX_RETRY_DURATION = Duration.ofMinutes( 20 );
 
     static
     {
@@ -71,7 +72,8 @@ public class WrdsAhpsTest
         List<Integer> retryOnThese = Collections.emptyList();
 
         try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_AHPS_URI_ONE,
-                                                                         retryOnThese ) )
+                                                                         retryOnThese,
+                                                                         MAX_RETRY_DURATION) )
         {
             assertAll( () -> assertTrue( response.getStatusCode() >= 200
                                          && response.getStatusCode() < 300,
@@ -88,7 +90,8 @@ public class WrdsAhpsTest
         List<Integer> retryOnThese = Collections.emptyList();
 
         try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_AHPS_URI_TWO,
-                                                                         retryOnThese ) )
+                                                                         retryOnThese,
+                                                                         MAX_RETRY_DURATION) )
         {
             ForecastResponse document = OBJECT_MAPPER.readValue( response.getResponse(),
                                                                  ForecastResponse.class );

@@ -24,6 +24,7 @@ public class NwisTest
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
     private static final URI NWIS_URI_ONE = URI.create( "https://nwis.waterservices.usgs.gov/nwis/iv/?format=json&indent=on&sites=09165000&parameterCd=00060&startDT=2018-10-01T00:00:00Z&endDT=2018-10-07T23:59:59Z" );
     private static final URI NWIS_URI_TWO = URI.create( "https://nwis.waterservices.usgs.gov/nwis/iv/?format=json&indent=on&sites=01631000&parameterCd=00060&startDT=2020-03-01T00:00:00Z&endDT=2020-04-30T23:59:59Z" );
+    private static final Duration MAX_RETRY_DURATION = Duration.ofMinutes( 20 );
 
     @Test
     void canGetMinimalResponseFromNwisWithWebClient() throws IOException
@@ -31,7 +32,8 @@ public class NwisTest
         List<Integer> retryOnThese = Collections.emptyList();
 
         try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( NWIS_URI_ONE,
-                                                                         retryOnThese ) )
+                                                                         retryOnThese,
+                                                                         MAX_RETRY_DURATION) )
         {
             assertAll( () -> assertTrue( response.getStatusCode() >= 200
                                          && response.getStatusCode() < 300,
@@ -51,7 +53,8 @@ public class NwisTest
 
         // GET
         try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( NWIS_URI_TWO,
-                                                                         retryOnThese ) )
+                                                                         retryOnThese,
+                                                                         MAX_RETRY_DURATION) )
         {
             // Parse
             Response document = OBJECT_MAPPER.readValue( response.getResponse(),
