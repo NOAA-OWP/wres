@@ -37,8 +37,10 @@ import wres.pipeline.Evaluator;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.events.broker.BrokerUtilities;
 import wres.eventsbroker.embedded.EmbeddedBroker;
+import wres.io.database.ConnectionSupplier;
 import wres.io.database.Database;
 import wres.io.database.DatabaseOperations;
+import wres.system.SettingsFactory;
 import wres.system.SystemSettings;
 
 /**
@@ -61,17 +63,16 @@ public class ScenarioHelper
 
     private static final String USUAL_EVALUATION_FILE_NAME = "evaluation.yml";
     private static final String DEPRECATED_EVALUATION_FILE_NAME = "project_config.xml";
-    private static final SystemSettings SYSTEM_SETTINGS = SystemSettings.fromDefaultClasspathXmlFile();
+    private static final SystemSettings SYSTEM_SETTINGS = SettingsFactory.createSettingsFromDefaultXml();
     private static final Database DATABASE;
 
     static
     {
-        if ( !SYSTEM_SETTINGS.isInMemory() )
+        if ( SYSTEM_SETTINGS.isUseDatabase() )
         {
-            DATABASE = new Database( SYSTEM_SETTINGS );
+            DATABASE = new Database( new ConnectionSupplier( SYSTEM_SETTINGS ) );
 
-            if ( SYSTEM_SETTINGS.getDatabaseSettings()
-                                .getAttemptToMigrate() )
+            if ( DATABASE.getAttemptToMigrate() )
             {
                 try
                 {
