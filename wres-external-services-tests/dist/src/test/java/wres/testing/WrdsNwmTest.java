@@ -26,6 +26,7 @@ import wres.http.WebClient;
 public class WrdsNwmTest
 {
     private static final String WRDS_HOSTNAME;
+    private static final Duration MAX_RETRY_DURATION = Duration.ofMinutes( 20 );
 
     static
     {
@@ -73,7 +74,8 @@ public class WrdsNwmTest
         List<Integer> retryOnThese = Collections.emptyList();
 
         try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_NWM_URI_ONE,
-                                                                         retryOnThese ) )
+                                                                         retryOnThese,
+                                                                         MAX_RETRY_DURATION) )
         {
             assertAll( () -> assertTrue( response.getStatusCode() >= 200
                                          && response.getStatusCode() < 300,
@@ -92,7 +94,8 @@ public class WrdsNwmTest
         NwmRootDocument document;
 
         try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_NWM_URI_TWO,
-                                                                         retryOnThese ) )
+                                                                         retryOnThese,
+                                                                         MAX_RETRY_DURATION) )
         {
             // Parse the stream in the way WrdsNwmReader parses a document:
             document = JSON_OBJECT_MAPPER.readValue( response.getResponse(),
