@@ -791,7 +791,7 @@ public class EvaluationService implements ServletContextListener
         if ( LOGGER.isInfoEnabled() )
         {
             LOGGER.info( Main.getVersionDescription() );
-            LOGGER.info( Main.getVerboseRuntimeDescription() );
+            LOGGER.info( Main.getVerboseRuntimeDescription( systemSettings ) );
         }
     }
 
@@ -807,22 +807,22 @@ public class EvaluationService implements ServletContextListener
         String databasePort = job.getDatabasePort();
 
         DatabaseSettings databaseConfiguration = systemSettings.getDatabaseConfiguration();
-        DatabaseSettings.DatabaseSettingsBuilder builder = databaseConfiguration.toBuilder();
+        DatabaseSettings.DatabaseSettingsBuilder databaseBuilder = databaseConfiguration.toBuilder();
 
         // Attempt to apply any changes detected
         if ( !databaseName.isEmpty() && !databaseName.equals( databaseConfiguration.getDatabaseName() ) )
         {
-            builder.databaseName( databaseName );
+            databaseBuilder.databaseName( databaseName );
             databaseChangeDetected = true;
         }
         if ( !databaseHost.isEmpty() && !databaseHost.equals( databaseConfiguration.getHost() ) )
         {
-            builder.host( databaseHost );
+            databaseBuilder.host( databaseHost );
             databaseChangeDetected = true;
         }
         if ( !databasePort.isEmpty() && !databasePort.equals( String.valueOf( databaseConfiguration.getPort() ) ) )
         {
-            builder.port( Integer.parseInt( databasePort ) );
+            databaseBuilder.port( Integer.parseInt( databasePort ) );
             databaseChangeDetected = true;
         }
 
@@ -830,15 +830,13 @@ public class EvaluationService implements ServletContextListener
         if ( databaseChangeDetected )
         {
             // DatabaseSettings have fields that are conditionally created in respect to host, port, and name; update those here
-            String passwordOverrides = SettingsFactory.getPasswordOverrides( builder.build() );
+            String passwordOverrides = SettingsFactory.getPasswordOverrides( databaseBuilder.build() );
             if ( passwordOverrides != null )
             {
-                builder.password( passwordOverrides );
+                databaseBuilder.password( passwordOverrides );
             }
 
-            builder.dataSourceProperties( SettingsFactory.createDatasourceProperties( builder.build() ) );
-
-            systemSettings = systemSettings.toBuilder().databaseConfiguration( builder.build() ).build();
+            systemSettings = systemSettings.toBuilder().databaseConfiguration( databaseBuilder.build() ).build();
 
             if ( systemSettings.isUseDatabase() )
             {

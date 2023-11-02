@@ -35,32 +35,6 @@ import lombok.experimental.NonFinal;
 public class DatabaseSettings
 {
 
-    //TODO: Moved this to the test that failed form this, doesnt seem to have a use in this POJO anymore, remove if true
-
-//    // Initialize all available driver classes for known databases. Strictly, this should not be necessary for JDBC 4.0+
-//    // drivers, which should be loaded automatically. However, #103770 suggests otherwise in some environments or class
-//    // loading contexts.
-//    private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseSettings.class );
-//
-//    static
-//    {
-//        for ( DatabaseType nextType : DatabaseType.values() )
-//        {
-//            try
-//            {
-//                Class.forName( nextType.getDriverClassName() );
-//            }
-//            catch ( ClassNotFoundException classError )
-//            {
-//                LOGGER.debug( "Failed to load the database driver class {}.", nextType.getDriverClassName() );
-//            }
-//        }
-//    }
-
-    /** From databaseType to the properties for its DataSource */
-    @Builder.Default
-    Map<DatabaseType, Properties> dataSourceProperties = null;
-
     /**
      * When the jdbcUrl is specified, it takes precedence over the fields used
      * to programmatically generate a jdbcUrl. The alternative to specifying a

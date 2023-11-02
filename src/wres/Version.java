@@ -1,6 +1,5 @@
 package wres;
 
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.SortedSet;
@@ -10,7 +9,6 @@ import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.server.EvaluationService;
 import wres.system.DatabaseSettings;
 import wres.system.SystemSettings;
 
@@ -83,7 +81,7 @@ public class Version
      * @return lots of runtime information
      */
 
-    public String getVerboseRuntimeDescription()
+    public String getVerboseRuntimeDescription( SystemSettings systemSettings )
     {
         StringJoiner s = new StringJoiner( "; " );
 
@@ -100,9 +98,8 @@ public class Version
 
         //Remove password information from the System Settings
         DatabaseSettings.DatabaseSettingsBuilder databaseBuilder =
-                this.systemSettings.getDatabaseConfiguration().toBuilder();
+                systemSettings.getDatabaseConfiguration().toBuilder();
         databaseBuilder.password( "[Omitted]" );
-        databaseBuilder.dataSourceProperties( new HashMap<>() );
 
         final String MIB = "MiB";
         final long MEGABYTE = 1024 * 1024;
@@ -110,11 +107,11 @@ public class Version
         s.add( "Max Memory: " + ( runtime.maxMemory() / MEGABYTE ) + MIB );
         s.add( "Free Memory: " + ( runtime.freeMemory() / MEGABYTE ) + MIB );
         s.add( "Total Memory: " + ( runtime.totalMemory() / MEGABYTE ) + MIB );
-        s.add( "WRES System Settings: " + this.systemSettings.toBuilder()
-                                                             .databaseConfiguration( databaseBuilder.build() )
-                                                             .build() );
+        s.add( "WRES System Settings: " + systemSettings.toBuilder()
+                                                        .databaseConfiguration( databaseBuilder.build() )
+                                                        .build() );
         s.add( "Java System Properties: " + firstProperty );
-        
+
         for ( String propertyName : sortedPropertyNames )
         {
             String lowerCaseName = propertyName.toLowerCase();

@@ -62,7 +62,7 @@ public class Main
         if ( LOGGER.isInfoEnabled() )
         {
             LOGGER.info( Main.getVersionDescription() );
-            LOGGER.info( Main.getVerboseRuntimeDescription() );
+            LOGGER.info( Main.getVerboseRuntimeDescription( SYSTEM_SETTINGS ) );
         }
 
         // Default to help function, -h
@@ -384,11 +384,12 @@ public class Main
     }
 
     /**
+     * @param systemSettings The SystemSettings to print information on
      * @return a verbose runtime description
      */
 
-    public static String getVerboseRuntimeDescription()
+    public static String getVerboseRuntimeDescription( SystemSettings systemSettings )
     {
-        return version.getVerboseRuntimeDescription();
+        return version.getVerboseRuntimeDescription( systemSettings );
     }
 }

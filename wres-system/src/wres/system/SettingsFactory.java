@@ -68,7 +68,6 @@ public class SettingsFactory
             {
                 databaseBuilder.password( passwordOverrides );
             }
-            databaseBuilder.dataSourceProperties( createDatasourceProperties( databaseBuilder.build() ) );
 
             // Get system configurations and convert to a builder
             SystemSettingsBuilder systemBuilder = systemSettings.toBuilder();
@@ -96,7 +95,6 @@ public class SettingsFactory
         DatabaseSettings.DatabaseSettingsBuilder builder = DatabaseSettings.builder();
         applyDatabaseSystemPropertyOverrides( builder );
         builder.password( getPasswordOverrides( DatabaseSettings.builder().build() ) );
-        builder.dataSourceProperties( createDatasourceProperties( DatabaseSettings.builder().build() ) );
 
         return SystemSettings.builder().databaseConfiguration( builder.build() ).build();
     }
@@ -378,24 +376,6 @@ public class SettingsFactory
                              systemSettings.getFeatureBatchSize() );
             }
         }
-    }
-
-    /**
-     * @return true if the evaluation is being performed in-memory, false otherwise.
-     */
-
-    public boolean isInMemory()
-    {
-        String useDatabaseString = System.getProperty( "wres.useDatabase" );
-
-        boolean useDatabase = false;
-
-        if ( Objects.nonNull( useDatabaseString ) )
-        {
-            useDatabase = "true".equalsIgnoreCase( useDatabaseString );
-        }
-
-        return !useDatabase;
     }
 
     private static void applyDatabaseSystemPropertyOverrides( DatabaseSettings.DatabaseSettingsBuilder builder )
@@ -688,130 +668,5 @@ public class SettingsFactory
             }
         }
         return null;
-    }
-
-    /** To be called after setting member variables based on wres config */
-    public static Map<DatabaseType, Properties> createDatasourceProperties( DatabaseSettings databaseSettings )
-    {
-        Map<DatabaseType, Properties> mapping = new EnumMap<>( DatabaseType.class );
-        Map<String, String> commonProperties = new TreeMap<>();
-
-        if ( Objects.nonNull( databaseSettings.getUsername() ) )
-        {
-            commonProperties.put( "user", databaseSettings.getUsername() );
-        }
-
-        if ( Objects.nonNull( databaseSettings.getPassword() ) )
-        {
-            commonProperties.put( "password", databaseSettings.getPassword() );
-        }
-
-        Properties postgresqlProperties = new Properties();
-        Properties h2Properties = new Properties();
-        Properties mariadbProperties = new Properties();
-        Properties mysqlProperties = new Properties();
-
-        postgresqlProperties.put( "ssl", Boolean.toString( databaseSettings.isUseSSL() ) );
-        mariadbProperties.put( "useSSL", Boolean.toString( databaseSettings.isUseSSL() ) );
-        mysqlProperties.put( "useSSL", Boolean.toString( databaseSettings.isUseSSL() ) );
-
-        if ( Objects.nonNull( databaseSettings.getHost() ) )
-        {
-            postgresqlProperties.put( "serverName", databaseSettings.getHost() );
-            mariadbProperties.put( "host", databaseSettings.getHost() );
-            mysqlProperties.put( "host", databaseSettings.getHost() );
-        }
-
-        if ( Objects.nonNull( databaseSettings.getDatabaseName() ) )
-        {
-            postgresqlProperties.put( "databaseName", databaseSettings.getDatabaseName() );
-        }
-
-        postgresqlProperties.put( "portNumber", databaseSettings.getPort() );
-        mariadbProperties.put( "port", databaseSettings.getPort() );
-        mysqlProperties.put( "port", databaseSettings.getPort() );
-
-        if ( databaseSettings.isValidateSSL() )
-        {
-            postgresqlProperties.put( "sslfactory", "wres.system.PgSSLSocketFactory" );
-            mariadbProperties.put( "verifyServerCertificate", "true" );
-            mysqlProperties.put( "verifyServerCertificate", "true" );
-
-            if ( Objects.nonNull( databaseSettings.getCertificateFileToTrust() ) )
-            {
-                postgresqlProperties.put( "sslfactoryarg",
-                                          databaseSettings.getCertificateFileToTrust() );
-                mariadbProperties.put( "serverSslCert",
-                                       databaseSettings.getCertificateFileToTrust() );
-                mysqlProperties.put( "serverSslCert",
-                                     databaseSettings.getCertificateFileToTrust() );
-            }
-        }
-        else
-        {
-            postgresqlProperties.put( "sslfactory", "org.postgresql.ssl.NonValidatingFactory" );
-            mariadbProperties.put( "trustServerCertificate", "true" );
-            mysqlProperties.put( "trustServerCertificate", "true" );
-        }
-
-        // Use server-side prepared statements eagerly
-        postgresqlProperties.put( "prepareThreshold", "2" );
-        mariadbProperties.put( "useServerPrepStmts", "true" );
-        mysqlProperties.put( "useServerPrepStmts", "true" );
-
-        if ( databaseSettings.getQueryTimeout() > 0 )
-        {
-            // Postgresql has opportunity for multiple settings in 'options'.
-            String pgStatementTimeout = "-c statement_timeout="
-                                        + databaseSettings.getQueryTimeout()
-                                        + "s";
-            String pgOptions = postgresqlProperties.getProperty( "options" );
-            if ( pgOptions == null )
-            {
-                pgOptions = pgStatementTimeout;
-            }
-            else
-            {
-                pgOptions = pgOptions + " " + pgStatementTimeout;
-            }
-
-            postgresqlProperties.put( "options", pgOptions );
-            mariadbProperties.put( "max_statement_time", databaseSettings.getQueryTimeout() );
-
-            // MySQL and H2 use milliseconds, not seconds.
-            mysqlProperties.put( "max_statement_time",
-                                 databaseSettings.getQueryTimeout() * 1000 );
-
-            // H2 MAX_QUERY_TIMEOUT property is added to the jdbc url below.
-        }
-
-        postgresqlProperties.putAll( commonProperties );
-        mapping.put( DatabaseType.POSTGRESQL, postgresqlProperties );
-
-        mariadbProperties.putAll( commonProperties );
-        mapping.put( DatabaseType.MARIADB, mariadbProperties );
-
-        mysqlProperties.putAll( commonProperties );
-        mapping.put( DatabaseType.MYSQL, mysqlProperties );
-
-        h2Properties.putAll( commonProperties );
-
-        if ( Objects.nonNull( databaseSettings.getJdbcUrl() ) )
-        {
-            String h2JdbcUrl = databaseSettings.getJdbcUrl();
-
-            if ( databaseSettings.getQueryTimeout() > 0 )
-            {
-                h2JdbcUrl = h2JdbcUrl
-                            + ";MAX_QUERY_TIMEOUT="
-                            + databaseSettings.getQueryTimeout() * 1000;
-            }
-
-            h2Properties.put( "url", h2JdbcUrl );
-        }
-
-        mapping.put( DatabaseType.H2, h2Properties );
-
-        return mapping;
     }
 }
