@@ -2,7 +2,6 @@ package wres.worker;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -123,20 +122,13 @@ public class JobStandardStreamMessenger implements Runnable
         {
             url = String.format( STD_ERR_URI, this.getPort(), this.getEvaluationId() );
         }
-        WebClient.ClientResponse clientResponse;
-        try
-        {
-            clientResponse = WEB_CLIENT.getFromWeb( URI.create( url ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        InputStream inputStream = clientResponse.getResponse();
-        try ( InputStreamReader utf8Reader = new InputStreamReader( inputStream,
-                                                                    StandardCharsets.UTF_8 );
-              BufferedReader reader = new BufferedReader( utf8Reader );
-              Channel channel = this.getConnection().createChannel() )
+
+        try (
+                WebClient.ClientResponse clientResponse = WEB_CLIENT.getFromWeb( URI.create( url ) );
+                InputStreamReader utf8Reader = new InputStreamReader( clientResponse.getResponse(),
+                                                                      StandardCharsets.UTF_8 );
+                BufferedReader reader = new BufferedReader( utf8Reader );
+                Channel channel = this.getConnection().createChannel() )
         {
             String exchangeName = this.getExchangeName();
             String exchangeType = "topic";

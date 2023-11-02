@@ -230,8 +230,8 @@ class WresEvaluationProcessor implements Callable<Integer>
             LOGGER.info( String.format( "Request exited with http code: %s for job: %s", exitValue, jobId ) );
             byte[] response = WresEvaluationProcessor.prepareExitResponse( exitValue, null );
             this.sendMessage( response, WhichStream.EXITCODE );
-            WresEvaluationProcessor.shutdownExecutor( executorService );
             closeEvaluation();
+            WresEvaluationProcessor.shutdownExecutor( executorService );
             return exitValue;
         }
         // There was a meta exception processing an evaluation and the server is in a bad state
