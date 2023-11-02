@@ -135,7 +135,7 @@ public class JobStatusMessenger implements Runnable
         }
         catch ( IOException ioe )
         {
-            LOGGER.warn( "Failed to create channel or declare exchange.", ioe );
+            LOGGER.warn( "Failed to create channel, declare exchange, or get status.", ioe );
         }
         catch ( InterruptedException ie )
         {
@@ -153,10 +153,14 @@ public class JobStatusMessenger implements Runnable
     private String getEvaluationStatus() throws IOException
     {
         String url = String.format( STATUS_URI, this.getPort(), this.getEvaluationId() );
-        WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( URI.create( url ) );
-        return new BufferedReader( new InputStreamReader( fromWeb.getResponse() ) ).lines()
-                                                                                   .collect( Collectors.joining(
-                                                                                           "\n" ) );
+        try (
+                WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( URI.create( url ) )
+        )
+        {
+            return new BufferedReader( new InputStreamReader( fromWeb.getResponse() ) ).lines()
+                                                                                       .collect( Collectors.joining(
+                                                                                               "\n" ) );
+        }
     }
 
     /**
