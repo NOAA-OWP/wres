@@ -45,6 +45,7 @@ import wres.io.ingesting.SourceLoader;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
 import wres.io.writing.netcdf.NetCDFCopier;
+import wres.pipeline.Canceller;
 import wres.pipeline.Evaluator;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
@@ -279,7 +280,7 @@ final class Functions
         String declarationOrPath = args.get( 0 )
                                        .trim();
 
-        return evaluator.evaluate( declarationOrPath );
+        return evaluator.evaluate( declarationOrPath, Canceller.of() );
     }
 
     /**

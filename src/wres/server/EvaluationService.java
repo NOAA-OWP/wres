@@ -56,6 +56,7 @@ import wres.io.database.DatabaseOperations;
 import wres.io.database.locking.DatabaseLockManager;
 import wres.messages.generated.EvaluationStatusOuterClass;
 import wres.messages.generated.Job;
+import wres.pipeline.Canceller;
 import wres.pipeline.Evaluator;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
@@ -94,13 +95,13 @@ public class EvaluationService implements ServletContextListener
     private static final Random RANDOM =
             new Random( System.currentTimeMillis() );
 
-    private static final AtomicReference<EvaluationStatusOuterClass.EvaluationStatus> evaluationStage =
+    private static final AtomicReference<EvaluationStatusOuterClass.EvaluationStatus> EVALUATION_STAGE =
             new AtomicReference<>( AWAITING );
-    private static final AtomicLong evaluationId = new AtomicLong( -1 );
-
-    private static Thread timeoutThread;
+    private static final AtomicLong EVALUATION_ID = new AtomicLong( -1 );
 
     private static final int ONE_MINUTE_IN_MILLISECONDS = 60000;
+
+    private static Thread timeoutThread;
 
     /** A shared bag of output resource references by request id */
     // The cache is here for expedience, this information could be persisted
@@ -131,7 +132,7 @@ public class EvaluationService implements ServletContextListener
         this.systemSettings = systemSettings;
         this.database = database;
         this.broker = broker;
-        evaluator = new Evaluator( systemSettings,
+        this.evaluator = new Evaluator( systemSettings,
                                    database,
                                    broker );
     }
@@ -146,7 +147,7 @@ public class EvaluationService implements ServletContextListener
     public Response heartbeat()
     {
         // We heartbeat the server before accepting a new job, set status to AWAITING
-        evaluationStage.set( AWAITING );
+        EVALUATION_STAGE.set( AWAITING );
         return Response.ok( "The Server is Up \n" )
                        .build();
     }
@@ -171,7 +172,7 @@ public class EvaluationService implements ServletContextListener
         //                           .build();
         //        }
 
-        return Response.ok( evaluationStage.get().toString() )
+        return Response.ok( EVALUATION_STAGE.get().toString() )
                        .build();
     }
 
@@ -237,14 +238,14 @@ public class EvaluationService implements ServletContextListener
     public Response openEvaluation()
     {
 
-        if ( evaluationId.get() > 0 || !( evaluationStage.get().equals( CLOSED ) || evaluationStage.get()
-                                                                                                   .equals( AWAITING ) ) )
+        if ( EVALUATION_ID.get() > 0 || !( EVALUATION_STAGE.get().equals( CLOSED ) || EVALUATION_STAGE.get()
+                                                                                                      .equals( AWAITING ) ) )
         {
             return Response.status( Response.Status.BAD_REQUEST )
                            .entity( String.format(
                                    "There was a project found with id: %d in state: %s. Please /close/{ID} this project first",
-                                   evaluationId.get(),
-                                   evaluationStage.get() ) )
+                                   EVALUATION_ID.get(),
+                                   EVALUATION_STAGE.get() ) )
                            .build();
         }
 
@@ -252,8 +253,8 @@ public class EvaluationService implements ServletContextListener
         // in edge cases. A while loop seems complex. Thanks to Ted Hopp
         // on StackOverflow question id 5827023.
         long projectId = RANDOM.nextLong() & Long.MAX_VALUE;
-        evaluationStage.set( OPENED );
-        evaluationId.set( projectId );
+        EVALUATION_STAGE.set( OPENED );
+        EVALUATION_ID.set( projectId );
 
         // Start a timer to prevent abandonded jobs from blocking the queue
         evaluationTimeoutThread();
@@ -300,7 +301,7 @@ public class EvaluationService implements ServletContextListener
         }
 
         // Check that this evaluation should be ran
-        if ( evaluationId.get() != id && evaluationStage.get().equals( OPENED ) )
+        if ( EVALUATION_ID.get() != id && EVALUATION_STAGE.get().equals( OPENED ) )
         {
             return Response.status( Response.Status.BAD_REQUEST )
                            .entity(
@@ -311,7 +312,7 @@ public class EvaluationService implements ServletContextListener
         //Used for logging
         Instant beganExecution = Instant.now();
 
-        evaluationStage.set( ONGOING );
+        EVALUATION_STAGE.set( ONGOING );
         Set<java.nio.file.Path> outputPaths;
         try
         {
@@ -322,7 +323,8 @@ public class EvaluationService implements ServletContextListener
             logJobHeaderInformation();
 
             // Execute an evaluation
-            ExecutionResult result = evaluator.evaluate( jobMessage.getProjectConfig() );
+            Canceller canceller = Canceller.of();
+            ExecutionResult result = evaluator.evaluate( jobMessage.getProjectConfig(), canceller );
 
             logJobFinishInformation( jobMessage, result, beganExecution );
 
@@ -332,7 +334,7 @@ public class EvaluationService implements ServletContextListener
                 // Print the stack exception so it is stored in the stdOut of the job
                 result.getException().printStackTrace();
 
-                evaluationStage.set( COMPLETED );
+                EVALUATION_STAGE.set( COMPLETED );
                 return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                                .entity( "WRES experienced an internal issue. The top-level exception was:\n "
                                         + result.getException() )
@@ -344,7 +346,7 @@ public class EvaluationService implements ServletContextListener
         }
         catch ( UserInputException e )
         {
-            evaluationStage.set( COMPLETED );
+            EVALUATION_STAGE.set( COMPLETED );
             logJobFinishInformation( jobMessage, ExecutionResult.failure( e ), beganExecution );
             return Response.status( Response.Status.BAD_REQUEST )
                            .entity( "I received something I could not parse. The top-level exception was: "
@@ -353,7 +355,7 @@ public class EvaluationService implements ServletContextListener
         }
         catch ( InternalWresException iwe )
         {
-            evaluationStage.set( COMPLETED );
+            EVALUATION_STAGE.set( COMPLETED );
             logJobFinishInformation( jobMessage, ExecutionResult.failure( iwe ), beganExecution );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "WRES experienced an internal issue. The top-level exception was: "
@@ -372,7 +374,7 @@ public class EvaluationService implements ServletContextListener
             writer.close();
         };
 
-        evaluationStage.set( COMPLETED );
+        EVALUATION_STAGE.set( COMPLETED );
 
         return Response.ok( streamingOutput )
                        .build();
@@ -519,7 +521,8 @@ public class EvaluationService implements ServletContextListener
             // on StackOverflow question id 5827023.
             projectId = RANDOM.nextLong() & Long.MAX_VALUE;
 
-            ExecutionResult result = evaluator.evaluate( projectConfig );
+            Canceller canceller = Canceller.of();
+            ExecutionResult result = evaluator.evaluate( projectConfig, canceller );
             Set<java.nio.file.Path> outputPaths = result.getResources();
             OUTPUTS.put( projectId, outputPaths );
         }
@@ -669,7 +672,7 @@ public class EvaluationService implements ServletContextListener
             try {
                 int offset = 0;
 
-                while ( !evaluationStage.get().equals( CLOSED ) )
+                while ( !EVALUATION_STAGE.get().equals( CLOSED ) )
                 {
                     ByteArrayInputStream byteArrayInputStream =
                             new ByteArrayInputStream( redirectStream.toByteArray() );
@@ -706,8 +709,8 @@ public class EvaluationService implements ServletContextListener
         timeoutThread.interrupt();
 
         // Set Atomic values to a state to accept new projects
-        evaluationStage.set( CLOSED );
-        evaluationId.set( -1 );
+        EVALUATION_STAGE.set( CLOSED );
+        EVALUATION_ID.set( -1 );
 
         // Reset Standard Streams
         System.setOut( new PrintStream( new FileOutputStream( FileDescriptor.out ) ) );
@@ -721,19 +724,19 @@ public class EvaluationService implements ServletContextListener
     private static void evaluationTimeoutThread()
     {
         Runnable timeoutRunnable = () -> {
-            while ( !evaluationStage.get().equals( CLOSED ) )
+            while ( !EVALUATION_STAGE.get().equals( CLOSED ) )
             {
                 try
                 {
                     Thread.sleep( ONE_MINUTE_IN_MILLISECONDS );
-                    if ( evaluationStage.get().equals( OPENED ) || evaluationStage.get().equals( COMPLETED ) )
+                    if ( EVALUATION_STAGE.get().equals( OPENED ) || EVALUATION_STAGE.get().equals( COMPLETED ) )
                     {
                         close();
                     }
                 }
                 catch ( InterruptedException interruptedException )
                 {
-                    LOGGER.info( "Evaluation was closed so thread was interrupted {}", interruptedException );
+                    LOGGER.info( "Evaluation was closed so thread was interrupted.", interruptedException );
                     Thread.currentThread().interrupt();
                 }
             }

@@ -123,6 +123,15 @@ class EvaluationStatusTrackerTest
                                                                              subscriberApprover,
                                                                              new ProducerFlowController( evaluation ) ) )
         {
+            // Start the status tracker
+            tracker.start();
+
+            // Start the subscriber
+            ignored.start();
+
+            // Start the evaluation
+            evaluation.start();
+
             // A less-good ignored: delivers only one of the required formats
             Consumer consumerOne = Consumer.newBuilder()
                                            .setConsumerId( "aConsumer" )
@@ -224,6 +233,10 @@ class EvaluationStatusTrackerTest
                                                                              subscriberApprover,
                                                                              new ProducerFlowController( evaluation ) ) )
         {
+            ignored.start();
+            evaluation.start();
+            tracker.start();
+
             Consumer consumerOne = Consumer.newBuilder()
                                            .setConsumerId( "aConsumer" )
                                            .addFormats( Format.PNG )
@@ -340,6 +353,15 @@ class EvaluationStatusTrackerTest
                                                                              subscriberApprover,
                                                                              new ProducerFlowController( evaluation ) ) )
         {
+            // Start the tracker
+            tracker.start();
+
+            // Start the subscriber
+            ignored.start();
+
+            // Start the evaluation
+            evaluation.start();
+
             Consumer consumerOne = Consumer.newBuilder()
                                            .setConsumerId( "aConsumer" )
                                            .addFormats( Format.PNG )

@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.ExecutionResult;
 import wres.pipeline.Evaluator;
+import wres.pipeline.Canceller;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.events.broker.BrokerUtilities;
 import wres.eventsbroker.embedded.EmbeddedBroker;
@@ -56,16 +57,13 @@ import wres.system.SystemSettings;
  * @author Hank Herr
  * @author Jesse Bickel
  */
-
 public class ScenarioHelper
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ScenarioHelper.class );
-
     private static final String USUAL_EVALUATION_FILE_NAME = "evaluation.yml";
     private static final String DEPRECATED_EVALUATION_FILE_NAME = "project_config.xml";
     private static final SystemSettings SYSTEM_SETTINGS = SettingsFactory.createSettingsFromDefaultXml();
     private static final Database DATABASE;
-
     static
     {
         if ( SYSTEM_SETTINGS.isUseDatabase() )
@@ -156,7 +154,7 @@ public class ScenarioHelper
                                                       DATABASE,
                                                       brokerConnectionFactory );
 
-            ExecutionResult result = wresEvaluation.evaluate( config.toString() );
+            ExecutionResult result = wresEvaluation.evaluate( config.toString(), Canceller.of() );
 
             if ( result.failed() )
             {

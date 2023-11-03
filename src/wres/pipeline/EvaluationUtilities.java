@@ -147,6 +147,7 @@ class EvaluationUtilities
      * @param executors the executors
      * @param connections broker connections
      * @param monitor an event that monitors the life cycle of the evaluation, not null
+     * @param canceller a callback to allow for cancellation of the running evaluation, not null
      * @return the resources written and the hash of the project data
      * @throws WresProcessingException if the evaluation processing fails
      * @throws DeclarationException if the declaration is incorrect
@@ -159,7 +160,8 @@ class EvaluationUtilities
                                              EvaluationDeclaration declaration,
                                              Executors executors,
                                              BrokerConnectionFactory connections,
-                                             EvaluationEvent monitor )
+                                             EvaluationEvent monitor,
+                                             Canceller canceller )
             throws IOException
     {
         Objects.requireNonNull( systemSettings );
@@ -167,6 +169,7 @@ class EvaluationUtilities
         Objects.requireNonNull( executors );
         Objects.requireNonNull( connections );
         Objects.requireNonNull( monitor );
+        Objects.requireNonNull( canceller );
 
         if ( systemSettings.isUseDatabase() )
         {
@@ -178,7 +181,10 @@ class EvaluationUtilities
 
         // Get a unique evaluation identifier
         String evaluationId = EvaluationEventUtilities.getId();
+
+        // Set the identifier where needed
         monitor.setEvaluationId( evaluationId );
+        canceller.setEvaluationId( evaluationId );
 
         // Create output directory
         Path outputDirectory = EvaluationUtilities.createTempOutputDirectory( evaluationId );
@@ -219,12 +225,17 @@ class EvaluationUtilities
                                                                                new HashSet<>( internalFormats ),
                                                                                netcdfWriters,
                                                                                declaration );
-              // Out-of-band statistics format subscriber/writer, ignored locally
-              EvaluationSubscriber ignoredFormatsSubscriber = EvaluationSubscriber.of( consumerFactory,
-                                                                                       executors.productExecutor(),
-                                                                                       connections,
-                                                                                       evaluationId ) )
+              EvaluationSubscriber formatsSubscriber = EvaluationSubscriber.of( consumerFactory,
+                                                                                executors.productExecutor(),
+                                                                                connections,
+                                                                                evaluationId ) )
         {
+            // Set the subscriber to cancel
+            canceller.setInternalFormatsSubscriber( formatsSubscriber );
+
+            // Start the subscriber
+            formatsSubscriber.start();
+
             // Restrict the subscribers for internally-delivered formats otherwise core clients may steal format
             // writing work from each other. This is expected insofar as all subscribers are par. However, core clients
             // currently run in short-running processes, we want to estimate resources for core clients effectively,
@@ -252,7 +263,8 @@ class EvaluationUtilities
                                                                                                       executors,
                                                                                                       connections,
                                                                                                       sharedWriters,
-                                                                                                      netcdfWriters );
+                                                                                                      netcdfWriters,
+                                                                                                      canceller );
             evaluation = evaluationAndProjectHash.getLeft();
             projectHash = evaluationAndProjectHash.getRight();
 
@@ -373,6 +385,7 @@ class EvaluationUtilities
      * @param connections the broker connections
      * @param netcdfWriters netCDF writers
      * @param sharedWriters for writing
+     * @param canceller a callback to allow for cancellation of the running evaluation, not null
      * @throws WresProcessingException if the processing failed for any reason
      * @return the evaluation and the hash of the project data
      * @throws IOException if the evaluation could not be closed
@@ -383,7 +396,8 @@ class EvaluationUtilities
                                                               Executors executors,
                                                               BrokerConnectionFactory connections,
                                                               SharedWriters sharedWriters,
-                                                              List<NetcdfOutputWriter> netcdfWriters )
+                                                              List<NetcdfOutputWriter> netcdfWriters,
+                                                              Canceller canceller )
             throws IOException
     {
         EvaluationMessager evaluation = null;
@@ -552,6 +566,12 @@ class EvaluationUtilities
                                                 EvaluationUtilities.CLIENT_ID,
                                                 evaluationDetails.evaluationId(),
                                                 evaluationDetails.subscriberApprover() );
+
+            // Register the messager for cancellation
+            canceller.setEvaluationMessager( evaluation );
+
+            // Start the evaluation
+            evaluation.start();
 
             // Set the project and evaluation, metrics and thresholds
             evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )

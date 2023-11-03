@@ -74,10 +74,12 @@ class MessagePublisherTest
                 MessagePublisher.of( MessagePublisherTest.connections,
                                      MessagePublisherTest.connections.getDestination( "status" ) );
               Connection consumerConnection = MessagePublisherTest.connections.get();
-              Session session = consumerConnection.createSession( false, Session.AUTO_ACKNOWLEDGE );
+              Session session = consumerConnection.createSession( Session.AUTO_ACKNOWLEDGE );
               MessageConsumer consumer =
                       session.createConsumer( MessagePublisherTest.connections.getDestination( "status" ) ) )
         {
+            publisher.start();
+
             consumerConnection.start();
 
             Map<MessageProperty, String> properties = new EnumMap<>( MessageProperty.class );
@@ -114,7 +116,7 @@ class MessagePublisherTest
                .thenReturn( mockConnection );
 
         Session mockSession = Mockito.mock( Session.class );
-        Mockito.when( mockConnection.createSession( false, Session.CLIENT_ACKNOWLEDGE ) )
+        Mockito.when( mockConnection.createSession( Session.CLIENT_ACKNOWLEDGE ) )
                .thenReturn( mockSession );
 
         MessageProducer mockProducer = Mockito.mock( MessageProducer.class );
@@ -124,7 +126,7 @@ class MessagePublisherTest
                .thenReturn( mockProducer );
 
         Connection realConnection = MessagePublisherTest.connections.get();
-        Session realSession = realConnection.createSession( false, Session.AUTO_ACKNOWLEDGE );
+        Session realSession = realConnection.createSession( Session.AUTO_ACKNOWLEDGE );
 
         // Create an answer that records an actual message when MessageProducer::send is invoked
         AtomicBoolean invokedAsExpected = new AtomicBoolean();
@@ -157,6 +159,8 @@ class MessagePublisherTest
                 MessagePublisher.of( mockFactory,
                                      statusDestination ) )
         {
+            publisher.start();
+
             Map<MessageProperty, String> properties = new EnumMap<>( MessageProperty.class );
             properties.put( MessageProperty.JMS_MESSAGE_ID, "ID:someId" );
             properties.put( MessageProperty.JMS_CORRELATION_ID, "someCorrelationId" );

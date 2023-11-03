@@ -82,16 +82,23 @@ public class Evaluator
     /**
      * Processes a declaration string or a path to a file that contains a declaration string.
      * @param declarationOrPath the declaration or path to a declaration string
+     * @param canceller a cancellation callback to cancel the running evaluation
      * @return the result of the execution
      * @throws UserInputException when WRES detects a problem with the declaration
      * @throws InternalWresException when WRES encounters an internal error, unrelated to the declaration
      */
 
-    public ExecutionResult evaluate( String declarationOrPath )
+    public ExecutionResult evaluate( String declarationOrPath,
+                                     Canceller canceller )
     {
         if ( Objects.isNull( declarationOrPath ) )
         {
             throw new InternalWresException( "Expected a non-null declaration string or path." );
+        }
+
+        if ( Objects.isNull( canceller ) )
+        {
+            throw new InternalWresException( "Expected a non-null cancellation callback." );
         }
 
         // Create a record of failure, but only commit if a failure actually occurs
@@ -115,28 +122,30 @@ public class Evaluator
             return ExecutionResult.failure( translated );
         }
 
-        SystemSettings systemSettings = this.getSystemSettings();
-
-        if ( !systemSettings.isUseDatabase() )
+        SystemSettings settings = this.getSystemSettings();
+        if ( !settings.isUseDatabase() )
         {
             LOGGER.info( "Running evaluation in memory." );
         }
 
-        return this.evaluate( declaration, rawDeclaration );
+        return this.evaluate( declaration, rawDeclaration, canceller );
     }
 
     /**
      * Executes an evaluation.
      * @param declaration the declaration
      * @param rawDeclaration the raw declaration string to log
+     * @param canceller a cancellation callback to cancel the running evaluation, not null
      * @return the result of the execution
      * @throws NullPointerException if the projectConfigPlus is null
      */
 
     private ExecutionResult evaluate( EvaluationDeclaration declaration,
-                                      String rawDeclaration )
+                                      String rawDeclaration,
+                                      Canceller canceller )
     {
         Objects.requireNonNull( declaration );
+        Objects.requireNonNull( canceller );
 
         EvaluationEvent monitor = EvaluationEvent.of();
         monitor.begin();
@@ -165,7 +174,7 @@ public class Evaluator
                 .namingPattern( "Format Writing Thread %d" )
                 .build();
 
-        SystemSettings systemSettings = this.getSystemSettings();
+        SystemSettings settings = this.getSystemSettings();
 
         // Create some unbounded work queues. For evaluations that produce statistics faster than subscribers (e.g.,
         // statistics format writers) can consume them, production is flow controlled explicitly via the statistics
@@ -178,30 +187,30 @@ public class Evaluator
 
         // Create some thread pools to perform the work required by different parts of the evaluation pipeline
         // Thread pool that processes pools of pairs
-        ExecutorService poolExecutor = new ThreadPoolExecutor( systemSettings.getMaximumPoolThreads(),
-                                                               systemSettings.getMaximumPoolThreads(),
-                                                               systemSettings.getPoolObjectLifespan(),
+        ExecutorService poolExecutor = new ThreadPoolExecutor( settings.getMaximumPoolThreads(),
+                                                               settings.getMaximumPoolThreads(),
+                                                               settings.getPoolObjectLifespan(),
                                                                TimeUnit.MILLISECONDS,
                                                                poolQueue,
                                                                poolFactory );
         // Thread pool that performs slicing/dicing and transforming of pooled data
-        ExecutorService slicingExecutor = new ThreadPoolExecutor( systemSettings.getMaximumSlicingThreads(),
-                                                                  systemSettings.getMaximumSlicingThreads(),
+        ExecutorService slicingExecutor = new ThreadPoolExecutor( settings.getMaximumSlicingThreads(),
+                                                                  settings.getMaximumSlicingThreads(),
                                                                   0,
                                                                   TimeUnit.SECONDS,
                                                                   slicingQueue,
                                                                   slicingFactory );
         // Thread pool that processes metrics
-        ExecutorService metricExecutor = new ThreadPoolExecutor( systemSettings.getMaximumMetricThreads(),
-                                                                 systemSettings.getMaximumMetricThreads(),
-                                                                 systemSettings.getPoolObjectLifespan(),
+        ExecutorService metricExecutor = new ThreadPoolExecutor( settings.getMaximumMetricThreads(),
+                                                                 settings.getMaximumMetricThreads(),
+                                                                 settings.getPoolObjectLifespan(),
                                                                  TimeUnit.MILLISECONDS,
                                                                  metricQueue,
                                                                  metricFactory );
         // Thread pool that generates products, such as statistics formats
-        ExecutorService productExecutor = new ThreadPoolExecutor( systemSettings.getMaximumProductThreads(),
-                                                                  systemSettings.getMaximumProductThreads(),
-                                                                  systemSettings.getPoolObjectLifespan(),
+        ExecutorService productExecutor = new ThreadPoolExecutor( settings.getMaximumProductThreads(),
+                                                                  settings.getMaximumProductThreads(),
+                                                                  settings.getPoolObjectLifespan(),
                                                                   TimeUnit.MILLISECONDS,
                                                                   productQueue,
                                                                   productFactory );
@@ -213,7 +222,7 @@ public class Evaluator
             ThreadFactory resamplingFactory = new BasicThreadFactory.Builder()
                     .namingPattern( "Sampling Uncertainty Thread %d" )
                     .build();
-            int threadCount = systemSettings.getMaximumSamplingUncertaintyThreads();
+            int threadCount = settings.getMaximumSamplingUncertaintyThreads();
             samplingUncertaintyExecutor = java.util.concurrent.Executors.newFixedThreadPool( threadCount,
                                                                                              resamplingFactory );
         }
@@ -221,10 +230,10 @@ public class Evaluator
         // Create database services if needed
         DatabaseServices databaseServices = null;
         DatabaseLockManager lockManager;
-        if ( systemSettings.isUseDatabase() )
+        if ( settings.isUseDatabase() )
         {
             Database innerDatabase = this.getDatabase();
-            lockManager = DatabaseLockManager.from( systemSettings,
+            lockManager = DatabaseLockManager.from( settings,
                                                     innerDatabase::getRawConnection );
 
             databaseServices = new DatabaseServices( innerDatabase, lockManager );
@@ -268,12 +277,13 @@ public class Evaluator
 
             // Perform the evaluation
             Pair<Set<Path>, String> innerPathsAndProjectHash =
-                    EvaluationUtilities.evaluate( systemSettings,
+                    EvaluationUtilities.evaluate( settings,
                                                   databaseServices,
                                                   declaration,
                                                   executors,
                                                   this.getBrokerConnectionFactory(),
-                                                  monitor );
+                                                  monitor,
+                                                  canceller );
             pathsWrittenTo.addAll( innerPathsAndProjectHash.getLeft() );
             projectHash = innerPathsAndProjectHash.getRight();
             monitor.setDataHash( projectHash );

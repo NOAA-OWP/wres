@@ -138,6 +138,8 @@ class GraphicsClientTest
                                                                      GraphicsClientTest.connections,
                                                                      "aClient" ) )
         {
+            // Start the evaluation
+            evaluation.start();
 
             // Publish the statistics to a "feature" group
             evaluation.publish( this.oneStatistics, "DRRC2" );

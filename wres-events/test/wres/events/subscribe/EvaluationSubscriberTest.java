@@ -107,6 +107,12 @@ class EvaluationSubscriberTest
                       MessagePublisher.of( EvaluationSubscriberTest.connections,
                                            EvaluationSubscriberTest.connections.getDestination( "statistics" ) ) )
         {
+            // Start the publishers
+            evalPublisher.start();
+            statsPublisher.start();
+
+            // Start the subscriber
+            subscriber.start();
 
             Map<MessageProperty, String> properties = new EnumMap<>( MessageProperty.class );
             properties.put( MessageProperty.NETCDF, subscriber.getClientId() );
@@ -190,6 +196,13 @@ class EvaluationSubscriberTest
                       MessagePublisher.of( EvaluationSubscriberTest.connections,
                                            EvaluationSubscriberTest.connections.getDestination( "status" ) ) )
         {
+            // Start the subscriber
+            subscriber.start();
+
+            // Start the publishers
+            evalPublisher.start();
+            statsPublisher.start();
+            statusPublisher.start();
 
             Map<MessageProperty, String> properties = new EnumMap<>( MessageProperty.class );
             properties.put( MessageProperty.NETCDF, subscriber.getClientId() );
