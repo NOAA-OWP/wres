@@ -16,6 +16,7 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -53,6 +54,7 @@ import wres.events.broker.BrokerConnectionFactory;
 import wres.io.database.ConnectionSupplier;
 import wres.io.database.Database;
 import wres.io.database.DatabaseOperations;
+import wres.io.database.locking.DatabaseLockFailed;
 import wres.io.database.locking.DatabaseLockManager;
 import wres.messages.generated.EvaluationStatusOuterClass;
 import wres.messages.generated.Job;
@@ -69,24 +71,19 @@ import wres.system.SystemSettings;
  * There are two main functions supported by this resource:
  * - Simple Evaluations
  * evaluation/evaluate allows a user to pass along a project config and receive output
- *
  * - Complete Evaluations
  * evaluation/open
  * evaluation/start
  * evaluation/close
- *
  * Takes in a job message as a byte[] and can support features like sending std out/error and database management
  * but it must be opened and closed by the caller and sent as a job instead of just a project config
- *
  * NOTE: Currently there is a 1:1 relationship between a server and an evaluation. That is to say each server can only
  * serve 1 evaluation at a time. For this reason we are currently using Atomic variables to track certain states and
  * information on an evaluation.
- *
  * TODO: Swap to using a persistant cache to support async/multiple simultaneous evaluations
  */
 
 @Path( "/evaluation" )
-//@ServerEndpoint( "/evaluation" )
 @Singleton
 public class EvaluationService implements ServletContextListener
 {
@@ -163,14 +160,6 @@ public class EvaluationService implements ServletContextListener
     public Response getStatus( @PathParam( "id" ) Long id )
     {
         //TODO activate when we have a persistant cache and async evaluations
-
-        //        if ( evaluationId.get() != id )
-        //        {
-        //            return Response.status( Response.Status.BAD_REQUEST )
-        //                           .entity( "The id provided: " + id + " Does not match the ID of the current evaluation: "
-        //                                    + evaluationId.get() )
-        //                           .build();
-        //        }
 
         return Response.ok( EVALUATION_STAGE.get().toString() )
                        .build();
@@ -290,15 +279,7 @@ public class EvaluationService implements ServletContextListener
     public Response startEvaluation( byte[] message, @PathParam( "id" ) Long id )
     {
         // Convert the raw message into a job
-        Job.job jobMessage;
-        try
-        {
-            jobMessage = Job.job.parseFrom( message );
-        }
-        catch ( InvalidProtocolBufferException ipbe )
-        {
-            throw new IllegalArgumentException( "Bad message received: " + message, ipbe );
-        }
+        Job.job jobMessage = createJobFromByteArray( message );
 
         // Check that this evaluation should be ran
         if ( EVALUATION_ID.get() != id && EVALUATION_STAGE.get().equals( OPENED ) )
@@ -400,15 +381,7 @@ public class EvaluationService implements ServletContextListener
         Instant beganExecution = Instant.now();
 
         // Convert the raw message into a job
-        Job.job jobMessage;
-        try
-        {
-            jobMessage = Job.job.parseFrom( message );
-        }
-        catch ( InvalidProtocolBufferException ipbe )
-        {
-            throw new IllegalArgumentException( "Bad message received: " + message, ipbe );
-        }
+        Job.job jobMessage = createJobFromByteArray( message );
 
         try
         {
@@ -455,20 +428,11 @@ public class EvaluationService implements ServletContextListener
         Instant beganExecution = Instant.now();
 
         // Convert the raw message into a job
-        Job.job jobMessage;
-        try
-        {
-            jobMessage = Job.job.parseFrom( message );
-        }
-        catch ( InvalidProtocolBufferException ipbe )
-        {
-            throw new IllegalArgumentException( "Bad message received: " + message, ipbe );
-        }
+        Job.job jobMessage = createJobFromByteArray( message );
 
         DatabaseLockManager lockManager =
                 DatabaseLockManager.from( systemSettings,
                                           () -> database.getRawConnection() );
-
         try
         {
             // Checks if database information has changed in the jobMessage and swap to that database
@@ -480,12 +444,12 @@ public class EvaluationService implements ServletContextListener
             lockManager.unlockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
             logJobFinishInformation( jobMessage, ExecutionResult.success(), beganExecution );
         }
-        catch ( SQLException se )
+        catch ( IllegalStateException | DatabaseLockFailed | SQLException se )
         {
-            String errorMessage = "Failed to clean the database.";
-            LOGGER.error( errorMessage, se );
+            String errorMessage = "Failed to clean the database. Unable to aquire lock or communicate with database";
             InternalWresException e = new InternalWresException( errorMessage, se );
-            logJobFinishInformation( jobMessage, ExecutionResult.failure( se ), beganExecution );
+            LOGGER.error( errorMessage, se );
+            logJobFinishInformation( jobMessage, ExecutionResult.failure( e ), beganExecution );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "Unable to clean the database with the error: "
                                     + e.getMessage() )
@@ -688,13 +652,13 @@ public class EvaluationService implements ServletContextListener
                     }
                 }
             } catch (IOException e){
-                e.printStackTrace();
+                LOGGER.info( "Unable to start a chunked output thread with the exception", e );
             }
             finally {
                 try {
                     output.close();
                 } catch (IOException e){
-                    e.printStackTrace();
+                    LOGGER.info( "Unable to close a chunked output thread with the exception", e );
                 }
             }
         } ).start();
@@ -864,6 +828,17 @@ public class EvaluationService implements ServletContextListener
                 }
             }
             evaluator = new Evaluator( systemSettings, database, broker );
+        }
+    }
+
+    private Job.job createJobFromByteArray ( byte[] message ) {
+        try
+        {
+            return Job.job.parseFrom( message );
+        }
+        catch ( InvalidProtocolBufferException ipbe )
+        {
+            throw new IllegalArgumentException( "Bad message received: " + Arrays.toString( message ), ipbe );
         }
     }
 

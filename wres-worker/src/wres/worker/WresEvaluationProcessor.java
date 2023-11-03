@@ -16,8 +16,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import javax.net.ssl.HttpsURLConnection;
-
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -43,6 +41,9 @@ class WresEvaluationProcessor implements Callable<Integer>
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WresEvaluationProcessor.class );
 
+    /**
+     * Failure code that signified the server is a bad/unrecoverable state, returning this will cycle the worker container
+     */
     private static final int META_FAILURE_CODE = 600;
 
     private static final String START_EVAL_URI = "http://localhost:%d/evaluation/start/%s";
@@ -169,6 +170,7 @@ class WresEvaluationProcessor implements Callable<Integer>
         String evaluationId = prepareEvaluationId();
 
         // Halt evaluation if we are unable to open a project successfully
+        // an empty response means there is a bad state on the server but we are accepting a new job
         if ( evaluationId.isEmpty() )
         {
             LOGGER.warn( "Unable to open a new evaluation" );
@@ -210,6 +212,7 @@ class WresEvaluationProcessor implements Callable<Integer>
 
         try
         {
+            // If for some reason a job kicked off does not return ANY response code, ther server is likely in a bad state
             int exitValue = META_FAILURE_CODE;
             // Check if the Job is to manipulate the database in some way
             if ( job.getVerb().equals( Job.job.Verb.CLEANDATABASE ) )
@@ -298,7 +301,7 @@ class WresEvaluationProcessor implements Callable<Integer>
             byte[] response =
                     WresEvaluationProcessor.prepareMetaFailureResponse( new UnsupportedOperationException( problem ) );
             this.sendMessage( response, WhichStream.EXITCODE );
-            return META_FAILURE_CODE;
+            throw problem;
         }
 
         URI startEvalURI = URI.create( String.format( START_EVAL_URI, this.getPort(), evaluationId ) );
@@ -344,18 +347,17 @@ class WresEvaluationProcessor implements Callable<Integer>
                                                                                    CALL_TIMEOUT,
                                                                                    RETRY_STATES ) )
         {
-            if ( evaluationIdRequest.getStatusCode() == HttpURLConnection.HTTP_INTERNAL_ERROR )
+            if ( evaluationIdRequest.getStatusCode() != HttpURLConnection.HTTP_OK  )
             {
                 LOGGER.error( "Unable to manipulate database" );
-                return META_FAILURE_CODE;
             }
 
-            LOGGER.info( "Database manipulated successfully" );
+            LOGGER.info( "Completed request: {}", uriToCall );
             return evaluationIdRequest.getStatusCode();
         }
         catch ( IOException e )
         {
-            throw new EvaluationProcessingException( "Unable to manipulate the database", e );
+            throw new EvaluationProcessingException( "Experienced and exception while attempting to manipulate the database", e );
         }
     }
 
@@ -368,7 +370,7 @@ class WresEvaluationProcessor implements Callable<Integer>
                       WEB_CLIENT.postToWeb( URI.create( String.format( CLOSE_EVAL_URI, this.getPort() ) ),
                                             CALL_TIMEOUT, RETRY_STATES ) )
         {
-            if ( clientResponse.getStatusCode() != HttpsURLConnection.HTTP_OK )
+            if ( clientResponse.getStatusCode() != HttpURLConnection.HTTP_OK )
             {
                 LOGGER.info( "Evaluation was not able to be closed" );
             }
