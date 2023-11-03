@@ -97,30 +97,7 @@ class SubscriberNegotiator
         SubscriberNegotiator negotiator = this;
 
         AtomicReference<EvaluationEventException> negotiationFailed = new AtomicReference<>();
-        TimerTask updater = new TimerTask()
-        {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    negotiator.notifyConsumerRequired();
-                }
-                catch ( EvaluationEventException e )
-                {
-                    // Set the exception and free the latches on subscribers so that the negotiation can fail in an 
-                    // orderly way. This updater runs async in a timer task, so any exception might not be set until
-                    // the format negotiation latches have been triggered, awaiting success or failure.
-                    negotiationFailed.set( e );
-                    negotiator.formatNegotiationLatches.forEach( ( a, b ) -> b.countDown() );
-                }
-            }
-        };
-
-        Timer timer = new Timer();
-
-        // Send with zero initial delay to avoid latency with awaiting subscriber
-        timer.schedule( updater, 0, SubscriberNegotiator.READY_TO_RECEIVE_CONSUMERS_UPDATE_FREQUENCY );
+        Timer timer = SubscriberNegotiator.getTimer( negotiator, negotiationFailed );
 
         // Wait for each format to receive an offer
         for ( Map.Entry<Format, TimedCountDownLatch> next : this.formatNegotiationLatches.entrySet() )
@@ -343,6 +320,42 @@ class SubscriberNegotiator
     {
         this.formatNegotiationLatches.values()
                                      .forEach( TimedCountDownLatch::countDown );
+    }
+
+    /**
+     * Returns a timer task for subscription negotiation.
+     * @param negotiator the negotiator
+     * @param negotiationFailed a hook for when negotiation has failed
+     * @return the timer task
+     */
+    private static Timer getTimer( SubscriberNegotiator negotiator,
+                                   AtomicReference<EvaluationEventException> negotiationFailed )
+    {
+        TimerTask updater = new TimerTask()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    negotiator.notifyConsumerRequired();
+                }
+                catch ( EvaluationEventException e )
+                {
+                    // Set the exception and free the latches on subscribers so that the negotiation can fail in an
+                    // orderly way. This updater runs async in a timer task, so any exception might not be set until
+                    // the format negotiation latches have been triggered, awaiting success or failure.
+                    negotiationFailed.set( e );
+                    negotiator.formatNegotiationLatches.forEach( ( a, b ) -> b.countDown() );
+                }
+            }
+        };
+
+        Timer timer = new Timer( "SubscriberNegotiatorTimer", true );
+
+        // Send with zero initial delay to avoid latency with awaiting subscriber
+        timer.schedule( updater, 0, SubscriberNegotiator.READY_TO_RECEIVE_CONSUMERS_UPDATE_FREQUENCY );
+        return timer;
     }
 
     /**

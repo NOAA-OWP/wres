@@ -32,7 +32,7 @@ import wres.events.broker.BrokerConnectionFactory;
  * because connections are assumed to be expensive. Currently, there is also one {@link Session} per instance, but a 
  * pool of sessions might be better (to allow better message throughput, as a session is the work thread). Overall, it 
  * may be better to abstract connections and sessions away from specific helpers.
- * 
+ *
  * @author James Brown
  */
 
@@ -76,14 +76,14 @@ public class MessagePublisher implements Closeable
         public String toString()
         {
             return switch ( this )
-                    {
-                        case JMSX_GROUP_ID -> "JMSXGroupID";
-                        case JMS_CORRELATION_ID -> "JMSCorrelationID";
-                        case JMS_MESSAGE_ID -> "JMSMessageID";
-                        case CONSUMER_ID -> "ConsumerID";
-                        case EVALUATION_JOB_ID -> "EvaluationJobID";
-                        default -> super.toString();
-                    };
+            {
+                case JMSX_GROUP_ID -> "JMSXGroupID";
+                case JMS_CORRELATION_ID -> "JMSCorrelationID";
+                case JMS_MESSAGE_ID -> "JMSMessageID";
+                case CONSUMER_ID -> "ConsumerID";
+                case EVALUATION_JOB_ID -> "EvaluationJobID";
+                default -> super.toString();
+            };
         }
     }
 
@@ -94,22 +94,10 @@ public class MessagePublisher implements Closeable
     private final Connection connection;
 
     /**
-     * A session.
-     */
-
-    private final Session session;
-
-    /**
      * A destination to which messages should be posted.
      */
 
     private final Destination destination;
-
-    /**
-     * A message producer.
-     */
-
-    private final MessageProducer producer;
 
     /**
      * The delivery mode.
@@ -154,8 +142,20 @@ public class MessagePublisher implements Closeable
     private final AtomicBoolean isClosed;
 
     /**
+     * A session.
+     */
+
+    private Session session;
+
+    /**
+     * A message producer.
+     */
+
+    private MessageProducer producer;
+
+    /**
      * Creates an instance with default settings.
-     * 
+     *
      * @param connectionFactory a broker connection factory
      * @param destination the delivery destination
      * @throws JMSException if the JMS provider fails to create the connection due to some internal error
@@ -179,7 +179,7 @@ public class MessagePublisher implements Closeable
 
     /**
      * Creates an instance with default settings and a {@link ConnectionExceptionListener}.
-     * 
+     *
      * @param connectionFactory a broker connection factory
      * @param destination the delivery destination
      * @param listener a connection exception listener
@@ -204,7 +204,7 @@ public class MessagePublisher implements Closeable
 
     /**
      * Creates an instance.
-     * 
+     *
      * @param connectionFactory a broker connection factory
      * @param destination the delivery destination
      * @param listener an optional connection exception listener
@@ -239,6 +239,24 @@ public class MessagePublisher implements Closeable
         return this.identifier;
     }
 
+    /**
+     * Starts the message publisher.
+     */
+    public void start()
+    {
+        try
+        {
+            // Client acknowledges messages processed
+            this.session = this.connection.createSession( Session.CLIENT_ACKNOWLEDGE );
+            this.producer = this.session.createProducer( this.destination );
+            this.connection.start();
+        }
+        catch ( JMSException e )
+        {
+            throw new EvaluationEventException( "Failed to start message publisher.", e );
+        }
+    }
+
     @Override
     public void close() throws IOException
     {
@@ -250,9 +268,8 @@ public class MessagePublisher implements Closeable
             {
                 // No need to close session etc.
                 this.connection.close();
-                LOGGER.debug( "Closed connection {} and session {} in publisher {}.",
+                LOGGER.debug( "Closed connection {} in publisher {}.",
                               this.connection,
-                              this.session,
                               this );
             }
             catch ( JMSException e )
@@ -267,7 +284,7 @@ public class MessagePublisher implements Closeable
 
     /**
      * Publishes a message to a destination.
-     * 
+     *
      * @param messageBytes the message bytes to publish
      * @param metadata the message metadata, minimally including a message identifier and correlation identifier
      * @throws EvaluationEventException - if the session fails to create or publish a message due to some internal error
@@ -286,7 +303,8 @@ public class MessagePublisher implements Closeable
         // Still open?
         if ( this.isClosed() )
         {
-            throw new IllegalArgumentException( "Message publisher " + this
+            throw new IllegalArgumentException( "Message publisher "
+                                                + this
                                                 + " has been closed and cannot accept any further publication "
                                                 + "requests." );
         }
@@ -337,7 +355,7 @@ public class MessagePublisher implements Closeable
     /**
      * Attempts to publish a message, up to the number of {@link #getRetryCount()}, using exponential back-off on each 
      * failed retry.
-     * 
+     *
      * @param messageBytes the message bytes
      * @param metadata the message metadata
      * @throws UnrecoverablePublisherException if the publication fails after all retries
@@ -346,15 +364,18 @@ public class MessagePublisher implements Closeable
     private void internalPublishWithRetriesAndExponentialBackoff( ByteBuffer messageBytes,
                                                                   Map<MessageProperty, String> metadata )
     {
+        this.validateStarted();
+
         long sleepMillis = 1000;
         int retries = this.getRetryCount();
+        String property = metadata.get( MessageProperty.JMS_MESSAGE_ID );
         for ( int i = 0; i <= retries; i++ )
         {
             // Still open?
             if ( this.isClosed() )
             {
                 LOGGER.debug( "Not attempting to publish message {} because the publisher has closed.",
-                              metadata.get( MessageProperty.JMS_MESSAGE_ID ) );
+                              property );
 
                 return;
             }
@@ -369,7 +390,7 @@ public class MessagePublisher implements Closeable
                     sleepMillis *= 2;
 
                     LOGGER.debug( "Retrying the publication of message {}. This is retry {} of {}.",
-                                  metadata.get( MessageProperty.JMS_MESSAGE_ID ),
+                                  property,
                                   i,
                                   retries );
                 }
@@ -388,7 +409,7 @@ public class MessagePublisher implements Closeable
                     LOGGER.trace( "From publisher {}, sent message {} with message properties {} to "
                                   + "destination {}.",
                                   this,
-                                  metadata.get( MessageProperty.JMS_MESSAGE_ID ),
+                                  property,
                                   metadata,
                                   this.destination );
                 }
@@ -403,7 +424,7 @@ public class MessagePublisher implements Closeable
                 {
                     throw new UnrecoverablePublisherException( "Publisher " + this
                                                                + " failed to send message "
-                                                               + metadata.get( MessageProperty.JMS_MESSAGE_ID )
+                                                               + property
                                                                + TO_DESTINATION
                                                                + this.destination
                                                                + " after "
@@ -413,7 +434,8 @@ public class MessagePublisher implements Closeable
                 }
                 else if ( LOGGER.isDebugEnabled() )
                 {
-                    String message = "Failed to send message " + metadata.get( MessageProperty.JMS_MESSAGE_ID )
+                    String message = "Failed to send message "
+                                     + property
                                      + " with message properties "
                                      + metadata
                                      + TO_DESTINATION
@@ -426,11 +448,12 @@ public class MessagePublisher implements Closeable
             // Propagate immediately
             catch ( InterruptedException e )
             {
-                Thread.currentThread().interrupt();
+                Thread.currentThread()
+                      .interrupt();
 
                 throw new UnrecoverablePublisherException( "Publisher " + this
                                                            + " was interrupted while attempting to send message "
-                                                           + metadata.get( MessageProperty.JMS_MESSAGE_ID )
+                                                           + property
                                                            + TO_DESTINATION
                                                            + this.destination
                                                            + ".",
@@ -441,7 +464,7 @@ public class MessagePublisher implements Closeable
 
     /**
      * Creates a {@link BytesMessage} for publication from message bytes and associated metadata.
-     * 
+     *
      * @param messageBytes the message bytes
      * @param metadata the metadata
      * @return the message
@@ -451,6 +474,11 @@ public class MessagePublisher implements Closeable
     private BytesMessage createMessage( ByteBuffer messageBytes, Map<MessageProperty, String> metadata )
             throws JMSException
     {
+        if ( Objects.isNull( this.session ) )
+        {
+            throw new IllegalStateException( "THe publisher must be started before messages are published." );
+        }
+
         // Post
         BytesMessage message = this.session.createBytesMessage();
 
@@ -473,8 +501,22 @@ public class MessagePublisher implements Closeable
     }
 
     /**
+     * Checks that the message publisher has been started.
+     * @throws IllegalStateException if the message publisher has not been started
+     */
+
+    private void validateStarted()
+    {
+        if ( Objects.isNull( this.producer ) )
+        {
+            throw new IllegalStateException( "Cannot publish a message because the message publisher has not been "
+                                             + "started." );
+        }
+    }
+
+    /**
      * Hidden constructor.
-     * 
+     *
      * @param connectionFactory a broker connection factory
      * @param destination the delivery destination
      * @param listener an optional connection exception listener
@@ -519,19 +561,13 @@ public class MessagePublisher implements Closeable
             this.connection.setExceptionListener( new ConnectionExceptionListener( this.identifier ) );
         }
 
-        // Client acknowledges messages processed
-        this.session = this.connection.createSession( false, Session.CLIENT_ACKNOWLEDGE );
-
         this.messagePriority = messagePriority;
         this.messageTimeToLive = messageTimeToLive;
         this.deliveryMode = deliveryMode;
 
         this.publicationLock = new ReentrantLock();
 
-        this.producer = this.session.createProducer( this.destination );
         this.isClosed = new AtomicBoolean();
-
-        connection.start();
 
         LOGGER.debug( "Created a messager publisher, {}, which is ready to receive messages to publish to destination "
                       + "{}. The messager publisher is configured with delivery mode {}, message priority {} and "
@@ -584,5 +620,4 @@ public class MessagePublisher implements Closeable
         }
 
     }
-
 }

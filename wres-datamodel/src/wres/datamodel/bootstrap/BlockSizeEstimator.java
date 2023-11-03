@@ -18,8 +18,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>Estimates the block size for the stationary bootstrap. The citation is: Patton, A. Politis, D.N. and White, H.
- * 2008: CORRECTION TO 'Automatic Block-Length Selection for the Dependent Bootstrap' by D.N. Politis and H. White.
- * Econometric Reviews, 28(4):372-375. The original article is: Politis, D.N., and White, H. 2004: Automatic block-
+ * (2008) CORRECTION TO 'Automatic Block-Length Selection for the Dependent Bootstrap' by D.N. Politis and H. White.
+ * Econometric Reviews, 28(4):372-375. The original article is: Politis, D.N., and White, H. (2004) Automatic block-
  * length selection for the dependent bootstrap. Econometric Reviews, 23(1):53-70.
  *
  * <p>This code is ported from an R implementation by C. Parmeter and J. Racine, available here (last checked,

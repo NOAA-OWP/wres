@@ -505,6 +505,7 @@ class GraphicsClient
                                                                this.getGraphicsExecutor(),
                                                                broker,
                                                                false );
+            this.graphicsSubscriber.start();
         }
         catch ( UnrecoverableSubscriberException e )
         {

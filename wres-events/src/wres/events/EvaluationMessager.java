@@ -121,6 +121,9 @@ public class EvaluationMessager implements Closeable
     /** The frequency with which to publish an evaluation-alive message in ms. */
     private static final long NOTIFY_ALIVE_MILLISECONDS = 100_000;
 
+    /** The evaluation description message. */
+    private final wres.statistics.generated.Evaluation evaluationDescription;
+
     /** A status message indicating that the evaluation is ongoing. */
     private final EvaluationStatus statusOngoing;
 
@@ -161,6 +164,9 @@ public class EvaluationMessager implements Closeable
      * notify completion, which includes the expected shape of the evaluation, and no further messages can be published 
      * with the public methods of this instance. */
     private final AtomicBoolean publicationComplete;
+
+    /** Is <code>true</code> if the evaluation has been started. */
+    private final AtomicBoolean isStarted;
 
     /** Is <code>true</code> if the evaluation has been stopped. */
     private final AtomicBoolean isStopped;
@@ -330,12 +336,14 @@ public class EvaluationMessager implements Closeable
         Objects.requireNonNull( status );
 
         this.validateRequestToPublish();
-
         this.validateStatusMessage( status, groupId );
 
         ByteBuffer body = ByteBuffer.wrap( status.toByteArray() );
 
-        this.internalPublish( body, this.evaluationStatusPublisher, EvaluationMessager.EVALUATION_STATUS_QUEUE, groupId );
+        this.internalPublish( body,
+                              this.evaluationStatusPublisher,
+                              EvaluationMessager.EVALUATION_STATUS_QUEUE,
+                              groupId );
 
         this.statusMessageCount.getAndIncrement();
 
@@ -413,6 +421,8 @@ public class EvaluationMessager implements Closeable
 
     public void markPublicationCompleteReportedSuccess()
     {
+        this.validateStarted();
+
         if ( !this.isAlive() )
         {
             LOGGER.warn( "Cannot mark publication complete for evaluation {} because the evaluation itself has "
@@ -475,6 +485,8 @@ public class EvaluationMessager implements Closeable
     {
         Objects.requireNonNull( groupId );
 
+        this.validateStarted();
+
         AtomicInteger groupCount = new AtomicInteger( 0 );
 
         // Some messages published?
@@ -522,6 +534,69 @@ public class EvaluationMessager implements Closeable
     }
 
     /**
+     * Starts an evaluation by negotiating subscriptions for all required formats.
+     */
+
+    public void start()
+    {
+        LOGGER.debug( "Starting the evaluation messager for evaluation {}.", this.getEvaluationId() );
+
+        // Start the publishers
+        this.evaluationStatusPublisher.start();
+        this.evaluationPublisher.start();
+        this.statisticsPublisher.start();
+        this.pairsPublisher.start();
+
+        // Now ready to publish messages
+        this.isStarted.set( true );
+
+        // Wait for all subscribers to be negotiated
+        try
+        {
+            this.statusTracker.awaitNegotiatedSubscribers();
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread()
+                  .interrupt();
+
+            EvaluationEventException f = new EvaluationEventException( EVALUATION_STRING + this.evaluationId
+                                                + " was Interrupted while waiting for "
+                                                + "subscriptions to be negotiated.",
+                                                e );
+
+            EvaluationStatus error = this.getStatusOnException( f );
+            this.statusTracker.stopOnFailure( error );
+            throw f;
+        }
+
+        Instant now = Instant.now();
+        long seconds = now.getEpochSecond();
+        int nanos = now.getNano();
+        EvaluationStatus started = EvaluationStatus.newBuilder()
+                                                   .setCompletionStatus( CompletionStatus.EVALUATION_STARTED )
+                                                   .setClientId( this.getClientId() )
+                                                   .setTime( Timestamp.newBuilder()
+                                                                      .setSeconds( seconds )
+                                                                      .setNanos( nanos ) )
+                                                   .build();
+
+        this.publish( started );
+
+        // Publish the evaluation description and update the evaluation status
+        wres.statistics.generated.Evaluation description = this.getEvaluationDescription();
+        this.internalPublish( description );
+
+        // Notify that the evaluation is alive
+        this.checkAndNotifyStatusAtFixedInterval( this, this.timer );
+
+        LOGGER.info( "Started an evaluation messager for {}, which negotiated these subscribers by output format type: "
+                     + "{}.",
+                     this.evaluationId,
+                     this.statusTracker.getNegotiatedSubscribers() );
+    }
+
+    /**
      * <p>Forcibly terminates an evaluation without completing any outstanding publication or consumption. This may be
      * necessary when an out-of-band exception is encountered (e.g., when producing messages for publication by this 
      * evaluation), which requires the evaluation to terminate promptly, without attempting further progress. To 
@@ -538,12 +613,15 @@ public class EvaluationMessager implements Closeable
 
     public void stop( Exception exception )
     {
+        this.validateStarted();
+
         if ( !this.isStopped.getAndSet( true ) )
         {
             LOGGER.debug( "Stopping evaluation {} on encountering an exception.", this.getEvaluationId() );
 
             // Publish the completion status, if possible
-            this.publishEvaluationFailed( exception );
+            EvaluationStatus status = this.getStatusOnException( exception );
+            this.publishEvaluationFailed( status );
 
             // Stop any flow control
             this.stopFlowControl();
@@ -551,6 +629,9 @@ public class EvaluationMessager implements Closeable
             // Set a non-normal exit code
             LOGGER.debug( "Setting exit code to {}.", 1 );
             this.exitCode.set( 1 );
+
+            // Stop tracking the evaluation
+            this.statusTracker.stopOnFailure( status );
         }
     }
 
@@ -566,6 +647,8 @@ public class EvaluationMessager implements Closeable
     @Override
     public void close() throws IOException
     {
+        this.validateStarted();
+
         if ( this.isClosed.getAndSet( true ) )
         {
             LOGGER.debug( "EvaluationMessager {} has already been closed.", this.getEvaluationId() );
@@ -594,12 +677,16 @@ public class EvaluationMessager implements Closeable
                 onCompletion = CompletionStatus.EVALUATION_COMPLETE_REPORTED_FAILURE;
             }
 
-            LOGGER.info( "Closed evaluation {} with status {}. This evaluation contained 1 evaluation description "
+            // Description message published?
+            int descriptionCount = this.isStarted.get() ? 1 : 0;
+
+            LOGGER.info( "Closed evaluation {} with status {}. This evaluation contained {} evaluation description "
                          + "message, {} statistics messages, {} pairs messages and {} evaluation status messages. The "
                          + "exit code was {}.",
+                         descriptionCount,
                          this.getEvaluationId(),
                          onCompletion,
-                         this.getPublishedMessageCount() - 1,
+                         this.getPublishedMessageCount() - descriptionCount,
                          this.getPublishedPairsMessageCount(),
                          this.getPublishedStatusMessageCount(),
                          this.getExitCode() );
@@ -651,6 +738,8 @@ public class EvaluationMessager implements Closeable
 
     public int await()
     {
+        this.validateStarted();
+
         if ( this.isStopped() || this.isClosed() )
         {
             LOGGER.debug( "EvaluationMessager {} has already completed.", this.getEvaluationId() );
@@ -898,11 +987,11 @@ public class EvaluationMessager implements Closeable
     }
 
     /**
-     * Publishes the completion status of an evaluation as failed.
-     * @param exception an optional exception encountered before completion
+     * Generates a status message on failure, adding the optional exception where available.
+     * @param exception an optional exception message
+     * @return the status message
      */
-
-    private void publishEvaluationFailed( Exception exception )
+    private EvaluationStatus getStatusOnException( Exception exception )
     {
         Instant now = Instant.now();
         long seconds = now.getEpochSecond();
@@ -921,8 +1010,17 @@ public class EvaluationMessager implements Closeable
             complete.addStatusEvents( event );
         }
 
-        EvaluationStatus toPublish = complete.build();
-        ByteBuffer body = ByteBuffer.wrap( toPublish.toByteArray() );
+        return complete.build();
+    }
+
+    /**
+     * Publishes the completion status of an evaluation as failed.
+     * @param status the final status message
+     */
+
+    private void publishEvaluationFailed( EvaluationStatus status )
+    {
+        ByteBuffer body = ByteBuffer.wrap( status.toByteArray() );
 
         try
         {
@@ -1038,6 +1136,8 @@ public class EvaluationMessager implements Closeable
 
     private void validateRequestToPublish()
     {
+        this.validateStarted();
+
         if ( this.publicationComplete.get() )
         {
             throw new IllegalStateException( WHILE_ATTEMPTING_TO_PUBLISH_A_MESSAGE_TO_EVALUATION
@@ -1185,12 +1285,10 @@ public class EvaluationMessager implements Closeable
 
         this.evaluationId = internalId;
 
-        LOGGER.info( "Creating an evaluation with identifier {}.", this.evaluationId );
-
         // Copy then validate
         BrokerConnectionFactory broker = builder.broker;
 
-        wres.statistics.generated.Evaluation evaluationDescription = builder.evaluationDescription;
+        this.evaluationDescription = builder.evaluationDescription;
         this.clientId = builder.clientId;
         SubscriberApprover subscriberApprover = builder.subscriberApprover;
 
@@ -1223,6 +1321,7 @@ public class EvaluationMessager implements Closeable
 
         this.publicationComplete = new AtomicBoolean();
         this.isStopped = new AtomicBoolean();
+        this.isStarted = new AtomicBoolean();
         this.isClosed = new AtomicBoolean();
         this.flowController = new ProducerFlowController( this );
         this.statusOngoing = EvaluationStatus.newBuilder()
@@ -1235,13 +1334,14 @@ public class EvaluationMessager implements Closeable
 
         try
         {
-            // Create the status tracker first  so that subscribers can register
+            // Create the status tracker first so that subscribers can register
             this.statusTracker = new EvaluationStatusTracker( this,
                                                               broker,
                                                               formatsRequired,
                                                               broker.getMaximumMessageRetries(),
                                                               subscriberApprover,
                                                               this.flowController );
+            this.statusTracker.start();
 
             Topic status = ( Topic ) broker.getDestination( EvaluationMessager.EVALUATION_STATUS_QUEUE );
 
@@ -1267,43 +1367,7 @@ public class EvaluationMessager implements Closeable
         this.pairsMessageCount = new AtomicInteger();
         this.messageGroups = new ConcurrentHashMap<>();
 
-        // Await all subscribers to be negotiated
-        try
-        {
-            this.statusTracker.awaitNegotiatedSubscribers();
-        }
-        catch ( InterruptedException e )
-        {
-            Thread.currentThread().interrupt();
-
-            throw new EvaluationEventException( EVALUATION_STRING + this.evaluationId
-                                                + " was Interrupted while waiting for "
-                                                + "subscriptions to be negotiated.",
-                                                e );
-        }
-
-        Instant now = Instant.now();
-        long seconds = now.getEpochSecond();
-        int nanos = now.getNano();
-        EvaluationStatus started = EvaluationStatus.newBuilder()
-                                                   .setCompletionStatus( CompletionStatus.EVALUATION_STARTED )
-                                                   .setClientId( this.getClientId() )
-                                                   .setTime( Timestamp.newBuilder()
-                                                                      .setSeconds( seconds )
-                                                                      .setNanos( nanos ) )
-                                                   .build();
-
-        this.publish( started );
-
-        // Publish the evaluation description  and update the evaluation status
-        this.internalPublish( evaluationDescription );
-
-        // Notify that the evaluation is alive
-        this.checkAndNotifyStatusAtFixedInterval( this, this.timer );
-
-        LOGGER.info( "Finished creating evaluation {}, which negotiated these subscribers by output format type: {}.",
-                     this.evaluationId,
-                     this.statusTracker.getNegotiatedSubscribers() );
+        LOGGER.info( "Created an evaluation messager for evaluation {}.", this.evaluationId );
     }
 
     /**
@@ -1321,6 +1385,8 @@ public class EvaluationMessager implements Closeable
                                   String queue,
                                   String groupId )
     {
+        this.validateStarted();
+
         // Published below, so increment by 1 here 
         String messageId = "ID:" + this.getEvaluationId() + "-m" + EvaluationEventUtilities.getId();
 
@@ -1384,6 +1450,8 @@ public class EvaluationMessager implements Closeable
     {
         Objects.requireNonNull( evaluation );
 
+        this.validateStarted();
+
         ByteBuffer body = ByteBuffer.wrap( evaluation.toByteArray() );
 
         this.internalPublish( body, this.evaluationPublisher, EvaluationMessager.EVALUATION_QUEUE, null );
@@ -1442,4 +1510,28 @@ public class EvaluationMessager implements Closeable
         }
     }
 
+    /**
+     * @return the evaluation description message
+     */
+    private wres.statistics.generated.Evaluation getEvaluationDescription()
+    {
+        return this.evaluationDescription;
+    }
+
+    /**
+     * Validates that the messager has been started by calling {@link #start()}.
+     *
+     * @throws IllegalStateException if the messager has not been started
+     */
+
+    private void validateStarted()
+    {
+        if( ! this.isStarted.get() )
+        {
+            throw new IllegalStateException( "The evaluation messager for evaluation "
+                                             + this.getEvaluationId()
+                                             + " has not been started, but an operation was attempted that requires "
+                                             + "the messager to have been started." );
+        }
+    }
 }

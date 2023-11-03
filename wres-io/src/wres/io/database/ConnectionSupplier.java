@@ -18,7 +18,7 @@ public class ConnectionSupplier
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ConnectionSupplier.class );
 
-    private SystemSettings systemSettings;
+    private final SystemSettings systemSettings;
 
     /**
      * The standard priority set of connections to the database
@@ -33,21 +33,25 @@ public class ConnectionSupplier
      */
     private final DataSource highPriorityConnectionPool;
 
-    public ConnectionSupplier( SystemSettings systemSettings ) {
+    public ConnectionSupplier( SystemSettings systemSettings )
+    {
         this.systemSettings = systemSettings;
-        this.connectionPool = makeConnectionPool();
-        this.highPriorityConnectionPool = makeHighPriorityConnectionPool();
+        this.connectionPool = this.makeConnectionPool();
+        this.highPriorityConnectionPool = this.makeHighPriorityConnectionPool();
     }
 
-    public SystemSettings getSystemSettings() {
+    public SystemSettings getSystemSettings()
+    {
         return this.systemSettings;
     }
 
-    public DataSource getConnectionPool() {
+    public DataSource getConnectionPool()
+    {
         return this.connectionPool;
     }
 
-    public DataSource getHighPriorityConnectionPool() {
+    public DataSource getHighPriorityConnectionPool()
+    {
         return this.highPriorityConnectionPool;
     }
 

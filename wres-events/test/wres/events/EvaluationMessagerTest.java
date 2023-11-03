@@ -277,6 +277,14 @@ class EvaluationMessagerTest
                                              A_CLIENT,
                                              "evaluationTwo" ) )
         {
+            // Start the subscribers
+            ignoredOne.start();
+            ignoredTwo.start();
+
+            // Start the evaluations
+            evaluationOne.start();
+            evaluationTwo.start();
+
             // First evaluation
             for ( Statistics next : this.oneStatistics )
             {
@@ -351,6 +359,12 @@ class EvaluationMessagerTest
                                              EvaluationMessagerTest.connections,
                                              A_CLIENT ) )
         {
+            // Start the subscriber
+            ignored.start();
+
+            // Start the evaluation
+            evaluation.start();
+
             // Stop the evaluation
             evaluation.stop( new Exception( "an exception" ) );
 
@@ -418,6 +432,12 @@ class EvaluationMessagerTest
                                                                      EvaluationMessagerTest.connections,
                                                                      A_CLIENT ) )
         {
+            // Start the subscriber
+            ignored.start();
+
+            // Start the evaluation
+            evaluation.start();
+
             // First group
             for ( Statistics next : this.oneStatistics )
             {
@@ -523,6 +543,12 @@ class EvaluationMessagerTest
                                            EvaluationMessagerTest.connections,
                                            A_CLIENT );
 
+            // Start the subscriber
+            ignored.start();
+
+            // Start the evaluation
+            evaluation.start();
+
             // Notify publication done, even though nothing published, as this 
             // has the expected message count
             evaluation.markPublicationCompleteReportedSuccess();
@@ -589,9 +615,15 @@ class EvaluationMessagerTest
                                                Executors.newSingleThreadExecutor(),
                                                EvaluationMessagerTest.connections ) )
         {
+            // Start the subscriber
+            ignored.start();
+
             evaluation = EvaluationMessager.of( this.oneEvaluation,
                                                 EvaluationMessagerTest.connections,
                                                 A_CLIENT );
+
+            // Start the evaluation
+            evaluation.start();
 
             // Publish a statistics message, which fails to be consumed after retries
             evaluation.publish( Statistics.getDefaultInstance() );
@@ -668,6 +700,12 @@ class EvaluationMessagerTest
                                                                      EvaluationMessagerTest.connections,
                                                                      A_CLIENT ) )
         {
+            // Start the subscriber
+            ignored.start();
+
+            // Start the evaluation
+            evaluation.start();
+
             // Publish a statistics message, triggering one failed consumption followed by recovery
             evaluation.publish( Statistics.getDefaultInstance() );
 
@@ -728,6 +766,12 @@ class EvaluationMessagerTest
             evaluation = EvaluationMessager.of( this.oneEvaluation,
                                                 EvaluationMessagerTest.connections,
                                                 A_CLIENT );
+
+            // Start the subscriber
+            ignored.start();
+
+            // Start the evaluation
+            evaluation.start();
 
             Statistics mockedStatistics = Mockito.mock( Statistics.class );
             Mockito.when( mockedStatistics.toByteArray() )
