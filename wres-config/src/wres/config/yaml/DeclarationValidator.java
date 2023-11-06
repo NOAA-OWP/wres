@@ -199,11 +199,12 @@ public class DeclarationValidator
 
         // Map the errors to evaluation status events
         List<EvaluationStatusEvent> events = errors.stream()
-                                                        .map( next -> EvaluationStatusEvent.newBuilder()
-                                                        .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
-                                                        .setEventMessage( next.getMessage() )
-                                                        .build() )
-                                                        .toList();
+                                                   .map( next -> EvaluationStatusEvent.newBuilder()
+                                                                                      .setStatusLevel(
+                                                                                              EvaluationStatusEvent.StatusLevel.ERROR )
+                                                                                      .setEventMessage( next.getMessage() )
+                                                                                      .build() )
+                                                   .toList();
 
         // Identify unique errors and sort them by message
         Comparator<EvaluationStatusEvent> comparator = Comparator.comparing( EvaluationStatusEvent::getEventMessage );
@@ -1513,10 +1514,15 @@ public class DeclarationValidator
      */
     private static List<EvaluationStatusEvent> metricsAreValid( EvaluationDeclaration declaration )
     {
+        // No duplicate metrics by name (e.g., with different parameters): see #120345. Note that simple/identity
+        // duplication is schema-invalid, but duplication-by-name involves more complex/business logic validation
+        List<EvaluationStatusEvent> duplication =
+                DeclarationValidator.checkForDuplicationOfMetricsByName( declaration );
+        List<EvaluationStatusEvent> events = new ArrayList<>( duplication );
         // Time-series metrics require single-valued forecasts
         List<EvaluationStatusEvent> singleValued =
                 DeclarationValidator.checkSingleValuedForecastsForTimeSeriesMetrics( declaration );
-        List<EvaluationStatusEvent> events = new ArrayList<>( singleValued );
+        events.addAll( singleValued );
         // Baseline defined for metrics that require one
         List<EvaluationStatusEvent> baselinePresent =
                 DeclarationValidator.checkBaselinePresentForMetricsThatNeedIt( declaration );
@@ -1534,6 +1540,46 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> legacyCsv =
                 DeclarationValidator.checkMetricsForLegacyCsvAndDatePools( declaration );
         events.addAll( legacyCsv );
+
+        return Collections.unmodifiableList( events );
+    }
+
+
+    /**
+     * Checks that the sampling uncertainty declaration is valid.
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> checkForDuplicationOfMetricsByName( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Find duplicate metrics by name
+        Set<MetricConstants> duplicates = declaration.metrics()
+                                                     .stream()
+                                                     .collect( Collectors.groupingBy( Metric::name ) )
+                                                     .entrySet()
+                                                     .stream()
+                                                     // Filter entries for duplicate names
+                                                     .filter( e -> e.getValue()
+                                                                    .size() > 1 )
+                                                     .map( Map.Entry::getKey )
+                                                     .collect( Collectors.toSet() );
+
+        if ( !duplicates.isEmpty() )
+        {
+            // Always warn about cost of this option
+            EvaluationStatusEvent error
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "Encountered duplicate metrics by name, which is not "
+                                                             + "allowed. Please remove all duplicates and try again. "
+                                                             + "The following metrics were duplicated: "
+                                                             + duplicates
+                                                             + "." )
+                                           .build();
+            events.add( error );
+        }
 
         return Collections.unmodifiableList( events );
     }

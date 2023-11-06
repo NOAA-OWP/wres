@@ -1874,6 +1874,32 @@ class DeclarationValidatorTest
                                                        StatusLevel.ERROR ) );
     }
 
+    @Test
+    void testDuplicateMetricNamesWithDifferentMetricParametersProducesError() throws IOException
+    {
+        // #120345: duplication of metric names
+        String evaluation = """
+                observed: observations.csv
+                predicted: predictions.csv
+                metrics:
+                  - name: time to peak error
+                    summary_statistics:
+                      - median
+                      - minimum
+                      - maximum
+                      - mean absolute
+                      - mean
+                      - standard deviation
+                  - name: time to peak error
+                """;
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "duplicate metrics by name",
+                                                       StatusLevel.ERROR ) );
+    }
+
     /**
      * @param events the events to check
      * @param message the message sequence that should appear in one or more messages
