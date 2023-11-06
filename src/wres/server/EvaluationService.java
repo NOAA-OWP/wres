@@ -312,13 +312,13 @@ public class EvaluationService implements ServletContextListener
             // If the result failed, print the stack trace and return the exception
             if ( result.failed() )
             {
+                String failureMessage = "The evaluation failed with the following stack trace: ";
                 // Print the stack exception so it is stored in the stdOut of the job
-                result.getException().printStackTrace();
+                LOGGER.info( failureMessage, result.getException() );
 
                 EVALUATION_STAGE.set( COMPLETED );
                 return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
-                               .entity( "WRES experienced an internal issue. The top-level exception was:\n "
-                                        + result.getException() )
+                               .entity( failureMessage + result.getException() )
                                .build();
             }
 
@@ -327,20 +327,22 @@ public class EvaluationService implements ServletContextListener
         }
         catch ( UserInputException e )
         {
-            EVALUATION_STAGE.set( COMPLETED );
+            String failureMessage = "I received something I could not parse. The top-level exception was";
             logJobFinishInformation( jobMessage, ExecutionResult.failure( e ), beganExecution );
+            LOGGER.info( failureMessage, e );
+            EVALUATION_STAGE.set( COMPLETED );
             return Response.status( Response.Status.BAD_REQUEST )
-                           .entity( "I received something I could not parse. The top-level exception was: "
-                                    + e.getMessage() )
+                           .entity( failureMessage + e.getMessage() )
                            .build();
         }
         catch ( InternalWresException iwe )
         {
-            EVALUATION_STAGE.set( COMPLETED );
+            String failureMessage = "WRES experienced an internal issue. The top-level exception was";
             logJobFinishInformation( jobMessage, ExecutionResult.failure( iwe ), beganExecution );
+            LOGGER.info( failureMessage, iwe );
+            EVALUATION_STAGE.set( COMPLETED );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
-                           .entity( "WRES experienced an internal issue. The top-level exception was: "
-                                    + iwe.getMessage() )
+                           .entity( failureMessage + iwe.getMessage() )
                            .build();
         }
 
@@ -396,7 +398,7 @@ public class EvaluationService implements ServletContextListener
         catch ( SQLException se )
         {
             String errorMessage = "Failed to migrate the database.";
-            LOGGER.error( errorMessage, se );
+            LOGGER.info( errorMessage, se );
             InternalWresException e = new InternalWresException( errorMessage, se );
             logJobFinishInformation( jobMessage, ExecutionResult.failure( se ), beganExecution );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
@@ -424,6 +426,8 @@ public class EvaluationService implements ServletContextListener
                                                 + "is no database to clean." );
         }
 
+        EVALUATION_STAGE.set( ONGOING );
+
         //Used for logging
         Instant beganExecution = Instant.now();
 
@@ -448,7 +452,7 @@ public class EvaluationService implements ServletContextListener
         {
             String errorMessage = "Failed to clean the database. Unable to aquire lock or communicate with database";
             InternalWresException e = new InternalWresException( errorMessage, se );
-            LOGGER.error( errorMessage, se );
+            LOGGER.info( errorMessage, se );
             logJobFinishInformation( jobMessage, ExecutionResult.failure( e ), beganExecution );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "Unable to clean the database with the error: "
@@ -457,6 +461,7 @@ public class EvaluationService implements ServletContextListener
         }
         finally
         {
+            EVALUATION_STAGE.set( CLOSED );
             lockManager.shutdown();
         }
 
