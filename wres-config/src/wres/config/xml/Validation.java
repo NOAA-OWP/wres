@@ -65,6 +65,7 @@ import wres.config.xml.generated.ThresholdsConfig;
 import wres.config.xml.generated.TimeScaleConfig;
 import wres.config.xml.generated.TimeScaleFunction;
 import wres.config.xml.generated.TimeSeriesMetricConfig;
+import wres.config.xml.generated.TimeSeriesMetricConfigName;
 import wres.config.xml.generated.UnitAlias;
 import wres.config.xml.generated.UnnamedFeature;
 import wres.config.MetricConstants.SampleDataGroup;
@@ -190,11 +191,17 @@ public class Validation
                     }
                     else
                     {
+                        String linkedExceptionMessage = null;
+                        if ( Objects.nonNull( ve.getLinkedException() ) )
+                        {
+                            linkedExceptionMessage = ve.getLinkedException()
+                                                       .getMessage();
+                        }
                         LOGGER.error( "In the project declaration from {}, WRES found an issue. The XML parser/"
                                       + "validator reports this message: {}; and this linked exception: {}.",
                                       projectConfigPlus.getOrigin(),
                                       ve.getMessage(),
-                                      ve.getLinkedException() );
+                                      linkedExceptionMessage );
                     }
                 }
             }
@@ -778,7 +785,7 @@ public class Validation
     {
         Objects.requireNonNull( projectConfigPlus, NON_NULL );
 
-        boolean result = true;
+        boolean result;
 
         // #58737
         result = Validation.hasUpToOneDestinationPerDestinationType( projectConfigPlus );
@@ -1051,12 +1058,13 @@ public class Validation
         for ( MetricConfig next : metricConfig )
         {
             //Unnamed metric
-            if ( MetricConfigName.ALL_VALID == next.getName() && metricConfig.size() > 1 )
+            if ( MetricConfigName.ALL_VALID == next.getName()
+                 && metricConfig.size() > 1 )
             {
                 if ( LOGGER.isErrorEnabled() )
                 {
                     LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
-                                  + " All valid' metrics cannot be requested alongside named metrics.",
+                                  + " Cannot request 'all valid' metrics alongside named metrics.",
                                   projectConfigPlus,
                                   next.sourceLocation().getLineNumber(),
                                   next.sourceLocation().getColumnNumber() );
@@ -1064,6 +1072,27 @@ public class Validation
                 returnMe = false;
             }
         }
+
+        // Cannot define specific time-series metrics together with all valid time-series metrics
+        for ( TimeSeriesMetricConfig next : timeSeriesMetrics )
+        {
+            //Unnamed metric
+            if ( TimeSeriesMetricConfigName.ALL_VALID == next.getName()
+                 && timeSeriesMetrics.size() > 1 )
+            {
+                if ( LOGGER.isErrorEnabled() )
+                {
+                    LOGGER.error( FILE_LINE_COLUMN_BOILERPLATE
+                                  + " Cannot request 'all valid' time-series metrics alongside named time-series "
+                                  + "metrics.",
+                                  projectConfigPlus,
+                                  next.sourceLocation().getLineNumber(),
+                                  next.sourceLocation().getColumnNumber() );
+                }
+                returnMe = false;
+            }
+        }
+
         return returnMe;
     }
 
@@ -1144,7 +1173,6 @@ public class Validation
                                                 + "format. Please consider using the CSV2 format instead, which "
                                                 + "supports all metrics.",
                                                 projectConfigPlus.getOrigin(),
-                                                nextMetric.getName(),
                                                 nextMetric.getName() );
                                }
                            }
@@ -1161,7 +1189,6 @@ public class Validation
                                                 + "format. Please consider using the CSV2 format instead, which "
                                                 + "supports all metrics.",
                                                 projectConfigPlus.getOrigin(),
-                                                nextMetric.getName(),
                                                 nextMetric.getName() );
                                }
                            }
@@ -1540,7 +1567,7 @@ public class Validation
 
     private static boolean isPairConfigValid( ProjectConfigPlus projectConfigPlus )
     {
-        boolean result = true;
+        boolean result;
 
         ProjectConfig projectConfig = projectConfigPlus.getProjectConfig();
 
@@ -1633,9 +1660,9 @@ public class Validation
     }
 
     /**
-     * Validates features.
+     * <p>Validates features.
      *
-     * TODO: Currently, features declared in the context of a featureGroup do not require that a feature name occurs 
+     * <p>TODO: Currently, features declared in the context of a featureGroup do not require that a feature name occurs
      * only once per feature dimension, but do require that feature tuples appear only once. When the former constraint
      * is relaxed, define a single helper for validation of features to be re-used in all contexts.
      *
@@ -1856,7 +1883,6 @@ public class Validation
 
     /**
      * Validates individual features that are supplied in a grouped context.
-     *
      * TODO: Currently, features declared in the context of a featureGroup do not require that a feature name occurs 
      * only once per feature dimension, but do require that feature tuples appear only once. When the former constraint
      * is relaxed, define a single helper for validation of features to be re-used in all contexts. The new helper will 
@@ -2662,7 +2688,7 @@ public class Validation
 
         // Check the earliest monthday
         // Another validation asserts pairs whose values are both present or absent
-        MonthDay earliestMonthDay = null;
+        MonthDay earliestMonthDay;
         if ( earliestMonthPresent && earliestDayPresent )
         {
             try
@@ -2692,7 +2718,7 @@ public class Validation
         }
 
         // Check the latest monthday
-        MonthDay latestMonthDay = null;
+        MonthDay latestMonthDay;
         if ( latestMonthPresent && latestDayPresent )
         {
             try
@@ -2758,12 +2784,12 @@ public class Validation
     }
 
     /**
-     * Returns true if the time aggregation function associated with the desiredTimeScale is valid given the time
+     * <p>Returns true if the time aggregation function associated with the desiredTimeScale is valid given the time
      * aggregation functions associated with the existingTimeScale for each source.
      *
-     * See Redmine issue 40389.
+     * <p>See Redmine issue 40389.
      *
-     * Not all attributes of a valid aggregation can be checked from the declaration alone, but some attributes, 
+     * <p>Not all attributes of a valid aggregation can be checked from the declaration alone, but some attributes,
      * notably whether the aggregation function is applicable, can be checked in advance. Having a valid time 
      * aggregation function does not imply that the system actually supports it.
      *
@@ -2880,12 +2906,12 @@ public class Validation
     }
 
     /**
-     * Returns true if the time aggregation period associated with the desiredTimeScale is valid given the time
+     * <p>Returns true if the time aggregation period associated with the desiredTimeScale is valid given the time
      * aggregation periods associated with the existingTimeScale for each source.
      *
-     * See Redmine issue 40389.
+     * <p>See Redmine issue 40389.
      *
-     * Not all attributes of a valid aggregation can be checked from the declaration alone, but some attributes, 
+     * <p>Not all attributes of a valid aggregation can be checked from the declaration alone, but some attributes,
      * can be checked in advance. Having a valid time aggregation period does not imply that the system actually 
      * supports aggregation to that period.
      *
@@ -3980,9 +4006,7 @@ public class Validation
                              anInterface,
                              type,
                              anInterface,
-                             interfaceType,
-                             interfaceType,
-                             type );
+                             interfaceType );
             }
             else
             {
