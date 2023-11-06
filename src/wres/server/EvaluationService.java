@@ -180,7 +180,7 @@ public class EvaluationService implements ServletContextListener
 
         // Create new stream to redirect output to
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        PrintStream printStream = new PrintStream( byteArrayOutputStream, true, StandardCharsets.UTF_8 );
+        PrintStream printStream = new PrintStream( byteArrayOutputStream );
 
         // redirect the out stream
         System.setOut( printStream );
@@ -205,7 +205,7 @@ public class EvaluationService implements ServletContextListener
 
         // Create new stream to redirect output to
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        PrintStream printStream = new PrintStream( byteArrayOutputStream, true, StandardCharsets.UTF_8 );
+        PrintStream printStream = new PrintStream( byteArrayOutputStream );
 
         // redirect the error stream
         System.setErr( printStream );
@@ -630,25 +630,44 @@ public class EvaluationService implements ServletContextListener
 
                 while ( !EVALUATION_STAGE.get().equals( CLOSED ) )
                 {
-                    ByteArrayInputStream byteArrayInputStream =
-                            new ByteArrayInputStream( redirectStream.toByteArray() );
-                    // Skip the content in the message already sent
-                    long skip = byteArrayInputStream.skip( offset );
-                    String bytes = new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 );
-
-                    // If we skipped successfully and the resulting string isn't empty send SSE
-                    if ( offset == skip && !bytes.isEmpty() )
-                    {
-                        offset += bytes.length();
-                        output.write( bytes );
-                    }
+                    offset = writeOutput( redirectStream, output, offset );
                 }
+
+                // After the evaluation is closed, send any more information missed in the last loop
+                // This helps avoid logs being cut off if alot of information is sent at the end of an evaluation
+                writeOutput( redirectStream, output, offset );
             }
             catch ( IOException e )
             {
                 LOGGER.warn( "Unable to start a chunked output thread with the exception:", e );
             }
         } ).start();
+    }
+
+    /**
+     * Helper to write output from the redirectStream to the output skipping the offset
+     * @param redirectStream the stream we are taking information from
+     * @param output the place we are writting the output
+     * @param offset How much of the redirectStream to skip
+     * @return the new offset
+     * @throws IOException IOexception when writting to the output
+     */
+    private int writeOutput( ByteArrayOutputStream redirectStream, ChunkedOutput<String> output, int offset )
+            throws IOException
+    {
+        ByteArrayInputStream byteArrayInputStream =
+                new ByteArrayInputStream( redirectStream.toByteArray() );
+        // Skip the content in the message already sent
+        long skip = byteArrayInputStream.skip( offset );
+        String bytes = new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 );
+
+        // If we skipped successfully and the resulting string isn't empty send SSE
+        if ( offset == skip && !bytes.isEmpty() )
+        {
+            offset += bytes.length();
+            output.write( bytes );
+        }
+        return offset;
     }
 
     /**
