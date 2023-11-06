@@ -138,8 +138,10 @@ public class Worker
 
                         // Something happened to the worker-server while evaluating, look for meta failure and throw exception
                         // We do this instead of passing the exception to be able to dequeue the job that caused this
-                        if ( responseCode == META_FAILURE_CODE ) {
-                            throw new EvaluationProcessingException( "Something happened to the worker-server while processing the evaluation" );
+                        if ( responseCode == META_FAILURE_CODE )
+                        {
+                            throw new EvaluationProcessingException(
+                                    "Something happened to the worker-server while processing the evaluation" );
                         }
                     }
                 }
@@ -258,9 +260,12 @@ public class Worker
     private static boolean isServerUp() throws IOException, URISyntaxException
     {
         URI uri = new URI( String.format( SERVER_HEARTBEAT_URI, DEFAULT_PORT ) );
-        WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( uri, CALL_TIMEOUT );
-
-        return fromWeb.getStatusCode() == HttpURLConnection.HTTP_OK;
+        try (
+                WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( uri, CALL_TIMEOUT );
+        )
+        {
+            return fromWeb.getStatusCode() == HttpURLConnection.HTTP_OK;
+        }
     }
 
     private static void killServerProcess( Process oldServerProcess )
