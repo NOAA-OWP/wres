@@ -3,11 +3,7 @@ package wres.system;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.EnumMap;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Properties;
-import java.util.TreeMap;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -21,8 +17,7 @@ import wres.system.SystemSettings.SystemSettingsBuilder;
 
 public class SettingsFactory
 {
-    private static final Logger LOGGER =
-            LoggerFactory.getLogger( SettingsFactory.class );
+    private static final Logger LOGGER = LoggerFactory.getLogger( SettingsFactory.class );
 
     private static final URI DEFAULT_CONFIG_PATH = URI.create( "wresconfig.xml" );
 
@@ -40,7 +35,7 @@ public class SettingsFactory
 
     /**
      * Creates SystemSettings from the input stream of a config file
-     * @param xmlInputStream
+     * @param xmlInputStream the input stream
      * @return SystemSettings with all overrides applied
      */
     public static SystemSettings createSettingsFromXml( InputStream xmlInputStream )
@@ -82,7 +77,7 @@ public class SettingsFactory
         }
         catch ( JAXBException e )
         {
-            throw new RuntimeException( e );
+            throw new SettingsReadException( "Could not read the system settings.,", e );
         }
     }
 
@@ -495,7 +490,6 @@ public class SettingsFactory
     private static void overrideDatabaseAttributesUsingJdbcUrl( DatabaseSettings.DatabaseSettingsBuilder builder,
                                                                 String jdbcUrl )
     {
-
         if ( Objects.nonNull( jdbcUrl )
              && !jdbcUrl.isBlank()
              && jdbcUrl.startsWith( "jdbc:" )
@@ -611,12 +605,12 @@ public class SettingsFactory
     }
 
     /**
-     * Figure out the password based on system properties and/or wres config
+     * <p>Figure out the password based on system properties and/or wres config
      * where host, port, and database name have already been set. Needs to be
      * called after all other overrides have been applied and/or parsing of
      * the jdbcUrl.
      *
-     * If there is no value it returns null which is the default value of password
+     * <p>If there is no value it returns null which is the default value of password
      */
 
     public static String getPasswordOverrides( DatabaseSettings databaseSettings )
@@ -668,5 +662,30 @@ public class SettingsFactory
             }
         }
         return null;
+    }
+
+    /**
+     * Exception encountered on reading system settings,
+     */
+    private static class SettingsReadException extends RuntimeException
+    {
+        /**
+         * Constructs a {@link SettingsReadException} with the specified message.
+         *
+         * @param message the message.
+         * @param cause the cause of the exception
+         */
+
+        public SettingsReadException( String message, Throwable cause )
+        {
+            super( message, cause );
+        }
+    }
+
+    /**
+     * Do not construct.
+     */
+    private SettingsFactory()
+    {
     }
 }

@@ -130,8 +130,8 @@ public class EvaluationService implements ServletContextListener
         this.database = database;
         this.broker = broker;
         this.evaluator = new Evaluator( systemSettings,
-                                   database,
-                                   broker );
+                                        database,
+                                        broker );
     }
 
     /**
@@ -159,7 +159,7 @@ public class EvaluationService implements ServletContextListener
     @Produces( MediaType.TEXT_PLAIN )
     public Response getStatus( @PathParam( "id" ) Long id )
     {
-        //TODO activate when we have a persistant cache and async evaluations
+        // TODO activate when we have a persistant cache and async evaluations
 
         return Response.ok( EVALUATION_STAGE.get().toString() )
                        .build();
@@ -176,7 +176,7 @@ public class EvaluationService implements ServletContextListener
         //TODO Get the stream for the evaluation ID if we allow async executions in the future
         //TODO Possibly add evaluation status check here as well. No need to check now as you can have unlimited listeners
 
-        final ChunkedOutput<String> output = new ChunkedOutput<>(String.class);
+        final ChunkedOutput<String> output = new ChunkedOutput<>( String.class );
 
         // Create new stream to redirect output to
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -198,10 +198,10 @@ public class EvaluationService implements ServletContextListener
     @Path( "/stderr/{id}" )
     public ChunkedOutput<String> getErrorStream( @PathParam( "id" ) Long id )
     {
-        //TODO Get the stream for the evaluation ID if we allow async executions in the future
-        //TODO Possibly add evaluation status check here as well. No need to check now as you can have unlimited listeners
+        // TODO Get the stream for the evaluation ID if we allow async executions in the future
+        // TODO Possibly add evaluation status check here as well. No need to check now as you can have unlimited listeners
 
-        final ChunkedOutput<String> output = new ChunkedOutput<>(String.class);
+        final ChunkedOutput<String> output = new ChunkedOutput<>( String.class );
 
         // Create new stream to redirect output to
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -226,9 +226,10 @@ public class EvaluationService implements ServletContextListener
     @Produces( MediaType.TEXT_PLAIN )
     public Response openEvaluation()
     {
-
-        if ( EVALUATION_ID.get() > 0 || !( EVALUATION_STAGE.get().equals( CLOSED ) || EVALUATION_STAGE.get()
-                                                                                                      .equals( AWAITING ) ) )
+        if ( EVALUATION_ID.get() > 0
+             || !( EVALUATION_STAGE.get().equals( CLOSED )
+                   || EVALUATION_STAGE.get()
+                                      .equals( AWAITING ) ) )
         {
             return Response.status( Response.Status.BAD_REQUEST )
                            .entity( String.format(
@@ -252,7 +253,6 @@ public class EvaluationService implements ServletContextListener
                        .entity( projectId )
                        .build();
     }
-
 
     /**
      * Closes an evaluation that was Opened (Wont interupt ongoing evaluations)
@@ -512,24 +512,7 @@ public class EvaluationService implements ServletContextListener
                            .build();
         }
 
-        //TODO: Swap to not using cache once we can find root cause of files not being written
-
-        //        if ( outputPaths == null )
-        //        {
-        //            return Response.status( Response.Status.NOT_FOUND )
-        //                           .build();
-        //        }
-        //
-        //
-        //        StreamingOutput streamingOutput = outputSream -> {
-        //            Writer writer = new BufferedWriter( new OutputStreamWriter( outputSream ) );
-        //            for ( java.nio.file.Path path : outputPaths )
-        //            {
-        //                writer.write( path.toString() + "\n" );
-        //            }
-        //            writer.flush();
-        //            writer.close();
-        //        };
+        // TODO: Swap to not using cache once we can find root cause of files not being written
 
         return Response.ok( "I received project " + projectId
                             + ", and successfully ran it. Visit /project/"
@@ -539,14 +522,15 @@ public class EvaluationService implements ServletContextListener
     }
 
     /**
-     * (DEPRECATED)
      * @param id the evaluation job identifier
      * @return the evaluation results
+     * @deprecated
      */
 
     @GET
     @Path( "/{id}" )
     @Produces( MediaType.TEXT_PLAIN )
+    @Deprecated( since = "6.17" )
     public Response getProjectResults( @PathParam( "id" ) Long id )
     {
         Set<java.nio.file.Path> paths = OUTPUTS.getIfPresent( id );
@@ -565,14 +549,15 @@ public class EvaluationService implements ServletContextListener
     }
 
     /**
-     * (DEPRECATED)
      * @param id the evaluation job identifier
      * @param resourceName the resource name
      * @return the resource
+     * @deprecated
      */
 
     @GET
     @Path( "/{id}/{resourceName}" )
+    @Deprecated( since = "6.17" )
     public Response getProjectResource( @PathParam( "id" ) Long id,
                                         @PathParam( "resourceName" ) String resourceName )
     {
@@ -626,14 +611,16 @@ public class EvaluationService implements ServletContextListener
                        .build();
     }
 
-
     /**
-     * Creates a thread that will send messages from the stream to the provided ChunkedOutput
+     * Creates a thread that will send messages from the stream to the provided ChunkedOutput.
+     * @param redirectStream the redirect stream
+     * @param output the chunked outputs stream
      */
     private void startChunkedOutputThread( ByteArrayOutputStream redirectStream, ChunkedOutput<String> output )
     {
         new Thread( () -> {
-            try {
+            try ( output )
+            {
                 int offset = 0;
 
                 while ( !EVALUATION_STAGE.get().equals( CLOSED ) )
@@ -651,15 +638,10 @@ public class EvaluationService implements ServletContextListener
                         output.write( bytes );
                     }
                 }
-            } catch (IOException e){
-                LOGGER.info( "Unable to start a chunked output thread with the exception", e );
             }
-            finally {
-                try {
-                    output.close();
-                } catch (IOException e){
-                    LOGGER.info( "Unable to close a chunked output thread with the exception", e );
-                }
+            catch ( IOException e )
+            {
+                LOGGER.warn( "Unable to start a chunked output thread with the exception:", e );
             }
         } ).start();
     }
@@ -749,7 +731,6 @@ public class EvaluationService implements ServletContextListener
             DatabaseOperations.logExecution( database,
                                              logParameters );
         }
-
     }
 
     private void logJobHeaderInformation()
@@ -831,7 +812,8 @@ public class EvaluationService implements ServletContextListener
         }
     }
 
-    private Job.job createJobFromByteArray ( byte[] message ) {
+    private Job.job createJobFromByteArray( byte[] message )
+    {
         try
         {
             return Job.job.parseFrom( message );

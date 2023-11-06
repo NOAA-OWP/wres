@@ -326,19 +326,16 @@ public class WresJob
     @Produces( "application/octet-stream" )
     public Response postWresValidate( @FormParam( "projectConfig" ) @DefaultValue( "" ) String projectConfig )
     {
-        //Obtain the evaluation status events.
-        Set<EvaluationStatusEvent> events;
+        // Obtain the evaluation status events.
+        List<EvaluationStatusEvent> events;
         try
         {
             events = DeclarationValidator.validate( projectConfig );
         }
         catch ( IOException e1 )
         {
-            LOGGER.warn(
-                         "Unable to validate project configuration due to internal error.",
-                         e1 );
-            return WresJob.internalServerError(
-                                                "Unable to validate project configuration due to internal error." );
+            LOGGER.warn( "Unable to validate project configuration due to internal error.", e1 );
+            return WresJob.internalServerError( "Unable to validate project configuration due to internal error." );
         }
 
         //Write the events to a delimited byte stream.

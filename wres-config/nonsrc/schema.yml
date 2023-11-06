@@ -979,11 +979,13 @@ definitions:
         items:
           "$ref": "#/definitions/ElaboratedThresholds"
         minItems: 1
+        uniqueItems: true
       # Plain thresholds
       - type: array
         items:
           type: number
         minItems: 1
+        uniqueItems: true
       # Single number
       - type: number
     required:
@@ -1000,6 +1002,7 @@ definitions:
             items:
               "$ref": "#/definitions/Threshold"
             minItems: 1
+            uniqueItems: true
           - type: number
       operator:
         "$ref": "#/definitions/ThresholdOperatorEnum"
@@ -1048,6 +1051,7 @@ definitions:
         items:
           "$ref": "#/definitions/ElaboratedProbabilityThresholds"
         minItems: 1
+        uniqueItems: true
       # Plain thresholds
       - type: array
         items:
@@ -1055,6 +1059,7 @@ definitions:
           minimum: 0.0
           maximum: 1.0
         minItems: 1
+        uniqueItems: true
       # Single number
       - type: number
     required:
@@ -1072,6 +1077,7 @@ definitions:
             items:
               "$ref": "#/definitions/ProbabilityThreshold"
             minItems: 1
+            uniqueItems: true
           - type: number
             minimum: 0.0
             maximum: 1.0
