@@ -434,14 +434,14 @@ public class EvaluationService implements ServletContextListener
         // Convert the raw message into a job
         Job.job jobMessage = createJobFromByteArray( message );
 
+        // Checks if database information has changed in the jobMessage and swap to that database
+        swapDatabaseIfNeeded( jobMessage );
+
         DatabaseLockManager lockManager =
                 DatabaseLockManager.from( systemSettings,
                                           () -> database.getRawConnection() );
         try
         {
-            // Checks if database information has changed in the jobMessage and swap to that database
-            swapDatabaseIfNeeded( jobMessage );
-
             logJobHeaderInformation();
             lockManager.lockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
             DatabaseOperations.cleanDatabase( database );
@@ -809,7 +809,9 @@ public class EvaluationService implements ServletContextListener
                     }
                     catch ( SQLException e )
                     {
-                        throw new IllegalStateException( "Failed to migrate the WRES database.", e );
+                        String errorMessage = "Failed to migrate the WRES database.";
+                        LOGGER.error( errorMessage, e );
+                        throw new IllegalStateException( errorMessage, e );
                     }
                 }
             }

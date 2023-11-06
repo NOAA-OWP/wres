@@ -241,12 +241,13 @@ class WresEvaluationProcessor implements Callable<Integer>
         // return meta failure code so the container can be restarted and job dequeued
         catch ( EvaluationProcessingException epe )
         {
-            String error = "!!!!----------------------------------------------------------------------------------!!!!\n\n"
+            String error =
+                    "!!!!----------------------------------------------------------------------------------!!!!\n\n"
                     + "This evaluation has failed due to an unrecoverable problem within the WRES.\n"
                     + "Please do not resubmit your evaluation.\n"
                     + "Instead, please report this issue by opening a ticket in the WRES User Support project:\n"
-                           + "https://vlab.***REMOVED***/redmine/projects/wres-user-support/issues/new\n\n"
-                    +  "!!!!----------------------------------------------------------------------------------!!!!\n";
+                    + "https://vlab.***REMOVED***/redmine/projects/wres-user-support/issues/new\n\n"
+                    + "!!!!----------------------------------------------------------------------------------!!!!\n";
             this.sendMessage( prepareStdStreamMessage( error ), WhichStream.STDOUT );
 
             LOGGER.error( String.format( "Failed to finish the evaluation for job: %s with log: \n %s", jobId, epe ) );
@@ -347,7 +348,7 @@ class WresEvaluationProcessor implements Callable<Integer>
                                                                                    CALL_TIMEOUT,
                                                                                    RETRY_STATES ) )
         {
-            if ( evaluationIdRequest.getStatusCode() != HttpURLConnection.HTTP_OK  )
+            if ( evaluationIdRequest.getStatusCode() != HttpURLConnection.HTTP_OK )
             {
                 LOGGER.error( "Unable to manipulate database" );
             }
@@ -357,7 +358,9 @@ class WresEvaluationProcessor implements Callable<Integer>
         }
         catch ( IOException e )
         {
-            throw new EvaluationProcessingException( "Experienced and exception while attempting to manipulate the database", e );
+            throw new EvaluationProcessingException(
+                    "Experienced and exception while attempting to manipulate the database",
+                    e );
         }
     }
 
