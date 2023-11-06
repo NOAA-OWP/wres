@@ -6,7 +6,7 @@ import wres.datamodel.DataException;
 
 /**
  * A runtime exception associated with incorrect {@link Pool}.
- * 
+ *
  * @author James Brown
  */
 
@@ -29,25 +29,25 @@ public class PoolException extends DataException
 
     /**
      * Constructs a {@link PoolException} with the specified message.
-     * 
+     *
      * @param message the message.
      */
 
-    public PoolException(final String message)
+    public PoolException( String message )
     {
-        super(message);
+        super( message );
     }
 
     /**
      * Constructs a {@link PoolException} with the specified message.
-     * 
+     *
      * @param message the message.
      * @param cause the cause of the exception
      */
 
-    public PoolException(final String message, final Throwable cause)
+    public PoolException( String message, Throwable cause )
     {
-        super(message, cause);
+        super( message, cause );
     }
 
 }

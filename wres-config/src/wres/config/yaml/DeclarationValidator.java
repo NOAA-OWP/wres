@@ -7,12 +7,15 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -115,12 +118,12 @@ public class DeclarationValidator
      * wants to validate the declaration without performing any subsequent activities, such as executing an evaluation.
      *
      * @param yaml a declaration string
-     * @return any validation events encountered
+     * @return an ordered list of validation events encountered
      * @throws NullPointerException if the input string is null
      * @throws IOException if the schema could not be read
      */
 
-    public static Set<EvaluationStatusEvent> validate( String yaml ) throws IOException
+    public static List<EvaluationStatusEvent> validate( String yaml ) throws IOException
     {
         Objects.requireNonNull( yaml );
 
@@ -151,7 +154,7 @@ public class DeclarationValidator
                                                               .getMessage() )
                                          .build();
 
-            return Set.of( error );
+            return List.of( error );
         }
 
         // Get the schema
@@ -159,7 +162,7 @@ public class DeclarationValidator
 
         // Validate against the schema
         Set<EvaluationStatusEvent> schemaEvents = DeclarationValidator.validate( declaration, schema );
-        Set<EvaluationStatusEvent> events = new HashSet<>( schemaEvents );
+        List<EvaluationStatusEvent> events = new ArrayList<>( schemaEvents );
 
         // No schema validation errors? Then proceed to business logic, which requires deserialization and hence no
         // schema validation errors: see #57969
@@ -172,14 +175,14 @@ public class DeclarationValidator
             events.addAll( businessEvents );
         }
 
-        return Collections.unmodifiableSet( events );
+        return Collections.unmodifiableList( events );
     }
 
     /**
      * Performs validation of a declaration node against the schema.
      * @param declaration the declaration
      * @param schema the schema
-     * @return any validation errors encountered
+     * @return the unique schema validation errors encountered
      * @throws NullPointerException if either input is null
      */
 
@@ -195,12 +198,19 @@ public class DeclarationValidator
                       errors.size() );
 
         // Map the errors to evaluation status events
-        return errors.stream()
-                     .map( next -> EvaluationStatusEvent.newBuilder()
+        List<EvaluationStatusEvent> events = errors.stream()
+                                                        .map( next -> EvaluationStatusEvent.newBuilder()
                                                         .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
                                                         .setEventMessage( next.getMessage() )
                                                         .build() )
-                     .collect( Collectors.toUnmodifiableSet() );
+                                                        .toList();
+
+        // Identify unique errors and sort them by message
+        Comparator<EvaluationStatusEvent> comparator = Comparator.comparing( EvaluationStatusEvent::getEventMessage );
+        SortedSet<EvaluationStatusEvent> sorted = new TreeSet<>( comparator );
+        sorted.addAll( events );
+
+        return Collections.unmodifiableSortedSet( sorted );
     }
 
     /**

@@ -1,8 +1,6 @@
 package wres.system;
 
 import java.sql.DriverManager;
-import java.util.Map;
-import java.util.Properties;
 import javax.sql.DataSource;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -17,7 +15,7 @@ import lombok.experimental.NonFinal;
 /**
  * <p>Contains access to configured settings and objects for accessing the database
  *
- * Connections should mostly be acquired from a common pool
+ * <p>Connections should mostly be acquired from a common pool
  * (HikariCP), which uses the {@link DataSource} route, not the {@link DriverManager} route. The latter should not be
  * used. When acquiring connections for a database lock manager, these connections should not be from the same pool,
  * but they should be obtained by creating a {@link DataSource}, not by using the {@link DriverManager}. See #103431
@@ -31,10 +29,9 @@ import lombok.experimental.NonFinal;
 @Value
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder (toBuilder = true)
+@Builder( toBuilder = true )
 public class DatabaseSettings
 {
-
     /**
      * When the jdbcUrl is specified, it takes precedence over the fields used
      * to programmatically generate a jdbcUrl. The alternative to specifying a
@@ -55,7 +52,7 @@ public class DatabaseSettings
     String username = "wres";
     @Builder.Default
     @XmlElement( name = "password" )
-    String password  = null;
+    String password = null;
     @Builder.Default
     @XmlElement( name = "port" )
     int port = 5432;
@@ -67,7 +64,7 @@ public class DatabaseSettings
     DatabaseType databaseType = DatabaseType.POSTGRESQL;
     @Builder.Default
     @XmlElement( name = "certificate_file_to_trust" )
-    String certificateFileToTrust  = null;
+    String certificateFileToTrust = null;
     @Builder.Default
     @XmlElement( name = "max_pool_size" )
     int maxPoolSize = 10;
@@ -99,10 +96,11 @@ public class DatabaseSettings
     int connectionTimeoutMs = 18000000;
 
     @XmlElement( name = "database_type" )
-    private void setDatabaseType( String databaseType ) {
+    private void setDatabaseType( String databaseType )
+    {
         this.databaseType = DatabaseType.valueOf( databaseType );
     }
 
     // Dummy class to allow javadoc task to find the builder created by lombok
-    public static class DatabaseSettingsBuilder{}
+    public static class DatabaseSettingsBuilder {}  // NOSONAR
 }

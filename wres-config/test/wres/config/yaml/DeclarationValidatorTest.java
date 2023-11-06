@@ -1779,7 +1779,7 @@ class DeclarationValidatorTest
     }
 
     @Test
-    void testInvalidDeclarationStringProducesSchemaValidationError() throws IOException
+    void testInvalidDeclarationStringProducesSchemaValidationError() throws IOException  // NOSONAR
     {
         // #57969-86
         String evaluation = """
@@ -1808,9 +1808,9 @@ class DeclarationValidatorTest
                   unit: hours
                 """;
 
-        Set<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
 
-        assertTrue( DeclarationValidatorTest.contains( List.copyOf( events ),
+        assertTrue( DeclarationValidatorTest.contains( events,
                                                        "is not defined in the schema",
                                                        StatusLevel.ERROR ) );
     }
@@ -1847,10 +1847,30 @@ class DeclarationValidatorTest
                   uri: https://foo/api/location/v3.0/metadata
                   """;
 
-        Set<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
 
-        assertTrue( DeclarationValidatorTest.contains( List.copyOf( events ),
+        assertTrue( DeclarationValidatorTest.contains( events,
                                                        "invalid YAML",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testDuplicateThresholdsProducesErrorOnUniqueConstraintViolation() throws IOException
+    {
+        // #120047: invalid spacing of minimum_exclusive
+        String evaluation = """
+                observed: foo.csv
+                predicted: bar.csv
+                classifier_thresholds:
+                  values: [0.05, 0.05, 0.1, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95]
+                  operator: equal
+                  apply_to: any predicted
+                """;
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "the items in the array must be unique",
                                                        StatusLevel.ERROR ) );
     }
 
