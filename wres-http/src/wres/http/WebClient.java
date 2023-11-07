@@ -184,6 +184,27 @@ public class WebClient
     public ClientResponse getFromWeb( URI uri, List<Integer> retryOn, Duration timeout )
             throws IOException
     {
+        return this.getFromWeb( uri, retryOn, timeout, false );
+    }
+
+    /**
+     * Get a pair of HTTP status and InputStream of body of given URI.
+     * TODO: This is a workaround as this class was leveraged poorly for all http traffic, refactor ticket #121266
+     * @param uri The URI to GET and transform the body into an InputStream.
+     * @param retryOn A list of http status codes that should cause a retry.
+     * @param timeout on a call
+     * @param noTimeout wether the request will timeout
+     * @return A pair of the HTTP status (left) and InputStream of body (right).
+     *         NullInputStream on right when 4xx response.
+     * @throws IOException When sending/receiving fails; when non-2xx non-4xx
+     *                     response, when wrapping response to decompress fails.
+     * @throws IllegalArgumentException When non-http uri is passed in.
+     * @throws NullPointerException When any argument is null.
+     */
+
+    public ClientResponse getFromWeb( URI uri, List<Integer> retryOn, Duration timeout, boolean noTimeout )
+            throws IOException
+    {
         Objects.requireNonNull( uri );
         Objects.requireNonNull( retryOn );
 
@@ -212,7 +233,18 @@ public class WebClient
             monitorEvent.begin();
 
             Instant start = Instant.now();
-            Response httpResponse = tryRequest( request, retryCount );
+
+            OkHttpClient client = this.httpClient;
+            if ( noTimeout )
+            {
+                // set to not timeout on post requests (We have very long evaluations and dont want to timeout the call)
+                client = this.httpClient.newBuilder()
+                                        .callTimeout( Duration.ZERO )
+                                        .readTimeout( Duration.ZERO )
+                                        .build();
+            }
+
+            Response httpResponse = tryRequest( request, retryCount, client );
 
             while ( retry )
             {
@@ -229,7 +261,7 @@ public class WebClient
                     }
 
                     Thread.sleep( sleepMillis );
-                    httpResponse = tryRequest( request, retryCount );
+                    httpResponse = tryRequest( request, retryCount, client );
                     Instant now = Instant.now();
                     retry = start.plus( timeout )
                                  .isAfter( now );

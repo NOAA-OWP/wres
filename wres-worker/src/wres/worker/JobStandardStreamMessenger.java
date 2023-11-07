@@ -5,12 +5,15 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
+import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +39,10 @@ public class JobStandardStreamMessenger implements Runnable
     private static final String STD_OUT_URI = "http://localhost:%d/evaluation/stdout/%s";
     /** A formatable string to compose the stderr request to the server */
     private static final String STD_ERR_URI = "http://localhost:%d/evaluation/stderr/%s";
+
+    private static final List<Integer> RETRY_STATES = List.of( Response.Status.REQUEST_TIMEOUT.getStatusCode() );
+
+    private static final Duration CALL_TIMEOUT = Duration.ofMinutes( 2 );
 
     /** Stream identifier. */
     public enum WhichStream
@@ -124,7 +131,7 @@ public class JobStandardStreamMessenger implements Runnable
         }
 
         try (
-                WebClient.ClientResponse clientResponse = WEB_CLIENT.getFromWeb( URI.create( url ) );
+                WebClient.ClientResponse clientResponse = WEB_CLIENT.getFromWeb( URI.create( url ), RETRY_STATES, CALL_TIMEOUT, true );
                 InputStreamReader utf8Reader = new InputStreamReader( clientResponse.getResponse(),
                                                                       StandardCharsets.UTF_8 );
                 BufferedReader reader = new BufferedReader( utf8Reader );
