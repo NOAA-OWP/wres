@@ -1875,7 +1875,7 @@ class DeclarationValidatorTest
     }
 
     @Test
-    void testDuplicateMetricNamesWithDifferentMetricParametersProducesError() throws IOException
+    void testDuplicateMetricNamesWithDifferentMetricParametersProducesWarning() throws IOException
     {
         // #120345: duplication of metric names
         String evaluation = """
@@ -1896,8 +1896,8 @@ class DeclarationValidatorTest
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
 
         assertTrue( DeclarationValidatorTest.contains( events,
-                                                       "duplicate metrics by name",
-                                                       StatusLevel.ERROR ) );
+                                                       "duplicate metrics",
+                                                       StatusLevel.WARN ) );
     }
 
     @Test

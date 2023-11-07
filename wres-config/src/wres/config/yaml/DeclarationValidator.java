@@ -1514,8 +1514,7 @@ public class DeclarationValidator
      */
     private static List<EvaluationStatusEvent> metricsAreValid( EvaluationDeclaration declaration )
     {
-        // No duplicate metrics by name (e.g., with different parameters): see #120345. Note that simple/identity
-        // duplication is schema-invalid, but duplication-by-name involves more complex/business logic validation
+        // Check and warn about duplication of metrics by name
         List<EvaluationStatusEvent> duplication =
                 DeclarationValidator.checkForDuplicationOfMetricsByName( declaration );
         List<EvaluationStatusEvent> events = new ArrayList<>( duplication );
@@ -1544,7 +1543,6 @@ public class DeclarationValidator
         return Collections.unmodifiableList( events );
     }
 
-
     /**
      * Checks that the sampling uncertainty declaration is valid.
      * @param declaration the declaration
@@ -1571,10 +1569,13 @@ public class DeclarationValidator
             // Always warn about cost of this option
             EvaluationStatusEvent error
                     = EvaluationStatusEvent.newBuilder()
-                                           .setStatusLevel( StatusLevel.ERROR )
-                                           .setEventMessage( "Encountered duplicate metrics by name, which is not "
-                                                             + "allowed. Please remove all duplicates and try again. "
-                                                             + "The following metrics were duplicated: "
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( "Encountered duplicate metrics with different parameter "
+                                                             + "values for each instance. While this is allowed, it is "
+                                                             + "unusual. Please check that you intended to calculate "
+                                                             + "the same metric(s) more than once with different "
+                                                             + "parameter values for each instance. The following "
+                                                             + "metrics were duplicated: "
                                                              + duplicates
                                                              + "." )
                                            .build();
