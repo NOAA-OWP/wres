@@ -113,9 +113,9 @@ public class Evaluator
             rawDeclaration = MultiDeclarationFactory.getDeclarationString( declarationOrPath, fileSystem );
             declaration = MultiDeclarationFactory.from( rawDeclaration, fileSystem, true, true );
         }
-        catch ( IOException e )
+        catch ( DeclarationException | IOException e )
         {
-            LOGGER.error( "Failed to read an evaluation declaration from the command line argument.", e );
+            LOGGER.error( "Failed to read or validate an evaluation declaration from the command line argument.", e );
             UserInputException translated = new UserInputException( "The evaluation declaration was invalid.", e );
             failure.setFailed();
             failure.commit();

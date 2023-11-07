@@ -144,6 +144,11 @@ public class JobStandardStreamMessenger implements Runnable
         {
             LOGGER.warn( "Failed to read a line,", ioe );
         }
+        // TODO: Remove generic exception after determening why some logs are partial
+        catch ( Exception e )
+        {
+            LOGGER.warn( "Generic exception reached.", e );
+        }
         LOGGER.info( "Finished sending {} for job {}", whichStream, jobId );
     }
 
@@ -176,7 +181,7 @@ public class JobStandardStreamMessenger implements Runnable
         }
         catch ( IOException ioe )
         {
-            LOGGER.warn( "Sending this output failed: {}", message, ioe );
+            LOGGER.error( "Sending this output failed: {}", message, ioe );
         }
         // We may also wish to see output on standard out and standard err...
         if ( PASS_THROUGH && this.getWhichStream().equals( WhichStream.STDOUT ) )
