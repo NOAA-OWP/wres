@@ -552,11 +552,17 @@ definitions:
         type: integer
         minimum: 1
         maximum: 31
-      # Complex schema-level validation of the allowed combinations of above 
-      # properties is possible - see #111987-70, for example - but the
-      # resulting validation does not produce intelligible errors, so a balance
-      # is needed between schema-level validation (fail early) and application-
-      # level validation (fail later, but better).
+    dependentRequired:
+      period:
+        - unit
+      minimum_month:
+        - minimum_day
+      maximum_month:
+        - maximum_day
+      minimum_day:
+        - minimum_month
+      maximum_day:
+        - maximum_month
 
   TimeShift:
     title: A timeshift to apply to a dataset.

@@ -1900,6 +1900,36 @@ class DeclarationValidatorTest
                                                        StatusLevel.ERROR ) );
     }
 
+    @Test
+    void testTimeScaleElementsThatAreDependentRequiredAndMissingProducesErrors() throws IOException
+    {
+        // #120552: timescale period with missing unit, plus some date elements with missing dependents
+        String evaluation = """
+                observed: observations.csv
+                predicted: predictions.csv
+                time_scale:
+                  function: maximum
+                  period: 24         # Requires units
+                  minimum_day: 1     # Requires minimum_month
+                  maximum_month: 2   # Requires maximum_day
+                """;
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "time_scale: has a missing property "
+                                                                        + "\"unit\"",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "time_scale: has a missing property "
+                                                                        + "\"minimum_month\"",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "time_scale: has a missing property "
+                                                                        + "\"maximum_day\"",
+                                                                        StatusLevel.ERROR ) ) );
+    }
+
     /**
      * @param events the events to check
      * @param message the message sequence that should appear in one or more messages

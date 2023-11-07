@@ -42,7 +42,9 @@ public class TimeScaleDeserializer extends JsonDeserializer<wres.config.yaml.com
             builder.setFunction( function );
         }
 
-        if ( node.has( "period" ) && node.has( "unit" ) )
+        // Unit is dependent required when period is present in the schema: #120552
+        if ( node.has( "period" )
+             && node.has( "unit" ) )
         {
             java.time.Duration duration = DurationDeserializer.getDuration( mapper, node, "period" );
             Duration protoDuration = Duration.newBuilder()
