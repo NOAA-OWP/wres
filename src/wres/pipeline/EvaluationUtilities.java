@@ -299,6 +299,14 @@ class EvaluationUtilities
                                                .get() );
             }
 
+            // Messaging failed, possibly in a separate client? Then throw an exception: see #122343
+            if ( evaluation.isFailed() )
+            {
+                throw new WresProcessingException( "Evaluation '"
+                                                   + evaluationId
+                                                   + "' failed because a messaging client reported an error." );
+            }
+
             return Pair.of( Collections.unmodifiableSet( resources ), projectHash );
         }
         // Allow a user-error to be distinguished separately
