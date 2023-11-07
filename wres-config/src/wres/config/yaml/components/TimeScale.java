@@ -21,6 +21,6 @@ public record TimeScale( wres.statistics.generated.TimeScale timeScale )
     public String toString()
     {
         // Remove unnecessary whitespace from the JSON protobuf string
-        return DeclarationFactory.PROTBUF_STRINGIFIER.apply( timeScale );
+        return DeclarationFactory.PROTBUF_STRINGIFIER.apply( this.timeScale );
     }
 }
