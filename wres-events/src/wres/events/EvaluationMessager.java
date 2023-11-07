@@ -683,9 +683,9 @@ public class EvaluationMessager implements Closeable
             LOGGER.info( "Closed evaluation {} with status {}. This evaluation contained {} evaluation description "
                          + "message, {} statistics messages, {} pairs messages and {} evaluation status messages. The "
                          + "exit code was {}.",
-                         descriptionCount,
                          this.getEvaluationId(),
                          onCompletion,
+                         descriptionCount,
                          this.getPublishedMessageCount() - descriptionCount,
                          this.getPublishedPairsMessageCount(),
                          this.getPublishedStatusMessageCount(),
