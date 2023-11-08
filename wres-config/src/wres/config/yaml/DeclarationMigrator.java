@@ -43,6 +43,7 @@ import wres.config.xml.generated.DestinationConfig;
 import wres.config.xml.generated.DoubleBoundsType;
 import wres.config.xml.generated.DurationBoundsType;
 import wres.config.xml.generated.DurationUnit;
+import wres.config.xml.generated.EnsembleAverageType;
 import wres.config.xml.generated.EnsembleCondition;
 import wres.config.xml.generated.FeatureDimension;
 import wres.config.xml.generated.FeatureGroup;
@@ -554,11 +555,11 @@ public class DeclarationMigrator
     private static TimeScaleLenience migrateLenienceType( LenienceType lenienceType )
     {
         return switch ( lenienceType )
-                {
-                    case TRUE -> TimeScaleLenience.ALL;
-                    case FALSE -> TimeScaleLenience.NONE;
-                    default -> TimeScaleLenience.valueOf( lenienceType.name() );
-                };
+        {
+            case TRUE -> TimeScaleLenience.ALL;
+            case FALSE -> TimeScaleLenience.NONE;
+            default -> TimeScaleLenience.valueOf( lenienceType.name() );
+        };
     }
 
     /**
@@ -637,7 +638,8 @@ public class DeclarationMigrator
     {
         List<MetricsConfig> metrics = projectConfig.getMetrics();
 
-        if ( Objects.nonNull( metrics ) && !metrics.isEmpty() )
+        if ( Objects.nonNull( metrics )
+             && !metrics.isEmpty() )
         {
             LOGGER.debug( "Encountered {} groups of metrics to migrate.", metrics.size() );
 
@@ -1597,6 +1599,12 @@ public class DeclarationMigrator
         // Iterate through each metric group
         for ( MetricsConfig next : metrics )
         {
+            // Migrate the ensemble average type: see #119981
+            if ( Objects.nonNull( next.getEnsembleAverage() ) )
+            {
+                DeclarationMigrator.migrateEnsembleAverageType( next.getEnsembleAverage(), builder );
+            }
+
             // In general "all valid" metrics means no explicit migration since no metrics means "all valid" in the new
             // language. However, there is one exception: when the old language suppresses graphics formats on a per-
             // metric basis, then all metrics must be explicitly migrated because the new format records this as a
@@ -1636,6 +1644,31 @@ public class DeclarationMigrator
             {
                 LOGGER.debug( "The following metrics declaration had no explicit metrics to migrate: {}", next );
             }
+        }
+    }
+
+    /**
+     * Migrates the ensemble average type.
+     * @param ensembleAverageType the ensemble average type
+     * @param builder the builder
+     */
+    private static void migrateEnsembleAverageType( EnsembleAverageType ensembleAverageType,
+                                                    EvaluationDeclarationBuilder builder )
+    {
+        // Missing, so set it
+        if ( Objects.isNull( builder.ensembleAverageType() ) )
+        {
+            Pool.EnsembleAverageType type = Pool.EnsembleAverageType.valueOf( ensembleAverageType.name() );
+            builder.ensembleAverageType( type );
+        }
+        // Already present and different, so warn
+        else if ( !ensembleAverageType.name()
+                                      .equals( builder.ensembleAverageType()
+                                                      .name() ) )
+        {
+            LOGGER.warn( "The new declaration language accepts only one ensemble average type per evaluation, but more "
+                         + "than one type was discovered in the legacy declaration supplied. Only the first type will "
+                         + "be used, which is {}.", builder.ensembleAverageType() );
         }
     }
 
