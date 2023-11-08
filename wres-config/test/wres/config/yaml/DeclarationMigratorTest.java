@@ -30,6 +30,7 @@ import wres.config.xml.generated.DestinationType;
 import wres.config.xml.generated.DoubleBoundsType;
 import wres.config.xml.generated.DurationBoundsType;
 import wres.config.xml.generated.DurationUnit;
+import wres.config.xml.generated.EnsembleAverageType;
 import wres.config.xml.generated.EnsembleCondition;
 import wres.config.xml.generated.FeatureDimension;
 import wres.config.xml.generated.FeatureGroup;
@@ -112,6 +113,7 @@ import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Outputs;
+import wres.statistics.generated.Pool;
 import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeScale;
 
@@ -1038,5 +1040,37 @@ class DeclarationMigratorTest
         wres.config.yaml.components.TimeScale expected = new wres.config.yaml.components.TimeScale( timeScale );
         wres.config.yaml.components.TimeScale actual = migrated.timeScale();
         assertEquals( expected, actual );
+    }
+
+    @Test
+    void testMigrateProjectWithEnsembleAverageTypeDeclared()
+    {
+        GraphicalType graphicalType = new GraphicalType( List.of(), 500, 300 );
+        DestinationConfig one = new DestinationConfig( OutputTypeSelection.LEAD_THRESHOLD,
+                                                       graphicalType,
+                                                       null,
+                                                       DestinationType.PNG,
+                                                       null );
+        List<DestinationConfig> destinations = List.of( one );
+        ProjectConfig.Outputs innerOutputs = new ProjectConfig.Outputs( destinations, DurationUnit.HOURS );
+
+        List<MetricConfig> someMetrics = List.of( new MetricConfig( null, MetricConfigName.MEAN_ABSOLUTE_ERROR ) );
+        MetricsConfig someMetricsWrapped = new MetricsConfig( null,
+                                                              null,
+                                                              someMetrics,
+                                                              null,
+                                                              EnsembleAverageType.MEDIAN );
+
+        List<MetricsConfig> innerMetrics = List.of( someMetricsWrapped );
+        ProjectConfig project = new ProjectConfig( this.inputs,
+                                                   this.pairs,
+                                                   innerMetrics,
+                                                   innerOutputs,
+                                                   null,
+                                                   null );
+
+        EvaluationDeclaration actual = DeclarationMigrator.from( project, false );
+
+        assertEquals( Pool.EnsembleAverageType.MEDIAN, actual.ensembleAverageType() );
     }
 }
