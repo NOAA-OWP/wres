@@ -54,6 +54,7 @@ import wres.config.xml.generated.LenienceType;
 import wres.config.xml.generated.MetricConfigName;
 import wres.config.xml.generated.MetricsConfig;
 import wres.config.xml.generated.NamedFeature;
+import wres.config.xml.generated.NetcdfType;
 import wres.config.xml.generated.OutputTypeSelection;
 import wres.config.xml.generated.PairConfig;
 import wres.config.xml.generated.Polygon;
@@ -741,7 +742,7 @@ public class DeclarationMigrator
                                                                     .build() );
             case PNG, GRAPHIC -> DeclarationMigrator.migratePngFormat( output, formatsBuilder, builder );
             case SVG -> DeclarationMigrator.migrateSvgFormat( output, formatsBuilder, builder );
-            case NETCDF -> formatsBuilder.setNetcdf( Formats.NETCDF_FORMAT );
+            case NETCDF -> formatsBuilder.setNetcdf( DeclarationMigrator.migrateNetcdfFormat( output.getNetcdf() ) );
             case NETCDF_2 -> formatsBuilder.setNetcdf2( Formats.NETCDF2_FORMAT );
             case PAIRS -> formatsBuilder.setPairs( Formats.PAIR_FORMAT.toBuilder()
                                                                       .setOptions( numericFormat )
@@ -751,6 +752,34 @@ public class DeclarationMigrator
 
         // Migrate the formats
         builder.formats( new Formats( formatsBuilder.build() ) );
+    }
+
+    /**
+     * Migrates the legacy netcdf format with supplied options.
+     * @param options the netcdf format options
+     * @return the netcdf format with any supported and requested options
+     */
+    private static Outputs.NetcdfFormat migrateNetcdfFormat( NetcdfType options )
+    {
+        Outputs.NetcdfFormat.Builder builder = Formats.NETCDF_FORMAT.toBuilder();
+
+        // Add supported options
+        if ( Objects.nonNull( options ) )
+        {
+            builder.setGridded( options.isGridded() );
+
+            if ( Objects.nonNull( options.getVectorVariable() ) )
+            {
+                builder.setVariableName( options.getVectorVariable() );
+            }
+
+            if ( Objects.nonNull( options.getTemplatePath() ) )
+            {
+                builder.setTemplatePath( options.getTemplatePath() );
+            }
+        }
+
+        return builder.build();
     }
 
     /**

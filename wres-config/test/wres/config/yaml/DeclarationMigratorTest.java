@@ -43,6 +43,7 @@ import wres.config.xml.generated.MetricConfig;
 import wres.config.xml.generated.MetricConfigName;
 import wres.config.xml.generated.MetricsConfig;
 import wres.config.xml.generated.NamedFeature;
+import wres.config.xml.generated.NetcdfType;
 import wres.config.xml.generated.OutputTypeSelection;
 import wres.config.xml.generated.PairConfig;
 import wres.config.xml.generated.Polygon;
@@ -1072,5 +1073,38 @@ class DeclarationMigratorTest
         EvaluationDeclaration actual = DeclarationMigrator.from( project, false );
 
         assertEquals( Pool.EnsembleAverageType.MEDIAN, actual.ensembleAverageType() );
+    }
+
+    @Test
+    void testMigrateProjectWithLegacyNetcdfFormatOptions()
+    {
+        // #120069
+        NetcdfType netcdfType = new NetcdfType( "foo", "bar", null, null, false );
+        DestinationConfig netcdf = new DestinationConfig( OutputTypeSelection.LEAD_THRESHOLD,
+                                                          null,
+                                                          netcdfType,
+                                                          DestinationType.NETCDF,
+                                                          null );
+        List<DestinationConfig> destinations = List.of( netcdf );
+        ProjectConfig.Outputs innerOutputs = new ProjectConfig.Outputs( destinations, DurationUnit.HOURS );
+
+        ProjectConfig project = new ProjectConfig( this.inputs,
+                                                   this.pairs,
+                                                   this.metrics,
+                                                   innerOutputs,
+                                                   null,
+                                                   null );
+
+        EvaluationDeclaration actual = DeclarationMigrator.from( project, false );
+
+        Outputs expected = Outputs.newBuilder()
+                                  .setNetcdf( Formats.NETCDF_FORMAT.toBuilder()
+                                                                   .setTemplatePath( "foo" )
+                                                                   .setGridded( false )
+                                                                   .setVariableName( "bar" ) )
+                                  .build();
+
+        assertEquals( expected, actual.formats()
+                                      .outputs() );
     }
 }
