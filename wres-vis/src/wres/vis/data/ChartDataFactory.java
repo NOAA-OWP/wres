@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
@@ -891,21 +892,32 @@ public class ChartDataFactory
             upper = mappedByQuantile.get( max );
         }
 
+        // In some cases, duplicates may be present. For example, when including two instances of the same metric with
+        // different threshold parameters for each metric, the "all data" statistic may be present for each instance
+        BinaryOperator<DoubleScoreComponentOuter> aggregator = ( a, b ) ->
+        {
+            LOGGER.debug( "Encountered duplicate scores to filter with the following metadata: {}.", a );
+            return a;
+        };
+
         // Map the results by time window and threshold to correlate nominal and quantile values
         Map<PoolMetadata, DoubleScoreComponentOuter> nominalMapped
                 = nominal.stream()
                          .collect( Collectors.toMap( s -> s.getPoolMetadata(),
-                                                     Function.identity() ) );
+                                                     Function.identity(),
+                                                     aggregator ) );
         Map<PoolMetadata, DoubleScoreComponentOuter> lowerMapped
                 = lower.stream()
-                         .collect( Collectors.toMap( s -> s.getPoolMetadata(),
-                                                     Function.identity() ) );
+                       .collect( Collectors.toMap( s -> s.getPoolMetadata(),
+                                                   Function.identity(),
+                                                   aggregator ) );
         Map<PoolMetadata, DoubleScoreComponentOuter> upperMapped
                 = upper.stream()
                        .collect( Collectors.toMap( s -> s.getPoolMetadata(),
-                                                   Function.identity() ) );
+                                                   Function.identity(),
+                                                   aggregator ) );
 
-        for ( Map.Entry<PoolMetadata,DoubleScoreComponentOuter> next : nominalMapped.entrySet() )
+        for ( Map.Entry<PoolMetadata, DoubleScoreComponentOuter> next : nominalMapped.entrySet() )
         {
             PoolMetadata nextMeta = next.getKey();
             DoubleScoreComponentOuter nextNominal = next.getValue();
@@ -917,14 +929,14 @@ public class ChartDataFactory
             double lowerValue = nominalValue;
             double upperValue = nominalValue;
 
-            if( lowerMapped.containsKey( nextMeta ) )
+            if ( lowerMapped.containsKey( nextMeta ) )
             {
                 DoubleScoreComponentOuter nextLower = lowerMapped.get( nextMeta );
                 lowerValue = nextLower.getStatistic()
                                       .getValue();
             }
 
-            if( upperMapped.containsKey( nextMeta ) )
+            if ( upperMapped.containsKey( nextMeta ) )
             {
                 DoubleScoreComponentOuter nextUpper = upperMapped.get( nextMeta );
                 upperValue = nextUpper.getStatistic()
