@@ -151,11 +151,6 @@ public class JobStandardStreamMessenger implements Runnable
         {
             LOGGER.warn( "Failed to read a line,", ioe );
         }
-        // TODO: Remove generic exception after determening why some logs are partial
-        catch ( Exception e )
-        {
-            LOGGER.warn( "Generic exception reached.", e );
-        }
         LOGGER.info( "Finished sending {} for job {}", whichStream, jobId );
     }
 
