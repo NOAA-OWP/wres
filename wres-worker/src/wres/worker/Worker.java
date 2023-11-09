@@ -46,8 +46,7 @@ public class Worker
     private static final int META_FAILURE_CODE = 600;
     private static volatile boolean killed = false;
 
-    /** A formatable string to compose the heartbeat request to the server */
-    private static final String SERVER_HEARTBEAT_URI = "http://localhost:%d/evaluation/heartbeat";
+    private static final String SERVER_READY_FOR_WORK_CHECK_URI = "http://localhost:%d/evaluation/readyForWork";
 
     private static final Duration CALL_TIMEOUT = Duration.ofMinutes( 1 );
 
@@ -120,29 +119,19 @@ public class Worker
 
                 WresEvaluationProcessor wresEvaluationProcessor = processToLaunch.poll( 2, TimeUnit.MINUTES );
 
-                if ( wresEvaluationProcessor != null )
+                if ( wresEvaluationProcessor != null && isServerReadyForWork() )
                 {
-                    if ( !isServerUp() )
-                    {
-                        // Server is not up after retrying, killing shim and allowing Docker to attempt a restart
-                        LOGGER.error( "Unable to reach the server" );
-                        killServerProcess( serverProcess );
-                        throw new InternalError( "Was unable to reach the worker server" );
-                    }
-                    else
-                    {
-                        // Launch WRES if the consumer found a message saying so.
-                        Integer responseCode = wresEvaluationProcessor.call();
-                        // Ack that this shim got and processed the message from the queue and remove that message
-                        receiveChannel.basicAck( wresEvaluationProcessor.getDeliveryTag(), false );
+                    // Launch WRES if the consumer found a message saying so.
+                    Integer responseCode = wresEvaluationProcessor.call();
+                    // Ack that this shim got and processed the message from the queue and remove that message
+                    receiveChannel.basicAck( wresEvaluationProcessor.getDeliveryTag(), false );
 
-                        // Something happened to the worker-server while evaluating, look for meta failure and throw exception
-                        // We do this instead of passing the exception to be able to dequeue the job that caused this
-                        if ( responseCode == META_FAILURE_CODE )
-                        {
-                            throw new EvaluationProcessingException(
-                                    "Something happened to the worker-server while processing the evaluation" );
-                        }
+                    // Something happened to the worker-server while evaluating, look for meta failure and throw exception
+                    // We do this instead of passing the exception to be able to dequeue the job that caused this
+                    if ( responseCode == META_FAILURE_CODE )
+                    {
+                        throw new EvaluationProcessingException(
+                                "Something happened to the worker-server while processing the evaluation" );
                     }
                 }
             }
@@ -253,13 +242,13 @@ public class Worker
 
 
     /**
-     * Method to check if the server is reachable which exponential backoff retries
+     * Method to check if the server is ready to accept a new job
      * @return boolean value if the server returns 200 (HTTP.OK)
      * @throws IOException, URISyntaxException
      */
-    private static boolean isServerUp() throws IOException, URISyntaxException
+    private static boolean isServerReadyForWork() throws IOException, URISyntaxException
     {
-        URI uri = new URI( String.format( SERVER_HEARTBEAT_URI, DEFAULT_PORT ) );
+        URI uri = new URI( String.format( SERVER_READY_FOR_WORK_CHECK_URI, DEFAULT_PORT ) );
         try (
                 WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( uri, CALL_TIMEOUT );
         )
