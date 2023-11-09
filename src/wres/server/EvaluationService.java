@@ -143,9 +143,34 @@ public class EvaluationService implements ServletContextListener
     @Produces( MediaType.TEXT_PLAIN )
     public Response heartbeat()
     {
-        // We heartbeat the server before accepting a new job, set status to AWAITING
-        EVALUATION_STAGE.set( AWAITING );
+        // We heartbeat the server before accepting a new job and periodically through docker
+        // Set status to AWAITING if the last project has been CLOSED
+        if ( EVALUATION_STAGE.get().equals( CLOSED ) )
+        {
+            EVALUATION_STAGE.set( AWAITING );
+        }
         return Response.ok( "The Server is Up \n" )
+                       .build();
+    }
+
+    /**
+     * Function to simply track the good status of the server
+     * @return Good Response
+     */
+    @GET
+    @Path( "/readyForWork" )
+    @Produces( MediaType.TEXT_PLAIN )
+    public Response readyForWork()
+    {
+        if ( ( EVALUATION_STAGE.get().equals( CLOSED ) || EVALUATION_STAGE.get().equals( AWAITING ) )
+             && EVALUATION_ID.get() == -1 )
+        {
+            return Response.ok( "The Server can accept a new job \n" )
+                           .build();
+        }
+
+        return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
+                       .entity( "The Server has not cleaned up from the previous job \n" )
                        .build();
     }
 
