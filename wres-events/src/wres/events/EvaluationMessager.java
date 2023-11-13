@@ -561,9 +561,9 @@ public class EvaluationMessager implements Closeable
                   .interrupt();
 
             EvaluationEventException f = new EvaluationEventException( EVALUATION_STRING + this.evaluationId
-                                                + " was Interrupted while waiting for "
-                                                + "subscriptions to be negotiated.",
-                                                e );
+                                                                       + " was Interrupted while waiting for "
+                                                                       + "subscriptions to be negotiated.",
+                                                                       e );
 
             EvaluationStatus error = this.getStatusOnException( f );
             this.statusTracker.stopOnFailure( error );
@@ -613,7 +613,12 @@ public class EvaluationMessager implements Closeable
 
     public void stop( Exception exception )
     {
-        this.validateStarted();
+        if ( !this.isStarted() || this.isClosed() )
+        {
+            LOGGER.debug( "Ignoring request to stop evaluation {} because the evaluation is not ongoing.",
+                          this.getEvaluationId() );
+            return;
+        }
 
         if ( !this.isStopped.getAndSet( true ) )
         {
@@ -1174,6 +1179,15 @@ public class EvaluationMessager implements Closeable
     }
 
     /**
+     * @return true if started, otherwise false.
+     */
+
+    private boolean isStarted()
+    {
+        return this.isStarted.get();
+    }
+
+    /**
      * @return true if closed, otherwise false.
      */
 
@@ -1526,7 +1540,7 @@ public class EvaluationMessager implements Closeable
 
     private void validateStarted()
     {
-        if( ! this.isStarted.get() )
+        if ( !this.isStarted.get() )
         {
             throw new IllegalStateException( "The evaluation messager for evaluation "
                                              + this.getEvaluationId()

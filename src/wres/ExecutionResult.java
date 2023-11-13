@@ -7,38 +7,29 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /**
- * Execution result.
+ * An execution result.
  */
 
 public class ExecutionResult
 {
-    /**
-     * The caller-supplied project name extracted during execution if available.
-     */
+    /** The caller-supplied project name extracted during execution if available. */
     private final String name;
 
-    /**
-     * The project identity, if available.
-     */
-
+    /** The project identity, if available. */
     private final String hash;
 
-    /**
-     * The declaration string, if available.
-     */
-
+    /** The declaration string, if available. */
     private final String declaration;
 
-    /**
-     * The exception that stopped execution if execution failed without Error. When an Error occurs, this should not be
-     * constructed and the Error should propagate.
-     */
+    /** The exception that stopped execution if execution failed without Error. When an Error occurs, this should not be
+     * constructed and the Error should propagate. */
     private final Exception exception;
 
-    /**
-     * The resources written.
-     */
+    /** The resources written. */
     private final Set<Path> resources;
+
+    /** Whether the execution was cancelled. */
+    private final boolean cancelled;
 
     /**
      * Create a successful result.
@@ -47,7 +38,7 @@ public class ExecutionResult
 
     public static ExecutionResult success()
     {
-        return new ExecutionResult( null, null, null, null, Set.of() );
+        return new ExecutionResult( null, null, null, null, Set.of(), false );
     }
 
     /**
@@ -59,7 +50,7 @@ public class ExecutionResult
 
     public static ExecutionResult success( String name, String declaration )
     {
-        return new ExecutionResult( name, null, declaration, null, Set.of() );
+        return new ExecutionResult( name, null, declaration, null, Set.of(), false );
     }
 
     /**
@@ -74,32 +65,34 @@ public class ExecutionResult
 
     public static ExecutionResult success( String name, String declaration, String hash, Set<Path> resources )
     {
-        return new ExecutionResult( name, hash, declaration, null, resources );
+        return new ExecutionResult( name, hash, declaration, null, resources, false );
     }
 
     /**
      * Create an unsuccessful result with an exception thrown.
      * @param e the exception thrown
+     * @param cancelled whether the execution was cancelled
      * @return an execution result
      */
 
-    public static ExecutionResult failure( Exception e )
+    public static ExecutionResult failure( Exception e, boolean cancelled )
     {
         Objects.requireNonNull( e );
-        return new ExecutionResult( null, null, null, e, Set.of() );
+        return new ExecutionResult( null, null, null, e, Set.of(), cancelled );
     }
 
     /**
      * Create an unsuccessful result with a project name and an exception thrown.
      * @param declaration the project declaration string
      * @param e the exception thrown
+     * @param cancelled whether the execution was cancelled
      * @return an execution result
      */
 
-    public static ExecutionResult failure( String declaration, Exception e )
+    public static ExecutionResult failure( String declaration, Exception e, boolean cancelled )
     {
         Objects.requireNonNull( e );
-        return new ExecutionResult( null, null, declaration, e, Set.of() );
+        return new ExecutionResult( null, null, declaration, e, Set.of(), cancelled );
     }
 
     /**
@@ -107,18 +100,20 @@ public class ExecutionResult
      * @param name the project name
      * @param declaration the project declaration string
      * @param e the exception thrown
+     * @param cancelled whether the execution was cancelled
      * @return an execution result
      */
 
-    public static ExecutionResult failure( String name, String declaration, Exception e )
+    public static ExecutionResult failure( String name, String declaration, Exception e, boolean cancelled )
     {
         Objects.requireNonNull( e );
-        return new ExecutionResult( name, null, declaration, e, Set.of() );
+        return new ExecutionResult( name, null, declaration, e, Set.of(), cancelled );
     }
 
     /**
      * @return the name of the project declaration on which the evaluation is based or null
      */
+
     public String getName()
     {
         return this.name;
@@ -127,6 +122,7 @@ public class ExecutionResult
     /**
      * @return the hash of the project datasets or null
      */
+
     public String getHash()
     {
         return this.hash;
@@ -135,6 +131,7 @@ public class ExecutionResult
     /**
      * @return the exception thrown upon failure or null
      */
+
     public Exception getException()
     {
         return exception;
@@ -143,6 +140,7 @@ public class ExecutionResult
     /**
      * @return the resources created during the execution
      */
+
     public Set<Path> getResources()
     {
         return this.resources; // Unmodifiable view
@@ -158,9 +156,19 @@ public class ExecutionResult
     }
 
     /**
+     * @return whether the execution was cancelled
+     */
+
+    public boolean cancelled()
+    {
+        return this.cancelled;
+    }
+
+    /**
      * Success?
      * @return True when the result was success, false when it was failure.
      */
+
     public boolean succeeded()
     {
         return !this.failed();
@@ -170,6 +178,7 @@ public class ExecutionResult
      * Failure?
      * @return True when the result was failure, false when it was success.
      */
+
     public boolean failed()
     {
         Exception e = this.getException();
@@ -183,12 +192,15 @@ public class ExecutionResult
      * @param declaration the declaration, if available
      * @param exception an exception, if applicable
      * @param resources the resources created, not null
+     * @param cancelled whether the execution was cancelled
      */
+
     private ExecutionResult( String name,
                              String hash,
                              String declaration,
                              Exception exception,
-                             Set<Path> resources )
+                             Set<Path> resources,
+                             boolean cancelled )
     {
         Objects.requireNonNull( resources );
 
@@ -197,5 +209,6 @@ public class ExecutionResult
         this.declaration = declaration;
         this.exception = exception;
         this.resources = Collections.unmodifiableSet( new TreeSet<>( resources ) );
+        this.cancelled = cancelled;
     }
 }

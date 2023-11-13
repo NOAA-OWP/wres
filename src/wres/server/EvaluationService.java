@@ -320,6 +320,7 @@ public class EvaluationService implements ServletContextListener
 
         EVALUATION_STAGE.set( ONGOING );
         Set<java.nio.file.Path> outputPaths;
+        Canceller canceller = Canceller.of();
         try
         {
             // Checks if database information has changed in the jobMessage and swap to that database
@@ -329,8 +330,7 @@ public class EvaluationService implements ServletContextListener
             logJobHeaderInformation();
 
             // Execute an evaluation
-            Canceller canceller = Canceller.of();
-            ExecutionResult result = evaluator.evaluate( jobMessage.getProjectConfig(), canceller );
+            ExecutionResult result = this.evaluator.evaluate( jobMessage.getProjectConfig(), canceller );
 
             logJobFinishInformation( jobMessage, result, beganExecution );
 
@@ -353,7 +353,7 @@ public class EvaluationService implements ServletContextListener
         catch ( UserInputException e )
         {
             String failureMessage = "I received something I could not parse. The top-level exception was";
-            logJobFinishInformation( jobMessage, ExecutionResult.failure( e ), beganExecution );
+            logJobFinishInformation( jobMessage, ExecutionResult.failure( e, canceller.cancelled() ), beganExecution );
             LOGGER.info( failureMessage, e );
             EVALUATION_STAGE.set( COMPLETED );
             return Response.status( Response.Status.BAD_REQUEST )
@@ -363,7 +363,9 @@ public class EvaluationService implements ServletContextListener
         catch ( InternalWresException iwe )
         {
             String failureMessage = "WRES experienced an internal issue. The top-level exception was";
-            logJobFinishInformation( jobMessage, ExecutionResult.failure( iwe ), beganExecution );
+            logJobFinishInformation( jobMessage,
+                                     ExecutionResult.failure( iwe, canceller.cancelled() ),
+                                     beganExecution );
             LOGGER.info( failureMessage, iwe );
             EVALUATION_STAGE.set( COMPLETED );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
@@ -425,7 +427,7 @@ public class EvaluationService implements ServletContextListener
             String errorMessage = "Failed to migrate the database.";
             LOGGER.info( errorMessage, se );
             InternalWresException e = new InternalWresException( errorMessage, se );
-            logJobFinishInformation( jobMessage, ExecutionResult.failure( se ), beganExecution );
+            logJobFinishInformation( jobMessage, ExecutionResult.failure( se, false ), beganExecution );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "Unable to migrate the database with the error: "
                                     + e.getMessage() )
@@ -478,7 +480,7 @@ public class EvaluationService implements ServletContextListener
             String errorMessage = "Failed to clean the database. Unable to aquire lock or communicate with database";
             InternalWresException e = new InternalWresException( errorMessage, se );
             LOGGER.info( errorMessage, se );
-            logJobFinishInformation( jobMessage, ExecutionResult.failure( e ), beganExecution );
+            logJobFinishInformation( jobMessage, ExecutionResult.failure( e, false ), beganExecution );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "Unable to clean the database with the error: "
                                     + e.getMessage() )

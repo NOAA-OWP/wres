@@ -5,9 +5,8 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import static wres.statistics.generated.ReferenceTime.ReferenceTimeType.T0;
-import static wres.io.retrieving.database.RetrieverTestConstants.*;
+import static wres.io.retrieving.database.RetrieverTestHelper.*;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -81,13 +80,15 @@ public class ObservationRetrieverTest
     private SystemSettings mockSystemSettings;
     @Mock
     DatabaseSettings mockDatabaseSettings;
-    @Mock private ConnectionSupplier mockConnectionSupplier;
+    @Mock
+    private ConnectionSupplier mockConnectionSupplier;
     private wres.io.database.Database wresDatabase;
     private DatabaseCaches caches;
     private DatabaseLockManager lockManager;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
     private Connection rawConnection;
+    private AutoCloseable mocks;
 
     /**
      * A {@link DatasetOrientation} for testing.
@@ -112,7 +113,7 @@ public class ObservationRetrieverTest
     @Before
     public void setup() throws Exception
     {
-        MockitoAnnotations.openMocks( this );
+        this.mocks = MockitoAnnotations.openMocks( this );
 
         // Create the database and connection pool
         this.testDatabase = new TestDatabase( this.getClass().getName() );
@@ -319,7 +320,7 @@ public class ObservationRetrieverTest
     }
 
     @After
-    public void tearDown() throws SQLException
+    public void tearDown() throws Exception
     {
         this.dropTheTablesAndSchema();
         this.rawConnection.close();
@@ -327,6 +328,7 @@ public class ObservationRetrieverTest
         this.testDatabase = null;
         this.dataSource.close();
         this.dataSource = null;
+        this.mocks.close();
     }
 
     /**
@@ -374,7 +376,7 @@ public class ObservationRetrieverTest
      * @throws SQLException if the detailed set-up fails
      */
 
-    private void addAnObservedTimeSeriesWithTenEventsToTheDatabase() throws SQLException, IOException
+    private void addAnObservedTimeSeriesWithTenEventsToTheDatabase() throws SQLException
     {
         DataSource leftData = RetrieverTestData.generateDataSource( DatasetOrientation.LEFT,
                                                                     DataType.OBSERVATIONS );
@@ -409,33 +411,33 @@ public class ObservationRetrieverTest
                                             .build();
 
         TimeSeries<Double> timeSeriesOne = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
-        IngestResult ingestResultOne;
-        try ( DatabaseTimeSeriesIngester ingesterOne =
-                      new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
-                                                              .setDatabase( this.wresDatabase )
-                                                              .setCaches( this.caches )
-                                                              .setLockManager( this.lockManager )
-                                                              .build() )
-        {
-            Stream<TimeSeriesTuple> tupleStreamOne =
-                    Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesOne, leftData ) );
-            ingestResultOne = ingesterOne.ingest( tupleStreamOne, leftData )
-                                         .get( 0 );
-        }
+
+        DatabaseTimeSeriesIngester ingesterOne =
+                new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                        .setDatabase( this.wresDatabase )
+                                                        .setIngestExecutor( RetrieverTestHelper.getIngestExecutor() )
+                                                        .setCaches( this.caches )
+                                                        .setLockManager( this.lockManager )
+                                                        .build();
+        Stream<TimeSeriesTuple> tupleStreamOne =
+                Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesOne, leftData ) );
+        IngestResult ingestResultOne = ingesterOne.ingest( tupleStreamOne, leftData )
+                                                  .get( 0 );
+
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleOne( T0 );
-        IngestResult ingestResultTwo;
-        try ( DatabaseTimeSeriesIngester ingesterTwo =
-                      new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
-                                                              .setDatabase( this.wresDatabase )
-                                                              .setCaches( this.caches )
-                                                              .setLockManager( this.lockManager )
-                                                              .build() )
-        {
-            Stream<TimeSeriesTuple> tupleStreamTwo =
-                    Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, rightData ) );
-            ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, rightData )
-                                         .get( 0 );
-        }
+
+        DatabaseTimeSeriesIngester ingesterTwo =
+                new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                        .setDatabase( this.wresDatabase )
+                                                        .setIngestExecutor( RetrieverTestHelper.getIngestExecutor() )
+                                                        .setCaches( this.caches )
+                                                        .setLockManager( this.lockManager )
+                                                        .build();
+
+        Stream<TimeSeriesTuple> tupleStreamTwo =
+                Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, rightData ) );
+        IngestResult ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, rightData )
+                                                  .get( 0 );
         List<IngestResult> results = List.of( ingestResultOne,
                                               ingestResultTwo );
 

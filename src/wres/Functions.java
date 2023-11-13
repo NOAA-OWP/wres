@@ -16,9 +16,17 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,7 +133,7 @@ final class Functions
         if ( LOGGER.isInfoEnabled() )
         {
             StringJoiner joiner = new StringJoiner( " " );
-            if( Objects.nonNull( sharedResources ) )
+            if ( Objects.nonNull( sharedResources ) )
             {
                 if ( !sharedResources.arguments()
                                      .contains( operation ) )
@@ -148,13 +156,14 @@ final class Functions
         if ( discovered.isPresent() )
         {
             result = discovered.get()
-                             .getValue()
-                             .apply( sharedResources );
+                               .getValue()
+                               .apply( sharedResources );
         }
         else
         {
             result = ExecutionResult.failure( new UnsupportedOperationException( "Cannot find operation "
-                                                                               + operation ) );
+                                                                                 + operation ),
+                                              false );
         }
 
         // Log timing of execution
@@ -273,7 +282,7 @@ final class Functions
                              + "bin/wres.bat execute c:/path/to/evaluation.yml";
             LOGGER.error( message );
             UserInputException e = new UserInputException( message );
-            return ExecutionResult.failure( e ); // Or return 400 - Bad Request (see #41467)
+            return ExecutionResult.failure( e, false ); // Or return 400 - Bad Request (see #41467)
         }
 
         // Attempt to read the declaration
@@ -318,7 +327,7 @@ final class Functions
             String message = "Could not connect to database.";
             LOGGER.warn( message, se );
             InternalWresException e = new InternalWresException( message );
-            return ExecutionResult.failure( e );
+            return ExecutionResult.failure( e, false );
         }
     }
 
@@ -353,7 +362,7 @@ final class Functions
             String message = "Failed to clean the database.";
             LOGGER.error( message, se );
             InternalWresException e = new InternalWresException( message, se );
-            return ExecutionResult.failure( e );
+            return ExecutionResult.failure( e, false );
         }
         finally
         {
@@ -371,7 +380,7 @@ final class Functions
     private static ExecutionResult migrateDatabase( SharedResources sharedResources )
     {
         if ( !sharedResources.systemSettings()
-                            .isUseDatabase() )
+                             .isUseDatabase() )
         {
             throw new IllegalArgumentException(
                     "This is an in-memory execution. Cannot migrate a database because there "
@@ -388,7 +397,7 @@ final class Functions
             String message = "Failed to migrate the database.";
             LOGGER.error( message, se );
             InternalWresException e = new InternalWresException( message, se );
-            return ExecutionResult.failure( e );
+            return ExecutionResult.failure( e, false );
         }
 
         return ExecutionResult.success();
@@ -416,7 +425,7 @@ final class Functions
                 String message = "The given variable is not a valid projected grid variable.";
                 UserInputException e = new UserInputException( message );
                 LOGGER.error( message );
-                return ExecutionResult.failure( e );
+                return ExecutionResult.failure( e, false );
             }
             else
             {
@@ -428,7 +437,7 @@ final class Functions
                 }
 
                 String message = "The given coordinate system is not valid.";
-                return ExecutionResult.failure( new UserInputException( message ) );
+                return ExecutionResult.failure( new UserInputException( message ), false );
             }
         }
         catch ( IOException e )
@@ -437,7 +446,7 @@ final class Functions
                              + "' is not a valid Netcdf Grid Dataset.";
             UserInputException uie = new UserInputException( message, e );
             LOGGER.error( message );
-            return ExecutionResult.failure( uie );
+            return ExecutionResult.failure( uie, false );
         }
     }
 
@@ -464,7 +473,7 @@ final class Functions
         catch ( SQLException | RuntimeException e )
         {
             LOGGER.error( "refreshDatabase failed.", e );
-            return ExecutionResult.failure( e );
+            return ExecutionResult.failure( e, false );
         }
         finally
         {
@@ -487,7 +496,7 @@ final class Functions
                              + "bin/wres.bat server 8010";
             LOGGER.error( message );
             UserInputException e = new UserInputException( message );
-            return ExecutionResult.failure( e ); // Or return 400 - Bad Request (see #41467)
+            return ExecutionResult.failure( e, false ); // Or return 400 - Bad Request (see #41467)
         }
 
         // Attempt to read the port
@@ -500,7 +509,7 @@ final class Functions
         catch ( Exception e )
         {
             LOGGER.error( "Failed to start the server", e );
-            return ExecutionResult.failure( e );
+            return ExecutionResult.failure( e, false );
         }
 
         return ExecutionResult.success();
@@ -533,7 +542,7 @@ final class Functions
                 Exception e = new PreIngestException( "Could not read declaration from "
                                                       + projectPath,
                                                       ioe );
-                return ExecutionResult.failure( e );
+                return ExecutionResult.failure( e, false );
             }
 
             DatabaseLockManager lockManager =
@@ -541,16 +550,59 @@ final class Functions
                                               () -> sharedResources.database()
                                                                    .getRawConnection() );
 
+            // Executors to close
+            ExecutorService readingExecutor = null;
+            ExecutorService ingestExecutor = null;
+
             try
             {
                 lockManager.lockShared( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
 
                 // Build the database caches/ORMs
+                SystemSettings settings = sharedResources.systemSettings();
                 DatabaseCaches caches = DatabaseCaches.of( sharedResources.database() );
+
+                // Create a reading executor
+                // Inner readers may create additional thread factories (e.g., archives).
+                ThreadFactory readingFactory = new BasicThreadFactory.Builder()
+                        .namingPattern( "Outer Reading Thread %d" )
+                        .build();
+                BlockingQueue<Runnable> readingQueue = new ArrayBlockingQueue<>( 100_000 );
+
+                // Create some thread pools to perform the work required by different parts of the evaluation pipeline
+
+                // Thread pool for reading formats
+                RejectedExecutionHandler readingHandler = new ThreadPoolExecutor.CallerRunsPolicy();
+                readingExecutor = new ThreadPoolExecutor( settings.getMaximumReadThreads(),
+                                                          settings.getMaximumReadThreads(),
+                                                          settings.getPoolObjectLifespan(),
+                                                          TimeUnit.MILLISECONDS,
+                                                          readingQueue,
+                                                          readingFactory,
+                                                          readingHandler );
+
+                // Create an ingest executor
+                ThreadFactory ingestFactory =
+                        new BasicThreadFactory.Builder().namingPattern( "Ingesting Thread %d" )
+                                                        .build();
+                // Queue should be large enough to allow join() call to be reached with zero or few rejected submissions to the
+                // executor service.
+                BlockingQueue<Runnable> ingestQueue = new ArrayBlockingQueue<>( settings.getMaximumIngestThreads() );
+
+                RejectedExecutionHandler ingestHandler = new ThreadPoolExecutor.CallerRunsPolicy();
+                ingestExecutor = new ThreadPoolExecutor( settings.getMaximumIngestThreads(),
+                                                         settings.getMaximumIngestThreads(),
+                                                         settings.getPoolObjectLifespan(),
+                                                         TimeUnit.MILLISECONDS,
+                                                         ingestQueue,
+                                                         ingestFactory,
+                                                         ingestHandler );
+
                 TimeSeriesIngester timeSeriesIngester =
-                        new DatabaseTimeSeriesIngester.Builder().setSystemSettings( sharedResources.systemSettings() )
+                        new DatabaseTimeSeriesIngester.Builder().setSystemSettings( settings )
                                                                 .setDatabase( sharedResources.database() )
                                                                 .setCaches( caches )
+                                                                .setIngestExecutor( ingestExecutor )
                                                                 .setLockManager( lockManager )
                                                                 .build();
 
@@ -565,7 +617,8 @@ final class Functions
                 SourceLoader.load( timeSeriesIngester,
                                    sharedResources.systemSettings(),
                                    declaration,
-                                   griddedFeatures );
+                                   griddedFeatures,
+                                   readingExecutor );
 
                 lockManager.unlockShared( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
                 return ExecutionResult.success( declaration.label(), declarationString );
@@ -573,11 +626,13 @@ final class Functions
             catch ( RuntimeException | SQLException e )
             {
                 LOGGER.error( "Failed to ingest from {}", projectPath, e );
-                return ExecutionResult.failure( declaration.label(), declarationString, e );
+                return ExecutionResult.failure( declaration.label(), declarationString, e, false );
             }
             finally
             {
                 lockManager.shutdown();
+                Canceller.closeGracefully( readingExecutor );
+                Canceller.closeGracefully( ingestExecutor );
             }
         }
         else
@@ -587,7 +642,7 @@ final class Functions
                              + "usage: ingest <path to configuration>";
             IllegalArgumentException e = new IllegalArgumentException( message );
             LOGGER.error( message );
-            return ExecutionResult.failure( e );
+            return ExecutionResult.failure( e, false );
         }
     }
 
@@ -629,7 +684,7 @@ final class Functions
                                  + pathOrDeclaration
                                  + "'";
                 UserInputException e = new UserInputException( message, error );
-                return ExecutionResult.failure( rawDeclaration, e ); // Or return 400 - Bad Request (see #41467)
+                return ExecutionResult.failure( rawDeclaration, e, false ); // Or return 400 - Bad Request (see #41467)
             }
         }
         else
@@ -637,7 +692,7 @@ final class Functions
             String message = "Could not find a project declaration to validate. Usage: validate <path to project>";
             LOGGER.error( message );
             UserInputException e = new UserInputException( message );
-            return ExecutionResult.failure( e );
+            return ExecutionResult.failure( e, false );
         }
     }
 
@@ -715,7 +770,7 @@ final class Functions
             catch ( UserInputException | IOException e )
             {
                 LOGGER.error( "Failed to unmarshal project declaration from command line argument.", e );
-                return ExecutionResult.failure( e );
+                return ExecutionResult.failure( e, false );
             }
         }
         else
@@ -723,7 +778,7 @@ final class Functions
             String message = "The declaration path or string was missing. Usage: validate "
                              + "<path to declaration or string>";
             UserInputException e = new UserInputException( message );
-            return ExecutionResult.failure( e );
+            return ExecutionResult.failure( e, false );
         }
     }
 
@@ -752,7 +807,7 @@ final class Functions
                                                                 + "template file must "
                                                                 + "have a valid source "
                                                                 + "file." );
-                    return ExecutionResult.failure( e );
+                    return ExecutionResult.failure( e, false );
                 }
 
                 if ( !toFileName.toLowerCase().endsWith( "nc" ) )
@@ -763,7 +818,7 @@ final class Functions
                                                                 + "'*.nc' to indicate "
                                                                 + "that it is a Netcdf "
                                                                 + "file." );
-                    return ExecutionResult.failure( e );
+                    return ExecutionResult.failure( e, false );
                 }
 
                 try ( NetCDFCopier writer = new NetCDFCopier( fromFileName, toFileName, ZonedDateTime.now() ) )
@@ -776,7 +831,7 @@ final class Functions
             catch ( IOException | RuntimeException error )
             {
                 LOGGER.error( "createNetCDFTemplate failed.", error );
-                return ExecutionResult.failure( error );
+                return ExecutionResult.failure( error, false );
             }
         }
         else
@@ -786,7 +841,7 @@ final class Functions
                              + "usage: createnetcdftemplate <path to original file> <path to template>";
             LOGGER.error( message );
             UserInputException e = new UserInputException( message );
-            return ExecutionResult.failure( e );
+            return ExecutionResult.failure( e, false );
         }
     }
 

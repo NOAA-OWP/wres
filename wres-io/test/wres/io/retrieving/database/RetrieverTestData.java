@@ -1,6 +1,6 @@
 package wres.io.retrieving.database;
 
-import static wres.io.retrieving.database.RetrieverTestConstants.*;
+import static wres.io.retrieving.database.RetrieverTestHelper.*;
 
 import java.time.Instant;
 import java.util.Collections;

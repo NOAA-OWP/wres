@@ -18,18 +18,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,28 +106,14 @@ public class SourceLoader
     public static List<IngestResult> load( TimeSeriesIngester timeSeriesIngester,
                                            SystemSettings systemSettings,
                                            EvaluationDeclaration declaration,
-                                           GriddedFeatures.Builder griddedFeatures )
+                                           GriddedFeatures.Builder griddedFeatures,
+                                           ExecutorService readingExecutor )
     {
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( timeSeriesIngester );
+        Objects.requireNonNull( readingExecutor );
 
-        // Create a thread factory for reading. Inner readers may create additional thread factories (e.g., archives).
-        ThreadFactory threadFactoryWithNaming =
-                new BasicThreadFactory.Builder().namingPattern( "Outer Reading Thread %d" )
-                                                .build();
-        ThreadPoolExecutor readingExecutor =
-                new ThreadPoolExecutor( systemSettings.getMaximumReadThreads(),
-                                        systemSettings.getMaximumReadThreads(),
-                                        systemSettings.getPoolObjectLifespan(),
-                                        TimeUnit.MILLISECONDS,
-                                        // Queue should be large enough to allow
-                                        // join() call below to be reached with
-                                        // zero or few rejected submissions to
-                                        // the executor service.
-                                        new ArrayBlockingQueue<>( 100_000 ),
-                                        threadFactoryWithNaming );
-        readingExecutor.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
         List<IngestResult> projectSources = new ArrayList<>();
 
         SourceLoader loader = new SourceLoader( timeSeriesIngester,

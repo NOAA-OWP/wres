@@ -441,37 +441,38 @@ class EvaluationUtilities
                 evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
                                                                                .caches( caches )
                                                                                .build();
-                try ( DatabaseTimeSeriesIngester databaseIngester =
-                              new DatabaseTimeSeriesIngester.Builder().setSystemSettings( evaluationDetails.systemSettings() )
-                                                                      .setDatabase( databaseServices.database() )
-                                                                      .setCaches( caches )
-                                                                      .setTimeSeriesTracker( timeSeriesTracker )
-                                                                      .setLockManager( databaseServices.databaseLockManager() )
-                                                                      .build() )
+                DatabaseTimeSeriesIngester databaseIngester =
+                        new DatabaseTimeSeriesIngester.Builder().setSystemSettings( evaluationDetails.systemSettings() )
+                                                                .setDatabase( databaseServices.database() )
+                                                                .setCaches( caches )
+                                                                .setIngestExecutor( executors.ingestExecutor() )
+                                                                .setTimeSeriesTracker( timeSeriesTracker )
+                                                                .setLockManager( databaseServices.databaseLockManager() )
+                                                                .build();
+
+                List<IngestResult> ingestResults = SourceLoader.load( databaseIngester,
+                                                                      evaluationDetails.systemSettings(),
+                                                                      declarationWithFeatures,
+                                                                      griddedFeaturesBuilder,
+                                                                      executors.readingExecutor() );
+
+                declarationWithFeatures =
+                        EvaluationUtilities.interpolateMissingDataTypes( declarationWithFeatures,
+                                                                         timeSeriesTracker.getDataTypes() );
+
+                // Create the gridded features cache if needed
+                GriddedFeatures griddedFeatures = null;
+                if ( Objects.nonNull( griddedFeaturesBuilder ) )
                 {
-                    List<IngestResult> ingestResults = SourceLoader.load( databaseIngester,
-                                                                          evaluationDetails.systemSettings(),
-                                                                          declarationWithFeatures,
-                                                                          griddedFeaturesBuilder );
-
-                    declarationWithFeatures =
-                            EvaluationUtilities.interpolateMissingDataTypes( declarationWithFeatures,
-                                                                             timeSeriesTracker.getDataTypes() );
-
-                    // Create the gridded features cache if needed
-                    GriddedFeatures griddedFeatures = null;
-                    if ( Objects.nonNull( griddedFeaturesBuilder ) )
-                    {
-                        griddedFeatures = griddedFeaturesBuilder.build();
-                    }
-
-                    // Get the project, which provides an interface to the underlying store of time-series data
-                    project = Projects.getProject( databaseServices.database(),
-                                                   declarationWithFeatures,
-                                                   caches,
-                                                   griddedFeatures,
-                                                   ingestResults );
+                    griddedFeatures = griddedFeaturesBuilder.build();
                 }
+
+                // Get the project, which provides an interface to the underlying store of time-series data
+                project = Projects.getProject( databaseServices.database(),
+                                               declarationWithFeatures,
+                                               caches,
+                                               griddedFeatures,
+                                               ingestResults );
             }
             // In-memory evaluation
             else
@@ -487,7 +488,8 @@ class EvaluationUtilities
                 List<IngestResult> ingestResults = SourceLoader.load( timeSeriesIngester,
                                                                       evaluationDetails.systemSettings(),
                                                                       declarationWithFeatures,
-                                                                      griddedFeaturesBuilder );
+                                                                      griddedFeaturesBuilder,
+                                                                      executors.readingExecutor() );
 
                 // Interpolate any missing elements of the declaration that depend on the data types
                 declarationWithFeatures =

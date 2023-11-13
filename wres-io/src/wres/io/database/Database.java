@@ -61,11 +61,12 @@ public class Database
      */
     public void shutdown()
     {
-        LOGGER.info( "Shutting down the database..." );
         try
         {
             if ( !this.sqlTasks.isShutdown() )
             {
+                LOGGER.info( "Shutting down the database..." );
+
                 // Shutdown
                 this.sqlTasks.shutdown();
 
@@ -88,7 +89,8 @@ public class Database
         catch ( InterruptedException ie )
         {
             LOGGER.warn( "Interrupted while shutting down {}.", this.sqlTasks, ie );
-            Thread.currentThread().interrupt();
+            Thread.currentThread()
+                  .interrupt();
         }
 
         this.closePools();
@@ -463,15 +465,19 @@ public class Database
 
     private void closePools()
     {
-        LOGGER.info( "Closing database connection pools." );
-
         // Close out our database connection pools
         try
         {
-            if ( this.connectionSupplier.getConnectionPool().isWrapperFor( HikariDataSource.class ) )
+            if ( this.connectionSupplier.getConnectionPool()
+                                        .isWrapperFor( HikariDataSource.class ) )
             {
-                this.connectionSupplier.getConnectionPool().unwrap( HikariDataSource.class )
-                                       .close();
+                HikariDataSource connections = this.connectionSupplier.getConnectionPool()
+                                                                      .unwrap( HikariDataSource.class );
+                if( ! connections.isClosed() )
+                {
+                    LOGGER.info( "Closing ordinary priority database connection pools." );
+                    connections.close();
+                }
             }
         }
         catch ( SQLException e )
@@ -481,10 +487,16 @@ public class Database
 
         try
         {
-            if ( this.connectionSupplier.getHighPriorityConnectionPool().isWrapperFor( HikariDataSource.class ) )
+            if ( this.connectionSupplier.getHighPriorityConnectionPool()
+                                        .isWrapperFor( HikariDataSource.class ) )
             {
-                this.connectionSupplier.getHighPriorityConnectionPool().unwrap( HikariDataSource.class )
-                                       .close();
+                HikariDataSource connections = this.connectionSupplier.getHighPriorityConnectionPool()
+                                                                      .unwrap( HikariDataSource.class );
+                if( ! connections.isClosed() )
+                {
+                    LOGGER.info( "Closing high priority database connection pools." );
+                    connections.close();
+                }
             }
         }
         catch ( SQLException e )

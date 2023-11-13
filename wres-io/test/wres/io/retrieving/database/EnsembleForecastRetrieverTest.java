@@ -4,7 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import static wres.io.retrieving.database.RetrieverTestConstants.*;
+import static wres.io.retrieving.database.RetrieverTestHelper.*;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
@@ -86,7 +87,8 @@ public class EnsembleForecastRetrieverTest
     private HikariDataSource dataSource;
     private Connection rawConnection;
     private DatabaseCaches caches;
-
+    private ExecutorService ingestExecutor;
+    private AutoCloseable mocks;
 
     /**
      * A {@link DatasetOrientation} for testing.
@@ -112,11 +114,12 @@ public class EnsembleForecastRetrieverTest
     @Before
     public void setup() throws SQLException, LiquibaseException, IOException
     {
-        MockitoAnnotations.openMocks( this );
+        this.mocks = MockitoAnnotations.openMocks( this );
 
         // Create the database and connection pool
         this.testDatabase = new TestDatabase( this.getClass().getName() );
         this.dataSource = this.testDatabase.getNewHikariDataSource();
+        this.ingestExecutor = RetrieverTestHelper.getIngestExecutor();
 
         // Substitute our H2 connection pool for both pools:
         Mockito.when( this.mockConnectionSupplier.getConnectionPool() )
@@ -275,7 +278,7 @@ public class EnsembleForecastRetrieverTest
     }
 
     @After
-    public void tearDown() throws SQLException
+    public void tearDown() throws Exception
     {
         this.dropTheTablesAndSchema();
         this.rawConnection.close();
@@ -283,6 +286,8 @@ public class EnsembleForecastRetrieverTest
         this.testDatabase = null;
         this.dataSource.close();
         this.dataSource = null;
+        this.ingestExecutor.shutdownNow();
+        this.mocks.close();
     }
 
     /**
@@ -316,7 +321,7 @@ public class EnsembleForecastRetrieverTest
      * @throws SQLException if the detailed set-up fails
      */
 
-    private void addOneForecastTimeSeriesWithFiveEventsAndThreeMembersToTheDatabase() throws SQLException, IOException
+    private void addOneForecastTimeSeriesWithFiveEventsAndThreeMembersToTheDatabase() throws SQLException
     {
         DataSource leftData = RetrieverTestData.generateDataSource( DatasetOrientation.LEFT,
                                                                     DataType.OBSERVATIONS );
@@ -351,34 +356,33 @@ public class EnsembleForecastRetrieverTest
                                             .build();
 
         TimeSeries<Ensemble> timeSeriesOne = RetrieverTestData.generateTimeSeriesEnsembleOne();
-        IngestResult ingestResultOne;
-        try ( DatabaseTimeSeriesIngester ingesterOne =
-                      new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
-                                                              .setDatabase( this.wresDatabase )
-                                                              .setCaches( this.caches )
-                                                              .setLockManager( this.lockManager )
-                                                              .build() )
-        {
-            Stream<TimeSeriesTuple> tupleStreamOne =
-                    Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne, rightData ) );
-            ingestResultOne = ingesterOne.ingest( tupleStreamOne, rightData )
-                                         .get( 0 );
-        }
+        DatabaseTimeSeriesIngester ingesterOne =
+                new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                        .setDatabase( this.wresDatabase )
+                                                        .setIngestExecutor( this.ingestExecutor )
+                                                        .setIngestExecutor( RetrieverTestHelper.getIngestExecutor() )
+                                                        .setCaches( this.caches )
+                                                        .setLockManager( this.lockManager )
+                                                        .build();
+
+        Stream<TimeSeriesTuple> tupleStreamOne =
+                Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne, rightData ) );
+        IngestResult ingestResultOne = ingesterOne.ingest( tupleStreamOne, rightData )
+                                                  .get( 0 );
 
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
-        IngestResult ingestResultTwo;
-        try ( DatabaseTimeSeriesIngester ingesterTwo =
-                      new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
-                                                              .setDatabase( this.wresDatabase )
-                                                              .setCaches( this.caches )
-                                                              .setLockManager( this.lockManager )
-                                                              .build() )
-        {
-            Stream<TimeSeriesTuple> tupleStreamTwo =
-                    Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, leftData ) );
-            ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, leftData )
-                                         .get( 0 );
-        }
+        DatabaseTimeSeriesIngester ingesterTwo =
+                new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
+                                                        .setDatabase( this.wresDatabase )
+                                                        .setIngestExecutor( this.ingestExecutor )
+                                                        .setIngestExecutor( RetrieverTestHelper.getIngestExecutor() )
+                                                        .setCaches( this.caches )
+                                                        .setLockManager( this.lockManager )
+                                                        .build();
+        Stream<TimeSeriesTuple> tupleStreamTwo =
+                Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, leftData ) );
+        IngestResult ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, leftData )
+                                                  .get( 0 );
 
         List<IngestResult> results = List.of( ingestResultOne,
                                               ingestResultTwo );
