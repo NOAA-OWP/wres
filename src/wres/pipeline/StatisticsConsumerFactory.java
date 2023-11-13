@@ -103,10 +103,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
                                                                  formatter );
 
             builder.addStatisticsConsumer( wres.config.yaml.components.Format.CSV2,
-                                           statistics -> {
-                                               Path aPath = writer.apply( statistics );
-                                               return Set.of( aPath );
-                                           } );
+                                           writer );
 
             this.resources.add( writer );
         }
@@ -239,7 +236,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
     /**
      * Returns <code>true</code> if graphics are required and will be delivered by this consumer factory,
      * otherwise <code>false</code>.
-     * 
+     *
      * @param formats the formats
      * @return true if graphics consumers are required, otherwise false.
      */
@@ -292,7 +289,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
 
     /**
      * Returns a formatter for decimal values as strings, null if none is defined.
-     * 
+     *
      * @param declaration the project declaration
      * @return a formatter
      */

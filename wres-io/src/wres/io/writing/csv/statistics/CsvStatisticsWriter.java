@@ -82,7 +82,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  */
 
 @ThreadSafe
-public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeable
+public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Closeable
 {
     /** A default name for the pairs. */
     public static final String DEFAULT_FILE_NAME = "evaluation.csv.gz";
@@ -146,6 +146,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
     @GuardedBy( "writeLock" )
     private final Path path;
 
+    /** Path to the supplementary CSVT file created for applications that use the GDAL geospatial library. */
+    private final Path pathToCsvt;
+
     /**
      * Returns an instance, which writes to the prescribed path. Uses default value formatting, which means durations in
      * units of seconds and {@link String#valueOf(double)} for real values.
@@ -196,7 +199,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      */
 
     @Override
-    public Path apply( Statistics statistics )
+    public Set<Path> apply( Statistics statistics )
     {
         Objects.requireNonNull( statistics );
 
@@ -226,7 +229,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             lock.unlock();
         }
 
-        return this.path;
+        return Set.of( this.path, this.pathToCsvt );
     }
 
     @Override
@@ -449,7 +452,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
 
         List<String> wkts = geometries.stream()
                                       .map( Geometry::getWkt )
-                                      .filter( next -> !"".equals( next ) )
+                                      .filter( next -> !next.isEmpty() )
                                       .toList();
 
         // Compose the names with a delimiter
@@ -1696,7 +1699,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
             this.writeHeader( this.bufferedWriter );
 
             // Write the CSVT file that helps with import into GDAL-enabled off-the-shelf GIS tools.
-            this.writeCsvtFileForGdalApplications( path );
+            this.pathToCsvt = this.writeCsvtFileForGdalApplications( path );
         }
         catch ( IOException e )
         {
@@ -1799,16 +1802,19 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
      *
      * @param path the base path, which will be adjusted
      * @throws IOException if the file could not be written
+     * @return the path created
      */
 
-    private void writeCsvtFileForGdalApplications( Path path ) throws IOException
+    private Path writeCsvtFileForGdalApplications( Path path ) throws IOException
     {
-        String name = path.getFileName().toString();
+        String name = path.getFileName()
+                          .toString();
         name = name.replace( ".csv", ".csvt" );
         name = name.replace( ".gz", "" );
 
         // Resolve the path for the CSVT file
-        Path pathToCsvt = path.getParent().resolve( name );
+        Path pathToCsvtInner = path.getParent()
+                                   .resolve( name );
 
         String columnClasses = "\"String\",\"String\",\"String\",\"String\",\"Integer\",\"String\",\"String\",\"WKT\","
                                + "\"Integer\",\"String\",\"String\",\"WKT\",\"Integer\",\"String\",\"String\",\"WKT\","
@@ -1832,11 +1838,13 @@ public class CsvStatisticsWriter implements Function<Statistics, Path>, Closeabl
                                    + ". They must be equal." );
         }
 
-        Files.writeString( pathToCsvt,
+        Files.writeString( pathToCsvtInner,
                            columnClasses,
                            StandardCharsets.UTF_8,
                            StandardOpenOption.CREATE,
                            StandardOpenOption.TRUNCATE_EXISTING );
+
+        return pathToCsvtInner;
     }
 
 }

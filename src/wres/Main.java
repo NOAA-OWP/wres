@@ -304,6 +304,8 @@ public class Main
                     LOGGER.warn( "Failed to destroy the embedded broker used for statistics messaging.", e );
                 }
             }
+
+            LOGGER.info( "The application has been closed." );
         }
 
         // Exit
