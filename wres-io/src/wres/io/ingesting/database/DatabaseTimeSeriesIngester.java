@@ -1,6 +1,5 @@
 package wres.io.ingesting.database;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -23,16 +22,14 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,7 +87,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  * @author Jesse Bickel
  */
 
-public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
+public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
 {
     private static final Logger LOGGER =
             LoggerFactory.getLogger( DatabaseTimeSeriesIngester.class );
@@ -117,7 +114,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
     private final DatabaseLockManager lockManager;
 
     /** A thread pool to process ingests. */
-    private final ThreadPoolExecutor executor;
+    private final ExecutorService executor;
 
     /** A time-series tracker. */
     private final UnaryOperator<TimeSeriesTuple> timeSeriesTracker;
@@ -133,6 +130,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         private DatabaseCaches caches;
         private DatabaseLockManager lockManager;
         private TimeSeriesTracker timeSeriesTracker;
+        private ExecutorService executor;
 
         /**
          * @param systemSettings the system settings to set
@@ -171,6 +169,16 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         public Builder setLockManager( DatabaseLockManager lockManager )
         {
             this.lockManager = lockManager;
+            return this;
+        }
+
+        /**
+         * @param executor the executor used to ingest data
+         * @return the builder
+         */
+        public Builder setIngestExecutor( ExecutorService executor )
+        {
+            this.executor = executor;
             return this;
         }
 
@@ -299,13 +307,6 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
             Thread.currentThread().interrupt();
             throw new IngestException( "Interrupted while getting ingest results.", e );
         }
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        this.getExecutor()
-            .shutdownNow();
     }
 
     /**
@@ -1730,7 +1731,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
      * @return the thread pool executor
      */
 
-    private ThreadPoolExecutor getExecutor()
+    private ExecutorService getExecutor()
     {
         return this.executor;
     }
@@ -1764,6 +1765,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         this.database = builder.database;
         this.caches = builder.caches;
         this.lockManager = builder.lockManager;
+        this.executor = builder.executor;
 
         // Set the tracker or an identity operator if null
         TimeSeriesTracker innerTracker = builder.timeSeriesTracker;
@@ -1780,24 +1782,6 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester, Closeable
         Objects.requireNonNull( this.database );
         Objects.requireNonNull( this.caches );
         Objects.requireNonNull( this.lockManager );
-
-        // Create a thread pool for ingesting
-        ThreadFactory threadFactoryWithNaming =
-                new BasicThreadFactory.Builder().namingPattern( "Ingesting Thread %d" )
-                                                .build();
-
-        ThreadPoolExecutor executorInner =
-                new ThreadPoolExecutor( this.systemSettings.getMaximumIngestThreads(),
-                                        this.systemSettings.getMaximumIngestThreads(),
-                                        this.systemSettings.getPoolObjectLifespan(),
-                                        TimeUnit.MILLISECONDS,
-                                        // Queue should be large enough to allow
-                                        // join() call below to be reached with
-                                        // zero or few rejected submissions to
-                                        // the executor service.
-                                        new ArrayBlockingQueue<>( this.systemSettings.getMaximumIngestThreads() ),
-                                        threadFactoryWithNaming );
-        executorInner.setRejectedExecutionHandler( new ThreadPoolExecutor.CallerRunsPolicy() );
-        this.executor = executorInner;
+        Objects.requireNonNull( this.executor );
     }
 }

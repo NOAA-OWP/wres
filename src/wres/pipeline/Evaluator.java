@@ -5,14 +5,15 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
@@ -119,7 +120,7 @@ public class Evaluator
             UserInputException translated = new UserInputException( "The evaluation declaration was invalid.", e );
             failure.setFailed();
             failure.commit();
-            return ExecutionResult.failure( translated );
+            return ExecutionResult.failure( translated, canceller.cancelled() );
         }
 
         SystemSettings settings = this.getSystemSettings();
@@ -164,6 +165,11 @@ public class Evaluator
         // policy. If dependent tasks (slicing) are queued ahead of independent ones (metrics) in the same pool, there
         // is a DEADLOCK probability. Likewise, use a separate thread pool for dispatching pools and completing tasks
         // within pools with the same number of threads in each.
+
+        // Inner readers may create additional thread factories (e.g., archives).
+        ThreadFactory readingFactory = new BasicThreadFactory.Builder()
+                .namingPattern( "Outer Reading Thread %d" )
+                .build();
         ThreadFactory slicingFactory = new BasicThreadFactory.Builder()
                 .namingPattern( "Slicing Thread %d" )
                 .build();
@@ -184,8 +190,21 @@ public class Evaluator
         BlockingQueue<Runnable> slicingQueue = new LinkedBlockingQueue<>();
         BlockingQueue<Runnable> metricQueue = new LinkedBlockingQueue<>();
         BlockingQueue<Runnable> productQueue = new LinkedBlockingQueue<>();
+        // Queue should be large enough to allow join call to be reached with zero or few rejected submissions to the
+        // executor service.
+        BlockingQueue<Runnable> readingQueue = new ArrayBlockingQueue<>( 100_000 );
 
         // Create some thread pools to perform the work required by different parts of the evaluation pipeline
+
+        // Thread pool for reading formats
+        RejectedExecutionHandler readingHandler = new ThreadPoolExecutor.CallerRunsPolicy();
+        ExecutorService readingExecutor = new ThreadPoolExecutor( settings.getMaximumReadThreads(),
+                                                                  settings.getMaximumReadThreads(),
+                                                                  settings.getPoolObjectLifespan(),
+                                                                  TimeUnit.MILLISECONDS,
+                                                                  readingQueue,
+                                                                  readingFactory,
+                                                                  readingHandler );
         // Thread pool that processes pools of pairs
         ExecutorService poolExecutor = new ThreadPoolExecutor( settings.getMaximumPoolThreads(),
                                                                settings.getMaximumPoolThreads(),
@@ -215,7 +234,9 @@ public class Evaluator
                                                                   productQueue,
                                                                   productFactory );
 
+        // Conditional executors
         ExecutorService samplingUncertaintyExecutor = null;
+        ExecutorService ingestExecutor = null;
 
         if ( Objects.nonNull( declaration.sampleUncertainty() ) )
         {
@@ -233,16 +254,49 @@ public class Evaluator
         if ( settings.isUseDatabase() )
         {
             Database innerDatabase = this.getDatabase();
+
+            // Register for cancellation
+            canceller.setDatabase( innerDatabase );
+
             lockManager = DatabaseLockManager.from( settings,
                                                     innerDatabase::getRawConnection );
 
             databaseServices = new DatabaseServices( innerDatabase, lockManager );
+
+            // Create an ingest executor
+            ThreadFactory ingestFactory =
+                    new BasicThreadFactory.Builder().namingPattern( "Ingesting Thread %d" )
+                                                    .build();
+            // Queue should be large enough to allow join() call to be reached with zero or few rejected submissions to the
+            // executor service.
+            BlockingQueue<Runnable> ingestQueue = new ArrayBlockingQueue<>( settings.getMaximumIngestThreads() );
+
+            RejectedExecutionHandler ingestHandler = new ThreadPoolExecutor.CallerRunsPolicy();
+            ingestExecutor = new ThreadPoolExecutor( settings.getMaximumIngestThreads(),
+                                                     settings.getMaximumIngestThreads(),
+                                                     settings.getPoolObjectLifespan(),
+                                                     TimeUnit.MILLISECONDS,
+                                                     ingestQueue,
+                                                     ingestFactory,
+                                                     ingestHandler );
         }
         else
         {
             // Dummy lock manager for in-memory evaluations
             lockManager = new DatabaseLockManagerNoop();
         }
+
+        // Reduce our set of executors to one object
+        Executors executors = new Executors( readingExecutor,
+                                             ingestExecutor,
+                                             poolExecutor,
+                                             slicingExecutor,
+                                             metricExecutor,
+                                             productExecutor,
+                                             samplingUncertaintyExecutor );
+
+        // Register the executors for cancellation
+        canceller.setEvaluationExecutors( executors );
 
         String projectHash;
         Set<Path> pathsWrittenTo = new TreeSet<>();
@@ -251,13 +305,6 @@ public class Evaluator
         {
             // Mark the WRES as doing an evaluation.
             lockManager.lockShared( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
-
-            // Reduce our set of executors to one object
-            Executors executors = new Executors( poolExecutor,
-                                                 slicingExecutor,
-                                                 metricExecutor,
-                                                 productExecutor,
-                                                 samplingUncertaintyExecutor );
 
             // Monitor the task queues if required
             if ( System.getProperty( "wres.monitorTaskQueues" ) != null )
@@ -299,7 +346,8 @@ public class Evaluator
             monitor.commit();
             return ExecutionResult.failure( declaration.label(),
                                             rawDeclaration,
-                                            userInputException );
+                                            userInputException,
+                                            canceller.cancelled() );
         }
         catch ( RuntimeException | IOException | SQLException internalException )
         {
@@ -309,20 +357,20 @@ public class Evaluator
             monitor.commit();
             return ExecutionResult.failure( declaration.label(),
                                             rawDeclaration,
-                                            internalWresException );
+                                            internalWresException,
+                                            canceller.cancelled() );
         }
         // Shutdown
         finally
         {
-            if ( Objects.nonNull( monitoringService ) )
-            {
-                Evaluator.shutDownGracefully( monitoringService );
-            }
-            Evaluator.shutDownGracefully( productExecutor );
-            Evaluator.shutDownGracefully( metricExecutor );
-            Evaluator.shutDownGracefully( slicingExecutor );
-            Evaluator.shutDownGracefully( poolExecutor );
-            Evaluator.shutDownGracefully( samplingUncertaintyExecutor );
+            Canceller.closeGracefully( monitoringService );
+            Canceller.closeGracefully( readingExecutor );
+            Canceller.closeGracefully( ingestExecutor );
+            Canceller.closeGracefully( productExecutor );
+            Canceller.closeGracefully( metricExecutor );
+            Canceller.closeGracefully( slicingExecutor );
+            Canceller.closeGracefully( poolExecutor );
+            Canceller.closeGracefully( samplingUncertaintyExecutor );
             lockManager.shutdown();
         }
 
@@ -332,43 +380,6 @@ public class Evaluator
                                         rawDeclaration,
                                         projectHash,
                                         pathsWrittenTo );
-    }
-
-    /**
-     * Kill off the executors passed in even if there are remaining tasks.
-     *
-     * @param executor the executor to shut down
-     */
-    private static void shutDownGracefully( ExecutorService executor )
-    {
-        if ( Objects.nonNull( executor ) )
-        {
-            // Shutdown
-            executor.shutdown();
-
-            try
-            {
-                // Await termination after shutdown
-                boolean died = executor.awaitTermination( 5, TimeUnit.SECONDS );
-
-                if ( !died )
-                {
-                    List<Runnable> tasks = executor.shutdownNow();
-
-                    if ( !tasks.isEmpty() && LOGGER.isInfoEnabled() )
-                    {
-                        LOGGER.info( "Abandoned {} tasks from {}",
-                                     tasks.size(),
-                                     executor );
-                    }
-                }
-            }
-            catch ( InterruptedException ie )
-            {
-                LOGGER.warn( "Interrupted while shutting down {}", executor, ie );
-                Thread.currentThread().interrupt();
-            }
-        }
     }
 
     /**
@@ -456,14 +467,18 @@ public class Evaluator
     /**
      * A value object that reduces count of args for some methods and provides names for those objects.
      *
-     * @param poolExecutor the pool executor
-     * @param slicingExecutor the executor for slicing/dicing/transforming pools
-     * @param metricExecutor the metric executor
-     * @param productExecutor the product executor
-     * @param samplingUncertaintyExecutor the sampling uncertainty executor
+     * @param readingExecutor the executor for reading data sources
+     * @param ingestExecutor the executor for ingesting data into a database
+     * @param poolExecutor the executor for completing pools
+     * @param slicingExecutor the executor for slicing/dicing/transforming datasets
+     * @param metricExecutor the executor for computing metrics
+     * @param productExecutor the executor for writing products or formats
+     * @param samplingUncertaintyExecutor the executor for calculating sampling uncertainties
      */
 
-    record Executors( ExecutorService poolExecutor,
+    record Executors( ExecutorService readingExecutor,
+                      ExecutorService ingestExecutor,
+                      ExecutorService poolExecutor,
                       ExecutorService slicingExecutor,
                       ExecutorService metricExecutor,
                       ExecutorService productExecutor,

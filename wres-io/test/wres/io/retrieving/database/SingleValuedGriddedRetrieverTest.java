@@ -5,7 +5,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import static wres.statistics.generated.ReferenceTime.ReferenceTimeType.T0;
-import static wres.io.retrieving.database.RetrieverTestConstants.*;
+import static wres.io.retrieving.database.RetrieverTestHelper.*;
 
 import java.net.URI;
 import java.sql.Connection;
@@ -71,31 +71,23 @@ public class SingleValuedGriddedRetrieverTest
     private HikariDataSource dataSource;
     private Connection rawConnection;
 
-    /**
-     * A feature for testing.
-     */
+    /** A feature for testing. */
     private static final Feature FEATURE = Feature.of( wres.statistics.MessageFactory.getGeometry( "POINT( 1 2 )",
                                                                                                    null,
                                                                                                    4326,
                                                                                                    "POINT( 1 2 )" ) );
 
-    /**
-     * A variable name for testing.
-     */
-
+    /** A variable name for testing. */
     private static final String VARIABLE_NAME = "QINE";
 
-    /**
-     * A {@link DatasetOrientation} for testing.
-     */
-
+    /** A {@link DatasetOrientation} for testing. */
     private static final DatasetOrientation ORIENTATION = DatasetOrientation.RIGHT;
 
-    /**
-     * The measurement units for testing.
-     */
-
+    /** The measurement units for testing. */
     private static final String UNITS = "m3/s";
+
+    /** Mocks to close. */
+    private AutoCloseable mocks;
 
     @BeforeClass
     public static void oneTimeSetup()
@@ -107,7 +99,7 @@ public class SingleValuedGriddedRetrieverTest
     @Before
     public void setup() throws SQLException, LiquibaseException
     {
-        MockitoAnnotations.openMocks( this );
+        this.mocks = MockitoAnnotations.openMocks( this );
         // Create the database and connection pool
         this.testDatabase = new TestDatabase( this.getClass().getName() );
         this.dataSource = this.testDatabase.getNewHikariDataSource();
@@ -199,7 +191,7 @@ public class SingleValuedGriddedRetrieverTest
     }
 
     @After
-    public void tearDown() throws SQLException
+    public void tearDown() throws Exception
     {
         this.dropTheTablesAndSchema();
         this.rawConnection.close();
@@ -207,6 +199,7 @@ public class SingleValuedGriddedRetrieverTest
         this.testDatabase = null;
         this.dataSource.close();
         this.dataSource = null;
+        this.mocks.close();
     }
 
     /**

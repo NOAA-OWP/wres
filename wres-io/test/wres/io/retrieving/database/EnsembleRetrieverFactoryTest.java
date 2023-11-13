@@ -3,9 +3,8 @@ package wres.io.retrieving.database;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static wres.statistics.generated.ReferenceTime.ReferenceTimeType.T0;
-import static wres.io.retrieving.database.RetrieverTestConstants.*;
+import static wres.io.retrieving.database.RetrieverTestHelper.*;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -17,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Stream;
 
 import com.zaxxer.hikari.HikariDataSource;
@@ -81,13 +81,16 @@ public class EnsembleRetrieverFactoryTest
     private SystemSettings mockSystemSettings;
     @Mock
     DatabaseSettings mockDatabaseSettings;
-    @Mock private ConnectionSupplier mockConnectionSupplier;
+    @Mock
+    private ConnectionSupplier mockConnectionSupplier;
     private wres.io.database.Database wresDatabase;
     private DatabaseCaches caches;
     private DatabaseLockManager lockManager;
     private TestDatabase testDatabase;
     private HikariDataSource dataSource;
     private Connection rawConnection;
+    private ExecutorService ingestExecutor;
+    private AutoCloseable mocks;
 
     /**
      * The retriever factory to test.
@@ -103,13 +106,16 @@ public class EnsembleRetrieverFactoryTest
     }
 
     @Before
-    public void runBeforeEachTest() throws SQLException, LiquibaseException, IOException
+    public void runBeforeEachTest() throws SQLException, LiquibaseException
     {
-        MockitoAnnotations.openMocks( this );
+        this.mocks = MockitoAnnotations.openMocks( this );
 
         // Create the database and connection pool
         this.testDatabase = new TestDatabase( this.getClass().getName() );
         this.dataSource = this.testDatabase.getNewHikariDataSource();
+
+        // Create an ingest executor
+        this.ingestExecutor = RetrieverTestHelper.getIngestExecutor();
 
         // Substitute our H2 connection pool for both pools:
         Mockito.when( this.mockConnectionSupplier.getConnectionPool() )
@@ -318,7 +324,7 @@ public class EnsembleRetrieverFactoryTest
     }
 
     @After
-    public void runAfterEachTest() throws SQLException
+    public void runAfterEachTest() throws Exception
     {
         this.dropTheTablesAndSchema();
         this.rawConnection.close();
@@ -326,6 +332,8 @@ public class EnsembleRetrieverFactoryTest
         this.testDatabase = null;
         this.dataSource.close();
         this.dataSource = null;
+        this.ingestExecutor.shutdownNow();
+        this.mocks.close();
     }
 
     /**
@@ -374,9 +382,9 @@ public class EnsembleRetrieverFactoryTest
     {
         Dataset left = DatasetBuilder.builder()
                                      .type( DataType.OBSERVATIONS )
-                .variable( VariableBuilder.builder()
-                                          .name( VARIABLE_NAME )
-                                          .build() )
+                                     .variable( VariableBuilder.builder()
+                                                               .name( VARIABLE_NAME )
+                                                               .build() )
                                      .build();
 
         Dataset right = DatasetBuilder.builder()
@@ -434,7 +442,7 @@ public class EnsembleRetrieverFactoryTest
      * @throws SQLException if the detailed set-up fails
      */
 
-    private void addTimeSeriesToDatabase() throws SQLException, IOException
+    private void addTimeSeriesToDatabase() throws SQLException
     {
         DataSource leftData = RetrieverTestData.generateDataSource( DatasetOrientation.LEFT,
                                                                     DataType.OBSERVATIONS );
@@ -478,47 +486,45 @@ public class EnsembleRetrieverFactoryTest
                                             .build();
 
         TimeSeries<Ensemble> timeSeriesOne = RetrieverTestData.generateTimeSeriesEnsembleOne();
-        IngestResult ingestResultOne;
-        try( DatabaseTimeSeriesIngester ingesterOne =
+        DatabaseTimeSeriesIngester ingesterOne =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
                                                         .setCaches( this.caches )
+                                                        .setIngestExecutor( this.ingestExecutor )
                                                         .setLockManager( this.lockManager )
-                                                        .build() )
-        {
-            Stream<TimeSeriesTuple> tupleStreamOne = Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne, rightData ) );
-            ingestResultOne = ingesterOne.ingest( tupleStreamOne, rightData )
-                                                      .get( 0 );
-        }
+                                                        .build();
 
-        IngestResult ingestResultTwo;
-        try( DatabaseTimeSeriesIngester ingesterTwo =
+        Stream<TimeSeriesTuple> tupleStreamOne =
+                Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne, rightData ) );
+        IngestResult ingestResultOne = ingesterOne.ingest( tupleStreamOne, rightData )
+                                                  .get( 0 );
+
+        DatabaseTimeSeriesIngester ingesterTwo =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
                                                         .setCaches( this.caches )
+                                                        .setIngestExecutor( this.ingestExecutor )
                                                         .setLockManager( this.lockManager )
-                                                        .build() )
-        {
-            Stream<TimeSeriesTuple> tupleStreamTwo =
-                    Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne, baselineData ) );
-            ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, baselineData )
-                                                      .get( 0 );
-        }
+                                                        .build();
+
+        Stream<TimeSeriesTuple> tupleStreamTwo =
+                Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne, baselineData ) );
+        IngestResult ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, baselineData )
+                                                  .get( 0 );
         TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
 
-        IngestResult ingestResultThree;
-        try(DatabaseTimeSeriesIngester ingesterThree =
+        DatabaseTimeSeriesIngester ingesterThree =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
                                                         .setCaches( this.caches )
+                                                        .setIngestExecutor( this.ingestExecutor )
                                                         .setLockManager( this.lockManager )
-                                                        .build() )
-        {
-            Stream<TimeSeriesTuple> tupleStreamThree =
-                    Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, leftData ) );
-            ingestResultThree = ingesterThree.ingest( tupleStreamThree, leftData )
-                                                          .get( 0 );
-        }
+                                                        .build();
+
+        Stream<TimeSeriesTuple> tupleStreamThree =
+                Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesTwo, leftData ) );
+        IngestResult ingestResultThree = ingesterThree.ingest( tupleStreamThree, leftData )
+                                                      .get( 0 );
         List<IngestResult> results = List.of( ingestResultOne,
                                               ingestResultTwo,
                                               ingestResultThree );

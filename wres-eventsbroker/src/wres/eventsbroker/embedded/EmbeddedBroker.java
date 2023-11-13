@@ -24,60 +24,39 @@ import org.slf4j.LoggerFactory;
 
 public class EmbeddedBroker implements Closeable
 {
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( EmbeddedBroker.class );
 
-    /**
-     * The default protocol for which an acceptor and associated binding url should be registered.
-     */
-
+    /** The default protocol for which an acceptor and associated binding url should be registered. */
     private static final String DEFAULT_PROTOCOL = "amqp";
 
-    /**
-     * Is <code>true</code> if the broker is started, <code>false</code> otherwise.
-     */
-
+    /** Is <code>true</code> if the broker is started, <code>false</code> otherwise. */
     private final AtomicBoolean isStarted;
 
-    /**
-     * The broker instance.
-     */
-
+    /** The broker instance. */
     private final ActiveMQServer broker;
 
-    /**
-     * The binding url, including the host (localhost) and port.
-     */
-
+    /** The binding url, including the host (localhost) and port. */
     private final String burl;
 
-    /**
-     * The port.
-     */
-
+    /** The port. */
     private final int port;
 
-    /**
-     * An exception encountered on starting the broker that is not fatal as judged by Artemis, but is fatal as judged
-     * by this application. See: <a href="https://www.mail-archive.com/issues@activemq.apache.org/msg50741.html">https://www.mail-archive.com/issues@activemq.apache.org/msg50741.html</a>
-     */
-
+    /** An exception encountered on starting the broker that is not fatal as judged by Artemis, but is fatal as judged
+     * by this application. See: <a href="https://www.mail-archive.com/issues@activemq.apache.org/msg50741.html">https://www.mail-archive.com/issues@activemq.apache.org/msg50741.html</a> */
     private final AtomicReference<Exception> exceptionOnStartup;
 
     /**
      * <p>Attempts to create an embedded broker in two stages:
-     * 
+     *
      * <ol>
      * <li>First, attempts to bind a broker on the configured port. If that fails, move the the second stage.</li>
      * <li>Second, if dynamic binding is allowed, attempts to bind a broker to a broker-chosen (free) port, which may 
      * be discovered from the embedded broker instance after startup.<li>
      * </ol>
-     * 
+     *
      * <p>If a free port is selected, the supplied properties are updated to reflect that port.
-     * 
+     *
      * @param properties the connection properties, not null                                                                     
      * @param dynamicBindingAllowed is true to bind any port, false to throw an exception if the requested port is bound
      * @return an embedded broker instance
@@ -116,7 +95,7 @@ public class EmbeddedBroker implements Closeable
         // Port pattern found?
         if ( m.find() )
         {
-            String portString = m.group()
+            String portString = m.group( "port" )
                                  .replace( ":", "" );
 
             LOGGER.debug( "While attempting to create an embedded broker, discovered the following port string to "
@@ -202,7 +181,7 @@ public class EmbeddedBroker implements Closeable
 
     /**
      * Starts the broker.
-     * 
+     *
      * @throws CouldNotStartEmbeddedBrokerException if the broker could not be started for any reason.
      */
 
@@ -247,7 +226,7 @@ public class EmbeddedBroker implements Closeable
 
     /**
      * Returns the port for messaging traffic
-     * 
+     *
      * @return the port 
      */
 
@@ -302,7 +281,7 @@ public class EmbeddedBroker implements Closeable
 
     /**
      * Returns the connection property name from the map of properties.
-     * 
+     *
      * @param properties the properties
      * @return the connection property name or null if none could be found
      * @throws NullPointerException if the properties is null
@@ -340,7 +319,7 @@ public class EmbeddedBroker implements Closeable
 
     /**
      * Returns a broker instance with default launch options on a prescribed port.
-     * 
+     *
      * @param port an explicit port on which to bind the transport
      * @return a broker instance with default options
      */
@@ -353,7 +332,7 @@ public class EmbeddedBroker implements Closeable
     /**
      * If the connection string contains a different port than the port actually used, then update the port inline to 
      * the properties map with the relevant AMQP port from the list of broker ports for which bindings were found. 
-     * 
+     *
      * @param connectionPropertyName the connection property name
      * @param properties the properties whose named value should be replaced
      * @param amqpPort the discovered amqp port
@@ -389,7 +368,7 @@ public class EmbeddedBroker implements Closeable
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param amqpPort the port
      * @throws CouldNotStartEmbeddedBrokerException if the broker could not be started for any reason
      */
@@ -430,6 +409,9 @@ public class EmbeddedBroker implements Closeable
             configuration = new ConfigurationImpl().setPersistenceEnabled( false )
                                                    .setJournalDirectory( "target/data/journal" )
                                                    .setSecurityEnabled( false )
+                                                   // Never timeout client connections to an embedded broker
+                                                   // Oddly, Long.MAX does not work here
+                                                   .setConnectionTTLOverride( 6000000000000L )
                                                    .addAcceptorConfiguration( DEFAULT_PROTOCOL, this.burl );
 
             this.broker = ActiveMQServers.newActiveMQServer( configuration );
