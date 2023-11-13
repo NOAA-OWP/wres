@@ -48,6 +48,8 @@ public class JobMetadata
         COMPLETED_REPORTED_SUCCESS,
         /** The job has finshed and the worker reported failure */
         COMPLETED_REPORTED_FAILURE,
+        /** The job was canceled  */
+        CANCELED,
         /** For use by other classes when no JobMetadata exists */
         NOT_FOUND
     }

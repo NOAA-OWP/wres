@@ -479,6 +479,14 @@ class JobResults
                               jobMetadata );
                 JobResults.deleteInputs( jobMetadata );
             }
+            // We use 409 to signify a canceled evaluation
+            else if (resultValue == HttpStatus.error409().status() )
+            {
+                sharedData.setJobState( JobMetadata.JobState.CANCELED );
+                LOGGER.debug( "Shared metadata after setting job state: {}",
+                              jobMetadata );
+                JobResults.deleteInputs( jobMetadata );
+            }
             else
             {
                 sharedData.setJobState( JobMetadata.JobState.COMPLETED_REPORTED_FAILURE );
