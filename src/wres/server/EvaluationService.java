@@ -94,7 +94,10 @@ public class EvaluationService implements ServletContextListener
 
     private static final AtomicReference<EvaluationStatusOuterClass.EvaluationStatus> EVALUATION_STAGE =
             new AtomicReference<>( AWAITING );
+
     private static final AtomicLong EVALUATION_ID = new AtomicLong( -1 );
+
+    private static final AtomicReference<Canceller> EVALUATION_CANCELLER = new AtomicReference<>();
 
     private static final int ONE_MINUTE_IN_MILLISECONDS = 60000;
 
@@ -307,7 +310,7 @@ public class EvaluationService implements ServletContextListener
         Job.job jobMessage = createJobFromByteArray( message );
 
         // Check that this evaluation should be ran
-        if ( EVALUATION_ID.get() != id && EVALUATION_STAGE.get().equals( OPENED ) )
+        if ( EVALUATION_ID.get() != id || !EVALUATION_STAGE.get().equals( OPENED ) )
         {
             return Response.status( Response.Status.BAD_REQUEST )
                            .entity(
@@ -319,6 +322,7 @@ public class EvaluationService implements ServletContextListener
         Instant beganExecution = Instant.now();
 
         EVALUATION_STAGE.set( ONGOING );
+        LOGGER.info( "Kicking off evaluation on server with the internal ID of: {}", id );
         Set<java.nio.file.Path> outputPaths;
         Canceller canceller = Canceller.of();
         try
@@ -330,12 +334,24 @@ public class EvaluationService implements ServletContextListener
             logJobHeaderInformation();
 
             // Execute an evaluation
-            ExecutionResult result = this.evaluator.evaluate( jobMessage.getProjectConfig(), canceller );
+            EVALUATION_CANCELLER.set( canceller );
+            ExecutionResult result =
+                    this.evaluator.evaluate( jobMessage.getProjectConfig(), EVALUATION_CANCELLER.get() );
 
             logJobFinishInformation( jobMessage, result, beganExecution );
 
-            // If the result failed, print the stack trace and return the exception
-            if ( result.failed() )
+            if ( result.cancelled() )
+            {
+                String failureMessage = "The evaluation was canceled";
+                // Print the stack exception so it is stored in the stdOut of the job
+                LOGGER.info( failureMessage );
+                EVALUATION_STAGE.set( COMPLETED );
+
+                return Response.status( Response.Status.CONFLICT )
+                               .entity( failureMessage )
+                               .build();
+            }
+            else if ( result.failed() )
             {
                 String failureMessage = "The evaluation failed with the following stack trace: ";
                 // Print the stack exception so it is stored in the stdOut of the job
@@ -387,6 +403,39 @@ public class EvaluationService implements ServletContextListener
         EVALUATION_STAGE.set( COMPLETED );
 
         return Response.ok( streamingOutput )
+                       .build();
+    }
+
+    /**
+     * cancel an ongoing Evaluation
+     * @param id the id of a job to be canceled
+     * @return the state of the cancel
+     */
+    @POST
+    @Path( "/cancel/{id}" )
+    @Produces( MediaType.TEXT_PLAIN )
+    public Response cancelEvaluation( @PathParam( "id" ) Long id )
+    {
+
+        // Check that there is an ongoing evaluation to be canceled
+        if ( EVALUATION_ID.get() != id || !EVALUATION_STAGE.get().equals( ONGOING ) )
+        {
+            return Response.status( Response.Status.BAD_REQUEST )
+                           .entity(
+                                   "There was not an ongoing evaluation with that ID to cancel" )
+                           .build();
+        }
+
+        // Cancel evaluation tied to this canceler
+        EVALUATION_CANCELLER.get().cancel();
+
+        // The canceled evaluation also takes out the database/evaluator this hack adds it back
+        // TODO: remove this as part of the clean up ticket #122596
+        database = new Database( new ConnectionSupplier( systemSettings ) );
+        evaluator = new Evaluator( systemSettings, database, broker );
+
+        return Response.status( Response.Status.OK )
+                       .entity( "Successfully canceled evaluation" )
                        .build();
     }
 
