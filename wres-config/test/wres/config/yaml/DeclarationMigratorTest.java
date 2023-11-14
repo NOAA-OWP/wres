@@ -1107,4 +1107,87 @@ class DeclarationMigratorTest
         assertEquals( expected, actual.formats()
                                       .outputs() );
     }
+
+    @Test
+    void testMigrateProjectWithMultipleSetsOfClassifierThresholds()
+    {
+        // #120048
+        ThresholdsConfig one = new ThresholdsConfig( wres.config.xml.generated.ThresholdType.PROBABILITY_CLASSIFIER,
+                                                     ThresholdDataType.LEFT_AND_RIGHT,
+                                                     "0.05,0.1",
+                                                     ThresholdOperator.LESS_THAN_OR_EQUAL_TO );
+        ThresholdsConfig two = new ThresholdsConfig( wres.config.xml.generated.ThresholdType.PROBABILITY_CLASSIFIER,
+                                                     ThresholdDataType.ANY_RIGHT,
+                                                     "0.05,0.1",
+                                                     ThresholdOperator.EQUAL_TO );
+
+        List<ThresholdsConfig> thresholdSets = List.of( one, two );
+        List<MetricConfig> metrics = List.of( new MetricConfig( null, MetricConfigName.PROBABILITY_OF_DETECTION ) );
+        MetricsConfig metricsConfig = new MetricsConfig( thresholdSets, null, metrics, null, null );
+        List<MetricsConfig> innerMetrics = List.of( metricsConfig );
+
+        ProjectConfig project = new ProjectConfig( this.inputs,
+                                                   this.pairs,
+                                                   innerMetrics,
+                                                   this.outputs,
+                                                   null,
+                                                   null );
+
+        EvaluationDeclaration actualEvaluation = DeclarationMigrator.from( project, false );
+
+        Threshold pOne = Threshold.newBuilder()
+                                  .setLeftThresholdProbability( DoubleValue.of( 0.05 ) )
+                                  .setOperator( Threshold.ThresholdOperator.LESS_EQUAL )
+                                  .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                  .build();
+
+        wres.config.yaml.components.Threshold pOneWrapped
+                = ThresholdBuilder.builder()
+                                  .threshold( pOne )
+                                  .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                  .build();
+
+        Threshold pTwo = Threshold.newBuilder()
+                                  .setLeftThresholdProbability( DoubleValue.of( 0.1 ) )
+                                  .setOperator( Threshold.ThresholdOperator.LESS_EQUAL )
+                                  .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                  .build();
+
+        wres.config.yaml.components.Threshold pTwoWrapped
+                = ThresholdBuilder.builder()
+                                  .threshold( pTwo )
+                                  .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                  .build();
+
+        Threshold pThree = Threshold.newBuilder()
+                                    .setLeftThresholdProbability( DoubleValue.of( 0.05 ) )
+                                    .setOperator( Threshold.ThresholdOperator.EQUAL )
+                                    .setDataType( Threshold.ThresholdDataType.ANY_RIGHT )
+                                    .build();
+
+        wres.config.yaml.components.Threshold pThreeWrapped =
+                ThresholdBuilder.builder()
+                                .threshold( pThree )
+                                .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                .build();
+
+        Threshold pFour = Threshold.newBuilder()
+                                   .setLeftThresholdProbability( DoubleValue.of( 0.1 ) )
+                                   .setOperator( Threshold.ThresholdOperator.EQUAL )
+                                   .setDataType( Threshold.ThresholdDataType.ANY_RIGHT )
+                                   .build();
+
+        wres.config.yaml.components.Threshold pFourWrapped =
+                ThresholdBuilder.builder()
+                                .threshold( pFour )
+                                .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                .build();
+
+        Set<wres.config.yaml.components.Threshold> expected = Set.of( pOneWrapped,
+                                                                      pTwoWrapped,
+                                                                      pThreeWrapped,
+                                                                      pFourWrapped );
+
+        assertEquals( expected, actualEvaluation.classifierThresholds() );
+    }
 }

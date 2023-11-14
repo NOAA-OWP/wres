@@ -485,7 +485,8 @@ public class WrdsNwmReader implements TimeSeriesReader
                       earliest );
 
         // Intentionally keep this raw, un-Sunday-ified.
-        ZonedDateTime latest = dates.maximum().atZone( ReaderUtilities.UTC );
+        ZonedDateTime latest = dates.maximum()
+                                    .atZone( ReaderUtilities.UTC );
 
         LOGGER.debug( "Given {} parsed {} for latest.",
                       dates.maximum(),

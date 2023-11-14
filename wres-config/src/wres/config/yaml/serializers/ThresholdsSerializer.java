@@ -86,17 +86,13 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
                                                           JsonGenerator writer ) throws IOException
     {
         // Preserve insertion order
-        Map<String, Set<Threshold>> grouped
-                = thresholds.stream()
-                            .collect( Collectors.groupingBy( next -> next.threshold()
-                                                                         .getName(),
-                                                             LinkedHashMap::new,
-                                                             Collectors.toCollection( LinkedHashSet::new ) ) );
+        List<Set<Threshold>> grouped = this.getGroupedThresholds( thresholds );
+
         // Write the groups to an array, one set in each position
         if ( grouped.size() > 1 )
         {
             writer.writeStartArray();
-            for ( Set<Threshold> nextThresholds : grouped.values() )
+            for ( Set<Threshold> nextThresholds : grouped )
             {
                 this.writeThresholdsWithFullMetadata( nextThresholds, type, writer );
             }
@@ -216,7 +212,7 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
             for ( double nextValue : values )
             {
                 // Use flow style if possible
-                if( writer instanceof CustomGenerator custom )
+                if ( writer instanceof CustomGenerator custom )
                 {
                     custom.setFlowStyleOn();
                 }
@@ -227,7 +223,7 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
                 writer.writeEndObject();
 
                 // Return to default style
-                if( writer instanceof CustomGenerator custom )
+                if ( writer instanceof CustomGenerator custom )
                 {
                     custom.setFlowStyleOff();
                 }
@@ -248,6 +244,43 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
 
         // End the array
         writer.writeEndArray();
+    }
+
+    /**
+     * Groups the thresholds for serialization.
+     * @param thresholds the thresholds to group
+     * @return the grouped thresholds
+     */
+
+    private List<Set<Threshold>> getGroupedThresholds( Set<Threshold> thresholds )
+    {
+        // Group by every attribute of the threshold except the values, retaining insertion order
+        Map<ThresholdAttributes, Set<Threshold>> grouped
+                = thresholds.stream()
+                            .collect( Collectors.groupingBy( t -> new ThresholdAttributes( t.threshold()
+                                                                                            .getOperator(),
+                                                                                           t.threshold()
+                                                                                            .getDataType(),
+                                                                                           t.threshold()
+                                                                                            .getName() ),
+                                                             LinkedHashMap::new,
+                                                             Collectors.toCollection( LinkedHashSet::new ) ) );
+
+        return grouped.values()
+                      .stream()
+                      .toList();
+    }
+
+    /**
+     * Bag of threshold attributes for ordering.
+     * @param operator the operator
+     * @param dataType the data type
+     * @param name the name
+     */
+    private record ThresholdAttributes( ThresholdOperator operator,
+                                        ThresholdDataType dataType,
+                                        String name )
+    {
     }
 
     /**

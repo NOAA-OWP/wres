@@ -2981,4 +2981,88 @@ class DeclarationFactoryTest
         assertEquals( expected, actual );
     }
 
+    @Test
+    void testSerializeWithMultipleSetsOfClassifierThresholds() throws IOException
+    {
+        // #120048
+        String expected = """
+                observed:
+                  sources: some_file.csv
+                predicted:
+                  sources: another_file.csv
+                classifier_thresholds:
+                  - values: [0.05, 0.1]
+                    operator: less equal
+                    apply_to: observed and predicted
+                  - values: [0.05, 0.1]
+                    operator: equal
+                    apply_to: any predicted
+                """;
+
+        Threshold pOne = Threshold.newBuilder()
+                                  .setLeftThresholdProbability( DoubleValue.of( 0.05 ) )
+                                  .setOperator( Threshold.ThresholdOperator.LESS_EQUAL )
+                                  .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                  .build();
+
+        wres.config.yaml.components.Threshold pOneWrapped
+                = ThresholdBuilder.builder()
+                                  .threshold( pOne )
+                                  .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                  .build();
+
+        Threshold pTwo = Threshold.newBuilder()
+                                  .setLeftThresholdProbability( DoubleValue.of( 0.1 ) )
+                                  .setOperator( Threshold.ThresholdOperator.LESS_EQUAL )
+                                  .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                  .build();
+
+        wres.config.yaml.components.Threshold pTwoWrapped
+                = ThresholdBuilder.builder()
+                                  .threshold( pTwo )
+                                  .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                  .build();
+
+        Threshold pThree = Threshold.newBuilder()
+                                    .setLeftThresholdProbability( DoubleValue.of( 0.05 ) )
+                                    .setOperator( Threshold.ThresholdOperator.EQUAL )
+                                    .setDataType( Threshold.ThresholdDataType.ANY_RIGHT )
+                                    .build();
+
+        wres.config.yaml.components.Threshold pThreeWrapped =
+                ThresholdBuilder.builder()
+                                .threshold( pThree )
+                                .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                .build();
+
+        Threshold pFour = Threshold.newBuilder()
+                                   .setLeftThresholdProbability( DoubleValue.of( 0.1 ) )
+                                   .setOperator( Threshold.ThresholdOperator.EQUAL )
+                                   .setDataType( Threshold.ThresholdDataType.ANY_RIGHT )
+                                   .build();
+
+        wres.config.yaml.components.Threshold pFourWrapped =
+                ThresholdBuilder.builder()
+                                .threshold( pFour )
+                                .type( ThresholdType.PROBABILITY_CLASSIFIER )
+                                .build();
+
+        // Thresholds in insertion order
+        Set<wres.config.yaml.components.Threshold> thresholds = new LinkedHashSet<>();
+        thresholds.add( pOneWrapped );
+        thresholds.add( pTwoWrapped );
+        thresholds.add( pThreeWrapped );
+        thresholds.add( pFourWrapped );
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .left( this.observedDataset )
+                                                                       .right( this.predictedDataset )
+                                                                       .classifierThresholds( thresholds )
+                                                                       .build();
+
+        String actual = DeclarationFactory.from( evaluation );
+
+        assertEquals( expected, actual );
+    }
+
 }
