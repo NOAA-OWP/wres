@@ -702,6 +702,7 @@ class NwmTimeSeries implements Closeable
                                        validDatetimeCount );
         }
 
+/*
         for ( Map.Entry<Integer, Map<Instant, double[]>> oneEnsemble : ensembleValues.entrySet() )
         {
             Map<Instant, double[]> map = oneEnsemble.getValue();
@@ -717,6 +718,7 @@ class NwmTimeSeries implements Closeable
                                               + oneEnsemble.getKey() );
             }
         }
+*/
 
         Map<Integer, TimeSeries<Ensemble>> byFeatureId = new HashMap<>( featureIds.length
                                                                         - this.featuresNotFound.size() );
