@@ -702,22 +702,6 @@ class NwmTimeSeries implements Closeable
                                        validDatetimeCount );
         }
 
-        for ( Map.Entry<Integer, Map<Instant, double[]>> oneEnsemble : ensembleValues.entrySet() )
-        {
-            Map<Instant, double[]> map = oneEnsemble.getValue();
-            if ( map.size() != validDatetimeCount )
-            {
-                throw new PreIngestException( "Expected "
-                                              + validDatetimeCount
-                                              + " different valid datetimes but found "
-                                              + map.size()
-                                              + " in netCDF resources "
-                                              + this.getNetcdfResourceNames()
-                                              + " for NWM feature id "
-                                              + oneEnsemble.getKey() );
-            }
-        }
-
         Map<Integer, TimeSeries<Ensemble>> byFeatureId = new HashMap<>( featureIds.length
                                                                         - this.featuresNotFound.size() );
 
