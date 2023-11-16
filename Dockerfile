@@ -42,5 +42,3 @@ CMD [ "./docker-entrypoint.sh" ]
 
 VOLUME /mnt/wres_share
 VOLUME /wres_secrets
-
-HEALTHCHECK --interval=30s --timeout=15s CMD curl -f --retry 1 --max-time 5 http://localhost:8010/evaluation/heartbeat || bash -c 'kill 1'
