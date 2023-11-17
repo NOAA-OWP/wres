@@ -442,14 +442,16 @@ public class DeclarationValidator
                                         .type() ) )
         {
             String message = start + OBSERVED + middle + OBSERVED + end;
-            EvaluationStatusEvent event = eventBuilder.setEventMessage( message ).build();
+            EvaluationStatusEvent event = eventBuilder.setEventMessage( message )
+                                                      .build();
             events.add( event );
         }
         if ( Objects.isNull( declaration.right()
                                         .type() ) )
         {
             String message = start + PREDICTED + middle + PREDICTED + end;
-            EvaluationStatusEvent event = eventBuilder.setEventMessage( message ).build();
+            EvaluationStatusEvent event = eventBuilder.setEventMessage( message )
+                                                      .build();
             events.add( event );
         }
         if ( DeclarationUtilities.hasBaseline( declaration )
@@ -458,7 +460,8 @@ public class DeclarationValidator
                                            .type() ) )
         {
             String message = start + BASELINE + middle + BASELINE + end;
-            EvaluationStatusEvent event = eventBuilder.setEventMessage( message ).build();
+            EvaluationStatusEvent event = eventBuilder.setEventMessage( message )
+                                                      .build();
             events.add( event );
         }
 
@@ -806,8 +809,8 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
         // Check for source interfaces that require a variable
-        EvaluationStatusEvent.Builder eventBuilder =
-                EvaluationStatusEvent.newBuilder().setStatusLevel( StatusLevel.ERROR );
+        EvaluationStatusEvent.Builder eventBuilder = EvaluationStatusEvent.newBuilder()
+                                                                          .setStatusLevel( StatusLevel.ERROR );
 
         String messageStart = "Discovered a data source for the '";
         String messageMiddle = "' data with an interface shorthand of ";
@@ -820,14 +823,16 @@ public class DeclarationValidator
             if ( DeclarationValidator.hasSourceInterface( declaration.left().sources(), SourceInterface.USGS_NWIS ) )
             {
                 String message = messageStart + OBSERVED + messageMiddle + SourceInterface.USGS_NWIS + messageEnd;
-                EvaluationStatusEvent event = eventBuilder.setEventMessage( message ).build();
+                EvaluationStatusEvent event = eventBuilder.setEventMessage( message )
+                                                          .build();
                 events.add( event );
             }
 
             if ( DeclarationValidator.hasSourceInterface( declaration.left().sources(), SourceInterface.WRDS_NWM ) )
             {
                 String message = messageStart + OBSERVED + messageMiddle + SourceInterface.WRDS_NWM + messageEnd;
-                EvaluationStatusEvent event = eventBuilder.setEventMessage( message ).build();
+                EvaluationStatusEvent event = eventBuilder.setEventMessage( message )
+                                                          .build();
                 events.add( event );
             }
         }
@@ -835,17 +840,21 @@ public class DeclarationValidator
         // Check the predicted data
         if ( DeclarationValidator.variableIsNotDeclared( declaration, DatasetOrientation.RIGHT ) )
         {
-            if ( DeclarationValidator.hasSourceInterface( declaration.right().sources(), SourceInterface.USGS_NWIS ) )
+            if ( DeclarationValidator.hasSourceInterface( declaration.right()
+                                                                     .sources(), SourceInterface.USGS_NWIS ) )
             {
                 String message = messageStart + PREDICTED + messageMiddle + SourceInterface.USGS_NWIS + messageEnd;
-                EvaluationStatusEvent event = eventBuilder.setEventMessage( message ).build();
+                EvaluationStatusEvent event = eventBuilder.setEventMessage( message )
+                                                          .build();
                 events.add( event );
             }
 
-            if ( DeclarationValidator.hasSourceInterface( declaration.right().sources(), SourceInterface.WRDS_NWM ) )
+            if ( DeclarationValidator.hasSourceInterface( declaration.right()
+                                                                     .sources(), SourceInterface.WRDS_NWM ) )
             {
                 String message = messageStart + PREDICTED + messageMiddle + SourceInterface.WRDS_NWM + messageEnd;
-                EvaluationStatusEvent event = eventBuilder.setEventMessage( message ).build();
+                EvaluationStatusEvent event = eventBuilder.setEventMessage( message )
+                                                          .build();
                 events.add( event );
             }
         }
@@ -853,19 +862,25 @@ public class DeclarationValidator
         // Check the baseline data
         if ( DeclarationValidator.variableIsNotDeclared( declaration, DatasetOrientation.BASELINE ) )
         {
-            if ( DeclarationValidator.hasSourceInterface( declaration.baseline().dataset().sources(),
+            if ( DeclarationValidator.hasSourceInterface( declaration.baseline()
+                                                                     .dataset()
+                                                                     .sources(),
                                                           SourceInterface.USGS_NWIS ) )
             {
                 String message = messageStart + BASELINE + messageMiddle + SourceInterface.USGS_NWIS + messageEnd;
-                EvaluationStatusEvent event = eventBuilder.setEventMessage( message ).build();
+                EvaluationStatusEvent event = eventBuilder.setEventMessage( message )
+                                                          .build();
                 events.add( event );
             }
 
-            if ( DeclarationValidator.hasSourceInterface( declaration.baseline().dataset().sources(),
+            if ( DeclarationValidator.hasSourceInterface( declaration.baseline()
+                                                                     .dataset()
+                                                                     .sources(),
                                                           SourceInterface.WRDS_NWM ) )
             {
                 String message = messageStart + BASELINE + messageMiddle + SourceInterface.WRDS_NWM + messageEnd;
-                EvaluationStatusEvent event = eventBuilder.setEventMessage( message ).build();
+                EvaluationStatusEvent event = eventBuilder.setEventMessage( message )
+                                                          .build();
                 events.add( event );
             }
         }
@@ -944,8 +959,11 @@ public class DeclarationValidator
         if ( DeclarationUtilities.hasBaseline( declaration ) )
         {
             List<EvaluationStatusEvent> baselineEvents =
-                    DeclarationValidator.sourcesAreValid( declaration.baseline().dataset().sources(),
-                                                          declaration.baseline().dataset()
+                    DeclarationValidator.sourcesAreValid( declaration.baseline()
+                                                                     .dataset()
+                                                                     .sources(),
+                                                          declaration.baseline()
+                                                                     .dataset()
                                                                      .type(),
                                                           BASELINE );
             events.addAll( baselineEvents );

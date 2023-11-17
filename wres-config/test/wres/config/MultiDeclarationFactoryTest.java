@@ -118,6 +118,60 @@ class MultiDeclarationFactoryTest
     }
 
     @Test
+    void testDeserializeFromOldDeclarationLanguageUsingExplicitStringAndWhiteSpace() throws IOException
+    {
+        // Test #121240
+        String oldLanguageString = """
+                
+                <?xml version="1.0" encoding="UTF-8"?>
+                <project name="scenario50x">
+                    <inputs>
+                        <left>
+                            <type>observations</type>
+                            <source>some_file.csv</source>
+                        </left>
+                        <right>
+                            <type>ensemble forecasts</type>
+                            <source>another_file.csv</source>
+                        </right>
+                    </inputs>
+                    <pair>
+                        <unit>CMS</unit>
+                    </pair>
+                    <metrics>
+                        <metric><name>sample size</name></metric>
+                    </metrics>
+                    <outputs>
+                        <destination type="pairs" />
+                    </outputs>
+                </project>""";
+
+        EvaluationDeclaration actual = MultiDeclarationFactory.from( oldLanguageString, null, false, false );
+
+        Metric metric = MetricBuilder.builder()
+                                     .name( MetricConstants.SAMPLE_SIZE )
+                                     .build();
+        Outputs.NumericFormat numericFormat = Outputs.NumericFormat.newBuilder()
+                                                                   .build();
+        Outputs formatsInner = Outputs.newBuilder()
+                                      .setPairs( Outputs.PairFormat.newBuilder()
+                                                                   .setOptions( numericFormat )
+                                                                   .build() )
+                                      .build();
+        Formats formats = new Formats( formatsInner );
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .metrics( Set.of( metric ) )
+                                                                     .unit( "CMS" )
+                                                                     .formats( formats )
+                                                                     .label( "scenario50x" )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testDeserializeFromNewDeclarationLanguageUsingExplicitString() throws IOException
     {
         String yaml = """
