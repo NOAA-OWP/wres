@@ -115,9 +115,8 @@ public class JobStatusMessenger implements Runnable
 
         try ( Channel channel = this.getConnection().createChannel() )
         {
-            String evaluationStatus = getEvaluationStatus();
-
             this.sendMessage( channel, RECEIVED );
+            String evaluationStatus = getEvaluationStatus();
 
             while ( !evaluationStatus.equals( COMPLETED.toString() ) && !evaluationStatus.equals( CLOSED.toString() ) )
             {

@@ -137,6 +137,7 @@ public class JobStandardStreamMessenger implements Runnable
                 BufferedReader reader = new BufferedReader( utf8Reader );
                 Channel channel = this.getConnection().createChannel() )
         {
+            LOGGER.info( "Established redirect for {} ", this.getWhichStream() );
             String exchangeName = this.getExchangeName();
             String exchangeType = "topic";
             channel.exchangeDeclare( exchangeName, exchangeType, true );
