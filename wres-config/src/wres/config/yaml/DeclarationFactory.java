@@ -211,7 +211,7 @@ public class DeclarationFactory
             LOGGER.info( "Discovered a path to a declaration string: {}", path );
         }
         // Probably a file path, but not a valid one
-        else if ( declarationString.split( System.lineSeparator() ).length <= 1
+        else if ( declarationString.split( "\\R" ).length <= 1 // One or fewer line separators
                   && !DeclarationFactory.isDeclarationString( declarationString ) )
         {
             throw new FileNotFoundException( "The following declaration string appears to be a path, but the file "

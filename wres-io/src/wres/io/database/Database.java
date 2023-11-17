@@ -475,15 +475,15 @@ public class Database
                                                                       .unwrap( HikariDataSource.class );
                 if( ! connections.isClosed() )
                 {
-                    LOGGER.info( "Closing ordinary priority database connection pool..." );
+                    LOGGER.info( "Closing the ordinary priority database connection pool..." );
                     connections.close();
-                    LOGGER.info( "Closed ordinary priority database connection pool." );
+                    LOGGER.info( "The ordinary priority database connection pool has been closed." );
                 }
             }
         }
         catch ( SQLException e )
         {
-            LOGGER.warn( "Unable to close the connection pool." );
+            LOGGER.warn( "Unable to close the ordinary priority database connection pool." );
         }
 
         try
@@ -495,15 +495,15 @@ public class Database
                                                                       .unwrap( HikariDataSource.class );
                 if( ! connections.isClosed() )
                 {
-                    LOGGER.info( "Closing high priority database connection pool..." );
+                    LOGGER.info( "Closing the high priority database connection pool..." );
                     connections.close();
-                    LOGGER.info( "Closed high priority database connection pool." );
+                    LOGGER.info( "The high priority database connection pool has been closed." );
                 }
             }
         }
         catch ( SQLException e )
         {
-            LOGGER.warn( "Unable to close the high priority connection pool." );
+            LOGGER.warn( "Unable to close the high priority database connection pool." );
         }
     }
 

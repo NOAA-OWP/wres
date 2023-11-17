@@ -208,14 +208,15 @@ public class MultiDeclarationFactory
         Objects.requireNonNull( mediaType );
         Objects.requireNonNull( declarationString );
 
+        String withoutWhiteSpace = declarationString.trim();
+
         // Permissive check because a string without <?xml version="1.0" encoding="UTF-8"?> will still parse correctly,
         // even though the content type will not be detected correctly. The first check deals with that scenario and
         // the second check deals with a correctly detected content type.
-        return declarationString.startsWith( "<project" )
+        return withoutWhiteSpace.startsWith( "<project" )
                || ( "application".equals( mediaType.getType() )
                     && "xml".equals( mediaType.getSubtype() ) )
-               || declarationString.trim()
-                                   .startsWith( "<?xml" ); // When tika fails
+               || withoutWhiteSpace.startsWith( "<?xml" ); // When tika fails
     }
 
     /**
@@ -227,7 +228,8 @@ public class MultiDeclarationFactory
 
     private static MediaType getMediaType( String declarationString ) throws IOException
     {
-        try ( InputStream inputStream = new ByteArrayInputStream( declarationString.getBytes() ) )
+        String withoutWhitespace = declarationString.trim();
+        try ( InputStream inputStream = new ByteArrayInputStream( withoutWhitespace.getBytes() ) )
         {
             Metadata metadata = new Metadata();
             TikaConfig tikaConfig = new TikaConfig();

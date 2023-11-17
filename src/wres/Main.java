@@ -284,6 +284,7 @@ public class Main
                 {
                     LOGGER.info( "Closing database activities..." );
                     database.shutdown();
+                    LOGGER.info( "The database activities have been closed." );
                 }
                 else
                 {
