@@ -526,28 +526,14 @@ public class DatabaseOperations
     }
 
     /**
-     * Removes all user data from the database
-     * TODO: This should probably accept an object or list to allow for the removal of business logic.
-     * Assumes that locking has already been done at a higher level by caller(s)
+     * Removes all user data from the database. Assumes that locking has already been done at a higher level by
+     * caller(s)
      * @throws SQLException Thrown if successful communication with the
      * database could not be established
      */
     private static void clean( Database database ) throws SQLException
     {
-        StringJoiner builder;
-
-        if ( database.getType() == DatabaseType.H2 )
-        {
-            builder = new StringJoiner( System.lineSeparator(),
-                                        "SET REFERENTIAL_INTEGRITY FALSE;"
-                                        + System.lineSeparator(),
-                                        System.lineSeparator()
-                                        + "SET REFERENTIAL_INTEGRITY TRUE;" );
-        }
-        else
-        {
-            builder = new StringJoiner( System.lineSeparator() );
-        }
+        StringJoiner builder = DatabaseOperations.getStartOfCleanScript( database );
 
         List<String> tables = List.of( "wres.Source",
                                        "wres.TimeSeries",
@@ -563,7 +549,7 @@ public class DatabaseOperations
             if ( database.getType()
                          .hasTruncateCascade() )
             {
-                builder.add( TRUNCATE_TABLE + table + " CASCADE;" );
+                builder.add( TRUNCATE_TABLE + table + " RESTART IDENTITY CASCADE;" );
             }
             else
             {
@@ -588,6 +574,31 @@ public class DatabaseOperations
             // Decorate with contextual information.
             throw new SQLException( message, e );
         }
+    }
+
+    /**
+     * Generates the start of a clean script, depending on database type.
+     * @param database the database
+     * @return the start of a clean script
+     */
+
+    private static StringJoiner getStartOfCleanScript( Database database )
+    {
+        StringJoiner builder;
+
+        if ( database.getType() == DatabaseType.H2 )
+        {
+            builder = new StringJoiner( System.lineSeparator(),
+                                        "SET REFERENTIAL_INTEGRITY FALSE;"
+                                        + System.lineSeparator(),
+                                        System.lineSeparator()
+                                        + "SET REFERENTIAL_INTEGRITY TRUE;" );
+        }
+        else
+        {
+            builder = new StringJoiner( System.lineSeparator() );
+        }
+        return builder;
     }
 
     /**
