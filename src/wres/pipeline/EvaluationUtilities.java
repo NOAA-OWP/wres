@@ -171,6 +171,7 @@ class EvaluationUtilities
         Objects.requireNonNull( monitor );
         Objects.requireNonNull( canceller );
 
+        // Database needed?
         if ( systemSettings.isUseDatabase() )
         {
             Objects.requireNonNull( databaseServices );
@@ -258,161 +259,6 @@ class EvaluationUtilities
                                                                .build();
 
             // Open an evaluation, to be closed on completion or stopped on exception
-            Pair<EvaluationMessager, String> evaluationAndProjectHash = EvaluationUtilities.evaluate( evaluationDetails,
-                                                                                                      databaseServices,
-                                                                                                      executors,
-                                                                                                      connections,
-                                                                                                      sharedWriters,
-                                                                                                      netcdfWriters,
-                                                                                                      canceller );
-            evaluation = evaluationAndProjectHash.getLeft();
-            projectHash = evaluationAndProjectHash.getRight();
-
-            // Wait for the evaluation to conclude
-            evaluation.await();
-
-            // Since the netcdf consumers are created here, they should be destroyed here. An attempt should be made to 
-            // close the netcdf writers before the finally clause because these writers employ a delayed write, which
-            // could still fail exceptionally. Such a failure should stop the evaluation exceptionally. For further 
-            // context see #81790-21 and the detailed description in EvaluationMessager.await(), which clarifies that
-            // awaiting an evaluation to complete does not mean that all consumers have finished their work, only
-            // that they have received all expected messages. If this contract is insufficient (e.g., because of a
-            // delayed write implementation), then it may be necessary to promote the underlying consumer/s to an
-            // external/outer subscriber that is responsible for messaging its own lifecycle, rather than delegating
-            // that to the EvaluationMessager instance (which adopts the limited contract described here). An external
-            // subscriber within this jvm/process has the same contract as an external subscriber running in another
-            // process/jvm. It should only report completion when consumption is "really done".
-            for ( NetcdfOutputWriter writer : netcdfWriters )
-            {
-                writer.close();
-            }
-
-            // Add the paths written by shared writers
-            if ( sharedWriters.hasSharedSampleWriters() )
-            {
-                resources.addAll( sharedWriters.getSampleDataWriters()
-                                               .get() );
-            }
-            if ( sharedWriters.hasSharedBaselineSampleWriters() )
-            {
-                resources.addAll( sharedWriters.getBaselineSampleDataWriters()
-                                               .get() );
-            }
-
-            // Messaging failed, possibly in a separate client? Then throw an exception: see #122343
-            if ( evaluation.isFailed() )
-            {
-                throw new WresProcessingException( "Evaluation '"
-                                                   + evaluationId
-                                                   + "' failed because a messaging client reported an error." );
-            }
-
-            return Pair.of( Collections.unmodifiableSet( resources ), projectHash );
-        }
-        // Allow a user-error to be distinguished separately
-        catch ( DeclarationException userError )
-        {
-            EvaluationUtilities.forceStop( evaluation, userError, evaluationId );
-
-            // Rethrow
-            throw userError;
-        }
-        // Internal error
-        catch ( RuntimeException internalError )
-        {
-            EvaluationUtilities.forceStop( evaluation, internalError, evaluationId );
-
-            // Decorate and rethrow
-            throw new WresProcessingException( "Encountered an error while processing evaluation '"
-                                               + evaluationId
-                                               + "': ",
-                                               internalError );
-        }
-        finally
-        {
-            // Close the netCDF writers if not closed
-            for ( NetcdfOutputWriter writer : netcdfWriters )
-            {
-                try
-                {
-                    writer.close();
-                }
-                catch ( IOException we )
-                {
-                    // Forcibly stop the evaluation messager if writing failed
-                    EvaluationUtilities.forceStop( evaluation, we, evaluationId );
-                    LOGGER.warn( "Failed to close a netcdf writer.", we );
-                }
-            }
-
-            // Clean-up an empty output directory: #67088
-            try ( Stream<Path> outputs = Files.list( outputDirectory ) )
-            {
-                if ( outputs.findAny()
-                            .isEmpty() )
-                {
-                    // Will only succeed for an empty directory
-                    boolean status = Files.deleteIfExists( outputDirectory );
-
-                    LOGGER.debug( "Attempted to remove empty output directory {} with success status: {}",
-                                  outputDirectory,
-                                  status );
-                }
-            }
-
-            // Add the paths written by external subscribers
-            if ( Objects.nonNull( evaluation ) )
-            {
-                resources.addAll( evaluation.getPathsWrittenBySubscribers() );
-            }
-
-            LOGGER.info( "Wrote the following output: {}", resources );
-
-            // Close the evaluation messager always (even if stopped on exception)
-            try
-            {
-                if ( Objects.nonNull( evaluation ) )
-                {
-                    evaluation.close();
-                }
-            }
-            catch ( IOException e )
-            {
-                String message = "Failed to close evaluation " + evaluationId + ".";
-                LOGGER.warn( message, e );
-            }
-        }
-    }
-
-    /**
-     * Executes and evaluation.
-     *
-     * @param evaluationDetails the evaluation details
-     * @param databaseServices the database services
-     * @param executors the executors
-     * @param connections the broker connections
-     * @param netcdfWriters netCDF writers
-     * @param sharedWriters for writing
-     * @param canceller a callback to allow for cancellation of the running evaluation, not null
-     * @throws WresProcessingException if the processing failed for any reason
-     * @return the evaluation and the hash of the project data
-     * @throws IOException if the evaluation could not be closed
-     */
-
-    private static Pair<EvaluationMessager, String> evaluate( EvaluationDetails evaluationDetails,
-                                                              DatabaseServices databaseServices,
-                                                              Executors executors,
-                                                              BrokerConnectionFactory connections,
-                                                              SharedWriters sharedWriters,
-                                                              List<NetcdfOutputWriter> netcdfWriters,
-                                                              Canceller canceller )
-            throws IOException
-    {
-        EvaluationMessager evaluation = null;
-        String projectHash;
-        try
-        {
-            EvaluationDeclaration declaration = evaluationDetails.declaration();
 
             // Look up any needed feature correlations and thresholds, generate a new declaration. These are needed for
             // reading and ingest, as well as subsequent steps, so perform this upfront: #116208
@@ -428,7 +274,7 @@ class EvaluationUtilities
             LOGGER.debug( "Beginning ingest of time-series data..." );
 
             Project project;
-            SystemSettings systemSettings = evaluationDetails.systemSettings();
+
             // Track the time-series through ingest
             TimeSeriesTracker timeSeriesTracker = TimeSeriesTracker.of();
 
@@ -544,19 +390,9 @@ class EvaluationUtilities
             Set<FeatureGroup> featureGroups = EvaluationUtilities.getFeatureGroups( project, features );
 
             // Create any netcdf blobs for writing. See #80267-137.
-            if ( !netcdfWriters.isEmpty() )
-            {
-                // TODO: eliminate these log messages when legacy netcdf is removed
-                LOGGER.info( "Creating Netcdf blobs for statistics. This can take a while..." );
-
-                for ( NetcdfOutputWriter writer : netcdfWriters )
-                {
-                    writer.createBlobsForWriting( featureGroups,
-                                                  metricsAndThresholds );
-                }
-
-                LOGGER.info( "Finished creating Netcdf blobs, which are now ready to accept statistics." );
-            }
+            EvaluationUtilities.createNetcdfBlobs( netcdfWriters,
+                                                   featureGroups,
+                                                   metricsAndThresholds );
 
             // Create the evaluation description with any analyzed units and variable names that happen post-ingest
             // This is akin to a post-ingest interpolation/augmentation of the declared project. Earlier stages of
@@ -594,7 +430,6 @@ class EvaluationUtilities
             List<PoolRequest> poolRequests = EvaluationUtilities.getPoolRequests( poolFactory, evaluationDescription );
 
             int poolCount = poolRequests.size();
-            EvaluationEvent monitor = evaluationDetails.monitor();
             monitor.setPoolCount( poolCount );
 
             // Report on the completion state of all pools
@@ -602,7 +437,7 @@ class EvaluationUtilities
                                                           poolCount,
                                                           true );
 
-            // Get a message group tracker to notify the completion of groups that encompass several pools. Currently, 
+            // Get a message group tracker to notify the completion of groups that encompass several pools. Currently,
             // this is feature-group shaped, but additional shapes may be desired in future
             PoolGroupTracker groupTracker = PoolGroupTracker.ofFeatureGroupTracker( evaluation, poolRequests );
 
@@ -615,44 +450,91 @@ class EvaluationUtilities
                                                    poolReporter,
                                                    groupTracker );
 
-            // Report that all publication was completed. At this stage, a message is sent indicating the expected 
+            // Report that all publication was completed. At this stage, a message is sent indicating the expected
             // message count for all message types, thereby allowing consumers to know when all messages have arrived.
             evaluation.markPublicationCompleteReportedSuccess();
 
             // Report on the pools
             poolReporter.report();
 
-            // Return an evaluation that was opened
-            return Pair.of( evaluation, projectHash );
+            // Wait for the evaluation to conclude
+            evaluation.await();
+
+            // Since the netcdf consumers are created here, they should be destroyed here. An attempt should be made to 
+            // close the netcdf writers before the finally clause because these writers employ a delayed write, which
+            // could still fail exceptionally. Such a failure should stop the evaluation exceptionally. For further 
+            // context see #81790-21 and the detailed description in EvaluationMessager.await(), which clarifies that
+            // awaiting an evaluation to complete does not mean that all consumers have finished their work, only
+            // that they have received all expected messages. If this contract is insufficient (e.g., because of a
+            // delayed write implementation), then it may be necessary to promote the underlying consumer/s to an
+            // external/outer subscriber that is responsible for messaging its own lifecycle, rather than delegating
+            // that to the EvaluationMessager instance (which adopts the limited contract described here). An external
+            // subscriber within this jvm/process has the same contract as an external subscriber running in another
+            // process/jvm. It should only report completion when consumption is "really done".
+            for ( NetcdfOutputWriter writer : netcdfWriters )
+            {
+                writer.close();
+            }
+
+            // Add the paths written by shared writers
+            if ( sharedWriters.hasSharedSampleWriters() )
+            {
+                resources.addAll( sharedWriters.getSampleDataWriters()
+                                               .get() );
+            }
+            if ( sharedWriters.hasSharedBaselineSampleWriters() )
+            {
+                resources.addAll( sharedWriters.getBaselineSampleDataWriters()
+                                               .get() );
+            }
+
+            // Messaging failed, possibly in a separate client? Then throw an exception: see #122343
+            if ( evaluation.isFailed() )
+            {
+                throw new WresProcessingException( "Evaluation '"
+                                                   + evaluationId
+                                                   + "' failed because a messaging client reported an error." );
+            }
+
+            return Pair.of( Collections.unmodifiableSet( resources ), projectHash );
         }
+        // Allow a user-error to be distinguished separately
+        catch ( DeclarationException userError )
+        {
+            EvaluationUtilities.forceStop( evaluation, userError, evaluationId );
+
+            // Rethrow
+            throw userError;
+        }
+        // Internal error
         catch ( RuntimeException internalError )
         {
-            if ( Objects.nonNull( evaluation ) )
-            {
-                LOGGER.debug( FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR,
-                              evaluation.getEvaluationId() );
+            EvaluationUtilities.forceStop( evaluation, internalError, evaluationId );
 
-                evaluation.stop( internalError );
-            }
-
-            throw new WresProcessingException( "Project failed to complete with the following error: ", internalError );
+            // Decorate and rethrow
+            throw new WresProcessingException( "Encountered an error while processing evaluation '"
+                                               + evaluationId
+                                               + "': ",
+                                               internalError );
         }
-        // Close an evaluation messager that failed. An evaluation messager that succeeded is returned
         finally
         {
-            if ( Objects.nonNull( evaluation )
-                 && evaluation.isFailed() )
+            // Close the netCDF writers if not closed
+            EvaluationUtilities.closeNetcdfWriters( netcdfWriters, evaluation, evaluationId );
+
+            // Clean-up an empty output directory: #67088
+            EvaluationUtilities.cleanEmptyOutputDirectory( outputDirectory );
+
+            // Add the paths written by external subscribers
+            if ( Objects.nonNull( evaluation ) )
             {
-                try
-                {
-                    evaluation.close();
-                }
-                catch ( IOException e )
-                {
-                    String message = "Failed to close evaluation " + evaluation.getEvaluationId() + ".";
-                    LOGGER.warn( message, e );
-                }
+                resources.addAll( evaluation.getPathsWrittenBySubscribers() );
             }
+
+            LOGGER.info( "Wrote the following output: {}", resources );
+
+            // Close the evaluation messager always (even if stopped on exception)
+            EvaluationUtilities.closeEvaluationMessager( evaluation, evaluationId );
         }
     }
 
@@ -682,6 +564,108 @@ class EvaluationUtilities
         }
 
         return declaration;
+    }
+
+    /**
+     * Creates the NetCDF blobs for writing, where needed.
+     * @param netcdfWriters the writers
+     * @param featureGroups the feature groups
+     * @param metricsAndThresholds the metrics and thresholds
+     * @throws IOException if the blobs could not be written for any reason
+     */
+
+    private static void createNetcdfBlobs( List<NetcdfOutputWriter> netcdfWriters,
+                                           Set<FeatureGroup> featureGroups,
+                                           Set<MetricsAndThresholds> metricsAndThresholds ) throws IOException
+    {
+        if ( !netcdfWriters.isEmpty() )
+        {
+            // TODO: eliminate these log messages when legacy netcdf is removed
+            LOGGER.info( "Creating Netcdf blobs for statistics. This can take a while..." );
+
+            for ( NetcdfOutputWriter writer : netcdfWriters )
+            {
+                writer.createBlobsForWriting( featureGroups,
+                                              metricsAndThresholds );
+            }
+
+            LOGGER.info( "Finished creating Netcdf blobs, which are now ready to accept statistics." );
+        }
+    }
+
+    /**
+     * Close the NetCDF writers, if required.
+     * @param netcdfWriters the NetCDF writers
+     * @param evaluation the evaluation messager
+     * @param evaluationId the evaluation identifier
+     */
+
+    private static void closeNetcdfWriters( List<NetcdfOutputWriter> netcdfWriters,
+                                            EvaluationMessager evaluation,
+                                            String evaluationId )
+    {
+        for ( NetcdfOutputWriter writer : netcdfWriters )
+        {
+            try
+            {
+                writer.close();
+            }
+            catch ( IOException we )
+            {
+                // Forcibly stop the evaluation messager if writing failed
+                EvaluationUtilities.forceStop( evaluation, we, evaluationId );
+                LOGGER.warn( "Failed to close a netcdf writer.", we );
+            }
+        }
+    }
+
+    /**
+     * Deletes an empty output directory when an evaluation fails to produce any output.
+     * @param outputDirectory the output directory
+     * @throws IOException if the directory could not be deleted for any reason
+     */
+
+    private static void cleanEmptyOutputDirectory( Path outputDirectory ) throws IOException
+    {
+        // Clean-up an empty output directory: #67088
+        try ( Stream<Path> outputs = Files.list( outputDirectory ) )
+        {
+            if ( outputs.findAny()
+                        .isEmpty() )
+            {
+                // Will only succeed for an empty directory
+                boolean status = Files.deleteIfExists( outputDirectory );
+
+                LOGGER.debug( "Attempted to remove empty output directory {} with success status: {}",
+                              outputDirectory,
+                              status );
+            }
+        }
+    }
+
+    /**
+     * Closes an evaluation messager.
+     * @param messager the evaluation messager
+     * @param evaluationId the evaluation identifier
+     */
+
+    private static void closeEvaluationMessager( EvaluationMessager messager,
+                                                 String evaluationId )
+    {
+        try
+        {
+            if ( Objects.nonNull( messager ) )
+            {
+                LOGGER.info( "Closing the messager for evaluation {}...", evaluationId );
+                messager.close();
+                LOGGER.info( "The messager for evaluation {} has been closed.", evaluationId );
+            }
+        }
+        catch ( IOException e )
+        {
+            String message = "Failed to close evaluation " + evaluationId + ".";
+            LOGGER.warn( message, e );
+        }
     }
 
     /**
@@ -1852,6 +1836,7 @@ class EvaluationUtilities
          * Attempts to close all shared writers.
          * @throws IOException when a resource could not be closed
          */
+
         @Override
         public void close() throws IOException
         {
@@ -1867,9 +1852,12 @@ class EvaluationUtilities
         }
     }
 
+    /**
+     * Do not construct.
+     */
+
     private EvaluationUtilities()
     {
-        // Helper class with static methods therefore no construction allowed.
     }
 
 }

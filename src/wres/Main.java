@@ -302,15 +302,16 @@ public class Main
                 }
                 catch ( IOException e )
                 {
-                    LOGGER.warn( "Failed to destroy the embedded broker used for statistics messaging.", e );
+                    LOGGER.warn( "Failed to close the embedded broker.", e );
                 }
             }
 
             LOGGER.info( "The application has been closed." );
         }
 
-        // Exit
-        Main.exit( result );
+        // Exit non-zero, if required. A nominal exit should not reach this point as clean-up has completed and all
+        // remaining threads should be daemon threads, allowing the JVM to exit cleanly. This is a last resort.
+        Main.forceExitOnErrorIfNeeded( result );
     }
 
     /**
@@ -344,25 +345,30 @@ public class Main
     }
 
     /**
-     * Exits the application. 
+     * Exits the application with a non-zero exit status when an error is encountered and the application has not yet
+     * exited.
      *
      * @param result the execution result on exit
      */
 
-    private static void exit( ExecutionResult result )
+    private static void forceExitOnErrorIfNeeded( ExecutionResult result )
     {
-        if ( Objects.nonNull( result ) && result.failed() )
+        if ( Objects.nonNull( result )
+             && result.failed() )
         {
             if ( result.getException() instanceof UserInputException )
             {
+                LOGGER.warn( "Terminating with a non-zero exit code: 4 (user input error)." );
                 System.exit( 4 );
             }
             else if ( result.getException() instanceof InternalWresException )
             {
+                LOGGER.warn( "Terminating with a non-zero exit code: 5 (evaluation error)." );
                 System.exit( 5 );
             }
             else
             {
+                LOGGER.warn( "Terminating with a non-zero exit code: 1 (unknown error)." );
                 System.exit( 1 );
             }
         }

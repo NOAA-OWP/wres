@@ -250,9 +250,9 @@ class EvaluationStatusTracker implements Closeable
 
         // Add the subscriber latches that are freed when consumption completes
         this.negotiatedSubscribers.values()
-                                  .forEach( nextSubscriber -> this.negotiatedSubscriberLatches.put( nextSubscriber,
-                                                                                                    new TimedCountDownLatch(
-                                                                                                            1 ) ) );
+                                  .forEach( nextSubscriber ->
+                                                    this.negotiatedSubscriberLatches.put( nextSubscriber,
+                                                                                          new TimedCountDownLatch( 1 ) ) );
 
         // Add the subscribers to the flow controller
         this.negotiatedSubscribers.values()
@@ -342,9 +342,9 @@ class EvaluationStatusTracker implements Closeable
         }
 
         // Stop waiting
+        this.subscriberNegotiator.stopNegotiation();
         this.publicationLatch.countDown();
         this.negotiatedSubscriberLatches.forEach( ( a, b ) -> b.countDown() );
-        this.subscriberNegotiator.stopNegotiation();
         this.subscriberInactivityTimer.cancel();
 
         // Stop the flow controller for the current thread if the lock is held by this thread
@@ -578,7 +578,8 @@ class EvaluationStatusTracker implements Closeable
         // Throw an exception if any consumers failed to complete consumption
         Set<String> identifiers = this.negotiatedSubscriberLatches.entrySet()
                                                                   .stream()
-                                                                  .filter( next -> next.getValue().getCount() > 0 )
+                                                                  .filter( next -> next.getValue()
+                                                                                       .getCount() > 0 )
                                                                   .map( Map.Entry::getKey )
                                                                   .collect( Collectors.toUnmodifiableSet() );
 
@@ -683,11 +684,11 @@ class EvaluationStatusTracker implements Closeable
                                                                                                         consumerId,
                                                                                                         periodToWait );
 
+                        // Stop the status tracker (and evaluation)
                         statusTracker.stopOnFailure( status );
                     }
-
-                    // Report
-                    if ( timeElapsed.compareTo( EvaluationStatusTracker.MINIMUM_PERIOD_BEFORE_REPORTING_INACTIVE_SUBSCRIBER )
+                    // Report when remaining time is available
+                    else if ( timeElapsed.compareTo( EvaluationStatusTracker.MINIMUM_PERIOD_BEFORE_REPORTING_INACTIVE_SUBSCRIBER )
                          > 0
                          && LOGGER.isInfoEnabled() )
                     {
