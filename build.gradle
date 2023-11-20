@@ -743,6 +743,7 @@ project(':wres-vis')
     mainClassName = 'wres.vis.client.GraphicsClient'
     applicationDefaultJvmArgs = ['-Xms640m','-Xmx640m',
                                  '-XX:+HeapDumpOnOutOfMemoryError',
+                                 '-XX:+CrashOnOutOfMemoryError',
                                  '-Djava.util.logging.config.file=logging.properties',
                                  '-Dorg.jboss.logging.provider=slf4j']
 
@@ -1732,6 +1733,7 @@ mainClassName = 'wres.Main'
 applicationDefaultJvmArgs = ['-Xms2560m', '-Xmx2560m',
                              '-XX:MaxDirectMemorySize=512m',
                              '-XX:+HeapDumpOnOutOfMemoryError',
+                             '-XX:+CrashOnOutOfMemoryError',
                              '-Duser.timezone=UTC',
                              '-Djava.util.logging.config.class=wres.system.logging.JavaUtilLoggingRedirector',
                              '-Ducar.unidata.io.http.maxReadCacheSize=200000',
