@@ -523,8 +523,13 @@ project(':wres-metrics')
     {
         implementation project(':wres-datamodel')
         implementation project(':wres-config')
+
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
         implementation 'org.slf4j:slf4j-api:2.0.9'
+
+        implementation group: 'org.eclipse.collections', name: 'eclipse-collections', version: '11.1.0'
+
+        compileOnly 'net.jcip:jcip-annotations:1.0'
 
         runtimeOnly( 'ch.qos.logback:logback-classic:1.4.11' )
         {

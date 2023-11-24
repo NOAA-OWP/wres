@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package wres.statistics.generated;
+
+import "wresproto/pool.proto";
+import "wresproto/double_score_statistic.proto";
+import "wresproto/diagram_statistic.proto";
+import "wresproto/boxplot_statistic.proto";
+import "wresproto/duration_score_statistic.proto";
+import "wresproto/duration_diagram_statistic.proto";
+
+option java_package = "wres.statistics.generated";
+option java_outer_classname = "SummaryStatisticProto";
+option java_multiple_files = true;
+
+message SummaryStatistic
+{
+    // A message that encapsulates a summary statistic over a given dimension.
+
+    enum StatisticName 
+    {
+        // A summary statistic name.
+        
+        MEAN = 0;
+        MEDIAN = 1;
+        MINIMUM = 2;
+        MAXIMUM = 3;
+        STANDARD_DEVIATION = 4;
+        QUANTILE = 5;
+    }
+
+    StatisticName statistic = 1;
+    // The name of the summary statistic
+
+    enum StatisticDimension
+    {
+        // The dimension to which the summary statistic applies.
+        
+        FEATURES = 0;
+        // A summary statistic over geographic features.
+        
+        RESAMPLED = 1;
+        // A summary statistic over resampled pools for sampling uncertainty 
+        // estimation.
+    }
+
+    StatisticDimension dimension = 2;
+    // The dimension over which the summary statistic applies.
+
+    double probability = 3;
+    // The probability associated with the quantile when the summary statistic
+    // is a quantile. Always a value within [0,1].
+}
