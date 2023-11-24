@@ -131,7 +131,10 @@ public class JobStandardStreamMessenger implements Runnable
         }
 
         try (
-                WebClient.ClientResponse clientResponse = WEB_CLIENT.getFromWeb( URI.create( url ), RETRY_STATES, CALL_TIMEOUT, true );
+                WebClient.ClientResponse clientResponse = WEB_CLIENT.getFromWeb( URI.create( url ),
+                                                                                 RETRY_STATES,
+                                                                                 CALL_TIMEOUT,
+                                                                                 true );
                 InputStreamReader utf8Reader = new InputStreamReader( clientResponse.getResponse(),
                                                                       StandardCharsets.UTF_8 );
                 BufferedReader reader = new BufferedReader( utf8Reader );

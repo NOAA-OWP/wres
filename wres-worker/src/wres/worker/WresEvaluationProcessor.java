@@ -315,6 +315,7 @@ class WresEvaluationProcessor implements Callable<Integer>
                                                                                 RETRY_STATES )
         )
         {
+            LOGGER.info( "Evaluation returned" );
             // The job succeeded and sent output
             if ( clientResponse.getStatusCode() == 200 )
             {
@@ -377,6 +378,7 @@ class WresEvaluationProcessor implements Callable<Integer>
             {
                 LOGGER.info( "Evaluation was not able to be closed" );
             }
+            LOGGER.info( "Evaluation Closed" );
         }
         catch ( IOException e )
         {
