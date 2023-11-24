@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -22,6 +23,7 @@ import wres.metrics.Metric;
 import wres.metrics.MetricParameterException;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.statistics.MessageFactory;
+import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
 import wres.statistics.generated.DurationScoreStatistic;
@@ -33,8 +35,6 @@ import wres.statistics.generated.MetricName;
  * <p>A collection of timing error summary statistics that consume a {@link Pool} of doubles and produce a
  * {@link DurationScoreStatisticOuter}.
  *
- * <p>TODO: consider implementing an API for summary statistics that works directly with {@link Duration}.
- *
  * @author James Brown
  */
 public class TimingErrorDurationStatistics
@@ -44,7 +44,7 @@ public class TimingErrorDurationStatistics
      * The summary statistics and associated identifiers
      */
 
-    private final Map<MetricConstants, ToDoubleFunction<double[]>> statistics;
+    private final Map<MetricConstants, Function<Duration[], Duration>> statistics;
 
     /**
      * A map of score metric components by name.
@@ -97,31 +97,25 @@ public class TimingErrorDurationStatistics
         DurationScoreStatistic.Builder scoreBuilder = DurationScoreStatistic.newBuilder();
 
         // Iterate through the statistics
-        MetricConstants nextIdentifier;
-        for ( Entry<MetricConstants, ToDoubleFunction<double[]>> next : this.statistics.entrySet() )
+        for ( Entry<MetricConstants, Function<Duration[], Duration>> next : this.statistics.entrySet() )
         {
-            nextIdentifier = next.getKey();
+            MetricConstants nextIdentifier = next.getKey();
+            Function<Duration[], Duration> nextFunction = next.getValue();
 
             // Data available
             if ( statisticsInner.getStatistic()
                                 .getStatisticsCount() != 0 )
             {
-                // Convert the input to double ms
-                double[] input = statisticsInner.getStatistic()
-                                                .getStatisticsList()
-                                                .stream()
-                                                .mapToDouble( a -> ( a.getDuration()
-                                                                      .getSeconds()
-                                                                     * 1000 )
-                                                                   + ( a.getDuration()
-                                                                        .getNanos()
-                                                                       / 1_000_000.0 ) )
-                                                .toArray();
+                // Convert the java durations
+                Duration[] input = statisticsInner.getStatistic()
+                                                  .getStatisticsList()
+                                                  .stream()
+                                                  .map( DurationDiagramStatistic.PairOfInstantAndDuration::getDuration )
+                                                  .map( wres.statistics.MessageFactory::parse )
+                                                  .toArray( Duration[]::new);
 
                 // Some loss of precision here, not consequential
-                Duration duration =
-                        Duration.ofMillis( Math.round( this.statistics.get( nextIdentifier )
-                                                                      .applyAsDouble( input ) ) );
+                Duration duration = nextFunction.apply( input );
 
                 // Add statistic component
                 DurationScoreMetricComponent componentMetric = this.components.get( nextIdentifier );
@@ -180,7 +174,7 @@ public class TimingErrorDurationStatistics
             throw new MetricParameterException( "Specify one or more summary statistics." );
         }
 
-        Map<MetricConstants, ToDoubleFunction<double[]>> innerStatistics = new TreeMap<>();
+        Map<MetricConstants, Function<Duration[], Duration>> innerStatistics = new TreeMap<>();
         Map<MetricConstants, DurationScoreMetricComponent> innerComponents = new EnumMap<>( MetricConstants.class );
 
         // Set and validate the copy
@@ -198,7 +192,9 @@ public class TimingErrorDurationStatistics
                 nextSummaryStatistic = next;
             }
 
-            innerStatistics.put( next, FunctionFactory.ofStatistic( nextSummaryStatistic ) );
+            ToDoubleFunction<double[]> univariate = FunctionFactory.ofSummaryStatistic( nextSummaryStatistic );
+            Function<Duration[], Duration> duration = FunctionFactory.ofDurationFromUnivariateFunction( univariate );
+            innerStatistics.put( next, duration );
 
             DurationScoreMetricComponent component = this.getMetricDescription( next );
             innerComponents.put( next, component );

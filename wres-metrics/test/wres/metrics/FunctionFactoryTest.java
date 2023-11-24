@@ -1,7 +1,10 @@
 package wres.metrics;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.function.BiPredicate;
+import java.util.function.Function;
+import java.util.function.ToDoubleFunction;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
@@ -158,23 +161,49 @@ class FunctionFactoryTest
     }
 
     @Test
-    void testOfStatistic()
+    void testQuantile()
     {
-        assertTrue( Objects.nonNull( FunctionFactory.ofStatistic( MetricConstants.MEAN ) ) );
-        assertTrue( Objects.nonNull( FunctionFactory.ofStatistic( MetricConstants.SAMPLE_SIZE ) ) );
-        assertTrue( Objects.nonNull( FunctionFactory.ofStatistic( MetricConstants.MINIMUM ) ) );
-        assertTrue( Objects.nonNull( FunctionFactory.ofStatistic( MetricConstants.MAXIMUM ) ) );
-        assertTrue( Objects.nonNull( FunctionFactory.ofStatistic( MetricConstants.MEDIAN ) ) );
-        assertTrue( Objects.nonNull( FunctionFactory.ofStatistic( MetricConstants.MEAN_ABSOLUTE ) ) );
-        assertTrue( Objects.nonNull( FunctionFactory.ofStatistic( MetricConstants.STANDARD_DEVIATION ) ) );
+        double[] unsorted = new double[] { 4.9, 1.5, 6.3, 27, 43.3, 433.9, 1012.6, 2009.8, 7001.4, 12038.5, 17897.2 };
+        ToDoubleFunction<double[]> qFA = FunctionFactory.quantile( 7.0 / 11.0 );
+        assertEquals( 1647.1818181818185, qFA.applyAsDouble( unsorted ), 7 );
     }
 
     @Test
-    void testOfStatisticWithWrongInput()
+    void testOfUnivariateFunction()
+    {
+        assertTrue( Objects.nonNull( FunctionFactory.ofSummaryStatistic( MetricConstants.MEAN ) ) );
+        assertTrue( Objects.nonNull( FunctionFactory.ofSummaryStatistic( MetricConstants.SAMPLE_SIZE ) ) );
+        assertTrue( Objects.nonNull( FunctionFactory.ofSummaryStatistic( MetricConstants.MINIMUM ) ) );
+        assertTrue( Objects.nonNull( FunctionFactory.ofSummaryStatistic( MetricConstants.MAXIMUM ) ) );
+        assertTrue( Objects.nonNull( FunctionFactory.ofSummaryStatistic( MetricConstants.MEDIAN ) ) );
+        assertTrue( Objects.nonNull( FunctionFactory.ofSummaryStatistic( MetricConstants.MEAN_ABSOLUTE ) ) );
+        assertTrue( Objects.nonNull( FunctionFactory.ofSummaryStatistic( MetricConstants.STANDARD_DEVIATION ) ) );
+    }
+
+    @Test
+    void testOfUnivariateFunctionWithWrongInput()
     {
         IllegalArgumentException exception = assertThrows( IllegalArgumentException.class,
-                                                           () -> FunctionFactory.ofStatistic( MetricConstants.MAIN ) );
+                                                           () -> FunctionFactory.ofSummaryStatistic( MetricConstants.MAIN ) );
 
         assertEquals( "The statistic 'MAIN' is not a recognized statistic in this context.", exception.getMessage() );
+    }
+
+    @Test
+    void testOfDurationFromUnivariateFunction()
+    {
+        ToDoubleFunction<double[]> mean = FunctionFactory.mean();
+
+        Duration[] durations = new Duration[3];
+
+        durations[0] = Duration.ofSeconds( 23 );
+        durations[1] = Duration.ofSeconds( 27 );
+        durations[2] = Duration.ofMillis( 38800 );
+
+        Function<Duration[],Duration> meanDuration = FunctionFactory.ofDurationFromUnivariateFunction( mean );
+        Duration actual = meanDuration.apply( durations );
+        Duration expected = Duration.ofMillis( 29600 );
+
+        assertEquals( expected, actual );
     }
 }

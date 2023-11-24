@@ -16,6 +16,7 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Consumer.Format;
+import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.TimeWindow;
 
 /**
@@ -398,6 +399,40 @@ public class MessageFactory
                                              null,
                                              null,
                                              null );
+    }
+
+    /**
+     * Creates a {@link SummaryStatistic} from the inputs.
+     * @param name the statistic name, required
+     * @param dimension the statistic dimension, required
+     * @param probability the optional probability associated with a quantile statistic
+     * @return a summary statistic
+     * @throws NullPointerException if any required input is null
+     * @throws IllegalArgumentException if the probability is outside of the unit interval
+     */
+    public static SummaryStatistic getSummaryStatistic( SummaryStatistic.StatisticName name,
+                                                        SummaryStatistic.StatisticDimension dimension,
+                                                        Double probability )
+    {
+        SummaryStatistic.Builder builder = SummaryStatistic.newBuilder()
+                                                           .setStatistic( name )
+                                                           .setDimension( dimension );
+
+        if ( Objects.nonNull( probability ) )
+        {
+            if ( probability < 0.0 || probability > 1.0 )
+            {
+                throw new IllegalArgumentException( "Cannot create a summary statistic for a quantile with a "
+                                                    + "probability of "
+                                                    + probability
+                                                    + " because the probability is invalid. Please supply a valid "
+                                                    + "probability that falls within the unit interval, [0,1]." );
+            }
+
+            builder.setProbability( probability );
+        }
+
+        return builder.build();
     }
 
     /**

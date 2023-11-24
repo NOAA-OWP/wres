@@ -8,6 +8,7 @@ import "wresproto/diagram_statistic.proto";
 import "wresproto/boxplot_statistic.proto";
 import "wresproto/duration_score_statistic.proto";
 import "wresproto/duration_diagram_statistic.proto";
+import "wresproto/summary_statistic.proto";
 
 option java_package = "wres.statistics.generated";
 option java_outer_classname = "StatisticsProto";
@@ -56,4 +57,19 @@ message Statistics
     // derived from a nominal sample, i.e., without the estimation of sampling
     // uncertainty. A value greater than zero and less than one represents an
     // actual quantile.
+
+    SummaryStatistic summary_statistic = 11;
+    // When present, all of the statistics in this collection correspond to the 
+    // prescribed summary statistic and not a raw statistic value. A summary
+    // statistic includes a statistic name, such as a mean, and a dimension over 
+    // which the statistic is computed, such as all geographic features within  
+    // the evaluation. In that case, the pool information refers only to those 
+    // attributes of the pool that are common to all pools from which the
+    // summary statistic was computed and, specifically, not to the dimension.
+    // By way of example, this collection may include a continuous ranked
+    // probability skill score and the summary statistic may represent a mean
+    // over geographic features. In that case, the score should be interpreted
+    // as an average skill across geographic features and not a raw skill for
+    // any single feature. Also, the pool information should not include any
+    // geographic features.
 }

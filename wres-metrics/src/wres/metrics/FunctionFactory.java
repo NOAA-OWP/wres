@@ -1,5 +1,6 @@
 package wres.metrics;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
@@ -8,6 +9,8 @@ import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -18,7 +21,9 @@ import org.apache.commons.math3.stat.descriptive.rank.Median;
 import wres.datamodel.MissingValues;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricGroup;
+import wres.datamodel.Slicer;
 import wres.datamodel.pools.Pool;
+import wres.statistics.generated.SummaryStatistic;
 
 /**
  * A factory class for constructing elementary functions.
@@ -211,6 +216,53 @@ public class FunctionFactory
     }
 
     /**
+     * Return a function that computes a quantile for the prescribed probability. The function will only sort the input
+     * array if it is not already sorted, accepting a linear/seek penalty always to save a non-linear/sort penalty
+     * sometimes.
+     *
+     * @param probability the probability associated with the quantile
+     * @return a function that computes a quantile
+     */
+
+    public static ToDoubleFunction<double[]> quantile( double probability )
+    {
+        return samples ->
+        {
+            // Sort?
+            if( !FunctionFactory.isSorted().test( samples ) )
+            {
+                Arrays.sort( samples );
+            }
+
+            DoubleUnaryOperator quantileFunction = Slicer.getQuantileFunction( samples );
+
+            return quantileFunction.applyAsDouble( probability );
+        };
+    }
+
+    /**
+     * Returns a function that checks for sortedness of a double array. The function has O(N) complexity.
+     * @return a function that checks for sortedness
+     */
+    public static Predicate<double[]> isSorted()
+    {
+        return check ->
+        {
+            Objects.requireNonNull( check );
+
+            for ( int i = 0; i < check.length - 1; i++ )
+            {
+                if ( check[i] > check[i + 1] )
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        };
+    }
+
+    /**
      * Return a function that computes the sum of square errors from a pool, mapping the pool values to real values
      * using the supplied mapper.
      * @param <T> the pool data type
@@ -280,11 +332,10 @@ public class FunctionFactory
      * @param statistic the identifier for the statistic
      * @return the statistic
      * @throws NullPointerException if the input is null
-     * @throws IllegalArgumentException if the input does not belong to {@link MetricGroup#UNIVARIATE_STATISTIC}
-     *            or the statistic does not exist
+     * @throws IllegalArgumentException if the statistic is not a valid summary statistic
      */
 
-    public static ToDoubleFunction<double[]> ofStatistic( MetricConstants statistic )
+    public static ToDoubleFunction<double[]> ofSummaryStatistic( MetricConstants statistic )
     {
         Objects.requireNonNull( statistic );
         if ( !statistic.isInGroup( MetricGroup.UNIVARIATE_STATISTIC ) )
@@ -295,9 +346,70 @@ public class FunctionFactory
         }
 
         // Lazy build the map
-        buildStatisticsMap();
+        FunctionFactory.buildStatisticsMap();
 
         return STATISTICS.get( statistic );
+    }
+
+    /**
+     * Returns a {@link SummaryStatisticFunction} from a {@link SummaryStatistic}.
+     *
+     * @param statistic the statistic
+     * @return the statistic calculator
+     * @throws NullPointerException if the input is null
+     * @throws IllegalArgumentException if the statistic is not a valid summary statistic
+     */
+
+    public static SummaryStatisticFunction ofSummaryStatistic( SummaryStatistic statistic )
+    {
+        Objects.requireNonNull( statistic );
+
+        if( statistic.getStatistic() == SummaryStatistic.StatisticName.QUANTILE )
+        {
+            return new SummaryStatisticFunction( statistic,
+                                                 FunctionFactory.quantile( statistic.getProbability() ) );
+        }
+
+        MetricConstants name = MetricConstants.valueOf( statistic.getStatistic()
+                                                                 .name() );
+
+        ToDoubleFunction<double[]> calculator = FunctionFactory.ofSummaryStatistic( name );
+
+        return new SummaryStatisticFunction( statistic, calculator );
+    }
+
+    /**
+     * Returns a function that operates on durations from a function that operates on real values. This implementation
+     * is lossy insofar as the durations are converted to milliseconds. A non-lossy implementation would require the
+     * use of {@link java.math.BigDecimal}, which is expensive and unlikely to be justified for most practical
+     * applications.
+     *
+     * @param univariate the univariate function, required
+     * @return the duration function
+     * @throws NullPointerException if the univariate function is null
+     */
+    public static Function<Duration[], Duration> ofDurationFromUnivariateFunction( ToDoubleFunction<double[]> univariate )
+    {
+        Objects.requireNonNull( univariate );
+
+        return durations ->
+        {
+            // Convert the input to double ms
+            double[] input = Arrays.stream( durations )
+                                   .filter( Objects::nonNull )
+                                   .mapToDouble( a -> ( a.getSeconds()
+                                                        * 1000 )
+                                                      + ( a.getNano()
+                                                          / 1_000_000.0 ) )
+                                   .toArray();
+
+            double measure = univariate.applyAsDouble( input );
+
+            // Round to the nearest ms
+            long milliseconds = Math.round( measure );
+
+            return Duration.ofMillis( milliseconds );
+        };
     }
 
     /**
