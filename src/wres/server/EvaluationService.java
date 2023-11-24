@@ -104,9 +104,13 @@ public class EvaluationService implements ServletContextListener
 
     private static Thread timeoutThread;
 
-    private final ChunkedOutput<String> errorStream = new ChunkedOutput<>( String.class );
+    private ChunkedOutput<String> errorStream;
 
-    private final ChunkedOutput<String> outStream = new ChunkedOutput<>( String.class );
+    private ByteArrayOutputStream byteErrorStream;
+
+    private ChunkedOutput<String> outStream;
+
+    private ByteArrayOutputStream byteOutputStream;
 
     /** A shared bag of output resource references by request id */
     // The cache is here for expedience, this information could be persisted
@@ -202,16 +206,18 @@ public class EvaluationService implements ServletContextListener
      */
     @GET
     @Path( "/stdout/{id}" )
-    public ChunkedOutput<String> getOutStream( @PathParam( "id" ) Long id )
+    public Response getOutStream( @PathParam( "id" ) Long id )
     {
         // Check that this evaluation should be ran
         if ( EVALUATION_ID.get() != id )
         {
-            throw new IllegalArgumentException(
-                    "There was no evaluation to get the stream of with that ID" );
+            return Response.status( Response.Status.NOT_FOUND )
+                           .entity( "Unable to find project logs with that ID. Check the persisted logs " + id )
+                           .build();
         }
 
-        return outStream;
+        return Response.ok( outStream )
+                       .build();
     }
 
     /**
@@ -220,16 +226,18 @@ public class EvaluationService implements ServletContextListener
      */
     @GET
     @Path( "/stderr/{id}" )
-    public ChunkedOutput<String> getErrorStream( @PathParam( "id" ) Long id )
+    public Response getErrorStream( @PathParam( "id" ) Long id )
     {
         // Check that this evaluation should be ran
         if ( EVALUATION_ID.get() != id )
         {
-            throw new IllegalArgumentException(
-                    "There was no evaluation to get the stream of with that ID" );
+            return Response.status( Response.Status.NOT_FOUND )
+                           .entity( "Unable to find project logs with that ID. Check the persisted logs " + id )
+                           .build();
         }
 
-        return errorStream;
+        return Response.ok( errorStream )
+                       .build();
     }
 
     /**
@@ -330,6 +338,7 @@ public class EvaluationService implements ServletContextListener
             ExecutionResult result =
                     this.evaluator.evaluate( jobMessage.getProjectConfig(), EVALUATION_CANCELLER.get() );
 
+            LOGGER.info( "Evaluation has finished executing" );
             logJobFinishInformation( jobMessage, result, beganExecution );
 
             if ( result.cancelled() )
@@ -690,12 +699,14 @@ public class EvaluationService implements ServletContextListener
     private void streamRedirectSetup()
     {
         // Create new stream to redirect output to
-        ByteArrayOutputStream byteOutputStream = new ByteArrayOutputStream();
+        byteOutputStream = new ByteArrayOutputStream();
         PrintStream outPrintStream = new PrintStream( byteOutputStream );
+        outStream = new ChunkedOutput<>( String.class );
 
         // Create new stream to redirect output to
-        ByteArrayOutputStream byteErrorStream = new ByteArrayOutputStream();
+        byteErrorStream = new ByteArrayOutputStream();
         PrintStream errorPrintStream = new PrintStream( byteErrorStream );
+        errorStream = new ChunkedOutput<>( String.class );
 
         // redirect the error stream
         System.setErr( errorPrintStream );
@@ -708,6 +719,7 @@ public class EvaluationService implements ServletContextListener
 
         // Start the thread that will send the information from the byteArrayOutputStream to the output ChunkedOutput we are returning
         startChunkedOutputThread( byteErrorStream, errorStream );
+        LOGGER.info( "Thread redirect setup finished" );
     }
 
     /**
@@ -718,7 +730,7 @@ public class EvaluationService implements ServletContextListener
     private void startChunkedOutputThread( ByteArrayOutputStream redirectStream, ChunkedOutput<String> output )
     {
         new Thread( () -> {
-            try ( redirectStream )
+            try ( redirectStream; output )
             {
                 int offset = 0;
 
@@ -769,6 +781,7 @@ public class EvaluationService implements ServletContextListener
      */
     private static void close()
     {
+        LOGGER.info( "Closing Evaluation" );
         // Project closed gracefully, stop the timeout thread
         timeoutThread.interrupt();
 
@@ -1019,10 +1032,12 @@ public class EvaluationService implements ServletContextListener
             if ( !outStream.isClosed() )
             {
                 outStream.close();
+                byteOutputStream.close();
             }
             if ( !errorStream.isClosed() )
             {
                 errorStream.close();
+                byteErrorStream.close();
             }
         }
         catch ( IOException e )
