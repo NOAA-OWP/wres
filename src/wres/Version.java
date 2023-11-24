@@ -1,13 +1,9 @@
 package wres;
 
 import java.util.Iterator;
-import java.util.Objects;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeSet;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import wres.system.DatabaseSettings;
 import wres.system.SystemSettings;
@@ -17,16 +13,12 @@ import wres.system.SystemSettings;
  */
 public class Version
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( Version.class );
     private static final String UNKNOWN_VERSION = "unknown";
     private final Package rawPackage;
-    private final SystemSettings systemSettings;
 
-    Version( SystemSettings systemSettings )
+    Version()
     {
-        Objects.requireNonNull( systemSettings );
         this.rawPackage = this.getClass().getPackage();
-        this.systemSettings = systemSettings;
     }
 
     /**
@@ -78,6 +70,7 @@ public class Version
     /**
      * Get a lot of information about the system, including processors, jvm ram,
      * jvm system properties. Omit passphrases and classpaths.
+     * @param systemSettings the system settings
      * @return lots of runtime information
      */
 
@@ -102,7 +95,7 @@ public class Version
         databaseBuilder.password( "[Omitted]" );
 
         final String MIB = "MiB";
-        final long MEGABYTE = 1024 * 1024;
+        final long MEGABYTE = 1024L * 1024L;
         s.add( "Processors: " + runtime.availableProcessors() );
         s.add( "Max Memory: " + ( runtime.maxMemory() / MEGABYTE ) + MIB );
         s.add( "Free Memory: " + ( runtime.freeMemory() / MEGABYTE ) + MIB );

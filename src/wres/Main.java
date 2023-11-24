@@ -50,7 +50,7 @@ public class Main
     /** System settings. */
     private static final SystemSettings SYSTEM_SETTINGS = SettingsFactory.createSettingsFromDefaultXml();
     /** Software version information. */
-    private static final Version version = new Version( SYSTEM_SETTINGS );
+    private static final Version version = new Version();
 
     /**
      * Executes and times the requested operation with the given parameters
