@@ -203,6 +203,7 @@ public class EvaluationService implements ServletContextListener
     /**
      * Redirect the standard out stream and return that to the user in a ChunkedOutput
      * @param id ID of the evaluation we are trying to track with this
+     * @return the response
      */
     @GET
     @Path( "/stdout/{id}" )
@@ -223,6 +224,7 @@ public class EvaluationService implements ServletContextListener
     /**
      * Redirect the standard err stream and return that to the user in a ChunkedOutput
      * @param id ID of the evaluation we are trying to track with this
+     * @return the response
      */
     @GET
     @Path( "/stderr/{id}" )
@@ -298,6 +300,7 @@ public class EvaluationService implements ServletContextListener
 
     /**
      * Starts an opened Evaluation
+     * @param id the evaluation identifier
      * @param message job message containing the evaluation and database settings
      * @return the state of the evaluation
      */
@@ -442,6 +445,7 @@ public class EvaluationService implements ServletContextListener
 
     /**
      * Kicks off a database Migration
+     * @param message the job message
      * @return Good response
      */
     @POST
@@ -490,6 +494,7 @@ public class EvaluationService implements ServletContextListener
 
     /**
      * Kicks off a database Clean
+     * @param message the job message
      * @return Good response
      */
     @POST
