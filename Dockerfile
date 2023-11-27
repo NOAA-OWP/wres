@@ -18,6 +18,7 @@ RUN groupadd --gid 1370800073 wres \
 # Specifies which version of the main WRES version to use.
 ARG version
 WORKDIR /opt
+COPY ./wres-worker/dist/lib/conf/inner_logback.xml .
 COPY ./build/distributions/wres-${version}.zip .
 RUN unzip wres-${version}.zip \
     && rm wres-${version}.zip \
