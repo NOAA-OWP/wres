@@ -47,6 +47,9 @@ message DiagramMetric
             OBSERVED_QUANTILES = 6;
             PREDICTED_QUANTILES = 7;
             SAMPLE_SIZE = 8;
+            COUNT = 9;
+            BIN_UPPER_BOUND = 10;
+            // The upper bound of a bin interval.
         }
 
         DiagramComponentName name = 1;

@@ -1,11 +1,13 @@
 package wres.metrics;
 
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.DoubleBinaryOperator;
 import java.util.function.DoubleUnaryOperator;
@@ -14,6 +16,8 @@ import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.math3.random.EmpiricalDistribution;
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.commons.math3.stat.descriptive.rank.Median;
@@ -23,6 +27,9 @@ import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.pools.Pool;
+import wres.statistics.generated.DiagramMetric;
+import wres.statistics.generated.DiagramStatistic;
+import wres.statistics.generated.MetricName;
 import wres.statistics.generated.SummaryStatistic;
 
 /**
@@ -45,6 +52,32 @@ public class FunctionFactory
 
     /** Standard deviation. */
     private static final StandardDeviation STANDARD_DEVIATION = new StandardDeviation();
+
+    /** Bin axis for a histogram. */
+    private static final DiagramMetric.DiagramMetricComponent HISTOGRAM_BINS =
+            DiagramMetric.DiagramMetricComponent.newBuilder()
+                                                .setName( DiagramMetric.DiagramMetricComponent.DiagramComponentName.BIN_UPPER_BOUND )
+                                                .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_DOMAIN_AXIS )
+                                                .setMinimum( Double.NEGATIVE_INFINITY )
+                                                .setMaximum( Double.POSITIVE_INFINITY )
+                                                .build();
+
+    /** Count axis for a histogram. */
+    private static final DiagramMetric.DiagramMetricComponent HISTOGRAM_COUNT =
+            DiagramMetric.DiagramMetricComponent.newBuilder()
+                                                .setName( DiagramMetric.DiagramMetricComponent.DiagramComponentName.COUNT )
+                                                .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_RANGE_AXIS )
+                                                .setMinimum( 0 )
+                                                .setMaximum( Double.POSITIVE_INFINITY )
+                                                .setUnits( "COUNT" )
+                                                .build();
+
+    /** Histogram metric. */
+    private static final DiagramMetric HISTOGRAM_METRIC = DiagramMetric.newBuilder()
+                                                                       .addComponents( FunctionFactory.HISTOGRAM_BINS )
+                                                                       .addComponents( FunctionFactory.HISTOGRAM_COUNT )
+                                                                       .setName( MetricName.HISTOGRAM )
+                                                                       .build();
 
     /**
      * Return a function that computes the difference between the second and first entries in a single-valued pair.
@@ -229,7 +262,7 @@ public class FunctionFactory
         return samples ->
         {
             // Sort?
-            if( !FunctionFactory.isSorted().test( samples ) )
+            if ( !FunctionFactory.isSorted().test( samples ) )
             {
                 Arrays.sort( samples );
             }
@@ -326,6 +359,123 @@ public class FunctionFactory
     }
 
     /**
+     * Returns a function that calculates a histogram with a prescribed number of bins.
+     * @param bins the number of bins, greater than zero
+     * @param dimension the dimension used to build the histogram
+     * @return the histogram function
+     * @throws IllegalArgumentException if the number of bins is less than one
+     */
+    public static DiagramStatisticFunction<double[]> histogram( int bins,
+                                                                SummaryStatistic.StatisticDimension dimension )
+    {
+        BiFunction<Map<DiagramStatisticFunction.DiagramComponentName, String>, double[], DiagramStatistic> f =
+                ( p, d ) ->
+                {
+                    Objects.requireNonNull( p.get( DiagramStatisticFunction.DiagramComponentName.VARIABLE ),
+                                            "Cannot create a histogram without a variable name." );
+                    Objects.requireNonNull( p.get( DiagramStatisticFunction.DiagramComponentName.VARIABLE_UNIT ),
+                                            "Cannot create a histogram without a variable unit." );
+
+                    String variableName = p.get( DiagramStatisticFunction.DiagramComponentName.VARIABLE );
+                    String unitName = p.get( DiagramStatisticFunction.DiagramComponentName.VARIABLE_UNIT );
+
+                    DiagramMetric.DiagramMetricComponent domainAxis = FunctionFactory.HISTOGRAM_BINS.toBuilder()
+                                                                                                    .setUnits( unitName )
+                                                                                                    .build();
+
+                    DiagramMetric metric = FunctionFactory.HISTOGRAM_METRIC.toBuilder()
+                                                                           .setComponents( 0, domainAxis )
+                                                                           .build();
+
+                    EmpiricalDistribution empirical = new EmpiricalDistribution( bins );
+                    empirical.load( d );
+
+                    List<Double> binUpperBounds = Arrays.stream( empirical.getUpperBounds() )
+                                                        .boxed()
+                                                        .toList();
+                    List<Double> binCounts = empirical.getBinStats()
+                                                      .stream()
+                                                      .mapToDouble( SummaryStatistics::getN )
+                                                      .boxed()
+                                                      .toList();
+
+                    DiagramStatistic.DiagramStatisticComponent domainStatistic =
+                            DiagramStatistic.DiagramStatisticComponent.newBuilder()
+                                                                      .setMetric( domainAxis )
+                                                                      .setName( variableName )
+                                                                      .addAllValues( binUpperBounds )
+                                                                      .build();
+
+                    DiagramStatistic.DiagramStatisticComponent rangeStatistic =
+                            DiagramStatistic.DiagramStatisticComponent.newBuilder()
+                                                                      .setMetric( FunctionFactory.HISTOGRAM_COUNT )
+                                                                      .addAllValues( binCounts )
+                                                                      .build();
+
+                    return DiagramStatistic.newBuilder()
+                                           .addStatistics( domainStatistic )
+                                           .addStatistics( rangeStatistic )
+                                           .setMetric( metric )
+                                           .build();
+                };
+
+        SummaryStatistic summaryStatistic = SummaryStatistic.newBuilder()
+                                                            .setStatistic( SummaryStatistic.StatisticName.HISTOGRAM )
+                                                            .setDimension( dimension )
+                                                            .build();
+
+        return new DiagramStatisticFunction<>( summaryStatistic, f );
+    }
+
+    /**
+     * Returns a function that calculates a histogram for durations with a given number of bins and prescribed units.
+     * @param bins the number of bins, greater than zero
+     * @param units the time units for the histogram bins
+     * @param dimension the dimension used to build the histogram
+     * @return the histogram function
+     * @throws IllegalArgumentException if the number of bins is less than one
+     */
+    public static DiagramStatisticFunction<Duration[]> histogram( int bins,
+                                                                  ChronoUnit units,
+                                                                  SummaryStatistic.StatisticDimension dimension )
+    {
+        // Get a histogram function for the decimal durations in prescribed units
+        DiagramStatisticFunction<double[]> fInUnits = FunctionFactory.histogram( bins, dimension );
+
+        // Create a function that operates on durations
+        BiFunction<Map<DiagramStatisticFunction.DiagramComponentName, String>, Duration[], DiagramStatistic> f =
+                ( p, d ) ->
+                {
+                    double[] decimalDurations = Arrays.stream( d )
+                                                      .mapToDouble( a -> ( a.getSeconds()
+                                                                           * 1000 )
+                                                                         + ( a.getNano()
+                                                                             / 1_000_000.0 ) )
+                                                      .map( fu -> fu / units.getDuration()
+                                                                            .toMillis() )
+                                                      .toArray();
+
+                    // Replace the units for the domain axis
+                    DiagramStatistic result = fInUnits.apply( p, decimalDurations );
+                    DiagramStatistic.Builder builder = result.toBuilder();
+                    String unitString = units.toString()
+                                             .toUpperCase();
+                    builder.getMetricBuilder()
+                           .getComponentsBuilder( 0 )
+                           .setUnits( unitString );
+                    builder.getStatisticsBuilder( 0 )
+                           .getMetricBuilder()
+                           .setUnits( unitString );
+
+                    return builder.build();
+                };
+
+        SummaryStatistic summaryStatistic = fInUnits.statistic();
+
+        return new DiagramStatisticFunction<>( summaryStatistic, f );
+    }
+
+    /**
      * Returns a statistic associated with a {@link MetricConstants} that belongs to the 
      * {@link MetricGroup#UNIVARIATE_STATISTIC}.
      *
@@ -364,7 +514,7 @@ public class FunctionFactory
     {
         Objects.requireNonNull( statistic );
 
-        if( statistic.getStatistic() == SummaryStatistic.StatisticName.QUANTILE )
+        if ( statistic.getStatistic() == SummaryStatistic.StatisticName.QUANTILE )
         {
             return new SummaryStatisticFunction( statistic,
                                                  FunctionFactory.quantile( statistic.getProbability() ) );

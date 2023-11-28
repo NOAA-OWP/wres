@@ -27,6 +27,7 @@ message SummaryStatistic
         MAXIMUM = 3;
         STANDARD_DEVIATION = 4;
         QUANTILE = 5;
+        HISTOGRAM = 6;
     }
 
     StatisticName statistic = 1;
