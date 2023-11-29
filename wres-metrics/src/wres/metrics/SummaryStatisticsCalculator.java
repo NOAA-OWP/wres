@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -16,6 +17,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
+import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.ThreadSafe;
 import org.eclipse.collections.api.list.primitive.MutableDoubleList;
 import org.eclipse.collections.impl.list.mutable.FastList;
@@ -43,7 +45,7 @@ import wres.statistics.generated.Statistics;
  * construction, ignoring any statistics that do not meet the filter condition. It is assumed that each blob of
  * statistics has a common structure for each supplied metric. For example, if one blob of statistics contains a
  * reliability diagram with five bins, then all other reliability diagrams provided to the same instance must contain
- * five bins.
+ * five bins. However, some of the blobs of statistics may contain no reliability diagrams.
  *
  * <p>Implementation notes:
  *
@@ -79,14 +81,32 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
     /** The cached sample of duration diagram statistics. */
     private final Map<MetricName, Map<Instant, List<Duration>>> durationDiagrams;
 
+    /** Template builders used to create summary statistics for double scores. */
+    private final Map<MetricName, DoubleScoreStatistic.Builder> doubleScoreTemplates;
+
+    /** Template builders used to create summary statistics for duration scores. */
+    private final Map<MetricName, DurationScoreStatistic.Builder> durationScoreTemplates;
+
+    /** Template builders used to create summary statistics for diagrams. */
+    private final Map<MetricName, DiagramStatistic.Builder> diagramTemplates;
+
+    /** Template builders used to create summary statistics for duration diagrams. */
+    private final Map<MetricName, DurationDiagramStatistic.Builder> durationDiagramTemplates;
+
     /** Whether this instance has been completed and is read-only. */
     private final AtomicBoolean isComplete;
 
     /** A filter supplied on construction. */
     private final Predicate<Statistics> filter;
 
-    /** The summary statistics to calculate on completion. */
-    private final List<SummaryStatisticFunction> summaryStatistics;
+    /** The scalar summary statistics to calculate on completion. */
+    private final List<SummaryStatisticFunction> scalarStatistics;
+
+    /** The diagram summary statistics to calculate for scores on completion. */
+    private final List<DiagramStatisticFunction<double[]>> diagramStatistics;
+
+    /** The diagram summary statistics to calculate for duration scores on completion. */
+    private final List<DiagramStatisticFunction<Duration[]>> diagramDurationStatistics;
 
     /** The calculated summary statistics. */
     private final List<Statistics> statistics;
@@ -94,21 +114,28 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
     /** Locks the creation of new diagram row slots within the {@link #diagrams}. */
     private final ReentrantLock diagramRowSlotCreationLock = new ReentrantLock();
 
-    /** The first statistics added to this instance. */
+    /** The superset of statistics added to this instance. Contains only the first occurrence of each metric. */
+    @GuardedBy( "nominalStatisticsLock" )
     private Statistics nominal = null;
 
     /**
      * Creates an instance.
-     * @param summaryStatistics the summary statistics to calculate, required and not empty
+     * @param scalarStatistics the scalar summary statistics to calculate
+     * @param diagramStatistics the diagram summary statistics to calculate for double scores
+     * @param diagramDurationStatistics the diagram summary statistics to calculate for duration scores
      * @param filter an optional filter
      * @return an instance
-     * @throws NullPointerException if the list of statistics is null
-     * @throws IllegalArgumentException if the list of statistics is empty
+     * @throws IllegalArgumentException if all lists of statistics are null or empty
      */
-    public static SummaryStatisticsCalculator of( List<SummaryStatisticFunction> summaryStatistics,
+    public static SummaryStatisticsCalculator of( List<SummaryStatisticFunction> scalarStatistics,
+                                                  List<DiagramStatisticFunction<double[]>> diagramStatistics,
+                                                  List<DiagramStatisticFunction<Duration[]>> diagramDurationStatistics,
                                                   Predicate<Statistics> filter )
     {
-        return new SummaryStatisticsCalculator( summaryStatistics, filter );
+        return new SummaryStatisticsCalculator( scalarStatistics,
+                                                diagramStatistics,
+                                                diagramDurationStatistics,
+                                                filter );
     }
 
     /**
@@ -147,10 +174,14 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
         }
 
         // Filter statistics that do not meet the filter supplied on construction
-        if ( !this.filter.test( statistics )
-             && LOGGER.isTraceEnabled() )
+        if ( !this.filter.test( statistics ) )
         {
-            LOGGER.debug( "Rejected these statistics as they do not meet the filter: {}.", statistics );
+            if ( LOGGER.isTraceEnabled() )
+            {
+                LOGGER.trace( "Rejected these statistics as they do not meet the filter: {}.", statistics );
+            }
+
+            return;
         }
 
         // Remove any statistics that do not support summary statistics
@@ -159,8 +190,18 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
         // Set the nominal statistics whose metadata will be used when reporting summary statistics
         if ( Objects.isNull( this.nominal ) )
         {
-            this.nominal = statistics;
+            this.nominal = statistics.toBuilder()
+                                     .clearScores()
+                                     .clearDurationScores()
+                                     .clearDiagrams()
+                                     .clearDurationDiagrams()
+                                     .clearOneBoxPerPair()
+                                     .clearOneBoxPerPool()
+                                     .build();
         }
+
+        // Update the templates
+        this.updateTemplates( statistics );
 
         // Add the double score statistics
         this.addDoubleScores( statistics );
@@ -174,6 +215,32 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
         LOGGER.debug( "Added statistics in thread {}.",
                       Thread.currentThread()
                             .getName() );
+    }
+
+    /**
+     * Updates the templates for the summary statistics.
+     *
+     * @param rawStatistics the raw statistics to use
+     */
+
+    private void updateTemplates( Statistics rawStatistics )
+    {
+        rawStatistics.getScoresList()
+                     .forEach( n -> this.doubleScoreTemplates.putIfAbsent( n.getMetric()
+                                                                            .getName(),
+                                                                           n.toBuilder() ) );
+        rawStatistics.getDurationScoresList()
+                     .forEach( n -> this.durationScoreTemplates.putIfAbsent( n.getMetric()
+                                                                              .getName(),
+                                                                             n.toBuilder() ) );
+        rawStatistics.getDiagramsList()
+                     .forEach( n -> this.diagramTemplates.putIfAbsent( n.getMetric()
+                                                                        .getName(),
+                                                                       n.toBuilder() ) );
+        rawStatistics.getDurationDiagramsList()
+                     .forEach( n -> this.durationDiagramTemplates.putIfAbsent( n.getMetric()
+                                                                                .getName(),
+                                                                               n.toBuilder() ) );
     }
 
     /**
@@ -379,51 +446,98 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
     }
 
     /**
-     * Calculates the summary statistics on request.
+     * Calculates the summary statistics on request. Can be called only once, which is guarded by {@link #isComplete}.
      */
 
     private void calculateSummaryStatistics()
     {
-        if ( !this.statistics.isEmpty() )
-        {
-            LOGGER.debug( "The summary statistics have already been calculated." );
-            return;
-        }
-
         if ( Objects.isNull( this.nominal ) )
         {
             LOGGER.debug( "No statistics were added from which to calculate summary statistics." );
             return;
         }
 
-        LOGGER.debug( "Calculating {} summary statistics: {}.", this.summaryStatistics.size(), this.summaryStatistics );
+        LOGGER.debug( "Calculating {} summary statistics: {}.",
+                      this.scalarStatistics.size(),
+                      this.scalarStatistics );
 
-        for ( SummaryStatisticFunction summaryStatistic : this.summaryStatistics )
+        // Calculate the scalar summary statistics
+        for ( SummaryStatisticFunction summaryStatistic : this.scalarStatistics )
         {
             Statistics.Builder builder = this.nominal.toBuilder()
                                                      .setSummaryStatistic( summaryStatistic.statistic() );
 
-            // Set the summary statistic for the double scores
-            List<DoubleScoreStatistic.Builder> scoreBuilders = builder.getScoresBuilderList();
+            // Set the summary statistic for the double scores, sorted by metric name
+            List<DoubleScoreStatistic.Builder> scoreBuilders
+                    = this.doubleScoreTemplates.values()
+                                               .stream()
+                                               .sorted( Comparator.comparing( a -> a.getMetric()
+                                                                                    .getName() ) )
+                                               .toList();
+            scoreBuilders.forEach( builder::addScores );
+            scoreBuilders = builder.getScoresBuilderList();
             this.calculateDoubleScoreSummaryStatistic( scoreBuilders, summaryStatistic );
 
-            // Set the quantiles for the duration scores
-            List<DurationScoreStatistic.Builder> durationScoreBuilders = builder.getDurationScoresBuilderList();
+            // Set the summary statistic for the duration scores, sorted by metric name
+            List<DurationScoreStatistic.Builder> durationScoreBuilders =
+                    this.durationScoreTemplates.values()
+                                               .stream()
+                                               .sorted( Comparator.comparing( a -> a.getMetric()
+                                                                                    .getName() ) )
+                                               .toList();
+            durationScoreBuilders.forEach( builder::addDurationScores );
+            durationScoreBuilders = builder.getDurationScoresBuilderList();
             this.calculateDurationScoreSummaryStatistics( durationScoreBuilders, summaryStatistic );
 
-            // Set the quantiles for the diagrams
-            List<DiagramStatistic.Builder> diagramBuilders = builder.getDiagramsBuilderList();
+            // Set the summary statistic for the diagrams, sorted by metric name
+            List<DiagramStatistic.Builder> diagramBuilders =
+                    this.diagramTemplates.values()
+                                         .stream()
+                                         .sorted( Comparator.comparing( a -> a.getMetric()
+                                                                              .getName() ) )
+                                         .toList();
+            diagramBuilders.forEach( builder::addDiagrams );
+            diagramBuilders = builder.getDiagramsBuilderList();
             this.calculateDiagramSummaryStatistics( diagramBuilders, summaryStatistic );
 
-            // Set the quantiles for the diagrams
-            List<DurationDiagramStatistic.Builder> durationDiagramBuilders = builder.getDurationDiagramsBuilderList();
+            // Set the summary statistic for the duration diagrams, sorted by metric name
+            List<DurationDiagramStatistic.Builder> durationDiagramBuilders =
+                    this.durationDiagramTemplates.values()
+                                                 .stream()
+                                                 .sorted( Comparator.comparing( a -> a.getMetric()
+                                                                                      .getName() ) )
+                                                 .toList();
+            durationDiagramBuilders.forEach( builder::addDurationDiagrams );
+            durationDiagramBuilders = builder.getDurationDiagramsBuilderList();
             this.calculateDurationDiagramSummaryStatistics( durationDiagramBuilders, summaryStatistic );
 
-            // Add the quantile
+            // Add the summary statistic
             this.statistics.add( builder.build() );
         }
 
-        LOGGER.debug( "Finished setting the summary statistics. This calculator is now read only." );
+        // Calculate the diagram summary statistics for scores
+        for ( DiagramStatisticFunction<double[]> diagramStatistic : this.diagramStatistics )
+        {
+            Statistics.Builder builder = this.nominal.toBuilder()
+                                                     .setSummaryStatistic( diagramStatistic.statistic() );
+
+            List<DiagramStatistic> diags = this.calculateDiagramStatisticForDoubleScores( diagramStatistic );
+            builder.addAllDiagrams( diags );
+            this.statistics.add( builder.build() );
+        }
+
+        // Calculate the diagram summary statistics for duration scores
+        for ( DiagramStatisticFunction<Duration[]> diagramStatistic : this.diagramDurationStatistics )
+        {
+            Statistics.Builder builder = this.nominal.toBuilder()
+                                                     .setSummaryStatistic( diagramStatistic.statistic() );
+
+            List<DiagramStatistic> diags = this.calculateDiagramStatisticForDurationScores( diagramStatistic );
+            builder.addAllDiagrams( diags );
+            this.statistics.add( builder.build() );
+        }
+
+        LOGGER.debug( "Finished setting the summary statistics." );
     }
 
     /**
@@ -570,39 +684,70 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
     }
 
     /**
-     * Creates an instance.
-     * @param summaryStatistics the summary statistics to calculate, required and not empty
-     * @param filter an optional filter
-     * @throws NullPointerException if the list of statistics is null
-     * @throws IllegalArgumentException if the list of statistics is empty
+     * Calculates the diagram statistic for all double scores.
+     * @param diagram the diagram statistic
+     * @return the diagram statistics, one for each double score
      */
-    private SummaryStatisticsCalculator( List<SummaryStatisticFunction> summaryStatistics,
-                                         Predicate<Statistics> filter )
+    private List<DiagramStatistic> calculateDiagramStatisticForDoubleScores( DiagramStatisticFunction<double[]> diagram )
     {
-        Objects.requireNonNull( summaryStatistics );
-
-        if ( Objects.isNull( filter ) )
+        List<DiagramStatistic> diagramList = new ArrayList<>();
+        for ( Map.Entry<DoubleScoreName, MutableDoubleList> nextScore : this.doubleScores.entrySet() )
         {
-            this.filter = in -> true;
-        }
-        else
-        {
-            this.filter = filter;
+            DoubleScoreName name = nextScore.getKey();
+            String nameString = name.metricName()
+                                    .toString();
+
+            if ( name.metricComponentName() != DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
+            {
+                nameString += "-" + name.metricComponentName();
+            }
+
+            MutableDoubleList scores = nextScore.getValue();
+            double[] rawScores = scores.toArray();
+            DoubleScoreStatistic.Builder b = this.doubleScoreTemplates.get( name.metricName() );
+            String unitString = b.getMetric()
+                                 .getComponentsList()
+                                 .get( 0 )  // All components have the same units
+                                 .getUnits();
+            Map<DiagramStatisticFunction.DiagramComponentName, String> names =
+                    Map.of( DiagramStatisticFunction.DiagramComponentName.VARIABLE, nameString,
+                            DiagramStatisticFunction.DiagramComponentName.VARIABLE_UNIT, unitString );
+            DiagramStatistic nextDiagram = diagram.apply( names, rawScores );
+            diagramList.add( nextDiagram );
         }
 
-        this.summaryStatistics = summaryStatistics;
-        this.isComplete = new AtomicBoolean();
-        this.statistics = new ArrayList<>();
-
-        // Create the slots for the sample statistics
-        this.doubleScores = new ConcurrentHashMap<>();
-        this.diagrams = new ConcurrentHashMap<>();
-        this.durationScores = new ConcurrentHashMap<>();
-        this.durationDiagrams = new ConcurrentHashMap<>();
+        return Collections.unmodifiableList( diagramList );
     }
 
     /**
-     * Removes any statistics that do not support sampling uncertainty estimation.
+     * Calculates the diagram statistic for all duration scores.
+     * @param diagram the diagram statistic
+     * @return the diagram statistics, one for each duration score
+     */
+    private List<DiagramStatistic> calculateDiagramStatisticForDurationScores( DiagramStatisticFunction<Duration[]> diagram )
+    {
+        List<DiagramStatistic> diagramList = new ArrayList<>();
+        for ( Map.Entry<DurationScoreName, List<Duration>> nextScore : this.durationScores.entrySet() )
+        {
+            DurationScoreName name = nextScore.getKey();
+            String nameString = name.metricName()
+                                    .toString()
+                                + "-"
+                                + name.metricComponentName();
+
+            List<Duration> scores = nextScore.getValue();
+            Duration[] rawScores = scores.toArray( new Duration[0] );
+            Map<DiagramStatisticFunction.DiagramComponentName, String> names =
+                    Map.of( DiagramStatisticFunction.DiagramComponentName.VARIABLE, nameString );
+            DiagramStatistic nextDiagram = diagram.apply( names, rawScores );
+            diagramList.add( nextDiagram );
+        }
+
+        return Collections.unmodifiableList( diagramList );
+    }
+
+    /**
+     * Removes any statistics that do not support summary statistics.
      *
      * @param statistics the statistics to filter
      * @return the filtered statistics
@@ -610,6 +755,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
 
     private Statistics filter( Statistics statistics )
     {
+        // Clear all statistics first, retaining the metadata
         Statistics.Builder builder = statistics.toBuilder()
                                                .clearScores()
                                                .clearDurationScores()
@@ -685,6 +831,71 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
         builder.addAllOneBoxPerPair( boxplotPerPairList );
 
         return builder.build();
+    }
+
+    /**
+     * Creates an instance.
+     * @param scalarStatistics the scalar summary statistics to calculate
+     * @param diagramStatistics the diagram summary statistics to calculate for scores
+     * @param diagramDurationStatistics the diagram summary statistics to calculate for duration scores
+     * @param filter an optional filter
+     * @throws IllegalArgumentException if all lists of statistics are null or empty
+     */
+    private SummaryStatisticsCalculator( List<SummaryStatisticFunction> scalarStatistics,
+                                         List<DiagramStatisticFunction<double[]>> diagramStatistics,
+                                         List<DiagramStatisticFunction<Duration[]>> diagramDurationStatistics,
+                                         Predicate<Statistics> filter )
+    {
+        // Replace null with empty lists
+        if ( Objects.isNull( scalarStatistics ) )
+        {
+            scalarStatistics = List.of();
+        }
+
+        if ( Objects.isNull( diagramStatistics ) )
+        {
+            diagramStatistics = List.of();
+        }
+
+        if ( Objects.isNull( diagramDurationStatistics ) )
+        {
+            diagramDurationStatistics = List.of();
+        }
+
+        // No statistics to compute?
+        if ( scalarStatistics.isEmpty()
+             && diagramStatistics.isEmpty()
+             && diagramDurationStatistics.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Provide one or more summary statistics to calculate." );
+        }
+
+        if ( Objects.isNull( filter ) )
+        {
+            this.filter = in -> true;
+        }
+        else
+        {
+            this.filter = filter;
+        }
+
+        this.scalarStatistics = scalarStatistics;
+        this.diagramStatistics = diagramStatistics;
+        this.diagramDurationStatistics = diagramDurationStatistics;
+        this.isComplete = new AtomicBoolean();
+        this.statistics = new ArrayList<>();
+
+        // Create the containers for the raw statistics
+        this.doubleScores = new ConcurrentHashMap<>();
+        this.diagrams = new ConcurrentHashMap<>();
+        this.durationScores = new ConcurrentHashMap<>();
+        this.durationDiagrams = new ConcurrentHashMap<>();
+
+        // Create the containers for the summary statistic templates
+        this.doubleScoreTemplates = new ConcurrentHashMap<>();
+        this.diagramTemplates = new ConcurrentHashMap<>();
+        this.durationScoreTemplates = new ConcurrentHashMap<>();
+        this.durationDiagramTemplates = new ConcurrentHashMap<>();
     }
 
     /**

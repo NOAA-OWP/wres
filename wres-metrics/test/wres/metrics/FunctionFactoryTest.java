@@ -1,6 +1,9 @@
 package wres.metrics;
 
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
@@ -16,6 +19,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.datamodel.MissingValues;
 import wres.config.MetricConstants;
+import wres.statistics.generated.DiagramMetric;
+import wres.statistics.generated.DiagramStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.SummaryStatistic;
 
 /**
  * Tests the {@link FunctionFactory}.
@@ -200,9 +207,144 @@ class FunctionFactoryTest
         durations[1] = Duration.ofSeconds( 27 );
         durations[2] = Duration.ofMillis( 38800 );
 
-        Function<Duration[],Duration> meanDuration = FunctionFactory.ofDurationFromUnivariateFunction( mean );
+        Function<Duration[], Duration> meanDuration = FunctionFactory.ofDurationFromUnivariateFunction( mean );
         Duration actual = meanDuration.apply( durations );
         Duration expected = Duration.ofMillis( 29600 );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testHistogram()
+    {
+        DiagramStatisticFunction<double[]> histogram =
+                FunctionFactory.histogram( 5, SummaryStatistic.StatisticDimension.FEATURES );
+
+        double[] data = new double[] { 1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6 };
+        Map<DiagramStatisticFunction.DiagramComponentName, String> p =
+                Map.of( DiagramStatisticFunction.DiagramComponentName.VARIABLE, "foo",
+                        DiagramStatisticFunction.DiagramComponentName.VARIABLE_UNIT, "bar" );
+
+        DiagramStatistic actual = histogram.apply( p, data );
+
+        // Build the expectation
+        DiagramMetric.DiagramMetricComponent domainMetric =
+                DiagramMetric.DiagramMetricComponent.newBuilder()
+                                                    .setName( DiagramMetric.DiagramMetricComponent.DiagramComponentName.BIN_UPPER_BOUND )
+                                                    .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_DOMAIN_AXIS )
+                                                    .setMinimum( Double.NEGATIVE_INFINITY )
+                                                    .setMaximum( Double.POSITIVE_INFINITY )
+                                                    .setUnits( "bar" )
+                                                    .build();
+
+        DiagramMetric.DiagramMetricComponent rangeMetric =
+                DiagramMetric.DiagramMetricComponent.newBuilder()
+                                                    .setName( DiagramMetric.DiagramMetricComponent.DiagramComponentName.COUNT )
+                                                    .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_RANGE_AXIS )
+                                                    .setMinimum( 0 )
+                                                    .setMaximum( Double.POSITIVE_INFINITY )
+                                                    .setUnits( "COUNT" )
+                                                    .build();
+
+        DiagramMetric metric = DiagramMetric.newBuilder()
+                                            .addComponents( domainMetric )
+                                            .addComponents( rangeMetric )
+                                            .setName( MetricName.HISTOGRAM )
+                                            .build();
+
+        DiagramStatistic.DiagramStatisticComponent domainStatistic =
+                DiagramStatistic.DiagramStatisticComponent.newBuilder()
+                                                          .setMetric( domainMetric )
+                                                          .setName( "foo" )
+                                                          .addAllValues( List.of( 2.0, 3.0, 4.0, 5.0, 6.0 ) )
+                                                          .build();
+
+        DiagramStatistic.DiagramStatisticComponent rangeStatistic =
+                DiagramStatistic.DiagramStatisticComponent.newBuilder()
+                                                          .setMetric( rangeMetric )
+                                                          .addAllValues( List.of( 3.0, 3.0, 4.0, 5.0, 6.0 ) )
+                                                          .build();
+
+        DiagramStatistic expected = DiagramStatistic.newBuilder()
+                                                    .addStatistics( domainStatistic )
+                                                    .addStatistics( rangeStatistic )
+                                                    .setMetric( metric )
+                                                    .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testHistogramForDurations()
+    {
+        DiagramStatisticFunction<Duration[]> histogram =
+                FunctionFactory.histogram( 5,
+                                           ChronoUnit.SECONDS,
+                                           SummaryStatistic.StatisticDimension.FEATURES );
+
+        Duration one = Duration.ofHours( 1 );
+        Duration two = Duration.ofHours( 2 );
+        Duration three = Duration.ofHours( 3 );
+        Duration four = Duration.ofHours( 4 );
+        Duration five = Duration.ofHours( 5 );
+        Duration six = Duration.ofHours( 6 );
+
+        Duration[] data =
+                new Duration[] { one, two, two, three, three, three, four, four, four, four, five, five, five, five,
+                        five, six, six, six, six, six, six };
+        Map<DiagramStatisticFunction.DiagramComponentName, String> p =
+                Map.of( DiagramStatisticFunction.DiagramComponentName.VARIABLE, "foo",
+                        DiagramStatisticFunction.DiagramComponentName.VARIABLE_UNIT, "bar" );
+
+        DiagramStatistic actual = histogram.apply( p, data );
+
+        // Build the expectation
+        DiagramMetric.DiagramMetricComponent domainMetric =
+                DiagramMetric.DiagramMetricComponent.newBuilder()
+                                                    .setName( DiagramMetric.DiagramMetricComponent.DiagramComponentName.BIN_UPPER_BOUND )
+                                                    .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_DOMAIN_AXIS )
+                                                    .setMinimum( Double.NEGATIVE_INFINITY )
+                                                    .setMaximum( Double.POSITIVE_INFINITY )
+                                                    .setUnits( "SECONDS" )
+                                                    .build();
+
+        DiagramMetric.DiagramMetricComponent rangeMetric =
+                DiagramMetric.DiagramMetricComponent.newBuilder()
+                                                    .setName( DiagramMetric.DiagramMetricComponent.DiagramComponentName.COUNT )
+                                                    .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_RANGE_AXIS )
+                                                    .setMinimum( 0 )
+                                                    .setMaximum( Double.POSITIVE_INFINITY )
+                                                    .setUnits( "COUNT" )
+                                                    .build();
+
+        DiagramMetric metric = DiagramMetric.newBuilder()
+                                            .addComponents( domainMetric )
+                                            .addComponents( rangeMetric )
+                                            .setName( MetricName.HISTOGRAM )
+                                            .build();
+
+        DiagramStatistic.DiagramStatisticComponent domainStatistic =
+                DiagramStatistic.DiagramStatisticComponent.newBuilder()
+                                                          .setMetric( domainMetric )
+                                                          .setName( "foo" )
+                                                          .addAllValues( List.of( 7200.0,
+                                                                                  10800.0,
+                                                                                  14400.0,
+                                                                                  18000.0,
+                                                                                  21600.0 ) )
+                                                          .build();
+
+        DiagramStatistic.DiagramStatisticComponent rangeStatistic =
+                DiagramStatistic.DiagramStatisticComponent.newBuilder()
+                                                          .setMetric( rangeMetric )
+                                                          .addAllValues( List.of( 3.0, 3.0, 4.0, 5.0, 6.0 ) )
+                                                          .build();
+
+        DiagramStatistic expected = DiagramStatistic.newBuilder()
+                                                    .addStatistics( domainStatistic )
+                                                    .addStatistics( rangeStatistic )
+                                                    .setMetric( metric )
+                                                    .build();
 
         assertEquals( expected, actual );
     }

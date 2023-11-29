@@ -38,8 +38,10 @@ public record SummaryStatisticFunction( SummaryStatistic statistic,
     public String toString()
     {
         return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
-                .append( "statistic", this.statistic().getStatistic() )
-                .append( "dimension", this.statistic().getDimension() )
+                .append( "statistic", this.statistic()
+                                          .getStatistic() )
+                .append( "dimension", this.statistic()
+                                          .getDimension() )
                 .append( "probability", this.statistic()
                                             .getProbability() )
                 .toString();
