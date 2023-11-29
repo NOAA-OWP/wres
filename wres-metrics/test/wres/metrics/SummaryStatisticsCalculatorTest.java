@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.Predicate;
 
 import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
@@ -87,7 +88,8 @@ class SummaryStatisticsCalculatorTest
         SummaryStatisticFunction q3f = FunctionFactory.ofSummaryStatistic( q3 );
 
         List<SummaryStatisticFunction> quantiles = List.of( q1f, q2f, q3f );
-        SummaryStatisticsCalculator calculator = SummaryStatisticsCalculator.of( quantiles, null );
+        SummaryStatisticsCalculator calculator =
+                SummaryStatisticsCalculator.of( quantiles, List.of(), List.of(), null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -191,7 +193,8 @@ class SummaryStatisticsCalculatorTest
         SummaryStatisticFunction q3f = FunctionFactory.ofSummaryStatistic( q3 );
 
         List<SummaryStatisticFunction> quantiles = List.of( q1f, q2f, q3f );
-        SummaryStatisticsCalculator calculator = SummaryStatisticsCalculator.of( quantiles, null );
+        SummaryStatisticsCalculator calculator =
+                SummaryStatisticsCalculator.of( quantiles, List.of(), List.of(), null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -299,7 +302,8 @@ class SummaryStatisticsCalculatorTest
         SummaryStatisticFunction q3f = FunctionFactory.ofSummaryStatistic( q3 );
 
         List<SummaryStatisticFunction> quantiles = List.of( q1f, q2f, q3f );
-        SummaryStatisticsCalculator calculator = SummaryStatisticsCalculator.of( quantiles, null );
+        SummaryStatisticsCalculator calculator =
+                SummaryStatisticsCalculator.of( quantiles, List.of(), List.of(), null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -397,7 +401,8 @@ class SummaryStatisticsCalculatorTest
         SummaryStatisticFunction q3f = FunctionFactory.ofSummaryStatistic( q3 );
 
         List<SummaryStatisticFunction> quantiles = List.of( q1f, q2f, q3f );
-        SummaryStatisticsCalculator calculator = SummaryStatisticsCalculator.of( quantiles, null );
+        SummaryStatisticsCalculator calculator =
+                SummaryStatisticsCalculator.of( quantiles, List.of(), List.of(), null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -512,7 +517,8 @@ class SummaryStatisticsCalculatorTest
         SummaryStatisticFunction q1f = FunctionFactory.ofSummaryStatistic( q1 );
 
         List<SummaryStatisticFunction> quantiles = List.of( q1f );
-        SummaryStatisticsCalculator calculator = SummaryStatisticsCalculator.of( quantiles, null );
+        SummaryStatisticsCalculator calculator =
+                SummaryStatisticsCalculator.of( quantiles, List.of(), List.of(), null );
 
         // Add nominal
         calculator.accept( nominal );
@@ -690,7 +696,8 @@ class SummaryStatisticsCalculatorTest
         SummaryStatisticFunction q3f = FunctionFactory.ofSummaryStatistic( q3 );
 
         List<SummaryStatisticFunction> quantiles = List.of( q1f, q2f, q3f );
-        SummaryStatisticsCalculator calculator = SummaryStatisticsCalculator.of( quantiles, null );
+        SummaryStatisticsCalculator calculator =
+                SummaryStatisticsCalculator.of( quantiles, List.of(), List.of(), null );
 
         ExecutorService executor = Executors.newFixedThreadPool( 5 );
 
@@ -899,8 +906,9 @@ class SummaryStatisticsCalculatorTest
 
         SummaryStatisticFunction meanFunction = FunctionFactory.ofSummaryStatistic( mean );
 
-        List<SummaryStatisticFunction> quantiles = List.of( meanFunction );
-        SummaryStatisticsCalculator calculator = SummaryStatisticsCalculator.of( quantiles, null );
+        List<SummaryStatisticFunction> summaryStatistics = List.of( meanFunction );
+        SummaryStatisticsCalculator calculator =
+                SummaryStatisticsCalculator.of( summaryStatistics, List.of(), List.of(), null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -925,4 +933,238 @@ class SummaryStatisticsCalculatorTest
         assertEquals( expected, actual );
     }
 
+    @Test
+    void testGetStandardDeviationOverFeaturesWithFilterForDoubleScore()
+    {
+        DoubleScoreMetric metric = DoubleScoreMetric.newBuilder()
+                                                    .setName( MetricName.BIAS_FRACTION )
+                                                    .build();
+
+        DoubleScoreMetric.DoubleScoreMetricComponent main =
+                DoubleScoreMetric.DoubleScoreMetricComponent.newBuilder()
+                                                            .setMinimum( Double.NEGATIVE_INFINITY )
+                                                            .setMaximum( Double.POSITIVE_INFINITY )
+                                                            .setOptimum( 0 )
+                                                            .setName( DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
+                                                            .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                                            .build();
+
+        DoubleScoreStatistic.DoubleScoreStatisticComponent
+                component = DoubleScoreStatistic.DoubleScoreStatisticComponent.newBuilder()
+                                                                              .setMetric( main )
+                                                                              .setValue( 0.5 )
+                                                                              .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( metric )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        Statistics nominal = Statistics.newBuilder()
+                                       .addScores( score )
+                                       .build();
+
+        SummaryStatistic sd = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.STANDARD_DEVIATION,
+                                                                  SummaryStatistic.StatisticDimension.FEATURES,
+                                                                  null );
+
+        SummaryStatisticFunction sdFunction = FunctionFactory.ofSummaryStatistic( sd );
+
+        List<SummaryStatisticFunction> summaryStatistics = List.of( sdFunction );
+
+        // Create a filter to eliminate a score of "5"
+        Predicate<Statistics> include = s -> !FunctionFactory.doubleEquals()
+                                                             .test( s.getScores( 0 )
+                                                                     .getStatistics( 0 )
+                                                                     .getValue(), 5.0 );
+
+        SummaryStatisticsCalculator calculator =
+                SummaryStatisticsCalculator.of( summaryStatistics, List.of(), List.of(), include );
+
+        for ( int i = 1; i < 11; i++ )
+        {
+            Statistics.Builder next = nominal.toBuilder();
+            // Set the new score
+            next.getScoresBuilder( 0 )
+                .getStatisticsBuilder( 0 )
+                .setValue( i );
+            calculator.accept( next.build() );
+        }
+
+        List<Statistics> actual = calculator.get();
+
+        Statistics.Builder expectedFirstBuilder = nominal.toBuilder()
+                                                         .setSummaryStatistic( sd );
+        expectedFirstBuilder.getScoresBuilder( 0 )
+                            .getStatisticsBuilder( 0 )
+                            .setValue( 3.2058973436118907 );
+
+        List<Statistics> expected = List.of( expectedFirstBuilder.build() );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testAddDifferentScoreAcrossTwoUpdates()
+    {
+        DoubleScoreMetric biasMetric = DoubleScoreMetric.newBuilder()
+                                                        .setName( MetricName.BIAS_FRACTION )
+                                                        .build();
+
+        DoubleScoreMetric.DoubleScoreMetricComponent biasMain =
+                DoubleScoreMetric.DoubleScoreMetricComponent.newBuilder()
+                                                            .setMinimum( Double.NEGATIVE_INFINITY )
+                                                            .setMaximum( Double.POSITIVE_INFINITY )
+                                                            .setOptimum( 0 )
+                                                            .setName( DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
+                                                            .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                                            .build();
+
+        DoubleScoreStatistic.DoubleScoreStatisticComponent
+                biasComponent = DoubleScoreStatistic.DoubleScoreStatisticComponent.newBuilder()
+                                                                                  .setMetric( biasMain )
+                                                                                  .setValue( 0.5 )
+                                                                                  .build();
+
+        DoubleScoreStatistic biasScore = DoubleScoreStatistic.newBuilder()
+                                                             .setMetric( biasMetric )
+                                                             .addStatistics( biasComponent )
+                                                             .build();
+
+        Statistics one = Statistics.newBuilder()
+                                   .addScores( biasScore )
+                                   .build();
+
+        DoubleScoreMetric correlationMetric = DoubleScoreMetric.newBuilder()
+                                                               .setName( MetricName.PEARSON_CORRELATION_COEFFICIENT )
+                                                               .build();
+
+        DoubleScoreMetric.DoubleScoreMetricComponent correlationMain =
+                DoubleScoreMetric.DoubleScoreMetricComponent.newBuilder()
+                                                            .setMinimum( -1 )
+                                                            .setMaximum( 1 )
+                                                            .setOptimum( 1 )
+                                                            .setName( DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
+                                                            .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                                            .build();
+
+        DoubleScoreStatistic.DoubleScoreStatisticComponent
+                correlationComponent = DoubleScoreStatistic.DoubleScoreStatisticComponent.newBuilder()
+                                                                                         .setMetric( correlationMain )
+                                                                                         .setValue( 0.8 )
+                                                                                         .build();
+
+        DoubleScoreStatistic correlationScore = DoubleScoreStatistic.newBuilder()
+                                                                    .setMetric( correlationMetric )
+                                                                    .addStatistics( correlationComponent )
+                                                                    .build();
+
+        Statistics two = Statistics.newBuilder()
+                                   .addScores( correlationScore )
+                                   .build();
+
+        SummaryStatistic mean = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.MEAN,
+                                                                    SummaryStatistic.StatisticDimension.FEATURES,
+                                                                    null );
+
+        SummaryStatisticFunction meanFunction = FunctionFactory.ofSummaryStatistic( mean );
+
+        List<SummaryStatisticFunction> summaryStatistics = List.of( meanFunction );
+
+        SummaryStatisticsCalculator calculator =
+                SummaryStatisticsCalculator.of( summaryStatistics, List.of(), List.of(), null );
+
+        // Accept the two statistics
+        calculator.accept( one );
+        calculator.accept( two );
+
+        // Cannot guarantee order of statistics, so compare sets
+        List<Statistics> actual = calculator.get();
+
+        Statistics expectedOne = Statistics.newBuilder()
+                                           .setSummaryStatistic( mean )
+                                           .addScores( biasScore )
+                                           .addScores( correlationScore )
+                                           .build();
+
+        List<Statistics> expected = List.of( expectedOne );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetMeanAndStandardDeviationOverFeaturesForDoubleScore()
+    {
+        DoubleScoreMetric metric = DoubleScoreMetric.newBuilder()
+                                                    .setName( MetricName.BIAS_FRACTION )
+                                                    .build();
+
+        DoubleScoreMetric.DoubleScoreMetricComponent main =
+                DoubleScoreMetric.DoubleScoreMetricComponent.newBuilder()
+                                                            .setMinimum( Double.NEGATIVE_INFINITY )
+                                                            .setMaximum( Double.POSITIVE_INFINITY )
+                                                            .setOptimum( 0 )
+                                                            .setName( DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
+                                                            .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                                            .build();
+
+        DoubleScoreStatistic.DoubleScoreStatisticComponent
+                component = DoubleScoreStatistic.DoubleScoreStatisticComponent.newBuilder()
+                                                                              .setMetric( main )
+                                                                              .setValue( 0.5 )
+                                                                              .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( metric )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        Statistics nominal = Statistics.newBuilder()
+                                       .addScores( score )
+                                       .build();
+
+        SummaryStatistic mean = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.MEAN,
+                                                                    SummaryStatistic.StatisticDimension.FEATURES,
+                                                                    null );
+
+        SummaryStatisticFunction meanFunction = FunctionFactory.ofSummaryStatistic( mean );
+
+        SummaryStatistic sd = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.STANDARD_DEVIATION,
+                                                                  SummaryStatistic.StatisticDimension.FEATURES,
+                                                                  null );
+
+        SummaryStatisticFunction sdFunction = FunctionFactory.ofSummaryStatistic( sd );
+
+        List<SummaryStatisticFunction> summaryStatistics = List.of( meanFunction, sdFunction );
+        SummaryStatisticsCalculator calculator =
+                SummaryStatisticsCalculator.of( summaryStatistics, List.of(), List.of(), null );
+
+        for ( int i = 1; i < 11; i++ )
+        {
+            Statistics.Builder next = nominal.toBuilder();
+            // Set the new score
+            next.getScoresBuilder( 0 )
+                .getStatisticsBuilder( 0 )
+                .setValue( i );
+            calculator.accept( next.build() );
+        }
+
+        List<Statistics> actual = calculator.get();
+
+        Statistics.Builder expectedFirstBuilder = nominal.toBuilder()
+                                                         .setSummaryStatistic( mean );
+        expectedFirstBuilder.getScoresBuilder( 0 )
+                            .getStatisticsBuilder( 0 )
+                            .setValue( 5.5 );
+
+        Statistics.Builder expectedSecondBuilder = nominal.toBuilder()
+                                                          .setSummaryStatistic( sd );
+        expectedSecondBuilder.getScoresBuilder( 0 )
+                             .getStatisticsBuilder( 0 )
+                             .setValue( 3.0276503540974917 );
+
+        List<Statistics> expected = List.of( expectedFirstBuilder.build(), expectedSecondBuilder.build() );
+
+        assertEquals( expected, actual );
+    }
 }

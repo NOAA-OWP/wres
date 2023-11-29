@@ -18,7 +18,6 @@ public class GraphicsUtils
     /**
      * @return a sequence of base colors.
      */
-
     public static Color[] getColors()
     {
         //Build a list of colors from the JFreeChart defaults and strip out the yellow shades. 
@@ -59,7 +58,7 @@ public class GraphicsUtils
         }
         else
         {
-            int baseColorIndex = 0;
+            int baseColorIndex;
             double baseColorFractionalCounter = 0.0;
             double mixingFraction;
 
@@ -113,5 +112,4 @@ public class GraphicsUtils
     private GraphicsUtils()
     {
     }
-
 }

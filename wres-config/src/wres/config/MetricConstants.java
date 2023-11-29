@@ -162,7 +162,7 @@ public enum MetricConstants
     MEAN( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC,
           MetricGroup.LRB ),
 
-    /** Median statistic. */
+    /** Median statistic. Not currently used to "score" a single side of paired data. */
     MEDIAN( MetricGroup.UNIVARIATE_STATISTIC ),
 
     /** Standard deviation statistic. */
@@ -177,7 +177,7 @@ public enum MetricConstants
     MAXIMUM( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC,
              MetricGroup.LRB ),
 
-    /** Mean absolute statistic. */
+    /** Mean absolute statistic. Not currently used to "score" a single side of paired data. */
     MEAN_ABSOLUTE( MetricGroup.UNIVARIATE_STATISTIC ),
 
     /** Time to peak error, mean across all instances. */

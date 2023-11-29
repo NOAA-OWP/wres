@@ -114,7 +114,6 @@ public class TimingErrorDurationStatistics
                                                   .map( wres.statistics.MessageFactory::parse )
                                                   .toArray( Duration[]::new);
 
-                // Some loss of precision here, not consequential
                 Duration duration = nextFunction.apply( input );
 
                 // Add statistic component
