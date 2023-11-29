@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
@@ -25,9 +24,11 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.SamplingUncertainty;
+import wres.metrics.FunctionFactory;
+import wres.metrics.SummaryStatisticFunction;
+import wres.metrics.SummaryStatisticsCalculator;
 import wres.datamodel.Slicer;
 import wres.datamodel.bootstrap.InsufficientDataForResamplingException;
-import wres.datamodel.bootstrap.QuantileCalculator;
 import wres.datamodel.bootstrap.StationaryBootstrapResampler;
 import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.messages.MessageFactory;
@@ -409,7 +410,8 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         }
         catch ( InterruptedException e )
         {
-            Thread.currentThread().interrupt();
+            Thread.currentThread()
+                  .interrupt();
 
             throw new WresProcessingException( "Interrupted while completing evaluation "
                                                + this.evaluation.getEvaluationId()
@@ -442,8 +444,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         {
             // Cannot estimate the sampling uncertainties of an empty pool
             if ( pool.get()
-                     .isEmpty() || pool.get()
-                                       .size() == 1 )
+                     .isEmpty() )
             {
                 LOGGER.warn( "Insufficient data to estimate the sampling uncertainties of pool: {}.",
                              pool.getMetadata() );
@@ -474,7 +475,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                           pool.getMetadata() );
 
             // Create the quantile calculators, one for each threshold
-            Map<OneOrTwoThresholds, Map<DatasetOrientation, QuantileCalculator>> quantileCalculators =
+            Map<OneOrTwoThresholds, Map<DatasetOrientation, SummaryStatisticsCalculator>> quantileCalculators =
                     this.getQuantileCalculators( nominalStatistics, samplingUncertainty );
 
             // Create the resampling structure
@@ -535,7 +536,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
      */
 
     private void updateSampleStatistics( List<StatisticsStore> stores,
-                                         Map<OneOrTwoThresholds, Map<DatasetOrientation, QuantileCalculator>> calculators )
+                                         Map<OneOrTwoThresholds, Map<DatasetOrientation, SummaryStatisticsCalculator>> calculators )
     {
         try
         {
@@ -543,26 +544,22 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             Map<OneOrTwoThresholds, Map<DatasetOrientation, List<Statistics>>> grouped = this.groupStatistics( stores );
 
             // Iterate through the calculators and increment the statistics
-            for ( Map.Entry<OneOrTwoThresholds, Map<DatasetOrientation, QuantileCalculator>> nextEntry : calculators.entrySet() )
+            for ( Map.Entry<OneOrTwoThresholds, Map<DatasetOrientation, SummaryStatisticsCalculator>> nextEntry : calculators.entrySet() )
             {
                 OneOrTwoThresholds nextThreshold = nextEntry.getKey();
-                Map<DatasetOrientation, QuantileCalculator> orientedCalculators = nextEntry.getValue();
+                Map<DatasetOrientation, SummaryStatisticsCalculator> orientedCalculators = nextEntry.getValue();
                 Map<DatasetOrientation, List<Statistics>> statistics = grouped.get( nextThreshold );
-
-                // Add an empty slot for each dataset orientation that has no statistics for this sample/threshold in
-                // order to increment the calculator
-                statistics = this.fillMissing( statistics, orientedCalculators.keySet() );
 
                 for ( Map.Entry<DatasetOrientation, List<Statistics>> nextOrientation : statistics.entrySet() )
                 {
                     DatasetOrientation orientation = nextOrientation.getKey();
                     List<Statistics> nextStatistics = nextOrientation.getValue();
-                    QuantileCalculator calculator = orientedCalculators.get( orientation );
+                    SummaryStatisticsCalculator calculator = orientedCalculators.get( orientation );
 
                     // Quantile calculator available?
                     if ( Objects.nonNull( calculator ) )
                     {
-                        calculator.add( nextStatistics );
+                        nextStatistics.forEach( calculator );
                     }
                     // Log a missing quantile calculator, which can happen when resampling generates novel data for
                     // which nominal statistics were unavailable. This is rare, but can happen, for example, when a
@@ -594,37 +591,6 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                                                + ".",
                                                e );
         }
-    }
-
-    /**
-     * Adds an empty list of statistics for each dataset orientation that is missing from the map of statistics.
-     *
-     * @param statistics the map of statistics
-     * @param orientations the orientations for which statistics are expected
-     * @return the statistics with missings filled as empty
-     */
-
-    private Map<DatasetOrientation, List<Statistics>> fillMissing( Map<DatasetOrientation, List<Statistics>> statistics,
-                                                                   Set<DatasetOrientation> orientations )
-    {
-        Map<DatasetOrientation, List<Statistics>> returnMe = new EnumMap<>( DatasetOrientation.class );
-
-        // Add the existing, non-null statistics
-        if ( Objects.nonNull( statistics ) )
-        {
-            statistics.entrySet()
-                      .stream()
-                      .filter( v -> Objects.nonNull( v.getValue() ) )
-                      .forEach( v -> returnMe.put( v.getKey(), v.getValue() ) );
-        }
-
-        // Add an empty placeholder for each dataset orientation without any statistics
-        for ( DatasetOrientation next : orientations )
-        {
-            returnMe.computeIfAbsent( next, d -> List.of() );
-        }
-
-        return Collections.unmodifiableMap( returnMe );
     }
 
     /**
@@ -733,8 +699,8 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
      * @return the quantile calculators
      */
 
-    private Map<OneOrTwoThresholds, Map<DatasetOrientation, QuantileCalculator>> getQuantileCalculators( List<Statistics> statistics,
-                                                                                                         SamplingUncertainty samplingUncertainty )
+    private Map<OneOrTwoThresholds, Map<DatasetOrientation, SummaryStatisticsCalculator>> getQuantileCalculators( List<Statistics> statistics,
+                                                                                                                  SamplingUncertainty samplingUncertainty )
     {
         // Merge any statistics for corresponding thresholds
         BinaryOperator<Statistics> merger = ( first, second ) ->
@@ -754,7 +720,13 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         // Are there separate statistics for a baseline pool?
         Map<DatasetOrientation, List<Statistics>> grouped = Slicer.getGroupedStatistics( statistics );
 
-        Map<OneOrTwoThresholds, Map<DatasetOrientation, QuantileCalculator>> returnMe = new HashMap<>();
+        // Create the quantile statistics
+        List<SummaryStatisticFunction> quantiles = samplingUncertainty.quantiles()
+                                                                      .stream()
+                                                                      .map( FunctionFactory::quantileForSamplingUncertainty )
+                                                                      .toList();
+
+        Map<OneOrTwoThresholds, Map<DatasetOrientation, SummaryStatisticsCalculator>> returnMe = new HashMap<>();
 
         for ( Map.Entry<DatasetOrientation, List<Statistics>> nextStatistics : grouped.entrySet() )
         {
@@ -771,10 +743,11 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             {
                 OneOrTwoThresholds key = nextEntry.getKey();
                 Statistics mergedStatistics = nextEntry.getValue();
-                QuantileCalculator calculator = QuantileCalculator.of( mergedStatistics,
-                                                                       samplingUncertainty.sampleSize(),
-                                                                       samplingUncertainty.quantiles(),
-                                                                       true );
+                SummaryStatisticsCalculator calculator = SummaryStatisticsCalculator.of( quantiles,
+                                                                                         List.of(),
+                                                                                         List.of(),
+                                                                                         null );
+                calculator.accept( mergedStatistics );
 
                 if ( returnMe.containsKey( key ) )
                 {
@@ -783,7 +756,8 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                 }
                 else
                 {
-                    Map<DatasetOrientation, QuantileCalculator> newMap = new EnumMap<>( DatasetOrientation.class );
+                    Map<DatasetOrientation, SummaryStatisticsCalculator> newMap =
+                            new EnumMap<>( DatasetOrientation.class );
                     newMap.put( orientation, calculator );
                     returnMe.put( key, newMap );
                 }

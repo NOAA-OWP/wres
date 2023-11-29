@@ -1713,7 +1713,8 @@ public class ChartFactory
             // Skill scores for baseline use a default reference, which is climatology
             // This is also potentially brittle, so consider a better way, such as adding the default baseline
             // name into the evaluation description
-            if ( metadata.getPool().getIsBaselinePool() )
+            if ( metadata.getPool()
+                         .getIsBaselinePool() )
             {
                 baselineSuffix = metadata.getEvaluation()
                                          .getDefaultBaseline()

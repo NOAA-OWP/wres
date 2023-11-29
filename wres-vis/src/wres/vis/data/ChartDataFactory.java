@@ -681,7 +681,8 @@ public class ChartDataFactory
             SortedSet<MetricDimension> names = diagram.getComponentNames();
             SortedSet<String> qualifiers = diagram.getComponentNameQualifiers();
 
-            DiagramStatistic.Builder builder = diagram.getStatistic().toBuilder();
+            DiagramStatistic.Builder builder = diagram.getStatistic()
+                                                      .toBuilder();
             for ( String qualifier : qualifiers )
             {
                 List<DiagramStatisticComponent> components = new ArrayList<>();

@@ -29,6 +29,7 @@ import wres.io.writing.WriterTestHelper;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Statistics;
+import wres.statistics.generated.SummaryStatistic;
 
 /**
  * Tests the writing of statistics formatted as Comma Separated Values (CSV) Version 2 (CSV2).
@@ -564,7 +565,13 @@ class CsvStatisticsWriterTest
                                                                     .collect( Collectors.toList() ) );
         if ( addSampleQuantile )
         {
-            builder.setSampleQuantile( 0.95 );
+            SummaryStatistic quantile = SummaryStatistic.newBuilder()
+                                                        .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
+                                                        .setDimension( SummaryStatistic.StatisticDimension.RESAMPLED )
+                                                        .setProbability( 0.95 )
+                                                        .build();
+
+            builder.setSummaryStatistic( quantile );
         }
 
         if ( isBaselinePool )
