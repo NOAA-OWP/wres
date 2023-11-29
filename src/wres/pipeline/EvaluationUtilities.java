@@ -1629,8 +1629,8 @@ class EvaluationUtilities
         for ( Pool<TimeSeries<Pair<Double, R>>> next : miniPools )
         {
             // Main data with sufficient samples
-            if ( next.get()
-                     .size() > 1 )
+            if ( !next.get()
+                      .isEmpty() )
             {
                 Pair<Long, Duration> nextMain =
                         EvaluationUtilities.getOptimalBlockSizesForStationaryBootstrap( next.get() );
@@ -1639,9 +1639,9 @@ class EvaluationUtilities
 
             // Baseline data with sufficient samples
             if ( next.hasBaseline()
-                 && next.getBaselineData()
-                        .get()
-                        .size() > 1 )
+                 && !next.getBaselineData()
+                         .get()
+                         .isEmpty() )
             {
                 List<TimeSeries<Pair<Double, R>>> baseline = next.getBaselineData()
                                                                  .get();

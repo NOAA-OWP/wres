@@ -255,10 +255,17 @@ public class FunctionFactory
      *
      * @param probability the probability associated with the quantile
      * @return a function that computes a quantile
+     * @throws IllegalArgumentException if the probability is outside the unit interval
      */
 
     public static ToDoubleFunction<double[]> quantile( double probability )
     {
+        // Valid probability?
+        if ( probability < 0.0 || probability > 1.0 )
+        {
+            throw new IllegalArgumentException( "The supplied probability is invalid : " + probability );
+        }
+
         return samples ->
         {
             // Sort?
@@ -271,6 +278,25 @@ public class FunctionFactory
 
             return quantileFunction.applyAsDouble( probability );
         };
+    }
+
+    /**
+     * Returns a quantile for sampling uncertainty estimation.
+     *
+     * @param probability the probability
+     * @return a quantile function
+     * @throws IllegalArgumentException if the probability is outside the unit interval
+     */
+
+    public static SummaryStatisticFunction quantileForSamplingUncertainty( double probability )
+    {
+        ToDoubleFunction<double[]> quantile = FunctionFactory.quantile( probability );
+        SummaryStatistic statistic = SummaryStatistic.newBuilder()
+                                                     .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
+                                                     .setProbability( probability )
+                                                     .setDimension( SummaryStatistic.StatisticDimension.RESAMPLED )
+                                                     .build();
+        return new SummaryStatisticFunction( statistic, quantile );
     }
 
     /**

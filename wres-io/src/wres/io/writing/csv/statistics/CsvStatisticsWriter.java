@@ -69,6 +69,7 @@ import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.statistics.generated.Statistics;
+import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeWindow;
@@ -478,7 +479,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         StringJoiner description = new StringJoiner( LIST_DELIMITER );
         geometries.stream()
                   .map( Geometry::getDescription )
-                  .forEach( names::add );
+                  .forEach( description::add );
 
         this.append( joiner, description.toString(), true );
 
@@ -494,8 +495,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
      * if this method receives multiple polygons, for example, it will form the union of their point geometries.
      *
      * @param wkts the wkts
-     * @return the multi-part geometry
-     * @throws IllegalArgumentException if the multi-part geometry could not be constructed for whatever reason
+     * @return the multipart geometry
+     * @throws IllegalArgumentException if the multipart geometry could not be constructed for whatever reason
      */
 
     private String getMultiPartWktFromSinglePartWkts( List<String> wkts )
@@ -1789,9 +1790,12 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
     private String getQuantileString( Statistics statistics )
     {
-        if ( statistics.getSampleQuantile() > 0 )
+        if ( statistics.hasSummaryStatistic()
+             && statistics.getSummaryStatistic()
+                          .getDimension() == SummaryStatistic.StatisticDimension.RESAMPLED )
         {
-            return String.valueOf( statistics.getSampleQuantile() );
+            return String.valueOf( statistics.getSummaryStatistic()
+                                             .getProbability() );
         }
 
         return "";

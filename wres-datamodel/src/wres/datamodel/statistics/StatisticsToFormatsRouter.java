@@ -32,6 +32,7 @@ import wres.statistics.generated.Statistics;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DurationDiagramStatistic;
+import wres.statistics.generated.SummaryStatistic;
 
 /**
  * <p>A consumer that routes a collection of statistics to inner consumers that deliver specific output formats. By
@@ -612,9 +613,12 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
     private Double getSampleQuantile( Statistics statistics )
     {
         Double sampleQuantile = null;
-        if( statistics.getSampleQuantile() > 0.0 )
+        if ( statistics.hasSummaryStatistic()
+             && statistics.getSummaryStatistic()
+                          .getDimension() == SummaryStatistic.StatisticDimension.RESAMPLED )
         {
-            sampleQuantile = statistics.getSampleQuantile();
+            sampleQuantile = statistics.getSummaryStatistic()
+                                       .getProbability();
         }
 
         return sampleQuantile;
