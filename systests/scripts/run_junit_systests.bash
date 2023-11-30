@@ -223,7 +223,7 @@ echo "$revisionInfo" >> $TESTINGJ_LOCK_FILE
 # Run the system tests!
 echo "Executing the system tests using this command:" 2>&1 | /usr/bin/tee --append $LOGFILE
 echo "" 2>&1 | /usr/bin/tee --append $LOGFILE
-echo "./gradlew cleanTest test -PversionToTest=$coreRevisionId -PgraphicsVersionToTest=$wresVisRevisionId -PwresZipDirectory=$wresZipDirectory -PwresGraphicsZipDirectory=$wresVisZipDirectory -PtestJvmSystemProperties=\"-Dwres.useDatabase=true -Dwres.useSSL=true -Dwres.username=$WRES_DB_USERNAMEJ -Dwres.url=$WRES_DB_HOSTNAMEJ -Dwres.databaseName=$WRES_DB_NAMEJ -Dwres.dataDirectory=/wres_share/testing -Dwres.logLevel=$WRES_LOG_LEVELJ -Djava.io.tmpdir=./outputs -Dwres.eventsBrokerAddress=localhost -Dwres.eventsBrokerPort=5673 -Dwres.externalGraphics=true -Dwres.startBroker=false\" -PtestJvmSystemPropertiesGraphics=\"-Djava.io.tmpdir=./outputs -Dwres.eventsBrokerAddress=localhost -Dwres.eventsBrokerPort=5673 -Dwres.startBroker=true\" --tests=\"SystemTestSuite\" --$WRES_LOG_LEVELJ 2>&1 | /usr/bin/tee --append $LOGFILE"
+echo "./gradlew cleanTest test -PversionToTest=$coreRevisionId -PgraphicsVersionToTest=$wresVisRevisionId -PwresZipDirectory=$wresZipDirectory -PwresGraphicsZipDirectory=$wresVisZipDirectory -PtestJvmSystemProperties=\"-Dwres.useDatabase=true -Dwres.useSSL=true -Dwres.username=$WRES_DB_USERNAMEJ -Dwres.url=$WRES_DB_HOSTNAMEJ -Dwres.databaseName=$WRES_DB_NAMEJ -Dwres.dataDirectory=/wres_share/testing -Dwres.logLevel=$WRES_LOG_LEVELJ -Djava.io.tmpdir=./outputs -Dwres.eventsBrokerAddress=localhost -Dwres.eventsBrokerPort=5673 -Dwres.externalGraphics=true -Dwres.startBroker=false\" -PtestJvmSystemPropertiesGraphics=\"-Djava.io.tmpdir=./outputs -Dwres.eventsBrokerAddress=localhost -Dwres.eventsBrokerPort=5673 -Dwres.startBroker=true\" --tests=\"SystemTestSuite\" --$WRES_LOG_LEVELJ " 2>&1 | /usr/bin/tee --append $LOGFILE
 
 echo"" 2>&1 | /usr/bin/tee --append $LOGFILE 
 echo "System test now executing *********************************" 2>&1 | /usr/bin/tee --append $LOGFILE
@@ -333,7 +333,7 @@ then
     echo "</notes>" >> redmineTempFile.xml
     # pass the log files and output XML file to below script, it will zip the log files, get their tokens, append all
     # neccessary XML element tags, then upload the zip files and update the Redmine ticket #89538
-    $WRES_DIRJ/install_scripts/get_and_post_file_tokens.bash ${LOGFILE} ${LOGFILE_GRAPHICS} redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE 
+    $WRES_DIRJ/install_scripts/get_and_post_file_tokens.bash ${LOGFILE} ${LOGFILE_GRAPHICS} redmineTempFile.xml ${VLAB_TOKEN_FILE} 2>&1 | /usr/bin/tee --append $LOGFILE 
 
     rm -v redmineTempFile.xml 2>&1 | /usr/bin/tee --append $LOGFILE
 
