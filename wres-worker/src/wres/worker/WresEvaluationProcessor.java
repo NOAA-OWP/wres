@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.http.WebClient;
+import wres.http.WebClientUtils;
 import wres.messages.generated.Job;
 import wres.messages.generated.JobOutput;
 import wres.messages.generated.JobResult;
@@ -80,7 +81,7 @@ class WresEvaluationProcessor implements Callable<Integer>
     private final byte[] jobMessage;
 
     /** A web client to help with reading data from the web. */
-    private static final WebClient WEB_CLIENT = new WebClient();
+    private static final WebClient WEB_CLIENT = new WebClient( WebClientUtils.noTimeoutHttpClient() );
 
     /**
      * The envelope from the message that caused creation of this process,
@@ -266,9 +267,7 @@ class WresEvaluationProcessor implements Callable<Integer>
     private String prepareEvaluationId()
     {
         URI prepareEval = URI.create( String.format( OPEN_EVAL_URI, this.getPort() ) );
-        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval,
-                                                                                   CALL_TIMEOUT,
-                                                                                   RETRY_STATES ) )
+        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval ) )
         {
             if ( evaluationIdRequest.getStatusCode() == HttpURLConnection.HTTP_BAD_REQUEST )
             {
@@ -309,10 +308,7 @@ class WresEvaluationProcessor implements Callable<Integer>
         LOGGER.info( String.format( "Starting evaluation: %s", startEvalURI ) );
 
         try (
-                WebClient.ClientResponse clientResponse = WEB_CLIENT.postToWeb( startEvalURI,
-                                                                                jobMessage,
-                                                                                CALL_TIMEOUT,
-                                                                                RETRY_STATES )
+                WebClient.ClientResponse clientResponse = WEB_CLIENT.postToWeb( startEvalURI, jobMessage )
         )
         {
             LOGGER.info( "Evaluation returned" );
@@ -344,10 +340,7 @@ class WresEvaluationProcessor implements Callable<Integer>
     private int manipulateDatabase( String uriToCall )
     {
         URI prepareEval = URI.create( String.format( uriToCall, this.getPort() ) );
-        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval,
-                                                                                   jobMessage,
-                                                                                   CALL_TIMEOUT,
-                                                                                   RETRY_STATES ) )
+        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval, jobMessage ) )
         {
             if ( evaluationIdRequest.getStatusCode() != HttpURLConnection.HTTP_OK )
             {
@@ -371,8 +364,7 @@ class WresEvaluationProcessor implements Callable<Integer>
     private void closeEvaluation()
     {
         try ( WebClient.ClientResponse clientResponse =
-                      WEB_CLIENT.postToWeb( URI.create( String.format( CLOSE_EVAL_URI, this.getPort() ) ),
-                                            CALL_TIMEOUT, RETRY_STATES ) )
+                      WEB_CLIENT.postToWeb( URI.create( String.format( CLOSE_EVAL_URI, this.getPort() ) ) ) )
         {
             if ( clientResponse.getStatusCode() != HttpURLConnection.HTTP_OK )
             {

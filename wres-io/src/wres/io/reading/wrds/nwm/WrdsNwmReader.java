@@ -37,6 +37,7 @@ import java.util.stream.Stream;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
 
+import okhttp3.OkHttpClient;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.tuple.Pair;
@@ -51,6 +52,7 @@ import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.TimeInterval;
+import wres.http.WebClientUtils;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
@@ -78,9 +80,6 @@ public class WrdsNwmReader implements TimeSeriesReader
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( WrdsNwmReader.class );
 
-    /** Trust manager for TLS connections to the WRDS services. */
-    private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
-
     /** Forward slash character. */
     private static final String SLASH = "/";
 
@@ -94,11 +93,19 @@ public class WrdsNwmReader implements TimeSeriesReader
     /** Message string. */
     private static final String WRDS_NWM = "WRDS NWM";
 
+    /** Custom HttpClient to use */
+    private static final OkHttpClient OK_HTTP_CLIENT;
+
     static
     {
         try
         {
-            SSL_CONTEXT = ReaderUtilities.getSslContextTrustingDodSignerForWrds();
+            Pair<SSLContext, X509TrustManager> sslContext = ReaderUtilities.getSslContextTrustingDodSignerForWrds();
+            OK_HTTP_CLIENT = WebClientUtils.defaultTimeoutHttpClient()
+                                           .newBuilder()
+                                           .sslSocketFactory( sslContext.getKey().getSocketFactory(),
+                                                              sslContext.getRight() )
+                                           .build();
         }
         catch ( PreIngestException e )
         {
@@ -108,7 +115,7 @@ public class WrdsNwmReader implements TimeSeriesReader
     }
 
     /** A web client to help with reading data from the web. */
-    private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT );
+    private static final WebClient WEB_CLIENT = new WebClient( OK_HTTP_CLIENT );
 
     /** Declaration, which is used to chunk requests. Null if no chunking is required. */
     private final EvaluationDeclaration declaration;
@@ -686,7 +693,7 @@ public class WrdsNwmReader implements TimeSeriesReader
             try
             {
                 // Stream us closed at a higher level
-                WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri );
+                WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() );
                 int httpStatus = response.getStatusCode();
 
                 // Read an error if possible

@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.http.WebClientUtils;
 import wres.io.reading.DataSource;
 import wres.io.reading.ReadException;
 import wres.io.reading.ReaderUtilities;
@@ -73,7 +74,7 @@ public class NwisReader implements TimeSeriesReader
     private static final WatermlReader WATERML_READER = WatermlReader.of();
 
     /** A web client to help with reading data from the web. */
-    private static final WebClient WEB_CLIENT = new WebClient();
+    private static final WebClient WEB_CLIENT = new WebClient( WebClientUtils.defaultTimeoutHttpClient() );
 
     /** Message string. */
     private static final String USGS_NWIS = "USGS NWIS";
@@ -459,7 +460,7 @@ public class NwisReader implements TimeSeriesReader
             if ( ReaderUtilities.isWebSource( uri ) )
             {
                 // Stream is closed at a higher level
-                WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri );
+                WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() );
                 int httpStatus = response.getStatusCode();
 
                 if ( httpStatus == 404 )
