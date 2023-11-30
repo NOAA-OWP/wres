@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.http.WebClient;
+import wres.http.WebClientUtils;
 import wres.messages.BrokerHelper;
 
 /**
@@ -48,12 +49,10 @@ public class Worker
 
     private static final String SERVER_READY_FOR_WORK_CHECK_URI = "http://localhost:%d/evaluation/readyForWork";
 
-    private static final Duration CALL_TIMEOUT = Duration.ofMinutes( 1 );
-
     private static final int DEFAULT_PORT = 8010;
 
     /** A web client to help with reading data from the web. */
-    private static final WebClient WEB_CLIENT = new WebClient();
+    private static final WebClient WEB_CLIENT = new WebClient( WebClientUtils.defaultTimeoutHttpClient() );
 
     /**
      * Expects exactly one arg with a path to WRES executable
@@ -250,7 +249,7 @@ public class Worker
     {
         URI uri = new URI( String.format( SERVER_READY_FOR_WORK_CHECK_URI, DEFAULT_PORT ) );
         try (
-                WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( uri, CALL_TIMEOUT );
+                WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() )
         )
         {
             return fromWeb.getStatusCode() == HttpURLConnection.HTTP_OK;

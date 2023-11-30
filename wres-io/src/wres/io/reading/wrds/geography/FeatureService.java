@@ -20,6 +20,7 @@ import java.util.StringJoiner;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509TrustManager;
 
+import okhttp3.OkHttpClient;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -30,6 +31,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.FeatureAuthority;
+import wres.http.WebClientUtils;
 import wres.io.ingesting.PreIngestException;
 import wres.io.reading.ReadException;
 import wres.io.reading.ReaderUtilities;
@@ -50,14 +52,21 @@ import wres.http.WebClient;
 
 class FeatureService
 {
-    private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
     private static final String AND_MISSING = " and missing ";
+
+    /** Custom HttpClient to use */
+    private static final OkHttpClient OK_HTTP_CLIENT;
 
     static
     {
         try
         {
-            SSL_CONTEXT = ReaderUtilities.getSslContextTrustingDodSignerForWrds();
+            Pair<SSLContext, X509TrustManager> sslContext = ReaderUtilities.getSslContextTrustingDodSignerForWrds();
+            OK_HTTP_CLIENT = WebClientUtils.defaultTimeoutHttpClient()
+                                           .newBuilder()
+                                           .sslSocketFactory( sslContext.getKey().getSocketFactory(),
+                                                              sslContext.getRight() )
+                                           .build();
         }
         catch ( PreIngestException e )
         {
@@ -66,7 +75,7 @@ class FeatureService
         }
     }
 
-    private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT );
+    private static final WebClient WEB_CLIENT = new WebClient( OK_HTTP_CLIENT );
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private static final String DELIMITER = "/";
@@ -464,7 +473,7 @@ class FeatureService
 
     private static byte[] readFromWeb( URI uri )
     {
-        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri ) )
+        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() ) )
         {
             if ( response.getStatusCode() != 200 )
             {

@@ -25,6 +25,7 @@ import javax.net.ssl.X509TrustManager;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import okhttp3.OkHttpClient;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.client.utils.URIBuilder;
@@ -39,6 +40,7 @@ import wres.config.yaml.components.ThresholdOrientation;
 import wres.config.yaml.components.ThresholdSource;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.units.UnitMapper;
+import wres.http.WebClientUtils;
 import wres.io.reading.ThresholdReader;
 import wres.io.reading.ThresholdReadingException;
 import wres.io.reading.wrds.geography.Location;
@@ -64,9 +66,6 @@ public class WrdsThresholdReader implements ThresholdReader
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( WrdsThresholdReader.class );
 
-    /** The context for establishing a secure connection. */
-    private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
-
     /** Path delimiter. */
     private static final String PATH_DELIM = "/";
 
@@ -75,12 +74,19 @@ public class WrdsThresholdReader implements ThresholdReader
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
 
-    // Load the SSL/TLS context upfront
+    /** Custom HttpClient to use */
+    private static final OkHttpClient OK_HTTP_CLIENT;
+
     static
     {
         try
         {
-            SSL_CONTEXT = ReaderUtilities.getSslContextTrustingDodSignerForWrds();
+            Pair<SSLContext, X509TrustManager> sslContext = ReaderUtilities.getSslContextTrustingDodSignerForWrds();
+            OK_HTTP_CLIENT = WebClientUtils.defaultTimeoutHttpClient()
+                                           .newBuilder()
+                                           .sslSocketFactory( sslContext.getKey().getSocketFactory(),
+                                                              sslContext.getRight() )
+                                           .build();
         }
         catch ( PreIngestException e )
         {
@@ -90,7 +96,7 @@ public class WrdsThresholdReader implements ThresholdReader
     }
 
     /** Client for web connections. */
-    private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT, true );
+    private static final WebClient WEB_CLIENT = new WebClient( true, OK_HTTP_CLIENT );
 
     /** Location request count, i.e., chunk size. */
     private final int locationRequestCount;
@@ -462,7 +468,7 @@ public class WrdsThresholdReader implements ThresholdReader
      */
     private static byte[] getResponseFromWeb( URI inputAddress ) throws IOException
     {
-        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( inputAddress ) )
+        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( inputAddress, WebClientUtils.getDefaultRetryStates() ) )
         {
 
             if ( response.getStatusCode() >= 400 && response.getStatusCode() < 500 )
@@ -612,7 +618,7 @@ public class WrdsThresholdReader implements ThresholdReader
             }
             else if ( LOGGER.isDebugEnabled() )
             {
-                if( Objects.isNull( featureName ) )
+                if ( Objects.isNull( featureName ) )
                 {
                     featuresNotRequired.add( location.toString() );
                 }

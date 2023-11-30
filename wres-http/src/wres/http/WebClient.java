@@ -19,9 +19,6 @@ import java.util.Objects;
 import java.util.logging.Level;
 import java.util.zip.GZIPInputStream;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.X509TrustManager;
-
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -30,7 +27,6 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 
 import okhttp3.ResponseBody;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,20 +47,7 @@ public class WebClient
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger( WebClient.class );
-    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds( 10 );
-    private static final Duration REQUEST_TIMEOUT = Duration.ofMinutes( 20 );
 
-    // Maybe retry should be hard-coded to something, but it seems like at least
-    // one connection timeout and one request timeout should be tolerated, thus
-    // the need to add the two timeouts.
-    private static final Duration MAX_RETRY_DURATION = CONNECT_TIMEOUT.plus( REQUEST_TIMEOUT )
-                                                                      .multipliedBy( 2 );
-    private static final List<Integer> DEFAULT_RETRY_STATES = List.of( 500,
-                                                                       502,
-                                                                       503,
-                                                                       504,
-                                                                       523,
-                                                                       524 );
     private final OkHttpClient httpClient;
     private final boolean trackTimings;
     private final List<TimingInformation> timingInformation = new ArrayList<>( 1 );
@@ -76,36 +59,28 @@ public class WebClient
      */
     public WebClient( boolean trackTimings )
     {
-        this.httpClient = new OkHttpClient().newBuilder()
-                                            .followRedirects( true )
-                                            .connectTimeout( CONNECT_TIMEOUT )
-                                            .callTimeout( REQUEST_TIMEOUT )
-                                            .pingInterval( Duration.ofSeconds( 10 ) )
-                                            .readTimeout( REQUEST_TIMEOUT )
-                                            .build();
+        this.httpClient = WebClientUtils.defaultHttpClient();
         this.trackTimings = trackTimings;
         this.setUserAgent();
     }
 
     /**
-     * Creates an instance
-     * @param sslGoo the TLS configuration
+     * Creates an instance.
      * @param trackTimings whether to track the timings
      */
-    public WebClient( Pair<SSLContext, X509TrustManager> sslGoo, boolean trackTimings )
+    public WebClient( boolean trackTimings, OkHttpClient okHttpClient )
     {
-        Objects.requireNonNull( sslGoo );
-        this.httpClient = new OkHttpClient().newBuilder()
-                                            .followRedirects( true )
-                                            .connectTimeout( CONNECT_TIMEOUT )
-                                            .callTimeout( REQUEST_TIMEOUT )
-                                            .readTimeout( REQUEST_TIMEOUT )
-                                            .sslSocketFactory( sslGoo.getKey()
-                                                                     .getSocketFactory(),
-                                                               sslGoo.getRight() )
-                                            .build();
+        this.httpClient = okHttpClient;
         this.trackTimings = trackTimings;
         this.setUserAgent();
+    }
+
+    /**
+     * Creates an instance.
+     */
+    public WebClient( OkHttpClient okHttpClient )
+    {
+        this( false, okHttpClient );
     }
 
     /**
@@ -117,25 +92,7 @@ public class WebClient
     }
 
     /**
-     * Creates an instance
-     * @param sslGoo the TLS configuration
-     */
-    public WebClient( Pair<SSLContext, X509TrustManager> sslGoo )
-    {
-        this( sslGoo, false );
-    }
-
-    /**
-     * @return an HTTP client
-     */
-    private OkHttpClient getHttpClient()
-    {
-        return this.httpClient;
-    }
-
-    /**
-     * Get a pair of HTTP status and InputStream of body of given URI, using
-     * the default retry http status codes.
+     * Get a pair of HTTP status and InputStream of body of given URI
      * @param uri The URI to GET and transform the body into an InputStream.
      * @return A pair of the HTTP status (left) and InputStream of body (right).
      *         NullInputStream on right when 4xx response.
@@ -147,53 +104,36 @@ public class WebClient
 
     public ClientResponse getFromWeb( URI uri ) throws IOException
     {
-        return this.getFromWeb( uri, DEFAULT_RETRY_STATES, MAX_RETRY_DURATION );
-    }
+        Objects.requireNonNull( uri );
 
-    /**
-     * Get a pair of HTTP status and InputStream of body of given URI, using
-     * the default retry http status codes.
-     * @param uri The URI to GET and transform the body into an InputStream.
-     * @param timeout custom timeout for the call
-     * @return A pair of the HTTP status (left) and InputStream of body (right).
-     *         NullInputStream on right when 4xx response.
-     * @throws IOException When sending/receiving fails; when non-2xx non-4xx
-     *                     response, when wrapping response to decompress fails.
-     * @throws IllegalArgumentException When non-http uri is passed in.
-     * @throws NullPointerException When any argument is null.
-     */
+        if ( !uri.getScheme().startsWith( "http" ) )
+        {
+            throw new IllegalArgumentException(
+                    "Must pass an http uri, got " + uri );
+        }
+        LOGGER.debug( "getFromWeb {}", uri );
 
-    public ClientResponse getFromWeb( URI uri, Duration timeout ) throws IOException
-    {
-        return this.getFromWeb( uri, DEFAULT_RETRY_STATES, timeout );
-    }
+        WebClientEvent monitorEvent = WebClientEvent.of( uri ); // Monitor with JFR
 
-    /**
-     * Get a pair of HTTP status and InputStream of body of given URI.
-     * @param uri The URI to GET and transform the body into an InputStream.
-     * @param retryOn A list of http status codes that should cause a retry.
-     * @param timeout on a call
-     * @return A pair of the HTTP status (left) and InputStream of body (right).
-     *         NullInputStream on right when 4xx response.
-     * @throws IOException When sending/receiving fails; when non-2xx non-4xx
-     *                     response, when wrapping response to decompress fails.
-     * @throws IllegalArgumentException When non-http uri is passed in.
-     * @throws NullPointerException When any argument is null.
-     */
+        Request request = new Request.Builder()
+                .url( uri.toURL() )
+                .header( "Accept-Encoding", "gzip" )
+                .header( "User-Agent", this.getUserAgent() )
+                .build();
 
-    public ClientResponse getFromWeb( URI uri, List<Integer> retryOn, Duration timeout )
-            throws IOException
-    {
-        return this.getFromWeb( uri, retryOn, timeout, false );
+        monitorEvent.begin();
+        Instant start = Instant.now();
+        int retryCount = 0;
+
+        Response httpResponse = tryRequest( request, retryCount );
+
+        return this.validateResponse( httpResponse, uri, retryCount, monitorEvent, start );
     }
 
     /**
      * Get a pair of HTTP status and InputStream of body of given URI.
-     * TODO: This is a workaround as this class was leveraged poorly for all http traffic, refactor ticket #121266
      * @param uri The URI to GET and transform the body into an InputStream.
-     * @param retryOn A list of http status codes that should cause a retry.
-     * @param timeout on a call
-     * @param noTimeout wether the request will timeout
+     * @param retryOn A list of http status codes that should cause a custom retry.
      * @return A pair of the HTTP status (left) and InputStream of body (right).
      *         NullInputStream on right when 4xx response.
      * @throws IOException When sending/receiving fails; when non-2xx non-4xx
@@ -202,7 +142,7 @@ public class WebClient
      * @throws NullPointerException When any argument is null.
      */
 
-    public ClientResponse getFromWeb( URI uri, List<Integer> retryOn, Duration timeout, boolean noTimeout )
+    public ClientResponse getFromWeb( URI uri, List<Integer> retryOn )
             throws IOException
     {
         Objects.requireNonNull( uri );
@@ -213,7 +153,6 @@ public class WebClient
             throw new IllegalArgumentException(
                     "Must pass an http uri, got " + uri );
         }
-
         LOGGER.debug( "getFromWeb {}", uri );
 
         WebClientEvent monitorEvent = WebClientEvent.of( uri ); // Monitor with JFR
@@ -223,6 +162,7 @@ public class WebClient
             boolean retry = true;
             long sleepMillis = 1000;
             int retryCount = 0;
+            Duration timeout = getMaxRetryDuration();
 
             Request request = new Request.Builder()
                     .url( uri.toURL() )
@@ -231,20 +171,9 @@ public class WebClient
                     .build();
 
             monitorEvent.begin();
-
             Instant start = Instant.now();
 
-            OkHttpClient client = this.httpClient;
-            if ( noTimeout )
-            {
-                // set to not timeout on post requests (We have very long evaluations and dont want to timeout the call)
-                client = this.httpClient.newBuilder()
-                                        .callTimeout( Duration.ZERO )
-                                        .readTimeout( Duration.ZERO )
-                                        .build();
-            }
-
-            Response httpResponse = tryRequest( request, retryCount, client );
+            Response httpResponse = tryRequest( request, retryCount );
 
             while ( retry )
             {
@@ -261,7 +190,7 @@ public class WebClient
                     }
 
                     Thread.sleep( sleepMillis );
-                    httpResponse = tryRequest( request, retryCount, client );
+                    httpResponse = tryRequest( request, retryCount );
                     Instant now = Instant.now();
                     retry = start.plus( timeout )
                                  .isAfter( now );
@@ -289,7 +218,6 @@ public class WebClient
     /**
      * Launches a post request against a given URI.
      * @param uri The URI to POST
-     * @param timeout the timeout of this call
      * @return A pair of the HTTP status (left) and InputStream of body (right).
      *         NullInputStream on right when 4xx response.
      * @throws IOException When sending/receiving fails; when non-2xx non-4xx
@@ -298,17 +226,16 @@ public class WebClient
      * @throws NullPointerException When any argument is null.
      */
 
-    public ClientResponse postToWeb( URI uri, Duration timeout, List<Integer> retryStates )
+    public ClientResponse postToWeb( URI uri )
             throws IOException
     {
-        return postToWeb( uri, new byte[0], timeout, retryStates );
+        return postToWeb( uri, new byte[0] );
     }
 
     /**
      * Post a pair of HTTP status and InputStream of body of given URI.
      * @param uri The URI to POST and transform the body into an InputStream.
      * @param jobMessage The body contents we want to send in a post request
-     * @param timeout the timeout of this call
      * @return A pair of the HTTP status (left) and InputStream of body (right).
      *         NullInputStream on right when 4xx response.
      * @throws IOException When sending/receiving fails; when non-2xx non-4xx
@@ -317,11 +244,11 @@ public class WebClient
      * @throws NullPointerException When any argument is null.
      */
 
-    public ClientResponse postToWeb( URI uri, byte[] jobMessage, Duration timeout, List<Integer> retryStates )
+    public ClientResponse postToWeb( URI uri, byte[] jobMessage )
             throws IOException
     {
         Objects.requireNonNull( uri );
-        Objects.requireNonNull( retryStates );
+        int retryCount = 0;
 
         if ( !uri.getScheme().startsWith( "http" ) )
         {
@@ -334,94 +261,18 @@ public class WebClient
         WebClientEvent monitorEvent = WebClientEvent.of( uri ); // Monitor with JFR
 
         RequestBody body = RequestBody.create( jobMessage, MediaType.parse( "text/plain; charset=utf-8" ) );
+        Request request = new Request.Builder()
+                .url( uri.toURL() )
+                .post( body )
+                .header( "Content-Type", "text/xml" )
+                .build();
 
-        try
-        {
-            boolean retry = true;
-            long sleepMillis = 1000;
-            int retryCount = 0;
+        monitorEvent.begin();
+        Instant start = Instant.now();
 
-            Request request = new Request.Builder()
-                    .url( uri.toURL() )
-                    .post( body )
-                    .header( "Content-Type", "text/xml" )
-                    //                    .header( "User-Agent", this.getUserAgent() )
-                    .build();
+        Response httpResponse = tryRequest( request, retryCount );
 
-
-            monitorEvent.begin();
-
-            Instant start = Instant.now();
-
-            // set to not timeout on post requests (We have very long evaluations and dont want to timeout the call)
-            OkHttpClient noTimeoutClient = this.httpClient.newBuilder()
-                                                          .callTimeout( Duration.ZERO )
-                                                          .readTimeout( Duration.ZERO )
-                                                          .build();
-
-            Response httpResponse = tryRequest( request, retryCount, noTimeoutClient );
-
-            while ( retry )
-            {
-                // the status is something we need to retry:
-                if ( !Objects.isNull( httpResponse )
-                     && retryStates.contains( httpResponse.code() ) )
-                {
-
-                    LOGGER.warn( "Retrying {} in a bit due to HTTP status {}.",
-                                 uri,
-                                 httpResponse.code() );
-
-                    Thread.sleep( sleepMillis );
-                    httpResponse = tryRequest( request, retryCount, noTimeoutClient );
-                    Instant now = Instant.now();
-                    retry = start.plus( timeout )
-                                 .isAfter( now );
-
-                    // Exponential backoff to be nice to the server.
-                    sleepMillis *= 2;
-                    retryCount++;
-                }
-                else
-                {
-                    retry = false;
-                }
-            }
-
-            // Do custome validation as the validate function throws errors on 500
-            Instant end = Instant.now();
-            Duration duration = Duration.between( start, end );
-
-            if ( Objects.nonNull( httpResponse )
-                 && Objects.nonNull( httpResponse.body() ) )
-            {
-                int httpStatus = httpResponse.code();
-
-                monitorEvent.setHttpResponseCode( httpStatus );
-                monitorEvent.setRetryCount( retryCount );
-                monitorEvent.commit();
-
-                LOGGER.debug( "Got response from {} in {}.",
-                              uri,
-                              duration );
-            }
-            else
-            {
-                throw new IOException( "Failed to get data from "
-                                       + uri
-                                       + " due to repeated failures (see "
-                                       + "WARN messages above) after "
-                                       + duration );
-            }
-
-            return new ClientResponse( httpResponse );
-        }
-        catch ( InterruptedException ie )
-        {
-            LOGGER.warn( "Interrupted while getting data from {}", uri, ie );
-            Thread.currentThread().interrupt();
-            return new ClientResponse( -1 );
-        }
+        return this.validateResponse( httpResponse, uri, retryCount, monitorEvent, start );
     }
 
     /**
@@ -466,6 +317,12 @@ public class WebClient
                               uri,
                               duration );
             }
+            else if ( httpStatus >= 500 && httpStatus < 600 )
+            {
+                LOGGER.debug( "Got server error from {} in {}.",
+                              uri,
+                              duration );
+            }
             else
             {
                 throw new IOException( "Failed to get data from "
@@ -496,25 +353,13 @@ public class WebClient
      */
     private Response tryRequest( Request request, int retryCount )
     {
-        return tryRequest( request, retryCount, this.getHttpClient() );
-    }
-
-    /**
-     *
-     * @param request The request to attempt
-     * @param retryCount The number of times this request has been retried
-     * @param httpClient Override for the httpClient
-     * @return The response if successful, null if retriable.
-     */
-    private Response tryRequest( Request request, int retryCount, OkHttpClient httpClient )
-    {
         HttpUrl uri = request.url();
         TimingInformation timing = new TimingInformation( uri );
         Response httpResponse = null;
 
         try
         {
-            httpResponse = httpClient.newCall( request )
+            httpResponse = this.httpClient.newCall( request )
                                      .execute();
 
             if ( LOGGER.isDebugEnabled() )
@@ -579,6 +424,20 @@ public class WebClient
     private String getUserAgent()
     {
         return this.userAgent;
+    }
+
+
+    /**
+     * Method to calculate total retry time for custom retry logic
+     *
+     * @return A Duration we should retry for
+     */
+    private Duration getMaxRetryDuration()
+    {
+        // Fairly arbitrary based on experience.
+        // Take all custom timeouts and multiply by 2 to allow 2 "failures" of each
+        return Duration.ofMillis( ( this.httpClient.callTimeoutMillis()
+                                    + this.httpClient.connectTimeoutMillis() ) * 2L );
     }
 
     /**
