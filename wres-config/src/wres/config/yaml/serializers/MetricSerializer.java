@@ -91,8 +91,10 @@ public class MetricSerializer extends JsonSerializer<Metric>
         if ( !parameters.summaryStatistics()
                         .isEmpty() )
         {
-            List<String> mapped = parameters.summaryStatistics().stream()
-                                            .map( MetricConstants::name )
+            List<String> mapped = parameters.summaryStatistics()
+                                            .stream()
+                                            .map( n -> n.getStatistic()
+                                                        .name() )
                                             .map( DeclarationUtilities::fromEnumName )
                                             .toList();
             writer.writeObjectField( "summary_statistics", mapped );

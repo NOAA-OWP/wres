@@ -101,6 +101,8 @@ public class DatabaseSettings
         this.databaseType = DatabaseType.valueOf( databaseType );
     }
 
-    // Dummy class to allow javadoc task to find the builder created by lombok
+    /**
+     * Dummy class to allow javadoc task to find the builder created by lombok
+     */
     public static class DatabaseSettingsBuilder {}  // NOSONAR
 }

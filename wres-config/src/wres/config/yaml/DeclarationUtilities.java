@@ -689,20 +689,20 @@ public class DeclarationUtilities
     public static Set<String> getFeatureNamesFor( Set<GeometryTuple> features, DatasetOrientation orientation )
     {
         return switch ( orientation )
-                {
-                    case LEFT -> features.stream()
-                                         .map( GeometryTuple::getLeft )
-                                         .map( Geometry::getName )
-                                         .collect( Collectors.toSet() );
-                    case RIGHT -> features.stream()
-                                          .map( GeometryTuple::getRight )
-                                          .map( Geometry::getName )
-                                          .collect( Collectors.toSet() );
-                    case BASELINE -> features.stream()
-                                             .map( GeometryTuple::getBaseline )
-                                             .map( Geometry::getName )
-                                             .collect( Collectors.toSet() );
-                };
+        {
+            case LEFT -> features.stream()
+                                 .map( GeometryTuple::getLeft )
+                                 .map( Geometry::getName )
+                                 .collect( Collectors.toSet() );
+            case RIGHT -> features.stream()
+                                  .map( GeometryTuple::getRight )
+                                  .map( Geometry::getName )
+                                  .collect( Collectors.toSet() );
+            case BASELINE -> features.stream()
+                                     .map( GeometryTuple::getBaseline )
+                                     .map( Geometry::getName )
+                                     .collect( Collectors.toSet() );
+        };
     }
 
     /**
@@ -720,15 +720,15 @@ public class DeclarationUtilities
         Objects.requireNonNull( orientation );
 
         return switch ( orientation )
-                {
-                    case LEFT -> evaluation.left()
-                                           .featureAuthority();
-                    case RIGHT -> evaluation.right()
-                                            .featureAuthority();
-                    case BASELINE -> evaluation.baseline()
-                                               .dataset()
-                                               .featureAuthority();
-                };
+        {
+            case LEFT -> evaluation.left()
+                                   .featureAuthority();
+            case RIGHT -> evaluation.right()
+                                    .featureAuthority();
+            case BASELINE -> evaluation.baseline()
+                                       .dataset()
+                                       .featureAuthority();
+        };
     }
 
     /**
@@ -822,10 +822,10 @@ public class DeclarationUtilities
         Objects.requireNonNull( dataType );
 
         return switch ( dataType )
-                {
-                    case ANALYSES, SIMULATIONS, OBSERVATIONS -> ReferenceTime.ReferenceTimeType.ANALYSIS_START_TIME;
-                    case ENSEMBLE_FORECASTS, SINGLE_VALUED_FORECASTS -> ReferenceTime.ReferenceTimeType.T0;
-                };
+        {
+            case ANALYSES, SIMULATIONS, OBSERVATIONS -> ReferenceTime.ReferenceTimeType.ANALYSIS_START_TIME;
+            case ENSEMBLE_FORECASTS, SINGLE_VALUED_FORECASTS -> ReferenceTime.ReferenceTimeType.T0;
+        };
     }
 
     /**
@@ -2004,7 +2004,11 @@ public class DeclarationUtilities
                                .isEmpty() )
                 {
                     Set<MetricConstants> nextSummaryStats = metric.parameters()
-                                                                  .summaryStatistics();
+                                                                  .summaryStatistics()
+                                                                  .stream()
+                                                                  .map( n -> MetricConstants.valueOf( n.getStatistic()
+                                                                                                       .name() ) )
+                                                                  .collect( Collectors.toSet() );
                     MetricConstants parent = metric.name();
                     Set<Metric> summaryExpanded =
                             nextSummaryStats.stream()

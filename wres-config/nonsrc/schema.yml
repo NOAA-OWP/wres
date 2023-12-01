@@ -199,6 +199,16 @@ definitions:
                 - "$ref": "#/definitions/TimeSeriesMetricWithParameters"
             minItems: 1
             uniqueItems: true
+      summary_statistics:
+        type: array
+        items:
+          anyOf:
+            - "$ref": "#/definitions/SummaryStatisticsEnum"
+            - "$ref": "#/definitions/SummaryStatisticsWithParametersEnum"
+            - "$ref": "#/definitions/Histogram"
+            - "$ref": "#/definitions/Quantiles"
+        minItems: 1
+        uniqueItems: true
       duration_format:
         "$ref": "#/definitions/DurationEnum"
       decimal_format:
@@ -593,16 +603,22 @@ definitions:
         type: integer
         minimum: 1
       quantiles:
-        type: array
-        items:
-          type: number
-          minimum: 0.0
-          maximum: 1.0
-          uniqueItems: true
-          minItems: 1
+        "$ref": "#/definitions/QuantilesList"
     required:
       - sample_size
       - quantiles
+
+  QuantilesList:
+    title: A list of quantiles from a probability distribution.
+    description: "A list of probabilities that correspond to quantiles from a 
+    probability distribution."
+    type: array
+    items:
+      type: number
+      minimum: 0.0
+      maximum: 1.0
+      uniqueItems: true
+      minItems: 1
 
   Feature:
     title: A geospatial feature.
@@ -972,6 +988,33 @@ definitions:
     required:
       - alias
       - unit
+          
+  Quantiles:
+    title: Quantile statistics.
+    description: Quantile statistics for a variable.
+    type: object
+    additionalProperties: false
+    properties:
+      name:
+        const: "quantiles"
+      probabilities:
+        "$ref": "#/definitions/QuantilesList"
+    required:
+      - name
+
+  Histogram:
+    title: Histogram statistics.
+    description: Histogram statistics for a variable.
+    type: object
+    additionalProperties: false
+    properties:
+      name:
+        const: "histogram"
+      bins:
+        type: integer
+        minimum: 2
+    required:
+      - name       
 
   Thresholds:
     title: An ordinary set of thresholds.
@@ -1256,10 +1299,10 @@ definitions:
     properties:
       name:
         "$ref": "#/definitions/TimeSeriesMetricEnum"
+      thresholds:
+        "$ref": "#/definitions/Thresholds"
       probability_thresholds:
         "$ref": "#/definitions/ProbabilityThresholds"
-      value_thresholds:
-        "$ref": "#/definitions/Thresholds"
       minimum_sample_size:
         type: integer
       summary_statistics:
@@ -1267,6 +1310,7 @@ definitions:
         items:
           "$ref": "#/definitions/SummaryStatisticsEnum"
         minItems: 1
+        uniqueItems: true
     required:
       - name
 
@@ -1568,6 +1612,12 @@ definitions:
       - maximum
       - standard deviation
       - mean absolute
+
+  SummaryStatisticsWithParametersEnum:
+    type: string
+    enum:
+      - quantiles
+      - histogram
 
   ThresholdDataTypeEnum:
     type: string

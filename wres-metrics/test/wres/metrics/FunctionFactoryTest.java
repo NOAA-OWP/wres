@@ -217,8 +217,11 @@ class FunctionFactoryTest
     @Test
     void testHistogram()
     {
-        DiagramStatisticFunction<double[]> histogram =
-                FunctionFactory.histogram( 5, SummaryStatistic.StatisticDimension.FEATURES );
+        SummaryStatistic parameters = SummaryStatistic.newBuilder()
+                                                      .setHistogramBins( 5 )
+                                                      .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                      .build();
+        DiagramStatisticFunction<double[]> histogram = FunctionFactory.histogram( parameters );
 
         double[] data = new double[] { 1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6 };
         Map<DiagramStatisticFunction.DiagramComponentName, String> p =
@@ -277,10 +280,11 @@ class FunctionFactoryTest
     @Test
     void testHistogramForDurations()
     {
-        DiagramStatisticFunction<Duration[]> histogram =
-                FunctionFactory.histogram( 5,
-                                           ChronoUnit.SECONDS,
-                                           SummaryStatistic.StatisticDimension.FEATURES );
+        SummaryStatistic parameters = SummaryStatistic.newBuilder()
+                                                      .setHistogramBins( 5 )
+                                                      .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                      .build();
+        DiagramStatisticFunction<Duration[]> histogram = FunctionFactory.histogram( parameters, ChronoUnit.SECONDS );
 
         Duration one = Duration.ofHours( 1 );
         Duration two = Duration.ofHours( 2 );

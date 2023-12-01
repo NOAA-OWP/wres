@@ -54,6 +54,7 @@ import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.SummaryStatistic;
 
 /**
  * <p>Interpolates missing declaration from the other declaration present. The interpolation of missing declaration may
@@ -168,6 +169,8 @@ public class DeclarationInterpolator
         DeclarationInterpolator.interpolateThresholdsForIndividualMetrics( adjustedDeclarationBuilder );
         // Interpolate metric parameters
         DeclarationInterpolator.interpolateMetricParameters( adjustedDeclarationBuilder );
+        // Interpolate summary statistics
+        DeclarationInterpolator.interpolateSummaryStatistics( adjustedDeclarationBuilder );
         // Interpolate output formats where none exist
         DeclarationInterpolator.interpolateOutputFormatsWhenNoneDeclared( adjustedDeclarationBuilder );
 
@@ -550,7 +553,9 @@ public class DeclarationInterpolator
                 metrics.addAll( singleValued );
 
                 // Probability or value thresholds? Then add dichotomous metrics
-                if ( !builder.probabilityThresholds().isEmpty() || !builder.thresholds().isEmpty() )
+                if ( !builder.probabilityThresholds()
+                             .isEmpty() || !builder.thresholds()
+                                                   .isEmpty() )
                 {
                     Set<MetricConstants> dichotomous = MetricConstants.SampleDataGroup.DICHOTOMOUS.getMetrics();
                     metrics.addAll( dichotomous );
@@ -959,29 +964,81 @@ public class DeclarationInterpolator
     private static void interpolateMetricParameters( EvaluationDeclarationBuilder builder )
     {
         wres.statistics.generated.Pool.EnsembleAverageType topType = builder.ensembleAverageType();
-        if ( Objects.nonNull( topType ) )
-        {
-            Set<Metric> adjusted = new HashSet<>();
-            for ( Metric next : builder.metrics() )
-            {
-                MetricBuilder metricBuilder = MetricBuilder.builder( next );
-                MetricParametersBuilder parBuilder = MetricParametersBuilder.builder();
-                if ( Objects.nonNull( next.parameters() ) )
-                {
-                    parBuilder = MetricParametersBuilder.builder( next.parameters() );
-                }
-                Pool.EnsembleAverageType parType = parBuilder.ensembleAverageType();
-                if ( Objects.isNull( parType ) )
-                {
-                    parBuilder.ensembleAverageType( topType );
-                }
-                metricBuilder.parameters( parBuilder.build() );
-                adjusted.add( metricBuilder.build() );
-            }
 
-            // Set the adjusted metrics
-            builder.metrics( adjusted );
+        Set<Metric> adjusted = new HashSet<>();
+        for ( Metric next : builder.metrics() )
+        {
+            MetricBuilder metricBuilder = MetricBuilder.builder( next );
+            MetricParametersBuilder parBuilder = MetricParametersBuilder.builder();
+
+            if ( Objects.nonNull( next.parameters() ) )
+            {
+                parBuilder = MetricParametersBuilder.builder( next.parameters() );
+
+                // Interpolate the summary statistic dimension for timing error summary statistics
+                if ( Objects.nonNull( parBuilder.summaryStatistics() ) )
+                {
+                    Set<SummaryStatistic> summaryStatistics =
+                            DeclarationInterpolator.interpolateDimensionForSummaryStatistics( parBuilder.summaryStatistics(),
+                                                                                              SummaryStatistic.StatisticDimension.TIMING_ERRORS );
+                    parBuilder.summaryStatistics( summaryStatistics );
+                }
+            }
+            Pool.EnsembleAverageType parType = parBuilder.ensembleAverageType();
+            if ( Objects.isNull( parType )
+                 && Objects.nonNull( topType ) )
+            {
+                parBuilder.ensembleAverageType( topType );
+            }
+            metricBuilder.parameters( parBuilder.build() );
+            adjusted.add( metricBuilder.build() );
         }
+
+        // Set the adjusted metrics
+        builder.metrics( adjusted );
+    }
+
+    /**
+     * Interpolates missing information from summary statistics.
+     * @param builder the builder to adjust
+     */
+    private static void interpolateSummaryStatistics( EvaluationDeclarationBuilder builder )
+    {
+        LOGGER.debug( "Interpolating summary statistics." );
+        if ( Objects.nonNull( builder.summaryStatistics() ) )
+        {
+            Set<SummaryStatistic> summaryStatistics =
+                    DeclarationInterpolator.interpolateDimensionForSummaryStatistics( builder.summaryStatistics(),
+                                                                                      SummaryStatistic.StatisticDimension.FEATURES );
+            builder.summaryStatistics( summaryStatistics );
+        }
+    }
+
+    /**
+     * Adds the prescribed dimension to each summary statistic.
+     *
+     * @param statistics the existing summary statistics
+     * @param dimension the dimension to interpolate
+     * @return the summary statistics with interpolated dimension
+     */
+    private static Set<SummaryStatistic> interpolateDimensionForSummaryStatistics( Set<SummaryStatistic> statistics,
+                                                                                   SummaryStatistic.StatisticDimension dimension )
+    {
+        Objects.requireNonNull( statistics );
+
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Interpolated a dimension of {} for the summary statistics: {}.",
+                          dimension,
+                          statistics.stream().map( SummaryStatistic::getStatistic )
+                                    .toList() );
+        }
+
+        return statistics.stream()
+                         .map( n -> n.toBuilder()
+                                     .setDimension( dimension )
+                                     .build() )
+                         .collect( Collectors.toUnmodifiableSet() );
     }
 
     /**
@@ -1465,7 +1522,7 @@ public class DeclarationInterpolator
     {
         Set<Threshold> combined = new HashSet<>();
 
-        if( add )
+        if ( add )
         {
             if ( Objects.nonNull( globalThresholds ) )
             {
@@ -2294,17 +2351,17 @@ public class DeclarationInterpolator
     private static GeometryTuple getFeatureTupleFrom( Geometry feature, DatasetOrientation orientation )
     {
         return switch ( orientation )
-                {
-                    case LEFT -> GeometryTuple.newBuilder()
-                                              .setLeft( feature )
-                                              .build();
-                    case RIGHT -> GeometryTuple.newBuilder()
-                                               .setRight( feature )
-                                               .build();
-                    case BASELINE -> GeometryTuple.newBuilder()
-                                                  .setBaseline( feature )
-                                                  .build();
-                };
+        {
+            case LEFT -> GeometryTuple.newBuilder()
+                                      .setLeft( feature )
+                                      .build();
+            case RIGHT -> GeometryTuple.newBuilder()
+                                       .setRight( feature )
+                                       .build();
+            case BASELINE -> GeometryTuple.newBuilder()
+                                          .setBaseline( feature )
+                                          .build();
+        };
     }
 
     /**

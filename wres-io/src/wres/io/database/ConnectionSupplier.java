@@ -14,6 +14,9 @@ import wres.system.DatabaseType;
 import wres.system.SettingsHelper;
 import wres.system.SystemSettings;
 
+/**
+ * Class that supplies database connections.
+ */
 public class ConnectionSupplier
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( ConnectionSupplier.class );
@@ -33,6 +36,10 @@ public class ConnectionSupplier
      */
     private final DataSource highPriorityConnectionPool;
 
+    /**
+     * Create an instance with the supplied settings.
+     * @param systemSettings the settings
+     */
     public ConnectionSupplier( SystemSettings systemSettings )
     {
         this.systemSettings = systemSettings;
@@ -40,16 +47,25 @@ public class ConnectionSupplier
         this.highPriorityConnectionPool = this.makeHighPriorityConnectionPool();
     }
 
+    /**
+     * @return the system settings
+     */
     public SystemSettings getSystemSettings()
     {
         return this.systemSettings;
     }
 
+    /**
+     * @return the ordinary priority database data source
+     */
     public DataSource getConnectionPool()
     {
         return this.connectionPool;
     }
 
+    /**
+     * @return the high priority database data source
+     */
     public DataSource getHighPriorityConnectionPool()
     {
         return this.highPriorityConnectionPool;

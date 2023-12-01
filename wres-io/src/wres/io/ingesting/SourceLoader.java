@@ -97,6 +97,7 @@ public class SourceLoader
      * @param systemSettings the system settings
      * @param declaration the projectConfig for the evaluation
      * @param griddedFeatures the gridded features cache to populate
+     * @param readingExecutor the executor for performing reading tasks
      * @return ingest results
      * @throws NullPointerException if any required input is null
      * @throws ReadException if the source could not be read

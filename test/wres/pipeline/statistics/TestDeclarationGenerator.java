@@ -32,6 +32,7 @@ import wres.config.yaml.components.VariableBuilder;
 import wres.datamodel.space.FeatureTuple;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.SummaryStatistic;
 
 /**
  * Generates declarations for integration testing.
@@ -310,12 +311,20 @@ class TestDeclarationGenerator
         Features features = FeaturesBuilder.builder().geometries( Set.of( geometryTuple ) )
                                            .build();
 
+        SummaryStatistic.Builder template = SummaryStatistic.newBuilder()
+                .setDimension( SummaryStatistic.StatisticDimension.FEATURES );
+
         MetricParameters metricParameters = MetricParametersBuilder.builder()
-                .summaryStatistics( Set.of( MetricConstants.MEAN,
-                                            MetricConstants.MEDIAN,
-                                            MetricConstants.MINIMUM,
-                                            MetricConstants.MAXIMUM,
-                                            MetricConstants.MEAN_ABSOLUTE ) )
+                .summaryStatistics( Set.of( template.setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                    .build(),
+                                            template.setStatistic( SummaryStatistic.StatisticName.MEDIAN )
+                                                    .build(),
+                                            template.setStatistic( SummaryStatistic.StatisticName.MINIMUM )
+                                                    .build(),
+                                            template.setStatistic( SummaryStatistic.StatisticName.MAXIMUM )
+                                                    .build(),
+                                            template.setStatistic( SummaryStatistic.StatisticName.MEAN_ABSOLUTE )
+                                                    .build() ) )
                 .build();
 
         Metric metric = MetricBuilder.builder()
