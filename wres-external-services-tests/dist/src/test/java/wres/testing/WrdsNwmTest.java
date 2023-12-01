@@ -47,7 +47,6 @@ public class WrdsNwmTest
     private static final ObjectMapper JSON_OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
-    private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
 
     /** Custom HttpClient to use */
     private static final OkHttpClient OK_HTTP_CLIENT;
