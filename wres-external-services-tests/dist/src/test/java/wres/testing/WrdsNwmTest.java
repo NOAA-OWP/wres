@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
+import okhttp3.OkHttpClient;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -23,11 +24,11 @@ import wres.io.ingesting.PreIngestException;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.wrds.nwm.NwmRootDocument;
 import wres.http.WebClient;
+import wres.http.WebClientUtils;
 
 public class WrdsNwmTest
 {
     private static final String WRDS_HOSTNAME;
-    private static final Duration MAX_RETRY_DURATION = Duration.ofMinutes( 20 );
 
     static
     {
@@ -47,21 +48,29 @@ public class WrdsNwmTest
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
     private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
-    
+
+    /** Custom HttpClient to use */
+    private static final OkHttpClient OK_HTTP_CLIENT;
+
     static
     {
         try
         {
-            SSL_CONTEXT = ReaderUtilities.getSslContextTrustingDodSignerForWrds();
+            Pair<SSLContext, X509TrustManager> sslContext = ReaderUtilities.getSslContextTrustingDodSignerForWrds();
+            OK_HTTP_CLIENT = WebClientUtils.defaultTimeoutHttpClient()
+                                           .newBuilder()
+                                           .sslSocketFactory( sslContext.getKey().getSocketFactory(),
+                                                              sslContext.getRight() )
+                                           .build();
         }
         catch ( PreIngestException e )
         {
             throw new ExceptionInInitializerError( "Failed to acquire the TLS context for connecting to WRDS: "
-                    + e.getMessage() );
+                                                   + e.getMessage() );
         }
     }
     
-    private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT, true );
+    private static final WebClient WEB_CLIENT = new WebClient( true, OK_HTTP_CLIENT );
     private static final URI WRDS_NWM_URI_ONE =
             URI.create( "https://" + WRDS_HOSTNAME
                         + "/api/nwm3.0/v3.0/ops/medium_range/streamflow/nwm_feature_id/18384141/?forecast_type=ensemble" );
@@ -75,8 +84,7 @@ public class WrdsNwmTest
         List<Integer> retryOnThese = Collections.emptyList();
 
         try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_NWM_URI_ONE,
-                                                                         retryOnThese,
-                                                                         MAX_RETRY_DURATION) )
+                                                                         retryOnThese ) )
         {
             assertAll( () -> assertTrue( response.getStatusCode() >= 200
                                          && response.getStatusCode() < 300,
@@ -95,8 +103,7 @@ public class WrdsNwmTest
         NwmRootDocument document;
 
         try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_NWM_URI_TWO,
-                                                                         retryOnThese,
-                                                                         MAX_RETRY_DURATION) )
+                                                                         retryOnThese F) )
         {
             // Parse the stream in the way WrdsNwmReader parses a document:
             document = JSON_OBJECT_MAPPER.readValue( response.getResponse(),
