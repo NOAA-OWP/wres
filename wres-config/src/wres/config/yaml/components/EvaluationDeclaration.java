@@ -19,6 +19,7 @@ import wres.config.yaml.deserializers.CrossPairDeserializer;
 import wres.config.yaml.deserializers.DecimalFormatDeserializer;
 import wres.config.yaml.deserializers.DurationDeserializer;
 import wres.config.yaml.deserializers.MetricsDeserializer;
+import wres.config.yaml.deserializers.SummaryStatisticsDeserializer;
 import wres.config.yaml.deserializers.ThresholdSetsDeserializer;
 import wres.config.yaml.deserializers.ThresholdSourcesDeserializer;
 import wres.config.yaml.deserializers.ThresholdsDeserializer;
@@ -31,6 +32,7 @@ import wres.config.yaml.serializers.PositiveIntegerSerializer;
 import wres.config.yaml.serializers.ThresholdSetsSerializer;
 import wres.config.yaml.serializers.ThresholdsSerializer;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.SummaryStatistic;
 
 /**
  * Root class for an evaluation declaration.
@@ -66,6 +68,7 @@ import wres.statistics.generated.Pool;
  * @param season the season
  * @param values the valid values
  * @param metrics the metrics
+ * @param summaryStatistics the summary statistics to generate from raw statistics
  * @param durationFormat the duration format
  * @param decimalFormat the decimal format
  * @param formats the statistics formats to write
@@ -120,6 +123,8 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonProperty( "values" ) Values values,
                                      @JsonDeserialize( using = MetricsDeserializer.class )
                                      @JsonProperty( "metrics" ) Set<Metric> metrics,
+                                     @JsonDeserialize( using = SummaryStatisticsDeserializer.class )
+                                     @JsonProperty( "summary_statistics" ) Set<SummaryStatistic> summaryStatistics,
                                      @JsonSerialize( using = ChronoUnitSerializer.class )
                                      @JsonProperty( "duration_format" ) ChronoUnit durationFormat,
                                      @JsonSerialize( using = DecimalFormatSerializer.class )
@@ -163,6 +168,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
      * @param season the season
      * @param values the valid values
      * @param metrics the metrics
+     * @param summaryStatistics the summary statistics to generate from raw statistics
      * @param durationFormat the duration format
      * @param decimalFormat the decimal format
      * @param formats the statistics formats to write
@@ -172,14 +178,17 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
     {
         if ( Objects.isNull( metrics ) )
         {
-            LOGGER.debug( "No metrics were declared, assuming \"all valid\" metrics are required." );
-
-            metrics = Collections.emptySet();
+            metrics = this.emptyOrUnmodifiableSet( metrics, "metrics" );
         }
-        else
+
+        if ( Objects.isNull( summaryStatistics ) )
         {
-            // Immutable copy, preserving insertion order
-            metrics = Collections.unmodifiableSet( new LinkedHashSet<>( metrics ) );
+            summaryStatistics = this.emptyOrUnmodifiableSet( summaryStatistics, "summary statistics" );
+        }
+
+        if ( Objects.isNull( unitAliases ) )
+        {
+            unitAliases = this.emptyOrUnmodifiableSet( unitAliases, "unit aliases" );
         }
 
         if ( Objects.isNull( rescaleLenience ) )
@@ -189,42 +198,27 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
 
         if ( Objects.isNull( probabilityThresholds ) )
         {
-            probabilityThresholds = Collections.emptySet();
-        }
-        else
-        {
-            // Immutable copy, preserving insertion order
-            probabilityThresholds = Collections.unmodifiableSet( new LinkedHashSet<>( probabilityThresholds ) );
+            probabilityThresholds = this.emptyOrUnmodifiableSet( probabilityThresholds, "probability thresholds" );
         }
 
         if ( Objects.isNull( thresholds ) )
         {
-            thresholds = Collections.emptySet();
-        }
-        else
-        {
-            // Immutable copy, preserving insertion order
-            thresholds = Collections.unmodifiableSet( new LinkedHashSet<>( thresholds ) );
+            thresholds = this.emptyOrUnmodifiableSet( thresholds, "thresholds" );
         }
 
         if ( Objects.isNull( classifierThresholds ) )
         {
-            classifierThresholds = Collections.emptySet();
-        }
-        else
-        {
-            // Immutable copy, preserving insertion order
-            classifierThresholds = Collections.unmodifiableSet( new LinkedHashSet<>( classifierThresholds ) );
+            classifierThresholds = this.emptyOrUnmodifiableSet( classifierThresholds, "classifier thresholds" );
         }
 
         if ( Objects.isNull( thresholdSets ) )
         {
-            thresholdSets = Collections.emptySet();
+            thresholdSets = this.emptyOrUnmodifiableSet( thresholdSets, "threshold sets" );
         }
-        else
+
+        if ( Objects.isNull( thresholdSources ) )
         {
-            // Immutable copy, preserving insertion order
-            thresholdSets = Collections.unmodifiableSet( new LinkedHashSet<>( thresholdSets ) );
+            thresholdSources = this.emptyOrUnmodifiableSet( thresholdSources, "threshold sources" );
         }
 
         if ( Objects.isNull( durationFormat ) )
@@ -236,10 +230,25 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
         {
             minimumSampleSize = 0;
         }
+    }
 
-        if ( Objects.isNull( thresholdSources ) )
+    /**
+     * Returns an unmodifiable set from the possibly null input that preserves insertion order.
+     * @param possiblyNull the possibly null set
+     * @param origin the origin of the set to help with logging
+     * @return an unmodifiable set that preserves insertion order
+     * @param <T> the collected data type
+     */
+    private <T> Set<T> emptyOrUnmodifiableSet( Set<T> possiblyNull, String origin )
+    {
+        if ( Objects.isNull( possiblyNull ) )
         {
-            thresholdSources = Collections.emptySet();
+            LOGGER.debug( "Discovered a null set of {}.", origin );
+            return Collections.emptySet();
+        }
+        else
+        {
+            return Collections.unmodifiableSet( new LinkedHashSet<>( possiblyNull ) );
         }
     }
 }

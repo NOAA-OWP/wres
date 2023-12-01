@@ -18,7 +18,7 @@ import lombok.Value;
 @Value
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder (toBuilder = true)
+@Builder( toBuilder = true )
 public class SystemSettings
 {
     @Builder.Default
@@ -94,6 +94,8 @@ public class SystemSettings
     @XmlElement( name = "feature_batch_size" )
     int featureBatchSize = 50;
 
-    // Dummy class to allow javadoc task to find the builder created by lombok
-    public static class SystemSettingsBuilder {}
+    /**
+     * Dummy class to allow javadoc task to find the builder created by lombok.
+     */
+    public static class SystemSettingsBuilder {}  // NOSONAR
 }

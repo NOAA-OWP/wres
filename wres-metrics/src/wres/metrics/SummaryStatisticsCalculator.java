@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
@@ -100,13 +101,13 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
     private final Predicate<Statistics> filter;
 
     /** The scalar summary statistics to calculate on completion. */
-    private final List<SummaryStatisticFunction> scalarStatistics;
+    private final Set<SummaryStatisticFunction> scalarStatistics;
 
     /** The diagram summary statistics to calculate for scores on completion. */
-    private final List<DiagramStatisticFunction<double[]>> diagramStatistics;
+    private final Set<DiagramStatisticFunction<double[]>> diagramStatistics;
 
     /** The diagram summary statistics to calculate for duration scores on completion. */
-    private final List<DiagramStatisticFunction<Duration[]>> diagramDurationStatistics;
+    private final Set<DiagramStatisticFunction<Duration[]>> diagramDurationStatistics;
 
     /** The calculated summary statistics. */
     private final List<Statistics> statistics;
@@ -127,9 +128,9 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
      * @return an instance
      * @throws IllegalArgumentException if all lists of statistics are null or empty
      */
-    public static SummaryStatisticsCalculator of( List<SummaryStatisticFunction> scalarStatistics,
-                                                  List<DiagramStatisticFunction<double[]>> diagramStatistics,
-                                                  List<DiagramStatisticFunction<Duration[]>> diagramDurationStatistics,
+    public static SummaryStatisticsCalculator of( Set<SummaryStatisticFunction> scalarStatistics,
+                                                  Set<DiagramStatisticFunction<double[]>> diagramStatistics,
+                                                  Set<DiagramStatisticFunction<Duration[]>> diagramDurationStatistics,
                                                   Predicate<Statistics> filter )
     {
         return new SummaryStatisticsCalculator( scalarStatistics,
@@ -841,25 +842,25 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
      * @param filter an optional filter
      * @throws IllegalArgumentException if all lists of statistics are null or empty
      */
-    private SummaryStatisticsCalculator( List<SummaryStatisticFunction> scalarStatistics,
-                                         List<DiagramStatisticFunction<double[]>> diagramStatistics,
-                                         List<DiagramStatisticFunction<Duration[]>> diagramDurationStatistics,
+    private SummaryStatisticsCalculator( Set<SummaryStatisticFunction> scalarStatistics,
+                                         Set<DiagramStatisticFunction<double[]>> diagramStatistics,
+                                         Set<DiagramStatisticFunction<Duration[]>> diagramDurationStatistics,
                                          Predicate<Statistics> filter )
     {
         // Replace null with empty lists
         if ( Objects.isNull( scalarStatistics ) )
         {
-            scalarStatistics = List.of();
+            scalarStatistics = Set.of();
         }
 
         if ( Objects.isNull( diagramStatistics ) )
         {
-            diagramStatistics = List.of();
+            diagramStatistics = Set.of();
         }
 
         if ( Objects.isNull( diagramDurationStatistics ) )
         {
-            diagramDurationStatistics = List.of();
+            diagramDurationStatistics = Set.of();
         }
 
         // No statistics to compute?

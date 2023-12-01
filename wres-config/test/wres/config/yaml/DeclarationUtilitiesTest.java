@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.time.MonthDay;
 import java.time.ZoneOffset;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -71,6 +72,7 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.ReferenceTime;
+import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeWindow;
@@ -1727,9 +1729,19 @@ class DeclarationUtilitiesTest
     @Test
     void testGetMetricGroupsForProcessingWithTimingErrorSummaryStatistics()
     {
-        Set<MetricConstants> summaryStatisticsOne = Set.of( MetricConstants.MEAN,
-                                                            MetricConstants.MEDIAN,
-                                                            MetricConstants.MEAN_ABSOLUTE );
+        Set<SummaryStatistic> summaryStatisticsOne = new LinkedHashSet<>();
+        SummaryStatistic.Builder template = SummaryStatistic.newBuilder()
+                                                            .setDimension( SummaryStatistic.StatisticDimension.TIMING_ERRORS );
+        SummaryStatistic mean = template.setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                        .build();
+        SummaryStatistic median = template.setStatistic( SummaryStatistic.StatisticName.MEDIAN )
+                                          .build();
+        SummaryStatistic meanAbsolute = template.setStatistic( SummaryStatistic.StatisticName.MEAN_ABSOLUTE )
+                                                .build();
+        summaryStatisticsOne.add( mean );
+        summaryStatisticsOne.add( median );
+        summaryStatisticsOne.add( meanAbsolute );
+
         MetricParameters parametersOne = MetricParametersBuilder.builder()
                                                                 .summaryStatistics( summaryStatisticsOne )
                                                                 .build();
@@ -1738,9 +1750,18 @@ class DeclarationUtilitiesTest
                                         .parameters( parametersOne )
                                         .build();
 
-        Set<MetricConstants> summaryStatisticsTwo = Set.of( MetricConstants.STANDARD_DEVIATION,
-                                                            MetricConstants.MINIMUM,
-                                                            MetricConstants.MAXIMUM );
+
+        Set<SummaryStatistic> summaryStatisticsTwo = new LinkedHashSet<>();
+        SummaryStatistic sd = template.setStatistic( SummaryStatistic.StatisticName.STANDARD_DEVIATION )
+                                      .build();
+        SummaryStatistic minimum = template.setStatistic( SummaryStatistic.StatisticName.MINIMUM )
+                                           .build();
+        SummaryStatistic maximum = template.setStatistic( SummaryStatistic.StatisticName.MAXIMUM )
+                                           .build();
+        summaryStatisticsTwo.add( sd );
+        summaryStatisticsTwo.add( minimum );
+        summaryStatisticsTwo.add( maximum );
+
         MetricParameters parametersTwo = MetricParametersBuilder.builder()
                                                                 .summaryStatistics( summaryStatisticsTwo )
                                                                 .build();

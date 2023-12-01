@@ -14,6 +14,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.TreeSet;
 
 import com.google.common.jimfs.Configuration;
@@ -56,6 +57,7 @@ import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricParameters;
+import wres.config.yaml.components.SamplingUncertainty;
 import wres.config.yaml.components.Season;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
@@ -80,6 +82,7 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeScale;
 
@@ -588,10 +591,19 @@ class DeclarationFactoryTest
                                      .build();
 
         // Predictable iteration order
-        Set<MetricConstants> summaryStatistics = new TreeSet<>();
-        summaryStatistics.add( MetricConstants.MEAN );
-        summaryStatistics.add( MetricConstants.MEDIAN );
-        summaryStatistics.add( MetricConstants.MINIMUM );
+        Set<SummaryStatistic> summaryStatistics = new LinkedHashSet<>();
+        SummaryStatistic mean = SummaryStatistic.newBuilder()
+                                                .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                .build();
+        SummaryStatistic median = SummaryStatistic.newBuilder()
+                                                .setStatistic( SummaryStatistic.StatisticName.MEDIAN )
+                                                .build();
+        SummaryStatistic minimum = SummaryStatistic.newBuilder()
+                                                .setStatistic( SummaryStatistic.StatisticName.MINIMUM )
+                                                .build();
+        summaryStatistics.add( mean );
+        summaryStatistics.add( median );
+        summaryStatistics.add( minimum );
 
         MetricParameters thirdParameters =
                 MetricParametersBuilder.builder()
@@ -1068,6 +1080,35 @@ class DeclarationFactoryTest
                                                                      .left( this.observedDataset )
                                                                      .right( this.predictedDataset )
                                                                      .pairFrequency( java.time.Duration.ofHours( 12 ) )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithSamplingUncertainty() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                sampling_uncertainty:
+                  sample_size: 1000
+                  quantiles: [0.05,0.95]
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        SortedSet<Double> quantiles = new TreeSet<>();
+        quantiles.add( 0.05 );
+        quantiles.add( 0.95 );
+        SamplingUncertainty samplingUncertainty = new SamplingUncertainty( quantiles, 1000 );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .sampleUncertainty( samplingUncertainty )
                                                                      .build();
 
         assertEquals( expected, actual );
@@ -1609,14 +1650,35 @@ class DeclarationFactoryTest
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
 
+        Set<SummaryStatistic> summaryStatistics = new LinkedHashSet<>();
+        SummaryStatistic mean = SummaryStatistic.newBuilder()
+                                                .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                .build();
+        SummaryStatistic median = SummaryStatistic.newBuilder()
+                                                  .setStatistic( SummaryStatistic.StatisticName.MEDIAN )
+                                                  .build();
+        SummaryStatistic meanAbsolute = SummaryStatistic.newBuilder()
+                                                        .setStatistic( SummaryStatistic.StatisticName.MEAN_ABSOLUTE )
+                                                        .build();
+        SummaryStatistic minimum = SummaryStatistic.newBuilder()
+                                                   .setStatistic( SummaryStatistic.StatisticName.MINIMUM )
+                                                   .build();
+        SummaryStatistic maximum = SummaryStatistic.newBuilder()
+                                                   .setStatistic( SummaryStatistic.StatisticName.MAXIMUM )
+                                                   .build();
+        SummaryStatistic sd = SummaryStatistic.newBuilder()
+                                              .setStatistic( SummaryStatistic.StatisticName.STANDARD_DEVIATION )
+                                              .build();
+        summaryStatistics.add( mean );
+        summaryStatistics.add( median );
+        summaryStatistics.add( meanAbsolute );
+        summaryStatistics.add( minimum );
+        summaryStatistics.add( maximum );
+        summaryStatistics.add( sd );
+
         MetricParameters firstParameters =
                 MetricParametersBuilder.builder()
-                                       .summaryStatistics( Set.of( MetricConstants.MEAN,
-                                                                   MetricConstants.MEDIAN,
-                                                                   MetricConstants.MEAN_ABSOLUTE,
-                                                                   MetricConstants.MAXIMUM,
-                                                                   MetricConstants.MINIMUM,
-                                                                   MetricConstants.STANDARD_DEVIATION ) )
+                                       .summaryStatistics( summaryStatistics )
                                        .build();
         Metric first = MetricBuilder.builder()
                                     .name( MetricConstants.TIME_TO_PEAK_ERROR )
@@ -1822,6 +1884,172 @@ class DeclarationFactoryTest
 
         Set<ThresholdSource> expected = Set.of( thresholdSourceOne, thresholdSourceTwo, thresholdSourceThree );
 
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithTimingErrorSummaryStatisticsAndThresholdsPerMetric() throws IOException
+    {
+        String yaml = """
+                    observed:
+                      - some_file.csv
+                    predicted:
+                      - another_file.csv
+                    metrics:
+                      - name: time to peak error
+                        thresholds:
+                          values: [183.0, 184.0]
+                          apply_to: observed and predicted
+                        summary_statistics:
+                          - mean
+                """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        // Preserve insertion order
+        Set<SummaryStatistic> summaryStatistics = new LinkedHashSet<>();
+        SummaryStatistic mean = SummaryStatistic.newBuilder()
+                                                .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                .build();
+        summaryStatistics.add( mean );
+
+        Threshold one = Threshold.newBuilder()
+                                 .setLeftThresholdValue( DoubleValue.of( 183.0 ) )
+                                 .setOperator( Threshold.ThresholdOperator.GREATER )
+                                 .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                 .build();
+        Threshold two = Threshold.newBuilder()
+                                 .setLeftThresholdValue( DoubleValue.of( 184.0 ) )
+                                 .setOperator( Threshold.ThresholdOperator.GREATER )
+                                 .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                 .build();
+
+        wres.config.yaml.components.Threshold oneWrapped = ThresholdBuilder.builder()
+                                                                           .threshold( one )
+                                                                           .type( ThresholdType.VALUE )
+                                                                           .build();
+
+        wres.config.yaml.components.Threshold twoWrapped = ThresholdBuilder.builder()
+                                                                           .threshold( two )
+                                                                           .type( ThresholdType.VALUE )
+                                                                           .build();
+
+        // Insertion order
+        Set<wres.config.yaml.components.Threshold> thresholds = new LinkedHashSet<>();
+        thresholds.add( oneWrapped );
+        thresholds.add( twoWrapped );
+
+        MetricParameters parameters =
+                MetricParametersBuilder.builder()
+                                       .summaryStatistics( summaryStatistics )
+                                       .thresholds( thresholds )
+                                       .build();
+        Metric first = MetricBuilder.builder()
+                                    .name( MetricConstants.TIME_TO_PEAK_ERROR )
+                                    .parameters( parameters )
+                                    .build();
+
+        Set<Metric> metrics = Set.of( first );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .metrics( metrics )
+                                                                     .build();
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithSummaryStatistics() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                summary_statistics:
+                  - mean
+                  - quantiles
+                  - histogram
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        Set<SummaryStatistic> summaryStatistics = new LinkedHashSet<>();
+        SummaryStatistic mean = SummaryStatistic.newBuilder()
+                                                .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                .build();
+        SummaryStatistic quantileOne = SummaryStatistic.newBuilder()
+                                                       .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
+                                                       .setProbability( 0.1 )
+                                                       .build();
+        SummaryStatistic quantileTwo = SummaryStatistic.newBuilder()
+                                                       .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
+                                                       .setProbability( 0.9 )
+                                                       .build();
+        SummaryStatistic histogram = SummaryStatistic.newBuilder()
+                                                     .setStatistic( SummaryStatistic.StatisticName.HISTOGRAM )
+                                                     .setHistogramBins( DeclarationFactory.DEFAULT_HISTOGRAM_BINS )
+                                                     .build();
+
+        summaryStatistics.add( mean );
+        summaryStatistics.add( quantileOne );
+        summaryStatistics.add( quantileTwo );
+        summaryStatistics.add( histogram );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .summaryStatistics( summaryStatistics )
+                                                                     .build();
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithSummaryStatisticsAndParameters() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                summary_statistics:
+                  - mean
+                  - name: quantiles
+                    probabilities: [0.05,0.95]
+                  - name: histogram
+                    bins: 5
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        Set<SummaryStatistic> summaryStatistics = new LinkedHashSet<>();
+        SummaryStatistic mean = SummaryStatistic.newBuilder()
+                                                .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                .build();
+        SummaryStatistic quantileOne = SummaryStatistic.newBuilder()
+                                                       .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
+                                                       .setProbability( 0.05 )
+                                                       .build();
+        SummaryStatistic quantileTwo = SummaryStatistic.newBuilder()
+                                                       .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
+                                                       .setProbability( 0.95 )
+                                                       .build();
+        SummaryStatistic histogram = SummaryStatistic.newBuilder()
+                                                     .setStatistic( SummaryStatistic.StatisticName.HISTOGRAM )
+                                                     .setHistogramBins( 5 )
+                                                     .build();
+
+        summaryStatistics.add( mean );
+        summaryStatistics.add( quantileOne );
+        summaryStatistics.add( quantileTwo );
+        summaryStatistics.add( histogram );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .summaryStatistics( summaryStatistics )
+                                                                     .build();
         assertEquals( expected, actual );
     }
 
@@ -2185,11 +2413,19 @@ class DeclarationFactoryTest
                                      .parameters( secondParameters )
                                      .build();
 
-        // preserve insertion order
-        Set<MetricConstants> summaryStatistics = new LinkedHashSet<>();
-        summaryStatistics.add( MetricConstants.MEAN );
-        summaryStatistics.add( MetricConstants.MEDIAN );
-        summaryStatistics.add( MetricConstants.MINIMUM );
+        // Preserve insertion order
+        Set<SummaryStatistic> summaryStatistics = new LinkedHashSet<>();
+        SummaryStatistic.Builder template = SummaryStatistic.newBuilder()
+                                                            .setDimension( SummaryStatistic.StatisticDimension.TIMING_ERRORS );
+        SummaryStatistic mean = template.setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                        .build();
+        SummaryStatistic median = template.setStatistic( SummaryStatistic.StatisticName.MEDIAN )
+                                          .build();
+        SummaryStatistic minimum = template.setStatistic( SummaryStatistic.StatisticName.MINIMUM )
+                                           .build();
+        summaryStatistics.add( mean );
+        summaryStatistics.add( median );
+        summaryStatistics.add( minimum );
 
         MetricParameters thirdParameters =
                 MetricParametersBuilder.builder()
@@ -3064,5 +3300,4 @@ class DeclarationFactoryTest
 
         assertEquals( expected, actual );
     }
-
 }

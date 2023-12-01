@@ -55,6 +55,7 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.Threshold;
 
 /**
@@ -1201,6 +1202,64 @@ class DeclarationInterpolatorTest
 
         assertAll( () -> assertEquals( DataType.ANALYSES, actualLeft ),
                    () -> assertEquals( DataType.SINGLE_VALUED_FORECASTS, actualRight ) );
+    }
+
+    @Test
+    void testInterpolateDimensionForSummaryStatistics()
+    {
+        Set<SummaryStatistic> summaryStatistics = new LinkedHashSet<>();
+        SummaryStatistic mean = SummaryStatistic.newBuilder()
+                                                .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                .build();
+        summaryStatistics.add( mean );
+
+        MetricParameters parameters =
+                MetricParametersBuilder.builder()
+                                       .summaryStatistics( summaryStatistics )
+                                       .build();
+        Metric first = MetricBuilder.builder()
+                                    .name( MetricConstants.TIME_TO_PEAK_ERROR )
+                                    .parameters( parameters )
+                                    .build();
+
+        Set<Metric> metrics = Set.of( first );
+
+        // Add summary statistics in two separate contexts
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .metrics( metrics )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
+
+        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( evaluation,
+                                                                            DataType.OBSERVATIONS,
+                                                                            DataType.ENSEMBLE_FORECASTS,
+                                                                            null,
+                                                                            true );
+
+        Set<SummaryStatistic> actualOne = actual.summaryStatistics();
+        Set<SummaryStatistic> actualTwo = actual.metrics()
+                                                .stream()
+                                                .findFirst()
+                                                .orElseThrow()
+                                                .parameters()
+                                                .summaryStatistics();
+
+        SummaryStatistic expectedFirst = SummaryStatistic.newBuilder()
+                                                         .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                         .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                         .build();
+
+        SummaryStatistic expectedSecond = SummaryStatistic.newBuilder()
+                                                          .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                          .setDimension( SummaryStatistic.StatisticDimension.TIMING_ERRORS )
+                                                          .build();
+
+        assertAll( () -> assertEquals( Set.of( expectedFirst ), actualOne ),
+                   () -> assertEquals( Set.of( expectedSecond ), actualTwo ) );
+
     }
 
     // The testDeserializeAndInterpolate* tests are integration tests of deserialization plus interpolation

@@ -386,14 +386,15 @@ public class FunctionFactory
 
     /**
      * Returns a function that calculates a histogram with a prescribed number of bins.
-     * @param bins the number of bins, greater than zero
-     * @param dimension the dimension used to build the histogram
+     * @param parameters the histogram parameters
      * @return the histogram function
      * @throws IllegalArgumentException if the number of bins is less than one
      */
-    public static DiagramStatisticFunction<double[]> histogram( int bins,
-                                                                SummaryStatistic.StatisticDimension dimension )
+    public static DiagramStatisticFunction<double[]> histogram( SummaryStatistic parameters )
     {
+        int bins = parameters.getHistogramBins();
+        SummaryStatistic.StatisticDimension dimension = parameters.getDimension();
+
         BiFunction<Map<DiagramStatisticFunction.DiagramComponentName, String>, double[], DiagramStatistic> f =
                 ( p, d ) ->
                 {
@@ -455,18 +456,16 @@ public class FunctionFactory
 
     /**
      * Returns a function that calculates a histogram for durations with a given number of bins and prescribed units.
-     * @param bins the number of bins, greater than zero
+     * @param parameters the histogram parameters
      * @param units the time units for the histogram bins
-     * @param dimension the dimension used to build the histogram
      * @return the histogram function
      * @throws IllegalArgumentException if the number of bins is less than one
      */
-    public static DiagramStatisticFunction<Duration[]> histogram( int bins,
-                                                                  ChronoUnit units,
-                                                                  SummaryStatistic.StatisticDimension dimension )
+    public static DiagramStatisticFunction<Duration[]> histogram( SummaryStatistic parameters,
+                                                                  ChronoUnit units )
     {
         // Get a histogram function for the decimal durations in prescribed units
-        DiagramStatisticFunction<double[]> fInUnits = FunctionFactory.histogram( bins, dimension );
+        DiagramStatisticFunction<double[]> fInUnits = FunctionFactory.histogram( parameters );
 
         // Create a function that operates on durations
         BiFunction<Map<DiagramStatisticFunction.DiagramComponentName, String>, Duration[], DiagramStatistic> f =

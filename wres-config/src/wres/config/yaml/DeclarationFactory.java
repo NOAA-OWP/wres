@@ -10,9 +10,12 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -103,6 +106,13 @@ public class DeclarationFactory
 
     /** Default threshold type (e.g., for a threshold data service). */
     public static final ThresholdType DEFAULT_THRESHOLD_TYPE = ThresholdType.VALUE;
+
+    /** Default probabilities when quantiles are declared as summary statistics without explicit probabilities. */
+    public static final SortedSet<Double> DEFAULT_QUANTILES =
+            Collections.unmodifiableSortedSet( new TreeSet<>( Set.of( 0.1, 0.9 ) ) );
+
+    /** Default number of bins in a histogram summary statistic when not declared. */
+    public static final int DEFAULT_HISTOGRAM_BINS = 10;
 
     /** Default threshold missing value. Ugly, but the most common value seen in the wild at the time of writing. */
     public static final double DEFAULT_MISSING_VALUE = -999.0;

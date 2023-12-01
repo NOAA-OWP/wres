@@ -5,9 +5,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
@@ -721,10 +723,11 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         Map<DatasetOrientation, List<Statistics>> grouped = Slicer.getGroupedStatistics( statistics );
 
         // Create the quantile statistics
-        List<SummaryStatisticFunction> quantiles = samplingUncertainty.quantiles()
-                                                                      .stream()
-                                                                      .map( FunctionFactory::quantileForSamplingUncertainty )
-                                                                      .toList();
+        Set<SummaryStatisticFunction> quantiles = samplingUncertainty.quantiles()
+                                                                     .stream()
+                                                                     .map( FunctionFactory::quantileForSamplingUncertainty )
+                                                                     .collect( Collectors.toCollection( LinkedHashSet::new ) );
+        quantiles = Collections.unmodifiableSet( quantiles );
 
         Map<OneOrTwoThresholds, Map<DatasetOrientation, SummaryStatisticsCalculator>> returnMe = new HashMap<>();
 
@@ -744,8 +747,8 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                 OneOrTwoThresholds key = nextEntry.getKey();
                 Statistics mergedStatistics = nextEntry.getValue();
                 SummaryStatisticsCalculator calculator = SummaryStatisticsCalculator.of( quantiles,
-                                                                                         List.of(),
-                                                                                         List.of(),
+                                                                                         Set.of(),
+                                                                                         Set.of(),
                                                                                          null );
                 calculator.accept( mergedStatistics );
 

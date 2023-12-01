@@ -11,11 +11,11 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.soabase.recordbuilder.core.RecordBuilder;
 
-import wres.config.MetricConstants;
 import wres.config.yaml.deserializers.SummaryStatisticsDeserializer;
 import wres.config.yaml.deserializers.ThresholdsDeserializer;
 import wres.config.yaml.serializers.EnsembleAverageTypeSerializer;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.SummaryStatistic;
 
 /**
  * Metric parameters. For simplicity, a single set of metric parameters is abstracted for all metrics. Restrictions on
@@ -38,7 +38,7 @@ public record MetricParameters( @JsonDeserialize( using = ThresholdsDeserializer
                                 @JsonDeserialize( using = ThresholdsDeserializer.class )
                                 @JsonProperty( "classifier_thresholds" ) Set<Threshold> classifierThresholds,
                                 @JsonDeserialize( using = SummaryStatisticsDeserializer.class )
-                                @JsonProperty( "summary_statistics" ) Set<MetricConstants> summaryStatistics,
+                                @JsonProperty( "summary_statistics" ) Set<SummaryStatistic> summaryStatistics,
                                 @JsonSerialize( using = EnsembleAverageTypeSerializer.class )
                                 @JsonProperty( "ensemble_average" ) Pool.EnsembleAverageType ensembleAverageType,
                                 @JsonProperty( "png" ) Boolean png,

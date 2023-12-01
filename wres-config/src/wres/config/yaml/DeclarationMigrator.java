@@ -125,6 +125,7 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.SummaryStatistic;
 
 /**
  * Class that helps migrate from the old-style XML declaration language to the new YAML language.
@@ -1727,13 +1728,19 @@ public class DeclarationMigrator
                 {
                     builder = MetricParametersBuilder.builder( parameters );
                 }
-                Set<MetricConstants> durationScores
+
+                SummaryStatistic.Builder template = SummaryStatistic.newBuilder()
+                                                                    .setDimension( SummaryStatistic.StatisticDimension.TIMING_ERRORS );
+
+                Set<SummaryStatistic> durationScores
                         = metricNames.stream()
                                      // Find the duration scores whose parent is the diagram in question
                                      .filter( m -> m.getParent() == next )
                                      // Get the child, which is a univariate measure
                                      .map( MetricConstants::getChild )
-                                     .collect( Collectors.toSet() );
+                                     .map( name -> template.setStatistic( SummaryStatistic.StatisticName.valueOf( name.name() ) )
+                                                           .build() )
+                                     .collect( Collectors.toCollection( LinkedHashSet::new ) );  // Preserve order
                 builder.summaryStatistics( durationScores );
 
                 // Do not add parameters that match the defaults

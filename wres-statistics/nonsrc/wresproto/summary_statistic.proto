@@ -26,8 +26,9 @@ message SummaryStatistic
         MINIMUM = 2;
         MAXIMUM = 3;
         STANDARD_DEVIATION = 4;
-        QUANTILE = 5;
-        HISTOGRAM = 6;
+        MEAN_ABSOLUTE = 5;
+        QUANTILE = 6;
+        HISTOGRAM = 7;
     }
 
     StatisticName statistic = 1;
@@ -41,8 +42,11 @@ message SummaryStatistic
         // A summary statistic over geographic features.
         
         RESAMPLED = 1;
-        // A summary statistic over resampled pools for sampling uncertainty 
+        // A summary statistic over resampled pools for sampling uncertainty. 
         // estimation.
+
+        TIMING_ERRORS = 2;
+        // A summary statistic over timing errors.
     }
 
     StatisticDimension dimension = 2;
@@ -51,4 +55,8 @@ message SummaryStatistic
     double probability = 3;
     // The probability associated with the quantile when the summary statistic
     // is a quantile. Always a value within [0,1].
+
+    int32 histogram_bins = 4;
+    // The number of bins in the histogram when the summary statistic is a
+    // histogram.
 }

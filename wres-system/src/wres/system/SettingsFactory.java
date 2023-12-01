@@ -15,6 +15,9 @@ import org.slf4j.LoggerFactory;
 
 import wres.system.SystemSettings.SystemSettingsBuilder;
 
+/**
+ * A factory class for building system settings.
+ */
 public class SettingsFactory
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( SettingsFactory.class );
@@ -611,6 +614,8 @@ public class SettingsFactory
      * the jdbcUrl.
      *
      * <p>If there is no value it returns null which is the default value of password
+     * @param databaseSettings the database settings
+     * @return the password override string
      */
 
     public static String getPasswordOverrides( DatabaseSettings databaseSettings )

@@ -232,7 +232,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             JsonNode valuesNode = thresholdNode.get( VALUES );
 
             // Embellished thresholds
-            if ( valuesNode.size() > 0 && valuesNode.get( 0 )
+            if ( !valuesNode.isEmpty() && valuesNode.get( 0 )
                                                     .has( VALUE ) )
             {
                 Set<Threshold> embellishedThresholds = this.getEmbellishedThresholds( reader,
