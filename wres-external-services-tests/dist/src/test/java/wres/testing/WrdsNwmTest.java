@@ -103,7 +103,7 @@ public class WrdsNwmTest
         NwmRootDocument document;
 
         try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_NWM_URI_TWO,
-                                                                         retryOnThese F) )
+                                                                         retryOnThese ) )
         {
             // Parse the stream in the way WrdsNwmReader parses a document:
             document = JSON_OBJECT_MAPPER.readValue( response.getResponse(),
