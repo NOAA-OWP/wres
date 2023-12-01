@@ -13,6 +13,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.junit.jupiter.api.Test;
+import okhttp3.OkHttpClient;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -22,12 +23,12 @@ import wres.io.ingesting.PreIngestException;
 import wres.io.reading.wrds.ahps.ForecastResponse;
 import wres.io.reading.ReaderUtilities;
 import wres.http.WebClient;
+import wres.http.WebClientUtils;
 
 public class WrdsAhpsTest
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( WrdsAhpsTest.class );
     private static final String WRDS_HOSTNAME;
-    private static final Duration MAX_RETRY_DURATION = Duration.ofMinutes( 20 );
 
     static
     {
@@ -43,22 +44,28 @@ public class WrdsAhpsTest
         }
     }
 
-    private static final Pair<SSLContext, X509TrustManager> SSL_CONTEXT;
-    
+    /** Custom HttpClient to use */
+    private static final OkHttpClient OK_HTTP_CLIENT;
+
     static
     {
         try
         {
-            SSL_CONTEXT = ReaderUtilities.getSslContextTrustingDodSignerForWrds();
+            Pair<SSLContext, X509TrustManager> sslContext = ReaderUtilities.getSslContextTrustingDodSignerForWrds();
+            OK_HTTP_CLIENT = WebClientUtils.defaultTimeoutHttpClient()
+                                           .newBuilder()
+                                           .sslSocketFactory( sslContext.getKey().getSocketFactory(),
+                                                              sslContext.getRight() )
+                                           .build();
         }
         catch ( PreIngestException e )
         {
             throw new ExceptionInInitializerError( "Failed to acquire the TLS context for connecting to WRDS: "
-                    + e.getMessage() );
+                                                   + e.getMessage() );
         }
     }
     
-    private static final WebClient WEB_CLIENT = new WebClient( SSL_CONTEXT, true );
+    private static final WebClient WEB_CLIENT = new WebClient( true, OK_HTTP_CLIENT );
     private static final URI WRDS_AHPS_URI_ONE =
             URI.create( "https://" + WRDS_HOSTNAME
                         + "/api/rfc_forecast/v2.0/forecast/streamflow/nws_lid/DRRC2?issuedTime=(2018-10-01T00%3A00%3A00Z%2C2018-10-07T23%3A23%3A59Z]&proj=WRES_automated_testing" );
@@ -73,8 +80,7 @@ public class WrdsAhpsTest
         List<Integer> retryOnThese = Collections.emptyList();
 
         try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_AHPS_URI_ONE,
-                                                                         retryOnThese,
-                                                                         MAX_RETRY_DURATION) )
+                                                                         retryOnThese ) )
         {
             assertAll( () -> assertTrue( response.getStatusCode() >= 200
                                          && response.getStatusCode() < 300,
@@ -91,8 +97,7 @@ public class WrdsAhpsTest
         List<Integer> retryOnThese = Collections.emptyList();
 
         try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( WRDS_AHPS_URI_TWO,
-                                                                         retryOnThese,
-                                                                         MAX_RETRY_DURATION) )
+                                                                         retryOnThese ) )
         {
             ForecastResponse document = OBJECT_MAPPER.readValue( response.getResponse(),
                                                                  ForecastResponse.class );

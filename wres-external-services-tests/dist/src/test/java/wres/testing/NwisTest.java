@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.Test;
+import okhttp3.OkHttpClient;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -16,16 +17,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.io.reading.waterml.Response;
 import wres.http.WebClient;
+import wres.http.WebClientUtils;
 
 public class NwisTest
 {
-    private static final WebClient WEB_CLIENT = new WebClient();
+    private static final WebClient WEB_CLIENT = new WebClient( WebClientUtils.defaultTimeoutHttpClient() );
     private static final ObjectMapper OBJECT_MAPPER =
             new ObjectMapper().registerModule( new JavaTimeModule() )
                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, true );
     private static final URI NWIS_URI_ONE = URI.create( "https://nwis.waterservices.usgs.gov/nwis/iv/?format=json&indent=on&sites=09165000&parameterCd=00060&startDT=2018-10-01T00:00:00Z&endDT=2018-10-07T23:59:59Z" );
     private static final URI NWIS_URI_TWO = URI.create( "https://nwis.waterservices.usgs.gov/nwis/iv/?format=json&indent=on&sites=01631000&parameterCd=00060&startDT=2020-03-01T00:00:00Z&endDT=2020-04-30T23:59:59Z" );
-    private static final Duration MAX_RETRY_DURATION = Duration.ofMinutes( 20 );
 
     @Test
     void canGetMinimalResponseFromNwisWithWebClient() throws IOException
@@ -33,8 +34,7 @@ public class NwisTest
         List<Integer> retryOnThese = Collections.emptyList();
 
         try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( NWIS_URI_ONE,
-                                                                         retryOnThese,
-                                                                         MAX_RETRY_DURATION) )
+                                                                         retryOnThese ) )
         {
             assertAll( () -> assertTrue( response.getStatusCode() >= 200
                                          && response.getStatusCode() < 300,
@@ -54,8 +54,7 @@ public class NwisTest
 
         // GET
         try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( NWIS_URI_TWO,
-                                                                         retryOnThese,
-                                                                         MAX_RETRY_DURATION) )
+                                                                         retryOnThese ) )
         {
             // Parse
             Response document = OBJECT_MAPPER.readValue( response.getResponse(),
