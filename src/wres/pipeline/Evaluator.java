@@ -5,6 +5,9 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
@@ -19,6 +22,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.tuple.Pair;
@@ -29,10 +33,41 @@ import wres.ExecutionResult;
 import wres.config.MultiDeclarationFactory;
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.pools.PoolRequest;
+import wres.datamodel.space.FeatureGroup;
+import wres.datamodel.space.FeatureTuple;
+import wres.datamodel.thresholds.MetricsAndThresholds;
+import wres.datamodel.thresholds.ThresholdSlicer;
+import wres.datamodel.time.TimeSeriesStore;
+import wres.datamodel.units.UnitMapper;
+import wres.events.EvaluationEventUtilities;
+import wres.events.EvaluationMessager;
 import wres.events.broker.BrokerConnectionFactory;
+import wres.events.subscribe.ConsumerFactory;
+import wres.events.subscribe.EvaluationSubscriber;
+import wres.events.subscribe.SubscriberApprover;
 import wres.io.database.Database;
+import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.locking.DatabaseLockManager;
 import wres.io.database.locking.DatabaseLockManagerNoop;
+import wres.io.ingesting.IngestResult;
+import wres.io.ingesting.SourceLoader;
+import wres.io.ingesting.TimeSeriesIngester;
+import wres.io.ingesting.TimeSeriesTracker;
+import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
+import wres.io.ingesting.memory.InMemoryTimeSeriesIngester;
+import wres.io.project.Project;
+import wres.io.project.Projects;
+import wres.io.reading.ReaderUtilities;
+import wres.io.reading.netcdf.grid.GriddedFeatures;
+import wres.io.writing.netcdf.NetcdfOutputWriter;
+import wres.pipeline.pooling.PoolFactory;
+import wres.pipeline.pooling.PoolGroupTracker;
+import wres.pipeline.pooling.PoolReporter;
+import wres.statistics.generated.Consumer;
+import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.GeometryTuple;
 import wres.system.DatabaseType;
 import wres.system.SystemSettings;
 
@@ -46,6 +81,13 @@ public class Evaluator
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( Evaluator.class );
+
+    /** Unique identifier for this instance of the core messaging client. */
+
+    private static final String CLIENT_ID = EvaluationEventUtilities.getId();
+
+    /** Number of items in a reading queue. Enough to allow join to be called with few or no rejected executions. */
+    private static final int READ_QUEUE_LENGTH = 100_000;
 
     /** System settings.*/
     private final SystemSettings systemSettings;
@@ -190,9 +232,7 @@ public class Evaluator
         BlockingQueue<Runnable> slicingQueue = new LinkedBlockingQueue<>();
         BlockingQueue<Runnable> metricQueue = new LinkedBlockingQueue<>();
         BlockingQueue<Runnable> productQueue = new LinkedBlockingQueue<>();
-        // Queue should be large enough to allow join call to be reached with zero or few rejected submissions to the
-        // executor service.
-        BlockingQueue<Runnable> readingQueue = new ArrayBlockingQueue<>( 100_000 );
+        BlockingQueue<Runnable> readingQueue = new ArrayBlockingQueue<>( READ_QUEUE_LENGTH );
 
         // Create some thread pools to perform the work required by different parts of the evaluation pipeline
 
@@ -287,13 +327,13 @@ public class Evaluator
         }
 
         // Reduce our set of executors to one object
-        Executors executors = new Executors( readingExecutor,
-                                             ingestExecutor,
-                                             poolExecutor,
-                                             slicingExecutor,
-                                             metricExecutor,
-                                             productExecutor,
-                                             samplingUncertaintyExecutor );
+        EvaluationExecutors executors = new EvaluationExecutors( readingExecutor,
+                                                                 ingestExecutor,
+                                                                 poolExecutor,
+                                                                 slicingExecutor,
+                                                                 metricExecutor,
+                                                                 productExecutor,
+                                                                 samplingUncertaintyExecutor );
 
         // Register the executors for cancellation
         canceller.setEvaluationExecutors( executors );
@@ -324,13 +364,13 @@ public class Evaluator
 
             // Perform the evaluation
             Pair<Set<Path>, String> innerPathsAndProjectHash =
-                    EvaluationUtilities.evaluate( settings,
-                                                  databaseServices,
-                                                  declaration,
-                                                  executors,
-                                                  this.getBrokerConnectionFactory(),
-                                                  monitor,
-                                                  canceller );
+                    this.evaluate( settings,
+                                   databaseServices,
+                                   declaration,
+                                   executors,
+                                   this.getBrokerConnectionFactory(),
+                                   monitor,
+                                   canceller );
             pathsWrittenTo.addAll( innerPathsAndProjectHash.getLeft() );
             projectHash = innerPathsAndProjectHash.getRight();
             monitor.setDataHash( projectHash );
@@ -380,6 +420,406 @@ public class Evaluator
                                         rawDeclaration,
                                         projectHash,
                                         pathsWrittenTo );
+    }
+
+    /**
+     * Executes an evaluation.
+     *
+     * @param systemSettings the system settings
+     * @param databaseServices the database services
+     * @param declaration the project declaration
+     * @param executors the executors
+     * @param connections broker connections
+     * @param monitor an event that monitors the life cycle of the evaluation, not null
+     * @param canceller a callback to allow for cancellation of the running evaluation, not null
+     * @return the resources written and the hash of the project data
+     * @throws WresProcessingException if the evaluation processing fails
+     * @throws DeclarationException if the declaration is incorrect
+     * @throws NullPointerException if any input is null
+     * @throws IOException if the creation of outputs fails
+     */
+
+    private Pair<Set<Path>, String> evaluate( SystemSettings systemSettings,
+                                              DatabaseServices databaseServices,
+                                              EvaluationDeclaration declaration,
+                                              EvaluationExecutors executors,
+                                              BrokerConnectionFactory connections,
+                                              EvaluationEvent monitor,
+                                              Canceller canceller )
+            throws IOException
+    {
+        Objects.requireNonNull( systemSettings );
+        Objects.requireNonNull( declaration );
+        Objects.requireNonNull( executors );
+        Objects.requireNonNull( connections );
+        Objects.requireNonNull( monitor );
+        Objects.requireNonNull( canceller );
+
+        // Database needed?
+        if ( systemSettings.isUseDatabase() )
+        {
+            Objects.requireNonNull( databaseServices );
+        }
+
+        Set<Path> resources = new TreeSet<>();
+        String projectHash;
+
+        // Get a unique evaluation identifier
+        String evaluationId = EvaluationEventUtilities.getId();
+
+        // Set the identifier where needed
+        monitor.setEvaluationId( evaluationId );
+        canceller.setEvaluationId( evaluationId );
+
+        // Create output directory
+        Path outputDirectory = EvaluationUtilities.createTempOutputDirectory( evaluationId );
+
+        // Create netCDF writers
+        List<NetcdfOutputWriter> netcdfWriters =
+                EvaluationUtilities.getNetcdfWriters( declaration,
+                                                      systemSettings,
+                                                      outputDirectory );
+
+        // Obtain any formats delivered by out-of-process subscribers.
+        Set<Consumer.Format> externalFormats = EvaluationUtilities.getFormatsDeliveredByExternalSubscribers();
+
+        LOGGER.debug( "These formats will be delivered by external subscribers: {}.", externalFormats );
+
+        // Formats delivered by within-process subscribers, in a mutable list
+        Set<Consumer.Format> internalFormats = wres.statistics.MessageFactory.getDeclaredFormats( declaration.formats()
+                                                                                                             .outputs() );
+
+        internalFormats = new HashSet<>( internalFormats );
+        internalFormats.removeAll( externalFormats );
+
+        LOGGER.debug( "These formats will be delivered by internal subscribers: {}.", internalFormats );
+
+        String consumerId = EvaluationEventUtilities.getId();
+
+        // Moving this into the try-with-resources would require a different approach than notifying the evaluation to
+        // stop( Exception e ) on encountering an error that is not visible to it. See discussion in #90292.
+        EvaluationMessager evaluation = null;
+
+        try ( SharedWriters sharedWriters = EvaluationUtilities.getSharedWriters( declaration,
+                                                                                  outputDirectory );
+              // Create a subscriber for the format writers that are within-process. The subscriber is built for this
+              // evaluation only, and should not serve other evaluations, else there is a risk that short-running
+              // subscribers die without managing to serve the evaluations they promised to serve. This complexity
+              // disappears when all subscribers are moved to separate, long-running, processes: #89868
+              ConsumerFactory consumerFactory = new StatisticsConsumerFactory( consumerId,
+                                                                               new HashSet<>( internalFormats ),
+                                                                               netcdfWriters,
+                                                                               declaration );
+              EvaluationSubscriber formatsSubscriber = EvaluationSubscriber.of( consumerFactory,
+                                                                                executors.productExecutor(),
+                                                                                connections,
+                                                                                evaluationId ) )
+        {
+            // Set the subscriber to cancel
+            canceller.setInternalFormatsSubscriber( formatsSubscriber );
+
+            // Start the subscriber
+            formatsSubscriber.start();
+
+            // Restrict the subscribers for internally-delivered formats otherwise core clients may steal format
+            // writing work from each other. This is expected insofar as all subscribers are par. However, core clients
+            // currently run in short-running processes, we want to estimate resources for core clients effectively,
+            // and some format writers are stateful (e.g., netcdf), hence this is currently a bad thing. Goal: place
+            // all format writers in long-running processes instead. See #88262 and #88267.
+            SubscriberApprover subscriberApprover =
+                    new SubscriberApprover.Builder().addApprovedSubscriber( internalFormats,
+                                                                            consumerId )
+                                                    .build();
+
+            // Package the details needed to build the evaluation
+            EvaluationDetails evaluationDetails =
+                    EvaluationDetailsBuilder.builder()
+                                            .systemSettings( systemSettings )
+                                            .declaration( declaration )
+                                            .evaluationId( evaluationId )
+                                            .subscriberApprover( subscriberApprover )
+                                            .monitor( monitor )
+                                            .databaseServices( databaseServices )
+                                            .build();
+
+            // Open an evaluation, to be closed on completion or stopped on exception
+
+            // Look up any needed feature correlations and thresholds, generate a new declaration. These are needed for
+            // reading and ingest, as well as subsequent steps, so perform this upfront: #116208
+            EvaluationDeclaration declarationWithFeatures = ReaderUtilities.readAndFillFeatures( declaration );
+            // Update the small bag-o-state
+            evaluationDetails = EvaluationDetailsBuilder.builder( evaluationDetails )
+                                                        .declaration( declarationWithFeatures )
+                                                        .build();
+            // Gridded features cache, if required. See #51232.
+            GriddedFeatures.Builder griddedFeaturesBuilder =
+                    EvaluationUtilities.getGriddedFeaturesCache( declarationWithFeatures );
+
+            LOGGER.debug( "Beginning ingest of time-series data..." );
+
+            Project project;
+
+            // Track the time-series through ingest
+            TimeSeriesTracker timeSeriesTracker = TimeSeriesTracker.of();
+
+            // Is the evaluation in a database? If so, use implementations that support a database
+            if ( systemSettings.isUseDatabase() )
+            {
+                // Build the database caches/ORMs, if required
+                DatabaseCaches caches = DatabaseCaches.of( databaseServices.database() );
+                // Set the caches
+                evaluationDetails = EvaluationDetailsBuilder.builder( evaluationDetails )
+                                                            .caches( caches )
+                                                            .build();
+                DatabaseTimeSeriesIngester databaseIngester =
+                        new DatabaseTimeSeriesIngester.Builder().setSystemSettings( evaluationDetails.systemSettings() )
+                                                                .setDatabase( databaseServices.database() )
+                                                                .setCaches( caches )
+                                                                .setIngestExecutor( executors.ingestExecutor() )
+                                                                .setTimeSeriesTracker( timeSeriesTracker )
+                                                                .setLockManager( databaseServices.databaseLockManager() )
+                                                                .build();
+
+                List<IngestResult> ingestResults = SourceLoader.load( databaseIngester,
+                                                                      evaluationDetails.systemSettings(),
+                                                                      declarationWithFeatures,
+                                                                      griddedFeaturesBuilder,
+                                                                      executors.readingExecutor() );
+
+                declarationWithFeatures =
+                        EvaluationUtilities.interpolateMissingDataTypes( declarationWithFeatures,
+                                                                         timeSeriesTracker.getDataTypes() );
+
+                // Create the gridded features cache if needed
+                GriddedFeatures griddedFeatures = null;
+                if ( Objects.nonNull( griddedFeaturesBuilder ) )
+                {
+                    griddedFeatures = griddedFeaturesBuilder.build();
+                }
+
+                // Get the project, which provides an interface to the underlying store of time-series data
+                project = Projects.getProject( databaseServices.database(),
+                                               declarationWithFeatures,
+                                               caches,
+                                               griddedFeatures,
+                                               ingestResults );
+            }
+            // In-memory evaluation
+            else
+            {
+                // Builder for an in-memory store of time-series
+                TimeSeriesStore.Builder timeSeriesStoreBuilder = new TimeSeriesStore.Builder();
+
+                // Ingester that ingests into the in-memory store
+                TimeSeriesIngester timeSeriesIngester = InMemoryTimeSeriesIngester.of( timeSeriesStoreBuilder,
+                                                                                       timeSeriesTracker );
+
+                // Load the sources using the ingester and create the ingest results to share
+                List<IngestResult> ingestResults = SourceLoader.load( timeSeriesIngester,
+                                                                      evaluationDetails.systemSettings(),
+                                                                      declarationWithFeatures,
+                                                                      griddedFeaturesBuilder,
+                                                                      executors.readingExecutor() );
+
+                // Interpolate any missing elements of the declaration that depend on the data types
+                declarationWithFeatures =
+                        EvaluationUtilities.interpolateMissingDataTypes( declarationWithFeatures,
+                                                                         timeSeriesTracker.getDataTypes() );
+
+                // The immutable collection of in-memory time-series
+                TimeSeriesStore timeSeriesStore = timeSeriesStoreBuilder.build();
+                // Set the store
+                evaluationDetails = EvaluationDetailsBuilder.builder( evaluationDetails )
+                                                            .timeSeriesStore( timeSeriesStore )
+                                                            .build();
+                project = Projects.getProject( declarationWithFeatures,
+                                               timeSeriesStore,
+                                               ingestResults );
+            }
+
+            LOGGER.debug( "Finished ingest of time-series data." );
+
+            // Set the project hash for identification
+            projectHash = project.getHash();
+
+            // Get a unit mapper for the declared or analyzed measurement units
+            String desiredMeasurementUnit = project.getMeasurementUnit();
+            UnitMapper unitMapper = UnitMapper.of( desiredMeasurementUnit,
+                                                   declaration.unitAliases() );
+
+            // Read external thresholds into the declaration
+            EvaluationDeclaration declarationWithFeaturesAndThresholds =
+                    ReaderUtilities.readAndFillThresholds( declarationWithFeatures, unitMapper );
+
+            // Update the small bag-o-state
+            evaluationDetails = EvaluationDetailsBuilder.builder( evaluationDetails )
+                                                        .declaration(
+                                                                declarationWithFeaturesAndThresholds )
+                                                        .build();
+            // Get the features, as described in the ingested time-series data, which may differ in number and details
+            // from the declared features. For example, they are filtered for data availability, spatial mask etc. and
+            // may include extra descriptive information, such as a geometry or location description.
+            Set<FeatureTuple> features = project.getFeatures();
+            Set<GeometryTuple> unwrappedFeatures = features.stream()
+                                                           .map( FeatureTuple::getGeometryTuple )
+                                                           .collect( Collectors.toUnmodifiableSet() );
+
+            // Get the atomic metrics and thresholds for processing, each group representing a distinct processing task.
+            // Ensure that named features correspond to the features associated with the data rather than declaration
+            Set<MetricsAndThresholds> metricsAndThresholds =
+                    ThresholdSlicer.getMetricsAndThresholdsForProcessing( declarationWithFeaturesAndThresholds,
+                                                                          unwrappedFeatures );
+
+            // Create the feature groups
+            Set<FeatureGroup> featureGroups = EvaluationUtilities.getFeatureGroups( project, features );
+
+            // Create any netcdf blobs for writing. See #80267-137.
+            EvaluationUtilities.createNetcdfBlobs( netcdfWriters,
+                                                   featureGroups,
+                                                   metricsAndThresholds );
+
+            // Create the evaluation description with any analyzed units and variable names that happen post-ingest
+            // This is akin to a post-ingest interpolation/augmentation of the declared project. Earlier stages of
+            // interpolation include interpolation of missing declaration and service calls to interpolate features and
+            // thresholds. This is the latest step in that process of combining the declaration and data
+            Evaluation evaluationDescription = MessageFactory.parse( declaration );
+            evaluationDescription = EvaluationUtilities.setAnalyzedUnitsAndVariableNames( evaluationDescription,
+                                                                                          project );
+
+            // Build the evaluation description for messaging. In the future, there may be a desire to build the
+            // evaluation description prior to ingest, in order to message the status of ingest to client applications.
+            // In order to build an evaluation description before ingest, those parts of the evaluation description that
+            // depend on the data would need to be part of the pool description instead (e.g., the measurement units).
+            // Indeed, the timescale is part of the pool description for this reason.
+            evaluation = EvaluationMessager.of( evaluationDescription,
+                                                connections,
+                                                Evaluator.CLIENT_ID,
+                                                evaluationDetails.evaluationId(),
+                                                evaluationDetails.subscriberApprover() );
+
+            // Register the messager for cancellation
+            canceller.setEvaluationMessager( evaluation );
+
+            // Start the evaluation
+            evaluation.start();
+
+            // Set the project and evaluation, metrics and thresholds
+            evaluationDetails = EvaluationDetailsBuilder.builder( evaluationDetails )
+                                                        .project( project )
+                                                        .evaluation( evaluation )
+                                                        .metricsAndThresholds( metricsAndThresholds )
+                                                        .build();
+
+            PoolFactory poolFactory = PoolFactory.of( project );
+            List<PoolRequest> poolRequests = EvaluationUtilities.getPoolRequests( poolFactory, evaluationDescription );
+
+            int poolCount = poolRequests.size();
+            monitor.setPoolCount( poolCount );
+
+            // Report on the completion state of all pools
+            PoolReporter poolReporter = new PoolReporter( declarationWithFeaturesAndThresholds,
+                                                          poolCount,
+                                                          true );
+
+            // Get a message group tracker to notify the completion of groups that encompass several pools. Currently,
+            // this is feature-group shaped, but additional shapes may be desired in future
+            PoolGroupTracker groupTracker = PoolGroupTracker.ofFeatureGroupTracker( evaluation, poolRequests );
+
+            // Create one or more pool tasks and complete them
+            EvaluationUtilities.completePoolTasks( poolFactory,
+                                                   evaluationDetails,
+                                                   sharedWriters,
+                                                   poolRequests,
+                                                   executors,
+                                                   poolReporter,
+                                                   groupTracker );
+
+            // Report that all publication was completed. At this stage, a message is sent indicating the expected
+            // message count for all message types, thereby allowing consumers to know when all messages have arrived.
+            evaluation.markPublicationCompleteReportedSuccess();
+
+            // Report on the pools
+            poolReporter.report();
+
+            // Wait for the evaluation to conclude
+            evaluation.await();
+
+            // Since the netcdf consumers are created here, they should be destroyed here. An attempt should be made to
+            // close the netcdf writers before the finally clause because these writers employ a delayed write, which
+            // could still fail exceptionally. Such a failure should stop the evaluation exceptionally. For further
+            // context see #81790-21 and the detailed description in EvaluationMessager.await(), which clarifies that
+            // awaiting an evaluation to complete does not mean that all consumers have finished their work, only
+            // that they have received all expected messages. If this contract is insufficient (e.g., because of a
+            // delayed write implementation), then it may be necessary to promote the underlying consumer/s to an
+            // external/outer subscriber that is responsible for messaging its own lifecycle, rather than delegating
+            // that to the EvaluationMessager instance (which adopts the limited contract described here). An external
+            // subscriber within this jvm/process has the same contract as an external subscriber running in another
+            // process/jvm. It should only report completion when consumption is "really done".
+            for ( NetcdfOutputWriter writer : netcdfWriters )
+            {
+                writer.close();
+            }
+
+            // Add the paths written by shared writers
+            if ( sharedWriters.hasSharedSampleWriters() )
+            {
+                resources.addAll( sharedWriters.getSampleDataWriters()
+                                               .get() );
+            }
+            if ( sharedWriters.hasSharedBaselineSampleWriters() )
+            {
+                resources.addAll( sharedWriters.getBaselineSampleDataWriters()
+                                               .get() );
+            }
+
+            // Messaging failed, possibly in a separate client? Then throw an exception: see #122343
+            if ( evaluation.isFailed() )
+            {
+                throw new WresProcessingException( "Evaluation '"
+                                                   + evaluationId
+                                                   + "' failed because a messaging client reported an error." );
+            }
+
+            return Pair.of( Collections.unmodifiableSet( resources ), projectHash );
+        }
+        // Allow a user-error to be distinguished separately
+        catch ( DeclarationException userError )
+        {
+            EvaluationUtilities.forceStop( evaluation, userError, evaluationId );
+
+            // Rethrow
+            throw userError;
+        }
+        // Internal error
+        catch ( RuntimeException internalError )
+        {
+            EvaluationUtilities.forceStop( evaluation, internalError, evaluationId );
+
+            // Decorate and rethrow
+            throw new WresProcessingException( "Encountered an error while processing evaluation '"
+                                               + evaluationId
+                                               + "': ",
+                                               internalError );
+        }
+        finally
+        {
+            // Close the netCDF writers if not closed
+            EvaluationUtilities.closeNetcdfWriters( netcdfWriters, evaluation, evaluationId );
+
+            // Clean-up an empty output directory: #67088
+            EvaluationUtilities.cleanEmptyOutputDirectory( outputDirectory );
+
+            // Add the paths written by external subscribers
+            if ( Objects.nonNull( evaluation ) )
+            {
+                resources.addAll( evaluation.getPathsWrittenBySubscribers() );
+            }
+
+            LOGGER.info( "Wrote the following output: {}", resources );
+
+            // Close the evaluation messager always (even if stopped on exception)
+            EvaluationUtilities.closeEvaluationMessager( evaluation, evaluationId );
+        }
     }
 
     /**
@@ -451,38 +891,5 @@ public class Evaluator
                          metricCount,
                          productCount );
         }
-    }
-
-    /**
-     * Small value object to collate a {@link Database} with an {@link DatabaseLockManager}. This may be disaggregated
-     * for transparency if we can reduce the number of input arguments to some methods.
-     * @param database The database instance.
-     * @param databaseLockManager The Database lock manager instance.
-     */
-
-    record DatabaseServices( Database database, DatabaseLockManager databaseLockManager )
-    {
-    }
-
-    /**
-     * A value object that reduces count of args for some methods and provides names for those objects.
-     *
-     * @param readingExecutor the executor for reading data sources
-     * @param ingestExecutor the executor for ingesting data into a database
-     * @param poolExecutor the executor for completing pools
-     * @param slicingExecutor the executor for slicing/dicing/transforming datasets
-     * @param metricExecutor the executor for computing metrics
-     * @param productExecutor the executor for writing products or formats
-     * @param samplingUncertaintyExecutor the executor for calculating sampling uncertainties
-     */
-
-    record Executors( ExecutorService readingExecutor,
-                      ExecutorService ingestExecutor,
-                      ExecutorService poolExecutor,
-                      ExecutorService slicingExecutor,
-                      ExecutorService metricExecutor,
-                      ExecutorService productExecutor,
-                      ExecutorService samplingUncertaintyExecutor )
-    {
     }
 }

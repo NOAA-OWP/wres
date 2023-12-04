@@ -41,7 +41,7 @@ public class Canceller
     private Database database;
 
     /** Executors that should be cancelled promptly. */
-    private Evaluator.Executors executors;
+    private EvaluationExecutors executors;
 
     /**
      * Creates an instance.
@@ -162,7 +162,7 @@ public class Canceller
      * Sets the evaluation executors to cancel
      * @param executors the executors
      */
-    void setEvaluationExecutors( Evaluator.Executors executors )
+    void setEvaluationExecutors( EvaluationExecutors executors )
     {
         this.executors = executors;
 
@@ -270,7 +270,7 @@ public class Canceller
 
     private void cancelDatabaseActivities()
     {
-        if( Objects.nonNull( this.database ) )
+        if ( Objects.nonNull( this.database ) )
         {
             LOGGER.warn( "Cancelling database activities for evaluation {}, which may produce errors...",
                          this.evaluationId );

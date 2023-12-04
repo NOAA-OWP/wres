@@ -1,6 +1,5 @@
 package wres.pipeline;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -22,7 +21,6 @@ import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import io.soabase.recordbuilder.core.RecordBuilder;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,39 +37,21 @@ import wres.config.yaml.components.GeneratedBaselines;
 import wres.datamodel.Ensemble;
 import wres.datamodel.bootstrap.BlockSizeEstimator;
 import wres.datamodel.bootstrap.InsufficientDataForResamplingException;
-import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.MetricsAndThresholds;
-import wres.datamodel.thresholds.ThresholdSlicer;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.time.TimeSeriesStore;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.events.EvaluationMessager;
-import wres.events.EvaluationEventUtilities;
-import wres.events.broker.BrokerConnectionFactory;
-import wres.events.subscribe.ConsumerFactory;
-import wres.events.subscribe.EvaluationSubscriber;
-import wres.events.subscribe.SubscriberApprover;
-import wres.io.database.caching.DatabaseCaches;
 import wres.io.reading.netcdf.grid.GriddedFeatures;
-import wres.io.ingesting.IngestResult;
-import wres.io.ingesting.SourceLoader;
-import wres.io.ingesting.TimeSeriesIngester;
-import wres.io.ingesting.TimeSeriesTracker;
-import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
-import wres.io.ingesting.memory.InMemoryTimeSeriesIngester;
-import wres.io.project.Projects;
-import wres.io.reading.ReaderUtilities;
 import wres.io.retrieving.database.EnsembleSingleValuedRetrieverFactory;
 import wres.io.retrieving.memory.EnsembleSingleValuedRetrieverFactoryInMemory;
 import wres.io.writing.csv.pairs.EnsemblePairsWriter;
 import wres.pipeline.pooling.PoolFactory;
 import wres.pipeline.pooling.PoolParameters;
-import wres.datamodel.units.UnitMapper;
 import wres.io.project.Project;
 import wres.io.retrieving.RetrieverFactory;
 import wres.io.retrieving.database.EnsembleRetrieverFactory;
@@ -81,8 +61,6 @@ import wres.io.retrieving.memory.SingleValuedRetrieverFactoryInMemory;
 import wres.io.writing.SharedSampleDataWriters;
 import wres.io.writing.csv.pairs.PairsWriter;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
-import wres.pipeline.Evaluator.DatabaseServices;
-import wres.pipeline.Evaluator.Executors;
 import wres.pipeline.pooling.PoolGroupTracker;
 import wres.pipeline.pooling.PoolProcessor;
 import wres.pipeline.pooling.PoolReporter;
@@ -91,7 +69,6 @@ import wres.pipeline.statistics.EnsembleStatisticsProcessor;
 import wres.pipeline.statistics.SingleValuedStatisticsProcessor;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.Evaluation;
-import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Outputs;
 import wres.system.SystemSettings;
 
@@ -109,10 +86,6 @@ class EvaluationUtilities
 
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationUtilities.class );
-
-    /** Unique identifier for this instance of the core messaging client. */
-
-    private static final String CLIENT_ID = EvaluationEventUtilities.getId();
 
     /** A function that estimates the trace count of a pool that contains ensemble traces. */
     private static final ToIntFunction<Pool<TimeSeries<Pair<Double, Ensemble>>>> ENSEMBLE_TRACE_COUNT_ESTIMATOR =
@@ -139,406 +112,6 @@ class EvaluationUtilities
             "Performing retrieval with a retriever factory backed by a persistent store.";
 
     /**
-     * Executes an evaluation.
-     *
-     * @param systemSettings the system settings
-     * @param databaseServices the database services
-     * @param declaration the project declaration
-     * @param executors the executors
-     * @param connections broker connections
-     * @param monitor an event that monitors the life cycle of the evaluation, not null
-     * @param canceller a callback to allow for cancellation of the running evaluation, not null
-     * @return the resources written and the hash of the project data
-     * @throws WresProcessingException if the evaluation processing fails
-     * @throws DeclarationException if the declaration is incorrect
-     * @throws NullPointerException if any input is null
-     * @throws IOException if the creation of outputs fails
-     */
-
-    static Pair<Set<Path>, String> evaluate( SystemSettings systemSettings,
-                                             DatabaseServices databaseServices,
-                                             EvaluationDeclaration declaration,
-                                             Executors executors,
-                                             BrokerConnectionFactory connections,
-                                             EvaluationEvent monitor,
-                                             Canceller canceller )
-            throws IOException
-    {
-        Objects.requireNonNull( systemSettings );
-        Objects.requireNonNull( declaration );
-        Objects.requireNonNull( executors );
-        Objects.requireNonNull( connections );
-        Objects.requireNonNull( monitor );
-        Objects.requireNonNull( canceller );
-
-        // Database needed?
-        if ( systemSettings.isUseDatabase() )
-        {
-            Objects.requireNonNull( databaseServices );
-        }
-
-        Set<Path> resources = new TreeSet<>();
-        String projectHash;
-
-        // Get a unique evaluation identifier
-        String evaluationId = EvaluationEventUtilities.getId();
-
-        // Set the identifier where needed
-        monitor.setEvaluationId( evaluationId );
-        canceller.setEvaluationId( evaluationId );
-
-        // Create output directory
-        Path outputDirectory = EvaluationUtilities.createTempOutputDirectory( evaluationId );
-
-        // Create netCDF writers
-        List<NetcdfOutputWriter> netcdfWriters =
-                EvaluationUtilities.getNetcdfWriters( declaration,
-                                                      systemSettings,
-                                                      outputDirectory );
-
-        // Obtain any formats delivered by out-of-process subscribers.
-        Set<Format> externalFormats = EvaluationUtilities.getFormatsDeliveredByExternalSubscribers();
-
-        LOGGER.debug( "These formats will be delivered by external subscribers: {}.", externalFormats );
-
-        // Formats delivered by within-process subscribers, in a mutable list
-        Set<Format> internalFormats = wres.statistics.MessageFactory.getDeclaredFormats( declaration.formats()
-                                                                                                    .outputs() );
-
-        internalFormats = new HashSet<>( internalFormats );
-        internalFormats.removeAll( externalFormats );
-
-        LOGGER.debug( "These formats will be delivered by internal subscribers: {}.", internalFormats );
-
-        String consumerId = EvaluationEventUtilities.getId();
-
-        // Moving this into the try-with-resources would require a different approach than notifying the evaluation to
-        // stop( Exception e ) on encountering an error that is not visible to it. See discussion in #90292.
-        EvaluationMessager evaluation = null;
-
-        try ( SharedWriters sharedWriters = EvaluationUtilities.getSharedWriters( declaration,
-                                                                                  outputDirectory );
-              // Create a subscriber for the format writers that are within-process. The subscriber is built for this
-              // evaluation only, and should not serve other evaluations, else there is a risk that short-running
-              // subscribers die without managing to serve the evaluations they promised to serve. This complexity
-              // disappears when all subscribers are moved to separate, long-running, processes: #89868
-              ConsumerFactory consumerFactory = new StatisticsConsumerFactory( consumerId,
-                                                                               new HashSet<>( internalFormats ),
-                                                                               netcdfWriters,
-                                                                               declaration );
-              EvaluationSubscriber formatsSubscriber = EvaluationSubscriber.of( consumerFactory,
-                                                                                executors.productExecutor(),
-                                                                                connections,
-                                                                                evaluationId ) )
-        {
-            // Set the subscriber to cancel
-            canceller.setInternalFormatsSubscriber( formatsSubscriber );
-
-            // Start the subscriber
-            formatsSubscriber.start();
-
-            // Restrict the subscribers for internally-delivered formats otherwise core clients may steal format
-            // writing work from each other. This is expected insofar as all subscribers are par. However, core clients
-            // currently run in short-running processes, we want to estimate resources for core clients effectively,
-            // and some format writers are stateful (e.g., netcdf), hence this is currently a bad thing. Goal: place
-            // all format writers in long-running processes instead. See #88262 and #88267.
-            SubscriberApprover subscriberApprover =
-                    new SubscriberApprover.Builder().addApprovedSubscriber( internalFormats,
-                                                                            consumerId )
-                                                    .build();
-
-            // Package the details needed to build the evaluation
-            EvaluationDetails evaluationDetails =
-                    EvaluationUtilitiesEvaluationDetailsBuilder.builder()
-                                                               .systemSettings( systemSettings )
-                                                               .declaration( declaration )
-                                                               .evaluationId( evaluationId )
-                                                               .subscriberApprover( subscriberApprover )
-                                                               .monitor( monitor )
-                                                               .databaseServices( databaseServices )
-                                                               .build();
-
-            // Open an evaluation, to be closed on completion or stopped on exception
-
-            // Look up any needed feature correlations and thresholds, generate a new declaration. These are needed for
-            // reading and ingest, as well as subsequent steps, so perform this upfront: #116208
-            EvaluationDeclaration declarationWithFeatures = ReaderUtilities.readAndFillFeatures( declaration );
-            // Update the small bag-o-state
-            evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
-                                                                           .declaration( declarationWithFeatures )
-                                                                           .build();
-            // Gridded features cache, if required. See #51232.
-            GriddedFeatures.Builder griddedFeaturesBuilder =
-                    EvaluationUtilities.getGriddedFeaturesCache( declarationWithFeatures );
-
-            LOGGER.debug( "Beginning ingest of time-series data..." );
-
-            Project project;
-
-            // Track the time-series through ingest
-            TimeSeriesTracker timeSeriesTracker = TimeSeriesTracker.of();
-
-            // Is the evaluation in a database? If so, use implementations that support a database
-            if ( systemSettings.isUseDatabase() )
-            {
-                // Build the database caches/ORMs, if required
-                DatabaseCaches caches = DatabaseCaches.of( databaseServices.database() );
-                // Set the caches
-                evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
-                                                                               .caches( caches )
-                                                                               .build();
-                DatabaseTimeSeriesIngester databaseIngester =
-                        new DatabaseTimeSeriesIngester.Builder().setSystemSettings( evaluationDetails.systemSettings() )
-                                                                .setDatabase( databaseServices.database() )
-                                                                .setCaches( caches )
-                                                                .setIngestExecutor( executors.ingestExecutor() )
-                                                                .setTimeSeriesTracker( timeSeriesTracker )
-                                                                .setLockManager( databaseServices.databaseLockManager() )
-                                                                .build();
-
-                List<IngestResult> ingestResults = SourceLoader.load( databaseIngester,
-                                                                      evaluationDetails.systemSettings(),
-                                                                      declarationWithFeatures,
-                                                                      griddedFeaturesBuilder,
-                                                                      executors.readingExecutor() );
-
-                declarationWithFeatures =
-                        EvaluationUtilities.interpolateMissingDataTypes( declarationWithFeatures,
-                                                                         timeSeriesTracker.getDataTypes() );
-
-                // Create the gridded features cache if needed
-                GriddedFeatures griddedFeatures = null;
-                if ( Objects.nonNull( griddedFeaturesBuilder ) )
-                {
-                    griddedFeatures = griddedFeaturesBuilder.build();
-                }
-
-                // Get the project, which provides an interface to the underlying store of time-series data
-                project = Projects.getProject( databaseServices.database(),
-                                               declarationWithFeatures,
-                                               caches,
-                                               griddedFeatures,
-                                               ingestResults );
-            }
-            // In-memory evaluation
-            else
-            {
-                // Builder for an in-memory store of time-series
-                TimeSeriesStore.Builder timeSeriesStoreBuilder = new TimeSeriesStore.Builder();
-
-                // Ingester that ingests into the in-memory store
-                TimeSeriesIngester timeSeriesIngester = InMemoryTimeSeriesIngester.of( timeSeriesStoreBuilder,
-                                                                                       timeSeriesTracker );
-
-                // Load the sources using the ingester and create the ingest results to share
-                List<IngestResult> ingestResults = SourceLoader.load( timeSeriesIngester,
-                                                                      evaluationDetails.systemSettings(),
-                                                                      declarationWithFeatures,
-                                                                      griddedFeaturesBuilder,
-                                                                      executors.readingExecutor() );
-
-                // Interpolate any missing elements of the declaration that depend on the data types
-                declarationWithFeatures =
-                        EvaluationUtilities.interpolateMissingDataTypes( declarationWithFeatures,
-                                                                         timeSeriesTracker.getDataTypes() );
-
-                // The immutable collection of in-memory time-series
-                TimeSeriesStore timeSeriesStore = timeSeriesStoreBuilder.build();
-                // Set the store
-                evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
-                                                                               .timeSeriesStore( timeSeriesStore )
-                                                                               .build();
-                project = Projects.getProject( declarationWithFeatures,
-                                               timeSeriesStore,
-                                               ingestResults );
-            }
-
-            LOGGER.debug( "Finished ingest of time-series data." );
-
-            // Set the project hash for identification
-            projectHash = project.getHash();
-
-            // Get a unit mapper for the declared or analyzed measurement units
-            String desiredMeasurementUnit = project.getMeasurementUnit();
-            UnitMapper unitMapper = UnitMapper.of( desiredMeasurementUnit,
-                                                   declaration.unitAliases() );
-
-            // Read external thresholds into the declaration
-            EvaluationDeclaration declarationWithFeaturesAndThresholds =
-                    ReaderUtilities.readAndFillThresholds( declarationWithFeatures, unitMapper );
-
-            // Update the small bag-o-state
-            evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
-                                                                           .declaration(
-                                                                                   declarationWithFeaturesAndThresholds )
-                                                                           .build();
-            // Get the features, as described in the ingested time-series data, which may differ in number and details
-            // from the declared features. For example, they are filtered for data availability, spatial mask etc. and
-            // may include extra descriptive information, such as a geometry or location description.
-            Set<FeatureTuple> features = project.getFeatures();
-            Set<GeometryTuple> unwrappedFeatures = features.stream()
-                                                           .map( FeatureTuple::getGeometryTuple )
-                                                           .collect( Collectors.toUnmodifiableSet() );
-
-            // Get the atomic metrics and thresholds for processing, each group representing a distinct processing task.
-            // Ensure that named features correspond to the features associated with the data rather than declaration
-            Set<MetricsAndThresholds> metricsAndThresholds =
-                    ThresholdSlicer.getMetricsAndThresholdsForProcessing( declarationWithFeaturesAndThresholds,
-                                                                          unwrappedFeatures );
-
-            // Create the feature groups
-            Set<FeatureGroup> featureGroups = EvaluationUtilities.getFeatureGroups( project, features );
-
-            // Create any netcdf blobs for writing. See #80267-137.
-            EvaluationUtilities.createNetcdfBlobs( netcdfWriters,
-                                                   featureGroups,
-                                                   metricsAndThresholds );
-
-            // Create the evaluation description with any analyzed units and variable names that happen post-ingest
-            // This is akin to a post-ingest interpolation/augmentation of the declared project. Earlier stages of
-            // interpolation include interpolation of missing declaration and service calls to interpolate features and
-            // thresholds. This is the latest step in that process of combining the declaration and data
-            Evaluation evaluationDescription = MessageFactory.parse( declaration );
-            evaluationDescription = EvaluationUtilities.setAnalyzedUnitsAndVariableNames( evaluationDescription,
-                                                                                          project );
-
-            // Build the evaluation description for messaging. In the future, there may be a desire to build the
-            // evaluation description prior to ingest, in order to message the status of ingest to client applications.
-            // In order to build an evaluation description before ingest, those parts of the evaluation description that
-            // depend on the data would need to be part of the pool description instead (e.g., the measurement units).
-            // Indeed, the timescale is part of the pool description for this reason.
-            evaluation = EvaluationMessager.of( evaluationDescription,
-                                                connections,
-                                                EvaluationUtilities.CLIENT_ID,
-                                                evaluationDetails.evaluationId(),
-                                                evaluationDetails.subscriberApprover() );
-
-            // Register the messager for cancellation
-            canceller.setEvaluationMessager( evaluation );
-
-            // Start the evaluation
-            evaluation.start();
-
-            // Set the project and evaluation, metrics and thresholds
-            evaluationDetails = EvaluationUtilitiesEvaluationDetailsBuilder.builder( evaluationDetails )
-                                                                           .project( project )
-                                                                           .evaluation( evaluation )
-                                                                           .metricsAndThresholds( metricsAndThresholds )
-                                                                           .build();
-
-            PoolFactory poolFactory = PoolFactory.of( project );
-            List<PoolRequest> poolRequests = EvaluationUtilities.getPoolRequests( poolFactory, evaluationDescription );
-
-            int poolCount = poolRequests.size();
-            monitor.setPoolCount( poolCount );
-
-            // Report on the completion state of all pools
-            PoolReporter poolReporter = new PoolReporter( declarationWithFeaturesAndThresholds,
-                                                          poolCount,
-                                                          true );
-
-            // Get a message group tracker to notify the completion of groups that encompass several pools. Currently,
-            // this is feature-group shaped, but additional shapes may be desired in future
-            PoolGroupTracker groupTracker = PoolGroupTracker.ofFeatureGroupTracker( evaluation, poolRequests );
-
-            // Create one or more pool tasks and complete them
-            EvaluationUtilities.completePoolTasks( poolFactory,
-                                                   evaluationDetails,
-                                                   sharedWriters,
-                                                   poolRequests,
-                                                   executors,
-                                                   poolReporter,
-                                                   groupTracker );
-
-            // Report that all publication was completed. At this stage, a message is sent indicating the expected
-            // message count for all message types, thereby allowing consumers to know when all messages have arrived.
-            evaluation.markPublicationCompleteReportedSuccess();
-
-            // Report on the pools
-            poolReporter.report();
-
-            // Wait for the evaluation to conclude
-            evaluation.await();
-
-            // Since the netcdf consumers are created here, they should be destroyed here. An attempt should be made to 
-            // close the netcdf writers before the finally clause because these writers employ a delayed write, which
-            // could still fail exceptionally. Such a failure should stop the evaluation exceptionally. For further 
-            // context see #81790-21 and the detailed description in EvaluationMessager.await(), which clarifies that
-            // awaiting an evaluation to complete does not mean that all consumers have finished their work, only
-            // that they have received all expected messages. If this contract is insufficient (e.g., because of a
-            // delayed write implementation), then it may be necessary to promote the underlying consumer/s to an
-            // external/outer subscriber that is responsible for messaging its own lifecycle, rather than delegating
-            // that to the EvaluationMessager instance (which adopts the limited contract described here). An external
-            // subscriber within this jvm/process has the same contract as an external subscriber running in another
-            // process/jvm. It should only report completion when consumption is "really done".
-            for ( NetcdfOutputWriter writer : netcdfWriters )
-            {
-                writer.close();
-            }
-
-            // Add the paths written by shared writers
-            if ( sharedWriters.hasSharedSampleWriters() )
-            {
-                resources.addAll( sharedWriters.getSampleDataWriters()
-                                               .get() );
-            }
-            if ( sharedWriters.hasSharedBaselineSampleWriters() )
-            {
-                resources.addAll( sharedWriters.getBaselineSampleDataWriters()
-                                               .get() );
-            }
-
-            // Messaging failed, possibly in a separate client? Then throw an exception: see #122343
-            if ( evaluation.isFailed() )
-            {
-                throw new WresProcessingException( "Evaluation '"
-                                                   + evaluationId
-                                                   + "' failed because a messaging client reported an error." );
-            }
-
-            return Pair.of( Collections.unmodifiableSet( resources ), projectHash );
-        }
-        // Allow a user-error to be distinguished separately
-        catch ( DeclarationException userError )
-        {
-            EvaluationUtilities.forceStop( evaluation, userError, evaluationId );
-
-            // Rethrow
-            throw userError;
-        }
-        // Internal error
-        catch ( RuntimeException internalError )
-        {
-            EvaluationUtilities.forceStop( evaluation, internalError, evaluationId );
-
-            // Decorate and rethrow
-            throw new WresProcessingException( "Encountered an error while processing evaluation '"
-                                               + evaluationId
-                                               + "': ",
-                                               internalError );
-        }
-        finally
-        {
-            // Close the netCDF writers if not closed
-            EvaluationUtilities.closeNetcdfWriters( netcdfWriters, evaluation, evaluationId );
-
-            // Clean-up an empty output directory: #67088
-            EvaluationUtilities.cleanEmptyOutputDirectory( outputDirectory );
-
-            // Add the paths written by external subscribers
-            if ( Objects.nonNull( evaluation ) )
-            {
-                resources.addAll( evaluation.getPathsWrittenBySubscribers() );
-            }
-
-            LOGGER.info( "Wrote the following output: {}", resources );
-
-            // Close the evaluation messager always (even if stopped on exception)
-            EvaluationUtilities.closeEvaluationMessager( evaluation, evaluationId );
-        }
-    }
-
-    /**
      * Interpolates any missing data types and validates the interpolated declaration for internal consistency.
      * @param declaration the declaration with missing data types
      * @param dataTypes the data types detected through ingest
@@ -546,8 +119,8 @@ class EvaluationUtilities
      * @throws DeclarationException if the declaration is inconsistent with the inferred types
      */
 
-    private static EvaluationDeclaration interpolateMissingDataTypes( EvaluationDeclaration declaration,
-                                                                      Map<DatasetOrientation, DataType> dataTypes )
+    static EvaluationDeclaration interpolateMissingDataTypes( EvaluationDeclaration declaration,
+                                                              Map<DatasetOrientation, DataType> dataTypes )
     {
         // Interpolate any missing elements of the declaration that depend on the data types
         if ( DeclarationUtilities.hasMissingDataTypes( declaration ) )
@@ -574,13 +147,12 @@ class EvaluationUtilities
      * @throws IOException if the blobs could not be written for any reason
      */
 
-    private static void createNetcdfBlobs( List<NetcdfOutputWriter> netcdfWriters,
-                                           Set<FeatureGroup> featureGroups,
-                                           Set<MetricsAndThresholds> metricsAndThresholds ) throws IOException
+    static void createNetcdfBlobs( List<NetcdfOutputWriter> netcdfWriters,
+                                   Set<FeatureGroup> featureGroups,
+                                   Set<MetricsAndThresholds> metricsAndThresholds ) throws IOException
     {
         if ( !netcdfWriters.isEmpty() )
         {
-            // TODO: eliminate these log messages when legacy netcdf is removed
             LOGGER.info( "Creating Netcdf blobs for statistics. This can take a while..." );
 
             for ( NetcdfOutputWriter writer : netcdfWriters )
@@ -600,9 +172,9 @@ class EvaluationUtilities
      * @param evaluationId the evaluation identifier
      */
 
-    private static void closeNetcdfWriters( List<NetcdfOutputWriter> netcdfWriters,
-                                            EvaluationMessager evaluation,
-                                            String evaluationId )
+    static void closeNetcdfWriters( List<NetcdfOutputWriter> netcdfWriters,
+                                    EvaluationMessager evaluation,
+                                    String evaluationId )
     {
         for ( NetcdfOutputWriter writer : netcdfWriters )
         {
@@ -625,7 +197,7 @@ class EvaluationUtilities
      * @throws IOException if the directory could not be deleted for any reason
      */
 
-    private static void cleanEmptyOutputDirectory( Path outputDirectory ) throws IOException
+    static void cleanEmptyOutputDirectory( Path outputDirectory ) throws IOException
     {
         // Clean-up an empty output directory: #67088
         try ( Stream<Path> outputs = Files.list( outputDirectory ) )
@@ -649,8 +221,8 @@ class EvaluationUtilities
      * @param evaluationId the evaluation identifier
      */
 
-    private static void closeEvaluationMessager( EvaluationMessager messager,
-                                                 String evaluationId )
+    static void closeEvaluationMessager( EvaluationMessager messager,
+                                         String evaluationId )
     {
         try
         {
@@ -669,23 +241,6 @@ class EvaluationUtilities
     }
 
     /**
-     * Forcibly stops an evaluation messager on encountering an error, if already created.
-     * @param evaluation the evaluation messager
-     * @param error the error
-     * @param evaluationId the evaluation identifier
-     */
-    private static void forceStop( EvaluationMessager evaluation, Exception error, String evaluationId )
-    {
-        if ( Objects.nonNull( evaluation ) )
-        {
-            // Stop forcibly
-            LOGGER.debug( FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR, evaluationId );
-
-            evaluation.stop( error );
-        }
-    }
-
-    /**
      * Chunks the pooling tasks into chains and evaluates them.
      *
      * @param poolFactory the pool factory
@@ -697,13 +252,13 @@ class EvaluationUtilities
      * @param poolGroupTracker the group publication tracker
      */
 
-    private static void completePoolTasks( PoolFactory poolFactory,
-                                           EvaluationDetails evaluationDetails,
-                                           SharedWriters sharedWriters,
-                                           List<PoolRequest> poolRequests,
-                                           Executors executors,
-                                           PoolReporter poolReporter,
-                                           PoolGroupTracker poolGroupTracker )
+    static void completePoolTasks( PoolFactory poolFactory,
+                                   EvaluationDetails evaluationDetails,
+                                   SharedWriters sharedWriters,
+                                   List<PoolRequest> poolRequests,
+                                   EvaluationExecutors executors,
+                                   PoolReporter poolReporter,
+                                   PoolGroupTracker poolGroupTracker )
     {
         LOGGER.info( "Submitting {} pool tasks for execution, which are awaiting completion. This can take a "
                      + "while...",
@@ -740,8 +295,8 @@ class EvaluationUtilities
      * @return the shared writer instance
      */
 
-    private static SharedWriters getSharedWriters( EvaluationDeclaration declaration,
-                                                   Path outputDirectory )
+    static SharedWriters getSharedWriters( EvaluationDeclaration declaration,
+                                           Path outputDirectory )
     {
         // Obtain the duration units for outputs: #55441
         ChronoUnit durationUnits = declaration.durationFormat();
@@ -783,9 +338,9 @@ class EvaluationUtilities
      * @return a list of netCDF writers, zero to two
      */
 
-    private static List<NetcdfOutputWriter> getNetcdfWriters( EvaluationDeclaration declaration,
-                                                              SystemSettings systemSettings,
-                                                              Path outputDirectory )
+    static List<NetcdfOutputWriter> getNetcdfWriters( EvaluationDeclaration declaration,
+                                                      SystemSettings systemSettings,
+                                                      Path outputDirectory )
     {
         List<NetcdfOutputWriter> writers = new ArrayList<>( 2 );
 
@@ -830,7 +385,7 @@ class EvaluationUtilities
      * @throws NullPointerException if the evaluationId is null 
      */
 
-    private static Path createTempOutputDirectory( String evaluationId ) throws IOException
+    static Path createTempOutputDirectory( String evaluationId ) throws IOException
     {
         Objects.requireNonNull( evaluationId );
 
@@ -885,7 +440,7 @@ class EvaluationUtilities
      * @return the formats delivered by external subscribers
      */
 
-    private static Set<Format> getFormatsDeliveredByExternalSubscribers()
+    static Set<Format> getFormatsDeliveredByExternalSubscribers()
     {
         String externalGraphics = System.getProperty( "wres.externalGraphics" );
 
@@ -907,8 +462,8 @@ class EvaluationUtilities
      * @return the feature groups
      */
 
-    private static Set<FeatureGroup> getFeatureGroups( Project project,
-                                                       Set<FeatureTuple> featuresWithExplicitThresholds )
+    static Set<FeatureGroup> getFeatureGroups( Project project,
+                                               Set<FeatureTuple> featuresWithExplicitThresholds )
     {
         Objects.requireNonNull( project );
         Objects.requireNonNull( featuresWithExplicitThresholds );
@@ -962,8 +517,8 @@ class EvaluationUtilities
      * @return an evaluation description with analyzed measurement units and variables, as needed
      */
 
-    private static Evaluation setAnalyzedUnitsAndVariableNames( Evaluation evaluation,
-                                                                Project project )
+    static Evaluation setAnalyzedUnitsAndVariableNames( Evaluation evaluation,
+                                                        Project project )
     {
         String desiredMeasurementUnit = project.getMeasurementUnit();
         Evaluation.Builder builder = evaluation.toBuilder()
@@ -998,8 +553,8 @@ class EvaluationUtilities
      * @return the pool requests
      */
 
-    private static List<PoolRequest> getPoolRequests( PoolFactory poolFactory,
-                                                      Evaluation evaluationDescription )
+    static List<PoolRequest> getPoolRequests( PoolFactory poolFactory,
+                                              Evaluation evaluationDescription )
     {
         List<PoolRequest> poolRequests = poolFactory.getPoolRequests( evaluationDescription );
 
@@ -1059,6 +614,40 @@ class EvaluationUtilities
     }
 
     /**
+     * @param declaration the project declaration
+     * @return a gridded feature cache or null if none is required
+     */
+
+    static GriddedFeatures.Builder getGriddedFeaturesCache( EvaluationDeclaration declaration )
+    {
+        GriddedFeatures.Builder griddedFeatures = null;
+
+        if ( Objects.nonNull( declaration.spatialMask() ) )
+        {
+            griddedFeatures = new GriddedFeatures.Builder( declaration.spatialMask() );
+        }
+
+        return griddedFeatures;
+    }
+
+    /**
+     * Forcibly stops an evaluation messager on encountering an error, if already created.
+     * @param evaluation the evaluation messager
+     * @param error the error
+     * @param evaluationId the evaluation identifier
+     */
+    static void forceStop( EvaluationMessager evaluation, Exception error, String evaluationId )
+    {
+        if ( Objects.nonNull( evaluation ) )
+        {
+            // Stop forcibly
+            LOGGER.debug( FORCIBLY_STOPPING_EVALUATION_UPON_ENCOUNTERING_AN_INTERNAL_ERROR, evaluationId );
+
+            evaluation.stop( error );
+        }
+    }
+
+    /**
      * Creates one pool task for each pool request and then chains them together, such that all of the pools complete 
      * nominally or one completes exceptionally.
      *
@@ -1076,7 +665,7 @@ class EvaluationUtilities
                                                            EvaluationDetails evaluationDetails,
                                                            SharedWriters sharedWriters,
                                                            List<PoolRequest> poolRequests,
-                                                           Executors executors,
+                                                           EvaluationExecutors executors,
                                                            PoolReporter poolReporter,
                                                            PoolGroupTracker poolGroupTracker )
     {
@@ -1145,7 +734,7 @@ class EvaluationUtilities
                                                                                       EvaluationDetails evaluationDetails,
                                                                                       List<PoolRequest> poolRequests,
                                                                                       SharedWriters sharedWriters,
-                                                                                      Executors executors,
+                                                                                      EvaluationExecutors executors,
                                                                                       PoolGroupTracker groupPublicationTracker,
                                                                                       PoolParameters poolParameters )
     {
@@ -1251,7 +840,7 @@ class EvaluationUtilities
                                                                                     EvaluationDetails evaluationDetails,
                                                                                     List<PoolRequest> poolRequests,
                                                                                     SharedWriters sharedWriters,
-                                                                                    Executors executors,
+                                                                                    EvaluationExecutors executors,
                                                                                     PoolGroupTracker groupPublicationTracker,
                                                                                     PoolParameters poolParameters )
     {
@@ -1598,23 +1187,6 @@ class EvaluationUtilities
     }
 
     /**
-     * @param declaration the project declaration
-     * @return a gridded feature cache or null if none is required
-     */
-
-    private static GriddedFeatures.Builder getGriddedFeaturesCache( EvaluationDeclaration declaration )
-    {
-        GriddedFeatures.Builder griddedFeatures = null;
-
-        if ( Objects.nonNull( declaration.spatialMask() ) )
-        {
-            griddedFeatures = new GriddedFeatures.Builder( declaration.spatialMask() );
-        }
-
-        return griddedFeatures;
-    }
-
-    /**
      * Estimates the optimal block size for each left-ish time-series in each mini-pool and returns the average of the
      * optimal block sizes across all time-series.
      * @param <R> the type of right-ish time-series data
@@ -1724,132 +1296,6 @@ class EvaluationUtilities
                                                                                          + "stationary bootstrap." ) );
 
         return Pair.of( optimalBlockSize, modalTimestep );
-    }
-
-    /**
-     * Small value class to collect together variables needed to instantiate an evaluation.
-     *
-     * @param systemSettings the system settings
-     * @param declaration the project declaration
-     * @param evaluationId the evaluation identifier
-     * @param subscriberApprover the subscriber approver
-     * @param monitor the evaluation event monitor
-     * @param databaseServices the database services
-     * @param caches the database caches/ORMs
-     * @param metricsAndThresholds the metrics and thresholds
-     * @param project the project
-     * @param evaluation the evaluation
-     * @param timeSeriesStore the time-series data store
-     */
-
-    @RecordBuilder
-    record EvaluationDetails( SystemSettings systemSettings,
-                              EvaluationDeclaration declaration,
-                              String evaluationId,
-                              SubscriberApprover subscriberApprover,
-                              EvaluationEvent monitor,
-                              DatabaseServices databaseServices,
-                              DatabaseCaches caches,
-                              Set<MetricsAndThresholds> metricsAndThresholds,
-                              Project project,
-                              EvaluationMessager evaluation,
-                              TimeSeriesStore timeSeriesStore )
-    {
-        /**
-         * @return true if there is an in-memory store of time-series, false otherwise.
-         */
-
-        private boolean hasInMemoryStore()
-        {
-            return Objects.nonNull( this.timeSeriesStore );
-        }
-    }
-
-    /**
-     * A value object for shared writers.
-     * @param sharedSampleWriters Shared writers for sample data.
-     * @param sharedBaselineSampleWriters Shared writers for baseline sampled data.
-     */
-
-    private record SharedWriters( SharedSampleDataWriters sharedSampleWriters,
-                                  SharedSampleDataWriters sharedBaselineSampleWriters ) implements Closeable
-    {
-        /**
-         * Returns an instance.
-         *
-         * @param sharedSampleWriters shared writer of pairs
-         * @param sharedBaselineSampleWriters shared writer of baseline pairs
-         */
-        private static SharedWriters of( SharedSampleDataWriters sharedSampleWriters,
-                                         SharedSampleDataWriters sharedBaselineSampleWriters )
-
-        {
-            return new SharedWriters( sharedSampleWriters, sharedBaselineSampleWriters );
-        }
-
-        /**
-         * Returns the shared sample data writers.
-         *
-         * @return the shared sample data writers.
-         */
-
-        private SharedSampleDataWriters getSampleDataWriters()
-        {
-            return this.sharedSampleWriters;
-        }
-
-        /**
-         * Returns the shared sample data writers for baseline data.
-         *
-         * @return the shared sample data writers  for baseline data.
-         */
-
-        private SharedSampleDataWriters getBaselineSampleDataWriters()
-        {
-            return this.sharedBaselineSampleWriters;
-        }
-
-        /**
-         * Returns <code>true</code> if shared sample writers are available, otherwise <code>false</code>.
-         *
-         * @return true if shared sample writers are available
-         */
-
-        private boolean hasSharedSampleWriters()
-        {
-            return Objects.nonNull( this.sharedSampleWriters );
-        }
-
-        /**
-         * Returns <code>true</code> if shared sample writers are available for the baseline samples, otherwise
-         * <code>false</code>.
-         *
-         * @return true if shared sample writers are available for the baseline samples
-         */
-
-        private boolean hasSharedBaselineSampleWriters()
-        {
-            return Objects.nonNull( this.sharedBaselineSampleWriters );
-        }
-
-        /**
-         * Attempts to close all shared writers.
-         * @throws IOException when a resource could not be closed
-         */
-
-        @Override
-        public void close() throws IOException
-        {
-            if ( this.hasSharedSampleWriters() )
-            {
-                this.getSampleDataWriters().close();
-            }
-
-            if ( this.hasSharedBaselineSampleWriters() )
-            {
-                this.getBaselineSampleDataWriters().close();
-            }
-        }
     }
 
     /**

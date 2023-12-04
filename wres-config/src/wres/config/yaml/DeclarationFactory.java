@@ -109,7 +109,7 @@ public class DeclarationFactory
 
     /** Default probabilities when quantiles are declared as summary statistics without explicit probabilities. */
     public static final SortedSet<Double> DEFAULT_QUANTILES =
-            Collections.unmodifiableSortedSet( new TreeSet<>( Set.of( 0.1, 0.9 ) ) );
+            Collections.unmodifiableSortedSet( new TreeSet<>( Set.of( 0.1, 0.5, 0.9 ) ) );
 
     /** Default number of bins in a histogram summary statistic when not declared. */
     public static final int DEFAULT_HISTOGRAM_BINS = 10;

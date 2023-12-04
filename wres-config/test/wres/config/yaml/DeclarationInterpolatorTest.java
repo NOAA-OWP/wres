@@ -1233,11 +1233,7 @@ class DeclarationInterpolatorTest
                                             .summaryStatistics( summaryStatistics )
                                             .build();
 
-        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( evaluation,
-                                                                            DataType.OBSERVATIONS,
-                                                                            DataType.ENSEMBLE_FORECASTS,
-                                                                            null,
-                                                                            true );
+        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( evaluation );
 
         Set<SummaryStatistic> actualOne = actual.summaryStatistics();
         Set<SummaryStatistic> actualTwo = actual.metrics()

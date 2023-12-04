@@ -1985,6 +1985,10 @@ class DeclarationFactoryTest
                                                        .build();
         SummaryStatistic quantileTwo = SummaryStatistic.newBuilder()
                                                        .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
+                                                       .setProbability( 0.5 )
+                                                       .build();
+        SummaryStatistic quantileThree = SummaryStatistic.newBuilder()
+                                                       .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
                                                        .setProbability( 0.9 )
                                                        .build();
         SummaryStatistic histogram = SummaryStatistic.newBuilder()
@@ -1995,6 +1999,7 @@ class DeclarationFactoryTest
         summaryStatistics.add( mean );
         summaryStatistics.add( quantileOne );
         summaryStatistics.add( quantileTwo );
+        summaryStatistics.add( quantileThree );
         summaryStatistics.add( histogram );
 
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
