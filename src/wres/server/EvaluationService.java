@@ -7,10 +7,12 @@ import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.io.Writer;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.sql.SQLException;
@@ -144,6 +146,20 @@ public class EvaluationService implements ServletContextListener
         this.evaluator = new Evaluator( systemSettings,
                                         database,
                                         broker );
+    }
+
+    /**
+     * Returns a help page for usage examples of a personal server
+     * @return Good Response
+     */
+    @GET
+    public Response help()
+    {
+        InputStream resourceAsStream =
+                EvaluationService.class.getResourceAsStream( URI.create( "/evaluationHelp.html" ).getPath() );
+
+        return Response.ok( resourceAsStream )
+                       .build();
     }
 
     /**

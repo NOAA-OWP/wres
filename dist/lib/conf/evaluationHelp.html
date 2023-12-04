@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <title>Evaluation Help</title>
+    </head>
+
+    <h1>Standalone Server Help</h1>
+
+    <h3> How do I execute and evaluation? </h3>
+    <body>
+        <p> curl -X POST -d "$(cat [DECLARATION_FILE])" -H "Content-Type:text/xml" localhost:[PORT]}/evaluation/evaluate </p>
+    </body>
+
+    <h3> How do I obtain a list of the outputs generated? </h3>
+    <body>
+        <p>curl -X GET localhost:[PORT]/evaluation/[PROJECT_ID]</p>
+    </body>
+
+    <h3> How do I obtain an output file? </h3>
+    <body>
+        <p>curl -o [FILE_NAME] -X GET localhost:[PORT]/evaluation/[PROJECT_ID]/[FILE_NAME]</p>
+    </body>
+
+    <h3> How do I view evaluation logs? </h3>
+    <body>
+        <p>In the server terminal, logging will printed associated with an executed evaluation.</p>
+    </body>
+</html>
