@@ -169,8 +169,6 @@ public class DeclarationInterpolator
         DeclarationInterpolator.interpolateThresholdsForIndividualMetrics( adjustedDeclarationBuilder );
         // Interpolate metric parameters
         DeclarationInterpolator.interpolateMetricParameters( adjustedDeclarationBuilder );
-        // Interpolate summary statistics
-        DeclarationInterpolator.interpolateSummaryStatistics( adjustedDeclarationBuilder );
         // Interpolate output formats where none exist
         DeclarationInterpolator.interpolateOutputFormatsWhenNoneDeclared( adjustedDeclarationBuilder );
 
@@ -979,8 +977,7 @@ public class DeclarationInterpolator
                 if ( Objects.nonNull( parBuilder.summaryStatistics() ) )
                 {
                     Set<SummaryStatistic> summaryStatistics =
-                            DeclarationInterpolator.interpolateDimensionForSummaryStatistics( parBuilder.summaryStatistics(),
-                                                                                              SummaryStatistic.StatisticDimension.TIMING_ERRORS );
+                            DeclarationInterpolator.interpolateTimingErrorSummaryStatistics( parBuilder.summaryStatistics() );
                     parBuilder.summaryStatistics( summaryStatistics );
                 }
             }
@@ -999,44 +996,28 @@ public class DeclarationInterpolator
     }
 
     /**
-     * Interpolates missing information from summary statistics.
-     * @param builder the builder to adjust
-     */
-    private static void interpolateSummaryStatistics( EvaluationDeclarationBuilder builder )
-    {
-        LOGGER.debug( "Interpolating summary statistics." );
-        if ( Objects.nonNull( builder.summaryStatistics() ) )
-        {
-            Set<SummaryStatistic> summaryStatistics =
-                    DeclarationInterpolator.interpolateDimensionForSummaryStatistics( builder.summaryStatistics(),
-                                                                                      SummaryStatistic.StatisticDimension.FEATURES );
-            builder.summaryStatistics( summaryStatistics );
-        }
-    }
-
-    /**
      * Adds the prescribed dimension to each summary statistic.
      *
      * @param statistics the existing summary statistics
-     * @param dimension the dimension to interpolate
      * @return the summary statistics with interpolated dimension
      */
-    private static Set<SummaryStatistic> interpolateDimensionForSummaryStatistics( Set<SummaryStatistic> statistics,
-                                                                                   SummaryStatistic.StatisticDimension dimension )
+    private static Set<SummaryStatistic> interpolateTimingErrorSummaryStatistics( Set<SummaryStatistic> statistics )
     {
         Objects.requireNonNull( statistics );
 
-        if ( LOGGER.isDebugEnabled() )
+        if ( LOGGER.isDebugEnabled()
+             && !statistics.isEmpty() )
         {
             LOGGER.debug( "Interpolated a dimension of {} for the summary statistics: {}.",
-                          dimension,
-                          statistics.stream().map( SummaryStatistic::getStatistic )
+                          SummaryStatistic.StatisticDimension.TIMING_ERRORS,
+                          statistics.stream()
+                                    .map( SummaryStatistic::getStatistic )
                                     .toList() );
         }
 
         return statistics.stream()
                          .map( n -> n.toBuilder()
-                                     .setDimension( dimension )
+                                     .setDimension( SummaryStatistic.StatisticDimension.TIMING_ERRORS )
                                      .build() )
                          .collect( Collectors.toUnmodifiableSet() );
     }
