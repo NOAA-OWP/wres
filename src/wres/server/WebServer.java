@@ -205,10 +205,11 @@ public class WebServer
 
         try ( ServerConnector serverConnector = new ServerConnector( jettyServer, httpOne, httpTwo, alpn ) )
         {
+            int port = getPortOrDefault( args );
             // Only listen on localhost, this process is intended to be managed
             // by other processes running locally, e.g. a shim or a UI.
             serverConnector.setHost( "127.0.0.1" );
-            serverConnector.setPort( getPortOrDefault( args ) );
+            serverConnector.setPort( port );
             serverConnector.addBean( HTTP_CHANNEL_LISTENER );
             serverConnector.setAcceptedSendBufferSize( 0 );
             ServerConnector[] serverConnectors = { serverConnector };
@@ -216,6 +217,10 @@ public class WebServer
 
             jettyServer.start();
             jettyServer.dump( System.err );  // NOSONAR
+            String helpMessage =
+                    String.format( "Server started. Visit localhost:%d/evaluation for usage instructions", port );
+            LOGGER.info( helpMessage );
+
             jettyServer.join();
         }
         catch ( InterruptedException ie )

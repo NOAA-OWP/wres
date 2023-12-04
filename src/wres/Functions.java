@@ -247,7 +247,7 @@ final class Functions
                        Functions::migrateInline );
         functions.put( new WresFunction( "-r", "refreshdatabase", "Refreshes the database.", false ),
                        Functions::refreshDatabase );
-        functions.put( new WresFunction( "-s", "server", "Spins up a long running worker server", true ),
+        functions.put( new WresFunction( "-s", "server", "Spins up a long running worker server. Visit localhost/evaluation for use instructions", true ),
                        Functions::startServer );
         functions.put( new WresFunction( "-v",
                                          "validate",
@@ -490,17 +490,32 @@ final class Functions
     private static ExecutionResult startServer( final SharedResources sharedResources )
     {
         List<String> args = sharedResources.arguments();
-        if ( args.size() != 1 )
+
+        if ( args.size() > 2 )
         {
-            String message = "Please supply a host for the server to listen to, like this: "
-                             + "bin/wres.bat server 8010";
+            String message = """
+                    Too many arguments provided. Please use this command in the following ways:
+                    bin/wres.bat server <PORT_OVERRIDE>
+                    bin/wres.bat server
+                    """;
             LOGGER.error( message );
             UserInputException e = new UserInputException( message );
             return ExecutionResult.failure( e, false ); // Or return 400 - Bad Request (see #41467)
         }
 
-        // Attempt to read the port
-        String port = args.get( 0 ).trim();
+        String port = "8010";
+        if ( args.size() == 1 )
+        {
+            String message = "Starting server on default port 8010, if you would like to provide a port to use  do so like this: "
+                             + "bin/wres.bat server 8010";
+            LOGGER.info( message );
+        }
+        else
+        {
+            // Attempt to read the port
+            port = args.get( 1 ).trim();
+            LOGGER.info( "Starting server on port: {}", port );
+        }
 
         try
         {
