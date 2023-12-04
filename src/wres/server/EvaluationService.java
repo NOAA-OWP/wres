@@ -576,8 +576,7 @@ public class EvaluationService implements ServletContextListener
      */
     @POST
     @Path( "/evaluate" )
-    @Consumes( MediaType.TEXT_XML )
-    @Produces( "application/octet-stream" )
+    @Produces( MediaType.TEXT_XML )
     public Response postEvaluate( String projectConfig )
     {
         long projectId;
