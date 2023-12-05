@@ -5,6 +5,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.ToDoubleFunction;
@@ -221,7 +222,7 @@ class FunctionFactoryTest
                                                       .setHistogramBins( 5 )
                                                       .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
                                                       .build();
-        DiagramStatisticFunction<double[]> histogram = FunctionFactory.histogram( parameters );
+        DiagramStatisticFunction histogram = FunctionFactory.histogram( parameters );
 
         double[] data = new double[] { 1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6 };
         Map<DiagramStatisticFunction.DiagramComponentName, String> p =
@@ -281,10 +282,14 @@ class FunctionFactoryTest
     void testHistogramForDurations()
     {
         SummaryStatistic parameters = SummaryStatistic.newBuilder()
+                                                      .setStatistic( SummaryStatistic.StatisticName.HISTOGRAM )
                                                       .setHistogramBins( 5 )
                                                       .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
                                                       .build();
-        DiagramStatisticFunction<Duration[]> histogram = FunctionFactory.histogram( parameters, ChronoUnit.SECONDS );
+        DiagramStatisticFunction histogram = FunctionFactory.ofDiagramSummaryStatistic( parameters );
+        BiFunction<Map<DiagramStatisticFunction.DiagramComponentName, String>, Duration[],
+                DiagramStatistic> durationHistogram =
+                FunctionFactory.ofDurationDiagramFromUnivariateFunction( histogram, ChronoUnit.SECONDS );
 
         Duration one = Duration.ofHours( 1 );
         Duration two = Duration.ofHours( 2 );
@@ -300,7 +305,7 @@ class FunctionFactoryTest
                 Map.of( DiagramStatisticFunction.DiagramComponentName.VARIABLE, "foo",
                         DiagramStatisticFunction.DiagramComponentName.VARIABLE_UNIT, "bar" );
 
-        DiagramStatistic actual = histogram.apply( p, data );
+        DiagramStatistic actual = durationHistogram.apply( p, data );
 
         // Build the expectation
         DiagramMetric.DiagramMetricComponent domainMetric =

@@ -95,7 +95,7 @@ class SummaryStatisticsCalculatorTest
         quantiles.add( q3f );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( quantiles, Set.of(), Set.of(), null );
+                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -104,7 +104,7 @@ class SummaryStatisticsCalculatorTest
             next.getScoresBuilder( 0 )
                 .getStatisticsBuilder( 0 )
                 .setValue( i );
-            calculator.accept( next.build() );
+            calculator.test( next.build() );
         }
 
         List<Statistics> actual = calculator.get();
@@ -204,7 +204,7 @@ class SummaryStatisticsCalculatorTest
         quantiles.add( q3f );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( quantiles, Set.of(), Set.of(), null );
+                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -222,7 +222,7 @@ class SummaryStatisticsCalculatorTest
                 .getStatisticsBuilder( 1 )
                 .clearValues()
                 .addAllValues( second );
-            calculator.accept( next.build() );
+            calculator.test( next.build() );
         }
 
         List<Statistics> actual = calculator.get();
@@ -317,7 +317,7 @@ class SummaryStatisticsCalculatorTest
         quantiles.add( q3f );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( quantiles, Set.of(), Set.of(), null );
+                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -327,7 +327,7 @@ class SummaryStatisticsCalculatorTest
                 .getStatisticsBuilder( 0 )
                 .setValue( Duration.newBuilder()
                                    .setSeconds( i * 60 * 60 ) );
-            calculator.accept( next.build() );
+            calculator.test( next.build() );
         }
 
         List<Statistics> actual = calculator.get();
@@ -420,7 +420,7 @@ class SummaryStatisticsCalculatorTest
         quantiles.add( q3f );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( quantiles, Set.of(), Set.of(), null );
+                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -440,7 +440,7 @@ class SummaryStatisticsCalculatorTest
             next.getDurationDiagramsBuilder( 0 )
                 .getStatisticsBuilder( 2 )
                 .setDuration( thirdDuration );
-            calculator.accept( next.build() );
+            calculator.test( next.build() );
         }
 
         List<Statistics> actual = calculator.get();
@@ -536,10 +536,10 @@ class SummaryStatisticsCalculatorTest
 
         Set<SummaryStatisticFunction> quantiles = Set.of( q1f );
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( quantiles, Set.of(), Set.of(), null );
+                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, null );
 
         // Add nominal
-        calculator.accept( nominal );
+        calculator.test( nominal );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -548,7 +548,7 @@ class SummaryStatisticsCalculatorTest
             next.getScoresBuilder( 0 )
                 .getStatisticsBuilder( 0 )
                 .setValue( i );
-            calculator.accept( next.build() );
+            calculator.test( next.build() );
         }
 
         List<Statistics> actual = calculator.get();
@@ -719,7 +719,7 @@ class SummaryStatisticsCalculatorTest
         quantiles.add( q3f );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( quantiles, Set.of(), Set.of(), null );
+                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, null );
 
         ExecutorService executor = Executors.newFixedThreadPool( 5 );
 
@@ -769,7 +769,7 @@ class SummaryStatisticsCalculatorTest
                        .setDuration( thirdDuration );
 
             // Multithreaded add
-            Runnable statisticAddTask = () -> calculator.accept( nextBuilder.build() );
+            Runnable statisticAddTask = () -> calculator.test( nextBuilder.build() );
             Future<?> statisticAddFuture = executor.submit( statisticAddTask );
             futures.add( statisticAddFuture );
         }
@@ -930,7 +930,7 @@ class SummaryStatisticsCalculatorTest
 
         Set<SummaryStatisticFunction> summaryStatistics = Set.of( meanFunction );
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), Set.of(), null );
+                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), null, null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -939,7 +939,7 @@ class SummaryStatisticsCalculatorTest
             next.getScoresBuilder( 0 )
                 .getStatisticsBuilder( 0 )
                 .setValue( i );
-            calculator.accept( next.build() );
+            calculator.test( next.build() );
         }
 
         List<Statistics> actual = calculator.get();
@@ -1001,7 +1001,7 @@ class SummaryStatisticsCalculatorTest
                                                                      .getValue(), 5.0 );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), Set.of(), include );
+                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), include, null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -1010,7 +1010,7 @@ class SummaryStatisticsCalculatorTest
             next.getScoresBuilder( 0 )
                 .getStatisticsBuilder( 0 )
                 .setValue( i );
-            calculator.accept( next.build() );
+            calculator.test( next.build() );
         }
 
         List<Statistics> actual = calculator.get();
@@ -1094,11 +1094,11 @@ class SummaryStatisticsCalculatorTest
         Set<SummaryStatisticFunction> summaryStatistics = Set.of( meanFunction );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), Set.of(), null );
+                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), null, null );
 
         // Accept the two statistics
-        calculator.accept( one );
-        calculator.accept( two );
+        calculator.test( one );
+        calculator.test( two );
 
         // Cannot guarantee order of statistics, so compare sets
         List<Statistics> actual = calculator.get();
@@ -1162,7 +1162,7 @@ class SummaryStatisticsCalculatorTest
         summaryStatistics.add( sdFunction );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), Set.of(), null );
+                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), null, null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -1171,7 +1171,7 @@ class SummaryStatisticsCalculatorTest
             next.getScoresBuilder( 0 )
                 .getStatisticsBuilder( 0 )
                 .setValue( i );
-            calculator.accept( next.build() );
+            calculator.test( next.build() );
         }
 
         List<Statistics> actual = calculator.get();

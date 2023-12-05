@@ -74,6 +74,10 @@ public enum MetricConstants
     /** Frequency Bias.*/
     FREQUENCY_BIAS( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
 
+    /** Histogram. */
+    HISTOGRAM( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM, MetricGroup.UNIVARIATE_STATISTIC,
+               MetricGroup.LRB ),
+
     /** Index of Agreement. */
     INDEX_OF_AGREEMENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 

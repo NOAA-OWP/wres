@@ -31,7 +31,7 @@
     <!-- To quiet mock server it seems we must set level on specific class. -->
     <logger name="org.mockserver.mock.HttpStateHandler" level="warn" />
 
-    <!-- Allow -Dwres.logLevel to set logging level, otherwise info. -->
+    <!-- Allow -Dwres.logLevel to set logging level, otherwise debug. -->
     <root level="${wres.logLevel:-debug}">
         <appender-ref ref="STDOUT" />
     </root>

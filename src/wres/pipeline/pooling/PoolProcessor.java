@@ -561,7 +561,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                     // Quantile calculator available?
                     if ( Objects.nonNull( calculator ) )
                     {
-                        nextStatistics.forEach( calculator );
+                        nextStatistics.forEach( calculator::test );
                     }
                     // Log a missing quantile calculator, which can happen when resampling generates novel data for
                     // which nominal statistics were unavailable. This is rare, but can happen, for example, when a
@@ -748,9 +748,9 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                 Statistics mergedStatistics = nextEntry.getValue();
                 SummaryStatisticsCalculator calculator = SummaryStatisticsCalculator.of( quantiles,
                                                                                          Set.of(),
-                                                                                         Set.of(),
+                                                                                         null,
                                                                                          null );
-                calculator.accept( mergedStatistics );
+                calculator.test( mergedStatistics );
 
                 if ( returnMe.containsKey( key ) )
                 {

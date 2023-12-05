@@ -13,6 +13,8 @@ import java.util.concurrent.ExecutorService;
  * @param metricExecutor the executor for computing metrics
  * @param productExecutor the executor for writing products or formats
  * @param samplingUncertaintyExecutor the executor for calculating sampling uncertainties
+ *
+ * @author James Brown
  */
 
 record EvaluationExecutors( ExecutorService readingExecutor,

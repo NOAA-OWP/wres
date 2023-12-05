@@ -341,6 +341,9 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
         filtered.remove( MetricConstants.FALSE_NEGATIVES );
         filtered.remove( MetricConstants.TRUE_NEGATIVES );
 
+        // Remove the histogram
+        filtered.remove( MetricConstants.HISTOGRAM );
+
         return filtered.toArray( new MetricConstants[0] );
     }
 
