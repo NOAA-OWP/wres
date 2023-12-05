@@ -2,6 +2,7 @@ package wres.metrics;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -12,7 +13,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Consumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -58,7 +59,7 @@ import wres.statistics.generated.Statistics;
  */
 
 @ThreadSafe
-public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, Consumer<Statistics>
+public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, Predicate<Statistics>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( SummaryStatisticsCalculator.class );
@@ -103,14 +104,14 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
     /** The scalar summary statistics to calculate on completion. */
     private final Set<SummaryStatisticFunction> scalarStatistics;
 
-    /** The diagram summary statistics to calculate for scores on completion. */
-    private final Set<DiagramStatisticFunction<double[]>> diagramStatistics;
-
-    /** The diagram summary statistics to calculate for duration scores on completion. */
-    private final Set<DiagramStatisticFunction<Duration[]>> diagramDurationStatistics;
+    /** The diagram summary statistics to calculate on completion. */
+    private final Set<DiagramStatisticFunction> diagramStatistics;
 
     /** The calculated summary statistics. */
     private final List<Statistics> statistics;
+
+    /** Time units for duration statistics. */
+    private final ChronoUnit timeUnit;
 
     /** Locks the creation of new diagram row slots within the {@link #diagrams}. */
     private final ReentrantLock diagramRowSlotCreationLock = new ReentrantLock();
@@ -122,25 +123,25 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
     /**
      * Creates an instance.
      * @param scalarStatistics the scalar summary statistics to calculate
-     * @param diagramStatistics the diagram summary statistics to calculate for double scores
-     * @param diagramDurationStatistics the diagram summary statistics to calculate for duration scores
+     * @param diagramStatistics the diagram summary statistics to calculate
      * @param filter an optional filter
+     * @param timeUnits the optional time units to use for duration statistics
      * @return an instance
      * @throws IllegalArgumentException if all lists of statistics are null or empty
      */
     public static SummaryStatisticsCalculator of( Set<SummaryStatisticFunction> scalarStatistics,
-                                                  Set<DiagramStatisticFunction<double[]>> diagramStatistics,
-                                                  Set<DiagramStatisticFunction<Duration[]>> diagramDurationStatistics,
-                                                  Predicate<Statistics> filter )
+                                                  Set<DiagramStatisticFunction> diagramStatistics,
+                                                  Predicate<Statistics> filter,
+                                                  ChronoUnit timeUnits )
     {
         return new SummaryStatisticsCalculator( scalarStatistics,
                                                 diagramStatistics,
-                                                diagramDurationStatistics,
-                                                filter );
+                                                filter,
+                                                timeUnits );
     }
 
     /**
-     * Closes the calculator to further additions via {@link #accept(Statistics)} and returns a {@link Statistics} for
+     * Closes the calculator to further additions via {@link #test(Statistics)}} and returns a {@link Statistics} for
      * each summary statistic requested on construction.
      *
      * @return the summary statistics
@@ -161,10 +162,11 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
      * @param statistics the statistics
      * @throws NullPointerException if the statistics is null
      * @throws IllegalArgumentException if this instance has been completed and no further statistics are expected
+     * @return whether the statistics were accepted into the store based on a filter supplied on construction
      */
 
     @Override
-    public void accept( Statistics statistics )
+    public boolean test( Statistics statistics )
     {
         Objects.requireNonNull( statistics );
 
@@ -182,7 +184,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                 LOGGER.trace( "Rejected these statistics as they do not meet the filter: {}.", statistics );
             }
 
-            return;
+            return false;
         }
 
         // Remove any statistics that do not support summary statistics
@@ -216,6 +218,8 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
         LOGGER.debug( "Added statistics in thread {}.",
                       Thread.currentThread()
                             .getName() );
+
+        return true;
     }
 
     /**
@@ -517,7 +521,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
         }
 
         // Calculate the diagram summary statistics for scores
-        for ( DiagramStatisticFunction<double[]> diagramStatistic : this.diagramStatistics )
+        for ( DiagramStatisticFunction diagramStatistic : this.diagramStatistics )
         {
             Statistics.Builder builder = this.nominal.toBuilder()
                                                      .setSummaryStatistic( diagramStatistic.statistic() );
@@ -528,7 +532,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
         }
 
         // Calculate the diagram summary statistics for duration scores
-        for ( DiagramStatisticFunction<Duration[]> diagramStatistic : this.diagramDurationStatistics )
+        for ( DiagramStatisticFunction diagramStatistic : this.diagramStatistics )
         {
             Statistics.Builder builder = this.nominal.toBuilder()
                                                      .setSummaryStatistic( diagramStatistic.statistic() );
@@ -689,7 +693,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
      * @param diagram the diagram statistic
      * @return the diagram statistics, one for each double score
      */
-    private List<DiagramStatistic> calculateDiagramStatisticForDoubleScores( DiagramStatisticFunction<double[]> diagram )
+    private List<DiagramStatistic> calculateDiagramStatisticForDoubleScores( DiagramStatisticFunction diagram )
     {
         List<DiagramStatistic> diagramList = new ArrayList<>();
         for ( Map.Entry<DoubleScoreName, MutableDoubleList> nextScore : this.doubleScores.entrySet() )
@@ -725,7 +729,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
      * @param diagram the diagram statistic
      * @return the diagram statistics, one for each duration score
      */
-    private List<DiagramStatistic> calculateDiagramStatisticForDurationScores( DiagramStatisticFunction<Duration[]> diagram )
+    private List<DiagramStatistic> calculateDiagramStatisticForDurationScores( DiagramStatisticFunction diagram )
     {
         List<DiagramStatistic> diagramList = new ArrayList<>();
         for ( Map.Entry<DurationScoreName, List<Duration>> nextScore : this.durationScores.entrySet() )
@@ -740,7 +744,10 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
             Duration[] rawScores = scores.toArray( new Duration[0] );
             Map<DiagramStatisticFunction.DiagramComponentName, String> names =
                     Map.of( DiagramStatisticFunction.DiagramComponentName.VARIABLE, nameString );
-            DiagramStatistic nextDiagram = diagram.apply( names, rawScores );
+            BiFunction<Map<DiagramStatisticFunction.DiagramComponentName, String>, Duration[], DiagramStatistic>
+                    durationDiagram =
+                    FunctionFactory.ofDurationDiagramFromUnivariateFunction( diagram, this.timeUnit );
+            DiagramStatistic nextDiagram = durationDiagram.apply( names, rawScores );
             diagramList.add( nextDiagram );
         }
 
@@ -837,15 +844,15 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
     /**
      * Creates an instance.
      * @param scalarStatistics the scalar summary statistics to calculate
-     * @param diagramStatistics the diagram summary statistics to calculate for scores
-     * @param diagramDurationStatistics the diagram summary statistics to calculate for duration scores
+     * @param diagramStatistics the diagram summary statistics to calculate
      * @param filter an optional filter
+     * @param timeUnits the optional time units to use for duration statistics
      * @throws IllegalArgumentException if all lists of statistics are null or empty
      */
     private SummaryStatisticsCalculator( Set<SummaryStatisticFunction> scalarStatistics,
-                                         Set<DiagramStatisticFunction<double[]>> diagramStatistics,
-                                         Set<DiagramStatisticFunction<Duration[]>> diagramDurationStatistics,
-                                         Predicate<Statistics> filter )
+                                         Set<DiagramStatisticFunction> diagramStatistics,
+                                         Predicate<Statistics> filter,
+                                         ChronoUnit timeUnits )
     {
         // Replace null with empty lists
         if ( Objects.isNull( scalarStatistics ) )
@@ -858,17 +865,21 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
             diagramStatistics = Set.of();
         }
 
-        if ( Objects.isNull( diagramDurationStatistics ) )
-        {
-            diagramDurationStatistics = Set.of();
-        }
-
         // No statistics to compute?
         if ( scalarStatistics.isEmpty()
-             && diagramStatistics.isEmpty()
-             && diagramDurationStatistics.isEmpty() )
+             && diagramStatistics.isEmpty() )
         {
             throw new IllegalArgumentException( "Provide one or more summary statistics to calculate." );
+        }
+
+        // Set the time unit for duration statistics
+        if ( Objects.nonNull( timeUnits ) )
+        {
+            this.timeUnit = timeUnits;
+        }
+        else
+        {
+            this.timeUnit = ChronoUnit.HOURS;
         }
 
         if ( Objects.isNull( filter ) )
@@ -882,7 +893,6 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
 
         this.scalarStatistics = scalarStatistics;
         this.diagramStatistics = diagramStatistics;
-        this.diagramDurationStatistics = diagramDurationStatistics;
         this.isComplete = new AtomicBoolean();
         this.statistics = new ArrayList<>();
 

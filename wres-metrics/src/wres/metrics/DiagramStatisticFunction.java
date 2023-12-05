@@ -17,9 +17,9 @@ import wres.statistics.generated.SummaryStatistic;
  * @param calculator the statistic calculator, not null
  * @author James Brown
  */
-public record DiagramStatisticFunction<T>( SummaryStatistic statistic,
-                                           BiFunction<Map<DiagramComponentName, String>, T, DiagramStatistic> calculator )
-        implements BiFunction<Map<DiagramStatisticFunction.DiagramComponentName, String>, T, DiagramStatistic>
+public record DiagramStatisticFunction( SummaryStatistic statistic,
+                                        BiFunction<Map<DiagramComponentName, String>, double[], DiagramStatistic> calculator )
+        implements BiFunction<Map<DiagramStatisticFunction.DiagramComponentName, String>, double[], DiagramStatistic>
 {
     /**
      * An enumeration of diagram component names to be associated with string values.
@@ -44,7 +44,7 @@ public record DiagramStatisticFunction<T>( SummaryStatistic statistic,
     }
 
     @Override
-    public DiagramStatistic apply( Map<DiagramComponentName, String> names, T value )
+    public DiagramStatistic apply( Map<DiagramComponentName, String> names, double[] value )
     {
         return this.calculator.apply( names, value );
     }

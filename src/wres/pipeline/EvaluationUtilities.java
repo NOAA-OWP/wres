@@ -16,6 +16,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
@@ -34,6 +35,7 @@ import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.GeneratedBaselines;
+import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.Ensemble;
 import wres.datamodel.bootstrap.BlockSizeEstimator;
 import wres.datamodel.bootstrap.InsufficientDataForResamplingException;
@@ -50,6 +52,10 @@ import wres.io.reading.netcdf.grid.GriddedFeatures;
 import wres.io.retrieving.database.EnsembleSingleValuedRetrieverFactory;
 import wres.io.retrieving.memory.EnsembleSingleValuedRetrieverFactoryInMemory;
 import wres.io.writing.csv.pairs.EnsemblePairsWriter;
+import wres.metrics.DiagramStatisticFunction;
+import wres.metrics.FunctionFactory;
+import wres.metrics.SummaryStatisticFunction;
+import wres.metrics.SummaryStatisticsCalculator;
 import wres.pipeline.pooling.PoolFactory;
 import wres.pipeline.pooling.PoolParameters;
 import wres.io.project.Project;
@@ -70,6 +76,10 @@ import wres.pipeline.statistics.SingleValuedStatisticsProcessor;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Outputs;
+import wres.statistics.generated.Statistics;
+import wres.statistics.generated.SummaryStatistic;
+import wres.statistics.generated.Threshold;
+import wres.statistics.generated.TimeWindow;
 import wres.system.SystemSettings;
 
 /**
@@ -110,6 +120,284 @@ class EvaluationUtilities
     /** Re-used string. */
     private static final String PERFORMING_RETRIEVAL_WITH_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE =
             "Performing retrieval with a retriever factory backed by a persistent store.";
+
+    /**
+     * Generates a collection of {@link SummaryStatisticsCalculator} from an {@link EvaluationDeclaration}. Currently,
+     * supports only {@link wres.statistics.generated.SummaryStatistic.StatisticDimension#FEATURES}.
+     * @param declaration the evaluation declaration
+     * @return the summary statistics calculators
+     * @throws NullPointerException if any input is null
+     * @throws IllegalArgumentException if the dimension is unsupported
+     */
+
+    static List<SummaryStatisticsCalculator> getSummaryStatisticsCalculators( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration );
+
+        // No summary statistics?
+        if ( declaration.summaryStatistics()
+                        .isEmpty() )
+        {
+            LOGGER.debug( "No summary statistics were declared." );
+
+            return List.of();
+        }
+
+        // Unsupported dimensions?
+        Set<SummaryStatistic.StatisticDimension> unsupported =
+                declaration.summaryStatistics()
+                           .stream()
+                           .map( SummaryStatistic::getDimension )
+                           .filter( d -> d != SummaryStatistic.StatisticDimension.FEATURES )
+                           .collect( Collectors.toSet() );
+
+        if ( !unsupported.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Unsupported dimension(s) for calculating summary statistics: "
+                                                + unsupported
+                                                + "." );
+        }
+
+        boolean separateMetricsForBaseline = DeclarationUtilities.hasBaseline( declaration )
+                                             && declaration.baseline()
+                                                           .separateMetrics();
+
+        // Get the time window filters
+        Set<TimeWindow> timeWindows = DeclarationUtilities.getTimeWindows( declaration );
+        List<Predicate<Statistics>> timeWindowFilters =
+                EvaluationUtilities.getTimeWindowFilters( timeWindows,
+                                                          separateMetricsForBaseline );
+
+        LOGGER.debug( "Discovered {} time windows, which produced {} filters.",
+                      timeWindows.size(),
+                      timeWindowFilters.size() );
+
+        // Get the threshold filters
+        Set<wres.config.yaml.components.Threshold> thresholds = DeclarationUtilities.getThresholds( declaration );
+        List<Predicate<Statistics>> thresholdFilters =
+                EvaluationUtilities.getThresholdFilters( thresholds, separateMetricsForBaseline );
+
+        LOGGER.debug( "Discovered {} thresholds, which produced {} filters.",
+                      thresholds.size(),
+                      thresholds.size() );
+
+        List<Predicate<Statistics>> joined = EvaluationUtilities.join( timeWindowFilters, thresholdFilters );
+
+        LOGGER.debug( "After joining the time windows and thresholds, produced {} filters.",
+                      joined.size() );
+
+        // Create the calculators
+        Set<SummaryStatistic> summaryStatistics = declaration.summaryStatistics();
+
+        LOGGER.debug( "Discovered {} summary statistics to generate.",
+                      summaryStatistics.size() );
+
+        Set<SummaryStatisticFunction> scalar = new HashSet<>();
+        Set<DiagramStatisticFunction> diagrams = new HashSet<>();
+
+        for ( SummaryStatistic nextStatistic : summaryStatistics )
+        {
+            SummaryStatistic.StatisticName name = nextStatistic.getStatistic();
+            MetricConstants behavioralName = MetricConstants.valueOf( name.name() );
+
+            // Diagram?
+            if ( behavioralName.isInGroup( MetricConstants.StatisticType.DIAGRAM ) )
+            {
+                DiagramStatisticFunction nextDiagram = FunctionFactory.ofDiagramSummaryStatistic( nextStatistic );
+                diagrams.add( nextDiagram );
+                LOGGER.debug( "Discovered a summary statistics diagram: {}.", name );
+            }
+            else
+            {
+                SummaryStatisticFunction nextScalar = FunctionFactory.ofSummaryStatistic( nextStatistic );
+                scalar.add( nextScalar );
+                LOGGER.debug( "Discovered a scalar summary statistic: {}.", name );
+            }
+        }
+
+        ChronoUnit timeUnits = declaration.durationFormat();
+
+        LOGGER.debug( "Discovered the following time units for summary statistic generation (where relevant): {}.",
+                      timeUnits );
+
+        // Return one calculator for each filter
+        return joined.stream()
+                     .map( n -> SummaryStatisticsCalculator.of( scalar, diagrams, n, timeUnits ) )
+                     .toList();
+    }
+
+    /**
+     * Generates a collection of filters for {@link Statistics} based on their {@link TimeWindow}, one for each supplied
+     * {@link TimeWindow}.
+     *
+     * @param timeWindows the time windows
+     * @param separateMetricsForBaseline whether to generate a filter for baseline pools with separate metrics
+     * @return the filters
+     */
+    private static List<Predicate<Statistics>> getTimeWindowFilters( Set<TimeWindow> timeWindows,
+                                                                     boolean separateMetricsForBaseline )
+    {
+        List<Predicate<Statistics>> filters = new ArrayList<>();
+
+        for ( TimeWindow timeWindow : timeWindows )
+        {
+            // Filter for main pools
+            Predicate<Statistics> nextMainFilter = statistics -> statistics.hasPool()
+                                                                 && statistics.getPool()
+                                                                              .getTimeWindow()
+                                                                              .equals( timeWindow );
+            filters.add( nextMainFilter );
+
+            // Separate metrics for baseline?
+            if ( separateMetricsForBaseline )
+            {
+                Predicate<Statistics> nextBaseFilter = statistics -> !statistics.hasPool()
+                                                                     && statistics.hasBaselinePool()
+                                                                     && statistics.getBaselinePool()
+                                                                                  .getTimeWindow()
+                                                                                  .equals( timeWindow );
+                filters.add( nextBaseFilter );
+            }
+        }
+
+        return Collections.unmodifiableList( filters );
+    }
+
+    /**
+     * Generates a collection of filters for {@link Statistics} based on their {@link Threshold}, one for each supplied
+     * combination of event and decision threshold.
+     *
+     * @param thresholds the thresholds
+     * @param separateMetricsForBaseline whether to generate a filter for baseline pools with separate metrics
+     * @return the filters
+     */
+    private static List<Predicate<Statistics>> getThresholdFilters( Set<wres.config.yaml.components.Threshold> thresholds,
+                                                                    boolean separateMetricsForBaseline )
+    {
+        Set<Threshold> eventThresholds = thresholds.stream()
+                                                   .filter( t -> t.type() != ThresholdType.PROBABILITY_CLASSIFIER )
+                                                   .map( wres.config.yaml.components.Threshold::threshold )
+                                                   .collect( Collectors.toSet() );
+
+        List<Predicate<Statistics>> eventThresholdFilters =
+                EvaluationUtilities.getThresholdFilters( eventThresholds,
+                                                         wres.statistics.generated.Pool::getEventThreshold,
+                                                         separateMetricsForBaseline );
+
+        LOGGER.debug( "Discovered {} event thresholds, which produced {} filters.",
+                      eventThresholds.size(),
+                      eventThresholdFilters.size() );
+
+        Set<Threshold> decisionThresholds = thresholds.stream()
+                                                      .filter( t -> t.type() == ThresholdType.PROBABILITY_CLASSIFIER )
+                                                      .map( wres.config.yaml.components.Threshold::threshold )
+                                                      .collect( Collectors.toSet() );
+
+        List<Predicate<Statistics>> decisionThresholdFilters =
+                EvaluationUtilities.getThresholdFilters( decisionThresholds,
+                                                         wres.statistics.generated.Pool::getDecisionThreshold,
+                                                         separateMetricsForBaseline );
+
+        LOGGER.debug( "Discovered {} decision (probability classifier) thresholds, which produced {} filters.",
+                      decisionThresholds.size(),
+                      decisionThresholdFilters.size() );
+
+        List<Predicate<Statistics>> joined =
+                EvaluationUtilities.join( eventThresholdFilters, decisionThresholdFilters );
+
+        LOGGER.debug( "After joining the event and decision thresholds, produced {} filters.", joined.size() );
+
+        // Join the filters, as needed
+        return joined;
+    }
+
+    /**
+     * Generates a filter for {@link Statistics} from each supplied {@link Threshold} and a threshold getter that
+     * returns a {@link Threshold} from a {@link wres.statistics.generated.Pool} at filter time.
+     * @param thresholds the thresholds
+     * @param thresholdGetter the threshold supplier
+     * @param separateMetricsForBaseline whether to generate a separate filter for baseline data
+     * @return the filters
+     */
+    private static List<Predicate<Statistics>> getThresholdFilters( Set<Threshold> thresholds,
+                                                                    Function<wres.statistics.generated.Pool, Threshold> thresholdGetter,
+                                                                    boolean separateMetricsForBaseline )
+    {
+        List<Predicate<Statistics>> filters = new ArrayList<>();
+        if ( !thresholds.isEmpty() )
+        {
+            for ( Threshold next : thresholds )
+            {
+                Predicate<Statistics> thresholdFilterMain =
+                        statistics -> statistics.hasPool()
+                                      // Thresholds with equal names or equal thresholds
+                                      && ( ( !next.getName()
+                                                  .isBlank()
+                                             && next.getName()
+                                                    .equals( thresholdGetter.apply( statistics.getPool() )
+                                                                            .getName() ) )
+                                           || next.equals( thresholdGetter.apply( statistics.getPool() ) ) );
+                filters.add( thresholdFilterMain );
+
+                // Separate metrics for baseline?
+                if ( separateMetricsForBaseline )
+                {
+                    Predicate<Statistics> thresholdFilterBase =
+                            statistics -> !statistics.hasPool()
+                                          && statistics.hasBaselinePool()
+                                          // Thresholds with equal names or equal thresholds
+                                          && ( ( !next.getName()
+                                                      .isBlank()
+                                                 && next.getName()
+                                                        .equals( thresholdGetter.apply( statistics.getBaselinePool() )
+                                                                                .getName() ) )
+                                               || next.equals( thresholdGetter.apply( statistics.getBaselinePool() ) ) );
+                    filters.add( thresholdFilterBase );
+                }
+            }
+        }
+
+        return Collections.unmodifiableList( filters );
+    }
+
+    /**
+     * Joins the filters in the two collections of filters using {@link Predicate#and(Predicate)}. If either collection
+     * is empty, returns the opposite collection.
+     *
+     * @param first the first collection of filters, possibly empty
+     * @param second the second collection of filters, possibly empty
+     * @return the joined filters
+     */
+
+    private static List<Predicate<Statistics>> join( List<Predicate<Statistics>> first,
+                                                     List<Predicate<Statistics>> second )
+    {
+        // First filters only
+        if ( second.isEmpty() )
+        {
+            return first;
+        }
+
+        // Second filters only
+        if ( first.isEmpty() )
+        {
+            return second;
+        }
+
+        // Combined filters
+        List<Predicate<Statistics>> combined = new ArrayList<>();
+
+        for ( Predicate<Statistics> nextFirst : first )
+        {
+            for ( Predicate<Statistics> nextSecond : second )
+            {
+                Predicate<Statistics> next = nextFirst.and( nextSecond );
+                combined.add( next );
+            }
+        }
+
+        return Collections.unmodifiableList( combined );
+    }
 
     /**
      * Interpolates any missing data types and validates the interpolated declaration for internal consistency.

@@ -390,7 +390,7 @@ public class FunctionFactory
      * @return the histogram function
      * @throws IllegalArgumentException if the number of bins is less than one
      */
-    public static DiagramStatisticFunction<double[]> histogram( SummaryStatistic parameters )
+    public static DiagramStatisticFunction histogram( SummaryStatistic parameters )
     {
         int bins = parameters.getHistogramBins();
         SummaryStatistic.StatisticDimension dimension = parameters.getDimension();
@@ -451,53 +451,7 @@ public class FunctionFactory
                                                             .setDimension( dimension )
                                                             .build();
 
-        return new DiagramStatisticFunction<>( summaryStatistic, f );
-    }
-
-    /**
-     * Returns a function that calculates a histogram for durations with a given number of bins and prescribed units.
-     * @param parameters the histogram parameters
-     * @param units the time units for the histogram bins
-     * @return the histogram function
-     * @throws IllegalArgumentException if the number of bins is less than one
-     */
-    public static DiagramStatisticFunction<Duration[]> histogram( SummaryStatistic parameters,
-                                                                  ChronoUnit units )
-    {
-        // Get a histogram function for the decimal durations in prescribed units
-        DiagramStatisticFunction<double[]> fInUnits = FunctionFactory.histogram( parameters );
-
-        // Create a function that operates on durations
-        BiFunction<Map<DiagramStatisticFunction.DiagramComponentName, String>, Duration[], DiagramStatistic> f =
-                ( p, d ) ->
-                {
-                    double[] decimalDurations = Arrays.stream( d )
-                                                      .mapToDouble( a -> ( a.getSeconds()
-                                                                           * 1000 )
-                                                                         + ( a.getNano()
-                                                                             / 1_000_000.0 ) )
-                                                      .map( fu -> fu / units.getDuration()
-                                                                            .toMillis() )
-                                                      .toArray();
-
-                    // Replace the units for the domain axis
-                    DiagramStatistic result = fInUnits.apply( p, decimalDurations );
-                    DiagramStatistic.Builder builder = result.toBuilder();
-                    String unitString = units.toString()
-                                             .toUpperCase();
-                    builder.getMetricBuilder()
-                           .getComponentsBuilder( 0 )
-                           .setUnits( unitString );
-                    builder.getStatisticsBuilder( 0 )
-                           .getMetricBuilder()
-                           .setUnits( unitString );
-
-                    return builder.build();
-                };
-
-        SummaryStatistic summaryStatistic = fInUnits.statistic();
-
-        return new DiagramStatisticFunction<>( summaryStatistic, f );
+        return new DiagramStatisticFunction( summaryStatistic, f );
     }
 
     /**
@@ -532,7 +486,7 @@ public class FunctionFactory
      * @param statistic the statistic
      * @return the statistic calculator
      * @throws NullPointerException if the input is null
-     * @throws IllegalArgumentException if the statistic is not a valid summary statistic
+     * @throws IllegalArgumentException if the statistic is not a valid summary statistic in this context
      */
 
     public static SummaryStatisticFunction ofSummaryStatistic( SummaryStatistic statistic )
@@ -551,6 +505,27 @@ public class FunctionFactory
         ToDoubleFunction<double[]> calculator = FunctionFactory.ofSummaryStatistic( name );
 
         return new SummaryStatisticFunction( statistic, calculator );
+    }
+
+    /**
+     * Returns a {@link SummaryStatisticFunction} from a {@link SummaryStatistic}.
+     *
+     * @param statistic the statistic
+     * @return the statistic calculator
+     * @throws NullPointerException if the input is null
+     * @throws IllegalArgumentException if the statistic is not a valid summary statistic in this context
+     */
+
+    public static DiagramStatisticFunction ofDiagramSummaryStatistic( SummaryStatistic statistic )
+    {
+        Objects.requireNonNull( statistic );
+
+        if ( statistic.getStatistic() != SummaryStatistic.StatisticName.HISTOGRAM )
+        {
+            throw new IllegalArgumentException( "Unsupported diagram statistic: " + statistic.getStatistic() + "." );
+        }
+
+        return FunctionFactory.histogram( statistic );
     }
 
     /**
@@ -584,6 +559,45 @@ public class FunctionFactory
             long milliseconds = Math.round( measure );
 
             return Duration.ofMillis( milliseconds );
+        };
+    }
+
+    /**
+     * Returns a function that calculates a duration diagram from a corresponding univariate diagram.
+     *
+     * @param function the function to translate
+     * @param units the time units to use
+     * @return the duration diagram function
+     */
+    public static BiFunction<Map<DiagramStatisticFunction.DiagramComponentName, String>, Duration[],
+            DiagramStatistic> ofDurationDiagramFromUnivariateFunction( DiagramStatisticFunction function,
+                                                                       ChronoUnit units )
+    {
+        // Create a function that operates on durations
+        return ( p, d ) ->
+        {
+            double[] decimalDurations = Arrays.stream( d )
+                                              .mapToDouble( a -> ( a.getSeconds()
+                                                                   * 1000 )
+                                                                 + ( a.getNano()
+                                                                     / 1_000_000.0 ) )
+                                              .map( fu -> fu / units.getDuration()
+                                                                    .toMillis() )
+                                              .toArray();
+
+            // Replace the units for the domain axis
+            DiagramStatistic result = function.apply( p, decimalDurations );
+            DiagramStatistic.Builder builder = result.toBuilder();
+            String unitString = units.toString()
+                                     .toUpperCase();
+            builder.getMetricBuilder()
+                   .getComponentsBuilder( 0 )
+                   .setUnits( unitString );
+            builder.getStatisticsBuilder( 0 )
+                   .getMetricBuilder()
+                   .setUnits( unitString );
+
+            return builder.build();
         };
     }
 

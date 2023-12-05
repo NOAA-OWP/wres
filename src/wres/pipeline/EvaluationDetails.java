@@ -28,6 +28,8 @@ import wres.system.SystemSettings;
  * @param project the project
  * @param evaluation the evaluation
  * @param timeSeriesStore the time-series data store
+ *
+ * @author James Brown
  */
 
 @RecordBuilder
