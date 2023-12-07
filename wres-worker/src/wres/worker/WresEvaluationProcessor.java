@@ -81,7 +81,16 @@ class WresEvaluationProcessor implements Callable<Integer>
     private final byte[] jobMessage;
 
     /** A web client to help with reading data from the web. */
-    private static final WebClient WEB_CLIENT = new WebClient( WebClientUtils.noTimeoutHttpClient() );
+    private static final WebClient WEB_CLIENT;
+
+    static
+    {
+        WEB_CLIENT = new WebClient( WebClientUtils.noTimeoutHttpClient()
+                                                  .newBuilder()
+                                                  .pingInterval( Duration.ofSeconds( 120 ) )
+                                                  .build()
+        );
+    }
 
     /**
      * The envelope from the message that caused creation of this process,
