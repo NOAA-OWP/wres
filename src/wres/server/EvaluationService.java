@@ -33,7 +33,6 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import jakarta.inject.Singleton;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
-import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -548,7 +547,7 @@ public class EvaluationService implements ServletContextListener
         }
         catch ( IllegalStateException | DatabaseLockFailed | SQLException se )
         {
-            String errorMessage = "Failed to clean the database. Unable to aquire lock or communicate with database";
+            String errorMessage = "Failed to clean the database. Unable to acquire lock or communicate with database";
             InternalWresException e = new InternalWresException( errorMessage, se );
             LOGGER.info( errorMessage, se );
             logJobFinishInformation( jobMessage, ExecutionResult.failure( e, false ), beganExecution );
@@ -563,7 +562,7 @@ public class EvaluationService implements ServletContextListener
             lockManager.shutdown();
         }
 
-        return Response.ok( "Database Cleaned" )
+        return Response.ok( "Database cleaned" )
                        .build();
     }
 

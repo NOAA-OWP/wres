@@ -62,6 +62,7 @@ import wres.io.project.Projects;
 import wres.io.reading.ReaderUtilities;
 import wres.io.reading.netcdf.grid.GriddedFeatures;
 import wres.io.writing.netcdf.NetcdfOutputWriter;
+import wres.metrics.SummaryStatisticsCalculator;
 import wres.pipeline.pooling.PoolFactory;
 import wres.pipeline.pooling.PoolGroupTracker;
 import wres.pipeline.pooling.PoolReporter;
@@ -498,7 +499,7 @@ public class Evaluator
 
         // Moving this into the try-with-resources would require a different approach than notifying the evaluation to
         // stop( Exception e ) on encountering an error that is not visible to it. See discussion in #90292.
-        EvaluationMessager evaluation = null;
+        EvaluationMessager evaluationMessager = null;
 
         try ( SharedWriters sharedWriters = EvaluationUtilities.getSharedWriters( declaration,
                                                                                   outputDirectory );
@@ -691,22 +692,22 @@ public class Evaluator
             // In order to build an evaluation description before ingest, those parts of the evaluation description that
             // depend on the data would need to be part of the pool description instead (e.g., the measurement units).
             // Indeed, the timescale is part of the pool description for this reason.
-            evaluation = EvaluationMessager.of( evaluationDescription,
+            evaluationMessager = EvaluationMessager.of( evaluationDescription,
                                                 connections,
                                                 Evaluator.CLIENT_ID,
                                                 evaluationDetails.evaluationId(),
                                                 evaluationDetails.subscriberApprover() );
 
             // Register the messager for cancellation
-            canceller.setEvaluationMessager( evaluation );
+            canceller.setEvaluationMessager( evaluationMessager );
 
             // Start the evaluation
-            evaluation.start();
+            evaluationMessager.start();
 
             // Set the project and evaluation, metrics and thresholds
             evaluationDetails = EvaluationDetailsBuilder.builder( evaluationDetails )
                                                         .project( project )
-                                                        .evaluation( evaluation )
+                                                        .evaluation( evaluationMessager )
                                                         .metricsAndThresholds( metricsAndThresholds )
                                                         .build();
 
@@ -723,29 +724,36 @@ public class Evaluator
 
             // Get a message group tracker to notify the completion of groups that encompass several pools. Currently,
             // this is feature-group shaped, but additional shapes may be desired in future
-            PoolGroupTracker groupTracker = PoolGroupTracker.ofFeatureGroupTracker( evaluation, poolRequests );
+            PoolGroupTracker groupTracker = PoolGroupTracker.ofFeatureGroupTracker( evaluationMessager, poolRequests );
 
-            // Create one or more pool tasks and complete them
-            EvaluationUtilities.completePoolTasks( poolFactory,
-                                                   evaluationDetails,
-                                                   sharedWriters,
-                                                   poolRequests,
-                                                   executors,
-                                                   poolReporter,
-                                                   groupTracker );
+            // Create the summary statistics calculators to increment with raw statistics
+            List<SummaryStatisticsCalculator> summaryStatisticsCalculators =
+                    EvaluationUtilities.getSummaryStatisticsCalculators( declaration );
+
+            // Create and publish the raw evaluation statistics
+            PoolDetails poolDetails = new PoolDetails( poolFactory, poolRequests, poolReporter, groupTracker );
+            EvaluationUtilities.createAndPublishStatistics( evaluationDetails,
+                                                            poolDetails,
+                                                            summaryStatisticsCalculators,
+                                                            sharedWriters,
+                                                            executors );
+
+            // Create and publish any summary statistics derived from the raw statistics
+            EvaluationUtilities.createAndPublishSummaryStatistics( summaryStatisticsCalculators,
+                                                                   evaluationMessager );
 
             // Report that all publication was completed. At this stage, a message is sent indicating the expected
             // message count for all message types, thereby allowing consumers to know when all messages have arrived.
-            evaluation.markPublicationCompleteReportedSuccess();
+            evaluationMessager.markPublicationCompleteReportedSuccess();
 
             // Report on the pools
             poolReporter.report();
 
-            // Wait for the evaluation to conclude
-            evaluation.await();
+            // Wait for all async consumption tasks to complete, including all format writing tasks
+            evaluationMessager.await();
 
             // Since the netcdf consumers are created here, they should be destroyed here. An attempt should be made to
-            // close the netcdf writers before the finally clause because these writers employ a delayed write, which
+            // close the netcdf writers before the "finally" clause because these writers employ a delayed write, which
             // could still fail exceptionally. Such a failure should stop the evaluation exceptionally. For further
             // context see #81790-21 and the detailed description in EvaluationMessager.await(), which clarifies that
             // awaiting an evaluation to complete does not mean that all consumers have finished their work, only
@@ -773,7 +781,7 @@ public class Evaluator
             }
 
             // Messaging failed, possibly in a separate client? Then throw an exception: see #122343
-            if ( evaluation.isFailed() )
+            if ( evaluationMessager.isFailed() )
             {
                 throw new WresProcessingException( "Evaluation '"
                                                    + evaluationId
@@ -785,7 +793,7 @@ public class Evaluator
         // Allow a user-error to be distinguished separately
         catch ( DeclarationException userError )
         {
-            EvaluationUtilities.forceStop( evaluation, userError, evaluationId );
+            EvaluationUtilities.forceStop( evaluationMessager, userError, evaluationId );
 
             // Rethrow
             throw userError;
@@ -793,7 +801,7 @@ public class Evaluator
         // Internal error
         catch ( RuntimeException internalError )
         {
-            EvaluationUtilities.forceStop( evaluation, internalError, evaluationId );
+            EvaluationUtilities.forceStop( evaluationMessager, internalError, evaluationId );
 
             // Decorate and rethrow
             throw new WresProcessingException( "Encountered an error while processing evaluation '"
@@ -804,21 +812,21 @@ public class Evaluator
         finally
         {
             // Close the netCDF writers if not closed
-            EvaluationUtilities.closeNetcdfWriters( netcdfWriters, evaluation, evaluationId );
+            EvaluationUtilities.closeNetcdfWriters( netcdfWriters, evaluationMessager, evaluationId );
 
             // Clean-up an empty output directory: #67088
             EvaluationUtilities.cleanEmptyOutputDirectory( outputDirectory );
 
             // Add the paths written by external subscribers
-            if ( Objects.nonNull( evaluation ) )
+            if ( Objects.nonNull( evaluationMessager ) )
             {
-                resources.addAll( evaluation.getPathsWrittenBySubscribers() );
+                resources.addAll( evaluationMessager.getPathsWrittenBySubscribers() );
             }
 
             LOGGER.info( "Wrote the following output: {}", resources );
 
             // Close the evaluation messager always (even if stopped on exception)
-            EvaluationUtilities.closeEvaluationMessager( evaluation, evaluationId );
+            EvaluationUtilities.closeEvaluationMessager( evaluationMessager, evaluationId );
         }
     }
 
