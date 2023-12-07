@@ -103,6 +103,9 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     /** The sampling uncertainty executor. */
     private final ExecutorService samplingUncertaintyExecutor;
 
+    /** The summary statistics calculators. */
+    private final List<SummaryStatisticsCalculator> summaryStatistics;
+
     /** The pool supplier. */
     private Supplier<Pool<TimeSeries<Pair<L, R>>>> poolSupplier;
 
@@ -139,6 +142,9 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
         // Create the statistics, generating sampling uncertainty estimates as needed
         List<Statistics> statistics = this.createStatistics( pool, this.samplingUncertainty, this.blockSize );
+
+        // Register the statistics with any summary statistics calculators
+        statistics.forEach( n -> this.summaryStatistics.forEach( p -> p.test( n ) ) );
 
         // Publish the statistics
         Status status = this.publish( this.evaluation,
@@ -221,6 +227,9 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
         /** Are separate metrics required for the baseline? */
         private boolean separateMetrics;
+
+        /** The summary statistics calculators. Allowed to be empty. */
+        private List<SummaryStatisticsCalculator> summaryStatistics = new ArrayList<>();
 
         /**
          * @param evaluation the evaluation to set
@@ -359,6 +368,16 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         public Builder<L, R> setSamplingUncertaintyExecutor( ExecutorService samplingUncertaintyExecutor )
         {
             this.samplingUncertaintyExecutor = samplingUncertaintyExecutor;
+            return this;
+        }
+
+        public Builder<L, R> setSummaryStatisticsCalculators( List<SummaryStatisticsCalculator> summaryStatistics )
+        {
+            if ( Objects.nonNull( summaryStatistics ) )
+            {
+                this.summaryStatistics = summaryStatistics;
+            }
+
             return this;
         }
 
@@ -968,6 +987,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         this.poolSupplier = builder.poolSupplier;
         this.poolRequest = builder.poolRequest;
         this.metricProcessors = List.copyOf( builder.metricProcessors ); // Validates nullity
+        this.summaryStatistics = List.copyOf( builder.summaryStatistics );
         this.samplingUncertaintyMetricProcessors = builder.samplingUncertaintyMetricProcessors;
         this.traceCountEstimator = builder.traceCountEstimator;
         this.poolGroupTracker = builder.poolGroupTracker;
