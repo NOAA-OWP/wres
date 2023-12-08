@@ -9,6 +9,7 @@ import net.jcip.annotations.Immutable;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
 import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.SummaryStatistic;
 
 /**
  * Immutable store of several box plot statistics.
@@ -109,7 +110,7 @@ public class BoxplotStatisticOuter implements Statistic<BoxplotStatistic>
     }
 
     @Override
-    public Double getSampleQuantile()
+    public SummaryStatistic getSummaryStatistic()
     {
         return null;
     }

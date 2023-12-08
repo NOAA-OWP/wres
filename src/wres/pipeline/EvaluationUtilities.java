@@ -15,6 +15,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -74,6 +75,8 @@ import wres.pipeline.statistics.EnsembleStatisticsProcessor;
 import wres.pipeline.statistics.SingleValuedStatisticsProcessor;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.SummaryStatistic;
@@ -188,6 +191,7 @@ class EvaluationUtilities
 
         for ( SummaryStatisticsCalculator calculator : summaryStatistics )
         {
+            // Generate the summary statistics
             List<Statistics> nextStatistics = calculator.get();
             nextStatistics.forEach( messager::publish );
         }
@@ -294,9 +298,26 @@ class EvaluationUtilities
         LOGGER.debug( "Discovered the following time units for summary statistic generation (where relevant): {}.",
                       timeUnits );
 
+        // Create a metadata adapter for features, adding new features to an overall group
+        BinaryOperator<Statistics> aggregator = ( existing, latest ) ->
+        {
+            GeometryGroup.Builder adjustedGeo = existing.getPool()
+                                                        .getGeometryGroup()
+                                                        .toBuilder();
+            adjustedGeo.setRegionName( "ALL FEATURES" );
+            List<GeometryTuple> newTuples = latest.getPool().getGeometryGroup()
+                                                  .getGeometryTuplesList();
+            adjustedGeo.addAllGeometryTuples( newTuples );
+            Statistics.Builder adjusted = existing.toBuilder();
+            adjusted.getPoolBuilder()
+                    .setGeometryGroup( adjustedGeo );
+
+            return adjusted.build();
+        };
+
         // Return one calculator for each filter
         return joined.stream()
-                     .map( n -> SummaryStatisticsCalculator.of( scalar, diagrams, n, timeUnits ) )
+                     .map( n -> SummaryStatisticsCalculator.of( scalar, diagrams, n, aggregator, timeUnits ) )
                      .toList();
     }
 

@@ -17,6 +17,7 @@ import wres.datamodel.statistics.DurationScoreStatisticOuter.DurationScoreCompon
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
+import wres.statistics.generated.SummaryStatistic;
 
 /**
  * An immutable score statistic that wraps a {@link DurationScoreStatistic}.
@@ -46,20 +47,20 @@ public class DurationScoreStatisticOuter
     }
 
     /**
-     * Construct the statistic with a sample quantile.
+     * Construct the statistic as a summary statistic.
      *
      * @param statistic the verification statistic
      * @param metadata the metadata
-     * @param sampleQuantile the sample quantile
+     * @param summaryStatistic the summary statistic or null
      * @throws StatisticException if any of the inputs are invalid
      * @return an instance of the output
      */
 
     public static DurationScoreStatisticOuter of( DurationScoreStatistic statistic,
                                                   PoolMetadata metadata,
-                                                  Double sampleQuantile )
+                                                  SummaryStatistic summaryStatistic )
     {
-        return new DurationScoreStatisticOuter( statistic, metadata, sampleQuantile );
+        return new DurationScoreStatisticOuter( statistic, metadata, summaryStatistic );
     }
 
     /**
@@ -77,14 +78,14 @@ public class DurationScoreStatisticOuter
          * Hidden constructor.
          * @param component the score component
          * @param metadata the metadata
-         * @param sampleQuantile the sample quantile or null
+         * @param summaryStatistic the summary statistic or null
          */
 
         private DurationScoreComponentOuter( DurationScoreStatisticComponent component,
                                              PoolMetadata metadata,
-                                             Double sampleQuantile )
+                                             SummaryStatistic summaryStatistic )
         {
-            super( component, metadata, next -> MessageFactory.parse( next.getValue() ).toString(), sampleQuantile );
+            super( component, metadata, next -> MessageFactory.parse( next.getValue() ).toString(), summaryStatistic );
 
             this.metricName = MetricConstants.valueOf( component.getMetric().getName().name() );
         }
@@ -105,19 +106,19 @@ public class DurationScoreStatisticOuter
         }
 
         /**
-         * Create a component with a sample quantile.
+         * Create a component with a summary statistic.
          *
          * @param component the score component
          * @param metadata the metadata
-         * @param sampleQuantile the sample quantile or null
+         * @param summaryStatistic the summary statistic or null
          * @return a component
          */
 
         public static DurationScoreComponentOuter of( DurationScoreStatisticComponent component,
                                                       PoolMetadata metadata,
-                                                      Double sampleQuantile )
+                                                      SummaryStatistic summaryStatistic )
         {
-            return new DurationScoreComponentOuter( component, metadata, sampleQuantile );
+            return new DurationScoreComponentOuter( component, metadata, summaryStatistic );
         }
 
         @Override
@@ -206,15 +207,17 @@ public class DurationScoreStatisticOuter
      *
      * @param score the score
      * @param metadata the pool metadata
-     * @param sampleQuantile the sample quantile or null
+     * @param summaryStatistic the summary statistic or null
      */
 
-    private DurationScoreStatisticOuter( DurationScoreStatistic score, PoolMetadata metadata, Double sampleQuantile )
+    private DurationScoreStatisticOuter( DurationScoreStatistic score,
+                                         PoolMetadata metadata,
+                                         SummaryStatistic summaryStatistic )
     {
         super( score,
-               DurationScoreStatisticOuter.createInternalMapping( score, metadata, sampleQuantile ),
+               DurationScoreStatisticOuter.createInternalMapping( score, metadata, summaryStatistic ),
                metadata,
-               sampleQuantile );
+               summaryStatistic );
 
         this.metricName = MetricConstants.valueOf( score.getMetric().getName().name() );
     }
@@ -224,14 +227,14 @@ public class DurationScoreStatisticOuter
      *
      * @param score the score
      * @param metadata the metadata
-     * @param sampleQuantile the sample quantile
+     * @param summaryStatistic the summary statistic
      * @return the internal mapping for re-use
      */
 
     private static Map<MetricConstants, DurationScoreComponentOuter>
     createInternalMapping( DurationScoreStatistic score,
                            PoolMetadata metadata,
-                           Double sampleQuantile )
+                           SummaryStatistic summaryStatistic )
     {
         Map<MetricConstants, DurationScoreComponentOuter> returnMe = new EnumMap<>( MetricConstants.class );
 
@@ -241,7 +244,7 @@ public class DurationScoreStatisticOuter
             MetricConstants name = MetricConstants.valueOf( next.getMetric().getName().name() );
             DurationScoreComponentOuter nextOuter = DurationScoreComponentOuter.of( next,
                                                                                     metadata,
-                                                                                    sampleQuantile );
+                                                                                    summaryStatistic );
 
             returnMe.put( name, nextOuter );
         }

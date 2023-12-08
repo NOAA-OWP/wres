@@ -550,7 +550,7 @@ class DeclarationValidatorTest
                    () -> assertTrue( DeclarationValidatorTest.contains( events, "The 'lead_times' interval "
                                                                                 + "is invalid",
                                                                         StatusLevel.ERROR ) ),
-                   () -> assertTrue( DeclarationValidatorTest.contains( events, "The 'analysis_durations' "
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "The 'analysis_times' "
                                                                                 + "interval is invalid",
                                                                         StatusLevel.ERROR ) )
         );
@@ -1839,8 +1839,8 @@ class DeclarationValidatorTest
                 valid_dates:
                   minimum: '2023-09-04T00:00:00Z'
                   maximum: '2023-09-14T19:43:24Z'
-                analysis_durations:
-                    minimum_exclusive: -2
+                analysis_times:
+                    minimum: -2
                   maximum: 0
                   unit: hours
                 feature_service:

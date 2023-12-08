@@ -14,6 +14,7 @@ import wres.config.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.ScoreStatistic.ScoreComponent;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.SummaryStatistic;
 
 /**
  * An abstract base class for an immutable score output.
@@ -38,8 +39,8 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
     /** The metadata associated with the statistic. */
     private final PoolMetadata metadata;
 
-    /** The sample quantile, if any. */
-    private final Double sampleQuantile;
+    /** The summary statistic, if any. */
+    private final SummaryStatistic summaryStatistic;
 
     @Override
     public PoolMetadata getPoolMetadata()
@@ -48,9 +49,9 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
     }
 
     @Override
-    public Double getSampleQuantile()
+    public SummaryStatistic getSummaryStatistic()
     {
-        return this.sampleQuantile;
+        return this.summaryStatistic;
     }
 
     @Override
@@ -61,7 +62,7 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
             return false;
         }
 
-        boolean start = Objects.equals( this.getSampleQuantile(), s.getSampleQuantile() );
+        boolean start = Objects.equals( this.getSummaryStatistic(), s.getSummaryStatistic() );
 
         if ( !start )
         {
@@ -83,7 +84,7 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.getStatistic(), this.getPoolMetadata(), this.getSampleQuantile() );
+        return Objects.hash( this.getStatistic(), this.getPoolMetadata(), this.getSummaryStatistic() );
     }
 
     @Override
@@ -133,41 +134,31 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
         /** Mapper to a pretty string. */
         private final Function<S, String> mapper;
 
-        /** The sample quantile, if any. */
-        private final Double sampleQuantile;
+        /** The summary statistic, if any. */
+        private final SummaryStatistic summaryStatistic;
 
         /**
          * Hidden constructor.
          * @param component the score component
          * @param metadata the metadata
          * @param mapper a mapper to a pretty string
-         * @param sampleQuantile the sample quantile or null
+         * @param summaryStatistic the summary statistic or null
          * @throws NullPointerException if any input is null
-         * @throws StatisticException if the sampleQuantile is outside the unit interval
          */
 
         BasicScoreComponent( S component,
                              PoolMetadata metadata,
                              Function<S, String> mapper,
-                             Double sampleQuantile )
+                             SummaryStatistic summaryStatistic )
         {
             Objects.requireNonNull( component );
             Objects.requireNonNull( metadata );
             Objects.requireNonNull( mapper );
 
-            if ( Objects.nonNull( sampleQuantile )
-                 && ( sampleQuantile < 0
-                      || sampleQuantile > 1.0 ) )
-            {
-                throw new StatisticException( "The sample quantile must be within [0,1], but was: "
-                                              + sampleQuantile
-                                              + "." );
-            }
-
             this.component = component;
             this.metadata = metadata;
             this.mapper = mapper;
-            this.sampleQuantile = sampleQuantile;
+            this.summaryStatistic = summaryStatistic;
         }
 
         @Override
@@ -183,9 +174,9 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
         }
 
         @Override
-        public Double getSampleQuantile()
+        public SummaryStatistic getSummaryStatistic()
         {
-            return this.sampleQuantile;
+            return this.summaryStatistic;
         }
 
         @Override
@@ -201,7 +192,7 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
                 return false;
             }
 
-            return Objects.equals( this.getSampleQuantile(), c.getSampleQuantile() )
+            return Objects.equals( this.getSummaryStatistic(), c.getSummaryStatistic() )
                    && Objects.equals( this.getMetricName(), c.getMetricName() )
                    && Objects.equals( this.getStatistic(), c.getStatistic() )
                    && Objects.equals( this.getPoolMetadata(), c.getPoolMetadata() );
@@ -213,7 +204,7 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
             return Objects.hash( this.getMetricName(),
                                  this.getStatistic(),
                                  this.getPoolMetadata(),
-                                 this.getSampleQuantile() );
+                                 this.getSummaryStatistic() );
         }
 
         @Override
@@ -245,29 +236,19 @@ abstract class BasicScoreStatistic<S, T extends ScoreComponent<?>> implements Sc
      * @param score the verification score
      * @param internal the internal mapping between score component names and component values
      * @param metadata the metadata
-     * @param sampleQuantile the sample quantile or null
-     * @throws StatisticException if the sampleQuantile is not within the unit interval
+     * @param summaryStatistic the summary statistic or null
      */
 
     BasicScoreStatistic( S score, Map<MetricConstants, T> internal,
                          PoolMetadata metadata,
-                         Double sampleQuantile )
+                         SummaryStatistic summaryStatistic )
     {
         Objects.requireNonNull( metadata, NULL_METADATA_MESSAGE );
         Objects.requireNonNull( score, NULL_OUTPUT_MESSAGE );
 
-        if ( Objects.nonNull( sampleQuantile )
-             && ( sampleQuantile < 0
-                  || sampleQuantile > 1.0 ) )
-        {
-            throw new StatisticException( "The sample quantile must be within [0,1], but was: "
-                                          + sampleQuantile
-                                          + "." );
-        }
-
         this.score = score;
         this.metadata = metadata;
         this.internal = Collections.unmodifiableMap( internal );
-        this.sampleQuantile = sampleQuantile;
+        this.summaryStatistic = summaryStatistic;
     }
 }

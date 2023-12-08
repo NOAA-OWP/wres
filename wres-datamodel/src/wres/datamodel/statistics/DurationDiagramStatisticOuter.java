@@ -14,6 +14,7 @@ import net.jcip.annotations.Immutable;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.PoolMetadata;
 import wres.statistics.generated.DurationDiagramStatistic;
+import wres.statistics.generated.SummaryStatistic;
 
 /**
  * A statistic that comprises a list of pairs.
@@ -33,8 +34,8 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
     /** The metric name. */
     private final MetricConstants metricName;
 
-    /** The sample quantile or null. */
-    private final Double sampleQuantile;
+    /** The summary statistic or null. */
+    private final SummaryStatistic summaryStatistic;
 
     /**
      * Construct the statistic.
@@ -52,20 +53,20 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
     }
 
     /**
-     * Construct the statistic with a sample quantile.
+     * Construct the statistic as a summary statistic.
      *
      * @param statistic the statistic
      * @param metadata the metadata
-     * @param sampleQuantile the sample quantile or null
+     * @param summaryStatistic the summary statistic or null
      * @throws StatisticException if any of the inputs are invalid
      * @return an instance of the output
      */
 
     public static DurationDiagramStatisticOuter of( DurationDiagramStatistic statistic,
                                                     PoolMetadata metadata,
-                                                    Double sampleQuantile )
+                                                    SummaryStatistic summaryStatistic )
     {
-        return new DurationDiagramStatisticOuter( statistic, metadata, sampleQuantile );
+        return new DurationDiagramStatisticOuter( statistic, metadata, summaryStatistic );
     }
 
     @Override
@@ -89,13 +90,13 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
 
         return this.getStatistic().equals( v.getStatistic() )
                && this.getPoolMetadata().equals( v.getPoolMetadata() )
-               && Objects.equals( this.getSampleQuantile(), v.getSampleQuantile() );
+               && Objects.equals( this.getSummaryStatistic(), v.getSummaryStatistic() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.getStatistic(), this.getPoolMetadata(), this.getSampleQuantile() );
+        return Objects.hash( this.getStatistic(), this.getPoolMetadata(), this.getSummaryStatistic() );
     }
 
     @Override
@@ -111,9 +112,9 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
     }
 
     @Override
-    public Double getSampleQuantile()
+    public SummaryStatistic getSummaryStatistic()
     {
-        return this.sampleQuantile;
+        return this.summaryStatistic;
     }
 
     /**
@@ -144,7 +145,7 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
         builder.append( "metric", this.getStatistic().getMetric().getName() )
                .append( "statistic", pairs )
                .append( "metadata", this.getPoolMetadata() )
-               .append( "sampleQuantile", this.getSampleQuantile() );
+               .append( "summaryStatistic", this.getSummaryStatistic() );
 
         return builder.toString();
     }
@@ -154,13 +155,13 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
      *
      * @param statistic the statistic
      * @param metadata the metadata
-     * @param sampleQuantile the sample quantile or null
+     * @param summaryStatistic the summary statistic or null
      * @throws StatisticException if any of the inputs are invalid
      */
 
     private DurationDiagramStatisticOuter( DurationDiagramStatistic statistic,
                                            PoolMetadata metadata,
-                                           Double sampleQuantile )
+                                           SummaryStatistic summaryStatistic )
     {
         //Validate
         if ( Objects.isNull( statistic ) )
@@ -172,21 +173,12 @@ public class DurationDiagramStatisticOuter implements Statistic<DurationDiagramS
             throw new StatisticException( "Specify non-null metadata." );
         }
 
-        if ( Objects.nonNull( sampleQuantile )
-             && ( sampleQuantile < 0
-                  || sampleQuantile > 1.0 ) )
-        {
-            throw new StatisticException( "The sample quantile must be within [0,1], but was: "
-                                          + sampleQuantile
-                                          + "." );
-        }
-
         //Set content
         this.statistic = statistic;
         this.metadata = metadata;
         this.metricName = MetricConstants.valueOf( statistic.getMetric()
                                                             .getName()
                                                             .name() );
-        this.sampleQuantile = sampleQuantile;
+        this.summaryStatistic = summaryStatistic;
     }
 }

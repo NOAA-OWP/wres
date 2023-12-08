@@ -165,8 +165,7 @@ abstract class CommaSeparatedStatisticsWriter
     }
 
     /**
-     * Removes statistics that represent quantiles of a sampling distribution, which are not supported by the CSV
-     * format.
+     * Removes statistics that represent summary statistics, which are not supported by the CSV format.
      * @param statistics the statistics
      * @return the filtered statistics
      */
@@ -174,7 +173,7 @@ abstract class CommaSeparatedStatisticsWriter
     static <T extends Statistic<?>> List<T> filter( List<T> statistics )
     {
         return statistics.stream()
-                         .filter( s -> !s.hasQuantile() )
+                         .filter( s -> !s.isSummaryStatistic() )
                          .toList();
     }
 
