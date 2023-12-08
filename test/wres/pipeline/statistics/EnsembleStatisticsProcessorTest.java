@@ -1276,7 +1276,7 @@ public final class EnsembleStatisticsProcessorTest
     ofMetricProcessorForEnsemblePairs( EvaluationDeclaration declaration )
     {
         Set<MetricsAndThresholds> metricsAndThresholdsSet =
-                ThresholdSlicer.getMetricsAndThresholdsForProcessing( declaration, Set.of()  );
+                ThresholdSlicer.getMetricsAndThresholdsForProcessing( declaration );
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors = new ArrayList<>();
         for ( MetricsAndThresholds metricsAndThresholds : metricsAndThresholdsSet )
         {

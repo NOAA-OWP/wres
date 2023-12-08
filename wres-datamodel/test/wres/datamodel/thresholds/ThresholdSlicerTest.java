@@ -593,8 +593,7 @@ class ThresholdSlicerTest
                                                                        .features( features )
                                                                        .build();
 
-        Set<MetricsAndThresholds> actual = ThresholdSlicer.getMetricsAndThresholdsForProcessing( evaluation,
-                                                                                                 Set.of() );
+        Set<MetricsAndThresholds> actual = ThresholdSlicer.getMetricsAndThresholdsForProcessing( evaluation );
 
         FeatureTuple tupleOne = FeatureTuple.of( singletonOne );
         FeatureTuple tupleTwo = FeatureTuple.of( singletonTwo );
@@ -697,8 +696,7 @@ class ThresholdSlicerTest
                                                                        .features( features )
                                                                        .build();
 
-        Set<MetricsAndThresholds> actual = ThresholdSlicer.getMetricsAndThresholdsForProcessing( evaluation,
-                                                                                                 Set.of() );
+        Set<MetricsAndThresholds> actual = ThresholdSlicer.getMetricsAndThresholdsForProcessing( evaluation );
 
         FeatureTuple tupleOne = FeatureTuple.of( singletonOne );
         FeatureTuple tupleTwo = FeatureTuple.of( singletonTwo );

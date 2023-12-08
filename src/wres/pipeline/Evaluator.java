@@ -33,6 +33,9 @@ import wres.ExecutionResult;
 import wres.config.MultiDeclarationFactory;
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.Features;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
@@ -654,8 +657,7 @@ public class Evaluator
 
             // Update the small bag-o-state
             evaluationDetails = EvaluationDetailsBuilder.builder( evaluationDetails )
-                                                        .declaration(
-                                                                declarationWithFeaturesAndThresholds )
+                                                        .declaration( declarationWithFeaturesAndThresholds )
                                                         .build();
             // Get the features, as described in the ingested time-series data, which may differ in number and details
             // from the declared features. For example, they are filtered for data availability, spatial mask etc. and
@@ -665,14 +667,29 @@ public class Evaluator
                                                            .map( FeatureTuple::getGeometryTuple )
                                                            .collect( Collectors.toUnmodifiableSet() );
 
-            // Get the atomic metrics and thresholds for processing, each group representing a distinct processing task.
-            // Ensure that named features correspond to the features associated with the data rather than declaration
-            Set<MetricsAndThresholds> metricsAndThresholds =
-                    ThresholdSlicer.getMetricsAndThresholdsForProcessing( declarationWithFeaturesAndThresholds,
-                                                                          unwrappedFeatures );
-
             // Create the feature groups
             Set<FeatureGroup> featureGroups = EvaluationUtilities.getFeatureGroups( project, features );
+
+            // Adjust the declaration to include the fully described features based on the ingested data
+            Features dataFeatures = new Features( unwrappedFeatures );
+            FeatureGroups dataFeatureGroups = new FeatureGroups( featureGroups.stream()
+                                                                              .map( FeatureGroup::getGeometryGroup )
+                                                                              // Non-singletons only
+                                                                              .filter( g -> g.getGeometryTuplesList()
+                                                                                             .size()
+                                                                                            > 1 )
+                                                                              .collect( Collectors.toSet() ) );
+            declarationWithFeaturesAndThresholds =
+                    EvaluationDeclarationBuilder.builder( declarationWithFeaturesAndThresholds )
+                                                .features( dataFeatures )
+                                                .featureGroups( dataFeatureGroups )
+                                                .build();
+
+            // Get the atomic metrics and thresholds for processing, each group representing a distinct processing task.
+            // Ensure that named features correspond to the features associated with the data rather than declaration,
+            // i.e., use the adjusted declaration
+            Set<MetricsAndThresholds> metricsAndThresholds =
+                    ThresholdSlicer.getMetricsAndThresholdsForProcessing( declarationWithFeaturesAndThresholds );
 
             // Create any netcdf blobs for writing. See #80267-137.
             EvaluationUtilities.createNetcdfBlobs( netcdfWriters,
@@ -693,10 +710,10 @@ public class Evaluator
             // depend on the data would need to be part of the pool description instead (e.g., the measurement units).
             // Indeed, the timescale is part of the pool description for this reason.
             evaluationMessager = EvaluationMessager.of( evaluationDescription,
-                                                connections,
-                                                Evaluator.CLIENT_ID,
-                                                evaluationDetails.evaluationId(),
-                                                evaluationDetails.subscriberApprover() );
+                                                        connections,
+                                                        Evaluator.CLIENT_ID,
+                                                        evaluationDetails.evaluationId(),
+                                                        evaluationDetails.subscriberApprover() );
 
             // Register the messager for cancellation
             canceller.setEvaluationMessager( evaluationMessager );
@@ -728,7 +745,7 @@ public class Evaluator
 
             // Create the summary statistics calculators to increment with raw statistics
             List<SummaryStatisticsCalculator> summaryStatisticsCalculators =
-                    EvaluationUtilities.getSummaryStatisticsCalculators( declaration );
+                    EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds );
 
             // Create and publish the raw evaluation statistics
             PoolDetails poolDetails = new PoolDetails( poolFactory, poolRequests, poolReporter, groupTracker );

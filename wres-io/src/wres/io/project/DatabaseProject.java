@@ -644,7 +644,8 @@ public class DatabaseProject implements Project
         // Features are the union of the singletons and grouped features
         Set<FeatureTuple> singletons = new HashSet<>( innerFeatures.getLeft() );
         this.featureGroups.stream()
-                          .flatMap( next -> next.getFeatures().stream() )
+                          .flatMap( next -> next.getFeatures()
+                                                .stream() )
                           .forEach( singletons::add );
         this.features = Collections.unmodifiableSet( singletons );
 
