@@ -1409,6 +1409,14 @@ definitions:
       - nwm analysis assim channel rt puertorico
       - nwm analysis assim no da channel rt puertorico
       - nwm long range channel rt conus
+      - nwm short range channel rt alaska
+      - nwm medium range ensemble channel rt alaska
+      - nwm medium range deterministic channel rt alaska
+      - nwm medium range no da deterministic channel rt alaska
+      - nwm analysis assim channel rt alaska
+      - nwm analysis assim no da channel rt alaska
+      - nwm analysis assim extend channel rt alaska
+      - nwm analysis assim extend no da channel rt alaska
 
   FeatureAuthorityEnum:
     type: string

@@ -117,7 +117,7 @@ class NwmTimeSeries implements Closeable
     /**
      * List of features requested that were not found in this NWM TimeSeries
      */
-    private final Set<Integer> featuresNotFound;
+    private final Set<Long> featuresNotFound;
 
     @Override
     public String toString()
@@ -539,7 +539,7 @@ class NwmTimeSeries implements Closeable
      * empty when no feature ids given were found in the NWM Data.
      */
 
-    Map<Integer, TimeSeries<Double>> readSingleValuedTimeSerieses( int[] featureIds,
+    Map<Long, TimeSeries<Double>> readSingleValuedTimeSerieses( long[] featureIds,
                                                                    String variableName,
                                                                    String unitName )
             throws InterruptedException, ExecutionException
@@ -553,9 +553,9 @@ class NwmTimeSeries implements Closeable
         BlockingQueue<Future<NWMDoubleReadOutcome>> reads =
                 new ArrayBlockingQueue<>( CONCURRENT_READS );
         CountDownLatch startGettingResults = new CountDownLatch( CONCURRENT_READS );
-        Map<Integer, SortedSet<Event<Double>>> events = new HashMap<>( featureIds.length );
+        Map<Long, SortedSet<Event<Double>>> events = new HashMap<>( featureIds.length );
 
-        for ( int featureId : featureIds )
+        for ( long featureId : featureIds )
         {
             SortedSet<Event<Double>> emptyList = new TreeSet<>();
             events.put( featureId, emptyList );
@@ -608,15 +608,15 @@ class NwmTimeSeries implements Closeable
         }
 
         // Go back and remove all the entries for non-existent data
-        for ( Integer notFoundFeature : this.featuresNotFound )
+        for ( Long notFoundFeature : this.featuresNotFound )
         {
             events.remove( notFoundFeature );
         }
 
-        Map<Integer, TimeSeries<Double>> allTimeSerieses = new HashMap<>( featureIds.length );
+        Map<Long, TimeSeries<Double>> allTimeSerieses = new HashMap<>( featureIds.length );
 
         // Create each TimeSeries
-        for ( Map.Entry<Integer, SortedSet<Event<Double>>> series : events.entrySet() )
+        for ( Map.Entry<Long, SortedSet<Event<Double>>> series : events.entrySet() )
         {
             // TODO: use the reference datetime from actual data, not args.
             // The datetimes seem to be synchronized but this is not true for
@@ -640,9 +640,9 @@ class NwmTimeSeries implements Closeable
         return Collections.unmodifiableMap( allTimeSerieses );
     }
 
-    Map<Integer, TimeSeries<Ensemble>> readEnsembleTimeSerieses( int[] featureIds,
-                                                                 String variableName,
-                                                                 String unitName )
+    Map<Long, TimeSeries<Ensemble>> readEnsembleTimeSerieses( long[] featureIds,
+                                                              String variableName,
+                                                              String unitName )
             throws InterruptedException, ExecutionException
     {
         // Check that the executor is still open
@@ -655,7 +655,7 @@ class NwmTimeSeries implements Closeable
         int validDatetimeCount = this.getProfile().getBlobCount();
 
         // Map of nwm feature id to a map of each timestep with member values.
-        Map<Integer, Map<Instant, double[]>> ensembleValues = new HashMap<>( featureIds.length );
+        Map<Long, Map<Instant, double[]>> ensembleValues = new HashMap<>( featureIds.length );
 
         BlockingQueue<Future<NWMDoubleReadOutcome>> reads =
                 new ArrayBlockingQueue<>( CONCURRENT_READS );
@@ -702,11 +702,11 @@ class NwmTimeSeries implements Closeable
                                        validDatetimeCount );
         }
 
-        Map<Integer, TimeSeries<Ensemble>> byFeatureId = new HashMap<>( featureIds.length
+        Map<Long, TimeSeries<Ensemble>> byFeatureId = new HashMap<>( featureIds.length
                                                                         - this.featuresNotFound.size() );
 
         // For each feature, create a TimeSeries.
-        for ( Map.Entry<Integer, Map<Instant, double[]>> entriesForOne : ensembleValues.entrySet() )
+        for ( Map.Entry<Long, Map<Instant, double[]>> entriesForOne : ensembleValues.entrySet() )
         {
             SortedSet<Event<Ensemble>> sortedEvents = new TreeSet<>();
 
@@ -821,7 +821,7 @@ class NwmTimeSeries implements Closeable
      * @param validDatetimeCount The count of validDatetimes.
      */
     private void putEnsembleDataInMap( List<EventForNWMFeature<Double>> events,
-                                       Map<Integer, Map<Instant, double[]>> ensembleValues,
+                                       Map<Long, Map<Instant, double[]>> ensembleValues,
                                        int memberCount,
                                        int validDatetimeCount )
     {
@@ -830,7 +830,7 @@ class NwmTimeSeries implements Closeable
         {
             Instant eventDatetime = event.getEvent()
                                          .getTime();
-            Integer featureId = event.getFeatureId();
+            Long featureId = event.getFeatureId();
             Map<Instant, double[]> fullEnsemble = ensembleValues.get( featureId );
 
             if ( Objects.isNull( fullEnsemble ) )
@@ -1384,16 +1384,16 @@ class NwmTimeSeries implements Closeable
     private static final class EventForNWMFeature<T>
     {
         private static final int NO_MEMBER = Integer.MIN_VALUE;
-        private final int featureId;
+        private final long featureId;
         private final Event<T> event;
         private final int ensembleMemberNumber;
 
-        EventForNWMFeature( int featureId, Event<T> event )
+        EventForNWMFeature( long featureId, Event<T> event )
         {
             this( featureId, event, NO_MEMBER );
         }
 
-        EventForNWMFeature( int featureId, Event<T> event, int ensembleMemberNumber )
+        EventForNWMFeature( long featureId, Event<T> event, int ensembleMemberNumber )
         {
             Objects.requireNonNull( event );
             this.featureId = featureId;
@@ -1401,7 +1401,7 @@ class NwmTimeSeries implements Closeable
             this.ensembleMemberNumber = ensembleMemberNumber;
         }
 
-        int getFeatureId()
+        long getFeatureId()
         {
             return featureId;
         }
@@ -1427,7 +1427,7 @@ class NwmTimeSeries implements Closeable
      * @param featuresNotFound the features not found
      */
     private record NWMDoubleReadOutcome( List<EventForNWMFeature<Double>> data,
-                                         Set<Integer> featuresNotFound )
+                                         Set<Long> featuresNotFound )
     {
     }
 
@@ -1441,16 +1441,16 @@ class NwmTimeSeries implements Closeable
         private static final int NOT_FOUND = Integer.MIN_VALUE;
         private final NwmProfile profile;
         private final NetcdfFile netcdfFile;
-        private final int[] featureIds;
+        private final long[] featureIds;
         private final String variableName;
         private final Instant originalReferenceDatetime;
         private final NWMFeatureCache featureCache;
         private final boolean isEnsemble;
-        private final Set<Integer> featuresNotFound;
+        private final Set<Long> featuresNotFound;
 
         NWMDoubleReader( NwmProfile profile,
                          NetcdfFile netcdfFile,
-                         int[] featureIds,
+                         long[] featureIds,
                          String variableName,
                          Instant originalReferenceDatetime,
                          NWMFeatureCache featureCache,
@@ -1485,7 +1485,7 @@ class NwmTimeSeries implements Closeable
 
         private NWMDoubleReadOutcome readDoubles( NwmProfile profile,
                                                   NetcdfFile netcdfFile,
-                                                  int[] featureIds,
+                                                  long[] featureIds,
                                                   String variableName,
                                                   Instant originalReferenceDatetime,
                                                   NWMFeatureCache featureCache,
@@ -1531,7 +1531,7 @@ class NwmTimeSeries implements Closeable
             int minIndex = Integer.MAX_VALUE;
             int maxIndex = Integer.MIN_VALUE;
 
-            for ( int featureId : featureIds )
+            for ( long featureId : featureIds )
             {
                 FeatureIdWithItsIndex feature;
                 int indexOfFeature = featureCache.findFeatureIndex( profile,
@@ -1577,9 +1577,9 @@ class NwmTimeSeries implements Closeable
                                               .filter( FeatureIdWithItsIndex::found )
                                               .mapToInt( FeatureIdWithItsIndex::index )
                                               .toArray();
-            int[] companionFeatures = features.stream()
+            long[] companionFeatures = features.stream()
                                               .filter( FeatureIdWithItsIndex::found )
-                                              .mapToInt( FeatureIdWithItsIndex::featureId )
+                                              .mapToLong( FeatureIdWithItsIndex::featureId )
                                               .toArray();
 
             Variable variableVariable = netcdfFile.findVariable( variableName );
@@ -1751,7 +1751,7 @@ class NwmTimeSeries implements Closeable
          *
          * <p>This is kept in int[] form in order to validate new netCDF resources.
          */
-        private int[] originalFeatures;
+        private long[] originalFeatures;
 
         /**
          * <p>Whether the features stored is sorted. Allows binary search if true.
@@ -1806,9 +1806,9 @@ class NwmTimeSeries implements Closeable
 
         private int findFeatureIndex( NwmProfile profile,
                                       NetcdfFile netcdfFile,
-                                      int featureId )
+                                      long featureId )
         {
-            int[] features = this.readFeaturesAndCacheOrGetFeaturesFromCache( profile,
+            long[] features = this.readFeaturesAndCacheOrGetFeaturesFromCache( profile,
                                                                               netcdfFile );
 
             if ( this.isSorted )
@@ -1844,8 +1844,8 @@ class NwmTimeSeries implements Closeable
          * @throws PreIngestException When timed out waiting on cache write.
          */
 
-        private int[] readFeaturesAndCacheOrGetFeaturesFromCache( NwmProfile profile,
-                                                                  NetcdfFile netcdfFile )
+        private long[] readFeaturesAndCacheOrGetFeaturesFromCache( NwmProfile profile,
+                                                                   NetcdfFile netcdfFile )
         {
             String netcdfFileName = netcdfFile.getLocation();
 
@@ -1897,7 +1897,7 @@ class NwmTimeSeries implements Closeable
             {
                 LOGGER.debug( "Reading features from {}", netcdfFileName );
                 Array allFeatures = featureVariable.read();
-                int[] unsafeFeatures = ( int[] ) allFeatures.get1DJavaArray( DataType.INT );
+                long[] unsafeFeatures = ( long[] ) allFeatures.get1DJavaArray( DataType.LONG );
 
                 if ( unsafeFeatures == null )
                 {
@@ -1905,7 +1905,7 @@ class NwmTimeSeries implements Closeable
                 }
 
                 // Clone because we may have a reference to internal nc library data
-                int[] features = unsafeFeatures.clone();
+                long[] features = unsafeFeatures.clone();
 
                 // Discover if this Thread is responsible for setting featureCache
                 boolean previouslySet = this.featureCacheRaceResolver.getAndSet( true );
@@ -1936,7 +1936,7 @@ class NwmTimeSeries implements Closeable
                     LOGGER.debug( "About to read the features cache to compare {}",
                                   netcdfFileName );
                     // Not in charge of setting the feature cache, do a read of it.
-                    int[] existingFeatures;
+                    long[] existingFeatures;
                     try
                     {
                         Duration timeout = Duration.ofMinutes( 10 );
@@ -1992,7 +1992,7 @@ class NwmTimeSeries implements Closeable
      * @param featureId the feature identifier
      * @param index the index
      */
-    private record FeatureIdWithItsIndex( int featureId, int index )
+    private record FeatureIdWithItsIndex( long featureId, int index )
     {
         boolean found()
         {
@@ -2001,3 +2001,4 @@ class NwmTimeSeries implements Closeable
     }
 
 }
+

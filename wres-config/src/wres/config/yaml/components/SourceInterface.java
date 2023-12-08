@@ -89,8 +89,37 @@ public enum SourceInterface
     NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_PUERTORICO( Set.of( DataType.ANALYSES ), FeatureAuthority.NWM_FEATURE_ID ),
     /** nwm long range channel rt conus. */
     @JsonProperty( "nwm long range channel rt conus" )
-    NWM_LONG_RANGE_CHANNEL_RT_CONUS( Set.of( DataType.SINGLE_VALUED_FORECASTS ), FeatureAuthority.NWM_FEATURE_ID );
-
+    NWM_LONG_RANGE_CHANNEL_RT_CONUS( Set.of( DataType.SINGLE_VALUED_FORECASTS ), FeatureAuthority.NWM_FEATURE_ID ),
+    
+    /** nwm short range channel rt alaska. */
+    @JsonProperty( "nwm short range channel rt alaska" )
+    NWM_SHORT_RANGE_CHANNEL_RT_CONUS_ALASKA( Set.of( DataType.SINGLE_VALUED_FORECASTS ), FeatureAuthority.NWM_FEATURE_ID ),
+    /** nwm medium range ensemble channel rt alaska. */
+    @JsonProperty( "nwm medium range ensemble channel rt alaska" )
+    NWM_MEDIUM_RANGE_ENSEMBLE_CHANNEL_RT_ALASKA( Set.of( DataType.ENSEMBLE_FORECASTS ),
+                                                FeatureAuthority.NWM_FEATURE_ID ),
+    /** nwm medium range deterministic channel rt alaska. */
+    @JsonProperty( "nwm medium range deterministic channel rt alaska" )
+    NWM_MEDIUM_RANGE_DETERMINISTIC_CHANNEL_RT_ALASKA( Set.of( DataType.SINGLE_VALUED_FORECASTS ),
+                                                     FeatureAuthority.NWM_FEATURE_ID ),
+    /** nwm medium range no da deterministic channel rt alaska. */
+    @JsonProperty( "nwm medium range no da deterministic channel rt alaska" )
+    NWM_MEDIUM_RANGE_NO_DA_DETERMINISTIC_CHANNEL_RT_ALASKA( Set.of( DataType.SINGLE_VALUED_FORECASTS ),
+                                                           FeatureAuthority.NWM_FEATURE_ID ),
+    /** nwm analysis assim channel rt alaska. */
+    @JsonProperty( "nwm analysis assim channel rt alaska" )
+    NWM_ANALYSIS_ASSIM_CHANNEL_RT_ALASKA( Set.of( DataType.ANALYSES ), FeatureAuthority.NWM_FEATURE_ID ),
+    /** nwm analysis assim no da channel rt alaska. */
+    @JsonProperty( "nwm analysis assim no da channel rt alaska" )
+    NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_ALASKA( Set.of( DataType.ANALYSES ), FeatureAuthority.NWM_FEATURE_ID ),
+    /** nwm analysis assim extend channel rt alaska. */
+    @JsonProperty( "nwm analysis assim extend channel rt alaska" )
+    NWM_ANALYSIS_ASSIM_EXTEND_CHANNEL_RT_ALASKA( Set.of( DataType.ANALYSES ), FeatureAuthority.NWM_FEATURE_ID ),
+    /** nwm analysis assim extend no da channel rt alaska. */
+    @JsonProperty( "nwm analysis assim extend no da channel rt alaska" )
+    NWM_ANALYSIS_ASSIM_EXTEND_NO_DA_CHANNEL_RT_ALASKA( Set.of( DataType.ANALYSES ), FeatureAuthority.NWM_FEATURE_ID );
+    
+    
     /** The supported data types. */
     private final Set<DataType> dataTypes;
 

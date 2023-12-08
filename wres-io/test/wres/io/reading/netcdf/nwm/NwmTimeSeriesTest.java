@@ -389,7 +389,7 @@ public class NwmTimeSeriesTest
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int featureId = 18384141;
-            TimeSeries<?> timeSeries = nwmTimeSeries.readSingleValuedTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
+            TimeSeries<?> timeSeries = nwmTimeSeries.readSingleValuedTimeSerieses( new long[] { featureId }, STREAMFLOW, CMS )
                                                     .get( featureId );
             LOGGER.info( HERE_IS_THE_TIMESERIES, timeSeries );
             assertNotNull( timeSeries );
@@ -427,7 +427,7 @@ public class NwmTimeSeriesTest
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int featureId = 18384141;
-            TimeSeries<?> timeSeries = nwmTimeSeries.readSingleValuedTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
+            TimeSeries<?> timeSeries = nwmTimeSeries.readSingleValuedTimeSerieses( new long[] { featureId }, STREAMFLOW, CMS )
                                                     .get( featureId );
             LOGGER.info( HERE_IS_THE_TIMESERIES, timeSeries );
             assertNotNull( timeSeries );
@@ -464,7 +464,7 @@ public class NwmTimeSeriesTest
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int featureId = 18384141;
-            TimeSeries<?> timeSeries = nwmTimeSeries.readSingleValuedTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
+            TimeSeries<?> timeSeries = nwmTimeSeries.readSingleValuedTimeSerieses( new long[] { featureId }, STREAMFLOW, CMS )
                                                     .get( featureId );
             LOGGER.info( HERE_IS_THE_TIMESERIES, timeSeries );
             assertNotNull( timeSeries );
@@ -501,7 +501,7 @@ public class NwmTimeSeriesTest
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int featureId = 18384141;
-            TimeSeries<?> timeSeries = nwmTimeSeries.readSingleValuedTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
+            TimeSeries<?> timeSeries = nwmTimeSeries.readSingleValuedTimeSerieses( new long[] { featureId }, STREAMFLOW, CMS )
                                                     .get( featureId );
             assertNotNull( timeSeries );
             assertNotEquals( 0, timeSeries.getEvents().size() );
@@ -537,7 +537,7 @@ public class NwmTimeSeriesTest
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int featureId = 18384141;
-            TimeSeries<?> timeSeries = nwmTimeSeries.readSingleValuedTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
+            TimeSeries<?> timeSeries = nwmTimeSeries.readSingleValuedTimeSerieses( new long[] { featureId }, STREAMFLOW, CMS )
                                                     .get( featureId );
             LOGGER.info( HERE_IS_THE_TIMESERIES, timeSeries );
             assertNotNull( timeSeries );
@@ -572,7 +572,7 @@ public class NwmTimeSeriesTest
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
             int featureId = 18384141;
-            TimeSeries<?> timeSeries = nwmTimeSeries.readSingleValuedTimeSerieses( new int[] { featureId }, STREAMFLOW, CMS )
+            TimeSeries<?> timeSeries = nwmTimeSeries.readSingleValuedTimeSerieses( new long[] { featureId }, STREAMFLOW, CMS )
                                                     .get( featureId );
             LOGGER.info( HERE_IS_THE_TIMESERIES, timeSeries );
             assertNotNull( timeSeries );
@@ -610,8 +610,8 @@ public class NwmTimeSeriesTest
                                                                URI.create( "https://dstore-fqdn/nwm/2.0/" ) ) )
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
-            int[] featureIds = new int[] { 18384141, 18696047, 942030011 };
-            Map<Integer,TimeSeries<Ensemble>> timeSerieses = nwmTimeSeries.readEnsembleTimeSerieses( featureIds, 
+            long[] featureIds = new long[] { 18384141, 18696047, 942030011 };
+            Map<Long,TimeSeries<Ensemble>> timeSerieses = nwmTimeSeries.readEnsembleTimeSerieses( featureIds, 
                                                                                                      STREAMFLOW, 
                                                                                                      CMS );
             TimeSeries<Ensemble> timeSeries1 = timeSerieses.get( featureIds[0] );
@@ -659,8 +659,8 @@ public class NwmTimeSeriesTest
                                                                URI.create( "C:/nwm_data/" ) ) )
         {
             LOGGER.info( FINISHED_OPENING_FORECAST_FILES_NOW_READING );
-            int[] featureIds = new int[] { 18384141, 18696047, 942030011 };
-            Map<Integer, TimeSeries<Ensemble>> timeSerieses = nwmTimeSeries.readEnsembleTimeSerieses( featureIds,
+            long[] featureIds = new long[] { 18384141, 18696047, 942030011 };
+            Map<Long, TimeSeries<Ensemble>> timeSerieses = nwmTimeSeries.readEnsembleTimeSerieses( featureIds,
                                                                                                       STREAMFLOW,
                                                                                                       CMS );
             TimeSeries<Ensemble> timeSeries1 = timeSerieses.get( featureIds[0] );
