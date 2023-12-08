@@ -568,27 +568,21 @@ public class ThresholdSlicer
 
     /**
      * Creates one {@link MetricsAndThresholds} for each group of {@link Metric} in the supplied declaration that can
-     * be processed together as an atomic unit (i.e., they all consume the same pool of pairs). Optionally, supply the
-     * features by which to index the results. If no features are supplied, the results will be indexed by the declared
-     * features.
+     * be processed together as an atomic unit (i.e., they all consume the same pool of pairs).
      *
      * @param evaluation the evaluation declaration
-     * @param features the features to use
      * @return one {@link MetricsAndThresholds} for each atomic group of metrics
      */
 
-    public static Set<MetricsAndThresholds> getMetricsAndThresholdsForProcessing( EvaluationDeclaration evaluation,
-                                                                                  Set<GeometryTuple> features )
+    public static Set<MetricsAndThresholds> getMetricsAndThresholdsForProcessing( EvaluationDeclaration evaluation )
     {
         Objects.requireNonNull( evaluation );
 
+        // Get the geographic features
+        Set<GeometryTuple> features = DeclarationUtilities.getFeatures( evaluation );
+
         // Get the atomic groups
         Set<Set<Metric>> atomicGroups = DeclarationUtilities.getMetricGroupsForProcessing( evaluation.metrics() );
-
-        if ( Objects.isNull( features ) || features.isEmpty() )
-        {
-            features = DeclarationUtilities.getFeatures( evaluation );
-        }
 
         // Obtain the minimum sample size
         int minimumSampleSize = evaluation.minimumSampleSize();

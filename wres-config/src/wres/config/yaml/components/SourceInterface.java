@@ -90,7 +90,6 @@ public enum SourceInterface
     /** nwm long range channel rt conus. */
     @JsonProperty( "nwm long range channel rt conus" )
     NWM_LONG_RANGE_CHANNEL_RT_CONUS( Set.of( DataType.SINGLE_VALUED_FORECASTS ), FeatureAuthority.NWM_FEATURE_ID ),
-    
     /** nwm short range channel rt alaska. */
     @JsonProperty( "nwm short range channel rt alaska" )
     NWM_SHORT_RANGE_CHANNEL_RT_CONUS_ALASKA( Set.of( DataType.SINGLE_VALUED_FORECASTS ), FeatureAuthority.NWM_FEATURE_ID ),
@@ -118,8 +117,7 @@ public enum SourceInterface
     /** nwm analysis assim extend no da channel rt alaska. */
     @JsonProperty( "nwm analysis assim extend no da channel rt alaska" )
     NWM_ANALYSIS_ASSIM_EXTEND_NO_DA_CHANNEL_RT_ALASKA( Set.of( DataType.ANALYSES ), FeatureAuthority.NWM_FEATURE_ID );
-    
-    
+
     /** The supported data types. */
     private final Set<DataType> dataTypes;
 
