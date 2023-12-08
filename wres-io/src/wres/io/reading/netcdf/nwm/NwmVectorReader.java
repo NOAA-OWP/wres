@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -88,7 +90,7 @@ public class NwmVectorReader implements TimeSeriesReader
         this.validateDataSource( dataSource );
 
         // Get the feature blocks
-        List<List<Integer>> featureBlocks = this.getFeatureBlocks( dataSource, this.getDeclaration() );
+        List<SortedSet<Long>> featureBlocks = this.getFeatureBlocks( dataSource, this.getDeclaration() );
 
         // Get the reference times
         Set<Instant> referenceTimes = this.getReferenceTimes( dataSource, this.getDeclaration() );
@@ -230,7 +232,7 @@ public class NwmVectorReader implements TimeSeriesReader
 
     private Supplier<TimeSeriesTuple> getTimeSeriesSupplier( DataSource dataSource,
                                                              Set<Instant> referenceTimes,
-                                                             List<List<Integer>> featureBlocks )
+                                                             List<SortedSet<Long>> featureBlocks )
     {
         SourceInterface interfaceShortHand = dataSource.getSource()
                                                        .sourceInterface();
@@ -314,7 +316,7 @@ public class NwmVectorReader implements TimeSeriesReader
                                                                     DataSource dataSource,
                                                                     Set<Instant> referenceTimes,
                                                                     ReferenceTimeType referenceTimeType,
-                                                                    List<List<Integer>> featureBlocks )
+                                                                    List<SortedSet<Long>> featureBlocks )
     {
         // Create the smaller suppliers, one per reference time
         List<Supplier<TimeSeriesTuple>> suppliers = new ArrayList<>();
@@ -349,10 +351,10 @@ public class NwmVectorReader implements TimeSeriesReader
                                                              DataSource dataSource,
                                                              Instant referenceTime,
                                                              ReferenceTimeType referenceTimeType,
-                                                             List<List<Integer>> featureBlocks )
+                                                             List<SortedSet<Long>> featureBlocks )
     {
         List<TimeSeriesTuple> cachedSeries = new ArrayList<>();
-        List<List<Integer>> mutableFeatureBlocks = new ArrayList<>( featureBlocks );
+        List<SortedSet<Long>> mutableFeatureBlocks = new ArrayList<>( featureBlocks );
         AtomicReference<NwmTimeSeries> nwmTimeSeries = new AtomicReference<>();
 
         // Create a supplier that returns a time-series once complete
@@ -378,7 +380,7 @@ public class NwmVectorReader implements TimeSeriesReader
             while ( !mutableFeatureBlocks.isEmpty() )
             {
                 NwmTimeSeries currentTimeSeries = nwmTimeSeries.get();
-                List<Integer> nextFeatureBlock = mutableFeatureBlocks.remove( 0 );
+                SortedSet<Long> nextFeatureBlock = mutableFeatureBlocks.remove( 0 );
 
                 // No blobs open? Create a new opener and expose it for future iterations.
                 if ( Objects.isNull( currentTimeSeries ) )
@@ -452,7 +454,7 @@ public class NwmVectorReader implements TimeSeriesReader
      */
 
     private void closeNwmTimeSeriesIfCacheIsEmpty( List<TimeSeriesTuple> cachedSeries,
-                                                   List<List<Integer>> featureBlocks,
+                                                   List<SortedSet<Long>> featureBlocks,
                                                    AtomicReference<NwmTimeSeries> nwmTimeSeries )
     {
         if ( cachedSeries.isEmpty() && featureBlocks.isEmpty() && Objects.nonNull( nwmTimeSeries.get() ) )
@@ -478,7 +480,7 @@ public class NwmVectorReader implements TimeSeriesReader
      */
 
     private List<TimeSeriesTuple> getTimeSeries( DataSource dataSource,
-                                                 List<Integer> featureBlock,
+                                                 SortedSet<Long> featureBlock,
                                                  NwmTimeSeries nwmTimeSeries,
                                                  NwmProfile nwmProfile )
     {
@@ -495,16 +497,16 @@ public class NwmVectorReader implements TimeSeriesReader
         String unitName = nwmTimeSeries.readAttributeAsString( variableName,
                                                                "units" );
 
-        int[] featureBlockInts = featureBlock.stream()
-                                             .mapToInt( Integer::intValue )
-                                             .toArray();
+        long[] featureBlockInts = featureBlock.stream()
+                                              .mapToLong( Long::longValue )
+                                              .toArray();
 
         try
         {
             // Single-valued series
             if ( nwmProfile.getMemberCount() == 1 )
             {
-                Map<Integer, TimeSeries<Double>> values =
+                Map<Long, TimeSeries<Double>> values =
                         nwmTimeSeries.readSingleValuedTimeSerieses( featureBlockInts,
                                                                     variableName,
                                                                     unitName );
@@ -518,7 +520,7 @@ public class NwmVectorReader implements TimeSeriesReader
             // Ensemble series
             else if ( nwmProfile.getMemberCount() > 1 )
             {
-                Map<Integer, TimeSeries<Ensemble>> values =
+                Map<Long, TimeSeries<Ensemble>> values =
                         nwmTimeSeries.readEnsembleTimeSerieses( featureBlockInts,
                                                                 variableName,
                                                                 unitName );
@@ -556,7 +558,7 @@ public class NwmVectorReader implements TimeSeriesReader
      * @return the feature block chunks
      */
 
-    private List<List<Integer>> getFeatureBlocks( DataSource dataSource, EvaluationDeclaration declaration )
+    private List<SortedSet<Long>> getFeatureBlocks( DataSource dataSource, EvaluationDeclaration declaration )
     {
         // Get the feature set
         Set<GeometryTuple> geometries = DeclarationUtilities.getFeatures( declaration );
@@ -565,18 +567,18 @@ public class NwmVectorReader implements TimeSeriesReader
 
         // A list of featureIds that will be sorted in NWM id order to be used
         // to create blocks of sequential NWM ids.
-        List<Integer> featureNwmIds = new ArrayList<>( features.size() );
+        List<Long> featureNwmIds = new ArrayList<>( features.size() );
 
         for ( String feature : features )
         {
             try
             {
-                Integer id = Integer.parseUnsignedInt( feature );
+                Long id = Long.parseUnsignedLong( feature );
                 featureNwmIds.add( id );
             }
             catch ( NumberFormatException nfe )
             {
-                LOGGER.warn( "Skipping non-integer NWM feature ID '{}' due to: {}",
+                LOGGER.warn( "Skipping non-long NWM feature ID '{}' due to: {}",
                              feature,
                              nfe.getMessage() );
             }
@@ -587,7 +589,10 @@ public class NwmVectorReader implements TimeSeriesReader
 
         LOGGER.debug( "Sorted featureNwmIds: {}", featureNwmIds );
 
-        List<List<Integer>> featureBlocks = ListUtils.partition( featureNwmIds, FEATURE_BLOCK_SIZE );
+        List<List<Long>> tempListOfLists = ListUtils.partition( featureNwmIds, FEATURE_BLOCK_SIZE );
+        List<SortedSet<Long>> featureBlocks = tempListOfLists.stream()
+                .map( t -> Collections.unmodifiableSortedSet( new TreeSet<>( t ) ) )
+                .toList();
 
         if ( LOGGER.isDebugEnabled() )
         {
@@ -793,3 +798,4 @@ public class NwmVectorReader implements TimeSeriesReader
     }
 
 }
+

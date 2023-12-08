@@ -79,6 +79,74 @@ import wres.config.yaml.components.SourceInterface;
  * short_range_puertorico/            02-Aug-2020 21:05    -
  * short_range_puertorico_no_da/      02-Aug-2020 21:11    -
  * usgs_timeslices/                   03-Aug-2020 20:40    -
+ *
+ * <p>Survey of directories in Nomads on 2023-12-08
+ * Index of /pub/data/nccf/com/nwm/v3.0/nwm.20231208
+ * (not all are availalbe on D-Store)
+ * 
+ * Name                                Last modified      Size  
+ * Parent Directory                                         -   
+ * analysis_assim/                     08-Dec-2023 15:42    -   
+ * analysis_assim_alaska/              08-Dec-2023 15:24    -   
+ * analysis_assim_alaska_no_da/        08-Dec-2023 15:24    -   
+ * analysis_assim_coastal_atlgulf/     08-Dec-2023 16:00    -   
+ * analysis_assim_coastal_hawaii/      08-Dec-2023 15:32    -   
+ * analysis_assim_coastal_pacific/     08-Dec-2023 15:50    -   
+ * analysis_assim_coastal_puertorico/  08-Dec-2023 15:36    -   
+ * analysis_assim_hawaii/              08-Dec-2023 15:30    -   
+ * analysis_assim_hawaii_no_da/        08-Dec-2023 15:30    -   
+ * analysis_assim_long/                08-Dec-2023 12:44    -   
+ * analysis_assim_long_no_da/          08-Dec-2023 12:46    -   
+ * analysis_assim_no_da/               08-Dec-2023 15:44    -   
+ * analysis_assim_puertorico/          08-Dec-2023 15:26    -   
+ * analysis_assim_puertorico_no_da/    08-Dec-2023 15:27    -   
+ * forcing_analysis_assim/             08-Dec-2023 15:33    -   
+ * forcing_analysis_assim_alaska/      08-Dec-2023 15:21    -   
+ * forcing_analysis_assim_hawaii/      08-Dec-2023 15:25    -   
+ * forcing_analysis_assim_puertorico/  08-Dec-2023 15:25    -   
+ * forcing_medium_range/               08-Dec-2023 10:53    -   
+ * forcing_medium_range_alaska/        08-Dec-2023 10:44    -   
+ * forcing_medium_range_blend/         08-Dec-2023 10:57    -   
+ * forcing_medium_range_blend_alaska/  08-Dec-2023 10:46    -   
+ * forcing_short_range/                08-Dec-2023 15:29    -   
+ * forcing_short_range_alaska/         08-Dec-2023 15:12    -   
+ * forcing_short_range_hawaii/         08-Dec-2023 14:51    -   
+ * forcing_short_range_puertorico/     08-Dec-2023 08:41    -   
+ * long_range_mem1/                    08-Dec-2023 14:59    -   
+ * long_range_mem2/                    08-Dec-2023 15:01    -   
+ * long_range_mem3/                    08-Dec-2023 14:58    -   
+ * long_range_mem4/                    08-Dec-2023 15:02    -   
+ * medium_range_alaska_mem1/           08-Dec-2023 11:02    -   
+ * medium_range_alaska_mem2/           08-Dec-2023 10:59    -   
+ * medium_range_alaska_mem3/           08-Dec-2023 11:00    -   
+ * medium_range_alaska_mem4/           08-Dec-2023 11:00    -   
+ * medium_range_alaska_mem5/           08-Dec-2023 10:59    -   
+ * medium_range_alaska_mem6/           08-Dec-2023 11:00    -   
+ * medium_range_alaska_no_da/          08-Dec-2023 11:04    -   
+ * medium_range_blend/                 08-Dec-2023 12:18    -   
+ * medium_range_blend_alaska/          08-Dec-2023 11:02    -   
+ * medium_range_blend_coastal_atlgulf/ 08-Dec-2023 13:03    -   
+ * medium_range_blend_coastal_pacific/ 08-Dec-2023 15:34    -   
+ * medium_range_coastal_atlgulf_mem1/  08-Dec-2023 13:00    -   
+ * medium_range_coastal_pacific_mem1/  08-Dec-2023 15:36    -   
+ * medium_range_mem1/                  08-Dec-2023 12:15    -   
+ * medium_range_mem2/                  08-Dec-2023 12:07    -   
+ * medium_range_mem3/                  08-Dec-2023 12:03    -   
+ * medium_range_mem4/                  08-Dec-2023 12:06    -   
+ * medium_range_mem5/                  08-Dec-2023 12:04    -   
+ * medium_range_mem6/                  08-Dec-2023 12:05    -   
+ * medium_range_no_da/                 08-Dec-2023 12:28    -   
+ * short_range/                        08-Dec-2023 15:42    -   
+ * short_range_alaska/                 08-Dec-2023 15:34    -   
+ * short_range_coastal_atlgulf/        08-Dec-2023 16:07    -   
+ * short_range_coastal_hawaii/         08-Dec-2023 15:15    -   
+ * short_range_coastal_pacific/        08-Dec-2023 15:57    -   
+ * short_range_coastal_puertorico/     08-Dec-2023 09:26    -   
+ * short_range_hawaii/                 08-Dec-2023 15:05    -   
+ * short_range_hawaii_no_da/           08-Dec-2023 15:05    -   
+ * short_range_puertorico/             08-Dec-2023 08:49    -   
+ * short_range_puertorico_no_da/       08-Dec-2023 08:49    -   
+ * usgs_timeslices/                    08-Dec-2023 16:01    -   
  */
 
 class NwmProfiles
@@ -91,6 +159,7 @@ class NwmProfiles
     private static final String SHORT_RANGE = "short_range";
     private static final String CHANNEL_RT = "channel_rt";
     private static final String CONUS = "conus";
+    private static final String ALASKA = "alaska";
 
     static NwmProfile getProfileFromShortHand( SourceInterface shortHand )
     {
@@ -115,6 +184,17 @@ class NwmProfiles
             case NWM_ANALYSIS_ASSIM_CHANNEL_RT_PUERTORICO -> NwmProfiles.getAnalysisAssimChannelRtPuertoRico();
             case NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_PUERTORICO -> NwmProfiles.getAnalysisAssimNoDaChannelRtPuertoRico();
             case NWM_LONG_RANGE_CHANNEL_RT_CONUS -> NwmProfiles.getLongRangeChannelRtConus();
+            
+            //Alaska
+            case NWM_SHORT_RANGE_CHANNEL_RT_CONUS_ALASKA -> NwmProfiles.getShortRangeChannelRtAlaska();
+            case NWM_MEDIUM_RANGE_ENSEMBLE_CHANNEL_RT_ALASKA -> NwmProfiles.getMediumRangeEnsembleChannelRtAlaska();
+            case NWM_MEDIUM_RANGE_DETERMINISTIC_CHANNEL_RT_ALASKA -> NwmProfiles.getMediumRangeDeterministicChannelRtAlaska();
+            case NWM_MEDIUM_RANGE_NO_DA_DETERMINISTIC_CHANNEL_RT_ALASKA -> NwmProfiles.getMediumRangeNoDaDeterministicChannelRtAlaska();
+            case NWM_ANALYSIS_ASSIM_CHANNEL_RT_ALASKA -> NwmProfiles.getAnalysisAssimChannelRtAlaska();
+            case NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_ALASKA -> NwmProfiles.getAnalysisAssimNoDaChannelRtAlaska();
+            case NWM_ANALYSIS_ASSIM_EXTEND_CHANNEL_RT_ALASKA -> NwmProfiles.getAnalysisAssimExtendChannelRtAlaska();
+            case NWM_ANALYSIS_ASSIM_EXTEND_NO_DA_CHANNEL_RT_ALASKA -> NwmProfiles.getAnalysisAssimExtendNoDaChannelRtAlaska();
+            
             default -> throw new UnsupportedOperationException( "No NwmProfile known to WRES for "
                                                                 + shortHand );
         };
@@ -427,7 +507,136 @@ class NwmProfiles
                                false,
                                Duration.ofHours( 16 ) );
     }
+    
 
+    private static NwmProfile getShortRangeChannelRtAlaska()
+    {
+        return new NwmProfile( 45,
+                               1,
+                               Duration.ofHours( 1 ),
+                               true,
+                               SHORT_RANGE,
+                               CHANNEL_RT,
+                               NwmProfile.TimeLabel.F,
+                               "short_range_alaska",
+                               ALASKA,
+                               Duration.ofHours( 3 ), // NWM SRF for Alaska is produced every 3 hours.
+                               false,
+                               Duration.ZERO );
+    }
+
+    private static NwmProfile getMediumRangeEnsembleChannelRtAlaska()
+    {
+        return new NwmProfile( 68 * 3,
+                               6,
+                               Duration.ofHours( 1 ),
+                               true,
+                               MEDIUM_RANGE,
+                               CHANNEL_RT,
+                               NwmProfile.TimeLabel.F,
+                               "medium_range_alaska",
+                               ALASKA,
+                               Duration.ofHours( 6 ),
+                               true,
+                               Duration.ZERO );
+    }
+    
+    private static NwmProfile getMediumRangeDeterministicChannelRtAlaska()
+    {
+        return new NwmProfile( 80 * 3,
+                               1,
+                               Duration.ofHours( 1 ),
+                               true,
+                               MEDIUM_RANGE,
+                               CHANNEL_RT,
+                               NwmProfile.TimeLabel.F,
+                               "medium_range_alaska",
+                               ALASKA,
+                               Duration.ofHours( 6 ),
+                               true, // For 2.0 and higher, the path has an ensemble-like structure: #110992
+                               Duration.ZERO );
+    }
+    
+    private static NwmProfile getMediumRangeNoDaDeterministicChannelRtAlaska()
+    {
+        return new NwmProfile( 80,
+                               1,
+                               Duration.ofHours( 3 ),
+                               true,
+                               "medium_range_no_da",
+                               CHANNEL_RT,
+                               NwmProfile.TimeLabel.F,
+                               "medium_range_alaska_no_da",
+                               ALASKA,
+                               Duration.ofHours( 6 ),
+                               false, // Available for 2.1 and above, no ensemble-like structure: #110992
+                               Duration.ZERO );
+    }
+    
+    private static NwmProfile getAnalysisAssimChannelRtAlaska()
+    {
+        return new NwmProfile( 3,
+                               1,
+                               Duration.ofHours( 1 ),
+                               true,
+                               ANALYSIS_ASSIM,
+                               CHANNEL_RT,
+                               NwmProfile.TimeLabel.TM,
+                               "analysis_assim_alaska",
+                               ALASKA,
+                               Duration.ofHours( 1 ),
+                               false,
+                               Duration.ZERO );
+    }
+    
+    private static NwmProfile getAnalysisAssimNoDaChannelRtAlaska()
+    {
+        return new NwmProfile( 3,
+                               1,
+                               Duration.ofHours( 1 ),
+                               true,
+                               ANALYSIS_ASSIM_NO_DA,
+                               CHANNEL_RT,
+                               NwmProfile.TimeLabel.TM,
+                               "analysis_assim_alaska_no_da",
+                               ALASKA,
+                               Duration.ofHours( 1 ),
+                               false,
+                               Duration.ZERO );
+    }
+
+    private static NwmProfile getAnalysisAssimExtendChannelRtAlaska()
+    {
+        return new NwmProfile( 28,
+                               1,
+                               Duration.ofHours( 1 ),
+                               true,
+                               "analysis_assim_extend",
+                               CHANNEL_RT,
+                               NwmProfile.TimeLabel.TM,
+                               "analysis_assim_extend_alaska",
+                               ALASKA,
+                               Duration.ofDays( 1 ),
+                               false,
+                               Duration.ofHours( 20 ) );
+    }
+
+    private static NwmProfile getAnalysisAssimExtendNoDaChannelRtAlaska()
+    {
+        return new NwmProfile( 28,
+                               1,
+                               Duration.ofHours( 1 ),
+                               true,
+                               "analysis_assim_extend_no_da",
+                               CHANNEL_RT,
+                               NwmProfile.TimeLabel.TM,
+                               "analysis_assim_extend_alaska_no_da",
+                               ALASKA,
+                               Duration.ofDays( 1 ),
+                               false,
+                               Duration.ofHours( 20 ) );
+    }
+    
     private NwmProfiles()
     {
         // Static utility class, no construction allowed.
