@@ -53,6 +53,7 @@ import wres.statistics.MessageFactory;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
+import wres.statistics.generated.SummaryStatistic;
 import wres.vis.charts.ChartFactory.ChartType;
 
 /**
@@ -659,8 +660,12 @@ public class ChartDataFactory
     public static <T extends Statistic<?>> SortedSet<Double> getQuantiles( List<T> statistics )
     {
         SortedSet<Double> quantiles = statistics.stream()
-                                                .filter( Statistic::hasQuantile )
-                                                .mapToDouble( n -> n.getSampleQuantile() )
+                                                .filter( s -> s.isSummaryStatistic()
+                                                              && s.getSummaryStatistic()
+                                                                  .getStatistic()
+                                                                 == SummaryStatistic.StatisticName.QUANTILE )
+                                                .mapToDouble( n -> n.getSummaryStatistic()
+                                                                    .getProbability() )
                                                 .boxed()
                                                 .collect( Collectors.toCollection( TreeSet::new ) );
 
@@ -699,7 +704,9 @@ public class ChartDataFactory
 
                 DiagramStatistic newDiagram = builder.build();
                 DiagramStatisticOuter newWrappedDiagram =
-                        DiagramStatisticOuter.of( newDiagram, diagram.getPoolMetadata(), diagram.getSampleQuantile() );
+                        DiagramStatisticOuter.of( newDiagram,
+                                                  diagram.getPoolMetadata(),
+                                                  diagram.getSummaryStatistic() );
                 returnMe.add( newWrappedDiagram );
             }
         }
@@ -858,11 +865,14 @@ public class ChartDataFactory
     {
         ToDoubleFunction<DoubleScoreComponentOuter> toDouble = score ->
         {
-            if ( !score.hasQuantile() )
+            if ( !( score.isSummaryStatistic()
+                    && score.getSummaryStatistic()
+                            .getStatistic() == SummaryStatistic.StatisticName.QUANTILE ) )
             {
                 return Double.NaN;
             }
-            return score.getSampleQuantile();
+            return score.getSummaryStatistic()
+                        .getProbability();
         };
 
         Map<Double, List<DoubleScoreComponentOuter>> mappedByQuantile
@@ -979,13 +989,16 @@ public class ChartDataFactory
                                                        MetricDimension xDimension,
                                                        MetricDimension yDimension )
     {
-        ToDoubleFunction<DiagramStatisticOuter> toDouble = statistic ->
+        ToDoubleFunction<DiagramStatisticOuter> toDouble = score ->
         {
-            if ( !statistic.hasQuantile() )
+            if ( !( score.isSummaryStatistic()
+                    && score.getSummaryStatistic()
+                            .getStatistic() == SummaryStatistic.StatisticName.QUANTILE ) )
             {
                 return Double.NaN;
             }
-            return statistic.getSampleQuantile();
+            return score.getSummaryStatistic()
+                        .getProbability();
         };
 
         Map<Double, List<DiagramStatisticOuter>> mappedByQuantile

@@ -21,6 +21,7 @@ import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
+import wres.statistics.generated.SummaryStatistic;
 
 /**
  * Tests the {@link DurationDiagramStatisticOuter}.
@@ -37,6 +38,9 @@ class DurationDiagramStatisticOuterTest
 
     /** Feature group. */
     private FeatureGroup featureGroup;
+
+    /** Summary statistic. */
+    private SummaryStatistic summaryStatistic;
 
     @BeforeEach
     void runBeforeEachTest()
@@ -77,6 +81,12 @@ class DurationDiagramStatisticOuterTest
                                             1 );
 
         this.metadata = PoolMetadata.of( evaluation, pool );
+
+        this.summaryStatistic = SummaryStatistic.newBuilder()
+                                                .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
+                                                .setDimension( SummaryStatistic.StatisticDimension.RESAMPLED )
+                                                .setProbability( 0.25 )
+                                                .build();
     }
 
     @Test
@@ -166,7 +176,7 @@ class DurationDiagramStatisticOuterTest
         assertEquals( yetAnother, yetAnother );
         assertNotEquals( yetAnother, oneMore );
 
-        DurationDiagramStatisticOuter u = DurationDiagramStatisticOuter.of( anotherNext, m2, 0.25 );
+        DurationDiagramStatisticOuter u = DurationDiagramStatisticOuter.of( anotherNext, m2, this.summaryStatistic );
         DurationDiagramStatisticOuter v = DurationDiagramStatisticOuter.of( next, this.metadata, null );
         assertEquals( u, u );
         assertEquals( another, v );
@@ -219,7 +229,12 @@ class DurationDiagramStatisticOuterTest
 
         PoolMetadata m2 = PoolMetadata.of( evaluation, pool );
 
-        DurationDiagramStatisticOuter anInstance = DurationDiagramStatisticOuter.of( this.defaultInstance, m2, 0.26 );
+        DurationDiagramStatisticOuter anInstance =
+                DurationDiagramStatisticOuter.of( this.defaultInstance,
+                                                  m2,
+                                                  this.summaryStatistic.toBuilder()
+                                                                       .setProbability( 0.26 )
+                                                                       .build() );
 
         // Equality and consistency
         for ( int i = 0; i < 100; i++ )
@@ -243,10 +258,14 @@ class DurationDiagramStatisticOuterTest
     @Test
     void testGetSampleQuantile()
     {
-        DurationDiagramStatisticOuter statistic = DurationDiagramStatisticOuter.of( this.defaultInstance,
-                                                                                    PoolMetadata.of(),
-                                                                                    0.26);
+        DurationDiagramStatisticOuter statistic =
+                DurationDiagramStatisticOuter.of( this.defaultInstance,
+                                                  PoolMetadata.of(),
+                                                  this.summaryStatistic.toBuilder()
+                                                                       .setProbability( 0.26 )
+                                                                       .build() );
 
-        assertEquals( 0.26, statistic.getSampleQuantile() );
+        assertEquals( 0.26, statistic.getSummaryStatistic()
+                                     .getProbability() );
     }
 }

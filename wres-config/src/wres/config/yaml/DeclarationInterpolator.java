@@ -1663,7 +1663,7 @@ public class DeclarationInterpolator
         DataType calculatedDataType;
 
         // Analysis durations present? If so, assume analyses
-        if ( DeclarationUtilities.hasAnalysisDurations( builder ) )
+        if ( DeclarationUtilities.hasAnalysisTimes( builder ) )
         {
             calculatedDataType = DataType.ANALYSES;
 

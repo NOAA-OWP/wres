@@ -371,6 +371,10 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             return this;
         }
 
+        /**
+         * @param summaryStatistics the summary statistics calculators
+         * @return this builder
+         */
         public Builder<L, R> setSummaryStatisticsCalculators( List<SummaryStatisticsCalculator> summaryStatistics )
         {
             if ( Objects.nonNull( summaryStatistics ) )
@@ -768,6 +772,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                 SummaryStatisticsCalculator calculator = SummaryStatisticsCalculator.of( quantiles,
                                                                                          Set.of(),
                                                                                          null,
+                                                                                         ( a, b ) -> a,
                                                                                          null );
                 calculator.test( mergedStatistics );
 

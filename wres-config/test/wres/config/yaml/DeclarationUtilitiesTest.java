@@ -1619,7 +1619,7 @@ class DeclarationUtilitiesTest
                                                                        .analysisTimes( analysisTimes )
                                                                        .build();
 
-        assertTrue( DeclarationUtilities.hasAnalysisDurations( evaluation ) );
+        assertTrue( DeclarationUtilities.hasAnalysisTimes( evaluation ) );
     }
 
     @Test
@@ -1628,7 +1628,7 @@ class DeclarationUtilitiesTest
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
                                                                        .build();
 
-        assertFalse( DeclarationUtilities.hasAnalysisDurations( evaluation ) );
+        assertFalse( DeclarationUtilities.hasAnalysisTimes( evaluation ) );
     }
 
     @Test

@@ -21,6 +21,7 @@ import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentType;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
+import wres.statistics.generated.SummaryStatistic;
 
 /**
  * A wrapping for a {@link DiagramStatistic}.
@@ -51,8 +52,8 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
     /** An internal map of indexes of pairs of metric names and qualifiers to allow fast lookup. */
     private final Map<Pair<MetricDimension, String>, Integer> componentIndexes;
 
-    /** The sample quantile or null. */
-    private final Double sampleQuantile;
+    /** The summary statistic or null. */
+    private final SummaryStatistic summaryStatistic;
 
     /**
      * Construct the diagram.
@@ -70,20 +71,20 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
     }
 
     /**
-     * Construct the statistic with a sample quantile.
+     * Construct the statistic as a summary statistic.
      *
      * @param diagram the verification diagram
      * @param metadata the metadata
-     * @param sampleQuantile the sample quantile or null
+     * @param summaryStatistic the summary statistic or null
      * @throws StatisticException if any of the inputs are invalid
      * @return an instance of the output
      */
 
     public static DiagramStatisticOuter of( DiagramStatistic diagram,
                                             PoolMetadata metadata,
-                                            Double sampleQuantile )
+                                            SummaryStatistic summaryStatistic )
     {
-        return new DiagramStatisticOuter( diagram, metadata, sampleQuantile );
+        return new DiagramStatisticOuter( diagram, metadata, summaryStatistic );
     }
 
     @Override
@@ -93,9 +94,9 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
     }
 
     @Override
-    public Double getSampleQuantile()
+    public SummaryStatistic getSummaryStatistic()
     {
-        return this.sampleQuantile;
+        return this.summaryStatistic;
     }
 
     /**
@@ -219,13 +220,13 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
                    .equals( v.getPoolMetadata() )
                && this.getStatistic()
                       .equals( v.getStatistic() )
-               && Objects.equals( this.getSampleQuantile(), v.getSampleQuantile() );
+               && Objects.equals( this.getSummaryStatistic(), v.getSummaryStatistic() );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.getPoolMetadata(), this.getStatistic(), this.getSampleQuantile() );
+        return Objects.hash( this.getPoolMetadata(), this.getStatistic(), this.getSummaryStatistic() );
     }
 
     @Override
@@ -240,7 +241,7 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
             .forEach( component -> builder.append( "componentName", component.getMetric().getName() )
                                           .append( "componentValues", component.getValuesList() ) );
 
-        return builder.append( "sampleQuantile", this.getSampleQuantile() )
+        return builder.append( "summaryStatistic", this.getSummaryStatistic() )
                       .toString();
     }
 
@@ -249,11 +250,11 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
      *
      * @param diagram the verification diagram
      * @param meta the metadata
-     * @param sampleQuantile the sample quantile or null
+     * @param summaryStatistic the summary statistic or null
      * @throws StatisticException if any of the inputs are invalid
      */
 
-    private DiagramStatisticOuter( DiagramStatistic diagram, PoolMetadata meta, Double sampleQuantile )
+    private DiagramStatisticOuter( DiagramStatistic diagram, PoolMetadata meta, SummaryStatistic summaryStatistic )
     {
         if ( Objects.isNull( diagram ) )
         {
@@ -264,18 +265,9 @@ public class DiagramStatisticOuter implements Statistic<DiagramStatistic>
             throw new StatisticException( "Specify non-null metadata." );
         }
 
-        if ( Objects.nonNull( sampleQuantile )
-             && ( sampleQuantile < 0
-                  || sampleQuantile > 1.0 ) )
-        {
-            throw new StatisticException( "The sample quantile must be within [0,1], but was: "
-                                          + sampleQuantile
-                                          + "." );
-        }
-
         this.diagram = diagram;
         this.metadata = meta;
-        this.sampleQuantile = sampleQuantile;
+        this.summaryStatistic = summaryStatistic;
 
         SortedSet<MetricDimension> cNames = new TreeSet<>();
         SortedSet<String> cQual = new TreeSet<>();

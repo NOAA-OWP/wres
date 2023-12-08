@@ -5,6 +5,7 @@ import java.util.Objects;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
+import wres.statistics.generated.SummaryStatistic;
 
 /**
  * <p>A {@link Statistic} is used to describe a {@link Pool} or to infer something about the population from which
@@ -40,23 +41,23 @@ public interface Statistic<U>
     MetricConstants getMetricName();
 
     /**
-     * Returns the sample quantile associated with the statistic, if any. If none, then the statistic is a nominal
-     * value, rather than a quantile from its sampling distribution.
+     * Returns the summary statistic metadata associated with the statistic, if any. If none, then the statistic is a
+     * raw statistic, and not a summary statistic over a collection of raw statistics.
      *
-     * @see #hasQuantile()
-     * @return the sample quantile or null
+     * @see #isSummaryStatistic()
+     * @return the summary statistic or null
      */
 
-    Double getSampleQuantile();
+    SummaryStatistic getSummaryStatistic();
 
     /**
-     * Returns {@code true} if the statistic is associated with a quantile, {@code false} if it is a nominal value.
+     * Returns {@code true} if the statistic is a summary statistic, {@code false} if it is a raw statistic.
      *
-     * @return whether the statistic is associated with a sample quantile
+     * @return whether the statistic is a summary statistic over a collection of raw statistics
      */
 
-    default boolean hasQuantile()
+    default boolean isSummaryStatistic()
     {
-        return Objects.nonNull( this.getSampleQuantile() );
+        return Objects.nonNull( this.getSummaryStatistic() );
     }
 }

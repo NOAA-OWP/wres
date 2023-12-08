@@ -21,10 +21,11 @@ import wres.statistics.generated.Pool;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.SummaryStatistic;
 
 /**
  * Tests the {@link ScoreStatistic}.
- * 
+ *
  * @author James Brown
  */
 class ScoreStatisticOuterTest
@@ -37,6 +38,9 @@ class ScoreStatisticOuterTest
 
     /** Feature group. */
     private FeatureGroup featureGroup;
+
+    /** Summary statistic. */
+    private SummaryStatistic summaryStatistic;
 
     @BeforeEach
     public void runBeforeEachTest()
@@ -66,8 +70,15 @@ class ScoreStatisticOuterTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 1.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN ) ) )
                                     .build();
+
+        this.summaryStatistic = SummaryStatistic.newBuilder()
+                                                .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
+                                                .setDimension( SummaryStatistic.StatisticDimension.RESAMPLED )
+                                                .setProbability( 0.25 )
+                                                .build();
     }
 
     @Test
@@ -120,7 +131,8 @@ class ScoreStatisticOuterTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 2.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName(
+                                                                                                                               ComponentName.MAIN ) ) )
                                     .build();
 
         assertNotEquals( DoubleScoreStatisticOuter.of( two, m1 ), s );
@@ -132,7 +144,7 @@ class ScoreStatisticOuterTest
         assertEquals( q, q );
         assertNotEquals( q, r );
 
-        DoubleScoreStatisticOuter u = DoubleScoreStatisticOuter.of( two, m1, 0.25 );
+        DoubleScoreStatisticOuter u = DoubleScoreStatisticOuter.of( two, m1, this.summaryStatistic );
         DoubleScoreStatisticOuter v = DoubleScoreStatisticOuter.of( this.one, m1, null );
         assertEquals( u, u );
         assertEquals( s, v );
@@ -163,9 +175,9 @@ class ScoreStatisticOuterTest
     void testHashCode()
     {
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> q =
-                DoubleScoreStatisticOuter.of( this.one, this.metadata, 0.25 );
+                DoubleScoreStatisticOuter.of( this.one, this.metadata, this.summaryStatistic );
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> r =
-                DoubleScoreStatisticOuter.of( this.one, this.metadata, 0.25 );
+                DoubleScoreStatisticOuter.of( this.one, this.metadata, this.summaryStatistic );
         assertEquals( q.hashCode(), r.hashCode() );
     }
 
@@ -173,7 +185,8 @@ class ScoreStatisticOuterTest
     void testGetSampleQuantile()
     {
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> q =
-                DoubleScoreStatisticOuter.of( this.one, this.metadata, 0.25 );
-        assertEquals( 0.25, q.getSampleQuantile() );
+                DoubleScoreStatisticOuter.of( this.one, this.metadata, this.summaryStatistic );
+        assertEquals( 0.25, q.getSummaryStatistic()
+                             .getProbability() );
     }
 }

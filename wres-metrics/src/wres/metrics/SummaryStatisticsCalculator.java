@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiFunction;
+import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -116,15 +117,25 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
     /** Locks the creation of new diagram row slots within the {@link #diagrams}. */
     private final ReentrantLock diagramRowSlotCreationLock = new ReentrantLock();
 
+    /** A transformer that aggregates the raw statistics metadata to reflect the dimension over which the summary
+     * statistics were calculated. For example, when summarizing over features, the feature metadata should be
+     * aggregated to include all features registered with the calculator. Consumes the existing metadata in the first
+     * argument and uses the new metadata in the second argument to generate updated metadata. */
+    private final BinaryOperator<Statistics> metadataAggregator;
+
     /** The superset of statistics added to this instance. Contains only the first occurrence of each metric. */
     @GuardedBy( "nominalStatisticsLock" )
     private Statistics nominal = null;
+
+    /** A lock to allow foratomic updating of the {@link #nominal} statistics. */
+    private final ReentrantLock nominalStatisticsLock = new ReentrantLock();
 
     /**
      * Creates an instance.
      * @param scalarStatistics the scalar summary statistics to calculate
      * @param diagramStatistics the diagram summary statistics to calculate
      * @param filter an optional filter
+     * @param metadataTransformer a transformer that adapts the statistics metadata to reflect the summary performed
      * @param timeUnits the optional time units to use for duration statistics
      * @return an instance
      * @throws IllegalArgumentException if all lists of statistics are null or empty
@@ -132,11 +143,13 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
     public static SummaryStatisticsCalculator of( Set<SummaryStatisticFunction> scalarStatistics,
                                                   Set<DiagramStatisticFunction> diagramStatistics,
                                                   Predicate<Statistics> filter,
+                                                  BinaryOperator<Statistics> metadataTransformer,
                                                   ChronoUnit timeUnits )
     {
         return new SummaryStatisticsCalculator( scalarStatistics,
                                                 diagramStatistics,
                                                 filter,
+                                                metadataTransformer,
                                                 timeUnits );
     }
 
@@ -190,21 +203,11 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
         // Remove any statistics that do not support summary statistics
         statistics = this.filter( statistics );
 
-        // Set the nominal statistics whose metadata will be used when reporting summary statistics
-        if ( Objects.isNull( this.nominal ) )
-        {
-            this.nominal = statistics.toBuilder()
-                                     .clearScores()
-                                     .clearDurationScores()
-                                     .clearDiagrams()
-                                     .clearDurationDiagrams()
-                                     .clearOneBoxPerPair()
-                                     .clearOneBoxPerPool()
-                                     .build();
-        }
+        // Update the nominal statistics metadata
+        this.updateStatisticsMetadata( statistics );
 
-        // Update the templates
-        this.updateTemplates( statistics );
+        // Update the templates that store the raw statistics to include any novel statistics in the current blob
+        this.updateStatisticsTemplates( statistics );
 
         // Add the double score statistics
         this.addDoubleScores( statistics );
@@ -223,12 +226,53 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
     }
 
     /**
+     * Updates the summary statistics metadata to reflect the latest raw statistics.
+     *
+     * @param latest the latest raw statistics
+     */
+
+    private void updateStatisticsMetadata( Statistics latest )
+    {
+        try
+        {
+            this.nominalStatisticsLock.lock();
+
+            // Set the nominal statistics whose metadata will be used when reporting summary statistics
+            if ( Objects.isNull( this.nominal ) )
+            {
+                this.nominal = latest.toBuilder()
+                                     .clearScores()
+                                     .clearDurationScores()
+                                     .clearDiagrams()
+                                     .clearDurationDiagrams()
+                                     .clearOneBoxPerPair()
+                                     .clearOneBoxPerPool()
+                                     .build();
+                LOGGER.debug( "Set the nominal statistics metadata for summary statistics calculation: {}",
+                              this.nominal );
+            }
+            else
+            {
+                // Transform the metadata to reflect the new information supplied
+                this.nominal = this.metadataAggregator.apply( this.nominal, latest );
+
+                LOGGER.debug( "Transformed the nominal statistics metadata for summary statistics calculation: {}.",
+                              this.nominal );
+            }
+        }
+        finally
+        {
+            this.nominalStatisticsLock.unlock();
+        }
+    }
+
+    /**
      * Updates the templates for the summary statistics.
      *
      * @param rawStatistics the raw statistics to use
      */
 
-    private void updateTemplates( Statistics rawStatistics )
+    private void updateStatisticsTemplates( Statistics rawStatistics )
     {
         rawStatistics.getScoresList()
                      .forEach( n -> this.doubleScoreTemplates.putIfAbsent( n.getMetric()
@@ -846,14 +890,19 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
      * @param scalarStatistics the scalar summary statistics to calculate
      * @param diagramStatistics the diagram summary statistics to calculate
      * @param filter an optional filter
+     * @param metadataAggregator a transformer that adapts the statistics metadata to reflect the summary performed
      * @param timeUnits the optional time units to use for duration statistics
      * @throws IllegalArgumentException if all lists of statistics are null or empty
+     * @throws NullPointerException if the metadata transformer is null
      */
     private SummaryStatisticsCalculator( Set<SummaryStatisticFunction> scalarStatistics,
                                          Set<DiagramStatisticFunction> diagramStatistics,
                                          Predicate<Statistics> filter,
+                                         BinaryOperator<Statistics> metadataAggregator,
                                          ChronoUnit timeUnits )
     {
+        Objects.requireNonNull( metadataAggregator );
+
         // Replace null with empty lists
         if ( Objects.isNull( scalarStatistics ) )
         {
@@ -891,6 +940,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
             this.filter = filter;
         }
 
+        this.metadataAggregator = metadataAggregator;
         this.scalarStatistics = scalarStatistics;
         this.diagramStatistics = diagramStatistics;
         this.isComplete = new AtomicBoolean();

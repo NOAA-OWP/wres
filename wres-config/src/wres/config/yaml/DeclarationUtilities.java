@@ -1111,10 +1111,10 @@ public class DeclarationUtilities
      * @return whether analysis durations have been declared
      */
 
-    static boolean hasAnalysisDurations( EvaluationDeclaration declaration )
+    static boolean hasAnalysisTimes( EvaluationDeclaration declaration )
     {
         EvaluationDeclarationBuilder builder = EvaluationDeclarationBuilder.builder( declaration );
-        return hasAnalysisDurations( builder );
+        return hasAnalysisTimes( builder );
     }
 
     /**
@@ -1122,7 +1122,7 @@ public class DeclarationUtilities
      * @return whether analysis durations have been declared
      */
 
-    static boolean hasAnalysisDurations( EvaluationDeclarationBuilder builder )
+    static boolean hasAnalysisTimes( EvaluationDeclarationBuilder builder )
     {
         return Objects.nonNull( builder.analysisTimes() ) && (
                 Objects.nonNull( builder.analysisTimes()

@@ -528,7 +528,7 @@ public class DeclarationValidator
 
         // If there are no analyses datasets present, there cannot be declaration for analyses
         if ( DeclarationValidator.doesNotHaveThisDataType( DataType.ANALYSES, declaration )
-             && DeclarationUtilities.hasAnalysisDurations( declaration ) )
+             && DeclarationUtilities.hasAnalysisTimes( declaration ) )
         {
             EvaluationStatusEvent event = EvaluationStatusEvent.newBuilder()
                                                                .setStatusLevel( StatusLevel.ERROR )
@@ -538,7 +538,7 @@ public class DeclarationValidator
                                                                        + DataType.ANALYSES
                                                                        + ", but some of the declaration is "
                                                                        + "designed for this data type: "
-                                                                       + "analysis_durations. Please remove this "
+                                                                       + "analysis_times. Please remove this "
                                                                        + "declaration or correct the data "
                                                                        + "types." )
                                                                .build();
@@ -1212,7 +1212,7 @@ public class DeclarationValidator
 
         // Analysis durations
         List<EvaluationStatusEvent> analysisDurations
-                = DeclarationValidator.analysisDurationsAreValid( declaration.analysisTimes() );
+                = DeclarationValidator.analysisTimesAreValid( declaration.analysisTimes() );
         events.addAll( analysisDurations );
 
         // Lead times
@@ -2808,7 +2808,7 @@ public class DeclarationValidator
      * @return the validation events encountered
      */
 
-    private static List<EvaluationStatusEvent> analysisDurationsAreValid( AnalysisTimes analysisTimes )
+    private static List<EvaluationStatusEvent> analysisTimesAreValid( AnalysisTimes analysisTimes )
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
@@ -2821,13 +2821,13 @@ public class DeclarationValidator
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.ERROR )
-                                           .setEventMessage( "The 'analysis_durations' interval is invalid because the "
+                                           .setEventMessage( "The 'analysis_times' interval is invalid because the "
                                                              + "'maximum' value of '"
                                                              + analysisTimes.maximum()
-                                                             + "' is less than the 'minimum_exclusive' "
+                                                             + "' is less than the 'minimum' "
                                                              + "value of '"
                                                              + analysisTimes.minimum()
-                                                             + "'. Please adjust the analysis durations to form a "
+                                                             + "'. Please adjust the analysis times to form a "
                                                              + "valid time interval and try again." )
                                            .build();
             events.add( event );

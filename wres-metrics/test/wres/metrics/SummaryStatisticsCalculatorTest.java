@@ -10,6 +10,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.BinaryOperator;
 import java.util.function.Predicate;
 
 import com.google.protobuf.Duration;
@@ -30,6 +31,7 @@ import wres.statistics.generated.DurationDiagramMetric;
 import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreStatistic;
+import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.SummaryStatistic;
@@ -95,7 +97,7 @@ class SummaryStatisticsCalculatorTest
         quantiles.add( q3f );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, null );
+                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, ( a, b ) -> a, null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -204,7 +206,7 @@ class SummaryStatisticsCalculatorTest
         quantiles.add( q3f );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, null );
+                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, ( a, b ) -> a, null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -317,7 +319,7 @@ class SummaryStatisticsCalculatorTest
         quantiles.add( q3f );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, null );
+                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, ( a, b ) -> a, null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -420,7 +422,7 @@ class SummaryStatisticsCalculatorTest
         quantiles.add( q3f );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, null );
+                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, ( a, b ) -> a, null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -536,7 +538,7 @@ class SummaryStatisticsCalculatorTest
 
         Set<SummaryStatisticFunction> quantiles = Set.of( q1f );
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, null );
+                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, ( a, b ) -> a, null );
 
         // Add nominal
         calculator.test( nominal );
@@ -719,7 +721,7 @@ class SummaryStatisticsCalculatorTest
         quantiles.add( q3f );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, null );
+                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, ( x, y ) -> x, null );
 
         ExecutorService executor = Executors.newFixedThreadPool( 5 );
 
@@ -930,7 +932,7 @@ class SummaryStatisticsCalculatorTest
 
         Set<SummaryStatisticFunction> summaryStatistics = Set.of( meanFunction );
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), null, null );
+                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), null, ( a, b ) -> a, null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -1001,7 +1003,7 @@ class SummaryStatisticsCalculatorTest
                                                                      .getValue(), 5.0 );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), include, null );
+                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), include, ( a, b ) -> a, null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -1094,7 +1096,7 @@ class SummaryStatisticsCalculatorTest
         Set<SummaryStatisticFunction> summaryStatistics = Set.of( meanFunction );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), null, null );
+                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), null, ( a, b ) -> a, null );
 
         // Accept the two statistics
         calculator.test( one );
@@ -1161,8 +1163,17 @@ class SummaryStatisticsCalculatorTest
         summaryStatistics.add( meanFunction );
         summaryStatistics.add( sdFunction );
 
+        GeometryGroup group = GeometryGroup.newBuilder()
+                                           .setRegionName( "ALL FEATURES" )
+                                           .build();
+
+        BinaryOperator<Statistics> transformer = ( x, y ) -> x.toBuilder()
+                                                              .setPool( x.getPool()
+                                                                         .toBuilder()
+                                                                         .setGeometryGroup( group ) )
+                                                              .build();
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), null, null );
+                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), null, transformer, null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -1176,14 +1187,21 @@ class SummaryStatisticsCalculatorTest
 
         List<Statistics> actual = calculator.get();
 
-        Statistics.Builder expectedFirstBuilder = nominal.toBuilder()
-                                                         .setSummaryStatistic( mean );
+        // Root builder with adapted geometry information
+        Statistics root = nominal.toBuilder()
+                                 .setPool( nominal.getPool()
+                                                  .toBuilder()
+                                                  .setGeometryGroup( group ) )
+                                 .build();
+
+        Statistics.Builder expectedFirstBuilder = root.toBuilder()
+                                                      .setSummaryStatistic( mean );
         expectedFirstBuilder.getScoresBuilder( 0 )
                             .getStatisticsBuilder( 0 )
                             .setValue( 5.5 );
 
-        Statistics.Builder expectedSecondBuilder = nominal.toBuilder()
-                                                          .setSummaryStatistic( sd );
+        Statistics.Builder expectedSecondBuilder = root.toBuilder()
+                                                       .setSummaryStatistic( sd );
         expectedSecondBuilder.getScoresBuilder( 0 )
                              .getStatisticsBuilder( 0 )
                              .setValue( 3.0276503540974917 );

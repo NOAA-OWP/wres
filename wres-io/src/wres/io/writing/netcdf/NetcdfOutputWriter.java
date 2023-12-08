@@ -80,6 +80,7 @@ import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Pool.EnsembleAverageType;
+import wres.statistics.generated.SummaryStatistic;
 import wres.system.SystemSettings;
 
 /**
@@ -1023,9 +1024,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             {
                 components.forEach( nextComponent -> returnMe.put( new MetricNames( nextMetric,
                                                                                     nextComponent,
-                                                                                   nextMetric.name()
-                                                                                   + "_"
-                                                                                   + nextComponent.name() ),
+                                                                                    nextMetric.name()
+                                                                                    + "_"
+                                                                                    + nextComponent.name() ),
                                                                    nextThresholds ) );
             }
             else
@@ -1458,10 +1459,13 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             }
 
             // Add the sample quantile using the standard name, where applicable
-            if ( score.hasQuantile()
+            if ( score.isSummaryStatistic()
+                 && score.getSummaryStatistic()
+                         .getStatistic() == SummaryStatistic.StatisticName.QUANTILE
                  && metricName.isSamplingUncertaintyAllowed() )
             {
-                double quantile = score.getSampleQuantile();
+                double quantile = score.getSummaryStatistic()
+                                       .getProbability();
                 Map<Double, String> quantileNames = this.outputWriter.getStandardQuantileNames();
                 String quantileName = quantileNames.get( quantile );
 

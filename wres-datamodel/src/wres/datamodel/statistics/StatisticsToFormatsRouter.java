@@ -60,6 +60,12 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
     private static final String NULL_OUTPUT_STRING = "Specify non-null outputs for product generation.";
 
     /**
+     * Empty summary statistics.
+     */
+
+    private static final SummaryStatistic EMPTY_SUMMARY_STATISTICS = SummaryStatistic.getDefaultInstance();
+
+    /**
      * Store of consumers for processing {@link DoubleScoreStatisticOuter} by {@link Format}.
      */
 
@@ -504,7 +510,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                     nextDiagram -> DiagramStatisticOuter.of( nextDiagram,
                                                              PoolMetadata.of( this.getEvaluationDescription(),
                                                                               poolSupplier.apply( someStats ) ),
-                                                             this.getSampleQuantile( someStats ) );
+                                                             this.getSummaryStatistic( someStats ) );
             return diagrams.stream()
                            .map( innerMapper )
                            .toList();
@@ -551,7 +557,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                     nextScore -> DoubleScoreStatisticOuter.of( nextScore,
                                                                PoolMetadata.of( this.getEvaluationDescription(),
                                                                                 poolSupplier.apply( someStats ) ),
-                                                               this.getSampleQuantile( someStats ) );
+                                                               this.getSummaryStatistic( someStats ) );
             return scores.stream()
                          .map( innerMapper )
                          .toList();
@@ -574,7 +580,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                     nextScore -> DurationScoreStatisticOuter.of( nextScore,
                                                                  PoolMetadata.of( this.getEvaluationDescription(),
                                                                                   poolSupplier.apply( someStats ) ),
-                                                                 this.getSampleQuantile( someStats ) );
+                                                                 this.getSummaryStatistic( someStats ) );
             return scores.stream()
                          .map( innerMapper )
                          .toList();
@@ -597,31 +603,11 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                     nextDiagram -> DurationDiagramStatisticOuter.of( nextDiagram,
                                                                      PoolMetadata.of( this.getEvaluationDescription(),
                                                                                       poolSupplier.apply( someStats ) ),
-                                                                     this.getSampleQuantile( someStats ) );
+                                                                     this.getSummaryStatistic( someStats ) );
             return diagrams.stream()
                            .map( innerMapper )
                            .toList();
         };
-    }
-
-    /**
-     * Returns the sample quantile associated with the statistics, if any.
-     * @param statistics the statistics
-     * @return the sample quantile or null
-     */
-
-    private Double getSampleQuantile( Statistics statistics )
-    {
-        Double sampleQuantile = null;
-        if ( statistics.hasSummaryStatistic()
-             && statistics.getSummaryStatistic()
-                          .getDimension() == SummaryStatistic.StatisticDimension.RESAMPLED )
-        {
-            sampleQuantile = statistics.getSummaryStatistic()
-                                       .getProbability();
-        }
-
-        return sampleQuantile;
     }
 
     /**
@@ -1016,6 +1002,22 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         LOGGER.debug( "Suppressing formats for these metrics: {}.", returnMe );
 
         return Collections.unmodifiableMap( returnMe );
+    }
+
+    /**
+     * @param statistics the statistics
+     * @return the summary statistic, if defined
+     */
+
+    private SummaryStatistic getSummaryStatistic( Statistics statistics )
+    {
+        SummaryStatistic summaryStatistic = null;
+        if( ! EMPTY_SUMMARY_STATISTICS.equals( statistics.getSummaryStatistic() ) )
+        {
+            summaryStatistic = statistics.getSummaryStatistic();
+        }
+
+        return summaryStatistic;
     }
 
     /**

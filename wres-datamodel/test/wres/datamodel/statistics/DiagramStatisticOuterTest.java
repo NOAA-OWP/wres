@@ -24,10 +24,11 @@ import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramCom
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.SummaryStatistic;
 
 /**
  * Tests the {@link DiagramStatisticOuter}.
- * 
+ *
  * @author James Brown
  */
 class DiagramStatisticOuterTest
@@ -37,13 +38,15 @@ class DiagramStatisticOuterTest
     private FeatureGroup featureGroup;
 
     private FeatureGroup anotherFeatureGroup;
-    
+
     private DiagramMetricComponent podComponent;
-    
+
     private DiagramMetricComponent pofdComponent;
-    
+
     private DiagramMetric metric;
-    
+
+    private SummaryStatistic summaryStatistic;
+
     private DiagramStatisticOuter testInstance;
 
     @BeforeEach
@@ -75,7 +78,7 @@ class DiagramStatisticOuterTest
                                             1 );
 
         this.metadata = PoolMetadata.of( evaluation, pool );
-        
+
         this.podComponent =
                 DiagramMetricComponent.newBuilder()
                                       .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
@@ -89,8 +92,8 @@ class DiagramStatisticOuterTest
                                       .build();
 
         this.metric = DiagramMetric.newBuilder()
-                                            .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM )
-                                            .build();
+                                   .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM )
+                                   .build();
         DiagramStatisticComponent podOne =
                 DiagramStatisticComponent.newBuilder()
                                          .setMetric( this.podComponent )
@@ -109,7 +112,15 @@ class DiagramStatisticOuterTest
                                                   .setMetric( this.metric )
                                                   .build();
 
-        this.testInstance = DiagramStatisticOuter.of( rocOne, this.metadata, 0.27 );
+        this.summaryStatistic = SummaryStatistic.newBuilder()
+                                                .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
+                                                .setDimension( SummaryStatistic.StatisticDimension.RESAMPLED )
+                                                .setProbability( 0.27 )
+                                                .build();
+
+        this.testInstance = DiagramStatisticOuter.of( rocOne,
+                                                      this.metadata,
+                                                      this.summaryStatistic );
     }
 
     @Test
@@ -176,13 +187,13 @@ class DiagramStatisticOuterTest
                                                     .build();
 
         DiagramStatisticOuter s = this.testInstance;
-        DiagramStatisticOuter t = DiagramStatisticOuter.of( rocTwo, this.metadata, 0.27 );
+        DiagramStatisticOuter t = DiagramStatisticOuter.of( rocTwo, this.metadata, this.summaryStatistic );
 
         assertEquals( s, t );
         assertNotEquals( null, s );
         assertNotEquals( 1.0, s );
-        assertNotEquals( s, DiagramStatisticOuter.of( rocThree, this.metadata, 0.27 ) );
-        assertNotEquals( s, DiagramStatisticOuter.of( rocThree, m2, 0.27 ) );
+        assertNotEquals( s, DiagramStatisticOuter.of( rocThree, this.metadata, this.summaryStatistic ) );
+        assertNotEquals( s, DiagramStatisticOuter.of( rocThree, m2, this.summaryStatistic ) );
         DiagramStatisticOuter q = DiagramStatisticOuter.of( s.getStatistic(), m2 );
         DiagramStatisticOuter r = DiagramStatisticOuter.of( rocTwo, m3 );
         assertEquals( q, q );
@@ -237,7 +248,7 @@ class DiagramStatisticOuterTest
                                                   .build();
 
         DiagramStatisticOuter q = this.testInstance;
-        DiagramStatisticOuter r = DiagramStatisticOuter.of( rocTwo, this.metadata, 0.27 );
+        DiagramStatisticOuter r = DiagramStatisticOuter.of( rocTwo, this.metadata, this.summaryStatistic );
 
         assertEquals( q.hashCode(), r.hashCode() );
     }
@@ -277,7 +288,8 @@ class DiagramStatisticOuterTest
     @Test
     void testGetSampleQuantile()
     {
-        assertEquals( 0.27, this.testInstance.getSampleQuantile() );
+        assertEquals( 0.27, this.testInstance.getSummaryStatistic()
+                                             .getProbability() );
     }
 
     @Test
