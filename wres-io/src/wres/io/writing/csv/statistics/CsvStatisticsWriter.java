@@ -109,8 +109,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                          + "LOWER PROBABILITY,DECISION THRESHOLD UPPER PROBABILITY,DECISION THRESHOLD "
                                          + "SIDE,DECISION THRESHOLD OPERATOR,METRIC NAME,METRIC COMPONENT NAME,METRIC "
                                          + "COMPONENT QUALIFIER,METRIC COMPONENT UNITS,METRIC COMPONENT MINIMUM,METRIC "
-                                         + "COMPONENT MAXIMUM,METRIC COMPONENT OPTIMUM,STATISTIC GROUP NUMBER,SAMPLE "
-                                         + "QUANTILE,STATISTIC";
+                                         + "COMPONENT MAXIMUM,METRIC COMPONENT OPTIMUM,STATISTIC GROUP NUMBER,SUMMARY "
+                                         + "STATISTIC TYPE,SUMMARY STATISTIC DIMENSION,SUMMARY STATISTIC QUANTILE,"
+                                         + "SAMPLE QUANTILE,STATISTIC";
 
     /** The CSV delimiter. */
     private static final String DELIMITER = ",";
@@ -743,7 +744,11 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         merge.merge( this.evaluationDescription );
         StringJoiner mergeDescription = merge.merge( poolDescription );
 
-        String quantileString = this.getQuantileString( statistics );
+        SummaryStatistic summaryStatistic = null;
+        if ( statistics.hasSummaryStatistic() )
+        {
+            summaryStatistic = statistics.getSummaryStatistic();
+        }
 
         // Write the double scores
         if ( !statistics.getScoresList()
@@ -754,7 +759,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                     writer,
                                     groupNumber,
                                     ensembleAverageType,
-                                    quantileString );
+                                    summaryStatistic );
         }
 
         // Write the duration scores
@@ -766,7 +771,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                       writer,
                                       this.getDurationUnits(),
                                       groupNumber,
-                                      quantileString );
+                                      summaryStatistic );
         }
 
         // Write the diagrams
@@ -778,7 +783,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                 writer,
                                 groupNumber,
                                 ensembleAverageType,
-                                quantileString );
+                                summaryStatistic );
         }
 
         // Write the box plots per pair (per pool)
@@ -812,7 +817,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                         writer,
                                         this.getDurationUnits(),
                                         groupNumber,
-                                        quantileString );
+                                        summaryStatistic );
         }
     }
 
@@ -824,7 +829,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
      * @param writer a shared writer, not to be closed
      * @param groupNumber the statistics group number
      * @param ensembleAverageType the ensemble average type, where applicable
-     * @param quantileString the quantile string
+     * @param summaryStatistic the summary statistic, if any
      * @throws IOException if any of the scores could not be written
      */
 
@@ -833,7 +838,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                     BufferedOutputStream writer,
                                     AtomicInteger groupNumber,
                                     EnsembleAverageType ensembleAverageType,
-                                    String quantileString )
+                                    SummaryStatistic summaryStatistic )
             throws IOException
     {
         // Sort in metric name order
@@ -845,7 +850,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
         for ( DoubleScoreStatistic next : sorted )
         {
-            this.writeDoubleScore( poolDescription, next, writer, groupNumber, ensembleAverageType, quantileString );
+            this.writeDoubleScore( poolDescription, next, writer, groupNumber, ensembleAverageType, summaryStatistic );
         }
     }
 
@@ -857,7 +862,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
      * @param writer a shared writer, not to be closed
      * @param durationUnits the duration units
      * @param groupNumber the statistics group number
-     * @param quantileString the quantile string
+     * @param summaryStatistic the summary statistic, if any
      * @throws IOException if any of the scores could not be written
      */
 
@@ -866,7 +871,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                       BufferedOutputStream writer,
                                       ChronoUnit durationUnits,
                                       AtomicInteger groupNumber,
-                                      String quantileString )
+                                      SummaryStatistic summaryStatistic )
             throws IOException
     {
         // Sort in metric name order
@@ -878,7 +883,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
         for ( DurationScoreStatistic next : sorted )
         {
-            this.writeDurationScore( poolDescription, next, writer, durationUnits, groupNumber, quantileString );
+            this.writeDurationScore( poolDescription, next, writer, durationUnits, groupNumber, summaryStatistic );
         }
     }
 
@@ -890,7 +895,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
      * @param writer a shared writer, not to be closed
      * @param groupNumber the statistics group number
      * @param ensembleAverageType the ensemble average type
-     * @param quantileString the quantile string
+     * @param summaryStatistic the summary statistic, if any
      * @throws IOException if any of the scores could not be written
      */
 
@@ -899,7 +904,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                 BufferedOutputStream writer,
                                 AtomicInteger groupNumber,
                                 EnsembleAverageType ensembleAverageType,
-                                String quantileString )
+                                SummaryStatistic summaryStatistic )
             throws IOException
     {
         // Sort in metric name order
@@ -911,7 +916,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
         for ( DiagramStatistic next : sorted )
         {
-            this.writeDiagram( poolDescription, next, writer, groupNumber, ensembleAverageType, quantileString );
+            this.writeDiagram( poolDescription, next, writer, groupNumber, ensembleAverageType, summaryStatistic );
         }
     }
 
@@ -954,7 +959,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
      * @param writer a shared writer, not to be closed
      * @param durationUnits the duration units
      * @param groupNumber the statistics group number
-     * @param quantileString the quantile string
+     * @param summaryStatistic the summary statistic, if any
      * @throws IOException if any of the scores could not be written
      */
 
@@ -963,7 +968,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                         BufferedOutputStream writer,
                                         ChronoUnit durationUnits,
                                         AtomicInteger groupNumber,
-                                        String quantileString )
+                                        SummaryStatistic summaryStatistic )
             throws IOException
     {
         // Sort in metric name order
@@ -975,7 +980,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
         for ( DurationDiagramStatistic next : sorted )
         {
-            this.writeDurationDiagram( poolDescription, next, writer, durationUnits, groupNumber, quantileString );
+            this.writeDurationDiagram( poolDescription, next, writer, durationUnits, groupNumber, summaryStatistic );
         }
     }
 
@@ -987,7 +992,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
      * @param writer a shared writer, not to be closed
      * @param groupNumber the statistics group number
      * @param ensembleAverageType the ensemble average type, where applicable
-     * @param quantileString the quantile string
+     * @param summaryStatistic the summary statistic, if any
      * @throws IOException if the score could not be written
      */
 
@@ -996,7 +1001,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                    BufferedOutputStream writer,
                                    AtomicInteger groupNumber,
                                    EnsembleAverageType ensembleAverageType,
-                                   String quantileString )
+                                   SummaryStatistic summaryStatistic )
             throws IOException
     {
         DoubleScoreMetric metric = score.getMetric();
@@ -1040,8 +1045,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
             // Add the statistic group number
             this.append( joiner, String.valueOf( groupNumber.getAndIncrement() ), false );
 
-            // Add the sample quantile
-            this.append( joiner, quantileString, false );
+            // Add the summary statistic, if available
+            this.writeSummaryStatistic( summaryStatistic, joiner );
 
             // Add the statistic value
             String formattedValue = this.getDecimalFormatter()
@@ -1106,7 +1111,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
      * @param writer a shared writer, not to be closed
      * @param durationUnits the duration units
      * @param groupNumber the statistics group number
-     * @param quantileString the quantile string
+     * @param summaryStatistic the summary statistic, if any
      * @throws IOException if the score could not be written
      */
 
@@ -1115,7 +1120,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                      BufferedOutputStream writer,
                                      ChronoUnit durationUnits,
                                      AtomicInteger groupNumber,
-                                     String quantileString )
+                                     SummaryStatistic summaryStatistic )
             throws IOException
     {
         DurationScoreMetric metric = score.getMetric();
@@ -1157,8 +1162,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                 // Add the statistic group number
                 this.append( joiner, String.valueOf( groupNumber.getAndIncrement() ), false );
 
-                // Add the sample quantile
-                this.append( joiner, quantileString, false );
+                // Add the summary statistic, if available
+                this.writeSummaryStatistic( summaryStatistic, joiner );
 
                 // Add the statistic value
                 com.google.protobuf.Duration protoDuration = next.getValue();
@@ -1184,8 +1189,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                 // Add the statistic group number
                 this.append( joiner, String.valueOf( groupNumber.getAndIncrement() ), false );
 
-                // Add the sample quantile
-                this.append( joiner, quantileString, false );
+                // Add the summary statistic, if available
+                this.writeSummaryStatistic( summaryStatistic, joiner );
 
                 // Add the statistic value
                 com.google.protobuf.Duration protoDuration = next.getValue();
@@ -1253,7 +1258,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
      * @param writer a shared writer, not to be closed
      * @param groupNumber the statistics group number
      * @param ensembleAverageType the ensemble average type
-     * @param quantileString the quantile string
+     * @param summaryStatistic the summary statistic, if any
      * @throws IOException if the score could not be written
      */
 
@@ -1262,7 +1267,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                BufferedOutputStream writer,
                                AtomicInteger groupNumber,
                                EnsembleAverageType ensembleAverageType,
-                               String quantileString )
+                               SummaryStatistic summaryStatistic )
             throws IOException
     {
         DiagramMetric metric = diagram.getMetric();
@@ -1314,8 +1319,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                 // Add the statistic group number
                 this.append( joiner, String.valueOf( innerGroupNumber ), false );
 
-                // Add the sample quantile
-                this.append( joiner, quantileString, false );
+                // Add the summary statistic, if available
+                this.writeSummaryStatistic( summaryStatistic, joiner );
 
                 // Add the statistic value
                 String formattedValue = this.getDecimalFormatter()
@@ -1349,7 +1354,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
      * @param writer a shared writer, not to be closed
      * @param durationUnits the duration units
      * @param groupNumber the statistics group number
-     * @param quantileString the quantile string
+     * @param summaryStatistic the summary statistic, if any
      * @throws IOException if the score could not be written
      */
 
@@ -1358,7 +1363,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                        BufferedOutputStream writer,
                                        ChronoUnit durationUnits,
                                        AtomicInteger groupNumber,
-                                       String quantileString )
+                                       SummaryStatistic summaryStatistic )
             throws IOException
     {
         DurationDiagramMetric metric = diagram.getMetric();
@@ -1396,8 +1401,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
             // Add the statistic group number
             this.append( joiner, String.valueOf( gNumber ), false );
 
-            // Add the sample quantile
-            this.append( joiner, quantileString, false );
+            // Add the summary statistic, if available
+            this.writeSummaryStatistic( summaryStatistic, joiner );
 
             String formattedValue = epochDurationInUserUnits.toPlainString();
             this.append( joiner, formattedValue, false );
@@ -1429,8 +1434,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
             // Add the statistic group number
             this.append( joinerTwo, String.valueOf( gNumber ), false );
 
-            // Add the sample quantile
-            this.append( joinerTwo, quantileString, false );
+            // Add the summary statistic, if available
+            this.writeSummaryStatistic( summaryStatistic, joinerTwo );
 
             String formattedValueDuration = durationInUserUnits.toPlainString();
             this.append( joinerTwo, formattedValueDuration, false );
@@ -1464,7 +1469,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         int gNumber = groupNumber.get();
         int addToGroupNumber = 0;
 
-        MetricDimension quantileValueType = MetricDimension.valueOf( metric.getQuantileValueType().name() );
+        MetricDimension quantileValueType = MetricDimension.valueOf( metric.getQuantileValueType()
+                                                                           .name() );
         String quantileValueTypeString = quantileValueType.toString();
 
         for ( Box next : boxplot.getStatisticsList() )
@@ -1585,8 +1591,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         // Add the statistics group number
         this.append( joiner, String.valueOf( groupNumber ), false );
 
-        // Add the sample quantile, which is missing
-        CsvStatisticsWriter.addEmptyValues( joiner, 1 );
+        // Add the summary statistic, which is missing
+        CsvStatisticsWriter.addEmptyValues( joiner, 4 );
 
         // Add the statistic value
         String formattedValue = this.getDecimalFormatter()
@@ -1597,6 +1603,56 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         byte[] row = joiner.toString()
                            .getBytes( StandardCharsets.UTF_8 );
         writer.write( row );
+    }
+
+    /**
+     * Writes the metadata for a summary statistic.
+     *
+     * @param summaryStatistic the summary statistic
+     * @param joiner the string joiner to which the summary statistic will be appended
+     */
+
+    private void writeSummaryStatistic( SummaryStatistic summaryStatistic,
+                                        StringJoiner joiner )
+    {
+        if ( Objects.nonNull( summaryStatistic ) )
+        {
+            String statisticName = summaryStatistic.getStatistic()
+                                                   .toString();
+            this.append( joiner, statisticName, false );
+
+            String statisticDimension = summaryStatistic.getDimension()
+                                                        .toString();
+            this.append( joiner, statisticDimension, false );
+
+            // Quantile for the summary statistic?
+            if ( this.hasQuantileSummaryStatistic( summaryStatistic ) )
+            {
+                double probability = summaryStatistic.getProbability();
+                String stringProbability = String.valueOf( probability );
+                this.append( joiner, stringProbability, false );
+            }
+            else
+            {
+                CsvStatisticsWriter.addEmptyValues( joiner, 1 );
+            }
+
+            // Quantile for the sampling uncertainty?
+            if ( this.hasQuantileSamplingUncertainty( summaryStatistic ) )
+            {
+                double probability = summaryStatistic.getProbability();
+                String stringProbability = String.valueOf( probability );
+                this.append( joiner, stringProbability, false );
+            }
+            else
+            {
+                CsvStatisticsWriter.addEmptyValues( joiner, 1 );
+            }
+        }
+        else
+        {
+            CsvStatisticsWriter.addEmptyValues( joiner, 4 );
+        }
     }
 
     /**
@@ -1642,6 +1698,28 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
     private DoubleFunction<String> getDecimalFormatter()
     {
         return this.decimalFormatter;
+    }
+
+    /**
+     * @param summaryStatistic the summary statistic to test
+     * @return whether the summary statistic is a quantile
+     */
+    private boolean hasQuantileSummaryStatistic( SummaryStatistic summaryStatistic )
+    {
+        return Objects.nonNull( summaryStatistic )
+               && summaryStatistic.getStatistic() == SummaryStatistic.StatisticName.QUANTILE
+               && summaryStatistic.getDimension() != SummaryStatistic.StatisticDimension.RESAMPLED;
+    }
+
+    /**
+     * @param summaryStatistic the summary statistic to test
+     * @return whether the summary statistic contains a quantile for the sampling uncertainty
+     */
+    private boolean hasQuantileSamplingUncertainty( SummaryStatistic summaryStatistic )
+    {
+        return Objects.nonNull( summaryStatistic )
+               && summaryStatistic.getDimension() == SummaryStatistic.StatisticDimension.RESAMPLED
+               && summaryStatistic.getStatistic() == SummaryStatistic.StatisticName.QUANTILE;
     }
 
     /**
@@ -1783,25 +1861,6 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
     }
 
     /**
-     * Creates a string for the sample quantile from the statistics.
-     * @param statistics the statistics
-     * @return the sample quantile string
-     */
-
-    private String getQuantileString( Statistics statistics )
-    {
-        if ( statistics.hasSummaryStatistic()
-             && statistics.getSummaryStatistic()
-                          .getDimension() == SummaryStatistic.StatisticDimension.RESAMPLED )
-        {
-            return String.valueOf( statistics.getSummaryStatistic()
-                                             .getProbability() );
-        }
-
-        return "";
-    }
-
-    /**
      * Writes a small CSVT file that aids import into GDAL-enabled tools, such as QGIS.
      *
      * @param path the base path, which will be adjusted
@@ -1826,7 +1885,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                + "\"String\",\"String\",\"String\",\"String\",\"String\",\"String\",\"Real\",\"Real\","
                                + "\"String\",\"Real\",\"Real\",\"String\",\"String\",\"String\",\"Real\",\"Real\","
                                + "\"String\",\"Real\",\"Real\",\"String\",\"String\",\"String\",\"String\",\"String\","
-                               + "\"String\",\"Real\",\"Real\",\"Real\",\"Integer\",\"Real\", \"Real\"";
+                               + "\"String\",\"Real\",\"Real\",\"Real\",\"Integer\",\"String\",\"String\",\"Real\","
+                               + "\"Real\",\"Real\"";
 
         // Sanity check that the number of column classes equals the number of columns
         int classCount = columnClasses.split( "," ).length;

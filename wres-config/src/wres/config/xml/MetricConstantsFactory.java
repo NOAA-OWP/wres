@@ -104,7 +104,7 @@ public class MetricConstantsFactory
             // All valid metrics
             if ( next.getName() == TimeSeriesMetricConfigName.ALL_VALID )
             {
-                Set<MetricConstants> allValid = null;
+                Set<MetricConstants> allValid;
                 SampleDataGroup inGroup =
                         MetricConstantsFactory.getMetricInputGroup( projectConfig.getInputs().getRight() );
 
@@ -164,7 +164,7 @@ public class MetricConstantsFactory
             // All valid metrics
             if ( next.getName() == MetricConfigName.ALL_VALID )
             {
-                Set<MetricConstants> allValid = null;
+                Set<MetricConstants> allValid;
                 SampleDataGroup inGroup =
                         MetricConstantsFactory.getMetricInputGroup( projectConfig.getInputs().getRight() );
 
@@ -568,7 +568,7 @@ public class MetricConstantsFactory
 
         Set<MetricConstants> returnMe = new HashSet<>( metrics );
 
-        //Remove CRPSS if no baseline is available
+        // Remove CRPSS if no baseline is available
         DataSourceConfig baseline = projectConfig.getInputs().getBaseline();
         if ( Objects.isNull( baseline ) )
         {

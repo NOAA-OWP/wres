@@ -266,6 +266,7 @@ class FunctionFactoryTest
         DiagramStatistic.DiagramStatisticComponent rangeStatistic =
                 DiagramStatistic.DiagramStatisticComponent.newBuilder()
                                                           .setMetric( rangeMetric )
+                                                          .setName( "foo" )
                                                           .addAllValues( List.of( 3.0, 3.0, 4.0, 5.0, 6.0 ) )
                                                           .build();
 
@@ -346,6 +347,7 @@ class FunctionFactoryTest
         DiagramStatistic.DiagramStatisticComponent rangeStatistic =
                 DiagramStatistic.DiagramStatisticComponent.newBuilder()
                                                           .setMetric( rangeMetric )
+                                                          .setName( "foo" )
                                                           .addAllValues( List.of( 3.0, 3.0, 4.0, 5.0, 6.0 ) )
                                                           .build();
 

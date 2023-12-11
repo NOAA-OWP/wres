@@ -60,12 +60,6 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
     private static final String NULL_OUTPUT_STRING = "Specify non-null outputs for product generation.";
 
     /**
-     * Empty summary statistics.
-     */
-
-    private static final SummaryStatistic EMPTY_SUMMARY_STATISTICS = SummaryStatistic.getDefaultInstance();
-
-    /**
      * Store of consumers for processing {@link DoubleScoreStatisticOuter} by {@link Format}.
      */
 
@@ -1012,7 +1006,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
     private SummaryStatistic getSummaryStatistic( Statistics statistics )
     {
         SummaryStatistic summaryStatistic = null;
-        if( ! EMPTY_SUMMARY_STATISTICS.equals( statistics.getSummaryStatistic() ) )
+        if ( statistics.hasSummaryStatistic() )
         {
             summaryStatistic = statistics.getSummaryStatistic();
         }

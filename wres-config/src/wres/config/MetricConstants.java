@@ -74,10 +74,6 @@ public enum MetricConstants
     /** Frequency Bias.*/
     FREQUENCY_BIAS( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
 
-    /** Histogram. */
-    HISTOGRAM( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM, MetricGroup.UNIVARIATE_STATISTIC,
-               MetricGroup.LRB ),
-
     /** Index of Agreement. */
     INDEX_OF_AGREEMENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
 
@@ -181,8 +177,14 @@ public enum MetricConstants
     MAXIMUM( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC,
              MetricGroup.LRB ),
 
-    /** Mean absolute statistic. Not currently used to "score" a single side of paired data. */
+    /** Mean absolute statistic. Not currently used to measure a single side of paired data. */
     MEAN_ABSOLUTE( MetricGroup.UNIVARIATE_STATISTIC ),
+
+    /** Histogram. Not currently used to measure a single side of paired data. */
+    HISTOGRAM( null, StatisticType.DIAGRAM, MetricGroup.UNIVARIATE_STATISTIC ),
+
+    /** Quantile. Not currently used to measure a single side of paired data. */
+    QUANTILE( MetricGroup.UNIVARIATE_STATISTIC ),
 
     /** Time to peak error, mean across all instances. */
     TIME_TO_PEAK_ERROR_MEAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
@@ -1009,114 +1011,65 @@ public enum MetricConstants
 
     public enum MetricDimension
     {
-
-        /**
-         * Identifier for probability of false detection.
-         */
-
+        /** Identifier for probability of false detection. */
         PROBABILITY_OF_FALSE_DETECTION,
 
-        /**
-         * Identifier for probability of detection.
-         */
-
+        /** Identifier for probability of detection. */
         PROBABILITY_OF_DETECTION,
 
-        /**
-         * Identifier for a rank ordering.
-         */
-
+        /** Identifier for a rank ordering. */
         RANK_ORDER,
 
-        /**
-         * Identifier for a forecast probability.
-         */
-
+        /** Identifier for a forecast probability. */
         FORECAST_PROBABILITY,
 
-        /**
-         * Identifier for the observed relative frequency with which an event occurs.
-         */
-
+        /** Identifier for the observed relative frequency with which an event occurs. */
         OBSERVED_RELATIVE_FREQUENCY,
 
-        /**
-         * Identifier for observed quantiles.
-         */
-
+        /** Identifier for observed quantiles. */
         OBSERVED_QUANTILES,
 
-        /**
-         * Identifier for predicted quantiles.
-         */
-
+        /** Identifier for predicted quantiles. */
         PREDICTED_QUANTILES,
 
-        /**
-         * Identifier for error.
-         */
-
+        /** Identifier for error. */
         FORECAST_ERROR,
 
-        /**
-         * Identifier for observed value. 
-         */
-
+        /** Identifier for observed value. */
         OBSERVED_VALUE,
 
-        /**
-         * Identifier for forecast value. 
-         */
-
+        /** Identifier for forecast value. */
         FORECAST_VALUE,
 
-        /**
-         * Identifier for ensemble mean. 
-         */
-
+        /** Identifier for ensemble mean. */
         ENSEMBLE_MEAN,
 
-        /**
-         * Identifier for ensemble median. 
-         */
-
+        /** Identifier for ensemble median. */
         ENSEMBLE_MEDIAN,
 
-        /**
-         * Identifier for a sample size.
-         */
-
+        /** Identifier for a sample size. */
         SAMPLE_SIZE,
 
-        /**
-         * Identifier for true positives.
-         */
-
+        /** Identifier for true positives. */
         TRUE_POSITIVES,
 
-        /**
-         * Identifier for false positives.
-         */
-
+        /** Identifier for false positives. */
         FALSE_POSITIVES,
 
-        /**
-         * Identifier for false negatives.
-         */
-
+        /** Identifier for false negatives. */
         FALSE_NEGATIVES,
 
-        /**
-         * Identifier for true negatives.
-         */
-
+        /** Identifier for true negatives. */
         TRUE_NEGATIVES,
 
-        /**
-         * Identifier for error as a percentage of the verifying value.
-         */
+        /** Identifier for error as a percentage of the verifying value. */
+        ERROR_PERCENT_OF_VERIFYING_VALUE,
 
-        ERROR_PERCENT_OF_VERIFYING_VALUE;
+        /** Identifier for the upper bound of a histogram bin. */
+        BIN_UPPER_BOUND,
+
+        /** Identifier for a count. */
+        COUNT;
 
         /**
          * Returns a string representation.
@@ -1129,7 +1082,5 @@ public enum MetricConstants
         {
             return name().replace( "_", " " );
         }
-
     }
-
 }

@@ -436,6 +436,7 @@ public class FunctionFactory
                     DiagramStatistic.DiagramStatisticComponent rangeStatistic =
                             DiagramStatistic.DiagramStatisticComponent.newBuilder()
                                                                       .setMetric( FunctionFactory.HISTOGRAM_COUNT )
+                                                                      .setName( variableName )
                                                                       .addAllValues( binCounts )
                                                                       .build();
 

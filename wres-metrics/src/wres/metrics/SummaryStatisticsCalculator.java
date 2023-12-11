@@ -745,6 +745,8 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
             DoubleScoreName name = nextScore.getKey();
             String nameString = name.metricName()
                                     .toString();
+            // Format the name string
+            nameString = nameString.replace( "_", " " );
 
             if ( name.metricComponentName() != DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
             {
@@ -754,9 +756,9 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
             MutableDoubleList scores = nextScore.getValue();
             double[] rawScores = scores.toArray();
             DoubleScoreStatistic.Builder b = this.doubleScoreTemplates.get( name.metricName() );
-            String unitString = b.getMetric()
-                                 .getComponentsList()
-                                 .get( 0 )  // All components have the same units
+
+            String unitString = b.getStatistics( 0 )
+                                 .getMetric()
                                  .getUnits();
             Map<DiagramStatisticFunction.DiagramComponentName, String> names =
                     Map.of( DiagramStatisticFunction.DiagramComponentName.VARIABLE, nameString,
