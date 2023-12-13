@@ -64,6 +64,7 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLe
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.GeometryTuple;
@@ -1776,6 +1777,32 @@ class DeclarationValidatorTest
         assertTrue( DeclarationValidatorTest.contains( events,
                                                        "is larger than the reasonable maximum",
                                                        StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testSummaryStatisticsAcrossFeaturesWithoutFeatureDeclarationProducesError()
+    {
+        SummaryStatistic summaryStatistic = SummaryStatistic.newBuilder()
+                                                            .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                            .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                            .build();
+
+        Set<SummaryStatistic> summaryStatistics = Set.of( summaryStatistic );
+
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "across geographic features, but no features were "
+                                                       + "declared for evaluation",
+                                                       StatusLevel.ERROR ) );
+
     }
 
     @Test
