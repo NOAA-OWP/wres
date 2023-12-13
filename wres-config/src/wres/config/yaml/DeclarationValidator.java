@@ -55,6 +55,7 @@ import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLevel;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.Outputs;
+import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.GeometryTuple;
 
@@ -276,6 +277,9 @@ public class DeclarationValidator
         // Check that the metrics declaration is valid
         List<EvaluationStatusEvent> metrics = DeclarationValidator.metricsAreValid( declaration );
         events.addAll( metrics );
+        // Check that any summary statistics are valid
+        List<EvaluationStatusEvent> summaryStatistics = DeclarationValidator.summaryStatisticsAreValid( declaration );
+        events.addAll( summaryStatistics );
         // Check that the threshold sources are valid
         List<EvaluationStatusEvent> thresholdService = DeclarationValidator.thresholdSourcesAreValid( declaration );
         events.addAll( thresholdService );
@@ -1557,6 +1561,47 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> legacyCsv =
                 DeclarationValidator.checkMetricsForLegacyCsvAndDatePools( declaration );
         events.addAll( legacyCsv );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the summary statistics declaration is valid.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> summaryStatisticsAreValid( EvaluationDeclaration declaration )
+    {
+        if ( declaration.summaryStatistics()
+                        .isEmpty() )
+        {
+            LOGGER.debug( "No summary statistics declaration to validate." );
+
+            return List.of();
+        }
+
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+        Set<SummaryStatistic> summaryStatistics = declaration.summaryStatistics();
+
+        // Permissive check. In other words, favors false negatives over false positives. False negatives should simply
+        // mean that no summary statistics are computed, whereas false positives means summary statistics cannot be
+        // computed when they should be allowed. Detecting whether singleton features are present is a complex check.
+        if ( summaryStatistics.stream()
+                              .anyMatch( d -> d.getDimension() == SummaryStatistic.StatisticDimension.FEATURES )
+             && Objects.isNull( declaration.features() )
+             && Objects.isNull( declaration.featureService() )
+             && Objects.isNull( declaration.spatialMask() ) )
+        {
+            EvaluationStatusEvent error
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "Summary statistics were requested to summarize the "
+                                                             + "evaluation results across geographic features, but no "
+                                                             + "features were declared for evaluation. Please declare "
+                                                             + "some geographic features and try again." )
+                                           .build();
+            events.add( error );
+        }
 
         return Collections.unmodifiableList( events );
     }

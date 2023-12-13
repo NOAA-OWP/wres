@@ -692,8 +692,12 @@ public class Evaluator
                     ThresholdSlicer.getMetricsAndThresholdsForProcessing( declarationWithFeaturesAndThresholds );
 
             // Create any netcdf blobs for writing. See #80267-137.
+            Set<FeatureGroup> adjustedFeatureGroups =
+                    EvaluationUtilities.getFeatureGroupsForSummaryStatistics( featureGroups,
+                                                                              unwrappedFeatures,
+                                                                              declaration.summaryStatistics() );
             EvaluationUtilities.createNetcdfBlobs( netcdfWriters,
-                                                   featureGroups,
+                                                   adjustedFeatureGroups,
                                                    metricsAndThresholds );
 
             // Create the evaluation description with any analyzed units and variable names that happen post-ingest

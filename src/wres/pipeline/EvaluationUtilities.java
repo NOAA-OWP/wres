@@ -115,6 +115,9 @@ class EvaluationUtilities
     private static final Function<Pool<TimeSeries<Pair<Double, Ensemble>>>, Pair<Long, Duration>>
             ENSEMBLE_BLOCK_SIZE_ESTIMATOR = EvaluationUtilities::getOptimalBlockSizeForStationaryBootstrap;
 
+    /** A default region name for summary statistics aggregated across geographic features. */
+    private static final String SUMMARY_STATISTICS_ACROSS_FEATURES = "ALL FEATURES";
+
     /** Re-used string. */
     private static final String PERFORMING_RETRIEVAL_WITH_AN_IN_MEMORY_RETRIEVER_FACTORY =
             "Performing retrieval with an in-memory retriever factory.";
@@ -728,6 +731,38 @@ class EvaluationUtilities
 
             evaluation.stop( error );
         }
+    }
+
+    /**
+     * Appends any feature groups associated with summary statistics (across features) to the input.
+     * @param featureGroups the existing feature groups
+     * @param features the singleton features
+     * @param summaryStatistics the summary statistics declaration
+     * @return the adjusted feature groups
+     */
+    static Set<FeatureGroup> getFeatureGroupsForSummaryStatistics( Set<FeatureGroup> featureGroups,
+                                                                   Set<GeometryTuple> features,
+                                                                   Set<SummaryStatistic> summaryStatistics )
+    {
+        // Summary statistics across geographic features?
+        if ( summaryStatistics.stream()
+                              .noneMatch( n -> n.getDimension() == SummaryStatistic.StatisticDimension.FEATURES ) )
+        {
+            LOGGER.debug( "No summary statistics across features that require an extra feature group." );
+            return featureGroups;
+        }
+
+        Set<FeatureGroup> adjustedFeatureGroups = new HashSet<>( featureGroups );
+        GeometryGroup summaryStatisticsGroup = GeometryGroup.newBuilder()
+                                                            .addAllGeometryTuples( features )
+                                                            .setRegionName( EvaluationUtilities.SUMMARY_STATISTICS_ACROSS_FEATURES )
+                                                            .build();
+        FeatureGroup summaryStatisticsFeatureGroup = FeatureGroup.of( summaryStatisticsGroup );
+        adjustedFeatureGroups.add( summaryStatisticsFeatureGroup );
+
+        LOGGER.debug( "Added a summary statistics feature group: {}.", summaryStatisticsFeatureGroup );
+
+        return Collections.unmodifiableSet( adjustedFeatureGroups );
     }
 
     /**
@@ -1684,7 +1719,7 @@ class EvaluationUtilities
                                                         .getGeometryGroup()
                                                         .toBuilder();
 
-            adjustedGeo.setRegionName( "ALL FEATURES" );
+            adjustedGeo.setRegionName( EvaluationUtilities.SUMMARY_STATISTICS_ACROSS_FEATURES );
             List<GeometryTuple> newTuples = latest.getPool().getGeometryGroup()
                                                   .getGeometryTuplesList();
             adjustedGeo.addAllGeometryTuples( newTuples );

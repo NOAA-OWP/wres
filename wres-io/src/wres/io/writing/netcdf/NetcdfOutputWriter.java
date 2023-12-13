@@ -56,6 +56,7 @@ import ucar.nc2.write.NetcdfFormatWriter;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.SamplingUncertainty;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.MissingValues;
@@ -107,9 +108,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
     // TODO: it is very unlikely that classloading datetime should be used here.
     private static final ZonedDateTime ANALYSIS_TIME = ZonedDateTime.now( ZoneId.of( "UTC" ) );
-
+    private static final String CREATED_A_NEW_METRIC_VARIABLE_TO_POPULATE_WITH_NAME =
+            "Created a new metric variable to populate with name {}: {}.";
     private final Object windowLock = new Object();
-
     private final Path outputDirectory;
     private final Outputs.NetcdfFormat netcdfFormat;
 
@@ -139,10 +140,16 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     private final AtomicBoolean isReadyToWrite;
 
     /**
-     * Mapping between a sample quantile and its standard name.
+     * Mapping between a quantile for sampling uncertainty and its standard name.
      */
 
-    private final Map<Double, String> standardQuantileNames;
+    private final Map<Double, String> standardQuantileNamesForSamplingUncertainty;
+
+    /**
+     * Mapping between a summary statistic quantile (not for sampling uncertainty) and its standard name.
+     */
+
+    private final Map<Double, String> standardQuantileNamesForSummaryStatistics;
 
     /**
      * Mapping between each threshold and a standard threshold name for each metric. This is used to help determine the 
@@ -330,12 +337,25 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         this.declaration = declaration;
         this.isReadyToWrite = new AtomicBoolean();
 
-        // Set the quantile names
-        if ( Objects.nonNull( declaration.sampleUncertainty() ) )
+        // Set the quantile names for sampling uncertainty
+        this.standardQuantileNamesForSamplingUncertainty =
+                this.getStandardQuantileNamesForSamplingUncertainty( declaration.sampleUncertainty() );
+
+        this.standardQuantileNamesForSummaryStatistics =
+                this.getStandardQuantileNamesForSummaryStatistics( declaration.summaryStatistics() );
+    }
+
+    /**
+     * Generates the standard quantile names for sampling uncertainty calculation.
+     * @param samplingUncertainty the sampling uncertainty declaration
+     * @return the standard quantile names, if any
+     */
+    private Map<Double, String> getStandardQuantileNamesForSamplingUncertainty( SamplingUncertainty samplingUncertainty )
+    {
+        Map<Double, String> standardQuantileNamesInner = new HashMap<>();
+        if ( Objects.nonNull( samplingUncertainty ) )
         {
-            SortedSet<Double> quantiles = declaration.sampleUncertainty()
-                                                     .quantiles();
-            Map<Double, String> standardQuantileNamesInner = new HashMap<>();
+            SortedSet<Double> quantiles = samplingUncertainty.quantiles();
             int qNumber = 1;
             for ( Double next : quantiles )
             {
@@ -343,14 +363,39 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 qNumber++;
             }
 
-            this.standardQuantileNames = Collections.unmodifiableMap( standardQuantileNamesInner );
-            LOGGER.debug( "Created the following standard quantile names by quantile value: {}.",
-                          this.standardQuantileNames );
+            standardQuantileNamesInner = Collections.unmodifiableMap( standardQuantileNamesInner );
+            LOGGER.debug( "Created the following standard quantile names by quantile value for sampling uncertainty: "
+                          + "{}.",
+                          standardQuantileNamesInner );
         }
-        else
+
+        return Collections.unmodifiableMap( standardQuantileNamesInner );
+    }
+
+    /**
+     * Generates the standard quantile names for summary statistics calculation.
+     * @param summaryStatistics the smmary statistics declaration
+     * @return the standard quantile names, if any
+     */
+    private Map<Double, String> getStandardQuantileNamesForSummaryStatistics( Set<SummaryStatistic> summaryStatistics )
+    {
+        Map<Double, String> standardQuantileNamesInner = new HashMap<>();
+        int qNumber = 1;
+        for ( SummaryStatistic summaryStatistic : summaryStatistics )
         {
-            this.standardQuantileNames = Collections.emptyMap();
+            if ( summaryStatistic.getStatistic() == SummaryStatistic.StatisticName.QUANTILE )
+            {
+                double quantile = summaryStatistic.getProbability();
+                standardQuantileNamesInner.put( quantile, "Q" + qNumber );
+                qNumber++;
+            }
         }
+
+        standardQuantileNamesInner = Collections.unmodifiableMap( standardQuantileNamesInner );
+        LOGGER.debug( "Created the following standard quantile names by quantile value for summary statistics: {}.",
+                      standardQuantileNamesInner );
+
+        return standardQuantileNamesInner;
     }
 
     /**
@@ -809,35 +854,41 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             if ( !hasBaseline || Boolean.TRUE.equals( !declaration.baseline()
                                                                   .separateMetrics() ) )
             {
-                Collection<MetricVariable> variables =
-                        this.getMetricVariablesForOneTimeWindow( timeWindow,
-                                                                 nextThresholdsByMetric,
-                                                                 units,
-                                                                 desiredTimeScale,
-                                                                 null,
-                                                                 hasBaseline,
-                                                                 nextType );
+                MetricVariableParameters parameters = new MetricVariableParameters( timeWindow,
+                                                                                    nextThresholdsByMetric,
+                                                                                    units,
+                                                                                    desiredTimeScale,
+                                                                                    null,
+                                                                                    hasBaseline,
+                                                                                    nextType,
+                                                                                    declaration.summaryStatistics() );
+                Collection<MetricVariable> variables = this.getMetricVariablesForOneTimeWindow( parameters );
                 merged.addAll( variables );
             }
             else
             {
                 // Two sets of variables, one for the right and one for the baseline with separate metrics.
                 // For backwards compatibility, only clarify the baseline variable
-                Collection<MetricVariable> right = this.getMetricVariablesForOneTimeWindow( timeWindow,
-                                                                                            nextThresholdsByMetric,
-                                                                                            units,
-                                                                                            desiredTimeScale,
-                                                                                            null,
-                                                                                            true,
-                                                                                            nextType );
+                MetricVariableParameters parameters = new MetricVariableParameters( timeWindow,
+                                                                                    nextThresholdsByMetric,
+                                                                                    units,
+                                                                                    desiredTimeScale,
+                                                                                    null,
+                                                                                    true,
+                                                                                    nextType,
+                                                                                    declaration.summaryStatistics() );
+                Collection<MetricVariable> right = this.getMetricVariablesForOneTimeWindow( parameters );
 
-                Collection<MetricVariable> baseline = this.getMetricVariablesForOneTimeWindow( timeWindow,
-                                                                                               nextThresholdsByMetric,
-                                                                                               units,
-                                                                                               desiredTimeScale,
-                                                                                               DatasetOrientation.BASELINE,
-                                                                                               true,
-                                                                                               nextType );
+                MetricVariableParameters baselineParameters =
+                        new MetricVariableParameters( timeWindow,
+                                                      nextThresholdsByMetric,
+                                                      units,
+                                                      desiredTimeScale,
+                                                      DatasetOrientation.BASELINE,
+                                                      true,
+                                                      nextType,
+                                                      declaration.summaryStatistics() );
+                Collection<MetricVariable> baseline = this.getMetricVariablesForOneTimeWindow( baselineParameters );
 
                 merged.addAll( right );
                 merged.addAll( baseline );
@@ -850,45 +901,36 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     /**
      * Creates a collection of {@link MetricVariable} for one time window.
      *
-     * @param timeWindow the time windows
-     * @param thresholds the thresholds
-     * @param units the measurement units, if available
-     * @param desiredTimeScale the desired time scale, if available
-     * @param context optional context for the variable
-     * @param hasBaseline is true if a baseline is declared
-     * @param ensembleAverageType the ensemble average type
+     * @param parameters the metric variable parameters
      * @return the metric variables
      */
 
-    private Collection<MetricVariable> getMetricVariablesForOneTimeWindow( TimeWindowOuter timeWindow,
-                                                                           Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholds,
-                                                                           String units,
-                                                                           TimeScaleOuter desiredTimeScale,
-                                                                           DatasetOrientation context,
-                                                                           boolean hasBaseline,
-                                                                           EnsembleAverageType ensembleAverageType )
+    private Collection<MetricVariable> getMetricVariablesForOneTimeWindow( MetricVariableParameters parameters )
     {
         Map<MetricNames, SortedSet<OneOrTwoThresholds>> decomposed =
-                this.decomposeThresholdsByMetricForBlobCreation( thresholds, hasBaseline );
+                this.decomposeThresholdsByMetricForBlobCreation( parameters.thresholds(),
+                                                                 parameters.hasBaseline() );
 
         LOGGER.debug( "Discovered these thresholds by metric for blob creation and ensemble average type {}: {}.",
-                      ensembleAverageType,
+                      parameters.ensembleAverageType(),
                       decomposed );
 
         Collection<MetricVariable> returnMe = new ArrayList<>();
 
         // Context to append?
         String append = "";
-        if ( Objects.nonNull( context ) )
+        if ( Objects.nonNull( parameters.context() ) )
         {
-            append = "_" + context.name();
+            append = "_" + parameters.context()
+                                     .name();
         }
 
         // Ensemble average type to append? For backwards compatibility, do not append the default value: #51670
-        if ( Objects.nonNull( ensembleAverageType )
-             && ensembleAverageType != EnsembleAverageType.MEAN )
+        if ( Objects.nonNull( parameters.ensembleAverageType() )
+             && parameters.ensembleAverageType() != EnsembleAverageType.MEAN )
         {
-            append += "_ENSEMBLE_" + ensembleAverageType.name();
+            append += "_ENSEMBLE_" + parameters.ensembleAverageType()
+                                               .name();
         }
 
         // One variable for each combination of metric and threshold. 
@@ -908,16 +950,17 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
                 MetricVariable.Builder nextVariable =
                         new MetricVariable.Builder().setVariableName( variableName )
-                                                    .setTimeWindow( timeWindow )
+                                                    .setTimeWindow( parameters.timeWindow() )
                                                     .setMetricName( nextMetric )
                                                     .setThresholds( nextThreshold )
-                                                    .setUnits( units )
-                                                    .setDesiredTimeScale( desiredTimeScale )
+                                                    .setUnits( parameters.units() )
+                                                    .setDesiredTimeScale( parameters.desiredTimeScale() )
                                                     .setDurationUnits( this.getDurationUnits() )
-                                                    .setEnsembleAverageType( ensembleAverageType );
+                                                    .setEnsembleAverageType( parameters.ensembleAverageType() );
 
                 Collection<MetricVariable> metricVariables =
-                        this.getMetricVariableForEachSampleQuantile( nextVariable );
+                        this.getMetricVariableForEachMetricAndSummaryStatistic( nextVariable,
+                                                                                parameters.summaryStatistics() );
                 returnMe.addAll( metricVariables );
             }
         }
@@ -926,20 +969,23 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     }
 
     /**
-     * Creates a {@link MetricVariable} for each sample quantile, else for the nominal value of the statistic.
+     * Creates a {@link MetricVariable} for each summary statistic, else for the raw statistic.
      *
      * @param builder the base variable builder
+     * @param summaryStatistics the summary statistics, possibly empty
      * @return the metric variables, one for each quantile or a single nominal value
      */
 
-    private Collection<MetricVariable> getMetricVariableForEachSampleQuantile( MetricVariable.Builder builder )
+    private Collection<MetricVariable> getMetricVariableForEachMetricAndSummaryStatistic( MetricVariable.Builder builder,
+                                                                                          Set<SummaryStatistic> summaryStatistics )
     {
         Collection<MetricVariable> metricVariables = new ArrayList<>();
-        // Add the variable for the nominal value
+
+        // Add the variable for the raw statistic
         MetricVariable nominal = builder.build();
         metricVariables.add( nominal );
 
-        LOGGER.debug( "Created a new metric variable to populate with name {}: {}.",
+        LOGGER.debug( CREATED_A_NEW_METRIC_VARIABLE_TO_POPULATE_WITH_NAME,
                       nominal.getName(),
                       nominal );
 
@@ -958,21 +1004,71 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         // Create a variable for each sample quantile, if this metric supports it
         if ( metric.isSamplingUncertaintyAllowed() )
         {
-            Map<Double, String> quantileNames = this.getStandardQuantileNames();
+            Map<Double, String> quantileNames = this.getStandardQuantileNamesForSamplingUncertainty();
             for ( Map.Entry<Double, String> next : quantileNames.entrySet() )
             {
                 Double quantile = next.getKey();
                 String quantileName = next.getValue();
 
-                String variableName = nominal.getName() + "_" + quantileName;
+                String variableName = nominal.getName()
+                                      + "_"
+                                      + SummaryStatistic.StatisticDimension.RESAMPLED
+                                      + "_"
+                                      + SummaryStatistic.StatisticName.QUANTILE
+                                      + "_"
+                                      + quantileName;
                 MetricVariable nextVariable = builder.setVariableName( variableName )
                                                      .setSampleQuantile( quantile )
                                                      .build();
                 metricVariables.add( nextVariable );
 
-                LOGGER.debug( "Created a new metric variable to populate with name {}: {}.",
+                LOGGER.debug( CREATED_A_NEW_METRIC_VARIABLE_TO_POPULATE_WITH_NAME,
                               variableName,
                               nextVariable );
+            }
+        }
+
+        // Create a metric variable for each summary statistic
+
+        // Clear the builder for re-use
+        if ( !summaryStatistics.isEmpty() )
+        {
+            builder.setVariableName( null )
+                   .setSampleQuantile( null );
+
+            // Only scores allowed in netcdf
+            List<SummaryStatistic> filtered =
+                    summaryStatistics.stream()
+                                     .filter( m -> !MetricConstants.valueOf( m.getStatistic()
+                                                                              .name() )
+                                                                   .isInGroup( StatisticType.DIAGRAM ) )
+
+                                     .toList();
+
+            for ( SummaryStatistic summaryStatistic : filtered )
+            {
+                String variableName = nominal.getName()
+                                      + "_"
+                                      + summaryStatistic.getDimension()
+                                      + "_"
+                                      + summaryStatistic.getStatistic();
+                if ( summaryStatistic.getStatistic() == SummaryStatistic.StatisticName.QUANTILE )
+                {
+                    Map<Double, String> quantileNames = this.getStandardQuantileNamesForSummaryStatistics();
+                    String standardName = quantileNames.get( summaryStatistic.getProbability() );
+                    variableName += "_"
+                                    + standardName;
+                }
+
+                MetricVariable nextVariable = builder.setVariableName( variableName )
+                                                     .setSummaryStatistic( summaryStatistic )
+                                                     .build();
+
+                LOGGER.debug( CREATED_A_NEW_METRIC_VARIABLE_TO_POPULATE_WITH_NAME,
+                              variableName,
+                              nextVariable );
+
+                metricVariables.add( nextVariable );
             }
         }
 
@@ -1119,11 +1215,19 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
     }
 
     /**
-     * @return the standard quantile names, if any
+     * @return the standard quantile names for sampling uncertainty, if any
      */
-    private Map<Double, String> getStandardQuantileNames()
+    private Map<Double, String> getStandardQuantileNamesForSamplingUncertainty()
     {
-        return this.standardQuantileNames;
+        return this.standardQuantileNamesForSamplingUncertainty;
+    }
+
+    /**
+     * @return the standard quantile names for summary statistics that do not involve sampling uncertainty, if any
+     */
+    private Map<Double, String> getStandardQuantileNamesForSummaryStatistics()
+    {
+        return this.standardQuantileNamesForSummaryStatistics;
     }
 
     /**
@@ -1422,7 +1526,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         private String getVariableName( MetricConstants metricName,
                                         DoubleScoreComponentOuter score )
         {
-            PoolMetadata sampleMetadata = score.getPoolMetadata();
+            PoolMetadata poolMetadata = score.getPoolMetadata();
 
             // Locating the variable relies on the use of a naming convention that matches the naming convention at blob
             // creation time. 
@@ -1444,52 +1548,21 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             }
 
             String append = "";
-            if ( sampleMetadata.getPool().getIsBaselinePool() )
+            if ( poolMetadata.getPool().getIsBaselinePool() )
             {
                 append = "_" + DatasetOrientation.BASELINE.name();
             }
 
             // Add the ensemble average type, where applicable
-            wres.statistics.generated.Pool.EnsembleAverageType ensembleAverageType = sampleMetadata.getPool()
-                                                                                                   .getEnsembleAverageType();
+            wres.statistics.generated.Pool.EnsembleAverageType ensembleAverageType = poolMetadata.getPool()
+                                                                                                 .getEnsembleAverageType();
             if ( ensembleAverageType != wres.statistics.generated.Pool.EnsembleAverageType.MEAN
                  && ensembleAverageType != wres.statistics.generated.Pool.EnsembleAverageType.NONE )
             {
                 append += "_ENSEMBLE_" + ensembleAverageType.name();
             }
 
-            // Add the sample quantile using the standard name, where applicable
-            if ( score.isSummaryStatistic()
-                 && score.getSummaryStatistic()
-                         .getStatistic() == SummaryStatistic.StatisticName.QUANTILE
-                 && metricName.isSamplingUncertaintyAllowed() )
-            {
-                double quantile = score.getSummaryStatistic()
-                                       .getProbability();
-                Map<Double, String> quantileNames = this.outputWriter.getStandardQuantileNames();
-                String quantileName = quantileNames.get( quantile );
-
-                // Qualifier for the sample quantile not found?
-                if ( Objects.isNull( quantileName ) )
-                {
-                    throw new IllegalStateException( "While attempting to write statistics to netcdf for the metric "
-                                                     + "variable "
-                                                     + metricNameString
-                                                     + AND_THRESHOLD
-                                                     + sampleMetadata.getThresholds()
-                                                     + ", failed to locate the quantile name corresponding to the "
-                                                     + "sample quantile: "
-                                                     + quantile
-                                                     + ". The sample metadata of the statistic that could not "
-                                                     + "be written is: "
-                                                     + sampleMetadata
-                                                     + ". The available quantile names and associated quantiles are: "
-                                                     + quantileNames
-                                                     + "." );
-                }
-
-                append += "_" + quantileName;
-            }
+            append += this.getSummaryStatisticNameQualifier( poolMetadata, metricNameString, score );
 
             // Look for a threshold with a standard name that is like the threshold associated with this score
             LOGGER.debug( "Searching the standard threshold names for metric name {} with qualifier {}.",
@@ -1506,13 +1579,13 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                  + "variable "
                                                  + metricNameString
                                                  + AND_THRESHOLD
-                                                 + sampleMetadata.getThresholds()
+                                                 + poolMetadata.getThresholds()
                                                  + ", failed to locate the variable name in the map of metric "
                                                  + "variables. The map contains the following metric variable names: "
                                                  + this.outputWriter.standardThresholdNames.keySet()
                                                  + ". The sample metadata of the statistic that could not be written "
                                                  + "is: "
-                                                 + sampleMetadata );
+                                                 + poolMetadata );
             }
 
             for ( Map.Entry<OneOrTwoThresholds, String> nextThreshold : thresholdMap.entrySet() )
@@ -1529,7 +1602,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 String name = this.getVariableNameOrNull( thresholdFromScore,
                                                           thresholdFromArchive,
                                                           nextName,
-                                                          sampleMetadata,
+                                                          poolMetadata,
                                                           metricNameString,
                                                           append,
                                                           secondThresholdIsEqual );
@@ -1544,14 +1617,83 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             throw new IllegalStateException( "While attempting to write statistics to netcdf for the metric variable "
                                              + metricNameString
                                              + AND_THRESHOLD
-                                             + sampleMetadata.getThresholds()
+                                             + poolMetadata.getThresholds()
                                              + ", discovered the variable name "
                                              + metricNameString
                                              + ", but failed to discover the standard threshold name within the map of "
                                              + "standard names. The map contained the following entries: "
                                              + thresholdMap
                                              + ". The sample metadata of the statistic that could not be written is: "
-                                             + sampleMetadata );
+                                             + poolMetadata );
+        }
+
+        /**
+         * Returns the summary statistic name qualifier when a summary statistic is present.
+         *
+         * @param poolMetadata the pool metadata
+         * @param metricNameString the metric name string
+         * @param score the score
+         * @return the summary statistic name qualifier
+         */
+
+        private String getSummaryStatisticNameQualifier( PoolMetadata poolMetadata,
+                                                         String metricNameString,
+                                                         DoubleScoreComponentOuter score )
+        {
+            String qualifier = "";
+
+            // Add the sample quantile using the standard name, where applicable
+            if ( score.isSummaryStatistic() )
+            {
+                SummaryStatistic summaryStatistic = score.getSummaryStatistic();
+                qualifier = "_"
+                            + summaryStatistic.getDimension()
+                            + "_"
+                            + summaryStatistic.getStatistic();
+
+                if ( summaryStatistic.getStatistic() == SummaryStatistic.StatisticName.QUANTILE )
+                {
+
+                    double quantile = score.getSummaryStatistic()
+                                           .getProbability();
+                    Map<Double, String> quantileNames;
+
+                    if ( summaryStatistic.getDimension() == SummaryStatistic.StatisticDimension.RESAMPLED )
+                    {
+                        quantileNames = this.outputWriter.getStandardQuantileNamesForSamplingUncertainty();
+                    }
+                    else
+                    {
+                        quantileNames = this.outputWriter.getStandardQuantileNamesForSummaryStatistics();
+                    }
+
+                    String quantileName = quantileNames.get( quantile );
+
+                    // Qualifier for the sample quantile not found?
+                    if ( Objects.isNull( quantileName ) )
+                    {
+                        throw new IllegalStateException(
+                                "While attempting to write statistics to netcdf for the metric "
+                                + "variable "
+                                + metricNameString
+                                + AND_THRESHOLD
+                                + poolMetadata.getThresholds()
+                                + ", failed to locate the quantile name corresponding to the "
+                                + "quantile: "
+                                + quantile
+                                + ". The sample metadata of the statistic that could not "
+                                + "be written is: "
+                                + poolMetadata
+                                + ". The available quantile names and associated quantiles are: "
+                                + quantileNames
+                                + "." );
+                    }
+
+                    qualifier += "_" + quantileName;
+                }
+            }
+
+            return qualifier;
         }
 
         /**
@@ -1658,7 +1800,6 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             LOGGER.trace( "The origin of {} was at {}", feature, origin );
             return origin;
         }
-
 
         /**
          * Finds the origin index(es) of the location in the netcdf variables
@@ -2008,5 +2149,28 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 }
             }
         }
+    }
+
+    /**
+     * Small value class for metric variable creation.
+     * @param timeWindow the time windows
+     * @param thresholds the thresholds
+     * @param units the measurement units, if available
+     * @param desiredTimeScale the desired time scale, if available
+     * @param context optional context for the variable
+     * @param hasBaseline is true if a baseline is declared
+     * @param ensembleAverageType the ensemble average type
+     * @param summaryStatistics the summary statistics, possibly empty
+     * @author James Brown
+     */
+    private record MetricVariableParameters( TimeWindowOuter timeWindow,
+                                             Map<MetricConstants, SortedSet<OneOrTwoThresholds>> thresholds,
+                                             String units,
+                                             TimeScaleOuter desiredTimeScale,
+                                             DatasetOrientation context,
+                                             boolean hasBaseline,
+                                             EnsembleAverageType ensembleAverageType,
+                                             Set<SummaryStatistic> summaryStatistics )
+    {
     }
 }

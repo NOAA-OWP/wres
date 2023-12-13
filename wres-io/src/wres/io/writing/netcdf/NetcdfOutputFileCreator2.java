@@ -45,18 +45,17 @@ import wres.statistics.generated.GeometryTuple;
 
 class NetcdfOutputFileCreator2
 {
-    private NetcdfOutputFileCreator2()
-    {
-    }
-
     private static final Logger
             LOGGER = LoggerFactory.getLogger( NetcdfOutputFileCreator2.class );
 
-    /** The _FillValue and missing_value to use when writing. */
-    static final double DOUBLE_FILL_VALUE = 9.9692099683868690e+36d;
+    /** Re-used string. */
+    private static final String ANALYSIS_TIME = "analysis_time";
+
+    /** Re-used string. */
+    private static final String LONG_NAME = "long_name";
 
     /** The _FillValue and missing_value to use when writing. */
-    private static final int INT_FILL_VALUE = -999;
+    static final double DOUBLE_FILL_VALUE = 9.9692099683868690e+36d;
 
     /** The length of string to use for each feature variable in the file. */
     private static final int FEATURE_STRING_LENGTH = 32;
@@ -69,6 +68,10 @@ class NetcdfOutputFileCreator2
 
     private static final String NOTE_REGARDING_UNITS_AND_GDAL =
             "Purposely avoided setting true units and standard_name attributes to maintain compatibility with GDAL/OGR 3.0.4 and QGIS 3.10.5.";
+    public static final String UNITS = "units";
+    public static final String FEATURE_NAME_AUTHORITY = "feature_name_authority";
+    public static final String FAILED = " failed: ";
+    public static final String ABOUT_TO_CALL_WRITE_ON = "About to call write on {}, {}, {}";
 
     /**
      * Create and set up dimensions of the Netcdf files for a given project.
@@ -129,7 +132,7 @@ class NetcdfOutputFileCreator2
 
             try
             {
-                writer.write( "analysis_time", analysisMinutes );
+                writer.write( ANALYSIS_TIME, analysisMinutes );
                 writer.flush();
             }
             catch ( InvalidRangeException | IOException e )
@@ -138,7 +141,8 @@ class NetcdfOutputFileCreator2
                                           + targetPath, e );
             }
 
-            return writer.getNetcdfFile().getLocation();
+            return writer.getNetcdfFile()
+                         .getLocation();
         }
         catch ( IOException e )
         {
@@ -246,7 +250,7 @@ class NetcdfOutputFileCreator2
                                                        1 );
         // Netcdf 3 uses a second dimension for string variables (char[])
         Dimension unknownDimension = writer.addDimension( null,
-                                                          "analysis_time",
+                                                          ANALYSIS_TIME,
                                                           1 );
         Dimension featureNameDimension = writer.addDimension( null,
                                                               "feature_name_string_len",
@@ -266,7 +270,7 @@ class NetcdfOutputFileCreator2
                                                   DataType.INT,
                                                   "" );
         Attribute projectionAttributeOne =
-                new Attribute( "long_name", "CRS definition" );
+                new Attribute( LONG_NAME, "CRS definition" );
         Attribute projectionAttributeTwo =
                 new Attribute( "grid_mapping_name", "latitude_longitude" );
         projection.addAll( List.of( projectionAttributeOne,
@@ -281,11 +285,11 @@ class NetcdfOutputFileCreator2
         // These will cause OGR to error out when reading the dataset!
         //Attribute timeUnits = new Attribute( "units", "seconds since 1970-01-01T00:00:00Z" );
         //Attribute timeUnits = new Attribute( "units", "minutes since 1970-01-01 00:00:00 UTC" );
-        Attribute unitsMeters = new Attribute( "units", "meters" );
+        Attribute unitsMeters = new Attribute( UNITS, "meters" );
 
         // Important for GDAL/OGR 3.0.4: DON'T USE STANDARD NAME TIME!
         //Attribute timeStandardName = new Attribute( "standard_name", "time" );
-        Attribute timeLongName = new Attribute( "long_name", "Lead duration in minutes" );
+        Attribute timeLongName = new Attribute( LONG_NAME, "Lead duration in minutes" );
         Attribute timeNotes = new Attribute( "notes", NOTE_REGARDING_UNITS_AND_GDAL );
 
 
@@ -301,11 +305,11 @@ class NetcdfOutputFileCreator2
                                                    DataType.DOUBLE,
                                                    stationDimension );
         Attribute latUnits =
-                new Attribute( "units", "degrees_north" );
+                new Attribute( UNITS, "degrees_north" );
         String latName = "latitude";
         Attribute latStandardName =
                 new Attribute( "standard_name", latName );
-        Attribute latLongName = new Attribute( "long_name", latName );
+        Attribute latLongName = new Attribute( LONG_NAME, latName );
         Attribute latAxis = new Attribute( "axis", "Y" );
         latVariable.addAll( List.of( latUnits
                 , latStandardName
@@ -373,7 +377,7 @@ class NetcdfOutputFileCreator2
         Attribute leftFeatureNameLongName =
                 new Attribute( "long_name", "The name of the geographic feature from the left dataset." );
         String leftAuthority = NetcdfOutputFileCreator2.getLeftFeatureDimensionName( declaration );
-        Attribute leftFeatureNameAuthority = new Attribute( "feature_name_authority", leftAuthority );
+        Attribute leftFeatureNameAuthority = new Attribute( FEATURE_NAME_AUTHORITY, leftAuthority );
         leftFeatureNameVariable.addAll( List.of( coordinates,
                                                  gridMapping,
                                                  leftFeatureNameLongName,
@@ -386,7 +390,7 @@ class NetcdfOutputFileCreator2
         Attribute rightFeatureNameLongName =
                 new Attribute( "long_name", "The name of the geographic feature from the right dataset." );
         String rightAuthority = NetcdfOutputFileCreator2.getRightFeatureDimensionName( declaration );
-        Attribute rightFeatureNameAuthority = new Attribute( "feature_name_authority", rightAuthority );
+        Attribute rightFeatureNameAuthority = new Attribute( FEATURE_NAME_AUTHORITY, rightAuthority );
         rightFeatureNameVariable.addAll( List.of( coordinates,
                                                   gridMapping,
                                                   rightFeatureNameLongName,
@@ -406,7 +410,7 @@ class NetcdfOutputFileCreator2
                                                      baselineFeatureNameAuthority ) );
 
         Variable analysisTimeVariable = writer.addVariable( null,
-                                                            "analysis_time",
+                                                            ANALYSIS_TIME,
                                                             DataType.INT,
                                                             List.of( unknownDimension ) );
         // https://www.unidata.ucar.edu/software/udunits/CHANGE_LOG implies
@@ -455,7 +459,7 @@ class NetcdfOutputFileCreator2
         {
             throw new WriteException( "Creating netCDF at "
                                       + writer.getNetcdfFile().getLocation()
-                                      + " failed: ", e );
+                                      + FAILED, e );
         }
 
         // Order the tuples and write the names
@@ -477,11 +481,11 @@ class NetcdfOutputFileCreator2
 
                 try
                 {
-                    LOGGER.debug( "About to call write on {}, {}, {}",
+                    LOGGER.debug( ABOUT_TO_CALL_WRITE_ON,
                                   lidVariable, index, nextTupleName );
                     writer.write( lidVariable, index, nextTupleName );
 
-                    LOGGER.debug( "About to call write on {}, {}, {}",
+                    LOGGER.debug( ABOUT_TO_CALL_WRITE_ON,
                                   featureGroupVariable, index, nextGroupName );
                     writer.write( featureGroupVariable, index, nextGroupName );
                 }
@@ -489,7 +493,7 @@ class NetcdfOutputFileCreator2
                 {
                     throw new WriteException( "Writing netCDF at "
                                               + writer.getNetcdfFile().getLocation()
-                                              + " failed: ", e );
+                                              + FAILED, e );
                 }
 
                 writeIndex++;
@@ -1088,11 +1092,11 @@ class NetcdfOutputFileCreator2
     }
 
     private static DatasetOrientation findMostGeoData( String leftWkt,
-                                                          boolean leftHasSrid,
-                                                          String rightWkt,
-                                                          boolean rightHasSrid,
-                                                          String baselineWkt,
-                                                          boolean baselineHasSrid )
+                                                       boolean leftHasSrid,
+                                                       String rightWkt,
+                                                       boolean rightHasSrid,
+                                                       String baselineWkt,
+                                                       boolean baselineHasSrid )
     {
         final String REGEX = " ";
         DatasetOrientation winner = null;
@@ -1138,21 +1142,18 @@ class NetcdfOutputFileCreator2
             }
         }
 
-        if ( baselineHasSrid || Objects.nonNull( baselineWkt ) )
+        if ( Objects.nonNull( baselineWkt ) )
         {
-            if ( Objects.nonNull( baselineWkt ) )
-            {
-                String[] baselineElements = baselineWkt.strip()
-                                                       .split( REGEX );
+            String[] baselineElements = baselineWkt.strip()
+                                                   .split( REGEX );
 
-                if ( ( baselineElements.length > leftElements.length
-                       || baselineElements.length > rightElements.length
-                       || ( baselineHasSrid && !leftHasSrid
-                            && !rightHasSrid && baselineElements.length > 1 ) ) )
-                {
-                    // Baseline only wins in narrow circumstances.
-                    winner = DatasetOrientation.BASELINE;
-                }
+            if ( ( baselineElements.length > leftElements.length
+                   || baselineElements.length > rightElements.length
+                   || ( baselineHasSrid && !leftHasSrid
+                        && !rightHasSrid && baselineElements.length > 1 ) ) )
+            {
+                // Baseline only wins in narrow circumstances.
+                winner = DatasetOrientation.BASELINE;
             }
         }
 
@@ -1210,5 +1211,12 @@ class NetcdfOutputFileCreator2
         char[] truncatedCharArray = Arrays.copyOf( charArray, length );
         char[][] twoDimTruncatedCharArray = new char[][] { truncatedCharArray };
         return ( ArrayChar.D2 ) ArrayChar.D2.makeFromJavaArray( twoDimTruncatedCharArray );
+    }
+
+    /**
+     * Do not construct.
+     */
+    private NetcdfOutputFileCreator2()
+    {
     }
 }

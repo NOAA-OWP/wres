@@ -15,6 +15,7 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Pool;
+import wres.statistics.generated.SummaryStatistic;
 
 class MetricVariable
 {
@@ -44,8 +45,8 @@ class MetricVariable
     private final Number earliestLead;
     private final Number latestLead;
     private final Double sampleQuantile;
-
     private final Pool.EnsembleAverageType ensembleAverageType;
+    private final SummaryStatistic summaryStatistic;
 
     /**
      * @return the variable name
@@ -128,6 +129,23 @@ class MetricVariable
         {
             attributes.put( "sample_quantile", this.sampleQuantile );
         }
+
+        if ( Objects.nonNull( this.summaryStatistic ) )
+        {
+            attributes.put( "summary_statistic_name", this.summaryStatistic.getStatistic()
+                                                                           .name() );
+            attributes.put( "summary_statistic_dimension", this.summaryStatistic.getDimension()
+                                                                                .name() );
+            if ( this.summaryStatistic.getStatistic() == SummaryStatistic.StatisticName.QUANTILE )
+            {
+                attributes.put( "summary_statistic_quantile", this.summaryStatistic.getProbability() );
+            }
+            else
+            {
+                attributes.put( "summary_statistic_quantile", NONE );
+            }
+        }
+
         return Collections.unmodifiableMap( attributes );
     }
 
@@ -145,6 +163,7 @@ class MetricVariable
         private ChronoUnit durationUnits;
         private Pool.EnsembleAverageType ensembleAverageType;
         private Double sampleQuantile;
+        private SummaryStatistic summaryStatistic;
 
         Builder setVariableName( String variableName )
         {
@@ -200,6 +219,12 @@ class MetricVariable
             return this;
         }
 
+        Builder setSummaryStatistic( SummaryStatistic summaryStatistic )
+        {
+            this.summaryStatistic = summaryStatistic;
+            return this;
+        }
+
         /**
          * @return an instance
          */
@@ -223,6 +248,7 @@ class MetricVariable
         this.ensembleAverageType = builder.ensembleAverageType;
         this.sampleQuantile = builder.sampleQuantile;
         this.metricNames = builder.metricNames;
+        this.summaryStatistic = builder.summaryStatistic;
 
         // Build the long_name. This should not contain numbers for the thresholds because they can vary by feature.
         String fullName = builder.metricNames.metricName() + " " + this.getThreshold();
@@ -341,8 +367,8 @@ class MetricVariable
     }
 
     /**
-     * @param timeScale the time scale
-     * @return the time scale period
+     * @param timeScale the timescale
+     * @return the timescale period
      */
     private String getTimeScalePeriod( TimeScaleOuter timeScale )
     {
