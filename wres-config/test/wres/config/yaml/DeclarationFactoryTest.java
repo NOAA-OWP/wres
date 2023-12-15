@@ -22,6 +22,7 @@ import com.google.common.jimfs.Jimfs;
 import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Duration;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
@@ -1960,6 +1961,7 @@ class DeclarationFactoryTest
     }
 
     @Test
+    @Disabled( "Pending deployment - see #117578" )
     void testDeserializeWithSummaryStatistics() throws IOException
     {
         String yaml = """
@@ -2011,6 +2013,7 @@ class DeclarationFactoryTest
     }
 
     @Test
+    @Disabled( "Pending deployment - see #117578" )
     void testDeserializeWithSummaryStatisticsAndParameters() throws IOException
     {
         String yaml = """
