@@ -437,8 +437,9 @@ public class ChartDataFactory
                                                 .filter( n -> !n.isBlank() )
                                                 .collect( Collectors.toCollection( TreeSet::new ) );
 
-            // No qualifiers
-            if ( qualified.isEmpty() )
+            // No qualifiers or a summary statistic that does not need to be sliced by qualifier
+            if ( qualified.isEmpty()
+                 || first.isSummaryStatistic() )
             {
                 String name = DataUtilities.toStringWithoutUnits( key );
                 XYIntervalSeries nextSeries = ChartDataFactory.getIntervalSeries( sliced,
@@ -863,6 +864,10 @@ public class ChartDataFactory
                                                       String name,
                                                       ToDoubleFunction<DoubleScoreComponentOuter> domainValue )
     {
+        Objects.requireNonNull( scores );
+        Objects.requireNonNull( name );
+        Objects.requireNonNull( domainValue );
+
         ToDoubleFunction<DoubleScoreComponentOuter> toDouble = score ->
         {
             if ( !( score.isSummaryStatistic()
@@ -880,8 +885,6 @@ public class ChartDataFactory
                         .collect( Collectors.groupingBy( toDouble::applyAsDouble ) );
 
         List<DoubleScoreComponentOuter> nominal = mappedByQuantile.remove( Double.NaN );
-
-        YIntervalSeries series = new YIntervalSeries( name );
 
         double min = mappedByQuantile.keySet()
                                      .stream()
@@ -911,40 +914,108 @@ public class ChartDataFactory
             return a;
         };
 
-        // Map the results by time window and threshold to correlate nominal and quantile values
-        Map<PoolMetadata, DoubleScoreComponentOuter> nominalMapped
-                = nominal.stream()
-                         .collect( Collectors.toMap( s -> s.getPoolMetadata(),
-                                                     Function.identity(),
-                                                     aggregator ) );
-        Map<PoolMetadata, DoubleScoreComponentOuter> lowerMapped
-                = lower.stream()
-                       .collect( Collectors.toMap( s -> s.getPoolMetadata(),
-                                                   Function.identity(),
-                                                   aggregator ) );
-        Map<PoolMetadata, DoubleScoreComponentOuter> upperMapped
-                = upper.stream()
-                       .collect( Collectors.toMap( s -> s.getPoolMetadata(),
-                                                   Function.identity(),
-                                                   aggregator ) );
+        // Map the results by time window and threshold to correlate nominal/central and quantile values
+        Map<PoolMetadata, DoubleScoreComponentOuter> centralMapped = Map.of();
+        Map<PoolMetadata, DoubleScoreComponentOuter> lowerMapped = Map.of();
+        Map<PoolMetadata, DoubleScoreComponentOuter> upperMapped = Map.of();
 
-        for ( Map.Entry<PoolMetadata, DoubleScoreComponentOuter> next : nominalMapped.entrySet() )
+        // Get a central value, if available. Use the nominal value first, else the median
+        if ( Objects.nonNull( nominal ) )
         {
-            PoolMetadata nextMeta = next.getKey();
-            DoubleScoreComponentOuter nextNominal = next.getValue();
+            centralMapped = nominal.stream()
+                                   .collect( Collectors.toMap( s -> s.getPoolMetadata(),
+                                                               Function.identity(),
+                                                               aggregator ) );
+        }
+        // Median
+        else if ( mappedByQuantile.containsKey( 0.5 ) )
+        {
+            centralMapped = mappedByQuantile.get( 0.5 )
+                                            .stream()
+                                            .collect( Collectors.toMap( s -> s.getPoolMetadata(),
+                                                                        Function.identity(),
+                                                                        aggregator ) );
+        }
 
-            double domainAxisValue = domainValue.applyAsDouble( nextNominal );
-            double nominalValue = nextNominal.getStatistic()
-                                             .getValue();
+        if ( Objects.nonNull( lower ) )
+        {
+            lowerMapped = lower.stream()
+                               .collect( Collectors.toMap( s -> s.getPoolMetadata(),
+                                                           Function.identity(),
+                                                           aggregator ) );
+        }
 
-            double lowerValue = nominalValue;
-            double upperValue = nominalValue;
+        if ( Objects.nonNull( upper ) )
+        {
+            upperMapped = upper.stream()
+                               .collect( Collectors.toMap( s -> s.getPoolMetadata(),
+                                                           Function.identity(),
+                                                           aggregator ) );
+        }
+
+        return ChartDataFactory.getIntervalSeries( centralMapped, lowerMapped, upperMapped, name, domainValue );
+    }
+
+    /**
+     * Creates an {@link YIntervalSeries} from the inputs.
+     * @param centralMapped the map of central values
+     * @param lowerMapped the map of lower interval values
+     * @param upperMapped the map of upper interval values
+     * @param name the series name
+     * @param domainValue a function that produces the domain value associated with a score
+     * @return the series
+     * @throws NullPointerException if ay input is null
+     */
+
+    private static YIntervalSeries getIntervalSeries( Map<PoolMetadata, DoubleScoreComponentOuter> centralMapped,
+                                                      Map<PoolMetadata, DoubleScoreComponentOuter> lowerMapped,
+                                                      Map<PoolMetadata, DoubleScoreComponentOuter> upperMapped,
+                                                      String name,
+                                                      ToDoubleFunction<DoubleScoreComponentOuter> domainValue )
+    {
+        Objects.requireNonNull( centralMapped );
+        Objects.requireNonNull( lowerMapped );
+        Objects.requireNonNull( upperMapped );
+        Objects.requireNonNull( name );
+        Objects.requireNonNull( domainValue );
+
+        YIntervalSeries series = new YIntervalSeries( name );
+
+        Set<PoolMetadata> metadatas = centralMapped.keySet();
+
+        if ( metadatas.isEmpty() )
+        {
+            metadatas = lowerMapped.keySet();
+        }
+
+        if ( metadatas.isEmpty() )
+        {
+            metadatas = upperMapped.keySet();
+        }
+
+        for ( PoolMetadata nextMeta : metadatas )
+        {
+            double nominalValue = Double.NaN;
+            double lowerValue = Double.NaN;
+            double upperValue = Double.NaN;
+            double domainAxisValue = Double.NaN;
+
+            if ( centralMapped.containsKey( nextMeta ) )
+            {
+                DoubleScoreComponentOuter nextNominal = centralMapped.get( nextMeta );
+                nominalValue = nextNominal.getStatistic()
+                                          .getValue();
+                lowerValue = nominalValue;
+                upperValue = nominalValue;
+                domainAxisValue = domainValue.applyAsDouble( nextNominal );
+            }
 
             if ( lowerMapped.containsKey( nextMeta ) )
             {
                 DoubleScoreComponentOuter nextLower = lowerMapped.get( nextMeta );
                 lowerValue = nextLower.getStatistic()
                                       .getValue();
+                domainAxisValue = domainValue.applyAsDouble( nextLower );
             }
 
             if ( upperMapped.containsKey( nextMeta ) )
@@ -952,6 +1023,7 @@ public class ChartDataFactory
                 DoubleScoreComponentOuter nextUpper = upperMapped.get( nextMeta );
                 upperValue = nextUpper.getStatistic()
                                       .getValue();
+                domainAxisValue = domainValue.applyAsDouble( nextUpper );
             }
 
             if ( Double.isInfinite( nominalValue ) )

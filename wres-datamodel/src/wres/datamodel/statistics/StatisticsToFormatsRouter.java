@@ -391,7 +391,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         };
 
         // Diagram output available
-        if ( statistics.stream().anyMatch( next -> next.getDiagramsCount() > 0 ) )
+        if ( statistics.stream()
+                       .anyMatch( next -> next.getDiagramsCount() > 0 ) )
         {
             List<DiagramStatisticOuter> wrapped =
                     this.getWrappedAndSortedStatistics( statistics,
@@ -412,7 +413,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         }
 
         // Box-plot output available per pool
-        if ( statistics.stream().anyMatch( next -> next.getOneBoxPerPoolCount() > 0 ) )
+        if ( statistics.stream()
+                       .anyMatch( next -> next.getOneBoxPerPoolCount() > 0 ) )
         {
             Function<Statistics, List<BoxplotStatistic>> supplier = Statistics::getOneBoxPerPoolList;
             List<BoxplotStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
@@ -424,7 +426,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         }
 
         // Ordinary scores available
-        if ( statistics.stream().anyMatch( next -> next.getScoresCount() > 0 ) )
+        if ( statistics.stream()
+                       .anyMatch( next -> next.getScoresCount() > 0 ) )
         {
             List<DoubleScoreStatisticOuter> wrapped =
                     this.getWrappedAndSortedStatistics( statistics, this.getDoubleScoreMapper( poolSupplier ) );
@@ -433,7 +436,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         }
 
         // Duration scores available
-        if ( statistics.stream().anyMatch( next -> next.getDurationScoresCount() > 0 ) )
+        if ( statistics.stream()
+                       .anyMatch( next -> next.getDurationScoresCount() > 0 ) )
         {
             List<DurationScoreStatisticOuter> wrapped =
                     this.getWrappedAndSortedStatistics( statistics,
@@ -444,7 +448,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
         }
 
         // Duration diagrams available
-        if ( statistics.stream().anyMatch( next -> next.getDurationDiagramsCount() > 0 ) )
+        if ( statistics.stream()
+                       .anyMatch( next -> next.getDurationDiagramsCount() > 0 ) )
         {
             List<DurationDiagramStatisticOuter> wrapped = this.getWrappedAndSortedStatistics( statistics,
                                                                                               this.getDurationDiagramMapper(
@@ -495,8 +500,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
      * @return the mapper
      */
 
-    private Function<Statistics, List<DiagramStatisticOuter>>
-    getDiagramMapper( Function<Statistics, Pool> poolSupplier )
+    private Function<Statistics, List<DiagramStatisticOuter>> getDiagramMapper( Function<Statistics, Pool> poolSupplier )
     {
         return someStats -> {
             List<DiagramStatistic> diagrams = someStats.getDiagramsList();
@@ -519,9 +523,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
      * @return the mapper
      */
 
-    private Function<Statistics, List<BoxplotStatisticOuter>>
-    getBoxplotMapper( Function<Statistics, List<BoxplotStatistic>> supplier,
-                      Function<Statistics, Pool> poolSupplier )
+    private Function<Statistics, List<BoxplotStatisticOuter>> getBoxplotMapper( Function<Statistics, List<BoxplotStatistic>> supplier,
+                                                                                Function<Statistics, Pool> poolSupplier )
     {
         return someStats -> {
             List<BoxplotStatistic> boxes = supplier.apply( someStats );
@@ -542,8 +545,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
      * @return the mapper
      */
 
-    private Function<Statistics, List<DoubleScoreStatisticOuter>>
-    getDoubleScoreMapper( Function<Statistics, Pool> poolSupplier )
+    private Function<Statistics, List<DoubleScoreStatisticOuter>> getDoubleScoreMapper( Function<Statistics, Pool> poolSupplier )
     {
         return someStats -> {
             List<DoubleScoreStatistic> scores = someStats.getScoresList();
@@ -565,8 +567,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
      * @return the mapper
      */
 
-    private Function<Statistics, List<DurationScoreStatisticOuter>>
-    getDurationScoreMapper( Function<Statistics, Pool> poolSupplier )
+    private Function<Statistics, List<DurationScoreStatisticOuter>> getDurationScoreMapper( Function<Statistics, Pool> poolSupplier )
     {
         return someStats -> {
             List<DurationScoreStatistic> scores = someStats.getDurationScoresList();
@@ -588,8 +589,7 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
      * @return the mapper
      */
 
-    private Function<Statistics, List<DurationDiagramStatisticOuter>>
-    getDurationDiagramMapper( Function<Statistics, Pool> poolSupplier )
+    private Function<Statistics, List<DurationDiagramStatisticOuter>> getDurationDiagramMapper( Function<Statistics, Pool> poolSupplier )
     {
         return someStats -> {
             List<DurationDiagramStatistic> diagrams = someStats.getDurationDiagramsList();
@@ -743,7 +743,8 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                                                                                                 next.getKey() );
 
             // Consume the output
-            Set<Path> innerPaths = next.getValue().apply( filtered );
+            Set<Path> innerPaths = next.getValue()
+                                       .apply( filtered );
             paths.addAll( innerPaths );
 
             this.log( outputs, next.getKey(), false );
@@ -915,7 +916,6 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
                                                                                  Format format )
     {
         Objects.requireNonNull( statistics );
-
         Objects.requireNonNull( format );
 
         Set<MetricConstants> suppress = this.getSuppressTheseMetricsForThisFormat( format );

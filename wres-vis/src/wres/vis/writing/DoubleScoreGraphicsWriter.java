@@ -13,6 +13,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.jfree.chart.JFreeChart;
 import org.slf4j.Logger;
@@ -27,6 +29,7 @@ import wres.datamodel.statistics.DoubleScoreStatisticOuter;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool.EnsembleAverageType;
+import wres.statistics.generated.SummaryStatistic;
 import wres.vis.charts.ChartBuildingException;
 import wres.vis.charts.ChartFactory;
 
@@ -175,8 +178,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
      * @return the sliced statistics to write
      */
 
-    private static List<List<DoubleScoreStatisticOuter>>
-    getSlicedStatistics( List<DoubleScoreStatisticOuter> statistics )
+    private static List<List<DoubleScoreStatisticOuter>> getSlicedStatistics( List<DoubleScoreStatisticOuter> statistics )
     {
         List<List<DoubleScoreStatisticOuter>> sliced = new ArrayList<>();
 
@@ -189,35 +191,53 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         // Slice by ensemble averaging function and then by secondary threshold
         for ( EnsembleAverageType type : EnsembleAverageType.values() )
         {
-            List<DoubleScoreStatisticOuter> innerSlice = Slicer.filter( statistics,
-                                                                        value -> type == value.getPoolMetadata()
-                                                                                              .getPool()
-                                                                                              .getEnsembleAverageType() );
+            List<DoubleScoreStatisticOuter> innerSlice =
+                    Slicer.filter( statistics,
+                                   value -> type == value.getPoolMetadata()
+                                                         .getPool()
+                                                         .getEnsembleAverageType() );
             // Slice by secondary threshold
             if ( !innerSlice.isEmpty() )
             {
                 if ( !secondThreshold.isEmpty() )
                 {
                     // Slice by the second threshold
-                    secondThreshold.forEach( next -> sliced.add( Slicer.filter( innerSlice,
+                    List<DoubleScoreStatisticOuter> innerSliceFinal = innerSlice;
+                    secondThreshold.forEach( next -> sliced.add( Slicer.filter( innerSliceFinal,
                                                                                 value -> next.equals( value.getPoolMetadata()
                                                                                                            .getThresholds()
                                                                                                            .second() ) ) ) );
 
                     // Primary thresholds without secondary thresholds
-                    List<DoubleScoreStatisticOuter> primaryOnly = innerSlice.stream()
-                                                                            .filter( next -> !next.getPoolMetadata()
-                                                                                                  .getThresholds()
-                                                                                                  .hasTwo() )
-                                                                            .toList();
+                    innerSlice = innerSliceFinal.stream()
+                                                .filter( next -> !next.getPoolMetadata()
+                                                                      .getThresholds()
+                                                                      .hasTwo() )
+                                                .toList();
+                }
 
-                    sliced.add( primaryOnly );
-                }
-                // No secondary thresholds
-                else
-                {
-                    sliced.add( innerSlice );
-                }
+                // Slice by summary statistic presence/absence, ignoring resampled quantiles
+                Predicate<DoubleScoreStatisticOuter> summaryStat
+                        = s -> s.isSummaryStatistic()
+                               && s.getSummaryStatistic()
+                                   .getDimension() != SummaryStatistic.StatisticDimension.RESAMPLED;
+
+                List<DoubleScoreStatisticOuter> summaryStats =
+                        Slicer.filter( innerSlice,
+                                       summaryStat );
+
+                // Partition the summary statistics by statistic name
+                Map<SummaryStatistic.StatisticName, List<DoubleScoreStatisticOuter>> grouped =
+                        summaryStats.stream()
+                                    .collect( Collectors.groupingBy( s -> s.getSummaryStatistic()
+                                                                           .getStatistic() ) );
+
+                List<DoubleScoreStatisticOuter> noSummaryStats =
+                        Slicer.filter( innerSlice,
+                                       summaryStat.negate() );
+
+                sliced.add( noSummaryStats );
+                sliced.addAll( grouped.values() );
             }
         }
 
@@ -250,11 +270,14 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         // #51670
         SortedSet<EnsembleAverageType> types =
                 Slicer.discover( statistics,
-                                 next -> next.getPoolMetadata().getPool().getEnsembleAverageType() );
+                                 next -> next.getPoolMetadata()
+                                             .getPool()
+                                             .getEnsembleAverageType() );
 
         Optional<EnsembleAverageType> type =
                 types.stream()
-                     .filter( next -> next != EnsembleAverageType.MEAN && next != EnsembleAverageType.NONE
+                     .filter( next -> next != EnsembleAverageType.MEAN
+                                      && next != EnsembleAverageType.NONE
                                       && next != EnsembleAverageType.UNRECOGNIZED )
                      .findFirst();
 
@@ -270,6 +293,30 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
             {
                 append = "ENSEMBLE_" + type.get()
                                            .name();
+            }
+        }
+
+        // Qualify by summary statistic name
+        Optional<SummaryStatistic.StatisticName> name =
+                statistics.stream()
+                          .filter( n -> n.isSummaryStatistic()
+                                        && n.getSummaryStatistic()
+                                            .getDimension()
+                                           != SummaryStatistic.StatisticDimension.RESAMPLED )
+                          .map( d -> d.getSummaryStatistic()
+                                      .getStatistic() )
+                          .findFirst();
+
+        if( name.isPresent() )
+        {
+            if( Objects.nonNull( append ) )
+            {
+                append += "_" + name.get();
+            }
+            else
+            {
+                append = name.get()
+                             .toString();
             }
         }
 
@@ -304,7 +351,8 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
 
             // Qualify with the component name unless there is one component and it is main
             MetricConstants componentName = null;
-            if ( nextEntry.getKey() != MetricConstants.MAIN || engines.size() > 0 )
+            if ( nextEntry.getKey() != MetricConstants.MAIN
+                 || !engines.isEmpty() )
             {
                 componentName = nextEntry.getKey();
             }
