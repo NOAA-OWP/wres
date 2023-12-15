@@ -4,6 +4,10 @@
 # This script runs a clean database on the single db used in an environment.
 # It then calls switchdatabase for that COWRES cluster.
 
+# This program requires that the WRES_ADMIN_TOKEN environment variable be
+# exported prior to execution. It must specify the token for the clan and
+# switch to be allowed. If its is not exported, the attempts will fail.
+
 echo "CLEAN AND SWITCH EXECUTING..."
 
 # One argument is expected, currently: the target database.
@@ -45,7 +49,7 @@ fi
 
 # First, attempt the clean of the target database
 echo "Posting the clean for $target_db on host $target_host to to COWRES URL $cowres_url ..."
-post_result=$( curl -i -s --cacert $wres_ca_file --data "additionalArguments=${target_host}&additionalArguments=&additionalArguments=${target_db}&adminToken="***REMOVED***"&verb=cleandatabase" $cowres_url/job | tr -d '\r' )
+post_result=$( curl -i -s --cacert $wres_ca_file --data "additionalArguments=${target_host}&additionalArguments=&additionalArguments=${target_db}&adminToken=$WRES_ADMIN_TOKEN&verb=cleandatabase" $cowres_url/job | tr -d '\r' )
 post_result_http_code=$( echo -n "$post_result" | grep HTTP | tail -n 1 | cut -d' ' -f2 )
 echo "The last status code in the response was $post_result_http_code"
 
@@ -113,7 +117,7 @@ fi
 
 # So far so good.  Try to switch the database.
 echo "Switching to the target database ${target_db} on host $target_host for COWRES url $cowres_url ..."
-post_result=$( curl -i -s --cacert $wres_ca_file --data "additionalArguments=${target_host}&additionalArguments=&additionalArguments=${target_db}&adminToken="***REMOVED***"&verb=switchdatabase" $cowres_url/job | tr -d '\r' )
+post_result=$( curl -i -s --cacert $wres_ca_file --data "additionalArguments=${target_host}&additionalArguments=&additionalArguments=${target_db}&adminToken=$WRES_ADMIN_TOKEN&verb=switchdatabase" $cowres_url/job | tr -d '\r' )
 post_result_http_code=$( echo -n "$post_result" | grep HTTP | tail -n 1 | cut -d' ' -f2 ) 
 echo "The last status code in the switchdatabase response was $post_result_http_code" 
 if [ "$post_result_http_code" -eq "201" ] || [ "$post_result_http_code" -eq "200" ]
