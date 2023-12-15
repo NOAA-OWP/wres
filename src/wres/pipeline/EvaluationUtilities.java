@@ -48,6 +48,7 @@ import wres.datamodel.thresholds.MetricsAndThresholds;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.events.EvaluationEventUtilities;
 import wres.events.EvaluationMessager;
 import wres.io.reading.netcdf.grid.GriddedFeatures;
 import wres.io.retrieving.database.EnsembleSingleValuedRetrieverFactory;
@@ -192,11 +193,13 @@ class EvaluationUtilities
         LOGGER.debug( "Publishing summary statistics from {} summary statistics calculators.",
                       summaryStatistics.size() );
 
+        // Create a group identifier for the summary statistics
+        String groupId = EvaluationEventUtilities.getId();
         for ( SummaryStatisticsCalculator calculator : summaryStatistics )
         {
             // Generate the summary statistics
             List<Statistics> nextStatistics = calculator.get();
-            nextStatistics.forEach( messager::publish );
+            nextStatistics.forEach( m -> messager.publish( m, groupId ) );
         }
 
         LOGGER.debug( "Finished publishing summary statistics." );

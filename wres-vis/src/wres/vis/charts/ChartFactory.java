@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
@@ -83,6 +84,7 @@ import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramCom
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 import wres.statistics.generated.Pool.EnsembleAverageType;
+import wres.statistics.generated.SummaryStatistic;
 import wres.vis.data.ChartDataFactory;
 
 /**
@@ -132,6 +134,9 @@ public class ChartFactory
 
     /** The default length of the error bars. */
     private static final int DEFAULT_ERROR_BAR_CAP_LENGTH = 5;
+
+    /** Re-used string. */
+    private static final String AND = " and ";
 
     /** Series colors. */
     private final Color[] seriesColors;
@@ -207,13 +212,14 @@ public class ChartFactory
         Objects.requireNonNull( durationUnits );
 
         // Find the metadata for the first element, which is sufficient here
-        PoolMetadata metadata = statistics.get( 0 )
-                                          .getPoolMetadata();
+        DurationScoreStatisticOuter example = statistics.get( 0 );
+        PoolMetadata metadata = example.getPoolMetadata();
 
-        MetricConstants metricName = statistics.get( 0 )
-                                               .getMetricName();
+        MetricConstants metricName = example.getMetricName();
 
-        //Build the source.
+        SummaryStatistic summaryStatistic = example.getSummaryStatistic();
+
+        // Build the source.
         CategoryDataset source = ChartDataFactory.ofDurationScoreSummaryStatistics( statistics );
 
         String legendTitle = this.getLegendName( metricName,
@@ -224,13 +230,16 @@ public class ChartFactory
 
         SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
 
-        String title = this.getChartTitle( metadata,
-                                           Pair.of( metricName, null ),
-                                           durationUnits,
-                                           ChartType.TIMING_ERROR_SUMMARY_STATISTICS,
-                                           StatisticType.DURATION_SCORE,
-                                           null,
-                                           quantiles );
+        ChartTitleParameters parameters = new ChartTitleParameters( metadata,
+                                                                    Pair.of( metricName, null ),
+                                                                    durationUnits,
+                                                                    ChartType.TIMING_ERROR_SUMMARY_STATISTICS,
+                                                                    StatisticType.DURATION_SCORE,
+                                                                    null,
+                                                                    quantiles,
+                                                                    summaryStatistic,
+                                                                    null );
+        String title = this.getChartTitle( parameters );
 
         String rangeTitle = metricName.toString() + " [HOURS]";
         String domainTitle = "SUMMARY STATISTIC";
@@ -280,6 +289,8 @@ public class ChartFactory
         PoolMetadata metadata = first.getPoolMetadata();
         MetricConstants metricName = first.getMetricName();
         DiagramMetricComponent domain = first.getComponent( DiagramComponentType.PRIMARY_DOMAIN_AXIS );
+        String diagramSummaryStatisticNameQualifier = this.getDiagramSummaryStatisticNameQualifier( first );
+
         DiagramMetricComponent range = first.getComponent( DiagramComponentType.PRIMARY_RANGE_AXIS );
         MetricDimension domainDimension = first.getComponentName( DiagramComponentType.PRIMARY_DOMAIN_AXIS );
         MetricDimension rangeDimension = first.getComponentName( DiagramComponentType.PRIMARY_RANGE_AXIS );
@@ -289,6 +300,7 @@ public class ChartFactory
 
         EnsembleAverageType ensembleAverageType = metadata.getPool()
                                                           .getEnsembleAverageType();
+        SummaryStatistic summaryStatistic = first.getSummaryStatistic();
 
         // Determine the output type
         ChartType chartType = ChartFactory.getChartType( metricName, graphicShape );
@@ -325,13 +337,17 @@ public class ChartFactory
 
             SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
 
-            String title = this.getChartTitle( union,
-                                               Pair.of( metricName, null ),
-                                               durationUnits,
-                                               chartType,
-                                               StatisticType.DIAGRAM,
-                                               ensembleAverageType,
-                                               quantiles );
+            ChartTitleParameters parameters = new ChartTitleParameters( union,
+                                                                        Pair.of( metricName, null ),
+                                                                        durationUnits,
+                                                                        chartType,
+                                                                        StatisticType.DIAGRAM,
+                                                                        ensembleAverageType,
+                                                                        quantiles,
+                                                                        summaryStatistic,
+                                                                        diagramSummaryStatisticNameQualifier );
+
+            String title = this.getChartTitle( parameters );
 
             XYDataset dataset;
 
@@ -436,30 +452,34 @@ public class ChartFactory
         Objects.requireNonNull( durationUnits );
 
         // Find the metadata for the first element, which is sufficient here
-        PoolMetadata metadata = statistics.get( 0 )
-                                          .getPoolMetadata();
+        DurationDiagramStatisticOuter example = statistics.get( 0 );
+        PoolMetadata metadata = example.getPoolMetadata();
+
+        SummaryStatistic summaryStatistic = example.getSummaryStatistic();
 
         // Component name
-        MetricConstants metricName = statistics.get( 0 )
-                                               .getMetricName();
+        MetricConstants metricName = example.getMetricName();
 
         // Determine the output type
         ChartType chartType = ChartFactory.getChartType( metricName, GraphicShape.DEFAULT );
 
-        //Build the source.
+        // Build the source.
         XYDataset source = ChartDataFactory.ofDurationDiagramStatistics( statistics );
 
         String legendTitle = this.getLegendName( metricName, metadata, chartType, GraphicShape.DEFAULT, durationUnits );
 
         SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
 
-        String title = this.getChartTitle( metadata,
-                                           Pair.of( metricName, null ),
-                                           durationUnits,
-                                           chartType,
-                                           StatisticType.DURATION_DIAGRAM,
-                                           null,
-                                           quantiles );
+        ChartTitleParameters parameters = new ChartTitleParameters( metadata,
+                                                                    Pair.of( metricName, null ),
+                                                                    durationUnits,
+                                                                    chartType,
+                                                                    StatisticType.DURATION_DIAGRAM,
+                                                                    null,
+                                                                    quantiles,
+                                                                    summaryStatistic,
+                                                                    null );
+        String title = this.getChartTitle( parameters );
 
         String rangeTitle = metricName.toString() + " [HOURS]";
         String domainTitle = "FORECAST ISSUE TIME [UTC]";
@@ -521,6 +541,8 @@ public class ChartFactory
         EnsembleAverageType ensembleAverageType = metadata.getPool()
                                                           .getEnsembleAverageType();
 
+        SummaryStatistic summaryStatistic = first.getSummaryStatistic();
+
         // Determine the output type
         ChartType chartType = ChartFactory.getChartType( metricName, GraphicShape.DEFAULT );
 
@@ -529,13 +551,16 @@ public class ChartFactory
 
         SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
 
-        String title = this.getChartTitle( metadata,
-                                           Pair.of( metricName, null ),
-                                           durationUnits,
-                                           chartType,
-                                           metricName.getMetricOutputGroup(),
-                                           ensembleAverageType,
-                                           quantiles );
+        ChartTitleParameters parameters = new ChartTitleParameters( metadata,
+                                                                    Pair.of( metricName, null ),
+                                                                    durationUnits,
+                                                                    chartType,
+                                                                    metricName.getMetricOutputGroup(),
+                                                                    ensembleAverageType,
+                                                                    quantiles,
+                                                                    summaryStatistic,
+                                                                    null );
+        String title = this.getChartTitle( parameters );
 
         String rangeTitle = type.toString()
                                 .replace( "_", " " )
@@ -664,6 +689,8 @@ public class ChartFactory
         EnsembleAverageType ensembleAverageType = metadata.getPool()
                                                           .getEnsembleAverageType();
 
+        SummaryStatistic summaryStatistic = first.getSummaryStatistic();
+
         // Determine the output type
         ChartType chartType = ChartFactory.getChartType( metricName, GraphicShape.DEFAULT );
 
@@ -672,13 +699,16 @@ public class ChartFactory
 
         SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
 
-        String title = this.getChartTitle( metadata,
-                                           Pair.of( metricName, null ),
-                                           durationUnits,
-                                           chartType,
-                                           metricName.getMetricOutputGroup(),
-                                           ensembleAverageType,
-                                           quantiles );
+        ChartTitleParameters parameters = new ChartTitleParameters( metadata,
+                                                                    Pair.of( metricName, null ),
+                                                                    durationUnits,
+                                                                    chartType,
+                                                                    metricName.getMetricOutputGroup(),
+                                                                    ensembleAverageType,
+                                                                    quantiles,
+                                                                    summaryStatistic,
+                                                                    null );
+        String title = this.getChartTitle( parameters );
 
         // Create the titles
         String domainTitle = valueType.toString()
@@ -734,21 +764,21 @@ public class ChartFactory
                                                           ChronoUnit durationUnits )
     {
         // Find the metadata for the first element, which is sufficient here
-        PoolMetadata metadata = statistics.get( 0 )
-                                          .getPoolMetadata();
-        String metricUnits = statistics.get( 0 )
-                                       .getStatistic()
-                                       .getMetric()
-                                       .getUnits();
+        DoubleScoreComponentOuter example = statistics.get( 0 );
+        PoolMetadata metadata = example.getPoolMetadata();
+        String metricUnits = example.getStatistic()
+                                    .getMetric()
+                                    .getUnits();
+
+        SummaryStatistic summaryStatistic = example.getSummaryStatistic();
 
         // Component name
-        MetricConstants metricComponentName = statistics.get( 0 )
-                                                        .getMetricName();
+        MetricConstants metricComponentName = example.getMetricName();
 
         EnsembleAverageType ensembleAverageType = metadata.getPool()
                                                           .getEnsembleAverageType();
 
-        // So not qualify a "main" score component because it is qualified by the overall metric name
+        // Do not qualify a "main" score component because it is qualified by the overall metric name
         if ( metricComponentName == MetricConstants.MAIN )
         {
             metricComponentName = null;
@@ -767,20 +797,22 @@ public class ChartFactory
 
         SortedSet<Double> quantiles = ChartDataFactory.getQuantiles( statistics );
 
-        String title = this.getChartTitle( metadata,
-                                           Pair.of( metricName, metricComponentName ),
-                                           durationUnits,
-                                           chartType,
-                                           StatisticType.DOUBLE_SCORE,
-                                           ensembleAverageType,
-                                           quantiles );
+        ChartTitleParameters parameters = new ChartTitleParameters( metadata,
+                                                                    Pair.of( metricName, metricComponentName ),
+                                                                    durationUnits,
+                                                                    chartType,
+                                                                    StatisticType.DOUBLE_SCORE,
+                                                                    ensembleAverageType,
+                                                                    quantiles,
+                                                                    summaryStatistic,
+                                                                    null );
+        String title = this.getChartTitle( parameters );
         String rangeTitle = metricName.toString()
                             + " ["
                             + metricUnits
                             + "]";
 
         JFreeChart chart;
-
 
         // Build the source
         XYDataset source;
@@ -1355,32 +1387,32 @@ public class ChartFactory
     /**
      * Creates a chart title.
      *
-     * @param metadata the pool metadata, required
-     * @param metricNames the metric names, required
-     * @param durationUnits the duration units, required
-     * @param chartType the chart type, required
-     * @param statisticType the type of statistics, required
-     * @param ensembleAverageType the ensemble average type, optional
+     * @param parameters the chart title parameters
      * @return the chart title
      * @throws NullPointerException if any required input is null
      */
 
-    private String getChartTitle( PoolMetadata metadata,
-                                  Pair<MetricConstants, MetricConstants> metricNames,
-                                  ChronoUnit durationUnits,
-                                  ChartType chartType,
-                                  StatisticType statisticType,
-                                  EnsembleAverageType ensembleAverageType,
-                                  SortedSet<Double> quantiles )
+    private String getChartTitle( ChartTitleParameters parameters )
     {
-        Objects.requireNonNull( metadata );
-        Objects.requireNonNull( metricNames );
-        Objects.requireNonNull( durationUnits );
-        Objects.requireNonNull( chartType );
-        Objects.requireNonNull( statisticType );
+        SummaryStatistic summaryStatistic = parameters.summaryStatistic();
 
+        Pair<MetricConstants, MetricConstants> metricNames = parameters.metricNames();
         MetricConstants metricName = metricNames.getLeft();
-        String name = metricName.toString();
+        String name = this.getSummaryStatisticQualifier( summaryStatistic );
+
+        boolean isSummaryStatistic = Objects.nonNull( summaryStatistic )
+                                     && summaryStatistic.getDimension()
+                                        != SummaryStatistic.StatisticDimension.RESAMPLED;
+
+        String metric = metricName.toString();
+
+        if ( isSummaryStatistic && Objects.nonNull( parameters.diagramSummaryStatisticNameQualifier() ) )
+        {
+            metric = parameters.diagramSummaryStatisticNameQualifier();
+        }
+
+        // Summary statistic that needs to be qualified
+        name += metric;
 
         MetricConstants metricComponentName = metricNames.getRight();
 
@@ -1390,26 +1422,21 @@ public class ChartFactory
         }
 
         // Are decision thresholds defined?
-        boolean hasDecisionThresholds = metadata.hasThresholds() && metadata.getThresholds()
-                                                                            .hasTwo();
+        PoolMetadata metadata = parameters.metadata();
 
-        // Qualify the ensemble average type if present and the metric is single-valued, unless it is a sample size or 
-        // a univariate metric applied to the LHS of the pairs. If the LHS eventually supports ensembles, the data 
-        // types will need to be qualified in the evaluation message.
-        if ( Objects.nonNull( ensembleAverageType )
-             && ensembleAverageType != EnsembleAverageType.NONE
-             // Single-valued metrics or dichotomous metrics defined for single-valued pairs only
-             && ( metricName.isInGroup( SampleDataGroup.SINGLE_VALUED )
-                  || ( metricName.isInGroup( SampleDataGroup.DICHOTOMOUS ) && !hasDecisionThresholds ) )
-             && metricName != MetricConstants.SAMPLE_SIZE
-             && metricComponentName != MetricConstants.LEFT )
-        {
-            name += " of the ENSEMBLE " + ensembleAverageType.name();
-        }
+        name += this.getEnsembleAverageTypeQualifier( parameters.ensembleAverageType(),
+                                                      metadata,
+                                                      metricName,
+                                                      metricComponentName );
 
         String geoName = this.getGeoNameForTitle( metadata );
 
-        name += " at " + geoName;
+        // Qualify the geography if not all geographic features
+        if ( !isSummaryStatistic || summaryStatistic.getDimension()
+                                    != SummaryStatistic.StatisticDimension.FEATURES )
+        {
+            name += " at " + geoName;
+        }
 
         String scenarioName = this.getScenarioNameForTitle( metadata, metricName );
 
@@ -1436,6 +1463,10 @@ public class ChartFactory
             name += " " + baselineScenario;
         }
 
+        ChartType chartType = parameters.chartType();
+        StatisticType statisticType = parameters.statisticType();
+        ChronoUnit durationUnits = parameters.durationUnits();
+
         String timeScale = this.getTimeScaleForTitle( metadata, durationUnits );
 
         if ( !timeScale.isBlank() )
@@ -1459,6 +1490,93 @@ public class ChartFactory
             name += " and a threshold of " + threshold;
         }
 
+        name += this.getQuantilesQualifier( metricName,
+                                            parameters.quantiles(),
+                                            isSummaryStatistic );
+
+        return name;
+    }
+
+    /**
+     * @param summaryStatistic the summary statistic
+     * @return the name qualifier for a summary statistic
+     */
+    private String getSummaryStatisticQualifier( SummaryStatistic summaryStatistic )
+    {
+        String name = "";
+
+        boolean isSummaryStatistic = Objects.nonNull( summaryStatistic )
+                                     && summaryStatistic.getDimension()
+                                        != SummaryStatistic.StatisticDimension.RESAMPLED;
+
+        if ( isSummaryStatistic )
+        {
+            String statisticName = summaryStatistic.getStatistic()
+                                                   .toString();
+
+            if ( summaryStatistic.getStatistic() == SummaryStatistic.StatisticName.QUANTILE )
+            {
+                statisticName = "QUANTILES";  // Plural
+            }
+
+            name = statisticName
+                   + " across "
+                   + summaryStatistic.getDimension()
+                   + " of the ";
+        }
+
+        return name;
+    }
+
+    /**
+     * Returns a name qualifier for the ensemble average type.
+     * @param ensembleAverageType the ensemble average type
+     * @param metadata the pool metadata
+     * @param metricName the metric name
+     * @param metricComponentName the metric component name
+     * @return the qualifier string
+     */
+    private String getEnsembleAverageTypeQualifier( EnsembleAverageType ensembleAverageType,
+                                                    PoolMetadata metadata,
+                                                    MetricConstants metricName,
+                                                    MetricConstants metricComponentName )
+    {
+        String name = "";
+
+        boolean hasDecisionThresholds = metadata.hasThresholds()
+                                        && metadata.getThresholds()
+                                                   .hasTwo();
+
+        // Qualify the ensemble average type if present and the metric is single-valued, unless it is a sample size or
+        // a univariate metric applied to the LHS of the pairs. If the LHS eventually supports ensembles, the data
+        // types will need to be qualified in the evaluation message.
+        if ( Objects.nonNull( ensembleAverageType )
+             && ensembleAverageType != EnsembleAverageType.NONE
+             // Single-valued metrics or dichotomous metrics defined for single-valued pairs only
+             && ( metricName.isInGroup( SampleDataGroup.SINGLE_VALUED )
+                  || ( metricName.isInGroup( SampleDataGroup.DICHOTOMOUS ) && !hasDecisionThresholds ) )
+             && metricName != MetricConstants.SAMPLE_SIZE
+             && metricComponentName != MetricConstants.LEFT )
+        {
+            name = " of the ENSEMBLE " + ensembleAverageType.name();
+        }
+
+        return name;
+    }
+
+    /**
+     * Generates qualifying text about the quantile intervals for use in a chart title.
+     * @param metricName the metric name
+     * @param quantiles the quantiles
+     * @param isSummaryStatistic true if the quantiles refer to a summary statistic, false for sampling uncertainty
+     * @return the sampling uncertainty qualification
+     */
+
+    private String getQuantilesQualifier( MetricConstants metricName,
+                                          SortedSet<Double> quantiles,
+                                          boolean isSummaryStatistic )
+    {
+        String name = "";
         if ( !quantiles.isEmpty()
              && this.canShowErrorBars( metricName ) )
         {
@@ -1472,33 +1590,42 @@ public class ChartFactory
                                       .max()
                                       .orElse( Double.NaN );
 
-            name += this.getSamplingUncertaintyQualifier( metricName, minimum, maximum );
+            SortedSet<Double> quantileSet = new TreeSet<>();
+            quantileSet.add( minimum );
+            quantileSet.add( maximum );
+
+            String quantileName = "error bars";
+
+            if ( isSummaryStatistic )
+            {
+                quantileName = "distribution bars";
+
+                // Qualify median value if available as this is also plotted
+                if ( quantiles.contains( 0.5 ) )
+                {
+                    quantileSet.add( 0.5 );
+                }
+            }
+
+            if ( metricName == MetricConstants.SAMPLE_SIZE )
+            {
+                return AND
+                       + quantileName
+                       + " for quantiles of "
+                       + quantileSet
+                       + ", which show the variation "
+                       + "in sample size across the pool samples";
+            }
+            else
+            {
+                return AND
+                       + quantileName
+                       + " for quantiles of "
+                       + quantileSet;
+            }
         }
 
         return name;
-    }
-
-    /**
-     * Generates qualifying text about the sampling uncertainty for use in a chart title.
-     * @param metricName the metric name
-     * @param minimum the minimum quantile
-     * @param maximum the maximum quantile
-     * @return the sampling uncertainty qualification
-     */
-
-    private String getSamplingUncertaintyQualifier( MetricConstants metricName,
-                                                    double minimum,
-                                                    double maximum )
-    {
-        if ( metricName == MetricConstants.SAMPLE_SIZE )
-        {
-            return " and error bars for quantiles of [" + minimum + ", " + maximum + "], which show the variation "
-                   + "in sample size across the pool samples";
-        }
-        else
-        {
-            return " and error bars for quantiles of [" + minimum + ", " + maximum + "]";
-        }
     }
 
     /**
@@ -1563,28 +1690,19 @@ public class ChartFactory
         Objects.requireNonNull( metadata );
         Objects.requireNonNull( metric );
 
-        String variableName = "";
-
         Evaluation evaluation = metadata.getEvaluation();
 
-        // Not univariate statistics, except the sample size
-        if ( !metric.isInGroup( MetricGroup.UNIVARIATE_STATISTIC ) || metric == MetricConstants.SAMPLE_SIZE )
-        {
-            // Use the left name. Should probably use the triple of variable names for accuracy. See #81790.
-            variableName = evaluation.getLeftVariableName();
-        }
-        else if ( Objects.nonNull( component ) )
+        // Default to left
+        String variableName = evaluation.getLeftVariableName();
+
+        if ( Objects.nonNull( component ) )
         {
             // Get the name that corresponds to the side of the component. Again, should probably use the triple.
             switch ( component )
             {
-                case LEFT -> variableName = evaluation.getLeftVariableName();
                 case RIGHT -> variableName = evaluation.getRightVariableName();
                 case BASELINE -> variableName = evaluation.getBaselineVariableName();
-                default ->
-                {
-                    // Do nothing
-                }
+                default -> variableName = evaluation.getLeftVariableName();
             }
         }
 
@@ -1592,7 +1710,7 @@ public class ChartFactory
     }
 
     /**
-     * Returns the time scale of the evaluation for the plot title.
+     * Returns the timescale of the evaluation for the plot title.
      *
      * @param metadata the statistics metadata
      * @param durationUnits the lead duration units
@@ -1799,7 +1917,7 @@ public class ChartFactory
             String start = "";
             if ( addedOne )
             {
-                start = " and ";
+                start = AND;
             }
 
             timeWindowString += start + "valid times in ["
@@ -1816,7 +1934,7 @@ public class ChartFactory
             String start = "";
             if ( addedOne )
             {
-                start = " and ";
+                start = AND;
             }
 
             String middle;
@@ -2010,10 +2128,10 @@ public class ChartFactory
         Objects.requireNonNull( statisticType );
 
         return switch ( statisticType )
-                {
-                    case BOXPLOT_PER_PAIR, BOXPLOT_PER_POOL, DURATION_DIAGRAM -> ChartType.UNIQUE;
-                    case DIAGRAM, DOUBLE_SCORE, DURATION_SCORE -> ChartType.LEAD_THRESHOLD;
-                };
+        {
+            case BOXPLOT_PER_PAIR, BOXPLOT_PER_POOL, DURATION_DIAGRAM -> ChartType.UNIQUE;
+            case DIAGRAM, DOUBLE_SCORE, DURATION_SCORE -> ChartType.LEAD_THRESHOLD;
+        };
     }
 
     /**
@@ -2087,6 +2205,29 @@ public class ChartFactory
     }
 
     /**
+     * Generates a name qualifier for a diagram summary statistic. The qualifier contains the name of the metric being
+     * summarized.
+     * @param statistic the statistic
+     * @return the name qualifier
+     */
+
+    private String getDiagramSummaryStatisticNameQualifier( DiagramStatisticOuter statistic )
+    {
+        String qualifier = "";
+        // For a diagram summary statistic, the underlying metric being summarized is recorded as a component name
+        // qualifier for all components
+        if ( statistic.isSummaryStatistic()
+             && !statistic.getComponentNameQualifiers()
+                          .isEmpty() )
+        {
+            qualifier = statistic.getComponentNameQualifiers()
+                                 .first();
+        }
+
+        return qualifier;
+    }
+
+    /**
      * Hidden constructor.
      */
 
@@ -2149,4 +2290,47 @@ public class ChartFactory
         this.chartFontTitle = chartFontTitleInner;
     }
 
+    /**
+     * Small value class for chart title creation.
+     * @param metadata the metadata
+     * @param metricNames the metric names
+     * @param durationUnits the duration units
+     * @param chartType the chart type
+     * @param statisticType the statistic type
+     * @param ensembleAverageType the ensemble average type
+     * @param quantiles the quantiles
+     * @param summaryStatistic the summary statistic
+     * @param diagramSummaryStatisticNameQualifier the name qualifier for a diagram summary statistic
+     */
+    private record ChartTitleParameters( PoolMetadata metadata,
+                                         Pair<MetricConstants, MetricConstants> metricNames,
+                                         ChronoUnit durationUnits,
+                                         ChartType chartType,
+                                         StatisticType statisticType,
+                                         EnsembleAverageType ensembleAverageType,
+                                         SortedSet<Double> quantiles,
+                                         SummaryStatistic summaryStatistic,
+                                         String diagramSummaryStatisticNameQualifier )
+    {
+        /**
+         * Validate inputs.
+         * @param metadata the metadata
+         * @param metricNames the metric names
+         * @param durationUnits the duration units
+         * @param chartType the chart type
+         * @param statisticType the statistic type
+         * @param ensembleAverageType the ensemble average type
+         * @param quantiles the quantiles
+         * @param summaryStatistic the summary statistic
+         * @param diagramSummaryStatisticNameQualifier the name qualifier for a diagram summary statistic
+         */
+        private ChartTitleParameters
+        {
+            Objects.requireNonNull( metadata );
+            Objects.requireNonNull( metricNames );
+            Objects.requireNonNull( durationUnits );
+            Objects.requireNonNull( chartType );
+            Objects.requireNonNull( statisticType );
+        }
+    }
 }

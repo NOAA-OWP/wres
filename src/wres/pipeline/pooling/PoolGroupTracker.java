@@ -75,7 +75,7 @@ public class PoolGroupTracker
 
     String getGroupId( PoolRequest poolRequest )
     {
-        String identity = groupIdentities.get( poolRequest );
+        String identity = this.groupIdentities.get( poolRequest );
 
         if ( Objects.isNull( identity ) )
         {
