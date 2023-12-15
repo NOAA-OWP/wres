@@ -199,16 +199,17 @@ definitions:
                 - "$ref": "#/definitions/TimeSeriesMetricWithParameters"
             minItems: 1
             uniqueItems: true
-      summary_statistics:
-        type: array
-        items:
-          anyOf:
-            - "$ref": "#/definitions/SummaryStatisticsEnum"
-            - "$ref": "#/definitions/SummaryStatisticsWithParametersEnum"
-            - "$ref": "#/definitions/Histogram"
-            - "$ref": "#/definitions/Quantiles"
-        minItems: 1
-        uniqueItems: true
+      # Toggle off summary statistics until ready for deployment: see #117578
+      # summary_statistics:
+      #   type: array
+      #   items:
+      #     anyOf:
+      #       - "$ref": "#/definitions/SummaryStatisticsEnum"
+      #       - "$ref": "#/definitions/SummaryStatisticsWithParametersEnum"
+      #       - "$ref": "#/definitions/Histogram"
+      #       - "$ref": "#/definitions/Quantiles"
+      #  minItems: 1
+      #  uniqueItems: true
       duration_format:
         "$ref": "#/definitions/DurationEnum"
       decimal_format:
