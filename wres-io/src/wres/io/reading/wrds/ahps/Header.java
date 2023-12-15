@@ -1,7 +1,7 @@
 package wres.io.reading.wrds.ahps;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonAlias;
 
 /**
  * A header.
@@ -10,7 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class Header
 {
     private ForecastRequest request;
-    @JsonProperty( "missing_values" )
+    @JsonAlias( { "missing_values", "missingValues" } ) 
     private double[] missingValues;
 
     /**

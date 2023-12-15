@@ -42,6 +42,7 @@ class WrdsAhpsJsonReaderTest
 {
     private DataSource fakeSource;
     private String jsonString;
+    private String observedJsonString;
 
     @BeforeEach
     void setup()
@@ -225,6 +226,155 @@ class WrdsAhpsJsonReaderTest
                             ]
                         }
                         """;
+
+        this.observedJsonString =
+                """
+                        {
+                            "_documentation": {
+                                "swaggerURL": "http://WRDS/docs/observed/v1.0/swagger/"
+                            },
+                            "_deployment": {
+                                "apiUrl": "https://WRDS/api/observed/v1.0/observed/streamflow/nws_lid/ERBA2/?proj=HANK",
+                                "stack": "prod",
+                                "version": "v1.1.1",
+                                "apiCaller": "HANK"
+                            },
+                            "_nonUrgentIssueReportingLink": "omitted",
+                            "_metrics": {
+                                "observedDataCount": 12,
+                                "locationCount": 1,
+                                "totalRequestTime": 0.7744016647338867
+                            },
+                            "header": {
+                                "request": {
+                                    "params": {
+                                        "asProvided": {},
+                                        "asUsed": {
+                                            "validTime": null,
+                                            "nonUSGSGages": false,
+                                            "issuer": null,
+                                            "pe": null,
+                                            "ts": null
+                                        }
+                                    }
+                                },
+                                "missingValues": [
+                                    -999,
+                                    -9999
+                                ]
+                            },
+                            "timeseriesDataset": [
+                                {
+                                    "location": {
+                                        "names": {
+                                            "nwsLid": "ERBA2",
+                                            "usgsSiteCode": "",
+                                            "nwmFeatureId": "",
+                                            "nwsName": "",
+                                            "usgsName": ""
+                                        },
+                                        "nwsCoordinates": {
+                                            "latitude": null,
+                                            "longitude": null,
+                                            "crs": null,
+                                            "link": null
+                                        },
+                                        "usgsCoordinates": {
+                                            "latitude": null,
+                                            "longitude": null,
+                                            "crs": null,
+                                            "link": null
+                                        }
+                                    },
+                                    "producer": "",
+                                    "issuer": "ACR",
+                                    "distributor": "SBN",
+                                    "generationTime": "2023-12-01T00:09:28Z",
+                                    "parameterCodes": {
+                                        "physicalElement": "QR",
+                                        "duration": "I",
+                                        "typeSource": "RZ"
+                                    },
+                                    "thresholds": {
+                                        "units": "CFS",
+                                        "action": null,
+                                        "minor": null,
+                                        "moderate": null,
+                                        "major": null,
+                                        "record": 10300.0
+                                    },
+                                    "timeseries": [
+                                        {
+                                            "identifier": "1",
+                                            "units": "KCFS",
+                                            "dataPoints": [
+                                                {
+                                                    "time": "2023-12-03T00:00:00Z",
+                                                    "value": -999.0,
+                                                    "status": "N/A"
+                                                },
+                                                {
+                                                    "time": "2023-12-03T06:00:00Z",
+                                                    "value": -999.0,
+                                                    "status": "N/A"
+                                                },
+                                                {
+                                                    "time": "2023-12-03T12:00:00Z",
+                                                    "value": -999.0,
+                                                    "status": "N/A"
+                                                },
+                                                {
+                                                    "time": "2023-12-03T18:00:00Z",
+                                                    "value": 0.0665,
+                                                    "status": "N/A"
+                                                },
+                                                {
+                                                    "time": "2023-12-04T00:00:00Z",
+                                                    "value": 0.185,
+                                                    "status": "N/A"
+                                                },
+                                                {
+                                                    "time": "2023-12-04T12:00:00Z",
+                                                    "value": 0.287,
+                                                    "status": "N/A"
+                                                },
+                                                {
+                                                    "time": "2023-12-04T18:00:00Z",
+                                                    "value": 0.319,
+                                                    "status": "N/A"
+                                                },
+                                                {
+                                                    "time": "2023-12-05T00:00:00Z",
+                                                    "value": 0.544,
+                                                    "status": "N/A"
+                                                },
+                                                {
+                                                    "time": "2023-12-05T06:00:00Z",
+                                                    "value": 0.462,
+                                                    "status": "N/A"
+                                                },
+                                                {
+                                                    "time": "2023-12-05T12:00:00Z",
+                                                    "value": 0.421,
+                                                    "status": "N/A"
+                                                },
+                                                {
+                                                    "time": "2023-12-05T18:00:00Z",
+                                                    "value": 0.36,
+                                                    "status": "N/A"
+                                                },
+                                                {
+                                                    "time": "2023-12-06T00:00:00Z",
+                                                    "value": 0.342,
+                                                    "status": "N/A"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                                        """;
     }
 
     @Test
@@ -282,4 +432,60 @@ class WrdsAhpsJsonReaderTest
             assertEquals( expected, actual );
         }
     }
+
+    @Test
+    void testReadObservationsFromStreamResultsInOneTimeSeries() throws IOException
+    {
+        WrdsAhpsJsonReader reader = WrdsAhpsJsonReader.of();
+
+        try ( InputStream inputStream = new ByteArrayInputStream( this.observedJsonString.getBytes() );
+              Stream<TimeSeriesTuple> tupleStream = reader.read( this.fakeSource, inputStream ) )
+        {
+            List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
+                                                         .collect( Collectors.toList() );
+
+            Geometry geometry = MessageFactory.getGeometry( "ERBA2",
+                                                            null,
+                                                            null,
+                                                            null );
+
+            TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of(),
+                                                                 TimeScaleOuter.of(),
+                                                                 "QR",
+                                                                 Feature.of( geometry ),
+                                                                 "KCFS" );
+            TimeSeries<Double> expectedSeries =
+                    new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "2023-12-03T00:00:00Z" ),
+                                                                         Double.NaN ) )
+                                                    .addEvent( Event.of( Instant.parse( "2023-12-03T06:00:00Z" ),
+                                                                         Double.NaN ) )
+                                                    .addEvent( Event.of( Instant.parse( "2023-12-03T12:00:00Z" ),
+                                                                         Double.NaN ) )
+                                                    .addEvent( Event.of( Instant.parse( "2023-12-03T18:00:00Z" ),
+                                                                         0.0665 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2023-12-04T00:00:00Z" ),
+                                                                         0.185 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2023-12-04T12:00:00Z" ),
+                                                                         0.287 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2023-12-04T18:00:00Z" ),
+                                                                         0.319 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2023-12-05T00:00:00Z" ),
+                                                                         0.544 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2023-12-05T06:00:00Z" ),
+                                                                         0.462 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2023-12-05T12:00:00Z" ),
+                                                                         0.421 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2023-12-05T18:00:00Z" ),
+                                                                         0.36 ) )
+                                                    .addEvent( Event.of( Instant.parse( "2023-12-06T00:00:00Z" ),
+                                                                         0.342 ) )
+                                                    .setMetadata( metadata )
+                                                    .build();
+
+            List<TimeSeries<Double>> expected = List.of( expectedSeries );
+
+            assertEquals( expected, actual );
+        }
+    }
 }
+
