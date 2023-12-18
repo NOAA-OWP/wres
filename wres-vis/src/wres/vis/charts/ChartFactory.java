@@ -49,7 +49,10 @@ import org.jfree.chart.plot.PlotOrientation;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.category.BarRenderer;
 import org.jfree.chart.renderer.category.StandardBarPainter;
+import org.jfree.chart.renderer.xy.StandardXYBarPainter;
+import org.jfree.chart.renderer.xy.XYBarRenderer;
 import org.jfree.chart.renderer.xy.XYErrorRenderer;
+import org.jfree.chart.renderer.xy.XYItemRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.title.LegendTitle;
 import org.jfree.chart.title.TextTitle;
@@ -349,25 +352,6 @@ public class ChartFactory
 
             String title = this.getChartTitle( parameters );
 
-            XYDataset dataset;
-
-            // One lead duration and up to many thresholds
-            if ( chartType == ChartType.LEAD_THRESHOLD || chartType == ChartType.POOLING_WINDOW )
-            {
-                dataset = ChartDataFactory.ofVerificationDiagramByLeadAndThreshold( slicedStatistics,
-                                                                                    domainDimension,
-                                                                                    rangeDimension,
-                                                                                    durationUnits );
-            }
-            // One threshold and up to many lead durations
-            else
-            {
-                dataset = ChartDataFactory.ofVerificationDiagramByThresholdAndLead( slicedStatistics,
-                                                                                    domainDimension,
-                                                                                    rangeDimension,
-                                                                                    durationUnits );
-            }
-
             JFreeChart chart;
 
             // The reliability diagram is a special case, combining two plots
@@ -384,6 +368,12 @@ public class ChartFactory
             }
             else
             {
+                XYDataset dataset = this.getDiagramDataset( chartType,
+                                                            slicedStatistics,
+                                                            domainDimension,
+                                                            rangeDimension,
+                                                            durationUnits );
+
                 chart = org.jfree.chart.ChartFactory.createXYLineChart( title,
                                                                         domainTitle,
                                                                         rangeTitle,
@@ -412,7 +402,7 @@ public class ChartFactory
 
                 // Set the renderer
                 this.setChartTheme( chart );
-                this.setSeriesColorAndShape( plot, !quantiles.isEmpty() );
+                this.setSeriesColorAndShape( plot, metricName, !quantiles.isEmpty() );
             }
 
             chart.setAntiAlias( true );
@@ -502,7 +492,7 @@ public class ChartFactory
         chart.setAntiAlias( true );
         this.setChartTheme( chart );
         this.setChartPadding( chart );
-        this.setSeriesColorAndShape( plot, !quantiles.isEmpty() );
+        this.setSeriesColorAndShape( plot, metricName, !quantiles.isEmpty() );
 
         // Set the legend on/off and the title
         if ( this.setLegendVisible( chart, false ) )
@@ -653,6 +643,52 @@ public class ChartFactory
                       results.keySet() );
 
         return Collections.unmodifiableMap( results );
+    }
+
+    /**
+     * Generate a diagram dataset.
+     * @param chartType the chart type
+     * @param slicedStatistics the sliced statistics
+     * @param domainDimension the domain axis dimension
+     * @param rangeDimension the range axis dimension
+     * @param durationUnits the duration units
+     * @return the diagram dataset
+     */
+    private XYDataset getDiagramDataset( ChartType chartType,
+                                         List<DiagramStatisticOuter> slicedStatistics,
+                                         MetricDimension domainDimension,
+                                         MetricDimension rangeDimension,
+                                         ChronoUnit durationUnits )
+    {
+        XYDataset dataset;
+
+        DiagramStatisticOuter first = slicedStatistics.get( 0 );
+
+        // One lead duration and up to many thresholds
+        if ( first.isSummaryStatistic()
+             && first.getSummaryStatistic()
+                     .getStatistic() == SummaryStatistic.StatisticName.HISTOGRAM )
+        {
+            dataset = ChartDataFactory.ofHistogram( slicedStatistics );
+        }
+        else if ( chartType == ChartType.LEAD_THRESHOLD
+                  || chartType == ChartType.POOLING_WINDOW )
+        {
+            dataset = ChartDataFactory.ofVerificationDiagramByLeadAndThreshold( slicedStatistics,
+                                                                                domainDimension,
+                                                                                rangeDimension,
+                                                                                durationUnits );
+        }
+        // One threshold and up to many lead durations
+        else
+        {
+            dataset = ChartDataFactory.ofVerificationDiagramByThresholdAndLead( slicedStatistics,
+                                                                                domainDimension,
+                                                                                rangeDimension,
+                                                                                durationUnits );
+        }
+
+        return dataset;
     }
 
     /**
@@ -890,7 +926,7 @@ public class ChartFactory
         this.setChartPadding( chart );
         this.setChartTheme( chart );
         XYPlot plot = chart.getXYPlot();
-        this.setSeriesColorAndShape( plot, !quantiles.isEmpty() );
+        this.setSeriesColorAndShape( plot, metricName, !quantiles.isEmpty() );
 
         // Set the legend on/off and the title
         if ( this.setLegendVisible( chart, false ) )
@@ -965,7 +1001,7 @@ public class ChartFactory
         XYPlot reliabilityPlot = new XYPlot( reliability, domainAxis, primaryRangeAxis, null );
         this.setXYPlotAxes( reliabilityPlot, 0, 1, 0, 1, true, false );
         this.addDiagonalLine( reliabilityPlot );
-        this.setSeriesColorAndShape( reliabilityPlot, !quantiles.isEmpty() );
+        this.setSeriesColorAndShape( reliabilityPlot, MetricConstants.RELIABILITY_DIAGRAM, !quantiles.isEmpty() );
 
         XYPlot sampleSizePlot = new XYPlot( sampleSize, domainAxis, secondaryRangeAxis, null );
         this.setXYPlotAxes( sampleSizePlot, 0, 1, 0, 0, false, false );
@@ -973,7 +1009,7 @@ public class ChartFactory
         // The reliability plot controls the legend, so remove legend items from the sample size plot
         LegendItemCollection noLegendItems = new LegendItemCollection();
         sampleSizePlot.setFixedLegendItems( noLegendItems );
-        this.setSeriesColorAndShape( sampleSizePlot, !quantiles.isEmpty() );
+        this.setSeriesColorAndShape( sampleSizePlot, MetricConstants.RELIABILITY_DIAGRAM, !quantiles.isEmpty() );
 
         CombinedDomainXYPlot combinedPlot = new CombinedDomainXYPlot( domainAxis );
         combinedPlot.setGap( 5.0 );
@@ -1216,11 +1252,36 @@ public class ChartFactory
      * Sets the color and shape for each series.
      *
      * @param plot the plot
+     * @param metric the metric name
      * @param errorBars is true to plot error bars, false otherwise
      * @throws NullPointerException if the plot is null
      */
 
-    private void setSeriesColorAndShape( XYPlot plot, boolean errorBars )
+    private void setSeriesColorAndShape( XYPlot plot, MetricConstants metric, boolean errorBars )
+    {
+        XYItemRenderer renderer;
+        if ( metric == MetricConstants.HISTOGRAM )
+        {
+            renderer = this.getBarRenderer( plot );
+        }
+        else
+        {
+            renderer = this.getLineAndShapeRenderer( plot, errorBars );
+        }
+
+        plot.setRenderer( renderer );
+    }
+
+    /**
+     * Gets a line and shape renderer.
+     *
+     * @param plot the plot
+     * @param errorBars is true to plot error bars, false otherwise
+     * @return the renderer
+     * @throws NullPointerException if the plot is null
+     */
+
+    private XYItemRenderer getLineAndShapeRenderer( XYPlot plot, boolean errorBars )
     {
         Objects.requireNonNull( plot );
 
@@ -1259,7 +1320,41 @@ public class ChartFactory
             renderer.setSeriesLinesVisible( i, true );
         }
 
-        plot.setRenderer( renderer );
+        return renderer;
+    }
+
+    /**
+     * Gets a bar renderer.
+     *
+     * @param plot the plot
+     * @return the renderer
+     * @throws NullPointerException if the plot is null
+     */
+
+    private XYItemRenderer getBarRenderer( XYPlot plot )
+    {
+        Objects.requireNonNull( plot );
+
+        Color[] colors = this.getSeriesColors();
+
+        // Too many series for the default color sequence? Generate a sequence instead
+        int seriesCount = plot.getSeriesCount();
+        if ( colors.length < seriesCount )
+        {
+            colors = GraphicsUtils.getColorPalette( seriesCount, Color.BLUE, Color.GREEN, Color.RED );
+        }
+
+        // Set flat/default renderer
+        XYBarRenderer.setDefaultBarPainter( new StandardXYBarPainter() );
+        XYBarRenderer renderer = new XYBarRenderer( 0.2 );
+        renderer.setShadowVisible( false );
+
+        for ( int i = 0; i < seriesCount; i++ )
+        {
+            renderer.setSeriesPaint( i, colors[i] );
+        }
+
+        return renderer;
     }
 
     /**
@@ -1406,7 +1501,10 @@ public class ChartFactory
 
         String metric = metricName.toString();
 
-        if ( isSummaryStatistic && Objects.nonNull( parameters.diagramSummaryStatisticNameQualifier() ) )
+        if ( isSummaryStatistic
+             && Objects.nonNull( parameters.diagramSummaryStatisticNameQualifier() )
+             && ! parameters.diagramSummaryStatisticNameQualifier()
+                            .isBlank() )
         {
             metric = parameters.diagramSummaryStatisticNameQualifier();
         }

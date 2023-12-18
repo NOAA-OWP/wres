@@ -1806,6 +1806,40 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testSummaryStatisticsQuantilesWithoutMedianAndWithDiagramMetricAndGraphicsProducesWarning()
+    {
+        SummaryStatistic summaryStatistic = SummaryStatistic.newBuilder()
+                                                            .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                            .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
+                                                            .setProbability( 0.4 )
+                                                            .build();
+
+        Set<SummaryStatistic> summaryStatistics = Set.of( summaryStatistic );
+
+        Metric metric = new Metric( MetricConstants.QUANTILE_QUANTILE_DIAGRAM, null );
+        Set<Metric> metrics = Set.of( metric );
+        Formats formats = new Formats( Outputs.newBuilder()
+                                              .setPng( Outputs.PngFormat.newBuilder()
+                                                                        .build() )
+                                              .build() );
+
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .metrics( metrics )
+                                            .summaryStatistics( summaryStatistics )
+                                            .formats( formats )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "alongside diagram metrics and graphics formats",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
     void testInvalidDeclarationStringProducesSchemaValidationError() throws IOException  // NOSONAR
     {
         // #57969-86

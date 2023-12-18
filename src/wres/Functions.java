@@ -247,7 +247,7 @@ final class Functions
                        Functions::migrateInline );
         functions.put( new WresFunction( "-r", "refreshdatabase", "Refreshes the database.", false ),
                        Functions::refreshDatabase );
-        functions.put( new WresFunction( "-s", "server", "Spins up a long running worker server. Visit localhost/evaluation for use instructions", true ),
+        functions.put( new WresFunction( "-s", "server", "Starts a long-running worker server. Visit localhost/evaluation for further help.", true ),
                        Functions::startServer );
         functions.put( new WresFunction( "-v",
                                          "validate",

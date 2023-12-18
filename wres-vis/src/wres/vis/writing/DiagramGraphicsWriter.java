@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.jfree.chart.JFreeChart;
 
@@ -28,12 +29,13 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 import wres.statistics.generated.Pool.EnsembleAverageType;
+import wres.statistics.generated.SummaryStatistic;
 import wres.vis.charts.ChartBuildingException;
 import wres.vis.charts.ChartFactory;
 
 /**
  * Helps write charts comprising {@link DiagramStatisticOuter} to graphics formats.
- * 
+ *
  * @author James Brown
  */
 
@@ -86,7 +88,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
 
             for ( List<DiagramStatisticOuter> nextGroup : groups.values() )
             {
-                // Slice by ensemble averaging type
+                // Slice the statistics
                 List<List<DiagramStatisticOuter>> sliced =
                         DiagramGraphicsWriter.getSlicedStatistics( nextGroup );
 
@@ -126,8 +128,10 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         // Build charts
         try
         {
-            MetricConstants metricName = statistics.get( 0 ).getMetricName();
-            PoolMetadata metadata = statistics.get( 0 ).getPoolMetadata();
+            MetricConstants metricName = statistics.get( 0 )
+                                                   .getMetricName();
+            PoolMetadata metadata = statistics.get( 0 )
+                                              .getPoolMetadata();
 
             // Collection of graphics parameters, one for each set of charts to write across N formats.
             Collection<Outputs> outputsMap =
@@ -176,7 +180,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
 
     /**
      * Slices the statistics for individual graphics. Returns as many sliced lists of statistics as graphics to create.
-     * 
+     *
      * @param statistics the statistics to slice
      * @return the sliced statistics to write
      */
@@ -194,11 +198,51 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                                                                                           .getEnsembleAverageType() );
             if ( !innerSlice.isEmpty() )
             {
-                sliced.add( innerSlice );
+                // Group by summary statistic presence/absence, only allowing mean, median and quantile statistics when
+                // a median is present
+                innerSlice = DiagramGraphicsWriter.removeSummaryStatisticQuantilesWithoutMedian( innerSlice );
+
+                List<List<DiagramStatisticOuter>> grouped =
+                        GraphicsWriter.groupBySummaryStatistics( innerSlice,
+                                                                 Set.of( SummaryStatistic.StatisticName.MEAN,
+                                                                         SummaryStatistic.StatisticName.MEDIAN,
+                                                                         SummaryStatistic.StatisticName.QUANTILE ) );
+                sliced.addAll( grouped );
             }
         }
 
         return Collections.unmodifiableList( sliced );
+    }
+
+    /**
+     * Filters the supplied statistics, removing any summary statistic quantiles that do not have a median present.
+     *
+     * @param diagrams the statistics to filter
+     * @return the filtered statistics
+     */
+
+    private static List<DiagramStatisticOuter> removeSummaryStatisticQuantilesWithoutMedian( List<DiagramStatisticOuter> diagrams )
+    {
+        List<DiagramStatisticOuter> filtered = diagrams;
+        Predicate<DiagramStatisticOuter> filter = s -> s.isSummaryStatistic()
+                                                       && s.getSummaryStatistic()
+                                                           .getStatistic() == SummaryStatistic.StatisticName.QUANTILE
+                                                       && s.getSummaryStatistic()
+                                                           .getDimension()
+                                                          != SummaryStatistic.StatisticDimension.RESAMPLED;
+        if ( diagrams.stream()
+                     .anyMatch( filter )
+             && diagrams.stream()
+                        .noneMatch( s -> s.isSummaryStatistic()
+                                         && s.getSummaryStatistic()
+                                             .getProbability() == 0.5 ) )
+        {
+            filtered = diagrams.stream()
+                               .filter( filter.negate() )
+                               .toList();
+        }
+
+        return filtered;
     }
 
     /**
@@ -240,7 +284,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                 }
             }
         }
-        else if ( appendObject instanceof OneOrTwoThresholds threshold)
+        else if ( appendObject instanceof OneOrTwoThresholds threshold )
         {
             append = DataUtilities.toStringSafe( threshold );
         }
@@ -258,7 +302,8 @@ public class DiagramGraphicsWriter extends GraphicsWriter
 
         Optional<EnsembleAverageType> type =
                 types.stream()
-                     .filter( next -> next != EnsembleAverageType.MEAN && next != EnsembleAverageType.NONE
+                     .filter( next -> next != EnsembleAverageType.MEAN
+                                      && next != EnsembleAverageType.NONE
                                       && next != EnsembleAverageType.UNRECOGNIZED )
                      .findFirst();
 
@@ -266,6 +311,22 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         {
             append += "_ENSEMBLE_" + type.get()
                                          .name();
+        }
+
+        // Qualify by summary statistic name
+        Optional<SummaryStatistic.StatisticName> name =
+                statistics.stream()
+                          .filter( n -> n.isSummaryStatistic()
+                                        && n.getSummaryStatistic()
+                                            .getDimension()
+                                           != SummaryStatistic.StatisticDimension.RESAMPLED )
+                          .map( d -> d.getSummaryStatistic()
+                                      .getStatistic() )
+                          .findFirst();
+
+        if ( name.isPresent() )
+        {
+            append += "_" + name.get();
         }
 
         return append;

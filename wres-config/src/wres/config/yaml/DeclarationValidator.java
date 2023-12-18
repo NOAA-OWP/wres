@@ -1603,6 +1603,38 @@ public class DeclarationValidator
             events.add( error );
         }
 
+        // Warn if the declaration contains diagrams and there are quantile statistics without a median
+        Predicate<SummaryStatistic> filter = s -> s.getStatistic() == SummaryStatistic.StatisticName.QUANTILE
+                                                  && s.getDimension()
+                                                     != SummaryStatistic.StatisticDimension.RESAMPLED;
+
+        Set<MetricConstants> diagrams = declaration.metrics()
+                                                   .stream()
+                                                   .map( Metric::name )
+                                                   .filter( m -> m.isInGroup( MetricConstants.StatisticType.DIAGRAM ) )
+                                                   .collect( Collectors.toSet() );
+
+        if ( !diagrams.isEmpty()
+             && summaryStatistics.stream()
+                                 .anyMatch( filter )
+             && summaryStatistics.stream()
+                                 .noneMatch( s -> s.getProbability() == 0.5 ) )
+        {
+            EvaluationStatusEvent warn
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( "Summary statistics with quantiles were declared "
+                                                             + "alongside diagram metrics and graphics formats. "
+                                                             + "However, quantile statistics cannot be plotted "
+                                                             + "for diagram metrics unless the quantiles include a "
+                                                             + "median value. Since no median was declared, graphics "
+                                                             + "will not be generated for the quantile summary "
+                                                             + "statistics of the following metrics: "
+                                                             + diagrams )
+                                           .build();
+            events.add( warn );
+        }
+
         return Collections.unmodifiableList( events );
     }
 
@@ -1686,7 +1718,7 @@ public class DeclarationValidator
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.WARN )
                                            .setEventMessage( "The evaluation requested the 'sampling_uncertainty' "
-                                                             + "option which will be delivered using a resampling "
+                                                             + "option, which will be delivered using a resampling "
                                                              + "scheme that is computationally expensive. This option "
                                                              + "should be used with care and the evaluation may take "
                                                              + "significantly longer to complete than an equivalent "
