@@ -662,17 +662,9 @@ public class ChartFactory
     {
         XYDataset dataset;
 
-        DiagramStatisticOuter first = slicedStatistics.get( 0 );
-
         // One lead duration and up to many thresholds
-        if ( first.isSummaryStatistic()
-             && first.getSummaryStatistic()
-                     .getStatistic() == SummaryStatistic.StatisticName.HISTOGRAM )
-        {
-            dataset = ChartDataFactory.ofHistogram( slicedStatistics );
-        }
-        else if ( chartType == ChartType.LEAD_THRESHOLD
-                  || chartType == ChartType.POOLING_WINDOW )
+        if ( chartType == ChartType.LEAD_THRESHOLD
+             || chartType == ChartType.POOLING_WINDOW )
         {
             dataset = ChartDataFactory.ofVerificationDiagramByLeadAndThreshold( slicedStatistics,
                                                                                 domainDimension,
@@ -1503,8 +1495,8 @@ public class ChartFactory
 
         if ( isSummaryStatistic
              && Objects.nonNull( parameters.diagramSummaryStatisticNameQualifier() )
-             && ! parameters.diagramSummaryStatisticNameQualifier()
-                            .isBlank() )
+             && !parameters.diagramSummaryStatisticNameQualifier()
+                           .isBlank() )
         {
             metric = parameters.diagramSummaryStatisticNameQualifier();
         }

@@ -11,7 +11,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -24,7 +23,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
-import org.jfree.data.statistics.HistogramDataset;
 import org.jfree.data.time.FixedMillisecond;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
@@ -52,7 +50,6 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.MessageFactory;
-import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
@@ -582,90 +579,6 @@ public class ChartDataFactory
         }
 
         return dataset;
-    }
-
-    /**
-     * Generates a histogram dataset.
-     * @param statistics the statistics
-     * @return the histogram dataset
-     */
-    public static XYDataset ofHistogram( List<DiagramStatisticOuter> statistics )
-    {
-        Objects.requireNonNull( statistics );
-
-        DiagramStatisticOuter first = statistics.get( 0 );
-        MetricConstants metricName = first.getMetricName();
-
-        if ( !first.isSummaryStatistic()
-             || first.getSummaryStatistic()
-                     .getStatistic() != SummaryStatistic.StatisticName.HISTOGRAM )
-        {
-            throw new IllegalArgumentException( "Expected a dataset for a histogram statistic, but received a dataset "
-                                                + "for a: " + metricName );
-        }
-
-        int timeWindowCount = Slicer.discover( statistics, meta -> meta.getPoolMetadata()
-                                                                       .getTimeWindow() )
-                                    .size();
-
-        int thresholdCount = Slicer.discover( statistics, meta -> meta.getPoolMetadata()
-                                                                      .getThresholds() )
-                                   .size();
-
-        if ( statistics.isEmpty() )
-        {
-            throw new IllegalArgumentException( "Cannot create a histogram without statistics." );
-        }
-
-        if ( timeWindowCount > 1 )
-        {
-            throw new IllegalArgumentException( "Received an unexpected collection of statistics for the histogram. "
-                                                + "Expected a single time window and one or more thresholds, but found "
-                                                + timeWindowCount
-                                                + TIME_WINDOWS_AND
-                                                + thresholdCount
-                                                + THRESHOLDS );
-        }
-
-        SummaryStatistic histogramStatistic = first.getSummaryStatistic();
-
-        HistogramDataset histogram = new HistogramDataset();
-
-        // Arrange the series by threshold
-        SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( statistics, next -> next.getPoolMetadata()
-                                                         .getThresholds() );
-
-        for ( OneOrTwoThresholds key : thresholds )
-        {
-            List<DiagramStatisticOuter> sliced = Slicer.filter( statistics,
-                                                                next -> next.getPoolMetadata()
-                                                                            .getThresholds()
-                                                                            .equals( key ) );
-
-            String name = DataUtilities.toStringWithoutUnits( key );
-
-            DiagramStatisticOuter nextHistogram = sliced.get( 0 );
-            Optional<DiagramStatisticComponent> countData
-                    = nextHistogram.getStatistic()
-                                   .getStatisticsList()
-                                   .stream().filter( n -> n.getMetric()
-                                                           .getName()
-                                                          == DiagramMetric.DiagramMetricComponent.DiagramComponentName.COUNT )
-                                   .findFirst();
-
-            if ( countData.isPresent() )
-            {
-                DiagramStatisticComponent counts = countData.get();
-                double[] rawCounts = counts.getValuesList()
-                                           .stream()
-                                           .mapToDouble( Double::doubleValue )
-                                           .toArray();
-                histogram.addSeries( name, rawCounts, histogramStatistic.getHistogramBins() );
-            }
-        }
-
-        return histogram;
     }
 
     /**
@@ -1381,6 +1294,15 @@ public class ChartDataFactory
             {
                 xU = xUpper.getValues( j );
                 yU = yUpper.getValues( j );
+            }
+
+            // Histogram
+            if ( xDimension == MetricDimension.BIN_UPPER_BOUND
+                 && valueCount > 1 )
+            {
+                double gap = ( xCentral.getValues( 1 ) - xCentral.getValues( 0 ) );
+                xL = xC - ( 0.5 * gap );
+                xU = xC + ( 0.5 * gap );
             }
 
             series.add( xC, xL, xU, yC, yL, yU );

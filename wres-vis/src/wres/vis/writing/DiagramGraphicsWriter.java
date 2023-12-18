@@ -198,14 +198,17 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                                                                                           .getEnsembleAverageType() );
             if ( !innerSlice.isEmpty() )
             {
-                // Group by summary statistic presence/absence, only allowing mean, median and quantile statistics when
-                // a median is present
+                // Group by summary statistic presence/absence, only allowing non-summary statistic diagrams when a
+                // median is present
+
+                // Remove quantile statistics when no median is present
                 innerSlice = DiagramGraphicsWriter.removeSummaryStatisticQuantilesWithoutMedian( innerSlice );
 
                 List<List<DiagramStatisticOuter>> grouped =
                         GraphicsWriter.groupBySummaryStatistics( innerSlice,
                                                                  Set.of( SummaryStatistic.StatisticName.MEAN,
                                                                          SummaryStatistic.StatisticName.MEDIAN,
+                                                                         SummaryStatistic.StatisticName.HISTOGRAM,
                                                                          SummaryStatistic.StatisticName.QUANTILE ) );
                 sliced.addAll( grouped );
             }
