@@ -1,5 +1,5 @@
 # From a base image, make updates
-FROM registry.access.redhat.com/ubi8/ubi:8.8-1067.1698056881
+FROM registry.access.redhat.com/ubi8/ubi:8.9-1028
 
 RUN dnf install -y \
     java-17-openjdk-headless-1:17.0.9.0.9-2.el8 \
@@ -7,8 +7,8 @@ RUN dnf install -y \
     fontconfig-2.13.1-4.el8 \
     dejavu-fonts-common-2.35-7.el8 \
     dejavu-sans-fonts-2.35-7.el8 \
-    procps-ng-3.3.15-13.el8 \
-    iproute-5.18.0-1.1.el8_8 \
+    procps-ng-3.3.15-14.el8 \
+    iproute-6.2.0-5.el8_9 \
     hostname-3.20-6.el8 \
     && dnf clean all
 
