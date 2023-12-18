@@ -2,6 +2,7 @@ package wres.vis.writing;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -13,7 +14,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.jfree.chart.JFreeChart;
@@ -216,28 +216,12 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                                                 .toList();
                 }
 
-                // Slice by summary statistic presence/absence, ignoring resampled quantiles
-                Predicate<DoubleScoreStatisticOuter> summaryStat
-                        = s -> s.isSummaryStatistic()
-                               && s.getSummaryStatistic()
-                                   .getDimension() != SummaryStatistic.StatisticDimension.RESAMPLED;
-
-                List<DoubleScoreStatisticOuter> summaryStats =
-                        Slicer.filter( innerSlice,
-                                       summaryStat );
-
-                // Partition the summary statistics by statistic name
-                Map<SummaryStatistic.StatisticName, List<DoubleScoreStatisticOuter>> grouped =
-                        summaryStats.stream()
-                                    .collect( Collectors.groupingBy( s -> s.getSummaryStatistic()
-                                                                           .getStatistic() ) );
-
-                List<DoubleScoreStatisticOuter> noSummaryStats =
-                        Slicer.filter( innerSlice,
-                                       summaryStat.negate() );
-
-                sliced.add( noSummaryStats );
-                sliced.addAll( grouped.values() );
+                // Group by summary statistic presence/absence
+                List<List<DoubleScoreStatisticOuter>> grouped
+                        = GraphicsWriter.groupBySummaryStatistics( innerSlice,
+                                                                   Arrays.stream( SummaryStatistic.StatisticName.values() )
+                                                                         .collect( Collectors.toUnmodifiableSet() ) );
+                sliced.addAll( grouped );
             }
         }
 
@@ -307,9 +291,9 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                                       .getStatistic() )
                           .findFirst();
 
-        if( name.isPresent() )
+        if ( name.isPresent() )
         {
-            if( Objects.nonNull( append ) )
+            if ( Objects.nonNull( append ) )
             {
                 append += "_" + name.get();
             }

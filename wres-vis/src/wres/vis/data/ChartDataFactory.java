@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jfree.data.category.CategoryDataset;
 import org.jfree.data.category.DefaultCategoryDataset;
+import org.jfree.data.statistics.HistogramDataset;
 import org.jfree.data.time.FixedMillisecond;
 import org.jfree.data.time.TimeSeries;
 import org.jfree.data.time.TimeSeriesCollection;
@@ -50,6 +52,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.MessageFactory;
+import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
@@ -69,6 +72,12 @@ public class ChartDataFactory
 
     /** Number of milliseconds in an hour for conversion of {@link Duration} to decimal hours for plotting. */
     private static final BigDecimal MILLIS_PER_HOUR = BigDecimal.valueOf( TimeUnit.HOURS.toMillis( 1 ) );
+
+    /** Re-used string. */
+    private static final String TIME_WINDOWS_AND = " time windows and ";
+
+    /** Re-used string. */
+    private static final String THRESHOLDS = " thresholds.";
 
     /**
      * Returns a dataset for one verification score organized by lead duration and threshold.
@@ -393,15 +402,17 @@ public class ChartDataFactory
         DiagramStatisticOuter first = statistics.get( 0 );
         MetricConstants metricName = first.getMetricName();
 
-        int timeWindowCount = Slicer.discover( statistics, meta -> meta.getPoolMetadata().getTimeWindow() )
+        int timeWindowCount = Slicer.discover( statistics, meta -> meta.getPoolMetadata()
+                                                                       .getTimeWindow() )
                                     .size();
 
-        int thresholdCount = Slicer.discover( statistics, meta -> meta.getPoolMetadata().getThresholds() )
+        int thresholdCount = Slicer.discover( statistics, meta -> meta.getPoolMetadata()
+                                                                      .getThresholds() )
                                    .size();
 
         if ( statistics.isEmpty() )
         {
-            throw new IllegalArgumentException( "Cannot create a diagram chart with no statistics." );
+            throw new IllegalArgumentException( "Cannot create a diagram chart without statistics." );
         }
 
         if ( timeWindowCount > 1 )
@@ -410,9 +421,9 @@ public class ChartDataFactory
                                                 + ". Expected a single time window and one or more thresholds, but "
                                                 + "found "
                                                 + timeWindowCount
-                                                + " time windows and "
+                                                + TIME_WINDOWS_AND
                                                 + thresholdCount
-                                                + " thresholds." );
+                                                + THRESHOLDS );
         }
 
         // Arrange the series by threshold
@@ -493,15 +504,17 @@ public class ChartDataFactory
         DiagramStatisticOuter first = statistics.get( 0 );
         MetricConstants metricName = first.getMetricName();
 
-        int timeWindowCount = Slicer.discover( statistics, meta -> meta.getPoolMetadata().getTimeWindow() )
+        int timeWindowCount = Slicer.discover( statistics, meta -> meta.getPoolMetadata()
+                                                                       .getTimeWindow() )
                                     .size();
 
-        int thresholdCount = Slicer.discover( statistics, meta -> meta.getPoolMetadata().getThresholds() )
+        int thresholdCount = Slicer.discover( statistics, meta -> meta.getPoolMetadata()
+                                                                      .getThresholds() )
                                    .size();
 
         if ( statistics.isEmpty() )
         {
-            throw new IllegalArgumentException( "Cannot create a diagram chart with no statistics." );
+            throw new IllegalArgumentException( "Cannot create a diagram chart without statistics." );
         }
 
         if ( thresholdCount > 1 )
@@ -510,9 +523,9 @@ public class ChartDataFactory
                                                 + ". Expected a single threshold and one or more time windows, but "
                                                 + "found "
                                                 + timeWindowCount
-                                                + " time windows and "
+                                                + TIME_WINDOWS_AND
                                                 + thresholdCount
-                                                + " thresholds." );
+                                                + THRESHOLDS );
         }
 
         // Arrange by time window
@@ -536,8 +549,9 @@ public class ChartDataFactory
                                                 .filter( n -> !n.isBlank() )
                                                 .collect( Collectors.toCollection( TreeSet::new ) );
 
-            // No qualifiers
-            if ( qualified.isEmpty() )
+            // No qualifiers or a summary statistic that does not need to be sliced by qualifier
+            if ( qualified.isEmpty()
+                 || first.isSummaryStatistic() )
             {
                 Number leadDuration = DataUtilities.durationToNumericUnits( key.getLatestLeadDuration(),
                                                                             durationUnits );
@@ -568,6 +582,90 @@ public class ChartDataFactory
         }
 
         return dataset;
+    }
+
+    /**
+     * Generates a histogram dataset.
+     * @param statistics the statistics
+     * @return the histogram dataset
+     */
+    public static XYDataset ofHistogram( List<DiagramStatisticOuter> statistics )
+    {
+        Objects.requireNonNull( statistics );
+
+        DiagramStatisticOuter first = statistics.get( 0 );
+        MetricConstants metricName = first.getMetricName();
+
+        if ( !first.isSummaryStatistic()
+             || first.getSummaryStatistic()
+                     .getStatistic() != SummaryStatistic.StatisticName.HISTOGRAM )
+        {
+            throw new IllegalArgumentException( "Expected a dataset for a histogram statistic, but received a dataset "
+                                                + "for a: " + metricName );
+        }
+
+        int timeWindowCount = Slicer.discover( statistics, meta -> meta.getPoolMetadata()
+                                                                       .getTimeWindow() )
+                                    .size();
+
+        int thresholdCount = Slicer.discover( statistics, meta -> meta.getPoolMetadata()
+                                                                      .getThresholds() )
+                                   .size();
+
+        if ( statistics.isEmpty() )
+        {
+            throw new IllegalArgumentException( "Cannot create a histogram without statistics." );
+        }
+
+        if ( timeWindowCount > 1 )
+        {
+            throw new IllegalArgumentException( "Received an unexpected collection of statistics for the histogram. "
+                                                + "Expected a single time window and one or more thresholds, but found "
+                                                + timeWindowCount
+                                                + TIME_WINDOWS_AND
+                                                + thresholdCount
+                                                + THRESHOLDS );
+        }
+
+        SummaryStatistic histogramStatistic = first.getSummaryStatistic();
+
+        HistogramDataset histogram = new HistogramDataset();
+
+        // Arrange the series by threshold
+        SortedSet<OneOrTwoThresholds> thresholds =
+                Slicer.discover( statistics, next -> next.getPoolMetadata()
+                                                         .getThresholds() );
+
+        for ( OneOrTwoThresholds key : thresholds )
+        {
+            List<DiagramStatisticOuter> sliced = Slicer.filter( statistics,
+                                                                next -> next.getPoolMetadata()
+                                                                            .getThresholds()
+                                                                            .equals( key ) );
+
+            String name = DataUtilities.toStringWithoutUnits( key );
+
+            DiagramStatisticOuter nextHistogram = sliced.get( 0 );
+            Optional<DiagramStatisticComponent> countData
+                    = nextHistogram.getStatistic()
+                                   .getStatisticsList()
+                                   .stream().filter( n -> n.getMetric()
+                                                           .getName()
+                                                          == DiagramMetric.DiagramMetricComponent.DiagramComponentName.COUNT )
+                                   .findFirst();
+
+            if ( countData.isPresent() )
+            {
+                DiagramStatisticComponent counts = countData.get();
+                double[] rawCounts = counts.getValuesList()
+                                           .stream()
+                                           .mapToDouble( Double::doubleValue )
+                                           .toArray();
+                histogram.addSeries( name, rawCounts, histogramStatistic.getHistogramBins() );
+            }
+        }
+
+        return histogram;
     }
 
     /**
@@ -923,7 +1021,7 @@ public class ChartDataFactory
         if ( Objects.nonNull( nominal ) )
         {
             centralMapped = nominal.stream()
-                                   .collect( Collectors.toMap( s -> s.getPoolMetadata(),
+                                   .collect( Collectors.toMap( DoubleScoreComponentOuter::getPoolMetadata,
                                                                Function.identity(),
                                                                aggregator ) );
         }
@@ -932,7 +1030,7 @@ public class ChartDataFactory
         {
             centralMapped = mappedByQuantile.get( 0.5 )
                                             .stream()
-                                            .collect( Collectors.toMap( s -> s.getPoolMetadata(),
+                                            .collect( Collectors.toMap( DoubleScoreComponentOuter::getPoolMetadata,
                                                                         Function.identity(),
                                                                         aggregator ) );
         }
@@ -940,7 +1038,7 @@ public class ChartDataFactory
         if ( Objects.nonNull( lower ) )
         {
             lowerMapped = lower.stream()
-                               .collect( Collectors.toMap( s -> s.getPoolMetadata(),
+                               .collect( Collectors.toMap( DoubleScoreComponentOuter::getPoolMetadata,
                                                            Function.identity(),
                                                            aggregator ) );
         }
@@ -948,7 +1046,7 @@ public class ChartDataFactory
         if ( Objects.nonNull( upper ) )
         {
             upperMapped = upper.stream()
-                               .collect( Collectors.toMap( s -> s.getPoolMetadata(),
+                               .collect( Collectors.toMap( DoubleScoreComponentOuter::getPoolMetadata,
                                                            Function.identity(),
                                                            aggregator ) );
         }
@@ -1079,8 +1177,6 @@ public class ChartDataFactory
 
         List<DiagramStatisticOuter> nominal = mappedByQuantile.remove( Double.NaN );
 
-        XYIntervalSeries series = new XYIntervalSeries( name );
-
         double min = mappedByQuantile.keySet()
                                      .stream()
                                      .mapToDouble( Double::doubleValue )
@@ -1102,37 +1198,193 @@ public class ChartDataFactory
             upper = mappedByQuantile.get( max );
         }
 
-        // Iterate the series
-        for ( int i = 0; i < nominal.size(); i++ )
+        // In some cases, duplicates may be present. For example, when including two instances of the same metric with
+        // different threshold parameters for each metric, the "all data" statistic may be present for each instance
+        BinaryOperator<DiagramStatisticOuter> aggregator = ( a, b ) ->
         {
-            DiagramStatisticOuter nextNominal = nominal.get( i );
-            DiagramStatisticOuter nextLower = lower.get( i );
-            DiagramStatisticOuter nextUpper = upper.get( i );
+            LOGGER.debug( "Encountered duplicate scores to filter with the following metadata: {}.", a );
+            return a;
+        };
 
-            String nameQualifier = nextNominal.getComponentNameQualifiers()
-                                              .first();
+        // Map the results by time window and threshold to correlate nominal/central and quantile values
+        Map<PoolMetadata, DiagramStatisticOuter> centralMapped = Map.of();
+        Map<PoolMetadata, DiagramStatisticOuter> lowerMapped = Map.of();
+        Map<PoolMetadata, DiagramStatisticOuter> upperMapped = Map.of();
 
-            DiagramStatisticComponent xNominal = nextNominal.getComponent( xDimension, nameQualifier );
-            DiagramStatisticComponent xLower = nextLower.getComponent( xDimension, nameQualifier );
-            DiagramStatisticComponent xUpper = nextUpper.getComponent( xDimension, nameQualifier );
-            DiagramStatisticComponent yNominal = nextNominal.getComponent( yDimension, nameQualifier );
-            DiagramStatisticComponent yLower = nextLower.getComponent( yDimension, nameQualifier );
-            DiagramStatisticComponent yUpper = nextUpper.getComponent( yDimension, nameQualifier );
+        // Get a central value, if available. Use the nominal value first, else the median
+        if ( Objects.nonNull( nominal ) )
+        {
+            centralMapped = nominal.stream()
+                                   .collect( Collectors.toMap( DiagramStatisticOuter::getPoolMetadata,
+                                                               Function.identity(),
+                                                               aggregator ) );
+        }
+        // Median
+        else if ( mappedByQuantile.containsKey( 0.5 ) )
+        {
+            centralMapped = mappedByQuantile.get( 0.5 )
+                                            .stream()
+                                            .collect( Collectors.toMap( DiagramStatisticOuter::getPoolMetadata,
+                                                                        Function.identity(),
+                                                                        aggregator ) );
+        }
 
-            // Add the series data
-            int valueCount = xNominal.getValuesCount();
-            for ( int j = 0; j < valueCount; j++ )
-            {
-                series.add( xNominal.getValues( j ),
-                            xLower.getValues( j ),
-                            xUpper.getValues( j ),
-                            yNominal.getValues( j ),
-                            yLower.getValues( j ),
-                            yUpper.getValues( j ) );
-            }
+        if ( Objects.nonNull( lower ) )
+        {
+            lowerMapped = lower.stream()
+                               .collect( Collectors.toMap( DiagramStatisticOuter::getPoolMetadata,
+                                                           Function.identity(),
+                                                           aggregator ) );
+        }
+
+        if ( Objects.nonNull( upper ) )
+        {
+            upperMapped = upper.stream()
+                               .collect( Collectors.toMap( DiagramStatisticOuter::getPoolMetadata,
+                                                           Function.identity(),
+                                                           aggregator ) );
+        }
+
+        return ChartDataFactory.getIntervalSeries( centralMapped,
+                                                   lowerMapped,
+                                                   upperMapped,
+                                                   name,
+                                                   xDimension,
+                                                   yDimension );
+    }
+
+    /**
+     * Creates an {@link XYIntervalSeries} from the inputs.
+     * @param centralMapped the map of central values
+     * @param lowerMapped the map of lower interval values
+     * @param upperMapped the map of upper interval values
+     * @param name the series name
+     * @param xDimension the domain axis dimension
+     * @param yDimension the range axis dimension
+     * @return the series
+     * @throws NullPointerException if ay input is null
+     */
+
+    private static XYIntervalSeries getIntervalSeries( Map<PoolMetadata, DiagramStatisticOuter> centralMapped,
+                                                       Map<PoolMetadata, DiagramStatisticOuter> lowerMapped,
+                                                       Map<PoolMetadata, DiagramStatisticOuter> upperMapped,
+                                                       String name,
+                                                       MetricDimension xDimension,
+                                                       MetricDimension yDimension )
+    {
+        Objects.requireNonNull( centralMapped );
+        Objects.requireNonNull( lowerMapped );
+        Objects.requireNonNull( upperMapped );
+        Objects.requireNonNull( name );
+        Objects.requireNonNull( xDimension );
+        Objects.requireNonNull( yDimension );
+
+        XYIntervalSeries series = new XYIntervalSeries( name );
+
+        Set<PoolMetadata> metadatas = centralMapped.keySet();
+
+        if ( metadatas.isEmpty() )
+        {
+            metadatas = lowerMapped.keySet();
+        }
+
+        if ( metadatas.isEmpty() )
+        {
+            metadatas = upperMapped.keySet();
+        }
+
+        // Iterate the series
+        for ( PoolMetadata metadata : metadatas )
+        {
+            DiagramStatisticOuter nextCentral = centralMapped.get( metadata );
+            DiagramStatisticOuter nextLower = lowerMapped.get( metadata );
+            DiagramStatisticOuter nextUpper = upperMapped.get( metadata );
+
+            ChartDataFactory.addDiagramDatasetToSeries( nextCentral,
+                                                        nextLower,
+                                                        nextUpper,
+                                                        xDimension,
+                                                        yDimension,
+                                                        series );
         }
 
         return series;
+    }
+
+    /**
+     * Adds a new diagram dataset to the supplied series.
+     * @param central the central dataset
+     * @param lower the lower bound dataset
+     * @param upper the upper bound dataset
+     * @param xDimension the domain axis dimension
+     * @param yDimension the range axis dimension
+     * @param series the series to adjust
+     */
+    private static void addDiagramDatasetToSeries( DiagramStatisticOuter central,
+                                                   DiagramStatisticOuter lower,
+                                                   DiagramStatisticOuter upper,
+                                                   MetricDimension xDimension,
+                                                   MetricDimension yDimension,
+                                                   XYIntervalSeries series )
+    {
+        if ( Objects.isNull( central ) )
+        {
+            LOGGER.debug( "Skipping a diagram because it does not have a central dataset." );
+            return;
+        }
+
+        String nameQualifier = central.getComponentNameQualifiers()
+                                      .first();
+        DiagramStatisticComponent xCentral = central.getComponent( xDimension, nameQualifier );
+        DiagramStatisticComponent yCentral = central.getComponent( yDimension, nameQualifier );
+        int valueCount = xCentral.getValuesCount();
+        DiagramStatisticComponent xLower = null;
+        DiagramStatisticComponent xUpper = null;
+        DiagramStatisticComponent yLower = null;
+        DiagramStatisticComponent yUpper = null;
+
+        if ( Objects.nonNull( lower ) )
+        {
+            nameQualifier = lower.getComponentNameQualifiers()
+                                 .first();
+            xLower = lower.getComponent( xDimension, nameQualifier );
+            yLower = lower.getComponent( yDimension, nameQualifier );
+            valueCount = xLower.getValuesCount();
+        }
+
+        if ( Objects.nonNull( upper ) )
+        {
+            nameQualifier = upper.getComponentNameQualifiers()
+                                 .first();
+            xUpper = upper.getComponent( xDimension, nameQualifier );
+            yUpper = upper.getComponent( yDimension, nameQualifier );
+            valueCount = xUpper.getValuesCount();
+        }
+
+        // Add the series data
+        for ( int j = 0; j < valueCount; j++ )
+        {
+            double xC = xCentral.getValues( j );
+            double yC = yCentral.getValues( j );
+            double xL = Double.NaN;
+            double xU = Double.NaN;
+            double yL = Double.NaN;
+            double yU = Double.NaN;
+
+            if ( Objects.nonNull( lower ) )
+            {
+                xL = xLower.getValues( j );
+                yL = yLower.getValues( j );
+            }
+
+            if ( Objects.nonNull( upper ) )
+            {
+                xU = xUpper.getValues( j );
+                yU = yUpper.getValues( j );
+            }
+
+            series.add( xC, xL, xU, yC, yL, yU );
+        }
     }
 
     /**

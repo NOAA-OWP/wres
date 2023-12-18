@@ -10,11 +10,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import javax.imageio.ImageIO;
 
@@ -37,6 +40,7 @@ import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.statistics.generated.Outputs.PngFormat;
 import wres.statistics.generated.Outputs.SvgFormat;
+import wres.statistics.generated.SummaryStatistic;
 import wres.vis.charts.ChartFactory;
 
 /**
@@ -269,6 +273,58 @@ abstract class GraphicsWriter
         }
 
         return append;
+    }
+
+    /**
+     * Slices the statistics into two groups, one containing summary statistics the other containing raw statistics.
+     * @param statistics the statistics to slice
+     * @param allowed the summary statistics allowed in this context
+     * @return the grouped statistics
+     * @param <T> the type of statistic
+     */
+    static <T extends Statistic<?>> List<List<T>> groupBySummaryStatistics( List<T> statistics,
+                                                                            Set<SummaryStatistic.StatisticName> allowed )
+    {
+        Objects.requireNonNull( statistics );
+        Objects.requireNonNull( allowed );
+
+        LOGGER.debug( "While grouping statistics, the following summary statistics were allowed: {}", allowed );
+
+        List<List<T>> sliced = new ArrayList<>();
+
+        // Slice by summary statistic presence/absence, ignoring resampled quantiles
+        Predicate<T> summaryStat
+                = s -> s.isSummaryStatistic()
+                       && s.getSummaryStatistic()
+                           .getDimension() != SummaryStatistic.StatisticDimension.RESAMPLED;
+
+        List<T> summaryStats =
+                Slicer.filter( statistics,
+                               summaryStat );
+
+        // Partition the summary statistics by statistic name
+        Map<SummaryStatistic.StatisticName, List<T>> grouped =
+                summaryStats.stream()
+                            .filter( s -> allowed.contains( s.getSummaryStatistic()
+                                                             .getStatistic() ) )
+                            .collect( Collectors.groupingBy( s -> s.getSummaryStatistic()
+                                                                   .getStatistic() ) );
+
+        List<T> noSummaryStats =
+                Slicer.filter( statistics,
+                               summaryStat.negate() );
+
+        if ( !noSummaryStats.isEmpty() )
+        {
+            sliced.add( noSummaryStats );
+        }
+
+        if ( !grouped.isEmpty() )
+        {
+            sliced.addAll( grouped.values() );
+        }
+
+        return Collections.unmodifiableList( sliced );
     }
 
     /**

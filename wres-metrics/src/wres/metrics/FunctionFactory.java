@@ -393,7 +393,6 @@ public class FunctionFactory
     public static DiagramStatisticFunction histogram( SummaryStatistic parameters )
     {
         int bins = parameters.getHistogramBins();
-        SummaryStatistic.StatisticDimension dimension = parameters.getDimension();
 
         BiFunction<Map<DiagramStatisticFunction.DiagramComponentName, String>, double[], DiagramStatistic> f =
                 ( p, d ) ->
@@ -447,12 +446,7 @@ public class FunctionFactory
                                            .build();
                 };
 
-        SummaryStatistic summaryStatistic = SummaryStatistic.newBuilder()
-                                                            .setStatistic( SummaryStatistic.StatisticName.HISTOGRAM )
-                                                            .setDimension( dimension )
-                                                            .build();
-
-        return new DiagramStatisticFunction( summaryStatistic, f );
+        return new DiagramStatisticFunction( parameters, f );
     }
 
     /**
