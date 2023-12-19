@@ -219,6 +219,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                 // Group by summary statistic presence/absence
                 List<List<DoubleScoreStatisticOuter>> grouped
                         = GraphicsWriter.groupBySummaryStatistics( innerSlice,
+                                                                   s -> "",
                                                                    Arrays.stream( SummaryStatistic.StatisticName.values() )
                                                                          .collect( Collectors.toUnmodifiableSet() ) );
                 sliced.addAll( grouped );

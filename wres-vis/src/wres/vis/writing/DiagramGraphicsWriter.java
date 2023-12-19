@@ -206,6 +206,8 @@ public class DiagramGraphicsWriter extends GraphicsWriter
 
                 List<List<DiagramStatisticOuter>> grouped =
                         GraphicsWriter.groupBySummaryStatistics( innerSlice,
+                                                                 s -> s.getComponentNameQualifiers()
+                                                                       .first(),
                                                                  Set.of( SummaryStatistic.StatisticName.MEAN,
                                                                          SummaryStatistic.StatisticName.MEDIAN,
                                                                          SummaryStatistic.StatisticName.HISTOGRAM,
@@ -317,22 +319,53 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         }
 
         // Qualify by summary statistic name
-        Optional<SummaryStatistic.StatisticName> name =
-                statistics.stream()
-                          .filter( n -> n.isSummaryStatistic()
-                                        && n.getSummaryStatistic()
-                                            .getDimension()
-                                           != SummaryStatistic.StatisticDimension.RESAMPLED )
-                          .map( d -> d.getSummaryStatistic()
-                                      .getStatistic() )
-                          .findFirst();
+        String name = DiagramGraphicsWriter.getSummaryStatisticPathQualifier( statistics );
 
-        if ( name.isPresent() )
+        if ( !name.isBlank() )
         {
-            append += "_" + name.get();
+            append += "_" + name;
         }
 
         return append;
+    }
+
+    /**
+     * Generates a path qualifier for summary statistics.
+     * @param statistics the statistics
+     * @return the path qualifier
+     */
+    private static String getSummaryStatisticPathQualifier( List<DiagramStatisticOuter> statistics )
+    {
+        Optional<String> name;
+
+        if ( statistics.stream()
+                       .anyMatch( n -> n.isSummaryStatistic()
+                                       && n.getSummaryStatistic().getStatistic()
+                                          == SummaryStatistic.StatisticName.HISTOGRAM ) )
+        {
+            name = statistics.stream()
+                             .filter( n -> n.isSummaryStatistic()
+                                           && n.getSummaryStatistic()
+                                               .getDimension()
+                                              != SummaryStatistic.StatisticDimension.RESAMPLED )
+                             .flatMap( d -> d.getComponentNameQualifiers()
+                                             .stream() )
+                             .findFirst();
+        }
+        else
+        {
+            name = statistics.stream()
+                             .filter( n -> n.isSummaryStatistic()
+                                           && n.getSummaryStatistic()
+                                               .getDimension()
+                                              != SummaryStatistic.StatisticDimension.RESAMPLED )
+                             .map( d -> d.getSummaryStatistic()
+                                         .getStatistic()
+                                         .name() )
+                             .findFirst();
+        }
+
+        return name.orElse( "" );
     }
 
     /**
