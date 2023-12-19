@@ -16,11 +16,13 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import javax.imageio.ImageIO;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.jfree.chart.ChartUtils;
 import org.jfree.chart.JFreeChart;
 import org.jfree.svg.SVGGraphics2D;
@@ -278,11 +280,13 @@ abstract class GraphicsWriter
     /**
      * Slices the statistics into two groups, one containing summary statistics the other containing raw statistics.
      * @param statistics the statistics to slice
+     * @param qualifier a function that generates a grouping qualifier from a statistic
      * @param allowed the summary statistics allowed in this context
      * @return the grouped statistics
      * @param <T> the type of statistic
      */
     static <T extends Statistic<?>> List<List<T>> groupBySummaryStatistics( List<T> statistics,
+                                                                            Function<T, String> qualifier,
                                                                             Set<SummaryStatistic.StatisticName> allowed )
     {
         Objects.requireNonNull( statistics );
@@ -303,12 +307,12 @@ abstract class GraphicsWriter
                                summaryStat );
 
         // Partition the summary statistics by statistic name
-        Map<SummaryStatistic.StatisticName, List<T>> grouped =
+        Map<Pair<SummaryStatistic.StatisticName, String>, List<T>> grouped =
                 summaryStats.stream()
                             .filter( s -> allowed.contains( s.getSummaryStatistic()
                                                              .getStatistic() ) )
-                            .collect( Collectors.groupingBy( s -> s.getSummaryStatistic()
-                                                                   .getStatistic() ) );
+                            .collect( Collectors.groupingBy( s -> Pair.of( s.getSummaryStatistic()
+                                                                            .getStatistic(), qualifier.apply( s ) ) ) );
 
         List<T> noSummaryStats =
                 Slicer.filter( statistics,
