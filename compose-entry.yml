@@ -16,7 +16,7 @@ volumes:
             device: "${NFS_HOME_DIR_DEVICE}"
 services:
     persister:
-        image: "${DOCKER_REGISTRY}/wres/wres-redis:20231124-25172eb"
+        image: "${DOCKER_REGISTRY}/wres/wres-redis:20231218-3a1100d"
         restart: always
         volumes:
          # For the job data
@@ -33,7 +33,7 @@ services:
     tasker:
         ports:
          - "443:8443"
-        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20231124-25172eb"
+        image: "${DOCKER_REGISTRY}/wres/wres-tasker:20231218-4536f8a"
         restart: always
         depends_on:
             broker:
@@ -68,7 +68,7 @@ services:
         ports:
          - "5671:5671"
          - "15671:15671"
-        image: "${DOCKER_REGISTRY}/wres/wres-broker:20231124-25172eb"
+        image: "${DOCKER_REGISTRY}/wres/wres-broker:20231218-3a1100d"
         restart: always
         volumes:
          # For certificates and keys that correspond to them:
@@ -87,7 +87,7 @@ services:
         healthcheck:
             start_period: 5m
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20231127-2bbe97c"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20231218-4536f8a"
         restart: always
         depends_on:
             broker:
@@ -137,7 +137,7 @@ services:
          - 5673
         ports:
          - 15673:15673
-        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20231124-25172eb"
+        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20231218-4536f8a"
         restart: always
         volumes:
          # For heap-dump files
@@ -159,7 +159,7 @@ services:
         depends_on:
             eventsbroker:
                 condition: service_started
-        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20231124-25172eb"
+        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20231218-4536f8a"
         restart: always
         volumes:
          # To write graphics outputs
