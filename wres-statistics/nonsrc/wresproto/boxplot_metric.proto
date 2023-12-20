@@ -41,6 +41,9 @@ message BoxplotMetric
         FORECAST = 0;
         FORECAST_ERROR = 1;
         ERROR_PERCENT_OF_VERIFYING_VALUE = 2;
+        VARIABLE = 3;
+        // An arbitrary variable whose name may be qualified in the variable
+        // field.
     }
 
     QuantileValueType quantile_value_type = 4;
@@ -57,4 +60,7 @@ message BoxplotMetric
 
     double maximum = 8;
     // The upper bound of the quantiles.
+
+    string variable = 9;
+    // The name of the variable whose quantiles are being plotted.
 }

@@ -20,10 +20,10 @@ message BoxplotStatistic
     
     message Box 
     {
-	// A box.
-    
-	double linked_value = 1;
-	// The value alongside which the box should be shown.
+        // A box.
+
+        double linked_value = 1;
+        // The value alongside which the box should be shown.
 
         repeated double quantiles = 2;
         // The whiskers.

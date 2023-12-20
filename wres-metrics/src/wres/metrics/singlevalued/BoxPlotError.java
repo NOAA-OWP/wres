@@ -21,29 +21,19 @@ import wres.statistics.generated.MetricName;
 
 /**
  * A box plot of the errors associated with a pool of single-valued pairs.
- * 
+ *
  * @author James Brown
  */
 
 public class BoxPlotError extends Diagram<Pool<Pair<Double, Double>>, BoxplotStatisticOuter>
 {
-
-    /**
-     * Default probabilities.
-     */
-
+    /** Default probabilities. */
     private static final List<Double> DEFAULT_PROBABILITIES = List.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
 
-    /**
-     * Empty box.
-     */
-
+    /** Empty box. */
     private static final List<Double> EMPTY_BOX = List.of( Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN );
 
-    /**
-     * Function for rounding the errors.
-     */
-
+    /** Function for rounding the errors. */
     private static final DoubleUnaryOperator ROUNDER = Slicer.rounder( 8 );
 
     /**
@@ -54,7 +44,7 @@ public class BoxPlotError extends Diagram<Pool<Pair<Double, Double>>, BoxplotSta
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -85,16 +75,19 @@ public class BoxPlotError extends Diagram<Pool<Pair<Double, Double>>, BoxplotSta
                                                                                           .toString() ) );
 
         // Empty output for empty input
-        if ( pool.get().isEmpty() )
+        if ( pool.get()
+                 .isEmpty() )
         {
             // Add an empty box: #62863
-            builder.addStatistics( Box.newBuilder().addAllQuantiles( BoxPlotError.EMPTY_BOX ) );
+            builder.addStatistics( Box.newBuilder()
+                                      .addAllQuantiles( BoxPlotError.EMPTY_BOX ) );
 
             return BoxplotStatisticOuter.of( builder.build(), pool.getMetadata() );
         }
 
         // Get the sorted errors
-        List<Double> probs = this.getMetric().getQuantilesList();
+        List<Double> probs = this.getMetric()
+                                 .getQuantilesList();
         double[] sortedErrors = pool.get()
                                     .stream()
                                     .mapToDouble( a -> a.getRight() - a.getLeft() )
@@ -109,7 +102,8 @@ public class BoxPlotError extends Diagram<Pool<Pair<Double, Double>>, BoxplotSta
                                 .boxed()
                                 .toList();
 
-        BoxplotStatistic statistic = builder.addStatistics( Box.newBuilder().addAllQuantiles( box ) )
+        BoxplotStatistic statistic = builder.addStatistics( Box.newBuilder()
+                                                               .addAllQuantiles( box ) )
                                             .build();
 
         return BoxplotStatisticOuter.of( statistic, pool.getMetadata() );
@@ -123,7 +117,7 @@ public class BoxPlotError extends Diagram<Pool<Pair<Double, Double>>, BoxplotSta
 
     /**
      * Returns the metric.
-     * 
+     *
      * @return the metric
      */
 

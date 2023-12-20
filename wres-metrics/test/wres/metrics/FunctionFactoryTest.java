@@ -20,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.datamodel.MissingValues;
 import wres.config.MetricConstants;
+import wres.statistics.generated.BoxplotMetric;
+import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.MetricName;
@@ -220,14 +222,15 @@ class FunctionFactoryTest
     {
         SummaryStatistic parameters = SummaryStatistic.newBuilder()
                                                       .setHistogramBins( 5 )
+                                                      .setStatistic( SummaryStatistic.StatisticName.HISTOGRAM )
                                                       .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
                                                       .build();
-        DiagramStatisticFunction histogram = FunctionFactory.histogram( parameters );
+        DiagramSummaryStatisticFunction histogram = FunctionFactory.histogram( parameters );
 
         double[] data = new double[] { 1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6 };
-        Map<DiagramStatisticFunction.DiagramComponentName, String> p =
-                Map.of( DiagramStatisticFunction.DiagramComponentName.VARIABLE, "foo",
-                        DiagramStatisticFunction.DiagramComponentName.VARIABLE_UNIT, "bar" );
+        Map<SummaryStatisticComponentName, String> p =
+                Map.of( SummaryStatisticComponentName.VARIABLE, "foo",
+                        SummaryStatisticComponentName.VARIABLE_UNIT, "bar" );
 
         DiagramStatistic actual = histogram.apply( p, data );
 
@@ -287,8 +290,8 @@ class FunctionFactoryTest
                                                       .setHistogramBins( 5 )
                                                       .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
                                                       .build();
-        DiagramStatisticFunction histogram = FunctionFactory.ofDiagramSummaryStatistic( parameters );
-        BiFunction<Map<DiagramStatisticFunction.DiagramComponentName, String>, Duration[],
+        DiagramSummaryStatisticFunction histogram = FunctionFactory.ofDiagramSummaryStatistic( parameters );
+        BiFunction<Map<SummaryStatisticComponentName, String>, Duration[],
                 DiagramStatistic> durationHistogram =
                 FunctionFactory.ofDurationDiagramFromUnivariateFunction( histogram, ChronoUnit.SECONDS );
 
@@ -302,9 +305,9 @@ class FunctionFactoryTest
         Duration[] data =
                 new Duration[] { one, two, two, three, three, three, four, four, four, four, five, five, five, five,
                         five, six, six, six, six, six, six };
-        Map<DiagramStatisticFunction.DiagramComponentName, String> p =
-                Map.of( DiagramStatisticFunction.DiagramComponentName.VARIABLE, "foo",
-                        DiagramStatisticFunction.DiagramComponentName.VARIABLE_UNIT, "bar" );
+        Map<SummaryStatisticComponentName, String> p =
+                Map.of( SummaryStatisticComponentName.VARIABLE, "foo",
+                        SummaryStatisticComponentName.VARIABLE_UNIT, "bar" );
 
         DiagramStatistic actual = durationHistogram.apply( p, data );
 
@@ -357,6 +360,44 @@ class FunctionFactoryTest
                                                     .setMetric( metric )
                                                     .build();
 
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testBoxplot()
+    {
+        SummaryStatistic parameters = SummaryStatistic.newBuilder()
+                                                      .setStatistic( SummaryStatistic.StatisticName.BOX_PLOT )
+                                                      .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                      .build();
+        BoxplotSummaryStatisticFunction boxplot = FunctionFactory.boxplot( parameters );
+
+        double[] data = new double[] { 1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 7, 7, 7 };
+        Map<SummaryStatisticComponentName, String> p =
+                Map.of( SummaryStatisticComponentName.VARIABLE, "foo",
+                        SummaryStatisticComponentName.VARIABLE_UNIT, "bar" );
+
+        BoxplotStatistic actual = boxplot.apply( p, data );
+
+        BoxplotMetric metric = BoxplotMetric.newBuilder()
+                                            .setName( MetricName.BOX_PLOT )
+                                            .setLinkedValueType( BoxplotMetric.LinkedValueType.NONE )
+                                            .setQuantileValueType( BoxplotMetric.QuantileValueType.VARIABLE )
+                                            .setVariable( "foo" )
+                                            .setUnits( "bar" )
+                                            .addAllQuantiles( FunctionFactory.DEFAULT_PROBABILITIES )
+                                            .setMinimum( Double.NEGATIVE_INFINITY )
+                                            .setMaximum( Double.POSITIVE_INFINITY )
+                                            .build();
+
+        // Compute the quantiles at a rounded precision
+        List<Double> box = List.of( 1.0, 3.0, 5.0, 6.0, 7.0 );
+
+        BoxplotStatistic expected = BoxplotStatistic.newBuilder()
+                                                    .setMetric( metric )
+                                                    .addStatistics( BoxplotStatistic.Box.newBuilder()
+                                                                                        .addAllQuantiles( box ) )
+                                                    .build();
         assertEquals( expected, actual );
     }
 }

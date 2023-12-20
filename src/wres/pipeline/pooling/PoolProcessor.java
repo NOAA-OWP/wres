@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.SamplingUncertainty;
 import wres.metrics.FunctionFactory;
-import wres.metrics.SummaryStatisticFunction;
+import wres.metrics.ScalarSummaryStatisticFunction;
 import wres.metrics.SummaryStatisticsCalculator;
 import wres.datamodel.Slicer;
 import wres.datamodel.bootstrap.InsufficientDataForResamplingException;
@@ -746,10 +746,11 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         Map<DatasetOrientation, List<Statistics>> grouped = Slicer.getGroupedStatistics( statistics );
 
         // Create the quantile statistics
-        Set<SummaryStatisticFunction> quantiles = samplingUncertainty.quantiles()
-                                                                     .stream()
-                                                                     .map( FunctionFactory::quantileForSamplingUncertainty )
-                                                                     .collect( Collectors.toCollection( LinkedHashSet::new ) );
+        Set<ScalarSummaryStatisticFunction> quantiles = samplingUncertainty.quantiles()
+                                                                           .stream()
+                                                                           .map( FunctionFactory::quantileForSamplingUncertainty )
+                                                                           .collect( Collectors.toCollection(
+                                                                                   LinkedHashSet::new ) );
         quantiles = Collections.unmodifiableSet( quantiles );
 
         Map<OneOrTwoThresholds, Map<DatasetOrientation, SummaryStatisticsCalculator>> returnMe = new HashMap<>();
@@ -770,6 +771,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                 OneOrTwoThresholds key = nextEntry.getKey();
                 Statistics mergedStatistics = nextEntry.getValue();
                 SummaryStatisticsCalculator calculator = SummaryStatisticsCalculator.of( quantiles,
+                                                                                         Set.of(),
                                                                                          Set.of(),
                                                                                          null,
                                                                                          ( a, b ) -> a,

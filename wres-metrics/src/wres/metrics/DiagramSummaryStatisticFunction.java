@@ -17,34 +17,22 @@ import wres.statistics.generated.SummaryStatistic;
  * @param calculator the statistic calculator, not null
  * @author James Brown
  */
-public record DiagramStatisticFunction( SummaryStatistic statistic,
-                                        BiFunction<Map<DiagramComponentName, String>, double[], DiagramStatistic> calculator )
-        implements BiFunction<Map<DiagramStatisticFunction.DiagramComponentName, String>, double[], DiagramStatistic>
+public record DiagramSummaryStatisticFunction( SummaryStatistic statistic,
+                                               BiFunction<Map<SummaryStatisticComponentName, String>, double[], DiagramStatistic> calculator )
+        implements BiFunction<Map<SummaryStatisticComponentName, String>, double[], DiagramStatistic>
 {
-    /**
-     * An enumeration of diagram component names to be associated with string values.
-     * @author James Brown
-     */
-    public enum DiagramComponentName
-    {
-        /** The variable to which the diagram refers. */
-        VARIABLE,
-        /** The unit of the variable. */
-        VARIABLE_UNIT
-    }
-
     /**
      * @param statistic the statistic
      * @param calculator the calculator
      */
-    public DiagramStatisticFunction
+    public DiagramSummaryStatisticFunction
     {
         Objects.requireNonNull( statistic );
         Objects.requireNonNull( calculator );
     }
 
     @Override
-    public DiagramStatistic apply( Map<DiagramComponentName, String> names, double[] value )
+    public DiagramStatistic apply( Map<SummaryStatisticComponentName, String> names, double[] value )
     {
         return this.calculator.apply( names, value );
     }

@@ -105,6 +105,7 @@ class EvaluationUtilitiesTest
         SummaryStatistic second = SummaryStatistic.newBuilder()
                                                   .setStatistic( SummaryStatistic.StatisticName.HISTOGRAM )
                                                   .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                  .setHistogramBins( 10 )
                                                   .build();
 
         Set<SummaryStatistic> summaryStatistics = new LinkedHashSet<>();

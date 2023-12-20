@@ -22,6 +22,7 @@ message SummaryStatistic
         MEAN_ABSOLUTE = 5;
         QUANTILE = 6;
         HISTOGRAM = 7;
+        BOX_PLOT = 8;
     }
 
     StatisticName statistic = 1;

@@ -183,6 +183,9 @@ public enum MetricConstants
     /** Histogram. Not currently used to measure a single side of paired data. */
     HISTOGRAM( null, StatisticType.DIAGRAM, MetricGroup.UNIVARIATE_STATISTIC ),
 
+    /** Box plot. Not currently used to measure a single side of paired data. */
+    BOX_PLOT( null, StatisticType.BOXPLOT_PER_POOL, MetricGroup.UNIVARIATE_STATISTIC ),
+
     /** Quantile. Not currently used to measure a single side of paired data. */
     QUANTILE( MetricGroup.UNIVARIATE_STATISTIC ),
 
@@ -1069,7 +1072,10 @@ public enum MetricConstants
         BIN_UPPER_BOUND,
 
         /** Identifier for a count. */
-        COUNT;
+        COUNT,
+
+        /** Identifier for a variable. */
+        VARIABLE;
 
         /**
          * Returns a string representation.
