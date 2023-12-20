@@ -125,16 +125,15 @@ public class JobStandardStreamMessenger implements Runnable
         }
 
         try (
-                WebClient.ClientResponse clientResponse = WEB_CLIENT.getFromWeb( URI.create( url ) );
+                WebClient.ClientResponse clientResponse = WEB_CLIENT.getFromWeb( URI.create( url ), WebClientUtils.getDefaultRetryStates() );
                 InputStreamReader utf8Reader = new InputStreamReader( clientResponse.getResponse(),
                                                                       StandardCharsets.UTF_8 );
                 BufferedReader reader = new BufferedReader( utf8Reader );
                 Channel channel = this.getConnection().createChannel() )
         {
             LOGGER.info( "Established redirect for {} ", this.getWhichStream() );
-            String exchangeName = this.getExchangeName();
             String exchangeType = "topic";
-            channel.exchangeDeclare( exchangeName, exchangeType, true );
+            channel.exchangeDeclare( this.getExchangeName(), exchangeType, true );
             reader.lines()
                   .forEach( line -> this.sendLine( channel, line ) );
         }
@@ -162,11 +161,10 @@ public class JobStandardStreamMessenger implements Runnable
                         .correlationId( this.getJobId() )
                         .deliveryMode( 2 )
                         .build();
-        int order = this.getOrder().getAndIncrement();
         wres.messages.generated.JobStandardStream.job_standard_stream message
                 = wres.messages.generated.JobStandardStream.job_standard_stream
                 .newBuilder()
-                .setIndex( order )
+                .setIndex( this.getOrder().getAndIncrement() )
                 .setText( line )
                 .build();
         try

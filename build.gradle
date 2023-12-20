@@ -1098,6 +1098,26 @@ project(':wres-worker')
         }
 
         testImplementation 'junit:junit:4.13.2'
+
+        // Mocking help
+        testImplementation 'org.mockito:mockito-inline:5.2.0'
+
+        // Use mockserver as a mock server for mock API responses
+        testImplementation 'org.mock-server:mockserver-netty:5.15.0'
+
+        // JUnit 5 API and runtime
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.1'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.1'
+    }
+
+    test
+    {
+        useJUnitPlatform()
+
+        // Set the socket timeout for tests involving mockserver to 120s
+        systemProperties += [ "mockserver.maxSocketTimeout": 120000,
+                              "ucar.unidata.io.http.maxReadCacheSize": 200000,
+                              "ucar.unidata.io.http.httpBufferSize": 200000 ]
     }
 
     apply plugin: 'application'

@@ -20,6 +20,7 @@ import static wres.messages.generated.JobStatus.job_status.Report.*;
 import static wres.messages.generated.EvaluationStatusOuterClass.EvaluationStatus.*;
 
 import wres.http.WebClient;
+import wres.http.WebClientUtils;
 import wres.messages.generated.JobStatus;
 
 
@@ -110,7 +111,6 @@ public class JobStatusMessenger implements Runnable
     @Override
     public void run()
     {
-        String exchangeName = this.getExchangeName();
         String exchangeType = "topic";
 
         try ( Channel channel = this.getConnection().createChannel() )
@@ -120,7 +120,7 @@ public class JobStatusMessenger implements Runnable
 
             while ( !evaluationStatus.equals( COMPLETED.toString() ) && !evaluationStatus.equals( CLOSED.toString() ) )
             {
-                channel.exchangeDeclare( exchangeName, exchangeType, true );
+                channel.exchangeDeclare( this.getExchangeName(), exchangeType, true );
 
                 this.sendMessage( channel, ALIVE );
                 Thread.sleep( 1000 );
@@ -147,13 +147,13 @@ public class JobStatusMessenger implements Runnable
     /**
      * Method to get the status of an ongoing evaluation
      * @return A string representing an EvaluationStatus
-     * @throws IOException
+     * @throws IOException exception from WebClient when unable to communicate with server
      */
     private String getEvaluationStatus() throws IOException
     {
         String url = String.format( STATUS_URI, this.getPort(), this.getEvaluationId() );
         try (
-                WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( URI.create( url ) )
+                WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( URI.create( url ), WebClientUtils.getDefaultRetryStates() )
         )
         {
             return new BufferedReader( new InputStreamReader( fromWeb.getResponse() ) ).lines()
@@ -176,7 +176,6 @@ public class JobStatusMessenger implements Runnable
                         .deliveryMode( 2 )
                         .build();
 
-        int order = this.getOrder().getAndIncrement();
         Instant now = Instant.now();
         Timestamp timestamp = Timestamp.newBuilder()
                                        .setSeconds( now.getEpochSecond() )
@@ -185,7 +184,7 @@ public class JobStatusMessenger implements Runnable
         JobStatus.job_status message
                 = JobStatus.job_status
                 .newBuilder()
-                .setIndex( order )
+                .setIndex( this.getOrder().getAndIncrement() )
                 .setDatetime( timestamp )
                 .setReport( report )
                 .build();
