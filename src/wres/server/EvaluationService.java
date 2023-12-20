@@ -26,6 +26,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -101,6 +105,8 @@ public class EvaluationService implements ServletContextListener
 
     private static final AtomicReference<Canceller> EVALUATION_CANCELLER = new AtomicReference<>();
 
+    private Future<Response> evaluationResponse;
+
     private static final int ONE_MINUTE_IN_MILLISECONDS = 60000;
 
     private static Thread timeoutThread;
@@ -149,9 +155,10 @@ public class EvaluationService implements ServletContextListener
 
     /**
      * Returns a help page for usage examples of a personal server
-     * @return Good Response
+     * @return Help message
      */
     @GET
+    @Produces( MediaType.TEXT_PLAIN )
     public Response help()
     {
         InputStream resourceAsStream =
@@ -222,6 +229,7 @@ public class EvaluationService implements ServletContextListener
      */
     @GET
     @Path( "/stdout/{id}" )
+    @Produces( "application/octet-stream" )
     public Response getOutStream( @PathParam( "id" ) Long id )
     {
         // Check that this evaluation should be ran
@@ -243,6 +251,7 @@ public class EvaluationService implements ServletContextListener
      */
     @GET
     @Path( "/stderr/{id}" )
+    @Produces( "application/octet-stream" )
     public Response getErrorStream( @PathParam( "id" ) Long id )
     {
         // Check that this evaluation should be ran
@@ -258,20 +267,18 @@ public class EvaluationService implements ServletContextListener
     }
 
     /**
-     * Creates an ID for an evaluation we plan to execute and sets status to OPEN
-     * If a project is not started within 1 minutes, a thread will put the status to closed
+     * Starts an evaluation and returns the ID of the evaluation kicked off
      *
-     * @return ID of evaluation to run
+     * @return ID of evaluation kicked off
      */
     @POST
-    @Path( "/open" )
+    @Path( "/startEvaluation" )
     @Produces( MediaType.TEXT_PLAIN )
-    public Response openEvaluation()
+    public Response createEvaluation( byte[] message )
     {
         if ( EVALUATION_ID.get() > 0
              || !( EVALUATION_STAGE.get().equals( CLOSED )
-                   || EVALUATION_STAGE.get()
-                                      .equals( AWAITING ) ) )
+                   || EVALUATION_STAGE.get().equals( AWAITING ) ) )
         {
             return Response.status( Response.Status.BAD_REQUEST )
                            .entity( String.format(
@@ -294,6 +301,9 @@ public class EvaluationService implements ServletContextListener
         // Start a timer to prevent abandoned jobs from blocking the queue
         evaluationTimeoutThread();
 
+        evaluationResponse =
+                startEvaluation( message, projectId );
+
         return Response.ok( Response.Status.CREATED )
                        .entity( projectId )
                        .build();
@@ -314,115 +324,42 @@ public class EvaluationService implements ServletContextListener
     }
 
     /**
-     * Starts an opened Evaluation
-     * @param id the evaluation identifier
-     * @param message job message containing the evaluation and database settings
-     * @return the state of the evaluation
+     * Attempts to get the Response of the current ongoing evaluation will hang till task finishes
+     * @param id The ID of the evaluation to get
+     * @return The output paths of the evaluation
      */
-    @POST
-    @Path( "/start/{id}" )
-    @Produces( "application/octet-stream" )
-    public Response startEvaluation( byte[] message, @PathParam( "id" ) Long id )
+    @GET
+    @Path( "/getEvaluation/{id}" )
+    @Produces( MediaType.TEXT_PLAIN )
+    public Response getEvaluationResult( @PathParam( "id" ) Long id )
     {
-        // Convert the raw message into a job
-        Job.job jobMessage = createJobFromByteArray( message );
-
-        // Check that this evaluation should be ran
-        if ( EVALUATION_ID.get() != id || !EVALUATION_STAGE.get().equals( OPENED ) )
+        if ( EVALUATION_ID.get() != id || Objects.isNull( evaluationResponse ) )
         {
             return Response.status( Response.Status.BAD_REQUEST )
                            .entity(
-                                   "There was not an evaluation opened to start. Please /close/{ID} any projects first and open a new one" )
+                                   "There was not an evaluation with that ID." )
                            .build();
         }
 
-        //Used for logging
-        Instant beganExecution = Instant.now();
-
-        EVALUATION_STAGE.set( ONGOING );
-        LOGGER.info( "Kicking off evaluation on server with the internal ID of: {}", id );
-        Set<java.nio.file.Path> outputPaths;
-        Canceller canceller = Canceller.of();
         try
         {
-            // Checks if database information has changed in the jobMessage and swap to that database
-            swapDatabaseIfNeeded( jobMessage );
-
-            // Print system setting at the top of the job log to help debug
-            logJobHeaderInformation();
-
-            // Execute an evaluation
-            EVALUATION_CANCELLER.set( canceller );
-            ExecutionResult result =
-                    this.evaluator.evaluate( jobMessage.getProjectConfig(), EVALUATION_CANCELLER.get() );
-
-            LOGGER.info( "Evaluation has finished executing" );
-            logJobFinishInformation( jobMessage, result, beganExecution );
-
-            if ( result.cancelled() )
-            {
-                String failureMessage = "The evaluation was canceled";
-                // Print the stack exception so it is stored in the stdOut of the job
-                LOGGER.info( failureMessage );
-                EVALUATION_STAGE.set( COMPLETED );
-
-                return Response.status( Response.Status.CONFLICT )
-                               .entity( failureMessage )
-                               .build();
-            }
-            else if ( result.failed() )
-            {
-                String failureMessage = "The evaluation failed with the following stack trace: ";
-                // Print the stack exception so it is stored in the stdOut of the job
-                LOGGER.info( failureMessage, result.getException() );
-
-                EVALUATION_STAGE.set( COMPLETED );
-                return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
-                               .entity( failureMessage + result.getException() )
-                               .build();
-            }
-
-            // get files written
-            outputPaths = result.getResources();
+            return evaluationResponse.get();
         }
-        catch ( UserInputException e )
+        catch ( ExecutionException e )
         {
-            String failureMessage = "I received something I could not parse. The top-level exception was";
-            logJobFinishInformation( jobMessage, ExecutionResult.failure( e, canceller.cancelled() ), beganExecution );
-            LOGGER.info( failureMessage, e );
-            EVALUATION_STAGE.set( COMPLETED );
-            return Response.status( Response.Status.BAD_REQUEST )
-                           .entity( failureMessage + e.getMessage() )
-                           .build();
-        }
-        catch ( InternalWresException iwe )
-        {
-            String failureMessage = "WRES experienced an internal issue. The top-level exception was";
-            logJobFinishInformation( jobMessage,
-                                     ExecutionResult.failure( iwe, canceller.cancelled() ),
-                                     beganExecution );
-            LOGGER.info( failureMessage, iwe );
-            EVALUATION_STAGE.set( COMPLETED );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
-                           .entity( failureMessage + iwe.getMessage() )
+                           .entity(
+                                   "Unable to get the evaluation response" )
                            .build();
         }
-
-        // Put output paths in a stream to send to user
-        StreamingOutput streamingOutput = outputSream -> {
-            Writer writer = new BufferedWriter( new OutputStreamWriter( outputSream ) );
-            for ( java.nio.file.Path path : outputPaths )
-            {
-                writer.write( path.toString() + "\n" );
-            }
-            writer.flush();
-            writer.close();
-        };
-
-        EVALUATION_STAGE.set( COMPLETED );
-
-        return Response.ok( streamingOutput )
-                       .build();
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
+                           .entity(
+                                   "Get request was interupted" )
+                           .build();
+        }
     }
 
     /**
@@ -523,8 +460,6 @@ public class EvaluationService implements ServletContextListener
                                                 + "is no database to clean." );
         }
 
-        EVALUATION_STAGE.set( ONGOING );
-
         //Used for logging
         Instant beganExecution = Instant.now();
 
@@ -558,7 +493,6 @@ public class EvaluationService implements ServletContextListener
         }
         finally
         {
-            EVALUATION_STAGE.set( CLOSED );
             lockManager.shutdown();
         }
 
@@ -572,10 +506,12 @@ public class EvaluationService implements ServletContextListener
      *
      * @param projectConfig the evaluation project declaration string
      * @return the state of the evaluation
+     * @deprecated
      */
     @POST
     @Path( "/evaluate" )
     @Produces( MediaType.TEXT_XML )
+    @Deprecated( since = "6.17" )
     public Response postEvaluate( String projectConfig )
     {
         long projectId;
@@ -710,6 +646,113 @@ public class EvaluationService implements ServletContextListener
                                 + " from project "
                                 + id )
                        .build();
+    }
+
+    /**
+     * Starts an opened Evaluation
+     * @param id the evaluation identifier
+     * @param message job message containing the evaluation and database settings
+     * @return a Future<Response> of the evaluation
+     */
+    private Future<Response> startEvaluation( byte[] message, Long id )
+    {
+        ExecutorService executorService = Executors.newSingleThreadExecutor();
+
+        return executorService.submit( () -> {
+            // Convert the raw message into a job
+            Job.job jobMessage = createJobFromByteArray( message );
+
+            //Used for logging
+            Instant beganExecution = Instant.now();
+
+            EVALUATION_STAGE.set( ONGOING );
+            LOGGER.info( "Kicking off evaluation on server with the internal ID of: {}", id );
+            Set<java.nio.file.Path> outputPaths;
+            Canceller canceller = Canceller.of();
+            try
+            {
+                // Checks if database information has changed in the jobMessage and swap to that database
+                swapDatabaseIfNeeded( jobMessage );
+
+                // Print system setting at the top of the job log to help debug
+                logJobHeaderInformation();
+
+                // Execute an evaluation
+                EVALUATION_CANCELLER.set( canceller );
+
+                ExecutionResult result =
+                        this.evaluator.evaluate( jobMessage.getProjectConfig(), EVALUATION_CANCELLER.get() );
+
+                LOGGER.info( "Evaluation has finished executing" );
+                logJobFinishInformation( jobMessage, result, beganExecution );
+
+                if ( result.cancelled() )
+                {
+                    String failureMessage = "The evaluation was canceled";
+                    // Print the stack exception so it is stored in the stdOut of the job
+                    LOGGER.info( failureMessage );
+                    EVALUATION_STAGE.set( COMPLETED );
+
+                    return Response.status( Response.Status.CONFLICT )
+                                   .entity( failureMessage )
+                                   .build();
+                }
+                else if ( result.failed() )
+                {
+                    String failureMessage = "The evaluation failed with the following stack trace: ";
+                    // Print the stack exception so it is stored in the stdOut of the job
+                    LOGGER.info( failureMessage, result.getException() );
+
+                    EVALUATION_STAGE.set( COMPLETED );
+                    return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
+                                   .entity( failureMessage + result.getException() )
+                                   .build();
+                }
+
+                // get files written
+                outputPaths = result.getResources();
+            }
+            catch ( UserInputException e )
+            {
+                String failureMessage = "I received something I could not parse. The top-level exception was";
+                logJobFinishInformation( jobMessage,
+                                         ExecutionResult.failure( e, canceller.cancelled() ),
+                                         beganExecution );
+                LOGGER.info( failureMessage, e );
+                EVALUATION_STAGE.set( COMPLETED );
+                return Response.status( Response.Status.BAD_REQUEST )
+                               .entity( failureMessage + e.getMessage() )
+                               .build();
+            }
+            catch ( InternalWresException iwe )
+            {
+                String failureMessage = "WRES experienced an internal issue. The top-level exception was";
+                logJobFinishInformation( jobMessage,
+                                         ExecutionResult.failure( iwe, canceller.cancelled() ),
+                                         beganExecution );
+                LOGGER.info( failureMessage, iwe );
+                EVALUATION_STAGE.set( COMPLETED );
+                return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
+                               .entity( failureMessage + iwe.getMessage() )
+                               .build();
+            }
+
+            // Put output paths in a stream to send to user
+            StreamingOutput streamingOutput = outputSream -> {
+                Writer writer = new BufferedWriter( new OutputStreamWriter( outputSream ) );
+                for ( java.nio.file.Path path : outputPaths )
+                {
+                    writer.write( path.toString() + "\n" );
+                }
+                writer.flush();
+                writer.close();
+            };
+
+            EVALUATION_STAGE.set( COMPLETED );
+
+            return Response.ok( streamingOutput )
+                           .build();
+        } );
     }
 
     /**
@@ -927,41 +970,49 @@ public class EvaluationService implements ServletContextListener
         // If we did change something, update Evaluator
         if ( databaseChangeDetected )
         {
-            // DatabaseSettings have fields that are conditionally created in respect to host, port, and name; update those here
-            String passwordOverrides = SettingsFactory.getPasswordOverrides( databaseBuilder.build() );
-            if ( passwordOverrides != null )
-            {
-                databaseBuilder.password( passwordOverrides );
-            }
-
-            systemSettings = systemSettings.toBuilder().databaseConfiguration( databaseBuilder.build() ).build();
-
-            if ( systemSettings.isUseDatabase() )
-            {
-                if ( Objects.nonNull( database ) )
-                {
-                    LOGGER.info( "Terminating current database connections" );
-                    database.shutdown();
-                }
-
-                database = new Database( new ConnectionSupplier( systemSettings ) );
-                // Migrate the database, as needed
-                if ( database.getAttemptToMigrate() )
-                {
-                    try
-                    {
-                        DatabaseOperations.migrateDatabase( database );
-                    }
-                    catch ( SQLException e )
-                    {
-                        String errorMessage = "Failed to migrate the WRES database.";
-                        LOGGER.error( errorMessage, e );
-                        throw new IllegalStateException( errorMessage, e );
-                    }
-                }
-            }
-            evaluator = new Evaluator( systemSettings, database, broker );
+            changeDatabase( databaseBuilder );
         }
+    }
+
+    /**
+     * Changes the database and creates a new corresponding Evaluator
+     * @param databaseBuilder The builder to be used for the new database
+     */
+    private void changeDatabase( DatabaseSettings.DatabaseSettingsBuilder databaseBuilder )
+    {
+        // DatabaseSettings have fields that are conditionally created in respect to host, port, and name; update those here
+        String passwordOverrides = SettingsFactory.getPasswordOverrides( databaseBuilder.build() );
+        if ( passwordOverrides != null )
+        {
+            databaseBuilder.password( passwordOverrides );
+        }
+
+        systemSettings = systemSettings.toBuilder().databaseConfiguration( databaseBuilder.build() ).build();
+
+        if ( systemSettings.isUseDatabase() )
+        {
+            if ( Objects.nonNull( database ) )
+            {
+                LOGGER.info( "Terminating current database connections" );
+                database.shutdown();
+            }
+
+            database = new Database( new ConnectionSupplier( systemSettings ) );
+            // Migrate the database, as needed
+            if ( database.getAttemptToMigrate() )
+            {
+                try
+                {
+                    DatabaseOperations.migrateDatabase( database );
+                }
+                catch ( SQLException e )
+                {
+                    String errorMessage = "Failed to migrate the WRES database.";
+                    throw new IllegalStateException( errorMessage, e );
+                }
+            }
+        }
+        evaluator = new Evaluator( systemSettings, database, broker );
     }
 
     private Job.job createJobFromByteArray( byte[] message )

@@ -32,6 +32,7 @@ public class WebClientUtils
         return new OkHttpClient().newBuilder()
                                  .followRedirects( true )
                                  .pingInterval( Duration.ofSeconds( 10 ) )
+                                 .connectTimeout( Duration.ofMinutes( 1 ) )
                                  .build();
     }
 

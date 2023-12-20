@@ -7,8 +7,6 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -22,7 +20,6 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.Envelope;
 
-import jakarta.ws.rs.core.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,19 +44,18 @@ class WresEvaluationProcessor implements Callable<Integer>
      */
     private static final int META_FAILURE_CODE = 600;
 
-    private static final String START_EVAL_URI = "http://localhost:%d/evaluation/start/%s";
+    /** How many seconds we wait before forcing down the executor threads */
+    private static final int EXECUTOR_WAIT_TIME = 10;
 
-    private static final String OPEN_EVAL_URI = "http://localhost:%d/evaluation/open";
+    private static final String START_EVAL_URI = "http://localhost:%d/evaluation/getEvaluation/%s";
+
+    private static final String OPEN_EVAL_URI = "http://localhost:%d/evaluation/startEvaluation";
 
     private static final String CLOSE_EVAL_URI = "http://localhost:%d/evaluation/close";
 
     private static final String CLEAN_DATABASE_URI = "http://localhost:%d/evaluation/cleanDatabase";
 
     private static final String MIGRATE_DATABASE_URI = "http://localhost:%d/evaluation/migrateDatabase";
-
-    private static final List<Integer> RETRY_STATES = List.of( Response.Status.REQUEST_TIMEOUT.getStatusCode() );
-
-    private static final Duration CALL_TIMEOUT = Duration.ofMinutes( 2 );
 
     /** Stream identifier. */
     public enum WhichStream
@@ -81,16 +77,7 @@ class WresEvaluationProcessor implements Callable<Integer>
     private final byte[] jobMessage;
 
     /** A web client to help with reading data from the web. */
-    private static final WebClient WEB_CLIENT;
-
-    static
-    {
-        WEB_CLIENT = new WebClient( WebClientUtils.noTimeoutHttpClient()
-                                                  .newBuilder()
-                                                  .pingInterval( Duration.ofSeconds( 120 ) )
-                                                  .build()
-        );
-    }
+    private static final WebClient WEB_CLIENT = new WebClient( WebClientUtils.noTimeoutHttpClient() );
 
     /**
      * The envelope from the message that caused creation of this process,
@@ -161,7 +148,6 @@ class WresEvaluationProcessor implements Callable<Integer>
 
     public Integer call() throws IOException
     {
-
         // Convert the job message into a job to see if we need to migrate or clean the database
         Job.job job;
         try
@@ -173,17 +159,50 @@ class WresEvaluationProcessor implements Callable<Integer>
             throw new IllegalArgumentException( "Bad message received", ipbe );
         }
 
+        // Check if the Job is to manipulate the database in some way
+        if ( job.getVerb().equals( Job.job.Verb.CLEANDATABASE ) )
+        {
+            return manipulateDatabase( CLEAN_DATABASE_URI );
+        }
+        if ( job.getVerb().equals( Job.job.Verb.MIGRATEDATABASE ) )
+        {
+            return manipulateDatabase( MIGRATE_DATABASE_URI );
+        }
+
+        // If we do not have a special verb, run this job as an execution
+        return executeEvaluation( job );
+    }
+
+    /**
+     * Method to kick off an evaluations and redirect stdOut and stdErr from server
+     * @param job The job we are kicking off
+     * @return the status code from the Evaluation
+     */
+    private int executeEvaluation( Job.job job )
+    {
+        // Check to see if there is any project config at all
+        if ( job.getProjectConfig().isEmpty() )
+        {
+            UnsupportedOperationException problem =
+                    new UnsupportedOperationException( "Could not execute due to invalid message." );
+            LOGGER.warn( problem.getMessage() );
+            byte[] response =
+                    WresEvaluationProcessor.prepareMetaFailureResponse( new UnsupportedOperationException( problem ) );
+            this.sendMessage( response, WhichStream.EXITCODE );
+            throw problem;
+        }
+
         // Use one Thread per messenger:
         ExecutorService executorService = Executors.newFixedThreadPool( 3 );
 
-        // Open an evaluation for work
-        String evaluationId = prepareEvaluationId();
+        // Open and start an evaluation
+        String evaluationId = startEvaluation();
 
         // Halt evaluation if we are unable to open a project successfully
         // an empty response means there is a bad state on the server but we are accepting a new job
         if ( evaluationId.isEmpty() )
         {
-            LOGGER.warn( "Unable to open a new evaluation" );
+            LOGGER.warn( "Unable to create a new evaluation" );
             byte[] response = WresEvaluationProcessor.prepareExitResponse( HttpURLConnection.HTTP_BAD_REQUEST,
                                                                            "Failed to open eval" );
             this.sendMessage( response, WhichStream.EXITCODE );
@@ -223,24 +242,9 @@ class WresEvaluationProcessor implements Callable<Integer>
         try
         {
             // If for some reason a job kicked off does not return ANY response code, ther server is likely in a bad state
-            int exitValue = META_FAILURE_CODE;
-            // Check if the Job is to manipulate the database in some way
-            if ( job.getVerb().equals( Job.job.Verb.CLEANDATABASE ) )
-            {
-                exitValue = manipulateDatabase( CLEAN_DATABASE_URI );
-            }
-            if ( job.getVerb().equals( Job.job.Verb.MIGRATEDATABASE ) )
-            {
-                exitValue = manipulateDatabase( MIGRATE_DATABASE_URI );
-            }
-
-            // Executes an evaluation
-            if ( job.getVerb().equals( Job.job.Verb.EXECUTE ) )
-            {
-                exitValue = startEvaluation( evaluationId, job );
-            }
-
-            LOGGER.info( String.format( "Request exited with http code: %s for job: %s", exitValue, jobId ) );
+            int exitValue = getEvaluationResult( evaluationId );
+            String exitMessage = String.format( "Request exited with http code: %s for job: %s", exitValue, jobId );
+            LOGGER.info( exitMessage );
             byte[] response = WresEvaluationProcessor.prepareExitResponse( exitValue, null );
             this.sendMessage( response, WhichStream.EXITCODE );
             closeEvaluation();
@@ -251,16 +255,21 @@ class WresEvaluationProcessor implements Callable<Integer>
         // return meta failure code so the container can be restarted and job dequeued
         catch ( EvaluationProcessingException epe )
         {
-            String error =
-                    "!!!!----------------------------------------------------------------------------------!!!!\n\n"
-                    + "This evaluation has failed due to an unrecoverable problem within the WRES.\n"
-                    + "Please do not resubmit your evaluation.\n"
-                    + "Instead, please report this issue by opening a ticket in the WRES User Support project:\n"
-                    + "https://vlab.***REMOVED***/redmine/projects/wres-user-support/issues/new\n\n"
-                    + "!!!!----------------------------------------------------------------------------------!!!!\n";
-            this.sendMessage( prepareStdStreamMessage( error ), WhichStream.STDOUT );
+            String genericError = """
+                    !!!!----------------------------------------------------------------------------------!!!!
+                                        
+                    This evaluation has failed due to an unrecoverable problem within the WRES.
+                    Please do not resubmit your evaluation.
+                    Instead, please report this issue by opening a ticket in the WRES User Support project:
+                    https://vlab.***REMOVED***/redmine/projects/wres-user-support/issues/new
+                                        
+                    !!!!----------------------------------------------------------------------------------!!!!
+                    """;
+            this.sendMessage( prepareStdStreamMessage( genericError ), WhichStream.STDOUT );
 
-            LOGGER.error( String.format( "Failed to finish the evaluation for job: %s with log: \n %s", jobId, epe ) );
+            String errorMessage =
+                    String.format( "Failed to finish the evaluation for job: %s with log: %n %s", jobId, epe );
+            LOGGER.error( errorMessage );
             byte[] response = WresEvaluationProcessor.prepareMetaFailureResponse( epe );
             this.sendMessage( response, WhichStream.EXITCODE );
             WresEvaluationProcessor.shutdownExecutor( executorService );
@@ -269,14 +278,13 @@ class WresEvaluationProcessor implements Callable<Integer>
     }
 
     /**
-     * Helper method to prepare an evaluation and create an evaluation ID with the worker server
+     * Helper method to prepare and start an evaluation
      * @return String representation of an evaluation id
-     * @throws IOException
      */
-    private String prepareEvaluationId()
+    private String startEvaluation()
     {
         URI prepareEval = URI.create( String.format( OPEN_EVAL_URI, this.getPort() ) );
-        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval ) )
+        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval, jobMessage ) )
         {
             if ( evaluationIdRequest.getStatusCode() == HttpURLConnection.HTTP_BAD_REQUEST )
             {
@@ -296,28 +304,17 @@ class WresEvaluationProcessor implements Callable<Integer>
     /**
      * Method to kick off and record the output of an EVALUATE call
      * @param evaluationId the ID opened for this job
-     * @param job the job contents
      * @return and int holding the return value of the call
      */
-    private int startEvaluation( String evaluationId, Job.job job )
+    private int getEvaluationResult( String evaluationId )
     {
-        // Check to see if there is any command at all
-        if ( job.getProjectConfig().isEmpty() )
-        {
-            UnsupportedOperationException problem =
-                    new UnsupportedOperationException( "Could not execute due to invalid message." );
-            LOGGER.warn( "", problem );
-            byte[] response =
-                    WresEvaluationProcessor.prepareMetaFailureResponse( new UnsupportedOperationException( problem ) );
-            this.sendMessage( response, WhichStream.EXITCODE );
-            throw problem;
-        }
-
         URI startEvalURI = URI.create( String.format( START_EVAL_URI, this.getPort(), evaluationId ) );
-        LOGGER.info( String.format( "Starting evaluation: %s", startEvalURI ) );
+        String startMessage = String.format( "Starting evaluation: %s", startEvalURI );
+        LOGGER.info( startMessage );
 
         try (
-                WebClient.ClientResponse clientResponse = WEB_CLIENT.postToWeb( startEvalURI, jobMessage )
+                WebClient.ClientResponse clientResponse = WEB_CLIENT.getFromWeb( startEvalURI,
+                                                                                 WebClientUtils.getDefaultRetryStates() )
         )
         {
             LOGGER.info( "Evaluation returned" );
@@ -356,14 +353,16 @@ class WresEvaluationProcessor implements Callable<Integer>
                 LOGGER.error( "Unable to manipulate database" );
             }
 
+            byte[] response = WresEvaluationProcessor.prepareExitResponse( evaluationIdRequest.getStatusCode(), null );
+            this.sendMessage( response, WhichStream.EXITCODE );
+
             LOGGER.info( "Completed request: {}", uriToCall );
             return evaluationIdRequest.getStatusCode();
         }
         catch ( IOException e )
         {
-            throw new EvaluationProcessingException(
-                    "Experienced and exception while attempting to manipulate the database",
-                    e );
+            LOGGER.warn( "Something went wrong manipulating the database. Cycling container to fix this" );
+            return META_FAILURE_CODE;
         }
     }
 
@@ -386,7 +385,6 @@ class WresEvaluationProcessor implements Callable<Integer>
             throw new EvaluationProcessingException( "Unable to close the evaluation", e );
         }
     }
-
 
     /**
      * Helper to prepare a completed job response
@@ -412,7 +410,6 @@ class WresEvaluationProcessor implements Callable<Integer>
                 .build();
         return jobResult.toByteArray();
     }
-
 
     /**
      * Helper to prepare a job that failed due to never getting the job to run
@@ -484,28 +481,19 @@ class WresEvaluationProcessor implements Callable<Integer>
         return jobOutputMessage.toByteArray();
     }
 
-    private static void shutdownExecutor( ExecutorService executorService )
-    {
-        WresEvaluationProcessor.shutdownExecutor( executorService, 10, TimeUnit.SECONDS );
-    }
-
     /**
      * Shuts down an executor service, waiting specified time before forcing it.
      * @param executorService the service to shut down
-     * @param wait the quantity of time units to wait before forcible shutdown
-     * @param waitUnit the unit of time for wait before forcible shutdown
      */
 
-    private static void shutdownExecutor( ExecutorService executorService,
-                                          long wait,
-                                          TimeUnit waitUnit )
+    private static void shutdownExecutor( ExecutorService executorService )
     {
         executorService.shutdown();
         boolean died = false;
 
         try
         {
-            died = executorService.awaitTermination( wait, waitUnit );
+            died = executorService.awaitTermination( EXECUTOR_WAIT_TIME, TimeUnit.SECONDS );
         }
         catch ( InterruptedException ie )
         {
@@ -517,7 +505,7 @@ class WresEvaluationProcessor implements Callable<Integer>
         if ( !died )
         {
             LOGGER.warn( "Executor did not shut down in {} {}, forcing down.",
-                         wait, waitUnit );
+                         EXECUTOR_WAIT_TIME, TimeUnit.SECONDS );
             executorService.shutdownNow();
         }
     }

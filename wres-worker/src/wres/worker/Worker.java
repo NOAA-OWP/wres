@@ -6,6 +6,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -51,7 +52,17 @@ public class Worker
     private static final int DEFAULT_PORT = 8010;
 
     /** A web client to help with reading data from the web. */
-    private static final WebClient WEB_CLIENT = new WebClient( WebClientUtils.defaultTimeoutHttpClient() );
+    private static final WebClient WEB_CLIENT;
+
+    static
+    {
+        WEB_CLIENT = new WebClient(
+                WebClientUtils.defaultTimeoutHttpClient()
+                              .newBuilder()
+                              .callTimeout( Duration.ofMinutes( 1 ) )
+                              .build()
+        );
+    }
 
     /**
      * Expects exactly one arg with a path to WRES executable
@@ -117,8 +128,12 @@ public class Worker
 
                 WresEvaluationProcessor wresEvaluationProcessor = processToLaunch.poll( 2, TimeUnit.MINUTES );
 
-                if ( wresEvaluationProcessor != null && isServerReadyForWork() )
+                if ( wresEvaluationProcessor != null )
                 {
+                    // Checks if server is ready for a new job, throws exception to restart the server
+                    // We should not be accepting another job if the server is in a bad state
+                    isServerReadyForWork();
+
                     // Launch WRES if the consumer found a message saying so.
                     Integer responseCode = wresEvaluationProcessor.call();
                     // Ack that this shim got and processed the message from the queue and remove that message
@@ -241,17 +256,18 @@ public class Worker
 
     /**
      * Method to check if the server is ready to accept a new job
-     * @return boolean value if the server returns 200 (HTTP.OK)
      * @throws IOException, URISyntaxException
      */
-    private static boolean isServerReadyForWork() throws IOException, URISyntaxException
+    private static void isServerReadyForWork() throws IOException, URISyntaxException
     {
         URI uri = new URI( String.format( SERVER_READY_FOR_WORK_CHECK_URI, DEFAULT_PORT ) );
         try (
                 WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() )
         )
         {
-            return fromWeb.getStatusCode() == HttpURLConnection.HTTP_OK;
+            if ( fromWeb.getStatusCode() != HttpURLConnection.HTTP_OK ) {
+                throw new IOException( "Server was not ready for work, restarting container " );
+            }
         }
     }
 
