@@ -13,7 +13,7 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 
 /**
  * Creates an {@link XYDataset} for building a box plot.
- * 
+ *
  * @author James Brown
  */
 class BoxplotByLead extends AbstractIntervalXYDataset
@@ -108,10 +108,11 @@ class BoxplotByLead extends AbstractIntervalXYDataset
 
         this.data = Boxplot.of( statistics );
         this.leadDurations = statistics.stream()
-                                       .map( next -> next.getPoolMetadata().getTimeWindow().getLatestLeadDuration() )
+                                       .map( next -> next.getPoolMetadata()
+                                                         .getTimeWindow()
+                                                         .getLatestLeadDuration() )
                                        .map( next -> DataUtilities.durationToNumericUnits( next,
-                                                                                         durationUnits ) )
+                                                                                           durationUnits ) )
                                        .toArray( Number[]::new );
     }
-
 }

@@ -15,14 +15,14 @@ import wres.statistics.generated.SummaryStatistic;
  * @param calculator the statistic calculator, not null
  * @author James Brown
  */
-public record SummaryStatisticFunction( SummaryStatistic statistic,
-                                        ToDoubleFunction<double[]> calculator ) implements ToDoubleFunction<double[]>
+public record ScalarSummaryStatisticFunction( SummaryStatistic statistic,
+                                              ToDoubleFunction<double[]> calculator ) implements ToDoubleFunction<double[]>
 {
     /**
      * @param statistic the statistic
      * @param calculator the calculator
      */
-    public SummaryStatisticFunction
+    public ScalarSummaryStatisticFunction
     {
         Objects.requireNonNull( statistic );
         Objects.requireNonNull( calculator );

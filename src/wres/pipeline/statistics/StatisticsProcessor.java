@@ -515,7 +515,8 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
         Objects.requireNonNull( metricsAndThresholds.thresholds(),
                                 "Specify a non-null collection of thresholds to process." );
 
-        if ( metricsAndThresholds.metrics().isEmpty() )
+        if ( metricsAndThresholds.metrics()
+                                 .isEmpty() )
         {
             throw new MetricCalculationException( "Cannot build a statistics processor without metrics." );
         }

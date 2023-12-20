@@ -87,17 +87,17 @@ class SummaryStatisticsCalculatorTest
                                                                   SummaryStatistic.StatisticDimension.RESAMPLED,
                                                                   0.9 );
 
-        SummaryStatisticFunction q1f = FunctionFactory.ofSummaryStatistic( q1 );
-        SummaryStatisticFunction q2f = FunctionFactory.ofSummaryStatistic( q2 );
-        SummaryStatisticFunction q3f = FunctionFactory.ofSummaryStatistic( q3 );
+        ScalarSummaryStatisticFunction q1f = FunctionFactory.ofSummaryStatistic( q1 );
+        ScalarSummaryStatisticFunction q2f = FunctionFactory.ofSummaryStatistic( q2 );
+        ScalarSummaryStatisticFunction q3f = FunctionFactory.ofSummaryStatistic( q3 );
 
-        Set<SummaryStatisticFunction> quantiles = new LinkedHashSet<>();
+        Set<ScalarSummaryStatisticFunction> quantiles = new LinkedHashSet<>();
         quantiles.add( q1f );
         quantiles.add( q2f );
         quantiles.add( q3f );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, ( a, b ) -> a, null );
+                SummaryStatisticsCalculator.of( quantiles, Set.of(), Set.of(), null, ( a, b ) -> a, null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -196,17 +196,17 @@ class SummaryStatisticsCalculatorTest
                                                                   SummaryStatistic.StatisticDimension.RESAMPLED,
                                                                   0.9 );
 
-        SummaryStatisticFunction q1f = FunctionFactory.ofSummaryStatistic( q1 );
-        SummaryStatisticFunction q2f = FunctionFactory.ofSummaryStatistic( q2 );
-        SummaryStatisticFunction q3f = FunctionFactory.ofSummaryStatistic( q3 );
+        ScalarSummaryStatisticFunction q1f = FunctionFactory.ofSummaryStatistic( q1 );
+        ScalarSummaryStatisticFunction q2f = FunctionFactory.ofSummaryStatistic( q2 );
+        ScalarSummaryStatisticFunction q3f = FunctionFactory.ofSummaryStatistic( q3 );
 
-        Set<SummaryStatisticFunction> quantiles = new LinkedHashSet<>();
+        Set<ScalarSummaryStatisticFunction> quantiles = new LinkedHashSet<>();
         quantiles.add( q1f );
         quantiles.add( q2f );
         quantiles.add( q3f );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, ( a, b ) -> a, null );
+                SummaryStatisticsCalculator.of( quantiles, Set.of(), Set.of(), null, ( a, b ) -> a, null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -309,17 +309,17 @@ class SummaryStatisticsCalculatorTest
                                                                   SummaryStatistic.StatisticDimension.RESAMPLED,
                                                                   0.9 );
 
-        SummaryStatisticFunction q1f = FunctionFactory.ofSummaryStatistic( q1 );
-        SummaryStatisticFunction q2f = FunctionFactory.ofSummaryStatistic( q2 );
-        SummaryStatisticFunction q3f = FunctionFactory.ofSummaryStatistic( q3 );
+        ScalarSummaryStatisticFunction q1f = FunctionFactory.ofSummaryStatistic( q1 );
+        ScalarSummaryStatisticFunction q2f = FunctionFactory.ofSummaryStatistic( q2 );
+        ScalarSummaryStatisticFunction q3f = FunctionFactory.ofSummaryStatistic( q3 );
 
-        Set<SummaryStatisticFunction> quantiles = new LinkedHashSet<>();
+        Set<ScalarSummaryStatisticFunction> quantiles = new LinkedHashSet<>();
         quantiles.add( q1f );
         quantiles.add( q2f );
         quantiles.add( q3f );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, ( a, b ) -> a, null );
+                SummaryStatisticsCalculator.of( quantiles, Set.of(), Set.of(), null, ( a, b ) -> a, null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -412,17 +412,17 @@ class SummaryStatisticsCalculatorTest
                                                                   SummaryStatistic.StatisticDimension.RESAMPLED,
                                                                   0.9 );
 
-        SummaryStatisticFunction q1f = FunctionFactory.ofSummaryStatistic( q1 );
-        SummaryStatisticFunction q2f = FunctionFactory.ofSummaryStatistic( q2 );
-        SummaryStatisticFunction q3f = FunctionFactory.ofSummaryStatistic( q3 );
+        ScalarSummaryStatisticFunction q1f = FunctionFactory.ofSummaryStatistic( q1 );
+        ScalarSummaryStatisticFunction q2f = FunctionFactory.ofSummaryStatistic( q2 );
+        ScalarSummaryStatisticFunction q3f = FunctionFactory.ofSummaryStatistic( q3 );
 
-        Set<SummaryStatisticFunction> quantiles = new LinkedHashSet<>();
+        Set<ScalarSummaryStatisticFunction> quantiles = new LinkedHashSet<>();
         quantiles.add( q1f );
         quantiles.add( q2f );
         quantiles.add( q3f );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, ( a, b ) -> a, null );
+                SummaryStatisticsCalculator.of( quantiles, Set.of(), Set.of(), null, ( a, b ) -> a, null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -534,11 +534,11 @@ class SummaryStatisticsCalculatorTest
                                                                   SummaryStatistic.StatisticDimension.RESAMPLED,
                                                                   0.5 );
 
-        SummaryStatisticFunction q1f = FunctionFactory.ofSummaryStatistic( q1 );
+        ScalarSummaryStatisticFunction q1f = FunctionFactory.ofSummaryStatistic( q1 );
 
-        Set<SummaryStatisticFunction> quantiles = Set.of( q1f );
+        Set<ScalarSummaryStatisticFunction> quantiles = Set.of( q1f );
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, ( a, b ) -> a, null );
+                SummaryStatisticsCalculator.of( quantiles, Set.of(), Set.of(), null, ( a, b ) -> a, null );
 
         // Add nominal
         calculator.test( nominal );
@@ -711,17 +711,17 @@ class SummaryStatisticsCalculatorTest
                                                                   SummaryStatistic.StatisticDimension.RESAMPLED,
                                                                   0.9 );
 
-        SummaryStatisticFunction q1f = FunctionFactory.ofSummaryStatistic( q1 );
-        SummaryStatisticFunction q2f = FunctionFactory.ofSummaryStatistic( q2 );
-        SummaryStatisticFunction q3f = FunctionFactory.ofSummaryStatistic( q3 );
+        ScalarSummaryStatisticFunction q1f = FunctionFactory.ofSummaryStatistic( q1 );
+        ScalarSummaryStatisticFunction q2f = FunctionFactory.ofSummaryStatistic( q2 );
+        ScalarSummaryStatisticFunction q3f = FunctionFactory.ofSummaryStatistic( q3 );
 
-        Set<SummaryStatisticFunction> quantiles = new LinkedHashSet<>();
+        Set<ScalarSummaryStatisticFunction> quantiles = new LinkedHashSet<>();
         quantiles.add( q1f );
         quantiles.add( q2f );
         quantiles.add( q3f );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( quantiles, Set.of(), null, ( x, y ) -> x, null );
+                SummaryStatisticsCalculator.of( quantiles, Set.of(), Set.of(), null, ( x, y ) -> x, null );
 
         ExecutorService executor = Executors.newFixedThreadPool( 5 );
 
@@ -928,11 +928,11 @@ class SummaryStatisticsCalculatorTest
                                                                     SummaryStatistic.StatisticDimension.FEATURES,
                                                                     null );
 
-        SummaryStatisticFunction meanFunction = FunctionFactory.ofSummaryStatistic( mean );
+        ScalarSummaryStatisticFunction meanFunction = FunctionFactory.ofSummaryStatistic( mean );
 
-        Set<SummaryStatisticFunction> summaryStatistics = Set.of( meanFunction );
+        Set<ScalarSummaryStatisticFunction> summaryStatistics = Set.of( meanFunction );
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), null, ( a, b ) -> a, null );
+                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), Set.of(), null, ( a, b ) -> a, null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -992,9 +992,9 @@ class SummaryStatisticsCalculatorTest
                                                                   SummaryStatistic.StatisticDimension.FEATURES,
                                                                   null );
 
-        SummaryStatisticFunction sdFunction = FunctionFactory.ofSummaryStatistic( sd );
+        ScalarSummaryStatisticFunction sdFunction = FunctionFactory.ofSummaryStatistic( sd );
 
-        Set<SummaryStatisticFunction> summaryStatistics = Set.of( sdFunction );
+        Set<ScalarSummaryStatisticFunction> summaryStatistics = Set.of( sdFunction );
 
         // Create a filter to eliminate a score of "5"
         Predicate<Statistics> include = s -> !FunctionFactory.doubleEquals()
@@ -1003,7 +1003,7 @@ class SummaryStatisticsCalculatorTest
                                                                      .getValue(), 5.0 );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), include, ( a, b ) -> a, null );
+                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), Set.of(), include, ( a, b ) -> a, null );
 
         for ( int i = 1; i < 11; i++ )
         {
@@ -1091,12 +1091,12 @@ class SummaryStatisticsCalculatorTest
                                                                     SummaryStatistic.StatisticDimension.FEATURES,
                                                                     null );
 
-        SummaryStatisticFunction meanFunction = FunctionFactory.ofSummaryStatistic( mean );
+        ScalarSummaryStatisticFunction meanFunction = FunctionFactory.ofSummaryStatistic( mean );
 
-        Set<SummaryStatisticFunction> summaryStatistics = Set.of( meanFunction );
+        Set<ScalarSummaryStatisticFunction> summaryStatistics = Set.of( meanFunction );
 
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), null, ( a, b ) -> a, null );
+                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), Set.of(), null, ( a, b ) -> a, null );
 
         // Accept the two statistics
         calculator.test( one );
@@ -1151,15 +1151,15 @@ class SummaryStatisticsCalculatorTest
                                                                     SummaryStatistic.StatisticDimension.FEATURES,
                                                                     null );
 
-        SummaryStatisticFunction meanFunction = FunctionFactory.ofSummaryStatistic( mean );
+        ScalarSummaryStatisticFunction meanFunction = FunctionFactory.ofSummaryStatistic( mean );
 
         SummaryStatistic sd = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.STANDARD_DEVIATION,
                                                                   SummaryStatistic.StatisticDimension.FEATURES,
                                                                   null );
 
-        SummaryStatisticFunction sdFunction = FunctionFactory.ofSummaryStatistic( sd );
+        ScalarSummaryStatisticFunction sdFunction = FunctionFactory.ofSummaryStatistic( sd );
 
-        Set<SummaryStatisticFunction> summaryStatistics = new LinkedHashSet<>();
+        Set<ScalarSummaryStatisticFunction> summaryStatistics = new LinkedHashSet<>();
         summaryStatistics.add( meanFunction );
         summaryStatistics.add( sdFunction );
 
@@ -1173,7 +1173,7 @@ class SummaryStatisticsCalculatorTest
                                                                          .setGeometryGroup( group ) )
                                                               .build();
         SummaryStatisticsCalculator calculator =
-                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), null, transformer, null );
+                SummaryStatisticsCalculator.of( summaryStatistics, Set.of(), Set.of(), null, transformer, null );
 
         for ( int i = 1; i < 11; i++ )
         {

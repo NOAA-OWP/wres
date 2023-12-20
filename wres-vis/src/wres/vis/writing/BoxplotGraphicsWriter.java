@@ -28,13 +28,14 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool.EnsembleAverageType;
+import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.TimeWindow;
 import wres.vis.charts.ChartBuildingException;
 import wres.vis.charts.ChartFactory;
 
 /**
  * Helps write charts comprising {@link BoxplotStatisticOuter} to graphics formats.
- * 
+ *
  * @author James Brown
  */
 
@@ -164,7 +165,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
             {
                 // Slice by ensemble averaging type
                 List<List<BoxplotStatisticOuter>> sliced =
-                        BoxplotGraphicsWriter.getSliceByEnsembleAverageType( nextGroup );
+                        BoxplotGraphicsWriter.getSlicedBoxes( nextGroup );
 
                 for ( List<BoxplotStatisticOuter> nextSlice : sliced )
                 {
@@ -330,15 +331,13 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
     }
 
     /**
-     * Slices the statistics for individual graphics by {@link EnsembleAverageType}. Returns as many slices as graphics 
-     * to create.
-     * 
+     * Slices the statistics for individual graphics. Returns as many slices as graphics to create.
+     *
      * @param statistics the statistics to slice
      * @return the sliced statistics to write
      */
 
-    private static List<List<BoxplotStatisticOuter>>
-            getSliceByEnsembleAverageType( List<BoxplotStatisticOuter> statistics )
+    private static List<List<BoxplotStatisticOuter>> getSlicedBoxes( List<BoxplotStatisticOuter> statistics )
     {
         List<List<BoxplotStatisticOuter>> sliced = new ArrayList<>();
 
@@ -349,9 +348,17 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                                                                     value -> type == value.getPoolMetadata()
                                                                                           .getPool()
                                                                                           .getEnsembleAverageType() );
+
             if ( !innerSlice.isEmpty() )
             {
-                sliced.add( innerSlice );
+                // Group by summary statistic presence/absence
+                List<List<BoxplotStatisticOuter>> grouped =
+                        GraphicsWriter.groupBySummaryStatistics( innerSlice,
+                                                                 s -> s.getStatistic()
+                                                                       .getMetric()
+                                                                       .getVariable(),
+                                                                 Set.of( SummaryStatistic.StatisticName.BOX_PLOT ) );
+                sliced.addAll( grouped );
             }
         }
 
@@ -361,13 +368,12 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
     /**
      * Slices the statistics for individual graphics by time-based pooling window. Returns as many slices as graphics 
      * to create.
-     * 
+     *
      * @param statistics the statistics to slice
      * @return the sliced statistics to write
      */
 
-    private static Map<TimeWindowOuter, List<BoxplotStatisticOuter>>
-            getSliceByPoolingWindow( List<BoxplotStatisticOuter> statistics )
+    private static Map<TimeWindowOuter, List<BoxplotStatisticOuter>> getSliceByPoolingWindow( List<BoxplotStatisticOuter> statistics )
     {
         Function<BoxplotStatisticOuter, TimeWindowOuter> classifier = boxplot -> {
             TimeWindowOuter timeWindow = boxplot.getPoolMetadata()
@@ -377,11 +383,15 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
             TimeWindow adjusted = timeWindow.getTimeWindow()
                                             .toBuilder()
                                             .setEarliestLeadDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                  .setSeconds( TimeWindowOuter.DURATION_MIN.getSeconds() )
-                                                                                                  .setNanos( TimeWindowOuter.DURATION_MIN.getNano() ) )
+                                                                                                  .setSeconds(
+                                                                                                          TimeWindowOuter.DURATION_MIN.getSeconds() )
+                                                                                                  .setNanos(
+                                                                                                          TimeWindowOuter.DURATION_MIN.getNano() ) )
                                             .setLatestLeadDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                .setSeconds( TimeWindowOuter.DURATION_MAX.getSeconds() )
-                                                                                                .setNanos( TimeWindowOuter.DURATION_MAX.getNano() ) )
+                                                                                                .setSeconds(
+                                                                                                        TimeWindowOuter.DURATION_MAX.getSeconds() )
+                                                                                                .setNanos(
+                                                                                                        TimeWindowOuter.DURATION_MAX.getNano() ) )
                                             .build();
 
             return TimeWindowOuter.of( adjusted );
@@ -421,11 +431,14 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
         // #51670
         SortedSet<EnsembleAverageType> types =
                 Slicer.discover( statistics,
-                                 next -> next.getPoolMetadata().getPool().getEnsembleAverageType() );
+                                 next -> next.getPoolMetadata()
+                                             .getPool()
+                                             .getEnsembleAverageType() );
 
         Optional<EnsembleAverageType> type =
                 types.stream()
-                     .filter( next -> next != EnsembleAverageType.MEAN && next != EnsembleAverageType.NONE
+                     .filter( next -> next != EnsembleAverageType.MEAN
+                                      && next != EnsembleAverageType.NONE
                                       && next != EnsembleAverageType.UNRECOGNIZED )
                      .findFirst();
 
@@ -440,12 +453,54 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                                         .name();
         }
 
+        // Qualify by summary statistic name
+        String name = BoxplotGraphicsWriter.getSummaryStatisticPathQualifier( statistics );
+
+        if ( !name.isBlank() )
+        {
+            if ( !append.isBlank() )
+            {
+                append += "_";
+            }
+            append += name;
+        }
+
         return append;
     }
 
     /**
+     * Generates a path qualifier for summary statistics.
+     * @param statistics the statistics
+     * @return the path qualifier
+     */
+    private static String getSummaryStatisticPathQualifier( List<BoxplotStatisticOuter> statistics )
+    {
+        Optional<String> name = Optional.empty();
+
+        if ( statistics.stream()
+                       .anyMatch( n -> n.isSummaryStatistic()
+                                       && n.getSummaryStatistic()
+                                           .getStatistic()
+                                          == SummaryStatistic.StatisticName.BOX_PLOT ) )
+        {
+            name = statistics.stream()
+                             .filter( n -> n.isSummaryStatistic()
+                                           && n.getSummaryStatistic()
+                                               .getDimension()
+                                              != SummaryStatistic.StatisticDimension.RESAMPLED )
+                             .map( d -> d.getStatistic()
+                                         .getMetric()
+                                         .getVariable()
+                                         .replace( " ", "_" ) )
+                             .findFirst();
+        }
+
+        return name.orElse( "" );
+    }
+
+    /**
      * Hidden constructor.
-     * 
+     *
      * @param outputsDescription a description of the required outputs
      * @param outputDirectory the directory into which to write
      * @throws NullPointerException if either input is null

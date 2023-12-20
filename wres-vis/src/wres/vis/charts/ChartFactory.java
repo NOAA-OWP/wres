@@ -292,7 +292,7 @@ public class ChartFactory
         PoolMetadata metadata = first.getPoolMetadata();
         MetricConstants metricName = first.getMetricName();
         DiagramMetricComponent domain = first.getComponent( DiagramComponentType.PRIMARY_DOMAIN_AXIS );
-        String diagramSummaryStatisticNameQualifier = this.getDiagramSummaryStatisticNameQualifier( first );
+        String summaryStatisticNameQualifier = this.getsummaryStatisticNameQualifier( first );
 
         DiagramMetricComponent range = first.getComponent( DiagramComponentType.PRIMARY_RANGE_AXIS );
         MetricDimension domainDimension = first.getComponentName( DiagramComponentType.PRIMARY_DOMAIN_AXIS );
@@ -348,7 +348,7 @@ public class ChartFactory
                                                                         ensembleAverageType,
                                                                         quantiles,
                                                                         summaryStatistic,
-                                                                        diagramSummaryStatisticNameQualifier );
+                                                                        summaryStatisticNameQualifier );
 
             String title = this.getChartTitle( parameters );
 
@@ -533,6 +533,17 @@ public class ChartFactory
 
         SummaryStatistic summaryStatistic = first.getSummaryStatistic();
 
+        String typeString = type.toString();
+
+        String summaryStatisticNameQualifier = null;
+        if ( Objects.nonNull( summaryStatistic ) )
+        {
+            summaryStatisticNameQualifier = first.getStatistic()
+                                                 .getMetric()
+                                                 .getVariable();
+            typeString = summaryStatisticNameQualifier;
+        }
+
         // Determine the output type
         ChartType chartType = ChartFactory.getChartType( metricName, GraphicShape.DEFAULT );
 
@@ -549,11 +560,10 @@ public class ChartFactory
                                                                     ensembleAverageType,
                                                                     quantiles,
                                                                     summaryStatistic,
-                                                                    null );
+                                                                    summaryStatisticNameQualifier );
         String title = this.getChartTitle( parameters );
 
-        String rangeTitle = type.toString()
-                                .replace( "_", " " )
+        String rangeTitle = typeString.replace( "_", " " )
                             + " ["
                             + metricUnits
                             + "]";
@@ -1494,11 +1504,11 @@ public class ChartFactory
         String metric = metricName.toString();
 
         if ( isSummaryStatistic
-             && Objects.nonNull( parameters.diagramSummaryStatisticNameQualifier() )
-             && !parameters.diagramSummaryStatisticNameQualifier()
+             && Objects.nonNull( parameters.summaryStatisticNameQualifier() )
+             && !parameters.summaryStatisticNameQualifier()
                            .isBlank() )
         {
-            metric = parameters.diagramSummaryStatisticNameQualifier();
+            metric = parameters.summaryStatisticNameQualifier();
         }
 
         // Summary statistic that needs to be qualified
@@ -1602,7 +1612,8 @@ public class ChartFactory
         if ( isSummaryStatistic )
         {
             String statisticName = summaryStatistic.getStatistic()
-                                                   .toString();
+                                                   .toString()
+                                                   .replace( "_", " " );
 
             if ( summaryStatistic.getStatistic() == SummaryStatistic.StatisticName.QUANTILE )
             {
@@ -2301,7 +2312,7 @@ public class ChartFactory
      * @return the name qualifier
      */
 
-    private String getDiagramSummaryStatisticNameQualifier( DiagramStatisticOuter statistic )
+    private String getsummaryStatisticNameQualifier( DiagramStatisticOuter statistic )
     {
         String qualifier = "";
         // For a diagram summary statistic, the underlying metric being summarized is recorded as a component name
@@ -2390,7 +2401,7 @@ public class ChartFactory
      * @param ensembleAverageType the ensemble average type
      * @param quantiles the quantiles
      * @param summaryStatistic the summary statistic
-     * @param diagramSummaryStatisticNameQualifier the name qualifier for a diagram summary statistic
+     * @param summaryStatisticNameQualifier the name qualifier for a summary statistic
      */
     private record ChartTitleParameters( PoolMetadata metadata,
                                          Pair<MetricConstants, MetricConstants> metricNames,
@@ -2400,7 +2411,7 @@ public class ChartFactory
                                          EnsembleAverageType ensembleAverageType,
                                          SortedSet<Double> quantiles,
                                          SummaryStatistic summaryStatistic,
-                                         String diagramSummaryStatisticNameQualifier )
+                                         String summaryStatisticNameQualifier )
     {
         /**
          * Validate inputs.
@@ -2412,7 +2423,7 @@ public class ChartFactory
          * @param ensembleAverageType the ensemble average type
          * @param quantiles the quantiles
          * @param summaryStatistic the summary statistic
-         * @param diagramSummaryStatisticNameQualifier the name qualifier for a diagram summary statistic
+         * @param summaryStatisticNameQualifier the name qualifier for a diagram summary statistic
          */
         private ChartTitleParameters
         {

@@ -531,7 +531,9 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
             Function<BoxplotStatistic, BoxplotStatisticOuter> innerMapper =
                     nextBoxplot -> BoxplotStatisticOuter.of( nextBoxplot,
                                                              PoolMetadata.of( this.getEvaluationDescription(),
-                                                                              poolSupplier.apply( someStats ) ) );
+                                                                              poolSupplier.apply( someStats ) ),
+                                                             this.getSummaryStatistic( someStats )
+                    );
             return boxes.stream()
                         .map( innerMapper )
                         .toList();

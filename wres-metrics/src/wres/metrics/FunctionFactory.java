@@ -27,6 +27,8 @@ import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.pools.Pool;
+import wres.statistics.generated.BoxplotMetric;
+import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.MetricName;
@@ -40,6 +42,9 @@ import wres.statistics.generated.SummaryStatistic;
 
 public class FunctionFactory
 {
+    /** Default probabilities. */
+    static final List<Double> DEFAULT_PROBABILITIES = List.of( 0.0, 0.25, 0.5, 0.75, 1.0 );
+
     /** Map of summary statistics. */
     private static final Map<MetricConstants, ToDoubleFunction<double[]>> STATISTICS =
             new EnumMap<>( MetricConstants.class );
@@ -78,6 +83,19 @@ public class FunctionFactory
                                                                        .addComponents( FunctionFactory.HISTOGRAM_COUNT )
                                                                        .setName( MetricName.HISTOGRAM )
                                                                        .build();
+
+    /** Box plot metric. */
+    private static final BoxplotMetric BOXPLOT_METRIC = BoxplotMetric.newBuilder()
+                                                                     .setName( MetricName.BOX_PLOT )
+                                                                     .setLinkedValueType( BoxplotMetric.LinkedValueType.NONE )
+                                                                     .setQuantileValueType( BoxplotMetric.QuantileValueType.VARIABLE )
+                                                                     .addAllQuantiles( FunctionFactory.DEFAULT_PROBABILITIES )
+                                                                     .setMinimum( Double.NEGATIVE_INFINITY )
+                                                                     .setMaximum( Double.POSITIVE_INFINITY )
+                                                                     .build();
+
+    /** Function for rounding the errors. */
+    private static final DoubleUnaryOperator ROUNDER = Slicer.rounder( 8 );
 
     /**
      * Return a function that computes the difference between the second and first entries in a single-valued pair.
@@ -269,7 +287,8 @@ public class FunctionFactory
         return samples ->
         {
             // Sort?
-            if ( !FunctionFactory.isSorted().test( samples ) )
+            if ( !FunctionFactory.isSorted()
+                                 .test( samples ) )
             {
                 Arrays.sort( samples );
             }
@@ -288,7 +307,7 @@ public class FunctionFactory
      * @throws IllegalArgumentException if the probability is outside the unit interval
      */
 
-    public static SummaryStatisticFunction quantileForSamplingUncertainty( double probability )
+    public static ScalarSummaryStatisticFunction quantileForSamplingUncertainty( double probability )
     {
         ToDoubleFunction<double[]> quantile = FunctionFactory.quantile( probability );
         SummaryStatistic statistic = SummaryStatistic.newBuilder()
@@ -296,7 +315,7 @@ public class FunctionFactory
                                                      .setProbability( probability )
                                                      .setDimension( SummaryStatistic.StatisticDimension.RESAMPLED )
                                                      .build();
-        return new SummaryStatisticFunction( statistic, quantile );
+        return new ScalarSummaryStatisticFunction( statistic, quantile );
     }
 
     /**
@@ -388,65 +407,131 @@ public class FunctionFactory
      * Returns a function that calculates a histogram with a prescribed number of bins.
      * @param parameters the histogram parameters
      * @return the histogram function
-     * @throws IllegalArgumentException if the number of bins is less than one
+     * @throws IllegalArgumentException if the parameters contain unexpected information
+     * @throws NullPointerException if the parameters is null
      */
-    public static DiagramStatisticFunction histogram( SummaryStatistic parameters )
+    public static DiagramSummaryStatisticFunction histogram( SummaryStatistic parameters )
     {
+        Objects.requireNonNull( parameters );
+
+        // Validate the parameters
+        if ( parameters.getHistogramBins() < 2 )
+        {
+            throw new IllegalArgumentException( "Expected at least two bins for ths histogram." );
+        }
+
+        if ( parameters.getStatistic() != SummaryStatistic.StatisticName.HISTOGRAM )
+        {
+            throw new IllegalArgumentException( "Expected parameters for a histogram, but received parameters for a : "
+                                                + parameters.getStatistic() );
+        }
+
         int bins = parameters.getHistogramBins();
 
-        BiFunction<Map<DiagramStatisticFunction.DiagramComponentName, String>, double[], DiagramStatistic> f =
-                ( p, d ) ->
-                {
-                    Objects.requireNonNull( p.get( DiagramStatisticFunction.DiagramComponentName.VARIABLE ),
-                                            "Cannot create a histogram without a variable name." );
-                    Objects.requireNonNull( p.get( DiagramStatisticFunction.DiagramComponentName.VARIABLE_UNIT ),
-                                            "Cannot create a histogram without a variable unit." );
+        BiFunction<Map<SummaryStatisticComponentName, String>, double[], DiagramStatistic> f = ( p, d ) ->
+        {
+            Objects.requireNonNull( p.get( SummaryStatisticComponentName.VARIABLE ),
+                                    "Cannot create a histogram without a variable name." );
+            Objects.requireNonNull( p.get( SummaryStatisticComponentName.VARIABLE_UNIT ),
+                                    "Cannot create a histogram without a variable unit." );
 
-                    String variableName = p.get( DiagramStatisticFunction.DiagramComponentName.VARIABLE );
-                    String unitName = p.get( DiagramStatisticFunction.DiagramComponentName.VARIABLE_UNIT );
+            String variableName = p.get( SummaryStatisticComponentName.VARIABLE );
+            String unitName = p.get( SummaryStatisticComponentName.VARIABLE_UNIT );
 
-                    DiagramMetric.DiagramMetricComponent domainAxis = FunctionFactory.HISTOGRAM_BINS.toBuilder()
-                                                                                                    .setUnits( unitName )
-                                                                                                    .build();
+            DiagramMetric.DiagramMetricComponent domainAxis = FunctionFactory.HISTOGRAM_BINS.toBuilder()
+                                                                                            .setUnits( unitName )
+                                                                                            .build();
 
-                    DiagramMetric metric = FunctionFactory.HISTOGRAM_METRIC.toBuilder()
-                                                                           .setComponents( 0, domainAxis )
-                                                                           .build();
+            DiagramMetric metric = FunctionFactory.HISTOGRAM_METRIC.toBuilder()
+                                                                   .setComponents( 0, domainAxis )
+                                                                   .build();
 
-                    EmpiricalDistribution empirical = new EmpiricalDistribution( bins );
-                    empirical.load( d );
+            EmpiricalDistribution empirical = new EmpiricalDistribution( bins );
+            empirical.load( d );
 
-                    List<Double> binUpperBounds = Arrays.stream( empirical.getUpperBounds() )
-                                                        .boxed()
-                                                        .toList();
-                    List<Double> binCounts = empirical.getBinStats()
-                                                      .stream()
-                                                      .mapToDouble( SummaryStatistics::getN )
-                                                      .boxed()
-                                                      .toList();
+            List<Double> binUpperBounds = Arrays.stream( empirical.getUpperBounds() )
+                                                .boxed()
+                                                .toList();
+            List<Double> binCounts = empirical.getBinStats()
+                                              .stream()
+                                              .mapToDouble( SummaryStatistics::getN )
+                                              .boxed()
+                                              .toList();
 
-                    DiagramStatistic.DiagramStatisticComponent domainStatistic =
-                            DiagramStatistic.DiagramStatisticComponent.newBuilder()
-                                                                      .setMetric( domainAxis )
-                                                                      .setName( variableName )
-                                                                      .addAllValues( binUpperBounds )
-                                                                      .build();
+            DiagramStatistic.DiagramStatisticComponent domainStatistic =
+                    DiagramStatistic.DiagramStatisticComponent.newBuilder()
+                                                              .setMetric( domainAxis )
+                                                              .setName( variableName )
+                                                              .addAllValues( binUpperBounds )
+                                                              .build();
 
-                    DiagramStatistic.DiagramStatisticComponent rangeStatistic =
-                            DiagramStatistic.DiagramStatisticComponent.newBuilder()
-                                                                      .setMetric( FunctionFactory.HISTOGRAM_COUNT )
-                                                                      .setName( variableName )
-                                                                      .addAllValues( binCounts )
-                                                                      .build();
+            DiagramStatistic.DiagramStatisticComponent rangeStatistic =
+                    DiagramStatistic.DiagramStatisticComponent.newBuilder()
+                                                              .setMetric( FunctionFactory.HISTOGRAM_COUNT )
+                                                              .setName( variableName )
+                                                              .addAllValues( binCounts )
+                                                              .build();
 
-                    return DiagramStatistic.newBuilder()
-                                           .addStatistics( domainStatistic )
-                                           .addStatistics( rangeStatistic )
-                                           .setMetric( metric )
-                                           .build();
-                };
+            return DiagramStatistic.newBuilder()
+                                   .addStatistics( domainStatistic )
+                                   .addStatistics( rangeStatistic )
+                                   .setMetric( metric )
+                                   .build();
+        };
 
-        return new DiagramStatisticFunction( parameters, f );
+        return new DiagramSummaryStatisticFunction( parameters, f );
+    }
+
+    /**
+     * Returns a function that calculates a box plot.
+     * @param parameters the box plot parameters
+     * @return the box plot function#
+     * @throws IllegalArgumentException if the parameters contain unexpected information
+     * @throws NullPointerException if the parameters is null
+     */
+    public static BoxplotSummaryStatisticFunction boxplot( SummaryStatistic parameters )
+    {
+        Objects.requireNonNull( parameters );
+
+        // Validate the parameters
+        if ( parameters.getStatistic() != SummaryStatistic.StatisticName.BOX_PLOT )
+        {
+            throw new IllegalArgumentException( "Expected parameters for a box plot, but received parameters for a : "
+                                                + parameters.getStatistic() );
+        }
+
+        BiFunction<Map<SummaryStatisticComponentName, String>, double[], BoxplotStatistic> f = ( p, d ) ->
+        {
+            Objects.requireNonNull( p.get( SummaryStatisticComponentName.VARIABLE ),
+                                    "Cannot create a box plot without a variable name." );
+            Objects.requireNonNull( p.get( SummaryStatisticComponentName.VARIABLE_UNIT ),
+                                    "Cannot create a box plot without a variable unit." );
+
+            String variableName = p.get( SummaryStatisticComponentName.VARIABLE );
+            String unitName = p.get( SummaryStatisticComponentName.VARIABLE_UNIT );
+
+            BoxplotMetric metric = BOXPLOT_METRIC.toBuilder()
+                                                 .setVariable( variableName )
+                                                 .setUnits( unitName )
+                                                 .build();
+
+            // Compute the quantiles at a rounded precision
+            List<Double> box = FunctionFactory.DEFAULT_PROBABILITIES.stream()
+                                                                    .mapToDouble( Double::doubleValue )
+                                                                    .map( pr -> FunctionFactory.quantile( pr )
+                                                                                               .applyAsDouble( d ) )
+                                                                    .map( FunctionFactory.ROUNDER )
+                                                                    .boxed()
+                                                                    .toList();
+
+            return BoxplotStatistic.newBuilder()
+                                   .setMetric( metric )
+                                   .addStatistics( BoxplotStatistic.Box.newBuilder()
+                                                                       .addAllQuantiles( box ) )
+                                   .build();
+        };
+
+        return new BoxplotSummaryStatisticFunction( parameters, f );
     }
 
     /**
@@ -476,7 +561,7 @@ public class FunctionFactory
     }
 
     /**
-     * Returns a {@link SummaryStatisticFunction} from a {@link SummaryStatistic}.
+     * Returns a {@link ScalarSummaryStatisticFunction} from a {@link SummaryStatistic}.
      *
      * @param statistic the statistic
      * @return the statistic calculator
@@ -484,14 +569,14 @@ public class FunctionFactory
      * @throws IllegalArgumentException if the statistic is not a valid summary statistic in this context
      */
 
-    public static SummaryStatisticFunction ofSummaryStatistic( SummaryStatistic statistic )
+    public static ScalarSummaryStatisticFunction ofSummaryStatistic( SummaryStatistic statistic )
     {
         Objects.requireNonNull( statistic );
 
         if ( statistic.getStatistic() == SummaryStatistic.StatisticName.QUANTILE )
         {
-            return new SummaryStatisticFunction( statistic,
-                                                 FunctionFactory.quantile( statistic.getProbability() ) );
+            return new ScalarSummaryStatisticFunction( statistic,
+                                                       FunctionFactory.quantile( statistic.getProbability() ) );
         }
 
         MetricConstants name = MetricConstants.valueOf( statistic.getStatistic()
@@ -499,11 +584,11 @@ public class FunctionFactory
 
         ToDoubleFunction<double[]> calculator = FunctionFactory.ofSummaryStatistic( name );
 
-        return new SummaryStatisticFunction( statistic, calculator );
+        return new ScalarSummaryStatisticFunction( statistic, calculator );
     }
 
     /**
-     * Returns a {@link SummaryStatisticFunction} from a {@link SummaryStatistic}.
+     * Returns a {@link DiagramSummaryStatisticFunction} from a {@link SummaryStatistic}.
      *
      * @param statistic the statistic
      * @return the statistic calculator
@@ -511,7 +596,7 @@ public class FunctionFactory
      * @throws IllegalArgumentException if the statistic is not a valid summary statistic in this context
      */
 
-    public static DiagramStatisticFunction ofDiagramSummaryStatistic( SummaryStatistic statistic )
+    public static DiagramSummaryStatisticFunction ofDiagramSummaryStatistic( SummaryStatistic statistic )
     {
         Objects.requireNonNull( statistic );
 
@@ -521,6 +606,27 @@ public class FunctionFactory
         }
 
         return FunctionFactory.histogram( statistic );
+    }
+
+    /**
+     * Returns a {@link BoxplotSummaryStatisticFunction} from a {@link SummaryStatistic}.
+     *
+     * @param statistic the statistic
+     * @return the statistic calculator
+     * @throws NullPointerException if the input is null
+     * @throws IllegalArgumentException if the statistic is not a valid summary statistic in this context
+     */
+
+    public static BoxplotSummaryStatisticFunction ofBoxplotSummaryStatistic( SummaryStatistic statistic )
+    {
+        Objects.requireNonNull( statistic );
+
+        if ( statistic.getStatistic() != SummaryStatistic.StatisticName.BOX_PLOT )
+        {
+            throw new IllegalArgumentException( "Unsupported box plot statistic: " + statistic.getStatistic() + "." );
+        }
+
+        return FunctionFactory.boxplot( statistic );
     }
 
     /**
@@ -564,8 +670,8 @@ public class FunctionFactory
      * @param units the time units to use
      * @return the duration diagram function
      */
-    public static BiFunction<Map<DiagramStatisticFunction.DiagramComponentName, String>, Duration[],
-            DiagramStatistic> ofDurationDiagramFromUnivariateFunction( DiagramStatisticFunction function,
+    public static BiFunction<Map<SummaryStatisticComponentName, String>, Duration[],
+            DiagramStatistic> ofDurationDiagramFromUnivariateFunction( DiagramSummaryStatisticFunction function,
                                                                        ChronoUnit units )
     {
         // Create a function that operates on durations

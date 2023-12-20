@@ -103,10 +103,13 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
     private final Predicate<Statistics> filter;
 
     /** The scalar summary statistics to calculate on completion. */
-    private final Set<SummaryStatisticFunction> scalarStatistics;
+    private final Set<ScalarSummaryStatisticFunction> scalarStatistics;
 
     /** The diagram summary statistics to calculate on completion. */
-    private final Set<DiagramStatisticFunction> diagramStatistics;
+    private final Set<DiagramSummaryStatisticFunction> diagramStatistics;
+
+    /** The box plot summary statistics to calculate on completion. */
+    private final Set<BoxplotSummaryStatisticFunction> boxplotStatistics;
 
     /** The calculated summary statistics. */
     private final List<Statistics> statistics;
@@ -134,20 +137,23 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
      * Creates an instance.
      * @param scalarStatistics the scalar summary statistics to calculate
      * @param diagramStatistics the diagram summary statistics to calculate
+     * @param boxplotStatistics the box plot summary statistics to calculate
      * @param filter an optional filter
      * @param metadataTransformer a transformer that adapts the statistics metadata to reflect the summary performed
      * @param timeUnits the optional time units to use for duration statistics
      * @return an instance
      * @throws IllegalArgumentException if all lists of statistics are null or empty
      */
-    public static SummaryStatisticsCalculator of( Set<SummaryStatisticFunction> scalarStatistics,
-                                                  Set<DiagramStatisticFunction> diagramStatistics,
+    public static SummaryStatisticsCalculator of( Set<ScalarSummaryStatisticFunction> scalarStatistics,
+                                                  Set<DiagramSummaryStatisticFunction> diagramStatistics,
+                                                  Set<BoxplotSummaryStatisticFunction> boxplotStatistics,
                                                   Predicate<Statistics> filter,
                                                   BinaryOperator<Statistics> metadataTransformer,
                                                   ChronoUnit timeUnits )
     {
         return new SummaryStatisticsCalculator( scalarStatistics,
                                                 diagramStatistics,
+                                                boxplotStatistics,
                                                 filter,
                                                 metadataTransformer,
                                                 timeUnits );
@@ -511,7 +517,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                       this.scalarStatistics );
 
         // Calculate the scalar summary statistics
-        for ( SummaryStatisticFunction summaryStatistic : this.scalarStatistics )
+        for ( ScalarSummaryStatisticFunction summaryStatistic : this.scalarStatistics )
         {
             Statistics.Builder builder = this.nominal.toBuilder()
                                                      .setSummaryStatistic( summaryStatistic.statistic() );
@@ -565,7 +571,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
         }
 
         // Calculate the diagram summary statistics for scores
-        for ( DiagramStatisticFunction diagramStatistic : this.diagramStatistics )
+        for ( DiagramSummaryStatisticFunction diagramStatistic : this.diagramStatistics )
         {
             Statistics.Builder builder = this.nominal.toBuilder()
                                                      .setSummaryStatistic( diagramStatistic.statistic() );
@@ -575,8 +581,19 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
             this.statistics.add( builder.build() );
         }
 
+        // Calculate the box plot statistics for scores
+        for ( BoxplotSummaryStatisticFunction boxplotStatistic : this.boxplotStatistics )
+        {
+            Statistics.Builder builder = this.nominal.toBuilder()
+                                                     .setSummaryStatistic( boxplotStatistic.statistic() );
+
+            List<BoxplotStatistic> boxes = this.calculateBoxplotStatisticForDoubleScores( boxplotStatistic );
+            builder.addAllOneBoxPerPool( boxes );
+            this.statistics.add( builder.build() );
+        }
+
         // Calculate the diagram summary statistics for duration scores
-        for ( DiagramStatisticFunction diagramStatistic : this.diagramStatistics )
+        for ( DiagramSummaryStatisticFunction diagramStatistic : this.diagramStatistics )
         {
             Statistics.Builder builder = this.nominal.toBuilder()
                                                      .setSummaryStatistic( diagramStatistic.statistic() );
@@ -596,7 +613,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
      */
 
     private void calculateDoubleScoreSummaryStatistic( List<DoubleScoreStatistic.Builder> builders,
-                                                       SummaryStatisticFunction summaryStatistic )
+                                                       ScalarSummaryStatisticFunction summaryStatistic )
     {
         for ( DoubleScoreStatistic.Builder score : builders )
         {
@@ -624,7 +641,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
      */
 
     private void calculateDurationScoreSummaryStatistics( List<DurationScoreStatistic.Builder> builders,
-                                                          SummaryStatisticFunction summaryStatistic )
+                                                          ScalarSummaryStatisticFunction summaryStatistic )
     {
         Function<Duration[], Duration> durationStatistic =
                 FunctionFactory.ofDurationFromUnivariateFunction( summaryStatistic );
@@ -662,7 +679,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
      */
 
     private void calculateDiagramSummaryStatistics( List<DiagramStatistic.Builder> builders,
-                                                    SummaryStatisticFunction summaryStatistic )
+                                                    ScalarSummaryStatisticFunction summaryStatistic )
     {
         for ( DiagramStatistic.Builder diagram : builders )
         {
@@ -698,7 +715,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
      */
 
     private void calculateDurationDiagramSummaryStatistics( List<DurationDiagramStatistic.Builder> builders,
-                                                            SummaryStatisticFunction summaryStatistic )
+                                                            ScalarSummaryStatisticFunction summaryStatistic )
     {
         Function<Duration[], Duration> durationStatistic =
                 FunctionFactory.ofDurationFromUnivariateFunction( summaryStatistic );
@@ -737,7 +754,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
      * @param diagram the diagram statistic
      * @return the diagram statistics, one for each double score
      */
-    private List<DiagramStatistic> calculateDiagramStatisticForDoubleScores( DiagramStatisticFunction diagram )
+    private List<DiagramStatistic> calculateDiagramStatisticForDoubleScores( DiagramSummaryStatisticFunction diagram )
     {
         List<DiagramStatistic> diagramList = new ArrayList<>();
         for ( Map.Entry<DoubleScoreName, MutableDoubleList> nextScore : this.doubleScores.entrySet() )
@@ -760,9 +777,9 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
             String unitString = b.getStatistics( 0 )
                                  .getMetric()
                                  .getUnits();
-            Map<DiagramStatisticFunction.DiagramComponentName, String> names =
-                    Map.of( DiagramStatisticFunction.DiagramComponentName.VARIABLE, nameString,
-                            DiagramStatisticFunction.DiagramComponentName.VARIABLE_UNIT, unitString );
+            Map<SummaryStatisticComponentName, String> names =
+                    Map.of( SummaryStatisticComponentName.VARIABLE, nameString,
+                            SummaryStatisticComponentName.VARIABLE_UNIT, unitString );
             DiagramStatistic nextDiagram = diagram.apply( names, rawScores );
             diagramList.add( nextDiagram );
         }
@@ -775,7 +792,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
      * @param diagram the diagram statistic
      * @return the diagram statistics, one for each duration score
      */
-    private List<DiagramStatistic> calculateDiagramStatisticForDurationScores( DiagramStatisticFunction diagram )
+    private List<DiagramStatistic> calculateDiagramStatisticForDurationScores( DiagramSummaryStatisticFunction diagram )
     {
         List<DiagramStatistic> diagramList = new ArrayList<>();
         for ( Map.Entry<DurationScoreName, List<Duration>> nextScore : this.durationScores.entrySet() )
@@ -788,9 +805,9 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
 
             List<Duration> scores = nextScore.getValue();
             Duration[] rawScores = scores.toArray( new Duration[0] );
-            Map<DiagramStatisticFunction.DiagramComponentName, String> names =
-                    Map.of( DiagramStatisticFunction.DiagramComponentName.VARIABLE, nameString );
-            BiFunction<Map<DiagramStatisticFunction.DiagramComponentName, String>, Duration[], DiagramStatistic>
+            Map<SummaryStatisticComponentName, String> names =
+                    Map.of( SummaryStatisticComponentName.VARIABLE, nameString );
+            BiFunction<Map<SummaryStatisticComponentName, String>, Duration[], DiagramStatistic>
                     durationDiagram =
                     FunctionFactory.ofDurationDiagramFromUnivariateFunction( diagram, this.timeUnit );
             DiagramStatistic nextDiagram = durationDiagram.apply( names, rawScores );
@@ -798,6 +815,45 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
         }
 
         return Collections.unmodifiableList( diagramList );
+    }
+
+    /**
+     * Calculates the box plot statistic for all double scores.
+     * @param boxplot the box plot statistic
+     * @return the box plot statistics, one for each double score
+     */
+    private List<BoxplotStatistic> calculateBoxplotStatisticForDoubleScores( BoxplotSummaryStatisticFunction boxplot )
+    {
+        List<BoxplotStatistic> boxplotList = new ArrayList<>();
+        for ( Map.Entry<DoubleScoreName, MutableDoubleList> nextScore : this.doubleScores.entrySet() )
+        {
+            DoubleScoreName name = nextScore.getKey();
+            String nameString = name.metricName()
+                                    .toString();
+            // Format the name string
+            nameString = nameString.replace( "_", " " );
+
+            if ( name.metricComponentName() != DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
+            {
+                nameString += "-" + name.metricComponentName();
+            }
+
+            MutableDoubleList scores = nextScore.getValue();
+            double[] rawScores = scores.toArray();
+            DoubleScoreStatistic.Builder b = this.doubleScoreTemplates.get( name.metricName() );
+
+            String unitString = b.getStatistics( 0 )
+                                 .getMetric()
+                                 .getUnits();
+            Map<SummaryStatisticComponentName, String> names =
+                    Map.of( SummaryStatisticComponentName.VARIABLE, nameString,
+                            SummaryStatisticComponentName.VARIABLE_UNIT, unitString );
+
+            BoxplotStatistic nextBoxplot = boxplot.apply( names, rawScores );
+            boxplotList.add( nextBoxplot );
+        }
+
+        return Collections.unmodifiableList( boxplotList );
     }
 
     /**
@@ -891,14 +947,16 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
      * Creates an instance.
      * @param scalarStatistics the scalar summary statistics to calculate
      * @param diagramStatistics the diagram summary statistics to calculate
+     * @param boxplotStatistics the box plot summary statistics to calculate
      * @param filter an optional filter
      * @param metadataAggregator a transformer that adapts the statistics metadata to reflect the summary performed
      * @param timeUnits the optional time units to use for duration statistics
      * @throws IllegalArgumentException if all lists of statistics are null or empty
      * @throws NullPointerException if the metadata transformer is null
      */
-    private SummaryStatisticsCalculator( Set<SummaryStatisticFunction> scalarStatistics,
-                                         Set<DiagramStatisticFunction> diagramStatistics,
+    private SummaryStatisticsCalculator( Set<ScalarSummaryStatisticFunction> scalarStatistics,
+                                         Set<DiagramSummaryStatisticFunction> diagramStatistics,
+                                         Set<BoxplotSummaryStatisticFunction> boxplotStatistics,
                                          Predicate<Statistics> filter,
                                          BinaryOperator<Statistics> metadataAggregator,
                                          ChronoUnit timeUnits )
@@ -916,9 +974,15 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
             diagramStatistics = Set.of();
         }
 
+        if ( Objects.isNull( boxplotStatistics ) )
+        {
+            boxplotStatistics = Set.of();
+        }
+
         // No statistics to compute?
         if ( scalarStatistics.isEmpty()
-             && diagramStatistics.isEmpty() )
+             && diagramStatistics.isEmpty()
+             && boxplotStatistics.isEmpty() )
         {
             throw new IllegalArgumentException( "Provide one or more summary statistics to calculate." );
         }
@@ -945,6 +1009,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
         this.metadataAggregator = metadataAggregator;
         this.scalarStatistics = scalarStatistics;
         this.diagramStatistics = diagramStatistics;
+        this.boxplotStatistics = boxplotStatistics;
         this.isComplete = new AtomicBoolean();
         this.statistics = new ArrayList<>();
 

@@ -54,9 +54,10 @@ import wres.io.reading.netcdf.grid.GriddedFeatures;
 import wres.io.retrieving.database.EnsembleSingleValuedRetrieverFactory;
 import wres.io.retrieving.memory.EnsembleSingleValuedRetrieverFactoryInMemory;
 import wres.io.writing.csv.pairs.EnsemblePairsWriter;
-import wres.metrics.DiagramStatisticFunction;
+import wres.metrics.BoxplotSummaryStatisticFunction;
+import wres.metrics.DiagramSummaryStatisticFunction;
 import wres.metrics.FunctionFactory;
-import wres.metrics.SummaryStatisticFunction;
+import wres.metrics.ScalarSummaryStatisticFunction;
 import wres.metrics.SummaryStatisticsCalculator;
 import wres.pipeline.pooling.PoolFactory;
 import wres.pipeline.pooling.PoolParameters;
@@ -1160,11 +1161,16 @@ class EvaluationUtilities
 
         for ( MetricsAndThresholds nextMetrics : metricsAndThresholds )
         {
-            StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> nextProcessor =
-                    new SingleValuedStatisticsProcessor( nextMetrics,
-                                                         slicingExecutor,
-                                                         metricExecutor );
-            processors.add( nextProcessor );
+            // Could be no metrics if sampling uncertainties requested and no metrics support it
+            if ( !nextMetrics.metrics()
+                             .isEmpty() )
+            {
+                StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>> nextProcessor =
+                        new SingleValuedStatisticsProcessor( nextMetrics,
+                                                             slicingExecutor,
+                                                             metricExecutor );
+                processors.add( nextProcessor );
+            }
         }
 
         return Collections.unmodifiableList( processors );
@@ -1205,11 +1211,16 @@ class EvaluationUtilities
 
         for ( MetricsAndThresholds nextMetrics : metricsAndThresholds )
         {
-            StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> nextProcessor =
-                    new EnsembleStatisticsProcessor( nextMetrics,
-                                                     slicingExecutor,
-                                                     metricExecutor );
-            processors.add( nextProcessor );
+            // Could be no metrics if sampling uncertainties requested and no metrics support it
+            if ( !nextMetrics.metrics()
+                             .isEmpty() )
+            {
+                StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>> nextProcessor =
+                        new EnsembleStatisticsProcessor( nextMetrics,
+                                                         slicingExecutor,
+                                                         metricExecutor );
+                processors.add( nextProcessor );
+            }
         }
 
         return Collections.unmodifiableList( processors );
@@ -1687,8 +1698,9 @@ class EvaluationUtilities
         LOGGER.debug( "Discovered {} summary statistics to generate.",
                       summaryStatistics.size() );
 
-        Set<SummaryStatisticFunction> scalar = new HashSet<>();
-        Set<DiagramStatisticFunction> diagrams = new HashSet<>();
+        Set<ScalarSummaryStatisticFunction> scalar = new HashSet<>();
+        Set<DiagramSummaryStatisticFunction> diagrams = new HashSet<>();
+        Set<BoxplotSummaryStatisticFunction> boxplots = new HashSet<>();
 
         for ( SummaryStatistic nextStatistic : summaryStatistics )
         {
@@ -1698,13 +1710,21 @@ class EvaluationUtilities
             // Diagram?
             if ( behavioralName.isInGroup( MetricConstants.StatisticType.DIAGRAM ) )
             {
-                DiagramStatisticFunction nextDiagram = FunctionFactory.ofDiagramSummaryStatistic( nextStatistic );
+                DiagramSummaryStatisticFunction nextDiagram =
+                        FunctionFactory.ofDiagramSummaryStatistic( nextStatistic );
                 diagrams.add( nextDiagram );
-                LOGGER.debug( "Discovered a summary statistics diagram: {}.", name );
+                LOGGER.debug( "Discovered a diagram summary statistics: {}.", name );
+            }
+            else if ( behavioralName.isInGroup( MetricConstants.StatisticType.BOXPLOT_PER_POOL ) )
+            {
+                BoxplotSummaryStatisticFunction nextBoxplot =
+                        FunctionFactory.ofBoxplotSummaryStatistic( nextStatistic );
+                boxplots.add( nextBoxplot );
+                LOGGER.debug( "Discovered a box plot summary statistics: {}.", name );
             }
             else
             {
-                SummaryStatisticFunction nextScalar = FunctionFactory.ofSummaryStatistic( nextStatistic );
+                ScalarSummaryStatisticFunction nextScalar = FunctionFactory.ofSummaryStatistic( nextStatistic );
                 scalar.add( nextScalar );
                 LOGGER.debug( "Discovered a scalar summary statistic: {}.", name );
             }
@@ -1735,7 +1755,7 @@ class EvaluationUtilities
 
         // Return one calculator for each filter
         return joined.stream()
-                     .map( n -> SummaryStatisticsCalculator.of( scalar, diagrams, n, aggregator, timeUnits ) )
+                     .map( n -> SummaryStatisticsCalculator.of( scalar, diagrams, boxplots, n, aggregator, timeUnits ) )
                      .toList();
     }
 
