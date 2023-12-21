@@ -465,17 +465,10 @@ abstract class GraphicsWriter
 
     static class GraphicsHelper
     {
-
-        /**
-         * The shape of graphic.
-         */
-
+        /** The shape of graphic. */
         private final GraphicShape graphicShape;
 
-        /**
-         * The duration units.
-         */
-
+        /** The duration units. */
         private final ChronoUnit durationUnits;
 
         /**
@@ -503,13 +496,19 @@ abstract class GraphicsWriter
 
             GraphicFormat graphicsOptions = null;
 
-            if ( outputs.hasPng() && outputs.getPng().hasOptions() )
+            if ( outputs.hasPng()
+                 && outputs.getPng()
+                                            .hasOptions() )
             {
-                graphicsOptions = outputs.getPng().getOptions();
+                graphicsOptions = outputs.getPng()
+                                         .getOptions();
             }
-            else if ( outputs.hasSvg() && outputs.getSvg().hasOptions() )
+            else if ( outputs.hasSvg()
+                      && outputs.getSvg()
+                                .hasOptions() )
             {
-                graphicsOptions = outputs.getSvg().getOptions();
+                graphicsOptions = outputs.getSvg()
+                                         .getOptions();
             }
 
             // Default to global type parameter

@@ -201,6 +201,8 @@ class EvaluationUtilities
             // Generate the summary statistics
             List<Statistics> nextStatistics = calculator.get();
             nextStatistics.forEach( m -> messager.publish( m, groupId ) );
+
+            LOGGER.debug( "Published {} summary statistics.", nextStatistics.size() );
         }
 
         LOGGER.debug( "Finished publishing summary statistics." );

@@ -270,7 +270,8 @@ public class DiagramGraphicsWriter extends GraphicsWriter
             ChronoUnit leadUnits = helper.getDurationUnits();
 
             // Qualify pooling windows with the latest reference time and valid time
-            if ( shape == GraphicShape.ISSUED_DATE_POOLS || shape == GraphicShape.VALID_DATE_POOLS )
+            if ( shape == GraphicShape.ISSUED_DATE_POOLS
+                 || shape == GraphicShape.VALID_DATE_POOLS )
             {
                 append = DataUtilities.toStringSafe( timeWindow, leadUnits );
             }

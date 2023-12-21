@@ -67,6 +67,7 @@ public class WebClient
     /**
      * Creates an instance.
      * @param trackTimings whether to track the timings
+     * @param okHttpClient the client
      */
     public WebClient( boolean trackTimings, OkHttpClient okHttpClient )
     {

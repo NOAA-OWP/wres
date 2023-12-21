@@ -267,8 +267,9 @@ public class EvaluationService implements ServletContextListener
     }
 
     /**
-     * Starts an evaluation and returns the ID of the evaluation kicked off
+     * Starts an evaluation and returns the ID of the evaluation created.
      *
+     * @param message the evaluation message
      * @return ID of evaluation kicked off
      */
     @POST
@@ -301,8 +302,7 @@ public class EvaluationService implements ServletContextListener
         // Start a timer to prevent abandoned jobs from blocking the queue
         evaluationTimeoutThread();
 
-        evaluationResponse =
-                startEvaluation( message, projectId );
+        evaluationResponse = startEvaluation( message, projectId );
 
         return Response.ok( Response.Status.CREATED )
                        .entity( projectId )
