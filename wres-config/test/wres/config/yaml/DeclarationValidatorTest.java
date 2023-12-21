@@ -1840,6 +1840,32 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testInconsistentGraphicsOrientationAndPoolingDeclarationProducesError() throws IOException  // NOSONAR
+    {
+        // #57969-86
+        String evaluation = """
+                observed: foo/data/DOSC1_QIN.xml
+                predicted: bar/DOSC1_SQIN.xml
+                valid_dates:
+                  minimum: 1988-10-01T00:00:00Z
+                  maximum: 2000-01-01T00:00:00Z
+                valid_date_pools:
+                  period: 2400
+                  frequency: 2400
+                  unit: hours
+                output_formats:
+                  - format: png
+                    orientation: lead threshold
+                """;
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "Please correct the 'orientation'",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
     void testInvalidDeclarationStringProducesSchemaValidationError() throws IOException  // NOSONAR
     {
         // #57969-86

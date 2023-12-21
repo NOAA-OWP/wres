@@ -1919,9 +1919,14 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> deprecated =
                 DeclarationValidator.checkForDeprecatedOutputFormats( declaration );
         List<EvaluationStatusEvent> events = new ArrayList<>( deprecated );
+
         // Validate NetCDF, which has cumbersome requirements
         List<EvaluationStatusEvent> netcdf = DeclarationValidator.validateNetcdfOutput( declaration );
         events.addAll( netcdf );
+
+        // Check that graphics shapes are consistent with other declaration
+        List<EvaluationStatusEvent> shapes = DeclarationValidator.validateGraphicsShapes( declaration );
+        events.addAll( shapes );
 
         return Collections.unmodifiableList( events );
     }
@@ -2026,6 +2031,97 @@ public class DeclarationValidator
             }
         }
         return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Validates the graphics shapes declaration.
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> validateGraphicsShapes( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Do not allow both legacy netcdf and netcdf2 together
+        Formats formats = declaration.formats();
+        if ( Objects.nonNull( formats ) )
+        {
+            Outputs outputs = formats.outputs();
+            if ( DeclarationValidator.hasNonPoolingWindowGraphicsShape( outputs )
+                 && ( Objects.nonNull( declaration.validDatePools() )
+                      || Objects.nonNull( declaration.referenceDatePools() ) ) )
+            {
+                String scope = DeclarationValidator.getScopeOfPoolingDeclaration( declaration );
+
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setEventMessage( "The 'output_formats' includes one or more graphics "
+                                                                 + "formats with an 'orientation' that is inconsistent "
+                                                                 + "with the pooling declaration, which contains "
+                                                                 + scope
+                                                                 + ". Please correct the 'orientation' of each "
+                                                                 + "graphics format or correct the pooling declaration "
+                                                                 + "and try again. " )
+                                               .build();
+                events.add( event );
+            }
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * @param outputs the outputs to test
+     * @return whether there is a non-pooling window graphics shape declared
+     */
+    private static boolean hasNonPoolingWindowGraphicsShape( Outputs outputs )
+    {
+        Outputs.GraphicFormat.GraphicShape shape = null;
+
+        if ( outputs.hasPng()
+             && outputs.getPng()
+                       .hasOptions() )
+        {
+            shape = outputs.getPng()
+                           .getOptions()
+                           .getShape();
+        }
+
+        if ( outputs.hasSvg()
+             && outputs.getSvg()
+                       .hasOptions() )
+        {
+            shape = outputs.getSvg()
+                           .getOptions()
+                           .getShape();
+        }
+
+        return Objects.nonNull( shape )
+               && shape != Outputs.GraphicFormat.GraphicShape.DEFAULT
+               && shape != Outputs.GraphicFormat.GraphicShape.ISSUED_DATE_POOLS
+               && shape != Outputs.GraphicFormat.GraphicShape.VALID_DATE_POOLS;
+    }
+
+    /**
+     * @param declaration the declaration
+     * @return a message indicating the scope of the pooling declaration
+     */
+    private static String getScopeOfPoolingDeclaration( EvaluationDeclaration declaration )
+    {
+        if ( Objects.nonNull( declaration.validDatePools() )
+             && Objects.nonNull( declaration.referenceDatePools() ) )
+        {
+            return "'valid_date_pools and reference_date_pools'";
+        }
+        else if ( Objects.nonNull( declaration.validDatePools() ) )
+        {
+            return "'valid_date_pools'";
+        }
+        else
+        {
+            return "'reference_date_pools'";
+        }
     }
 
     /**

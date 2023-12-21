@@ -512,9 +512,15 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
             return;
         }
 
-        LOGGER.debug( "Calculating {} summary statistics: {}.",
+        LOGGER.debug( "Calculating {} scalar summary statistics: {}.",
                       this.scalarStatistics.size(),
                       this.scalarStatistics );
+        LOGGER.debug( "Calculating {} diagram summary statistics: {}.",
+                      this.diagramStatistics.size(),
+                      this.diagramStatistics );
+        LOGGER.debug( "Calculating {} box plot summary statistics: {}.",
+                      this.boxplotStatistics.size(),
+                      this.boxplotStatistics );
 
         // Calculate the scalar summary statistics
         for ( ScalarSummaryStatisticFunction summaryStatistic : this.scalarStatistics )

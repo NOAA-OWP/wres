@@ -5,23 +5,17 @@ import java.util.List;
 
 import okhttp3.OkHttpClient;
 
+/**
+ * Web client utility class.
+ */
 public class WebClientUtils
 {
-
     private static final List<Integer> DEFAULT_RETRY_STATES = List.of( 500,
                                                                        502,
                                                                        503,
                                                                        504,
                                                                        523,
                                                                        524 );
-
-    /**
-     * private constructor for static util method
-     */
-    private WebClientUtils()
-    {
-
-    }
 
     /**
      * Creates a base level HttpClient, is public to reduce code repeating
@@ -61,8 +55,18 @@ public class WebClientUtils
                                   .build();
     }
 
+    /**
+     * @return the default retry states
+     */
     public static List<Integer> getDefaultRetryStates()
     {
         return DEFAULT_RETRY_STATES;
+    }
+
+    /**
+     * private constructor for static util method
+     */
+    private WebClientUtils()
+    {
     }
 }
