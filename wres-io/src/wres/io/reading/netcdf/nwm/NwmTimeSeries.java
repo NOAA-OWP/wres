@@ -230,8 +230,8 @@ class NwmTimeSeries implements Closeable
                       this.baseUri );
 
         ThreadFactory nwmReaderThreadFactory = new BasicThreadFactory.Builder()
-                .namingPattern( "NwmTimeSeries Reader %d" )
-                .build();
+                                                                               .namingPattern( "NwmTimeSeries Reader %d" )
+                                                                               .build();
 
         BlockingQueue<Runnable> nwmReaderQueue =
                 new ArrayBlockingQueue<>( CONCURRENT_READS );
@@ -540,8 +540,8 @@ class NwmTimeSeries implements Closeable
      */
 
     Map<Long, TimeSeries<Double>> readSingleValuedTimeSerieses( long[] featureIds,
-                                                                   String variableName,
-                                                                   String unitName )
+                                                                String variableName,
+                                                                String unitName )
             throws InterruptedException, ExecutionException
     {
         // Check that the executor is still open
@@ -622,8 +622,8 @@ class NwmTimeSeries implements Closeable
             // The datetimes seem to be synchronized but this is not true for
             // analyses.
             Geometry geometry = wres.statistics.MessageFactory.getGeometry(
-                    series.getKey()
-                          .toString() );
+                                                                            series.getKey()
+                                                                                  .toString() );
             Feature feature = Feature.of( geometry );
 
             TimeSeriesMetadata metadata =
@@ -660,7 +660,7 @@ class NwmTimeSeries implements Closeable
         BlockingQueue<Future<NWMDoubleReadOutcome>> reads =
                 new ArrayBlockingQueue<>( CONCURRENT_READS );
         CountDownLatch startGettingResults = new CountDownLatch(
-                CONCURRENT_READS );
+                                                                 CONCURRENT_READS );
 
         for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
         {
@@ -703,7 +703,7 @@ class NwmTimeSeries implements Closeable
         }
 
         Map<Long, TimeSeries<Ensemble>> byFeatureId = new HashMap<>( featureIds.length
-                                                                        - this.featuresNotFound.size() );
+                                                                     - this.featuresNotFound.size() );
 
         // For each feature, create a TimeSeries.
         for ( Map.Entry<Long, Map<Instant, double[]>> entriesForOne : ensembleValues.entrySet() )
@@ -721,8 +721,8 @@ class NwmTimeSeries implements Closeable
             }
 
             Geometry geometry = MessageFactory.getGeometry(
-                    entriesForOne.getKey()
-                                 .toString() );
+                                                            entriesForOne.getKey()
+                                                                         .toString() );
             Feature feature = Feature.of( geometry );
 
             TimeSeriesMetadata metadata =
@@ -965,10 +965,10 @@ class NwmTimeSeries implements Closeable
                 else
                 {
                     throw new CastMayCauseBadConversionException(
-                            "Unable to convert attribute '"
-                            + attributeName
-                            + "' to float because it is type "
-                            + type );
+                                                                  "Unable to convert attribute '"
+                                                                  + attributeName
+                                                                  + "' to float because it is type "
+                                                                  + type );
                 }
             }
         }
@@ -1012,10 +1012,10 @@ class NwmTimeSeries implements Closeable
                 else
                 {
                     throw new CastMayCauseBadConversionException(
-                            "Unable to convert attribute '"
-                            + attributeName
-                            + "' to integer because it is type "
-                            + type );
+                                                                  "Unable to convert attribute '"
+                                                                  + attributeName
+                                                                  + "' to integer because it is type "
+                                                                  + type );
                 }
             }
         }
@@ -1166,7 +1166,7 @@ class NwmTimeSeries implements Closeable
         try
         {
             Array array = variable.read( origin, shape );
-            int[] unsafeValues = ( int[] ) array.get1DJavaArray( DataType.INT );
+            int[] unsafeValues = (int[]) array.get1DJavaArray( DataType.INT );
             rawValues = unsafeValues.clone();
         }
         catch ( IOException | InvalidRangeException e )
@@ -1183,12 +1183,12 @@ class NwmTimeSeries implements Closeable
         if ( rawValues.length != countOfRawValuesToRead )
         {
             throw new PreIngestException(
-                    "Expected to read exactly " + countOfRawValuesToRead
-                    + ""
-                    + " values from variable "
-                    + variableName
-                    + " instead got "
-                    + rawValues.length );
+                                          "Expected to read exactly " + countOfRawValuesToRead
+                                          + ""
+                                          + " values from variable "
+                                          + variableName
+                                          + " instead got "
+                                          + rawValues.length );
         }
 
         // Write the values to the result array. Skip past unrequested values.
@@ -1211,13 +1211,13 @@ class NwmTimeSeries implements Closeable
         }
 
         LOGGER.debug(
-                "Asked variable {} for range {} through {} to get values at indices {}, got raw count {}, distilled to {}",
-                variableName,
-                minIndex,
-                maxIndex,
-                indices,
-                rawValues.length,
-                result );
+                      "Asked variable {} for range {} through {} to get values at indices {}, got raw count {}, distilled to {}",
+                      variableName,
+                      minIndex,
+                      maxIndex,
+                      indices,
+                      rawValues.length,
+                      result );
         return result;
     }
 
@@ -1578,9 +1578,9 @@ class NwmTimeSeries implements Closeable
                                               .mapToInt( FeatureIdWithItsIndex::index )
                                               .toArray();
             long[] companionFeatures = features.stream()
-                                              .filter( FeatureIdWithItsIndex::found )
-                                              .mapToLong( FeatureIdWithItsIndex::featureId )
-                                              .toArray();
+                                               .filter( FeatureIdWithItsIndex::found )
+                                               .mapToLong( FeatureIdWithItsIndex::featureId )
+                                               .toArray();
 
             Variable variableVariable = netcdfFile.findVariable( variableName );
             int[] rawVariableValues;
@@ -1622,14 +1622,14 @@ class NwmTimeSeries implements Closeable
                      || rawVariableValues[i] == fillValue )
                 {
                     LOGGER.debug(
-                            "Found missing value {} (one of {}, {}) at index {} for feature {} in variable {} of netCDF {}",
-                            rawVariableValues[i],
-                            missingValue,
-                            fillValue,
-                            i,
-                            companionFeatures[i],
-                            variableName,
-                            netcdfFile.getLocation() );
+                                  "Found missing value {} (one of {}, {}) at index {} for feature {} in variable {} of netCDF {}",
+                                  rawVariableValues[i],
+                                  missingValue,
+                                  fillValue,
+                                  i,
+                                  companionFeatures[i],
+                                  variableName,
+                                  netcdfFile.getLocation() );
                     variableValue = MissingValues.DOUBLE;
                 }
                 else
@@ -1809,7 +1809,7 @@ class NwmTimeSeries implements Closeable
                                       long featureId )
         {
             long[] features = this.readFeaturesAndCacheOrGetFeaturesFromCache( profile,
-                                                                              netcdfFile );
+                                                                               netcdfFile );
 
             if ( this.isSorted )
             {
@@ -1833,6 +1833,36 @@ class NwmTimeSeries implements Closeable
         }
 
         /**
+         * Wait for the cache to be set. This method will interrupt this thread
+         * if the process of waiting for the cache is, itself, interrupted.
+         * @param netcdfFileName Name of netCDF being read.
+         * @throws PreIngestException when timed out waiting on cache.
+         */
+        private void waitForCache( String netcdfFileName )
+        {
+            try
+            {
+                Duration timeout = Duration.ofMinutes( 10 );
+                boolean timedOut = !this.featureCacheGuard.await( timeout.toSeconds(),
+                                                                  TimeUnit.SECONDS );
+                if ( timedOut )
+                {
+                    throw new PreIngestException(
+                                                  "While reading "
+                                                  + netcdfFileName,
+                                                  new TimeoutException(
+                                                                        "Timed out waiting for feature cache after "
+                                                                        + timeout ) );
+                }
+            }
+            catch ( InterruptedException ie )
+            {
+                LOGGER.warn( "Interrupted while waiting for feature cache to be written", ie );
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        /**
          * Read features and cache in instance or read from the cache. Allows us to
          * avoid multiple reads of same data.
          * @param profile the profile
@@ -1841,7 +1871,8 @@ class NwmTimeSeries implements Closeable
          * Performs safe publication of an internal map, assumes internal
          * caller, assumes that internal caller will not publish the map,
          * assumes internal caller will only read from the map.
-         * @throws PreIngestException When timed out waiting on cache write.
+         * @throws PreIngestException From the waitForCache method, will be 
+         * thrown if the wait times out.
          */
 
         private long[] readFeaturesAndCacheOrGetFeaturesFromCache( NwmProfile profile,
@@ -1850,33 +1881,14 @@ class NwmTimeSeries implements Closeable
             String netcdfFileName = netcdfFile.getLocation();
 
             // Check to see if this netcdf file has features already read
+            // If its already been read, then wait for the cache to be set
+            // and return what was cached.
             AtomicBoolean validated = this.validatedFeatures.get( netcdfFile );
-
             if ( validated.get() )
             {
                 LOGGER.trace( "Already read netCDF resource {}, returning cached.",
                               netcdfFileName );
-                try
-                {
-                    Duration timeout = Duration.ofMinutes( 10 );
-                    boolean timedOut = !this.featureCacheGuard.await( timeout.toSeconds(),
-                                                                      TimeUnit.SECONDS );
-                    if ( timedOut )
-                    {
-                        throw new PreIngestException(
-                                "While reading "
-                                + netcdfFileName,
-                                new TimeoutException(
-                                        "Timed out waiting for feature cache after "
-                                        + timeout ) );
-                    }
-                }
-                catch ( InterruptedException ie )
-                {
-                    LOGGER.warn( "Interrupted while waiting for feature cache to be written", ie );
-                    Thread.currentThread().interrupt();
-                }
-
+                waitForCache( netcdfFileName );
                 return this.originalFeatures;
             }
             else
@@ -1888,6 +1900,7 @@ class NwmTimeSeries implements Closeable
             String featureVariableName = profile.getFeatureVariable();
             Variable featureVariable = netcdfFile.findVariable( featureVariableName );
             assert featureVariable != null;
+
             // Must find the location of the variable.
             // Might be nice to assume these are sorted to do a binary search,
             // but I think it is an unsafe assumption that the values are sorted
@@ -1895,21 +1908,27 @@ class NwmTimeSeries implements Closeable
             // getting a value from the actual variable needed.
             try
             {
-                LOGGER.debug( "Reading features from {}", netcdfFileName );
-                Array allFeatures = featureVariable.read();
-                long[] unsafeFeatures = ( long[] ) allFeatures.get1DJavaArray( DataType.LONG );
-
-                if ( unsafeFeatures == null )
-                {
-                    throw new IllegalStateException( "netCDF library returned null array when looking for NWM features." );
-                }
-
-                // Clone because we may have a reference to internal nc library data
-                long[] features = unsafeFeatures.clone();
-
                 // Discover if this Thread is responsible for setting featureCache
                 boolean previouslySet = this.featureCacheRaceResolver.getAndSet( true );
 
+                //If this Thread is not setting the cache, then wait until the cache
+                //is set.
+                if ( previouslySet )
+                {
+                    waitForCache( netcdfFileName );
+                }
+
+                //Read the features from the netCDF file and clone them to ensure that
+                //we are referring to a fresh copy, and not an internal netCDF copy.
+                LOGGER.debug( "Reading features from {}", netcdfFileName );
+                long[] features = (long[]) featureVariable.read().get1DJavaArray( DataType.LONG );
+                if ( features == null )
+                {
+                    throw new IllegalStateException( "netCDF library returned null array when looking for NWM features." );
+                }
+                features = features.clone();
+
+                //Set the cache if this Thread is responsible for it.
                 if ( !previouslySet )
                 {
                     LOGGER.debug( "About to set the features cache using {}",
@@ -1918,9 +1937,9 @@ class NwmTimeSeries implements Closeable
                     // In charge of setting the feature cache, do so.
                     this.originalFeatures = features.clone();
 
-                    // Sort the local features, compare to see if identical
+                    // Sort the local features, compare to see if identical and
+                    // set isSorted.
                     Arrays.sort( features );
-
                     if ( Arrays.equals( features, this.originalFeatures ) )
                     {
                         this.isSorted = true;
@@ -1931,44 +1950,22 @@ class NwmTimeSeries implements Closeable
                     LOGGER.debug( "Finished setting the features cache using {}",
                                   netcdfFileName );
                 }
+                //Otherwise, just check the read features against the cached 
+                //features to ensure they are identical.
                 else
                 {
                     LOGGER.debug( "About to read the features cache to compare {}",
                                   netcdfFileName );
-                    // Not in charge of setting the feature cache, do a read of it.
-                    long[] existingFeatures;
-                    try
-                    {
-                        Duration timeout = Duration.ofMinutes( 10 );
-                        boolean timedOut = !this.featureCacheGuard.await( timeout.toSeconds(),
-                                                                          TimeUnit.SECONDS );
-                        if ( timedOut )
-                        {
-                            throw new PreIngestException(
-                                    "While reading "
-                                    + netcdfFileName,
-                                    new TimeoutException(
-                                            "Timed out waiting for feature cache after "
-                                            + timeout ) );
-                        }
-                    }
-                    catch ( InterruptedException ie )
-                    {
-                        LOGGER.warn( "Interrupted while waiting for feature cache to be written", ie );
-                        Thread.currentThread().interrupt();
-                    }
-
-                    existingFeatures = this.originalFeatures;
 
                     // Compare the existing features with those just read, throw an
                     // exception if they differ (by content).
-                    if ( !Arrays.equals( features, existingFeatures ) )
+                    if ( !Arrays.equals( features, this.originalFeatures ) )
                     {
                         throw new PreIngestException(
-                                "Non-homogeneous NWM data found. The features from "
-                                + netcdfFile.getLocation()
-                                + " do not match those found in a previously read "
-                                + "netCDF resource in the same NWM timeseries." );
+                                                      "Non-homogeneous NWM data found. The features from "
+                                                      + netcdfFile.getLocation()
+                                                      + " do not match those found in a previously read "
+                                                      + "netCDF resource in the same NWM timeseries." );
                     }
                     LOGGER.debug( "Finished comparing {} to the features cache",
                                   netcdfFileName );
@@ -2001,4 +1998,5 @@ class NwmTimeSeries implements Closeable
     }
 
 }
+
 
