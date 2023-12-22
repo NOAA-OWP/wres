@@ -1965,8 +1965,9 @@ public class ChartFactory
 
         if ( regionName.isBlank() )
         {
-            throw new IllegalArgumentException( "Failed to create parameters for graphics generation: the region "
-                                                + "name was missing from the pool metadata, which is not allowed." );
+            regionName = "UNKNOWN";
+
+            LOGGER.debug( "Discovered a missing region name in pool: {}.", metadata );
         }
 
         return regionName;

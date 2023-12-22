@@ -773,7 +773,11 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
 
             if ( name.metricComponentName() != DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
             {
-                nameString += "-" + name.metricComponentName();
+                nameString = name.metricComponentName()
+                                 .toString()
+                                 .replace( "_", " " )
+                             + " of the "
+                             + nameString;
             }
 
             MutableDoubleList scores = nextScore.getValue();
@@ -804,18 +808,19 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
         for ( Map.Entry<DurationScoreName, List<Duration>> nextScore : this.durationScores.entrySet() )
         {
             DurationScoreName name = nextScore.getKey();
-            String nameString = name.metricName()
-                                    .toString()
-                                + "-"
-                                + name.metricComponentName();
+            String nameString = name.metricComponentName()
+                                + " of the "
+                                + name.metricName()
+                                      .toString()
+                                      .replace( "_", " " );
 
             List<Duration> scores = nextScore.getValue();
             Duration[] rawScores = scores.toArray( new Duration[0] );
             Map<SummaryStatisticComponentName, String> names =
-                    Map.of( SummaryStatisticComponentName.VARIABLE, nameString );
+                    Map.of( SummaryStatisticComponentName.VARIABLE, nameString,
+                            SummaryStatisticComponentName.VARIABLE_UNIT, this.timeUnit.name() );
             BiFunction<Map<SummaryStatisticComponentName, String>, Duration[], DiagramStatistic>
-                    durationDiagram =
-                    FunctionFactory.ofDurationDiagramFromUnivariateFunction( diagram, this.timeUnit );
+                    durationDiagram = FunctionFactory.ofDurationDiagramFromUnivariateFunction( diagram, this.timeUnit );
             DiagramStatistic nextDiagram = durationDiagram.apply( names, rawScores );
             diagramList.add( nextDiagram );
         }

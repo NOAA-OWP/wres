@@ -24,6 +24,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.slf4j.Logger;
@@ -534,14 +535,57 @@ public final class Slicer
         Objects.requireNonNull( statistics, NULL_INPUT_EXCEPTION );
 
         // Null-friendly comparator on time window
-        Comparator<T> twComparator =
-                Comparator.nullsFirst( Comparator.comparing( statistic -> statistic.getPoolMetadata().getTimeWindow(),
-                                                             TimeWindowOuter::compareTo ) );
+        Comparator<T> twComparator = ( a, b ) -> {
+            TimeWindowOuter first = null;
+            TimeWindowOuter second = null;
+
+            if ( Objects.nonNull( a )
+                 && Objects.nonNull( a.getPoolMetadata() )
+                 && Objects.nonNull( a.getPoolMetadata()
+                                      .getTimeWindow() ) )
+            {
+                first = a.getPoolMetadata()
+                         .getTimeWindow();
+            }
+
+            if ( Objects.nonNull( b )
+                 && Objects.nonNull( b.getPoolMetadata() )
+                 && Objects.nonNull( b.getPoolMetadata()
+                                      .getTimeWindow() ) )
+            {
+                second = b.getPoolMetadata()
+                          .getTimeWindow();
+            }
+
+            return ObjectUtils.compare( first, second );
+        };
 
         // Null-friendly comparator on threshold
-        Comparator<T> trComparator =
-                Comparator.nullsFirst( Comparator.comparing( statistic -> statistic.getPoolMetadata().getThresholds(),
-                                                             OneOrTwoThresholds::compareTo ) );
+        Comparator<T> trComparator = ( a, b ) ->
+        {
+            OneOrTwoThresholds first = null;
+            OneOrTwoThresholds second = null;
+
+            if ( Objects.nonNull( a )
+                 && Objects.nonNull( a.getPoolMetadata() )
+                 && Objects.nonNull( a.getPoolMetadata()
+                                      .getThresholds() ) )
+            {
+                first = a.getPoolMetadata()
+                         .getThresholds();
+            }
+
+            if ( Objects.nonNull( b )
+                 && Objects.nonNull( b.getPoolMetadata() )
+                 && Objects.nonNull( b.getPoolMetadata()
+                                      .getThresholds() ) )
+            {
+                second = b.getPoolMetadata()
+                          .getThresholds();
+            }
+
+            return ObjectUtils.compare( first, second );
+        };
 
         // Combined comparator
         Comparator<T> compare = twComparator.thenComparing( trComparator );
@@ -816,7 +860,7 @@ public final class Slicer
 
         Map<DatasetOrientation, List<T>> groups =
                 statistics.stream()
-                     .collect( Collectors.groupingBy( classifier ) );
+                          .collect( Collectors.groupingBy( classifier ) );
 
         return Collections.unmodifiableMap( groups );
     }
@@ -842,7 +886,7 @@ public final class Slicer
         };
 
         return statistics.stream()
-                          .collect( Collectors.groupingBy( classifier ) );
+                         .collect( Collectors.groupingBy( classifier ) );
     }
 
     /**
