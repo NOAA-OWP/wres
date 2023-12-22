@@ -351,6 +351,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                                               != SummaryStatistic.StatisticDimension.RESAMPLED )
                              .flatMap( d -> d.getComponentNameQualifiers()
                                              .stream() )
+                             .map( String::toUpperCase )
                              .findFirst();
         }
         else

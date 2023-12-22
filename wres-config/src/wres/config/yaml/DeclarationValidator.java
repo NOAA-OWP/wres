@@ -1583,9 +1583,7 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> events = new ArrayList<>();
         Set<SummaryStatistic> summaryStatistics = declaration.summaryStatistics();
 
-        // Permissive check. In other words, favors false negatives over false positives. False negatives should simply
-        // mean that no summary statistics are computed, whereas false positives means summary statistics cannot be
-        // computed when they should be allowed. Detecting whether singleton features are present is a complex check.
+        // Warn when no features explicitly declared. Could still be implicitly declared.
         if ( summaryStatistics.stream()
                               .anyMatch( d -> d.getDimension() == SummaryStatistic.StatisticDimension.FEATURES )
              && Objects.isNull( declaration.features() )
@@ -1594,11 +1592,10 @@ public class DeclarationValidator
         {
             EvaluationStatusEvent error
                     = EvaluationStatusEvent.newBuilder()
-                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setStatusLevel( StatusLevel.WARN )
                                            .setEventMessage( "Summary statistics were requested to summarize the "
                                                              + "evaluation results across geographic features, but no "
-                                                             + "features were declared for evaluation. Please declare "
-                                                             + "some geographic features and try again." )
+                                                             + "features were declared for evaluation." )
                                            .build();
             events.add( error );
         }

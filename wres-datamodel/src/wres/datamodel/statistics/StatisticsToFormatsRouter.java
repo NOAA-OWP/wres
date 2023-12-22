@@ -870,37 +870,37 @@ public class StatisticsToFormatsRouter implements Function<Collection<Statistics
      * @param startOfProcess is true to log the start, false to log the end
      */
 
-    private <T extends Statistic<?>> void
-    log( List<T> output, Format type, boolean startOfProcess )
+    private <T extends Statistic<?>> void log( List<T> output, Format type, boolean startOfProcess )
     {
-        String positionString = "Completed ";
-        if ( startOfProcess )
+        if ( LOGGER.isDebugEnabled() )
         {
-            positionString = "Started ";
-        }
+            String positionString = "Completed ";
+            if ( startOfProcess )
+            {
+                positionString = "Started ";
+            }
 
-        if ( !output.isEmpty() )
-        {
-            LOGGER.debug( "{} processing of result type '{}' for '{}' "
-                          + "at time window {}.",
-                          positionString,
-                          type,
-                          output.get( 0 )
-                                .getPoolMetadata()
-                                .getPool()
-                                .getGeometryTuples( 0 )
-                                .getLeft()
-                                .getName(),
-                          output.get( 0 )
-                                .getPoolMetadata()
-                                .getTimeWindow() );
-        }
-        else
-        {
-            LOGGER.debug( "{} processing of result type '{}' for unknown data at "
-                          + "unknown time window.",
-                          positionString,
-                          type );
+            if ( !output.isEmpty() )
+            {
+                LOGGER.debug( "{} processing of result type '{}' for '{}' "
+                              + "at time window {}.",
+                              positionString,
+                              type,
+                              output.get( 0 )
+                                    .getPoolMetadata()
+                                    .getPool()
+                                    .getGeometryGroup(),
+                              output.get( 0 )
+                                    .getPoolMetadata()
+                                    .getTimeWindow() );
+            }
+            else
+            {
+                LOGGER.debug( "{} processing of result type '{}' for unknown data at "
+                              + "unknown time window.",
+                              positionString,
+                              type );
+            }
         }
     }
 

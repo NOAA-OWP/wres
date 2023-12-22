@@ -1801,7 +1801,7 @@ class DeclarationValidatorTest
         assertTrue( DeclarationValidatorTest.contains( events,
                                                        "across geographic features, but no features were "
                                                        + "declared for evaluation",
-                                                       StatusLevel.ERROR ) );
+                                                       StatusLevel.WARN ) );
 
     }
 
