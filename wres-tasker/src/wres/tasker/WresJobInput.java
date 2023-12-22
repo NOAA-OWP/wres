@@ -170,7 +170,9 @@ public class WresJobInput
         //At this point, the md5 should be computed, so there is no need to check
         //for it.  If it wasn't computed, the catch, above, should have been 
         //triggered.
-        return Response.status( Response.Status.OK ).header( "content-md5", md5 )
+        return Response.status( Response.Status.OK )
+                       .header( "content-md5", md5 )
+                       .header( "content-location", uri )
                        .build();
     }
 
@@ -338,13 +340,16 @@ public class WresJobInput
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity(
                                    "Failed to send declaration, this could a be temporary condition, try again in a moment: "
-                                   + e.getMessage() )
+                                   + e.getMessage() 
+                                   + "\n\nDeclaration posted is below; repost it directly if you opted to keep posted input:\n\n"
+                                   + newDeclaration )
                            .build();
         }
 
         sharedJobResults.setInQueue( jobId );
 
-        return Response.status( Response.Status.OK )
-                       .build();
+        return Response.ok( newDeclaration )
+            .header("content-type","text/yaml")
+            .build();
     }
 }

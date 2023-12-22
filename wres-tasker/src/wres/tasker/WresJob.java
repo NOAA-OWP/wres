@@ -378,6 +378,7 @@ public class WresJob
                                  @FormParam( "adminToken" ) @DefaultValue( "" ) String adminToken,
                                  @FormParam( "verb" ) @DefaultValue( "execute" ) String verb,
                                  @FormParam( "postInput" ) @DefaultValue( "false" ) boolean postInput,
+                                 @FormParam( "keepInput" ) @DefaultValue( "false" ) boolean keepInput,
                                  @FormParam( "additionalArguments" ) List<String> additionalArguments )
     {
         LOGGER.debug( "additionalArguments: {}", additionalArguments );
@@ -629,6 +630,7 @@ public class WresJob
             // posting input."
             JOB_RESULTS.setJobMessage( jobId, jobMessage.toByteArray() );
             JOB_RESULTS.setAwaitingPostInputData( jobId );
+            JOB_RESULTS.setKeepPostedInputData( jobId, keepInput );
             return Response.created( resourceCreated )
                            .entity( "<!DOCTYPE html><html><head><title>Evaluation job received.</title></head>"
                                     + "<body><h1>Evaluation job "
