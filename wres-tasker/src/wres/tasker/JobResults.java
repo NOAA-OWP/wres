@@ -1292,6 +1292,10 @@ class JobResults
 
     private static void deleteInputs( JobMetadata sharedData )
     {
+        if ( sharedData.getKeepInput() )
+        {
+            return;
+        }
         String jobId = sharedData.getId();
 
         // When there are posted input data related to this job, remove them
@@ -1433,6 +1437,18 @@ class JobResults
         JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
 
         metadata.setJobState( JobMetadata.JobState.FAILED_BEFORE_IN_QUEUE );
+    }
+
+    /**
+     * Mark whether the inputs should be kept after the evaluation
+     * completes.
+     * @param keepInput True to keep input, false if not.
+     */
+    void setKeepPostedInputData( String jobId, boolean keepInput )
+    {
+        JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
+
+        metadata.setKeepInput( keepInput);
     }
 }
 

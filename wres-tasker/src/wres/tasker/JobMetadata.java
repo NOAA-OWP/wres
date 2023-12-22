@@ -91,6 +91,8 @@ public class JobMetadata
     //Must ensure this is not null.  Just set it to CREATED on construction.
     private JobState jobState = JobState.CREATED;
 
+    private boolean keepInput = false;
+
     private String databaseName;
 
     private String databaseHost;
@@ -196,6 +198,16 @@ public class JobMetadata
     public void setBaselineInputs( List<URI> baselineInputs )
     {
         this.baselineInputs = baselineInputs;
+    }
+
+    public void setKeepInput( boolean keepInput )
+    {
+        this.keepInput = keepInput;
+    }
+
+    public boolean getKeepInput()
+    {
+        return this.keepInput;
     }
 
     /**

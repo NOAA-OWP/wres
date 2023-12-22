@@ -234,7 +234,7 @@ public class WresJobTest
     {
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
         WresJob wresJob = new WresJob();
-        Response response = wresJob.postWresJob( "fake", "hank", null, "boogaflickle", false,
+        Response response = wresJob.postWresJob( "fake", "hank", null, "boogaflickle", false, false,
                                                  Collections.emptyList() );
         assertEquals( "Expected a 400 bad request.", 400, response.getStatus() );
     }
@@ -244,7 +244,7 @@ public class WresJobTest
     {
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
         WresJob wresJob = new WresJob();
-        Response response = wresJob.postWresJob( "too short a declaration", null, null, null, false, Collections.emptyList() );
+        Response response = wresJob.postWresJob( "too short a declaration", null, null, null, false, false, Collections.emptyList() );
         assertEquals( "Expected a 400 bad request.", 400, response.getStatus() );
     }
 
@@ -253,7 +253,7 @@ public class WresJobTest
     {
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
         WresJob wresJob = new WresJob();
-        Response response = wresJob.postWresJob( FAKE_DECLARATION, null, null, null, false, Collections.emptyList() );
+        Response response = wresJob.postWresJob( FAKE_DECLARATION, null, null, null, false, false, Collections.emptyList() );
         assertEquals( "Expected a 500 Internal Server Error.", 500, response.getStatus() );
     }
 
