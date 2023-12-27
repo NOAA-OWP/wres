@@ -71,6 +71,9 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                                   .filter( Objects::nonNull )
                                   .toList();
 
+    /** Repeated string. */
+    private static final String OF_THE = " of the ";
+
     /** The cached samples of score statistics. */
     private final Map<DoubleScoreName, MutableDoubleList> doubleScores;
 
@@ -594,8 +597,12 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                                                      .setSummaryStatistic( boxplotStatistic.statistic() );
 
             List<BoxplotStatistic> boxes = this.calculateBoxplotStatisticForDoubleScores( boxplotStatistic );
-            builder.addAllOneBoxPerPool( boxes );
-            this.statistics.add( builder.build() );
+
+            if ( !boxes.isEmpty() )
+            {
+                builder.addAllOneBoxPerPool( boxes );
+                this.statistics.add( builder.build() );
+            }
         }
 
         // Calculate the diagram summary statistics for duration scores
@@ -607,6 +614,21 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
             List<DiagramStatistic> diags = this.calculateDiagramStatisticForDurationScores( diagramStatistic );
             builder.addAllDiagrams( diags );
             this.statistics.add( builder.build() );
+        }
+
+        // Calculate the box plot statistics for duration scores
+        for ( BoxplotSummaryStatisticFunction boxplotStatistic : this.boxplotStatistics )
+        {
+            Statistics.Builder builder = this.nominal.toBuilder()
+                                                     .setSummaryStatistic( boxplotStatistic.statistic() );
+
+            List<BoxplotStatistic> boxes = this.calculateBoxplotStatisticForDurationScores( boxplotStatistic );
+
+            if ( !boxes.isEmpty() )
+            {
+                builder.addAllOneBoxPerPool( boxes );
+                this.statistics.add( builder.build() );
+            }
         }
 
         LOGGER.debug( "Finished setting the summary statistics." );
@@ -776,7 +798,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                 nameString = name.metricComponentName()
                                  .toString()
                                  .replace( "_", " " )
-                             + " of the "
+                             + OF_THE
                              + nameString;
             }
 
@@ -809,7 +831,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
         {
             DurationScoreName name = nextScore.getKey();
             String nameString = name.metricComponentName()
-                                + " of the "
+                                + OF_THE
                                 + name.metricName()
                                       .toString()
                                       .replace( "_", " " );
@@ -840,9 +862,8 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
         {
             DoubleScoreName name = nextScore.getKey();
             String nameString = name.metricName()
-                                    .toString();
-            // Format the name string
-            nameString = nameString.replace( "_", " " );
+                                    .toString()
+                                    .replace( "_", " " );
 
             if ( name.metricComponentName() != DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
             {
@@ -861,6 +882,40 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                             SummaryStatisticComponentName.VARIABLE_UNIT, unitString );
 
             BoxplotStatistic nextBoxplot = boxplot.apply( names, rawScores );
+            boxplotList.add( nextBoxplot );
+        }
+
+        return Collections.unmodifiableList( boxplotList );
+    }
+
+    /**
+     * Calculates the box plot statistic for all duration scores.
+     * @param boxplot the box plot statistic
+     * @return the box plot statistics, one for each duration score
+     */
+    private List<BoxplotStatistic> calculateBoxplotStatisticForDurationScores( BoxplotSummaryStatisticFunction boxplot )
+    {
+        List<BoxplotStatistic> boxplotList = new ArrayList<>();
+        for ( Map.Entry<DurationScoreName, List<Duration>> nextScore : this.durationScores.entrySet() )
+        {
+            DurationScoreName name = nextScore.getKey();
+            String nameString = name.metricComponentName()
+                                + OF_THE
+                                + name.metricName()
+                                      .toString()
+                                      .replace( "_", " " );
+
+            List<Duration> scores = nextScore.getValue();
+            Duration[] rawScores = scores.toArray( new Duration[0] );
+            double[] rawScoresDecimal = FunctionFactory.ofDecimalDurations( rawScores, this.timeUnit );
+
+            String unitString = this.timeUnit.toString()
+                                             .toUpperCase();
+            Map<SummaryStatisticComponentName, String> names =
+                    Map.of( SummaryStatisticComponentName.VARIABLE, nameString,
+                            SummaryStatisticComponentName.VARIABLE_UNIT, unitString );
+
+            BoxplotStatistic nextBoxplot = boxplot.apply( names, rawScoresDecimal );
             boxplotList.add( nextBoxplot );
         }
 

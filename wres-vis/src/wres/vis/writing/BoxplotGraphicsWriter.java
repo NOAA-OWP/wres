@@ -491,6 +491,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                              .map( d -> d.getStatistic()
                                          .getMetric()
                                          .getVariable()
+                                         .toUpperCase()
                                          .replace( " ", "_" ) )
                              .findFirst();
         }

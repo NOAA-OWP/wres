@@ -23,6 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import wres.datamodel.pools.MeasurementUnit;
 import wres.statistics.MessageFactory;
+import wres.statistics.generated.BoxplotMetric;
+import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DoubleScoreMetric;
@@ -87,9 +89,9 @@ class SummaryStatisticsCalculatorTest
                                                                   SummaryStatistic.StatisticDimension.RESAMPLED,
                                                                   0.9 );
 
-        ScalarSummaryStatisticFunction q1f = FunctionFactory.ofSummaryStatistic( q1 );
-        ScalarSummaryStatisticFunction q2f = FunctionFactory.ofSummaryStatistic( q2 );
-        ScalarSummaryStatisticFunction q3f = FunctionFactory.ofSummaryStatistic( q3 );
+        ScalarSummaryStatisticFunction q1f = FunctionFactory.ofScalarSummaryStatistic( q1 );
+        ScalarSummaryStatisticFunction q2f = FunctionFactory.ofScalarSummaryStatistic( q2 );
+        ScalarSummaryStatisticFunction q3f = FunctionFactory.ofScalarSummaryStatistic( q3 );
 
         Set<ScalarSummaryStatisticFunction> quantiles = new LinkedHashSet<>();
         quantiles.add( q1f );
@@ -196,9 +198,9 @@ class SummaryStatisticsCalculatorTest
                                                                   SummaryStatistic.StatisticDimension.RESAMPLED,
                                                                   0.9 );
 
-        ScalarSummaryStatisticFunction q1f = FunctionFactory.ofSummaryStatistic( q1 );
-        ScalarSummaryStatisticFunction q2f = FunctionFactory.ofSummaryStatistic( q2 );
-        ScalarSummaryStatisticFunction q3f = FunctionFactory.ofSummaryStatistic( q3 );
+        ScalarSummaryStatisticFunction q1f = FunctionFactory.ofScalarSummaryStatistic( q1 );
+        ScalarSummaryStatisticFunction q2f = FunctionFactory.ofScalarSummaryStatistic( q2 );
+        ScalarSummaryStatisticFunction q3f = FunctionFactory.ofScalarSummaryStatistic( q3 );
 
         Set<ScalarSummaryStatisticFunction> quantiles = new LinkedHashSet<>();
         quantiles.add( q1f );
@@ -309,9 +311,9 @@ class SummaryStatisticsCalculatorTest
                                                                   SummaryStatistic.StatisticDimension.RESAMPLED,
                                                                   0.9 );
 
-        ScalarSummaryStatisticFunction q1f = FunctionFactory.ofSummaryStatistic( q1 );
-        ScalarSummaryStatisticFunction q2f = FunctionFactory.ofSummaryStatistic( q2 );
-        ScalarSummaryStatisticFunction q3f = FunctionFactory.ofSummaryStatistic( q3 );
+        ScalarSummaryStatisticFunction q1f = FunctionFactory.ofScalarSummaryStatistic( q1 );
+        ScalarSummaryStatisticFunction q2f = FunctionFactory.ofScalarSummaryStatistic( q2 );
+        ScalarSummaryStatisticFunction q3f = FunctionFactory.ofScalarSummaryStatistic( q3 );
 
         Set<ScalarSummaryStatisticFunction> quantiles = new LinkedHashSet<>();
         quantiles.add( q1f );
@@ -412,9 +414,9 @@ class SummaryStatisticsCalculatorTest
                                                                   SummaryStatistic.StatisticDimension.RESAMPLED,
                                                                   0.9 );
 
-        ScalarSummaryStatisticFunction q1f = FunctionFactory.ofSummaryStatistic( q1 );
-        ScalarSummaryStatisticFunction q2f = FunctionFactory.ofSummaryStatistic( q2 );
-        ScalarSummaryStatisticFunction q3f = FunctionFactory.ofSummaryStatistic( q3 );
+        ScalarSummaryStatisticFunction q1f = FunctionFactory.ofScalarSummaryStatistic( q1 );
+        ScalarSummaryStatisticFunction q2f = FunctionFactory.ofScalarSummaryStatistic( q2 );
+        ScalarSummaryStatisticFunction q3f = FunctionFactory.ofScalarSummaryStatistic( q3 );
 
         Set<ScalarSummaryStatisticFunction> quantiles = new LinkedHashSet<>();
         quantiles.add( q1f );
@@ -534,7 +536,7 @@ class SummaryStatisticsCalculatorTest
                                                                   SummaryStatistic.StatisticDimension.RESAMPLED,
                                                                   0.5 );
 
-        ScalarSummaryStatisticFunction q1f = FunctionFactory.ofSummaryStatistic( q1 );
+        ScalarSummaryStatisticFunction q1f = FunctionFactory.ofScalarSummaryStatistic( q1 );
 
         Set<ScalarSummaryStatisticFunction> quantiles = Set.of( q1f );
         SummaryStatisticsCalculator calculator =
@@ -711,9 +713,9 @@ class SummaryStatisticsCalculatorTest
                                                                   SummaryStatistic.StatisticDimension.RESAMPLED,
                                                                   0.9 );
 
-        ScalarSummaryStatisticFunction q1f = FunctionFactory.ofSummaryStatistic( q1 );
-        ScalarSummaryStatisticFunction q2f = FunctionFactory.ofSummaryStatistic( q2 );
-        ScalarSummaryStatisticFunction q3f = FunctionFactory.ofSummaryStatistic( q3 );
+        ScalarSummaryStatisticFunction q1f = FunctionFactory.ofScalarSummaryStatistic( q1 );
+        ScalarSummaryStatisticFunction q2f = FunctionFactory.ofScalarSummaryStatistic( q2 );
+        ScalarSummaryStatisticFunction q3f = FunctionFactory.ofScalarSummaryStatistic( q3 );
 
         Set<ScalarSummaryStatisticFunction> quantiles = new LinkedHashSet<>();
         quantiles.add( q1f );
@@ -928,7 +930,7 @@ class SummaryStatisticsCalculatorTest
                                                                     SummaryStatistic.StatisticDimension.FEATURES,
                                                                     null );
 
-        ScalarSummaryStatisticFunction meanFunction = FunctionFactory.ofSummaryStatistic( mean );
+        ScalarSummaryStatisticFunction meanFunction = FunctionFactory.ofScalarSummaryStatistic( mean );
 
         Set<ScalarSummaryStatisticFunction> summaryStatistics = Set.of( meanFunction );
         SummaryStatisticsCalculator calculator =
@@ -992,7 +994,7 @@ class SummaryStatisticsCalculatorTest
                                                                   SummaryStatistic.StatisticDimension.FEATURES,
                                                                   null );
 
-        ScalarSummaryStatisticFunction sdFunction = FunctionFactory.ofSummaryStatistic( sd );
+        ScalarSummaryStatisticFunction sdFunction = FunctionFactory.ofScalarSummaryStatistic( sd );
 
         Set<ScalarSummaryStatisticFunction> summaryStatistics = Set.of( sdFunction );
 
@@ -1091,7 +1093,7 @@ class SummaryStatisticsCalculatorTest
                                                                     SummaryStatistic.StatisticDimension.FEATURES,
                                                                     null );
 
-        ScalarSummaryStatisticFunction meanFunction = FunctionFactory.ofSummaryStatistic( mean );
+        ScalarSummaryStatisticFunction meanFunction = FunctionFactory.ofScalarSummaryStatistic( mean );
 
         Set<ScalarSummaryStatisticFunction> summaryStatistics = Set.of( meanFunction );
 
@@ -1151,13 +1153,13 @@ class SummaryStatisticsCalculatorTest
                                                                     SummaryStatistic.StatisticDimension.FEATURES,
                                                                     null );
 
-        ScalarSummaryStatisticFunction meanFunction = FunctionFactory.ofSummaryStatistic( mean );
+        ScalarSummaryStatisticFunction meanFunction = FunctionFactory.ofScalarSummaryStatistic( mean );
 
         SummaryStatistic sd = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.STANDARD_DEVIATION,
                                                                   SummaryStatistic.StatisticDimension.FEATURES,
                                                                   null );
 
-        ScalarSummaryStatisticFunction sdFunction = FunctionFactory.ofSummaryStatistic( sd );
+        ScalarSummaryStatisticFunction sdFunction = FunctionFactory.ofScalarSummaryStatistic( sd );
 
         Set<ScalarSummaryStatisticFunction> summaryStatistics = new LinkedHashSet<>();
         summaryStatistics.add( meanFunction );
@@ -1207,6 +1209,85 @@ class SummaryStatisticsCalculatorTest
                              .setValue( 3.0276503540974917 );
 
         List<Statistics> expected = List.of( expectedFirstBuilder.build(), expectedSecondBuilder.build() );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetBoxplotsForDoubleScore()
+    {
+        DoubleScoreMetric metric = DoubleScoreMetric.newBuilder()
+                                                    .setName( MetricName.BIAS_FRACTION )
+                                                    .build();
+
+        DoubleScoreMetric.DoubleScoreMetricComponent main =
+                DoubleScoreMetric.DoubleScoreMetricComponent.newBuilder()
+                                                            .setMinimum( Double.NEGATIVE_INFINITY )
+                                                            .setMaximum( Double.POSITIVE_INFINITY )
+                                                            .setOptimum( 0 )
+                                                            .setName( DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
+                                                            .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                                            .build();
+
+        DoubleScoreStatistic.DoubleScoreStatisticComponent
+                component = DoubleScoreStatistic.DoubleScoreStatisticComponent.newBuilder()
+                                                                              .setMetric( main )
+                                                                              .setValue( 0.5 )
+                                                                              .build();
+
+        DoubleScoreStatistic score = DoubleScoreStatistic.newBuilder()
+                                                         .setMetric( metric )
+                                                         .addStatistics( component )
+                                                         .build();
+
+        Statistics nominal = Statistics.newBuilder()
+                                       .addScores( score )
+                                       .build();
+
+        SummaryStatistic q1 = MessageFactory.getSummaryStatistic( SummaryStatistic.StatisticName.BOX_PLOT,
+                                                                  SummaryStatistic.StatisticDimension.FEATURES,
+                                                                  null );
+
+        BoxplotSummaryStatisticFunction q1f = FunctionFactory.ofBoxplotSummaryStatistic( q1 );
+
+        Set<BoxplotSummaryStatisticFunction> boxplot = Set.of( q1f );
+        SummaryStatisticsCalculator calculator =
+                SummaryStatisticsCalculator.of( Set.of(), Set.of(), boxplot, null, ( a, b ) -> a, null );
+
+        for ( int i = 1; i < 11; i++ )
+        {
+            Statistics.Builder next = nominal.toBuilder();
+            // Set the new score
+            next.getScoresBuilder( 0 )
+                .getStatisticsBuilder( 0 )
+                .setValue( i );
+            calculator.test( next.build() );
+        }
+
+        List<Statistics> actual = calculator.get();
+
+        Statistics.Builder expectedFirstBuilder = nominal.toBuilder()
+                                                         .clearScores()
+                                                         .setSummaryStatistic( q1 );
+        BoxplotStatistic.Box box = BoxplotStatistic.Box.newBuilder()
+                                                       .addAllQuantiles( List.of( 1.0, 2.75, 5.5, 8.25, 10.0 ) )
+                                                       .build();
+        BoxplotMetric boxplotMetric = BoxplotMetric.newBuilder()
+                                                   .setName( MetricName.BOX_PLOT )
+                                                   .setVariable( "BIAS FRACTION" )
+                                                   .setUnits( "DIMENSIONLESS" )
+                                                   .setMinimum( Double.NEGATIVE_INFINITY )
+                                                   .setMaximum( Double.POSITIVE_INFINITY )
+                                                   .setQuantileValueType( BoxplotMetric.QuantileValueType.VARIABLE )
+                                                   .addAllQuantiles( List.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) )
+                                                   .build();
+        BoxplotStatistic boxStatistic = BoxplotStatistic.newBuilder()
+                                                        .setMetric( boxplotMetric )
+                                                        .addStatistics( box )
+                                                        .build();
+        expectedFirstBuilder.addOneBoxPerPool( boxStatistic );
+
+        List<Statistics> expected = List.of( expectedFirstBuilder.build() );
 
         assertEquals( expected, actual );
     }

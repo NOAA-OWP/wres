@@ -53,7 +53,6 @@ import static wres.tasker.JobMessageHelper.JOB_NOT_DONE_YET;
 
 import wres.messages.generated.JobStandardStream;
 
-
 /**
  * Used to get information about results and where to find them.
  * Eagerly looks in job result queue when a job id is registered, so that a
@@ -372,7 +371,7 @@ class JobResults
          * @throws IOException when queue declaration fails
          */
 
-        public Integer call() throws IOException, TimeoutException
+        public Integer call() throws IOException
         {
             LOGGER.debug( "call called on {}", this );
             String jobId = this.getJobId();
