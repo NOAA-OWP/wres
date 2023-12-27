@@ -544,18 +544,19 @@ public class FunctionFactory
      * @throws IllegalArgumentException if the statistic is not a valid summary statistic
      */
 
-    public static ToDoubleFunction<double[]> ofSummaryStatistic( MetricConstants statistic )
+    public static ToDoubleFunction<double[]> ofScalarSummaryStatistic( MetricConstants statistic )
     {
         Objects.requireNonNull( statistic );
-        if ( !statistic.isInGroup( MetricGroup.UNIVARIATE_STATISTIC ) )
+
+        // Lazy build the map
+        FunctionFactory.buildStatisticsMap();
+
+        if ( !STATISTICS.containsKey( statistic ) )
         {
             throw new IllegalArgumentException( "The statistic '" + statistic
                                                 + "' is not a recognized statistic "
                                                 + "in this context." );
         }
-
-        // Lazy build the map
-        FunctionFactory.buildStatisticsMap();
 
         return STATISTICS.get( statistic );
     }
@@ -569,7 +570,7 @@ public class FunctionFactory
      * @throws IllegalArgumentException if the statistic is not a valid summary statistic in this context
      */
 
-    public static ScalarSummaryStatisticFunction ofSummaryStatistic( SummaryStatistic statistic )
+    public static ScalarSummaryStatisticFunction ofScalarSummaryStatistic( SummaryStatistic statistic )
     {
         Objects.requireNonNull( statistic );
 
@@ -582,7 +583,7 @@ public class FunctionFactory
         MetricConstants name = MetricConstants.valueOf( statistic.getStatistic()
                                                                  .name() );
 
-        ToDoubleFunction<double[]> calculator = FunctionFactory.ofSummaryStatistic( name );
+        ToDoubleFunction<double[]> calculator = FunctionFactory.ofScalarSummaryStatistic( name );
 
         return new ScalarSummaryStatisticFunction( statistic, calculator );
     }
@@ -630,6 +631,28 @@ public class FunctionFactory
     }
 
     /**
+     * Translates durations to decimal durations in prescribed units.
+     * @param durations the durations
+     * @param units the units
+     * @return the decimal durations
+     * @throws NullPointerException if any input is null
+     */
+    public static double[] ofDecimalDurations( Duration[] durations, ChronoUnit units )
+    {
+        Objects.requireNonNull( durations );
+        Objects.requireNonNull( units );
+
+        return Arrays.stream( durations )
+                     .mapToDouble( a -> ( a.getSeconds()
+                                          * 1000 )
+                                        + ( a.getNano()
+                                            / 1_000_000.0 ) )
+                     .map( fu -> fu / units.getDuration()
+                                           .toMillis() )
+                     .toArray();
+    }
+
+    /**
      * Returns a function that operates on durations from a function that operates on real values. This implementation
      * is lossy insofar as the durations are converted to milliseconds. A non-lossy implementation would require the
      * use of {@link java.math.BigDecimal}, which is expensive and unlikely to be justified for most practical
@@ -646,13 +669,7 @@ public class FunctionFactory
         return durations ->
         {
             // Convert the input to double ms
-            double[] input = Arrays.stream( durations )
-                                   .filter( Objects::nonNull )
-                                   .mapToDouble( a -> ( a.getSeconds()
-                                                        * 1000 )
-                                                      + ( a.getNano()
-                                                          / 1_000_000.0 ) )
-                                   .toArray();
+            double[] input = FunctionFactory.ofDecimalDurations( durations, ChronoUnit.MILLIS );
 
             double measure = univariate.applyAsDouble( input );
 
@@ -677,14 +694,7 @@ public class FunctionFactory
         // Create a function that operates on durations
         return ( p, d ) ->
         {
-            double[] decimalDurations = Arrays.stream( d )
-                                              .mapToDouble( a -> ( a.getSeconds()
-                                                                   * 1000 )
-                                                                 + ( a.getNano()
-                                                                     / 1_000_000.0 ) )
-                                              .map( fu -> fu / units.getDuration()
-                                                                    .toMillis() )
-                                              .toArray();
+            double[] decimalDurations = FunctionFactory.ofDecimalDurations( d, units );
 
             // Replace the units for the domain axis
             DiagramStatistic result = function.apply( p, decimalDurations );

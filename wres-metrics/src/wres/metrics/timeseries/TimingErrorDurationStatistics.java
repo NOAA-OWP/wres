@@ -191,7 +191,7 @@ public class TimingErrorDurationStatistics
                 nextSummaryStatistic = next;
             }
 
-            ToDoubleFunction<double[]> univariate = FunctionFactory.ofSummaryStatistic( nextSummaryStatistic );
+            ToDoubleFunction<double[]> univariate = FunctionFactory.ofScalarSummaryStatistic( nextSummaryStatistic );
             Function<Duration[], Duration> duration = FunctionFactory.ofDurationFromUnivariateFunction( univariate );
             innerStatistics.put( next, duration );
 

@@ -1300,7 +1300,7 @@ public class ChartDataFactory
             if ( xDimension == MetricDimension.BIN_UPPER_BOUND
                  && valueCount > 1 )
             {
-                double gap = ( xCentral.getValues( 1 ) - xCentral.getValues( 0 ) );
+                double gap = xCentral.getValues( 1 ) - xCentral.getValues( 0 );
                 xL = xC - ( 0.5 * gap );
                 xU = xC + ( 0.5 * gap );
             }

@@ -1726,7 +1726,7 @@ class EvaluationUtilities
             }
             else
             {
-                ScalarSummaryStatisticFunction nextScalar = FunctionFactory.ofSummaryStatistic( nextStatistic );
+                ScalarSummaryStatisticFunction nextScalar = FunctionFactory.ofScalarSummaryStatistic( nextStatistic );
                 scalar.add( nextScalar );
                 LOGGER.debug( "Discovered a scalar summary statistic: {}.", name );
             }

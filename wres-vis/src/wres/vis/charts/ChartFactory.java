@@ -58,6 +58,7 @@ import org.jfree.chart.title.LegendTitle;
 import org.jfree.chart.title.TextTitle;
 import org.jfree.chart.ui.RectangleInsets;
 import org.jfree.data.category.CategoryDataset;
+import org.jfree.data.xy.IntervalXYDataset;
 import org.jfree.data.xy.XYDataset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -366,6 +367,32 @@ public class ChartFactory
                                                     chartType == ChartType.LEAD_THRESHOLD
                                                     || chartType == ChartType.POOLING_WINDOW );
             }
+            else if ( metricName == MetricConstants.HISTOGRAM )
+            {
+                IntervalXYDataset dataset = ( IntervalXYDataset ) this.getDiagramDataset( chartType,
+                                                                                          slicedStatistics,
+                                                                                          domainDimension,
+                                                                                          rangeDimension,
+                                                                                          durationUnits );
+
+                chart = org.jfree.chart.ChartFactory.createXYBarChart( title,
+                                                                       domainTitle,
+                                                                       false,
+                                                                       rangeTitle,
+                                                                       dataset );
+
+                // Set the background paint
+                XYPlot plot = chart.getXYPlot();
+                plot.setBackgroundPaint( Color.WHITE );
+
+                // Set the series renderer
+                this.setChartTheme( chart );
+                this.setSeriesColorAndShape( plot, metricName, !quantiles.isEmpty() );
+
+                // Set the axis offsets to zero. Could abstract to setting chart theme above, but breaks test benchmarks
+                // for graphics scenarios
+                plot.setAxisOffset( RectangleInsets.ZERO_INSETS );
+            }
             else
             {
                 XYDataset dataset = this.getDiagramDataset( chartType,
@@ -400,7 +427,7 @@ public class ChartFactory
                                     hasDiagonal, // Plots with a diagonal are always square, plots without, probably not
                                     !hasDiagonal ); // Plots with a diagonal should not show a zero range marker
 
-                // Set the renderer
+                // Set the series renderer
                 this.setChartTheme( chart );
                 this.setSeriesColorAndShape( plot, metricName, !quantiles.isEmpty() );
             }
@@ -1350,6 +1377,7 @@ public class ChartFactory
         XYBarRenderer.setDefaultBarPainter( new StandardXYBarPainter() );
         XYBarRenderer renderer = new XYBarRenderer( 0.2 );
         renderer.setShadowVisible( false );
+        renderer.setDrawBarOutline( false );
 
         for ( int i = 0; i < seriesCount; i++ )
         {
@@ -1495,7 +1523,7 @@ public class ChartFactory
 
         Pair<MetricConstants, MetricConstants> metricNames = parameters.metricNames();
         MetricConstants metricName = metricNames.getLeft();
-        String name = this.getSummaryStatisticQualifier( summaryStatistic );
+        String name = this.getSummaryStatisticQualifier( metricName, summaryStatistic );
 
         boolean isSummaryStatistic = Objects.nonNull( summaryStatistic )
                                      && summaryStatistic.getDimension()
@@ -1598,10 +1626,12 @@ public class ChartFactory
     }
 
     /**
+     * @param metric the metric
      * @param summaryStatistic the summary statistic
      * @return the name qualifier for a summary statistic
      */
-    private String getSummaryStatisticQualifier( SummaryStatistic summaryStatistic )
+    private String getSummaryStatisticQualifier( MetricConstants metric,
+                                                 SummaryStatistic summaryStatistic )
     {
         String name = "";
 
@@ -1617,7 +1647,14 @@ public class ChartFactory
 
             if ( summaryStatistic.getStatistic() == SummaryStatistic.StatisticName.QUANTILE )
             {
-                statisticName = "QUANTILES";  // Plural
+                if ( metric.isInGroup( StatisticType.DURATION_SCORE ) )
+                {
+                    statisticName += " " + summaryStatistic.getProbability();
+                }
+                else
+                {
+                    statisticName = "QUANTILES";  // Plural
+                }
             }
 
             name = statisticName

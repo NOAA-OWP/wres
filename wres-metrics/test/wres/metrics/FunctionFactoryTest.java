@@ -179,22 +179,22 @@ class FunctionFactoryTest
     }
 
     @Test
-    void testOfUnivariateFunction()
+    void testOfScalarSummaryStatistic()
     {
-        assertTrue( Objects.nonNull( FunctionFactory.ofSummaryStatistic( MetricConstants.MEAN ) ) );
-        assertTrue( Objects.nonNull( FunctionFactory.ofSummaryStatistic( MetricConstants.SAMPLE_SIZE ) ) );
-        assertTrue( Objects.nonNull( FunctionFactory.ofSummaryStatistic( MetricConstants.MINIMUM ) ) );
-        assertTrue( Objects.nonNull( FunctionFactory.ofSummaryStatistic( MetricConstants.MAXIMUM ) ) );
-        assertTrue( Objects.nonNull( FunctionFactory.ofSummaryStatistic( MetricConstants.MEDIAN ) ) );
-        assertTrue( Objects.nonNull( FunctionFactory.ofSummaryStatistic( MetricConstants.MEAN_ABSOLUTE ) ) );
-        assertTrue( Objects.nonNull( FunctionFactory.ofSummaryStatistic( MetricConstants.STANDARD_DEVIATION ) ) );
+        assertTrue( Objects.nonNull( FunctionFactory.ofScalarSummaryStatistic( MetricConstants.MEAN ) ) );
+        assertTrue( Objects.nonNull( FunctionFactory.ofScalarSummaryStatistic( MetricConstants.SAMPLE_SIZE ) ) );
+        assertTrue( Objects.nonNull( FunctionFactory.ofScalarSummaryStatistic( MetricConstants.MINIMUM ) ) );
+        assertTrue( Objects.nonNull( FunctionFactory.ofScalarSummaryStatistic( MetricConstants.MAXIMUM ) ) );
+        assertTrue( Objects.nonNull( FunctionFactory.ofScalarSummaryStatistic( MetricConstants.MEDIAN ) ) );
+        assertTrue( Objects.nonNull( FunctionFactory.ofScalarSummaryStatistic( MetricConstants.MEAN_ABSOLUTE ) ) );
+        assertTrue( Objects.nonNull( FunctionFactory.ofScalarSummaryStatistic( MetricConstants.STANDARD_DEVIATION ) ) );
     }
 
     @Test
-    void testOfUnivariateFunctionWithWrongInput()
+    void testOfScalarSummaryStatisticWithWrongInput()
     {
         IllegalArgumentException exception = assertThrows( IllegalArgumentException.class,
-                                                           () -> FunctionFactory.ofSummaryStatistic( MetricConstants.MAIN ) );
+                                                           () -> FunctionFactory.ofScalarSummaryStatistic( MetricConstants.MAIN ) );
 
         assertEquals( "The statistic 'MAIN' is not a recognized statistic in this context.", exception.getMessage() );
     }
