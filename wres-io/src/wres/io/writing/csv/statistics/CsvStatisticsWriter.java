@@ -223,8 +223,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         }
         catch ( IOException e )
         {
-            throw new CommaSeparatedWriteException( "Encountered an error while writing a blob of statistic to file.",
-                                                    e );
+            throw new CommaSeparatedWriteException( "Encountered an error while writing a blob of statistic to a CSV "
+                                                    + "file.", e );
         }
         finally
         {
@@ -271,9 +271,10 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
      * Returns a pool description from the pool definitions.
      *
      * @return a pool description
+     * @throws IOException if the pool description cannot be generated
      */
 
-    private StringJoiner getPoolDescription( Pool pool )
+    private StringJoiner getPoolDescription( Pool pool ) throws IOException
     {
         StringJoiner joiner = new StringJoiner( CsvStatisticsWriter.DELIMITER );
 
@@ -301,7 +302,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         StringJoiner timeWindowDescription = this.getTimeWindowDescription( pool.getTimeWindow() );
         joiner = joiner.merge( timeWindowDescription );
 
-        // Merge in the time scale description
+        // Merge in the timescale description
         if ( pool.hasTimeScale() )
         {
             StringJoiner timeScaleDescription = this.getTimeScaleDescription( pool.getTimeScale() );
@@ -345,17 +346,19 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
      * @param geometries the geometries
      * @param featureGroupName the feature group name
      * @return the geometry description
-     * @throws IllegalArgumentException if there are no geometries or more than one srid
+     * @throws IOException if there are no geometries or more than one srid
      */
 
-    private StringJoiner getGeometryTupleDescription( List<GeometryTuple> geometries, String featureGroupName )
+    private StringJoiner getGeometryTupleDescription( List<GeometryTuple> geometries,
+                                                      String featureGroupName )
+            throws IOException
     {
         if ( geometries.isEmpty() )
         {
-            throw new IllegalArgumentException( "Expected at least one geometry but found none while processing "
-                                                + "feature group "
-                                                + featureGroupName
-                                                + "." );
+            throw new IOException( "Expected at least one geometry but found none while processing "
+                                   + "feature group "
+                                   + featureGroupName
+                                   + "." );
         }
 
         StringJoiner joiner = new StringJoiner( CsvStatisticsWriter.DELIMITER );
@@ -721,9 +724,10 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
     {
         Objects.requireNonNull( statistics );
 
-        if ( !statistics.hasPool() && !statistics.hasBaselinePool() )
+        if ( !statistics.hasPool()
+             && !statistics.hasBaselinePool() )
         {
-            throw new IllegalArgumentException( "Cannot write statistics to CSV without a pool definition." );
+            throw new IOException( "Cannot write statistics to CSV without a pool definition." );
         }
 
         // Get the evaluation and pool information

@@ -106,6 +106,9 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     /** The summary statistics calculators. */
     private final List<SummaryStatisticsCalculator> summaryStatistics;
 
+    /** The summary statistics calculators for a baseline when calculating separate statistics for a baseline. */
+    private final List<SummaryStatisticsCalculator> summaryStatisticsForBaseline;
+
     /** The pool supplier. */
     private Supplier<Pool<TimeSeries<Pair<L, R>>>> poolSupplier;
 
@@ -143,8 +146,22 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         // Create the statistics, generating sampling uncertainty estimates as needed
         List<Statistics> statistics = this.createStatistics( pool, this.samplingUncertainty, this.blockSize );
 
+        // Group the statistics by dataset orientation
+        Map<DatasetOrientation, List<Statistics>> groups = Slicer.getGroupedStatistics( statistics );
+
         // Register the statistics with any summary statistics calculators
-        statistics.forEach( n -> this.summaryStatistics.forEach( p -> p.test( n ) ) );
+        if ( groups.containsKey( DatasetOrientation.RIGHT ) )
+        {
+            List<Statistics> right = groups.get( DatasetOrientation.RIGHT );
+            right.forEach( n -> this.summaryStatistics.forEach( p -> p.test( n ) ) );
+        }
+
+        // Summary statistics for a separate baseline?
+        if ( groups.containsKey( DatasetOrientation.BASELINE ) )
+        {
+            List<Statistics> baseline = groups.get( DatasetOrientation.BASELINE );
+            baseline.forEach( n -> this.summaryStatisticsForBaseline.forEach( p -> p.test( n ) ) );
+        }
 
         // Publish the statistics
         Status status = this.publish( this.evaluation,
@@ -230,6 +247,9 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
         /** The summary statistics calculators. Allowed to be empty. */
         private List<SummaryStatisticsCalculator> summaryStatistics = new ArrayList<>();
+
+        /** The summary statistics calculators for a separate baseline. Allowed to be empty. */
+        private List<SummaryStatisticsCalculator> summaryStatisticsForBaseline = new ArrayList<>();
 
         /**
          * @param evaluation the evaluation to set
@@ -380,6 +400,20 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             if ( Objects.nonNull( summaryStatistics ) )
             {
                 this.summaryStatistics = summaryStatistics;
+            }
+
+            return this;
+        }
+
+        /**
+         * @param summaryStatistics the summary statistics calculators for a separate baseline
+         * @return this builder
+         */
+        public Builder<L, R> setSummaryStatisticsCalculatorsForBaseline( List<SummaryStatisticsCalculator> summaryStatistics )
+        {
+            if ( Objects.nonNull( summaryStatistics ) )
+            {
+                this.summaryStatisticsForBaseline = summaryStatistics;
             }
 
             return this;
@@ -995,6 +1029,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         this.poolRequest = builder.poolRequest;
         this.metricProcessors = List.copyOf( builder.metricProcessors ); // Validates nullity
         this.summaryStatistics = List.copyOf( builder.summaryStatistics );
+        this.summaryStatisticsForBaseline = List.copyOf( builder.summaryStatisticsForBaseline );
         this.samplingUncertaintyMetricProcessors = builder.samplingUncertaintyMetricProcessors;
         this.traceCountEstimator = builder.traceCountEstimator;
         this.poolGroupTracker = builder.poolGroupTracker;
