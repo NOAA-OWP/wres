@@ -750,17 +750,23 @@ public class Evaluator
             // Create the summary statistics calculators to increment with raw statistics
             List<SummaryStatisticsCalculator> summaryStatisticsCalculators =
                     EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds );
+            List<SummaryStatisticsCalculator> summaryStatisticsCalculatorsForBaseline =
+                    EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds );
 
             // Create and publish the raw evaluation statistics
             PoolDetails poolDetails = new PoolDetails( poolFactory, poolRequests, poolReporter, groupTracker );
             EvaluationUtilities.createAndPublishStatistics( evaluationDetails,
                                                             poolDetails,
                                                             summaryStatisticsCalculators,
+                                                            summaryStatisticsCalculatorsForBaseline,
                                                             sharedWriters,
                                                             executors );
 
             // Create and publish any summary statistics derived from the raw statistics
             EvaluationUtilities.createAndPublishSummaryStatistics( summaryStatisticsCalculators,
+                                                                   evaluationMessager );
+
+            EvaluationUtilities.createAndPublishSummaryStatistics( summaryStatisticsCalculatorsForBaseline,
                                                                    evaluationMessager );
 
             // Report that all publication was completed. At this stage, a message is sent indicating the expected

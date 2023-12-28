@@ -628,27 +628,24 @@ public class ChartDataFactory
         List<DiagramStatisticOuter> inputSlice;
         if ( chartType == ChartType.LEAD_THRESHOLD )
         {
-            inputSlice =
-                    Slicer.filter( statistics,
-                                   next -> next.getPoolMetadata()
-                                               .getTimeWindow()
-                                               .equals( keyInstance ) );
+            inputSlice = Slicer.filter( statistics,
+                                        next -> next.getPoolMetadata()
+                                                    .getTimeWindow()
+                                                    .equals( keyInstance ) );
         }
         else if ( chartType == ChartType.THRESHOLD_LEAD )
         {
-            inputSlice =
-                    Slicer.filter( statistics,
-                                   next -> next.getPoolMetadata()
-                                               .getThresholds()
-                                               .equals( keyInstance ) );
+            inputSlice = Slicer.filter( statistics,
+                                        next -> next.getPoolMetadata()
+                                                    .getThresholds()
+                                                    .equals( keyInstance ) );
         }
         else if ( chartType == ChartType.POOLING_WINDOW )
         {
-            inputSlice =
-                    Slicer.filter( statistics,
-                                   next -> next.getPoolMetadata()
-                                               .getTimeWindow()
-                                               .equals( keyInstance ) );
+            inputSlice = Slicer.filter( statistics,
+                                        next -> next.getPoolMetadata()
+                                                    .getTimeWindow()
+                                                    .equals( keyInstance ) );
         }
         else
         {

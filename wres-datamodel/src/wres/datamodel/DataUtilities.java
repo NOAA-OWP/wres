@@ -31,7 +31,7 @@ import wres.statistics.generated.Pool;
 
 /**
  * Utilities for working with data/metadata objects.
- * 
+ *
  * @author James Brown
  */
 
@@ -48,7 +48,7 @@ public final class DataUtilities
      * Returns a string representation of the {@link OneOrTwoThresholds} that contains only alphanumeric characters 
      * A-Z, a-z, and 0-9 and, additionally, the underscore character to separate between elements, and the period 
      * character as a decimal separator.
-     * 
+     *
      * @param threshold the threshold, required
      * @return a safe string representation
      * @throws NullPointerException if the threshold is null
@@ -71,7 +71,7 @@ public final class DataUtilities
      * Returns a string representation of the {@link OneOrTwoThresholds} without any units. This is useful when forming 
      * string representations of a collection of {@link ThresholdOuter} and abstracting the common units to a higher 
      * level.
-     * 
+     *
      * @param threshold the threshold, required
      * @return a string without any units
      * @throws NullPointerException if the threshold is null
@@ -94,7 +94,7 @@ public final class DataUtilities
      * Returns a string representation of the {@link ThresholdOuter} that contains only alphanumeric characters A-Z, a-z, 
      * and 0-9 and, additionally, the underscore character to separate between elements, and the period character as
      * a decimal separator.
-     * 
+     *
      * @param threshold the threshold, required
      * @return a safe string representation
      * @throws NullPointerException if the threshold is null
@@ -129,7 +129,7 @@ public final class DataUtilities
      * Returns a string representation of the {@link ThresholdOuter} without any units. This is useful when forming 
      * string representations of a collection of {@link ThresholdOuter} and abstracting the common units to a higher 
      * level.
-     * 
+     *
      * @param threshold the threshold, required
      * @return a string without any units
      * @throws NullPointerException if the threshold is null
@@ -223,7 +223,7 @@ public final class DataUtilities
     }
 
     /**
-     * Returns a safe and user-friendly string representation of the lead durations within a {@link TimeWindowOuter} 
+     * Returns a safe and user-friendly string representation of the lead durations within a {@link TimeWindowOuter}
      * for use in a path to a web resource.
      * @param timeWindow the timeWindow
      * @param units the lead duration units
@@ -252,7 +252,7 @@ public final class DataUtilities
 
     /**
      * Retrieves the specified number of fractional time units from the input duration. Accepted units include:
-     * 
+     *
      * <ol>
      * <li>{@link ChronoUnit#DAYS}</li>
      * <li>{@link ChronoUnit#HOURS}</li>
@@ -260,7 +260,7 @@ public final class DataUtilities
      * <li>{@link ChronoUnit#SECONDS}</li>
      * <li>{@link ChronoUnit#MILLIS}</li>
      * </ol>
-     *  
+     *
      * @param duration the duration
      * @param durationUnits the duration units required
      * @return the duration in the prescribed units
@@ -274,16 +274,16 @@ public final class DataUtilities
 
         // Divisor
         BigDecimal divisor = switch ( durationUnits )
-                {
-                    case DAYS -> BigDecimal.valueOf( 60.0 * 60.0 * 24.0 );
-                    case HOURS -> BigDecimal.valueOf( 60.0 * 60.0 );
-                    case MINUTES -> BigDecimal.valueOf( 60.0 );
-                    case SECONDS -> BigDecimal.valueOf( 1.0 );
-                    case MILLIS -> BigDecimal.valueOf( 1000.0 );
-                    default -> throw new IllegalArgumentException( "The input time units '" + durationUnits
-                                                                   + "' are not supported "
-                                                                   + "in this context." );
-                };
+        {
+            case DAYS -> BigDecimal.valueOf( 60.0 * 60.0 * 24.0 );
+            case HOURS -> BigDecimal.valueOf( 60.0 * 60.0 );
+            case MINUTES -> BigDecimal.valueOf( 60.0 );
+            case SECONDS -> BigDecimal.valueOf( 1.0 );
+            case MILLIS -> BigDecimal.valueOf( 1000.0 );
+            default -> throw new IllegalArgumentException( "The input time units '" + durationUnits
+                                                           + "' are not supported "
+                                                           + "in this context." );
+        };
 
         double durationDouble = durationSeconds.divide( divisor, RoundingMode.HALF_UP )
                                                .doubleValue();
@@ -291,7 +291,7 @@ public final class DataUtilities
         // Use a long for a whole number
         if ( ( durationDouble == Math.floor( durationDouble ) ) && !Double.isInfinite( durationDouble ) )
         {
-            return (long) durationDouble;
+            return ( long ) durationDouble;
         }
 
         return durationDouble;
@@ -415,7 +415,7 @@ public final class DataUtilities
         }
 
         // Add optional append
-        if ( Objects.nonNull( append ) && ! append.isBlank() )
+        if ( Objects.nonNull( append ) && !append.isBlank() )
         {
             joinElements.add( append );
         }
@@ -469,7 +469,7 @@ public final class DataUtilities
             Geometry geometry = reader.read( wktUpperCase );
             return geometry.getCoordinate();
         }
-        catch( ParseException e )
+        catch ( ParseException e )
         {
             throw new IllegalArgumentException( "Failed to read a coordinate pair from this wkt: "
                                                 + wkt
@@ -492,7 +492,7 @@ public final class DataUtilities
         {
             return DataUtilities.getLonLatFromPointWkt( wkt );
         }
-        catch( IllegalArgumentException e )
+        catch ( IllegalArgumentException e )
         {
             LOGGER.debug( "Failed to read a coordinate pair from this wkt: {}.", wkt );
             return null;
@@ -517,8 +517,9 @@ public final class DataUtilities
 
         if ( geoCount > 1 )
         {
-            if ( "".equals( pool.getGeometryGroup()
-                                .getRegionName() ) )
+            if ( pool.getGeometryGroup()
+                     .getRegionName()
+                     .isEmpty() )
             {
                 throw new IllegalArgumentException( "Discovered a pool with " + geoCount
                                                     + " features, but no region "
@@ -554,8 +555,9 @@ public final class DataUtilities
             LOGGER.debug( "Creating a geographic name from the single feature tuple, {}.", firstTuple );
 
             // Region name?
-            if ( !"".equals( pool.getGeometryGroup()
-                                 .getRegionName() ) )
+            if ( !pool.getGeometryGroup()
+                      .getRegionName()
+                      .isEmpty() )
             {
                 joiner.add( pool.getGeometryGroup()
                                 .getRegionName()
@@ -582,7 +584,7 @@ public final class DataUtilities
 
     /**
      * Gets the name of a dataset from the evaluation and pool.
-     * 
+     *
      * @param evaluation the evaluation
      * @param pool the pool
      * @return the dataset name
@@ -592,21 +594,31 @@ public final class DataUtilities
     {
         String name = null;
 
-        // Try to use the baseline data name if this pool is a baseline pool
-        if ( pool.getIsBaselinePool() && !evaluation.getBaselineDataName().isBlank() )
+        // Try to use the baseline data name if this pool is a baseline pool. Always assign a name to a baseline pool
+        if ( pool.getIsBaselinePool() )
         {
-            name = evaluation.getBaselineDataName();
+            if ( !evaluation.getBaselineDataName()
+                            .isBlank() )
+            {
+                name = evaluation.getBaselineDataName();
+            }
+            else
+            {
+                name = DatasetOrientation.BASELINE.name();
+            }
         }
 
-        // Use the right name, which may be blank
+        // Use the right name if required, which may be blank
         if ( Objects.isNull( name ) )
         {
             name = evaluation.getRightDataName();
         }
 
         // If both right and baseline have the same non-blank names, resolve this
-        if ( evaluation.getBaselineDataName().equals( evaluation.getRightDataName() ) &&
-             !evaluation.getRightDataName().isBlank() )
+        if ( evaluation.getBaselineDataName()
+                       .equals( evaluation.getRightDataName() )
+             && !evaluation.getRightDataName()
+                           .isBlank() )
         {
             if ( pool.getIsBaselinePool() )
             {

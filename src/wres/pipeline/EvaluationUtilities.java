@@ -136,6 +136,7 @@ class EvaluationUtilities
      * @param evaluationDetails the evaluation details
      * @param poolDetails the pool details
      * @param summaryStatistics the summary statistics calculators, possibly empty
+     * @param summaryStatisticsForBaseline the summary statistics calculators for a separate baseline, possibly empty
      * @param sharedWriters the shared writers
      * @param executors the executor services
      * @throws NullPointerException if any input is null
@@ -144,12 +145,14 @@ class EvaluationUtilities
     static void createAndPublishStatistics( EvaluationDetails evaluationDetails,
                                             PoolDetails poolDetails,
                                             List<SummaryStatisticsCalculator> summaryStatistics,
+                                            List<SummaryStatisticsCalculator> summaryStatisticsForBaseline,
                                             SharedWriters sharedWriters,
                                             EvaluationExecutors executors )
     {
         Objects.requireNonNull( evaluationDetails );
         Objects.requireNonNull( poolDetails );
         Objects.requireNonNull( summaryStatistics );
+        Objects.requireNonNull( summaryStatisticsForBaseline );
         Objects.requireNonNull( sharedWriters );
         Objects.requireNonNull( executors );
 
@@ -172,6 +175,7 @@ class EvaluationUtilities
         CompletableFuture<Object> poolTaskChain = EvaluationUtilities.getPoolTasks( evaluationDetails,
                                                                                     poolDetails,
                                                                                     summaryStatistics,
+                                                                                    summaryStatisticsForBaseline,
                                                                                     sharedWriters,
                                                                                     executors );
 
@@ -778,6 +782,7 @@ class EvaluationUtilities
      * @param evaluationDetails the evaluation details
      * @param poolDetails the pool details
      * @param summaryStatistics the summary statistics calculators, possibly empty
+     * @param summaryStatisticsForBaseline the summary statistics calculators for a separate baseline, possibly empty
      * @param sharedWriters the shared writers
      * @param executors the executor services
      * @return the pool task chain
@@ -786,6 +791,7 @@ class EvaluationUtilities
     private static CompletableFuture<Object> getPoolTasks( EvaluationDetails evaluationDetails,
                                                            PoolDetails poolDetails,
                                                            List<SummaryStatisticsCalculator> summaryStatistics,
+                                                           List<SummaryStatisticsCalculator> summaryStatisticsForBaseline,
                                                            SharedWriters sharedWriters,
                                                            EvaluationExecutors executors )
     {
@@ -802,6 +808,7 @@ class EvaluationUtilities
                     EvaluationUtilities.getEnsemblePoolProcessors( evaluationDetails,
                                                                    poolDetails,
                                                                    summaryStatistics,
+                                                                   summaryStatisticsForBaseline,
                                                                    sharedWriters,
                                                                    executors );
 
@@ -816,6 +823,7 @@ class EvaluationUtilities
                     EvaluationUtilities.getSingleValuedPoolProcessors( evaluationDetails,
                                                                        poolDetails,
                                                                        summaryStatistics,
+                                                                       summaryStatisticsForBaseline,
                                                                        sharedWriters,
                                                                        executors );
 
@@ -832,6 +840,7 @@ class EvaluationUtilities
      * @param evaluationDetails the evaluation details
      * @param poolDetails the pool details
      * @param summaryStatistics the summary statistics calculators, possibly empty
+     * @param summaryStatisticsForBaseline the summary statistics calculators for a separate baseline, possibly empty
      * @param sharedWriters the shared writers
      * @param executors the executors
      * @return the single-valued processors
@@ -840,6 +849,7 @@ class EvaluationUtilities
     private static List<PoolProcessor<Double, Double>> getSingleValuedPoolProcessors( EvaluationDetails evaluationDetails,
                                                                                       PoolDetails poolDetails,
                                                                                       List<SummaryStatisticsCalculator> summaryStatistics,
+                                                                                      List<SummaryStatisticsCalculator> summaryStatisticsForBaseline,
                                                                                       SharedWriters sharedWriters,
                                                                                       EvaluationExecutors executors )
     {
@@ -929,6 +939,7 @@ class EvaluationUtilities
                             .setSeparateMetricsForBaseline( separateMetrics )
                             .setPoolGroupTracker( poolDetails.poolGroupTracker() )
                             .setSummaryStatisticsCalculators( summaryStatistics )
+                            .setSummaryStatisticsCalculatorsForBaseline( summaryStatisticsForBaseline )
                             .build();
 
             poolProcessors.add( poolProcessor );
@@ -942,6 +953,7 @@ class EvaluationUtilities
      * @param evaluationDetails the evaluation details
      * @param poolDetails the pool details
      * @param summaryStatistics the summary statistics calculators, possibly empty
+     * @param summaryStatisticsForBaseline the summary statistics calculators for a separate baseline, possibly empty
      * @param sharedWriters the shared writers
      * @param executors the executors
      * @return the ensemble processors
@@ -950,6 +962,7 @@ class EvaluationUtilities
     private static List<PoolProcessor<Double, Ensemble>> getEnsemblePoolProcessors( EvaluationDetails evaluationDetails,
                                                                                     PoolDetails poolDetails,
                                                                                     List<SummaryStatisticsCalculator> summaryStatistics,
+                                                                                    List<SummaryStatisticsCalculator> summaryStatisticsForBaseline,
                                                                                     SharedWriters sharedWriters,
                                                                                     EvaluationExecutors executors )
     {
@@ -1096,6 +1109,7 @@ class EvaluationUtilities
                             .setSeparateMetricsForBaseline( separateMetrics )
                             .setPoolGroupTracker( poolDetails.poolGroupTracker() )
                             .setSummaryStatisticsCalculators( summaryStatistics )
+                            .setSummaryStatisticsCalculatorsForBaseline( summaryStatisticsForBaseline )
                             .build();
 
             poolProcessors.add( poolProcessor );
@@ -1740,17 +1754,43 @@ class EvaluationUtilities
         // Create a metadata adapter for features, adding new features to an overall group
         BinaryOperator<Statistics> aggregator = ( existing, latest ) ->
         {
-            GeometryGroup.Builder adjustedGeo = existing.getPool()
-                                                        .getGeometryGroup()
-                                                        .toBuilder();
+            boolean isBaselinePool = !existing.hasPool()
+                                     && existing.hasBaselinePool();
+
+            wres.statistics.generated.Pool existingPool;
+            wres.statistics.generated.Pool latestPool;
+
+            if ( isBaselinePool )
+            {
+                existingPool = existing.getBaselinePool();
+                latestPool = latest.getBaselinePool();
+            }
+            else
+            {
+                existingPool = existing.getPool();
+                latestPool = latest.getPool();
+            }
+
+            GeometryGroup.Builder adjustedGeo = existingPool.getGeometryGroup()
+                                                            .toBuilder();
 
             adjustedGeo.setRegionName( EvaluationUtilities.SUMMARY_STATISTICS_ACROSS_FEATURES );
-            List<GeometryTuple> newTuples = latest.getPool().getGeometryGroup()
-                                                  .getGeometryTuplesList();
+            List<GeometryTuple> newTuples = latestPool.getGeometryGroup()
+                                                      .getGeometryTuplesList();
             adjustedGeo.addAllGeometryTuples( newTuples );
             Statistics.Builder adjusted = existing.toBuilder();
-            adjusted.getPoolBuilder()
-                    .setGeometryGroup( adjustedGeo );
+
+            // Separate baseline pool?
+            if ( isBaselinePool )
+            {
+                adjusted.getBaselinePoolBuilder()
+                        .setGeometryGroup( adjustedGeo );
+            }
+            else
+            {
+                adjusted.getPoolBuilder()
+                        .setGeometryGroup( adjustedGeo );
+            }
 
             return adjusted.build();
         };

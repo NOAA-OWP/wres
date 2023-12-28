@@ -333,7 +333,6 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         // Build the outputs
         for ( final Entry<MetricConstants, JFreeChart> nextEntry : engines.entrySet() )
         {
-
             // Qualify with the component name unless there is one component and it is main
             MetricConstants componentName = null;
             if ( nextEntry.getKey() != MetricConstants.MAIN
