@@ -27,52 +27,28 @@ import org.slf4j.LoggerFactory;
 
 public class BrokerConnectionFactory implements Supplier<Connection>
 {
-    /**
-     * Default jndi properties file on the classpath.
-     */
-
+    /** Default jndi properties file on the classpath. */
     public static final String DEFAULT_PROPERTIES = "eventbroker.properties";
 
-    /**
-     * Re-used string.
-     */
-
+    /** Re-used string. */
     private static final String UNABLE_TO_CONNECT_TO_THE_BROKER_AT = "Unable to connect to the broker at ";
 
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( BrokerConnectionFactory.class );
 
-    /**
-     * Maximum number of connection retries on initially connecting to the broker.
-     */
+    /** Maximum number of connection retries on initially connecting to the broker. */
+    private static final int MAXIMUM_CONNECTION_RETRIES = 6;
 
-    private static final int MAXIMUM_CONNECTION_RETRIES = 5;
-
-    /**
-     * Default maximum number of times a message will be resent.
-     */
-
+    /** Default maximum number of times a message will be resent. */
     private static final int DEFAULT_MAXIMUM_MESSAGE_RETRIES = 4;
 
-    /**
-     * The maximum number of times a message can be resent on failure.
-     */
-
+    /** The maximum number of times a message can be resent on failure. */
     private final Integer maximumMessageRetries;
 
-    /**
-     * Context that maps JMS objects to names.
-     */
-
+    /** Context that maps JMS objects to names. */
     private final Context context;
 
-    /**
-     * A connection factory.
-     */
-
+    /** A connection factory. */
     private final ConnectionFactory connectionFactory;
 
     /**
@@ -360,7 +336,7 @@ public class BrokerConnectionFactory implements Supplier<Connection>
             BrokerConnectionFactory.testConnection( properties,
                                                     BrokerConnectionFactory.MAXIMUM_CONNECTION_RETRIES );
 
-            if( LOGGER.isInfoEnabled() )
+            if ( LOGGER.isInfoEnabled() )
             {
                 LOGGER.info( "Created a broker connection factory {} with name {} and binding URL {}.",
                              this,
