@@ -670,7 +670,7 @@ class EvaluationUtilities
                 timeWindows.add( nextTimeWindow );
             }
 
-            LOGGER.info( "Created {} pool requests, which include {} features groups and {} time windows. "
+            LOGGER.info( "Created {} pool requests, which include {} feature groups and {} time windows. "
                          + "The feature groups are: {}. The time windows are: {}.",
                          poolRequests.size(),
                          features.size(),
@@ -1538,9 +1538,25 @@ class EvaluationUtilities
                                                                     boolean separateMetricsForBaseline )
     {
         List<Predicate<Statistics>> filters = new ArrayList<>();
-        if ( !thresholds.isEmpty() )
+
+        // Find the unique thresholds using the threshold names when present, otherwise the full threshold information
+        Set<Threshold> uniqueThresholds = thresholds;
+        // Named thresholds?
+        if ( uniqueThresholds.stream()
+                             .anyMatch( n -> !n.getName()
+                                               .isBlank() ) )
         {
-            for ( Threshold next : thresholds )
+            uniqueThresholds = new HashSet<>( uniqueThresholds.stream()
+                                                              .collect( Collectors.toMap( Threshold::getName,
+                                                                                          Function.identity(),
+                                                                                          ( a, b ) -> a ) )
+                                                              .values() );
+        }
+
+        // Iterate the thresholds
+        if ( !uniqueThresholds.isEmpty() )
+        {
+            for ( Threshold next : uniqueThresholds )
             {
                 Predicate<Statistics> thresholdFilterMain =
                         statistics -> statistics.hasPool()

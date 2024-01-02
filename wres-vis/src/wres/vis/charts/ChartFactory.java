@@ -142,6 +142,9 @@ public class ChartFactory
     /** Re-used string. */
     private static final String AND = " and ";
 
+    /** Re-used string. */
+    private static final String OF_THE = " of the ";
+
     /** Series colors. */
     private final Color[] seriesColors;
 
@@ -246,6 +249,18 @@ public class ChartFactory
         String title = this.getChartTitle( parameters );
 
         String rangeTitle = metricName.toString() + " [HOURS]";
+
+        // Summary statistic across a non-resampled dimension?
+        if ( Objects.nonNull( summaryStatistic )
+             && summaryStatistic.getDimension() != SummaryStatistic.StatisticDimension.RESAMPLED )
+        {
+            rangeTitle = summaryStatistic.getStatistic()
+                                         .name()
+                                         .replace( "_", " " )
+                         + OF_THE
+                         + rangeTitle;
+        }
+
         String domainTitle = "SUMMARY STATISTIC";
 
         JFreeChart chart = org.jfree.chart.ChartFactory.createBarChart( title,
@@ -499,6 +514,18 @@ public class ChartFactory
         String title = this.getChartTitle( parameters );
 
         String rangeTitle = metricName.toString() + " [HOURS]";
+
+        // Summary statistic across a non-resampled dimension?
+        if ( Objects.nonNull( summaryStatistic )
+             && summaryStatistic.getDimension() != SummaryStatistic.StatisticDimension.RESAMPLED )
+        {
+            rangeTitle = summaryStatistic.getStatistic()
+                                         .name()
+                                         .replace( "_", " " )
+                         + OF_THE
+                         + rangeTitle;
+        }
+
         String domainTitle = "FORECAST ISSUE TIME [UTC]";
 
         JFreeChart chart = org.jfree.chart.ChartFactory.createTimeSeriesChart( title,
@@ -876,6 +903,17 @@ public class ChartFactory
                             + " ["
                             + metricUnits
                             + "]";
+
+        // Summary statistic across a non-resampled dimension?
+        if ( Objects.nonNull( summaryStatistic )
+             && summaryStatistic.getDimension() != SummaryStatistic.StatisticDimension.RESAMPLED )
+        {
+            rangeTitle = summaryStatistic.getStatistic()
+                                         .name()
+                                         .replace( "_", " " )
+                         + OF_THE
+                         + rangeTitle;
+        }
 
         JFreeChart chart;
 
@@ -1660,7 +1698,7 @@ public class ChartFactory
             name = statisticName
                    + " across "
                    + summaryStatistic.getDimension()
-                   + " of the ";
+                   + OF_THE;
         }
 
         return name;
