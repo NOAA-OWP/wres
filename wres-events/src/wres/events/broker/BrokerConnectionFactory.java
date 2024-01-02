@@ -226,7 +226,8 @@ public class BrokerConnectionFactory implements Supplier<Connection>
             // Propagate immediately
             catch ( InterruptedException e )
             {
-                Thread.currentThread().interrupt();
+                Thread.currentThread()
+                      .interrupt();
 
                 throw new BrokerConnectionException( UNABLE_TO_CONNECT_TO_THE_BROKER_AT
                                                      + connectionUrl
@@ -359,10 +360,13 @@ public class BrokerConnectionFactory implements Supplier<Connection>
             BrokerConnectionFactory.testConnection( properties,
                                                     BrokerConnectionFactory.MAXIMUM_CONNECTION_RETRIES );
 
-            LOGGER.info( "Created a broker connection factory {} with name {} and binding URL {}.",
-                         this,
-                         connectionPropertyName,
-                         properties.getProperty( connectionPropertyName ) );
+            if( LOGGER.isInfoEnabled() )
+            {
+                LOGGER.info( "Created a broker connection factory {} with name {} and binding URL {}.",
+                             this,
+                             connectionPropertyName,
+                             properties.getProperty( connectionPropertyName ) );
+            }
         }
         catch ( NamingException e )
         {
