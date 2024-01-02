@@ -50,7 +50,7 @@ public class WresJobOutput
         }
 
         StreamingOutput streamingOutput = output -> {
-            try ( OutputStreamWriter outputStreamWriter =  new OutputStreamWriter( output, StandardCharsets.UTF_8 );
+            try ( OutputStreamWriter outputStreamWriter = new OutputStreamWriter( output, StandardCharsets.UTF_8 );
                   BufferedWriter writer = new BufferedWriter( outputStreamWriter ) )
             {
                 for ( URI outputResource : jobOutputs )
@@ -85,12 +85,14 @@ public class WresJobOutput
         }
 
         String header = "<!DOCTYPE html><html><head><title>Resources created by job id "
-                        + id + "</title></head><body><h1>Resources created by job id "
-                        + id + "</h1><ul>";
+                        + id
+                        + "</title></head><body><h1>Resources created by job id "
+                        + id
+                        + "</h1><ul>";
         String footer = "</ul></body></html>";
 
         StreamingOutput streamingOutput = output -> {
-            try ( OutputStreamWriter outputStreamWriter =  new OutputStreamWriter( output, StandardCharsets.UTF_8 );
+            try ( OutputStreamWriter outputStreamWriter = new OutputStreamWriter( output, StandardCharsets.UTF_8 );
                   BufferedWriter writer = new BufferedWriter( outputStreamWriter ) )
             {
                 writer.write( header );
@@ -104,7 +106,7 @@ public class WresJobOutput
                                               .toString();
                     writer.write( "<li><a href=\"output/" );
                     writer.write( resourceName );
-                    writer.write(  "\">" );
+                    writer.write( "\">" );
                     writer.write( resourceName );
                     writer.write( "</a></li>" );
                 }
@@ -150,8 +152,10 @@ public class WresJobOutput
                 {
                     return Response.status( Response.Status.NOT_FOUND )
                                    .entity( "Could not find resource "
-                                            + resourceName + " at "
-                                            + actualFile + " from  uri "
+                                            + resourceName
+                                            + " at "
+                                            + actualFile
+                                            + " from  uri "
                                             + outputResource )
                                    .build();
                 }
@@ -160,7 +164,8 @@ public class WresJobOutput
                 {
                     return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                                    .entity( "Found but could not read resource "
-                                            + resourceName + "." )
+                                            + resourceName
+                                            + "." )
                                    .build();
                 }
 
@@ -185,9 +190,9 @@ public class WresJobOutput
                     }
 
                     //Testing shows that the inputStream open for tika is reset and can be resused here. 
-                    md5 = DigestUtils.md5Hex(inputStream);
+                    md5 = DigestUtils.md5Hex( inputStream );
 
-                    LOGGER.debug( "The path {} found to have type {} and MD5 {}.", path, type, md5);
+                    LOGGER.debug( "The path {} found to have type {} and MD5 {}.", path, type, md5 );
                 }
                 catch ( IOException | TikaException e )
                 {
@@ -204,13 +209,14 @@ public class WresJobOutput
         return Response.status( Response.Status.NOT_FOUND )
                        .type( type )
                        .entity( "Could not find resource " + resourceName
-                                + " from project " + id )
+                                + " from project "
+                                + id )
                        .build();
     }
 
 
     /**
-     * Afford the client the ability to remove all resources after the client is
+     * Afford the client the ability to remove output resources after the client is
      * finished reading the resources it cares about.
      *
      * It is important that the client not specify an arbitrary path, and that
@@ -225,68 +231,46 @@ public class WresJobOutput
 
     @DELETE
     @Produces( "text/plain; charset=utf-8" )
-    public Response deleteProjectResourcesPlain( @PathParam( "jobId" ) String id )
+    public Response deleteProjectOutputResourcesPlain( @PathParam( "jobId" ) String id )
     {
-        LOGGER.debug( "Retrieving resources from job {}", id );
+        LOGGER.debug( "Deleting output resources from job {}", id );
 
-        Set<URI> jobOutputs = WresJob.getSharedJobResults()
-                                     .getJobOutputs( id );
-        Set<URI> deletedOutputs = new ConcurrentSkipListSet<>(); 
-
-        if ( jobOutputs == null )
+        try
         {
+            WresJob.getSharedJobResults().deleteOutputs( id );
+        }
+        catch ( JobNotFoundException jnfe )
+        {
+            LOGGER.error( "Could not find metadata for the job {}.", id, jnfe );
             return Response.status( Response.Status.NOT_FOUND )
                            .entity( "Could not find job " + id )
                            .build();
         }
-
-        try
-        {
-            for ( URI outputResource : jobOutputs )
-            {
-                java.nio.file.Path path = Paths.get( outputResource.getPath() );
-
-                boolean deleted = Files.deleteIfExists( path );
-
-                if ( !deleted )
-                {
-                    LOGGER.warn( "Failed to delete {} -- was it previously deleted?",
-                                 path );
-                }
-                else
-                {
-                    deletedOutputs.add( outputResource );
-                    LOGGER.debug( "Deleted {}", path );
-                }
-            }
-
-        }
         catch ( IOException ioe )
         {
             LOGGER.error( "Failed to delete resources for job {} at request of client.",
-                          id, ioe );
-
+                          id,
+                          ioe );
             return Response.serverError()
-                    .entity( "Failed to delete all resources for job " + id +
-                             " though some may have been deleted before the exception occurred." )
-                    .build();
+                           .entity( "Failed to delete all resources for job " + id
+                                    +
+                                    " though some may have been deleted before the exception occurred." )
+                           .build();
         }
         catch ( IllegalStateException ise )
         {
             LOGGER.error( "Internal error deleting resources for job {}.",
-                          id, ise );
-
+                          id,
+                          ise );
             return Response.serverError()
-                    .entity( "Internal error deleting all resources for job " + id +
-                             " though some may have been deleted before the exception occurred." )
-                    .build();
-        }
-        finally
-        {
-            WresJob.getSharedJobResults().removeJobOutputs( id, deletedOutputs );
+                           .entity( "Internal error deleting all resources for job " + id
+                                    +
+                                    " though some may have been deleted before the exception occurred." )
+                           .build();
         }
 
-        return Response.ok( "Successfully deleted resources for job " + id )
+        return Response.ok( "Successfully deleted output resources for job " + id )
                        .build();
     }
 }
+
