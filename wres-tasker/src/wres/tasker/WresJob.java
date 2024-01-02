@@ -4,6 +4,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.spec.KeySpec;
 import java.text.DecimalFormat;
 import java.util.Arrays;
@@ -13,6 +15,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLContext;
@@ -27,6 +30,7 @@ import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DefaultSaslConfig;
 import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.DefaultValue;
 import jakarta.ws.rs.FormParam;
 import jakarta.ws.rs.GET;
@@ -751,6 +755,63 @@ public class WresJob
                             + A_P_BODY_HTML )
                        .build();
     }
+    
+    /**
+     * Afford the client the ability to remove all resources after the client is
+     * finished reading the resources it cares about.
+     *
+     * It is important that the client not specify an arbitrary path, and that
+     * the server here do the job of looking for the resources the *server* has
+     * associated with the job. Otherwise you could imagine a malicious client
+     * deleting anything on the server machine that the server process has
+     * access to. (The server process also should have limited privilege.)
+     *
+     * @param id the id of the job whose outputs to delete
+     * @return 200 when successful (idempotent), 5## when problems occur
+     */
+    @DELETE
+    @Path( "/{jobId}" )
+    @Produces( "text/plain; charset=utf-8" )
+    public Response deleteProjectOutputResourcesPlain( @PathParam( "jobId" ) String id )
+    {
+        LOGGER.debug( "Deleting input (if any) and output resources from job {}", id );
+        
+        try
+        {
+            WresJob.getSharedJobResults().deleteOutputs( id );
+            
+            //Make sure to force delete inputs, since the user requested it.
+            WresJob.getSharedJobResults().deleteInputs( id, true );
+        }
+        catch ( JobNotFoundException jnfe )
+        {
+            LOGGER.error( "Could not find metadata for the job {}.", id, jnfe );
+            return Response.status( Response.Status.NOT_FOUND )
+                    .entity( "Could not find job " + id )
+                    .build();
+        }
+        catch ( IOException ioe )
+        {
+            LOGGER.error( "Failed to delete resources for job {} at request of client.",
+                          id, ioe );
+            return Response.serverError()
+                    .entity( "Failed to delete all resources for job " + id +
+                             " though some may have been deleted before the exception occurred." )
+                    .build();
+        }
+        catch ( IllegalStateException ise )
+        {
+            LOGGER.error( "Internal error deleting resources for job {}.",
+                          id, ise );
+            return Response.serverError()
+                    .entity( "Internal error deleting all resources for job " + id +
+                             " though some may have been deleted before the exception occurred." )
+                    .build();
+        }
+
+        return Response.ok( "Successfully deleted input (if any) and output resources for job " + id )
+                       .build();
+    }
 
     /**
      *
@@ -1007,3 +1068,4 @@ public class WresJob
         }
     }
 }
+

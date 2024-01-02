@@ -17,6 +17,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -36,6 +37,8 @@ import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.StreamingOutput;
 
 import jodd.net.HttpStatus;
@@ -152,7 +155,7 @@ class JobResults
                 {
                     try
                     {
-                        Future<?> future = ( Future<?> ) r;
+                        Future<?> future = (Future<?>) r;
                         if ( future.isDone() )
                         {
                             future.get();
@@ -194,7 +197,8 @@ class JobResults
                 public void onExpired( EntryEvent event )
                 {
                     LOGGER.info( "The persister is expiring the metadata associated with job id {}. Deleting the "
-                                 + "metadata and all of its fields.", event.getKey() );
+                                 + "metadata and all of its fields.",
+                                 event.getKey() );
                     objectService.delete( objectService.get( JobMetadata.class, event.getKey() ) );
                 }
             } );
@@ -234,9 +238,9 @@ class JobResults
                 catch ( IOException | TimeoutException e )
                 {
                     LOGGER.warn(
-                            "Timed out while waiting for job feedback watchers to bind for job {}; aborting watching that job.",
-                            jobId,
-                            e );
+                                 "Timed out while waiting for job feedback watchers to bind for job {}; aborting watching that job.",
+                                 jobId,
+                                 e );
                 }
                 catch ( InterruptedException e )
                 {
@@ -454,9 +458,9 @@ class JobResults
                     catch ( IOException e )
                     {
                         LOGGER.warn(
-                                "Delete queue with name {} failed due to an exception. There might be a zombie queue.",
-                                queueName,
-                                e );
+                                     "Delete queue with name {} failed due to an exception. There might be a zombie queue.",
+                                     queueName,
+                                     e );
                     }
                 }
             }
@@ -479,7 +483,7 @@ class JobResults
                 JobResults.deleteInputs( jobMetadata );
             }
             // We use 409 to signify a canceled evaluation
-            else if (resultValue == HttpStatus.error409().status() )
+            else if ( resultValue == HttpStatus.error409().status() )
             {
                 sharedData.setJobState( JobMetadata.JobState.CANCELED );
                 LOGGER.debug( "Shared metadata after setting job state: {}",
@@ -537,7 +541,7 @@ class JobResults
         long usedSpace = totalSpace - usableSpace;
 
 
-        double percentageUsed = ( ( ( double ) usedSpace / totalSpace ) * 100 );
+        double percentageUsed = ( ( (double) usedSpace / totalSpace ) * 100 );
 
         return percentageUsed >= diskThreshold;
     }
@@ -777,9 +781,9 @@ class JobResults
                     catch ( IOException e )
                     {
                         LOGGER.warn(
-                                "Delete queue with name {} failed due to an exception. There might be a zombie queue.",
-                                queueName,
-                                e );
+                                     "Delete queue with name {} failed due to an exception. There might be a zombie queue.",
+                                     queueName,
+                                     e );
                     }
                 }
             }
@@ -818,14 +822,15 @@ class JobResults
     /**
      * @param jobId The ID for which to find the metadata.
      * @return The metadata found.
-     * @throws IllegalStateException if this job is not found.
+     * @throws JobNotFoundException if this job is not found. That extends
+     * IllegalStateException.
      */
     private JobMetadata getJobMetadataExceptIfNotFound( String jobId )
     {
         JobMetadata metadata = jobMetadataById.get( jobId );
         if ( Objects.isNull( metadata ) )
         {
-            throw new IllegalStateException( "Job id " + jobId + " not found." );
+            throw new JobNotFoundException( "Job id " + jobId + " not found." );
         }
         return metadata;
     }
@@ -876,11 +881,11 @@ class JobResults
              */
 
             metadataExisted =
-                    ( ( RMapCache<String, JobMetadata> ) this.jobMetadataById )
-                            .putIfAbsent( jobId,
-                                          jobMetadata,
-                                          EXPIRY_IN_MINUTES,
-                                          TimeUnit.MINUTES ) != null;
+                    ( (RMapCache<String, JobMetadata>) this.jobMetadataById )
+                                                                             .putIfAbsent( jobId,
+                                                                                           jobMetadata,
+                                                                                           EXPIRY_IN_MINUTES,
+                                                                                           TimeUnit.MINUTES ) != null;
         }
         else
         {
@@ -1113,25 +1118,6 @@ class JobResults
     }
 
     /**
-     * Remove outputs from the list of outputs.
-     * @param jobId the job
-     * @param outputs the outputs to remove
-     * @throws IllegalStateException if the removal encounters problems.
-     */
-    void removeJobOutputs( String jobId, Set<URI> outputs )
-    {
-        JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
-
-        //This call may throw an IllegalStateException.
-        boolean result = metadata.removeOutputs( outputs );
-
-        if ( !result )
-        {
-            LOGGER.warn( "Result from removeOutputs is not true; check previous warnings for why." );
-        }
-    }
-
-    /**
      * Set the declaration for a job. Can only be done once.
      * @throws IllegalStateException When job id non-existent or dec already set
      */
@@ -1283,15 +1269,118 @@ class JobResults
         }
     }
 
+
+    /**
+     * Delete outputs for the give job id.
+     * @param jobId The job id.
+     * @throws JobNotFoundException if the job id is not found. Make sure
+     * to catch this before the lower IllegalStateException!
+     * @throws IOException If a file delete throws the exception.
+     * @throws IllegalStateException if a file delete throws the exception
+     */
+    void deleteOutputs( String jobId ) throws JobNotFoundException, IOException
+    {
+        JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
+        deleteOutputs( metadata );
+    }
+
+    /**
+     * Delete the outputs contained in the specified shared data.
+     * The metadata will be updated with successfully deleted files, 
+     * even if an exception occurs while deleting the files. In that
+     * case, the metadata is updated by deletion halts and the
+     * exception is propagated to the caller. 
+     * @param sharedData The metadata with the output to delete.
+     * @throws IOException If a file delete throws the exception.
+     * @throws IllegalStateException if a file delete throws the exception.
+     */
+    void deleteOutputs( JobMetadata sharedData ) throws IOException
+    {
+        Set<URI> jobOutputs = sharedData.getOutputs();
+        Set<URI> deletedOutputs = new ConcurrentSkipListSet<>();
+
+        //Remove each file if it exists. Log messages appropriately.
+        //All exceptions are propagated to the caller.
+        try
+        {
+            for ( URI outputResource : jobOutputs )
+            {
+                java.nio.file.Path path = Paths.get( outputResource.getPath() );
+
+                boolean deleted = Files.deleteIfExists( path );
+                if ( !deleted )
+                {
+                    LOGGER.warn( "Failed to delete {} because the file does not exist."
+                                 + " Was it previously deleted?",
+                                 path );
+                }
+                else
+                {
+                    LOGGER.debug( "Deleted {}", path );
+                }
+
+                //If we reach this point, then the file was either deleted
+                //or did not exist. Regardless, it should not be in the 
+                //metadata, so add it to the list of files to be removed
+                //from the metadata.
+                deletedOutputs.add( outputResource );
+            }
+        }
+        //Inside of a finally, I want to make sure the metadata
+        //reflects the deletions that succeeded. 
+        finally
+        {
+            sharedData.removeOutputs( deletedOutputs );
+        }
+    }
+
+    /**
+     * Delete inputs associated with the given job id. This instance method
+     * is here so that it can be called from WresJobInput.
+     * @param jobId The job id.
+     * @throws JobNotFoundException if the job id is not found.
+     */
+    void deleteInputs( String jobId )
+    {
+        JobMetadata sharedMetadata = getJobMetadataExceptIfNotFound( jobId );
+        JobResults.deleteInputs( sharedMetadata );
+    }
+
+    /**
+     * Delete inputs associated with the given job id. This instance method
+     * is here so that it can be called from WresJobInput.
+     * @param jobId The job id.
+     * @throws JobNotFoundException if the job id is not found.
+     */
+    void deleteInputs( String jobId, boolean force )
+    {
+        JobMetadata sharedMetadata = getJobMetadataExceptIfNotFound( jobId );
+        JobResults.deleteInputs( sharedMetadata, force );
+    }
+
     /**
      * Delete any posted data associated with the given job metadata.
      * This one is static such that it can be called by JobResultWatcher.
-     * @param sharedData the JobMetadata associated for the job.
+     * @param sharedData the JobMetadata associated for the job. 
      */
-
     private static void deleteInputs( JobMetadata sharedData )
     {
-        if ( sharedData.getKeepInput() )
+        deleteInputs( sharedData, false );
+    }
+
+    /**
+     * Delete any posted data associated with the given job metadata.
+     * This will not clear the lists in the JobMetadata, itself, since
+     * those do not need to be presented to the user. This is not the
+     * same behavior as job outputs which requires a separate remove 
+     * method for the metadata since the user will see a list of outputs.
+     * Exceptions lead to warnings, not errors.
+     * @param sharedData the JobMetadata associated for the job.
+     * @param force Set to true to force the delete regardless of keep flag.
+     */
+    private static void deleteInputs( JobMetadata sharedData, boolean force )
+    {
+        if ( sharedData.getKeepInput() && !force )
         {
             return;
         }
@@ -1313,7 +1402,6 @@ class JobResults
                              ioe );
             }
         }
-
         for ( URI uri : sharedData.getRightInputs() )
         {
             try
@@ -1346,20 +1434,6 @@ class JobResults
             }
         }
     }
-
-
-    /**
-     * Delete inputs associated with the given job id. This instance method
-     * is here so that it can be called from WresJobInput.
-     * @param jobId The job id.
-     */
-
-    void deleteInputs( String jobId )
-    {
-        JobMetadata sharedMetadata = getJobMetadataExceptIfNotFound( jobId );
-        JobResults.deleteInputs( sharedMetadata );
-    }
-
 
     /**
      * Mark the job as being in the queue, transition state to IN_QUEUE
@@ -1447,7 +1521,7 @@ class JobResults
     {
         JobMetadata metadata = getJobMetadataExceptIfNotFound( jobId );
 
-        metadata.setKeepInput( keepInput);
+        metadata.setKeepInput( keepInput );
     }
 }
 
