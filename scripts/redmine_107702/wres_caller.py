@@ -82,13 +82,14 @@ parser = argparse.ArgumentParser(
                     prog='call_wres',
                     description='Calls a cluster instance of the WRES, such as the COWRES.',
                     epilog='Not sure if an epilog in the help will be needed, but this is where it would go.')
-parser.add_argument('filename',          help='Declaration filename')
-parser.add_argument('-u', '--host',      help='Cluster WRES instance host (without the http prefix); defaults to WRES_HOST_NAME environment variable.')
-parser.add_argument('-c', '--cert',      help='The certificate .pem file to authenticate the WRES instance; defaults to WRES_CA_FOLE environment variable.')
-parser.add_argument('-o', '--output',    help='Directory where output is to be written.', default=".")
-parser.add_argument('-l', '--observed',  help='Data to post for the observed sources either one file or a directory.')
-parser.add_argument('-p', '--predicted', help='Data to post for the predicted sources either one file or a directory.')
-parser.add_argument('-b', '--baseline',  help='Data to post for the baseline sources either one file or a directory.')
+parser.add_argument('filename',           help='Declaration filename')
+parser.add_argument('-u', '--host',       help='Cluster WRES instance host (without the http prefix); defaults to WRES_HOST_NAME environment variable.')
+parser.add_argument('-c', '--cert',       help='The certificate .pem file to authenticate the WRES instance; defaults to WRES_CA_FOLE environment variable.')
+parser.add_argument('-o', '--output',     help='Directory where output is to be written.', default=".")
+parser.add_argument('-l', '--observed',   help='Data to post for the observed sources either one file or a directory.')
+parser.add_argument('-p', '--predicted',  help='Data to post for the predicted sources either one file or a directory.')
+parser.add_argument('-b', '--baseline',   help='Data to post for the baseline sources either one file or a directory.')
+parser.add_argument('-k', '--keep_input', help='Instruct COWRES to not remove posted data after evaluation is completed', default=False, action="store_true")
 
 # Parse the arguments.
 args = parser.parse_args()
@@ -148,21 +149,36 @@ if evaluation is None:
     exit(4)
 
 # Is data-direct posting to be performed? Check the length of the 
-# lists containing the files for each side.
+# lists containing the files for each side. If data is to be posted, 
+# will it be kept? Identify the flag based on the argument.
 data_posted = (len(predicted_files) > 0) or (len(observed_files) > 0) or (len(baseline_files) > 0)
 if data_posted:
     print("Data was provided for either the observed, predicted or baseline sources, so data is to be posted!")
+    keep_input="false"    
+    if args.keep_input:
+        print("The data posted will be marked as kept so that its not deleted after the evaluation is completed.")
+        keep_input="true"
 
 #====================================================================================
 # First, post the evaluation using the read in declaration. The data handed off to
-# the service may need to include postInput if data is to be posted. If the 
-# evaluation is successfully posted, then obtain the location URL from the response.
+# the service may need to include postInput and keepInput if evaluation data is to be 
+# posted. If the evaluation is successfully posted, then obtain the location URL from
+# the response.
 #====================================================================================
 print( "Posting the declaration to the WRES host {host}..." )
+
+# By default, the data posted is just the evaluation declaration.
 data = { 'projectConfig': evaluation }
+
+# If data is to be posted, then...
 if data_posted:
+
+    # Build the data to include the declaration, postInput, and keepInput.
     data = { 'projectConfig': evaluation, 
-             'postInput': 'true' }
+             'postInput': 'true',
+             'keepInput': keep_input }
+
+# Post the request.
 post_result = requests.post( url="https://"+host+"/job",
                              verify = wres_ca_file,
                              data = data )
