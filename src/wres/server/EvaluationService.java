@@ -347,6 +347,8 @@ public class EvaluationService implements ServletContextListener
         }
         catch ( ExecutionException e )
         {
+            String message = "Unable to get the evaluation response due to unhandled exception: " + e.getCause();
+            LOGGER.warn( message );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity(
                                    "Unable to get the evaluation response" )
@@ -357,7 +359,7 @@ public class EvaluationService implements ServletContextListener
             Thread.currentThread().interrupt();
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity(
-                                   "Get request was interupted" )
+                                   "Get request was interrupted" )
                            .build();
         }
     }
