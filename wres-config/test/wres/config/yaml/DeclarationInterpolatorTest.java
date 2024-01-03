@@ -1454,7 +1454,8 @@ class DeclarationInterpolatorTest
                                            .setLeft( Geometry.newBuilder()
                                                              .setName( "09165000" )
                                                              .setWkt( "POINT (-67.945 46.8886111)" ) )
-                                           .setRight( Geometry.newBuilder().setName( DRRC2 ) )
+                                           .setRight( Geometry.newBuilder()
+                                                              .setName( DRRC2 ) )
                                            .build();
 
         GeometryTuple second = GeometryTuple.newBuilder()

@@ -1903,7 +1903,7 @@ class DeclarationValidatorTest
     }
 
     @Test
-    void testInvalidYamlProducesError() throws IOException
+    void testIncorrectlySpacedYamlProducesStatusEventErrorNotException() throws IOException
     {
         // #120626: invalid spacing of minimum_exclusive
         String evaluation = """
@@ -1932,6 +1932,43 @@ class DeclarationValidatorTest
                   unit: hours
                 feature_service:
                   uri: https://foo/api/location/v3.0/metadata
+                  """;
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "invalid YAML",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testMalformedYamlProducesStatusEventErrorNotException() throws IOException
+    {
+        // #124676: malformed yaml
+        String evaluation = """
+                web demo
+                observed: /mnt/wres_share/systests/data/DRRC2QINE.xml
+                predicted:
+                  label: HEFS
+                  sources: /mnt/wres_share/systests/data/drrc2ForecastsOneMonth/
+                unit: m3/s
+                lead_times:
+                  minimum: 0
+                  maximum: 48
+                  unit: hours
+                probability_thresholds:
+                  values: [0.002, 0.01, 0.1, 0.9, 0.99, 0.998]
+                  operator: greater equal
+                metrics:
+                  - quantile quantile diagram
+                  - rank histogram
+                  - relative operating characteristic diagram
+                  - box plot of errors by forecast value
+                  - root mean square error
+                  - sample size
+                  - mean absolute error
+                  - box plot of errors by observed value
+                  - reliability diagram
                   """;
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
