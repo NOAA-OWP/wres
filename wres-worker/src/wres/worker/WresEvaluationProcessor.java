@@ -7,6 +7,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -56,6 +57,8 @@ class WresEvaluationProcessor implements Callable<Integer>
     private static final String CLEAN_DATABASE_URI = "http://localhost:%d/evaluation/cleanDatabase";
 
     private static final String MIGRATE_DATABASE_URI = "http://localhost:%d/evaluation/migrateDatabase";
+
+    private static final List<Integer> RETRY_STATES = List.of( 503, 504 );
 
     /** Stream identifier. */
     public enum WhichStream
@@ -314,7 +317,7 @@ class WresEvaluationProcessor implements Callable<Integer>
 
         try (
                 WebClient.ClientResponse clientResponse = WEB_CLIENT.getFromWeb( startEvalURI,
-                                                                                 WebClientUtils.getDefaultRetryStates() )
+                                                                                 RETRY_STATES )
         )
         {
             LOGGER.info( "Evaluation returned" );
