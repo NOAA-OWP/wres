@@ -49,6 +49,7 @@ import org.yaml.snakeyaml.nodes.Tag;
 import org.yaml.snakeyaml.parser.ParserException;
 import org.yaml.snakeyaml.representer.Representer;
 import org.yaml.snakeyaml.resolver.Resolver;
+import org.yaml.snakeyaml.scanner.ScannerException;
 
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
@@ -405,7 +406,7 @@ public class DeclarationFactory
             // Deserialize with Jackson now that any anchors/references are resolved
             return DESERIALIZER.readTree( resolvedYamlString );
         }
-        catch ( ParserException e )
+        catch ( ScannerException | ParserException | JsonProcessingException e )
         {
             throw new IOException( "Failed to deserialize a YAML string.", e );
         }
