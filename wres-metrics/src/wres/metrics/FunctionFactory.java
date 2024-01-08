@@ -207,7 +207,7 @@ public class FunctionFactory
     }
 
     /**
-     * Return a function that computes the minimum of value in a vector of doubles.
+     * Return a function that computes the minimum value in a vector of doubles.
      *
      * @return a function that computes the minimum over the input
      */
@@ -220,7 +220,7 @@ public class FunctionFactory
     }
 
     /**
-     * Return a function that computes the maximum of value in a vector of doubles.
+     * Return a function that computes the maximum value in a vector of doubles.
      *
      * @return a function that computes the maximum over the input
      */
