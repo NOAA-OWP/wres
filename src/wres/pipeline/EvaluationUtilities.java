@@ -234,23 +234,16 @@ class EvaluationUtilities
             return List.of();
         }
 
-        // Unsupported dimensions?
-        Set<SummaryStatistic.StatisticDimension> unsupported =
+        // Collect the geographic feature dimensions to aggregate, which are the only supported dimensions
+        Set<SummaryStatistic.StatisticDimension> dimensions =
                 declaration.summaryStatistics()
                            .stream()
                            .map( SummaryStatistic::getDimension )
-                           .filter( d -> d != SummaryStatistic.StatisticDimension.FEATURES )
+                           .filter( d -> d == SummaryStatistic.StatisticDimension.FEATURE_GROUP
+                                         || d == SummaryStatistic.StatisticDimension.FEATURES )
                            .collect( Collectors.toSet() );
 
-        if ( !unsupported.isEmpty() )
-        {
-            throw new IllegalArgumentException( "Unsupported dimension(s) for calculating summary statistics: "
-                                                + unsupported
-                                                + "." );
-        }
-
-        // Summary statistics across geographic features
-        return EvaluationUtilities.getSummaryStatisticsAcrossFeatures( declaration );
+        return EvaluationUtilities.getSummaryStatisticsForFeatures( declaration, dimensions );
     }
 
     /**
@@ -1591,41 +1584,6 @@ class EvaluationUtilities
     }
 
     /**
-     * Generates a filter for {@link Statistics} from each supplied {@link GeometryGroup}.
-     * @param geometryGroups the geometry groups to ignore
-     * @param separateMetricsForBaseline whether to generate a separate filter for baseline data
-     * @return the filters
-     */
-    private static List<Predicate<Statistics>> getFeatureGroupFilters( Set<GeometryGroup> geometryGroups,
-                                                                       boolean separateMetricsForBaseline )
-    {
-        LOGGER.debug( "Creating filters for the following geometry groups: {}.", geometryGroups );
-
-        List<Predicate<Statistics>> filters = new ArrayList<>();
-        if ( !geometryGroups.isEmpty() )
-        {
-            Predicate<Statistics> geometryFilterMain =
-                    statistics -> statistics.hasPool()
-                                  && !geometryGroups.contains( statistics.getPool()
-                                                                         .getGeometryGroup() );
-            filters.add( geometryFilterMain );
-
-            // Separate metrics for baseline?
-            if ( separateMetricsForBaseline )
-            {
-                Predicate<Statistics> geometryFilterBase =
-                        statistics -> !statistics.hasPool()
-                                      && statistics.hasBaselinePool()
-                                      && !geometryGroups.contains( statistics.getBaselinePool()
-                                                                             .getGeometryGroup() );
-                filters.add( geometryFilterBase );
-            }
-        }
-
-        return Collections.unmodifiableList( filters );
-    }
-
-    /**
      * Joins the filters in the two collections of filters using {@link Predicate#and(Predicate)}. If either collection
      * is empty, returns the opposite collection.
      *
@@ -1665,15 +1623,17 @@ class EvaluationUtilities
     }
 
     /**
-     * Generates a collection of {@link SummaryStatisticsCalculator} from an {@link EvaluationDeclaration}. Currently,
-     * supports only {@link wres.statistics.generated.SummaryStatistic.StatisticDimension#FEATURES}.
+     * Generates a collection of {@link SummaryStatisticsCalculator} from an {@link EvaluationDeclaration} for all
+     * geographic features in a single group.
      * @param declaration the evaluation declaration
+     * @param dimensions the feature dimensions over which to perform aggregation
      * @return the summary statistics calculators
      * @throws NullPointerException if any input is null
      * @throws IllegalArgumentException if the dimension is unsupported
      */
 
-    private static List<SummaryStatisticsCalculator> getSummaryStatisticsAcrossFeatures( EvaluationDeclaration declaration )
+    private static List<SummaryStatisticsCalculator> getSummaryStatisticsForFeatures( EvaluationDeclaration declaration,
+                                                                                      Set<SummaryStatistic.StatisticDimension> dimensions )
     {
         Objects.requireNonNull( declaration );
 
@@ -1681,47 +1641,37 @@ class EvaluationUtilities
                                              && declaration.baseline()
                                                            .separateMetrics();
 
-        // Get the time window filters
-        Set<TimeWindow> timeWindows = DeclarationUtilities.getTimeWindows( declaration );
-        List<Predicate<Statistics>> timeWindowFilters =
-                EvaluationUtilities.getTimeWindowFilters( timeWindows,
-                                                          separateMetricsForBaseline );
+        // Get the time window and threshold filters
+        List<Predicate<Statistics>> timeWindowAndThresholdFilters =
+                EvaluationUtilities.getTimeWindowAndThresholdFilters( declaration,
+                                                                      separateMetricsForBaseline );
 
-        LOGGER.debug( "Discovered {} time windows, which produced {} filters.",
-                      timeWindows.size(),
-                      timeWindowFilters.size() );
-
-        // Get the threshold filters
-        Set<wres.config.yaml.components.Threshold> thresholds = DeclarationUtilities.getThresholds( declaration );
-        List<Predicate<Statistics>> thresholdFilters =
-                EvaluationUtilities.getThresholdFilters( thresholds, separateMetricsForBaseline );
-
-        LOGGER.debug( "Discovered {} thresholds, which produced {} filters.",
-                      thresholds.size(),
-                      thresholds.size() );
-
-        List<Predicate<Statistics>> joined = EvaluationUtilities.join( timeWindowFilters, thresholdFilters );
-
-        LOGGER.debug( "After joining the time windows and thresholds, produced {} filters.",
-                      joined.size() );
-
-        // Get filters for singleton features if feature groups are declared
-        if ( Objects.nonNull( declaration.featureGroups() ) )
+        // Get the geographic feature filters
+        List<FeatureGroupFilter> featureFilters = new ArrayList<>();
+        if ( dimensions.contains( SummaryStatistic.StatisticDimension.FEATURES ) )
         {
-            Set<GeometryGroup> groups = declaration.featureGroups()
-                                                   .geometryGroups();
+            List<FeatureGroupFilter> filters =
+                    EvaluationUtilities.getOneBigFeatureGroupFilters( declaration,
+                                                                      separateMetricsForBaseline );
+            featureFilters.addAll( filters );
+        }
 
-            List<Predicate<Statistics>> groupFilters =
-                    EvaluationUtilities.getFeatureGroupFilters( groups, separateMetricsForBaseline );
+        if ( dimensions.contains( SummaryStatistic.StatisticDimension.FEATURE_GROUP ) )
+        {
+            List<FeatureGroupFilter> filters =
+                    EvaluationUtilities.getFeatureGroupFilters( declaration,
+                                                                separateMetricsForBaseline );
+            featureFilters.addAll( filters );
+        }
 
-            LOGGER.debug( "Discovered {} feature groups, which produced {} filters.",
-                          groups.size(),
-                          groupFilters.size() );
-
-            joined = EvaluationUtilities.join( joined, groupFilters );
-
-            LOGGER.debug( "After joining the geometry groups to the time windows and thresholds, produced {} filters.",
-                          joined.size() );
+        if ( LOGGER.isDebugEnabled() )
+        {
+            List<FeatureGroup> featureGroups = featureFilters.stream()
+                                                             .filter( g -> g.geometryGroup()
+                                                                            .getGeometryTuplesCount() > 0 )
+                                                             .map( g -> FeatureGroup.of( g.geometryGroup() ) )
+                                                             .toList();
+            LOGGER.debug( "Creating filters for the following geometry groups: {}.", featureGroups );
         }
 
         // Create the calculators
@@ -1767,54 +1717,253 @@ class EvaluationUtilities
         LOGGER.debug( "Discovered the following time units for summary statistic generation (where relevant): {}.",
                       timeUnits );
 
-        // Create a metadata adapter for features, adding new features to an overall group
-        BinaryOperator<Statistics> aggregator = ( existing, latest ) ->
+        // Generate one calculator for each combination of filters
+        List<SummaryStatisticsCalculator> calculators = new ArrayList<>();
+        for ( FeatureGroupFilter next : featureFilters )
+        {
+            GeometryGroup featureGroup = next.geometryGroup();
+            Predicate<Statistics> featureFilter = next.filter();
+            BinaryOperator<Statistics> metadataAdapter =
+                    EvaluationUtilities.getMetadataAdapterForFeatureGroup( featureGroup );
+
+            for ( Predicate<Statistics> nextInnerFilter : timeWindowAndThresholdFilters )
+            {
+                Predicate<Statistics> joined = featureFilter.and( nextInnerFilter );
+
+                SummaryStatisticsCalculator calculator = SummaryStatisticsCalculator.of( scalar,
+                                                                                         diagrams,
+                                                                                         boxplots,
+                                                                                         joined,
+                                                                                         metadataAdapter,
+                                                                                         timeUnits );
+
+                calculators.add( calculator );
+            }
+        }
+
+        LOGGER.debug( "After joining the geometry groups to the time windows and thresholds, produced {} filters.",
+                      calculators.size() );
+
+        return Collections.unmodifiableList( calculators );
+    }
+
+    /**
+     * Creates a metadata adapter for generating summary statistics across geographic features.
+     * @param geometryGroup the geometry group to which the statistics apply
+     * @return the metadata adapter
+     */
+
+    private static BinaryOperator<Statistics> getMetadataAdapterForFeatureGroup( GeometryGroup geometryGroup )
+    {
+        return ( existing, latest ) ->
         {
             boolean isBaselinePool = !existing.hasPool()
                                      && existing.hasBaselinePool();
 
-            wres.statistics.generated.Pool existingPool;
-            wres.statistics.generated.Pool latestPool;
-
-            if ( isBaselinePool )
-            {
-                existingPool = existing.getBaselinePool();
-                latestPool = latest.getBaselinePool();
-            }
-            else
-            {
-                existingPool = existing.getPool();
-                latestPool = latest.getPool();
-            }
-
-            GeometryGroup.Builder adjustedGeo = existingPool.getGeometryGroup()
-                                                            .toBuilder();
-
-            adjustedGeo.setRegionName( EvaluationUtilities.SUMMARY_STATISTICS_ACROSS_FEATURES );
-            List<GeometryTuple> newTuples = latestPool.getGeometryGroup()
-                                                      .getGeometryTuplesList();
-            adjustedGeo.addAllGeometryTuples( newTuples );
             Statistics.Builder adjusted = existing.toBuilder();
 
             // Separate baseline pool?
             if ( isBaselinePool )
             {
                 adjusted.getBaselinePoolBuilder()
-                        .setGeometryGroup( adjustedGeo );
+                        .setGeometryGroup( geometryGroup );
             }
             else
             {
                 adjusted.getPoolBuilder()
-                        .setGeometryGroup( adjustedGeo );
+                        .setGeometryGroup( geometryGroup );
             }
 
             return adjusted.build();
         };
+    }
 
-        // Return one calculator for each filter
-        return joined.stream()
-                     .map( n -> SummaryStatisticsCalculator.of( scalar, diagrams, boxplots, n, aggregator, timeUnits ) )
-                     .toList();
+    /**
+     * Generates a filter for {@link Statistics} that ignores all (multi-features) geometry groups in the supplied
+     * declaration, retaining all singleton features.
+     * @param declaration the declaration
+     * @param separateMetricsForBaseline whether to generate a separate filter for baseline data
+     * @return the filters
+     */
+
+    private static List<FeatureGroupFilter> getOneBigFeatureGroupFilters( EvaluationDeclaration declaration,
+                                                                          boolean separateMetricsForBaseline )
+    {
+        Set<GeometryTuple> singletons;
+        Set<GeometryGroup> geometryGroups;
+
+        if ( Objects.nonNull( declaration.features() ) )
+        {
+            singletons = declaration.features()
+                                    .geometries();
+        }
+        else
+        {
+            singletons = Set.of();
+        }
+
+        if ( Objects.nonNull( declaration.featureGroups() ) )
+        {
+            geometryGroups = declaration.featureGroups()
+                                        .geometryGroups();
+        }
+        else
+        {
+            geometryGroups = Set.of();
+        }
+
+        GeometryGroup oneBigGeometry = GeometryGroup.newBuilder()
+                                                    .addAllGeometryTuples( singletons )
+                                                    .setRegionName( SUMMARY_STATISTICS_ACROSS_FEATURES )
+                                                    .build();
+
+        return EvaluationUtilities.getOneBigFeatureGroupFilters( separateMetricsForBaseline,
+                                                                 geometryGroups,
+                                                                 oneBigGeometry );
+    }
+
+    /**
+     * Generates a filter for {@link Statistics} that ignores all (multi-features) geometry groups in the supplied
+     * declaration, retaining all singleton features.
+     * @param separateMetricsForBaseline whether to generate a separate filter for baseline data
+     * @param geometryGroups the geometry groups
+     * @param oneBigGeometry the all-feature geometry
+     * @return the filters
+     */
+
+    private static List<FeatureGroupFilter> getOneBigFeatureGroupFilters( boolean separateMetricsForBaseline,
+                                                                          Set<GeometryGroup> geometryGroups,
+                                                                          GeometryGroup oneBigGeometry )
+    {
+        List<FeatureGroupFilter> filters = new ArrayList<>();
+        Predicate<Statistics> geometryFilterMain =
+                statistics -> statistics.hasPool()
+                              && !geometryGroups.contains( statistics.getPool()
+                                                                     .getGeometryGroup() );
+        FeatureGroupFilter filter = new FeatureGroupFilter( oneBigGeometry, geometryFilterMain );
+        filters.add( filter );
+
+        // Separate metrics for baseline?
+        if ( separateMetricsForBaseline )
+        {
+            Predicate<Statistics> geometryFilterBase =
+                    statistics -> !statistics.hasPool()
+                                  && statistics.hasBaselinePool()
+                                  && !geometryGroups.contains( statistics.getBaselinePool()
+                                                                         .getGeometryGroup() );
+            FeatureGroupFilter baselineFilter = new FeatureGroupFilter( oneBigGeometry, geometryFilterBase );
+            filters.add( baselineFilter );
+        }
+        return filters;
+    }
+
+    /**
+     * Generates a filter for {@link Statistics} from each supplied {@link GeometryGroup}.
+     * @param declaration the declaration
+     * @param separateMetricsForBaseline whether to generate a separate filter for baseline data
+     * @return the filters
+     */
+    private static List<FeatureGroupFilter> getFeatureGroupFilters( EvaluationDeclaration declaration,
+                                                                    boolean separateMetricsForBaseline )
+    {
+        List<FeatureGroupFilter> filters = new ArrayList<>();
+
+        if ( Objects.nonNull( declaration.featureGroups() ) )
+        {
+            for ( GeometryGroup group : declaration.featureGroups()
+                                                   .geometryGroups() )
+            {
+                FeatureGroupFilter filter = EvaluationUtilities.getMainFeatureGroupFilter( group );
+                filters.add( filter );
+
+                // Separate metrics for baseline?
+                if ( separateMetricsForBaseline )
+                {
+                    FeatureGroupFilter baselineFilter = EvaluationUtilities.getBaselineFeatureGroupFilter( group );
+                    filters.add( baselineFilter );
+                }
+            }
+        }
+        return Collections.unmodifiableList( filters );
+    }
+
+    /**
+     * Generates a feature group filter for the main pool from the input.
+     * @param group the feature group
+     * @return the filter
+     */
+
+    private static FeatureGroupFilter getBaselineFeatureGroupFilter( GeometryGroup group )
+    {
+        Predicate<Statistics> geometryFilterBase =
+                statistics -> statistics.hasBaselinePool()
+                              && statistics.getBaselinePool()
+                                           .hasGeometryGroup()
+                              && Objects.equals( statistics.getBaselinePool()
+                                                           .getGeometryGroup(), group );
+        return new FeatureGroupFilter( group, geometryFilterBase );
+    }
+
+    /**
+     * Generates a feature group filter for the baseline pool from the input.
+     * @param group the feature group
+     * @return the filter
+     */
+
+    private static FeatureGroupFilter getMainFeatureGroupFilter( GeometryGroup group )
+    {
+        Predicate<Statistics> geometryFilterMain =
+                statistics -> statistics.hasPool()
+                              && statistics.getPool()
+                                           .hasGeometryGroup()
+                              && Objects.equals( statistics.getPool()
+                                                           .getGeometryGroup(), group );
+        return new FeatureGroupFilter( group, geometryFilterMain );
+    }
+
+    /**
+     * Generates summary statistic filters for time windows and thresholds.
+     * @param declaration the declaration
+     * @param separateMetricsForBaseline whether separate metrics are required for a baseline dataset
+     * @return the filters
+     */
+    private static List<Predicate<Statistics>> getTimeWindowAndThresholdFilters( EvaluationDeclaration declaration,
+                                                                                 boolean separateMetricsForBaseline )
+    {
+        // Get the time window filters
+        Set<TimeWindow> timeWindows = DeclarationUtilities.getTimeWindows( declaration );
+        List<Predicate<Statistics>> timeWindowFilters =
+                EvaluationUtilities.getTimeWindowFilters( timeWindows,
+                                                          separateMetricsForBaseline );
+
+        LOGGER.debug( "Discovered {} time windows, which produced {} filters.",
+                      timeWindows.size(),
+                      timeWindowFilters.size() );
+
+        // Get the threshold filters
+        Set<wres.config.yaml.components.Threshold> thresholds = DeclarationUtilities.getThresholds( declaration );
+        List<Predicate<Statistics>> thresholdFilters =
+                EvaluationUtilities.getThresholdFilters( thresholds, separateMetricsForBaseline );
+
+        LOGGER.debug( "Discovered {} thresholds, which produced {} filters.",
+                      thresholds.size(),
+                      thresholds.size() );
+
+        List<Predicate<Statistics>> joined = EvaluationUtilities.join( timeWindowFilters, thresholdFilters );
+
+        LOGGER.debug( "After joining the time windows and thresholds, produced {} filters.",
+                      joined.size() );
+
+        return joined;
+    }
+
+    /**
+     * A filter for a geographic feature group and its associated group.
+     * @param geometryGroup the geometry group
+     * @param filter the filter
+     */
+    private record FeatureGroupFilter( GeometryGroup geometryGroup, Predicate<Statistics> filter )
+    {
     }
 
     /**

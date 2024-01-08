@@ -84,7 +84,7 @@ import wres.config.yaml.components.SourceInterface;
  * Index of /pub/data/nccf/com/nwm/v3.0/nwm.20231208
  * (not all are availalbe on D-Store)
  * 
- * Name                                Last modified      Size  
+ * <p>Name                                Last modified      Size
  * Parent Directory                                         -   
  * analysis_assim/                     08-Dec-2023 15:42    -   
  * analysis_assim_alaska/              08-Dec-2023 15:24    -   
@@ -160,6 +160,9 @@ class NwmProfiles
     private static final String CHANNEL_RT = "channel_rt";
     private static final String CONUS = "conus";
     private static final String ALASKA = "alaska";
+    private static final String MEDIUM_RANGE_NO_DA = "medium_range_no_da";
+    private static final String ANALYSIS_ASSIM_EXTEND = "analysis_assim_extend";
+    private static final String ANALYSIS_ASSIM_EXTEND_NO_DA = "analysis_assim_extend_no_da";
 
     static NwmProfile getProfileFromShortHand( SourceInterface shortHand )
     {
@@ -185,7 +188,7 @@ class NwmProfiles
             case NWM_ANALYSIS_ASSIM_NO_DA_CHANNEL_RT_PUERTORICO -> NwmProfiles.getAnalysisAssimNoDaChannelRtPuertoRico();
             case NWM_LONG_RANGE_CHANNEL_RT_CONUS -> NwmProfiles.getLongRangeChannelRtConus();
             
-            //Alaska
+            // Alaska
             case NWM_SHORT_RANGE_CHANNEL_RT_CONUS_ALASKA -> NwmProfiles.getShortRangeChannelRtAlaska();
             case NWM_MEDIUM_RANGE_ENSEMBLE_CHANNEL_RT_ALASKA -> NwmProfiles.getMediumRangeEnsembleChannelRtAlaska();
             case NWM_MEDIUM_RANGE_DETERMINISTIC_CHANNEL_RT_ALASKA -> NwmProfiles.getMediumRangeDeterministicChannelRtAlaska();
@@ -287,10 +290,10 @@ class NwmProfiles
                                1,
                                Duration.ofHours( 3 ),
                                true,
-                               "medium_range_no_da",
+                               MEDIUM_RANGE_NO_DA,
                                CHANNEL_RT,
                                NwmProfile.TimeLabel.F,
-                               "medium_range_no_da",
+                               MEDIUM_RANGE_NO_DA,
                                CONUS,
                                Duration.ofHours( 6 ),
                                false, // Available for 2.1 and above, no ensemble-like structure: #110992
@@ -482,10 +485,10 @@ class NwmProfiles
                                1,
                                Duration.ofHours( 1 ),
                                true,
-                               "analysis_assim_extend",
+                               ANALYSIS_ASSIM_EXTEND,
                                CHANNEL_RT,
                                NwmProfile.TimeLabel.TM,
-                               "analysis_assim_extend",
+                               ANALYSIS_ASSIM_EXTEND,
                                CONUS,
                                Duration.ofDays( 1 ),
                                false,
@@ -498,10 +501,10 @@ class NwmProfiles
                                1,
                                Duration.ofHours( 1 ),
                                true,
-                               "analysis_assim_extend_no_da",
+                               ANALYSIS_ASSIM_EXTEND_NO_DA,
                                CHANNEL_RT,
                                NwmProfile.TimeLabel.TM,
-                               "analysis_assim_extend_no_da",
+                               ANALYSIS_ASSIM_EXTEND_NO_DA,
                                CONUS,
                                Duration.ofDays( 1 ),
                                false,
@@ -563,7 +566,7 @@ class NwmProfiles
                                1,
                                Duration.ofHours( 3 ),
                                true,
-                               "medium_range_no_da",
+                               MEDIUM_RANGE_NO_DA,
                                CHANNEL_RT,
                                NwmProfile.TimeLabel.F,
                                "medium_range_alaska_no_da",
@@ -611,7 +614,7 @@ class NwmProfiles
                                1,
                                Duration.ofHours( 1 ),
                                true,
-                               "analysis_assim_extend",
+                               ANALYSIS_ASSIM_EXTEND,
                                CHANNEL_RT,
                                NwmProfile.TimeLabel.TM,
                                "analysis_assim_extend_alaska",
@@ -627,7 +630,7 @@ class NwmProfiles
                                1,
                                Duration.ofHours( 1 ),
                                true,
-                               "analysis_assim_extend_no_da",
+                               ANALYSIS_ASSIM_EXTEND_NO_DA,
                                CHANNEL_RT,
                                NwmProfile.TimeLabel.TM,
                                "analysis_assim_extend_alaska_no_da",

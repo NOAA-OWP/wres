@@ -33,13 +33,16 @@ message SummaryStatistic
         // The dimension to which the summary statistic applies.
         
         FEATURES = 0;
-        // A summary statistic over geographic features.
+        // A summary statistic over all geographic features within the evaluation.
+
+        FEATURE_GROUP = 1;
+        // A summary statistic over geographic features within a single feature group.
         
-        RESAMPLED = 1;
+        RESAMPLED = 2;
         // A summary statistic over resampled pools for sampling uncertainty. 
         // estimation.
 
-        TIMING_ERRORS = 2;
+        TIMING_ERRORS = 3;
         // A summary statistic over timing errors.
     }
 

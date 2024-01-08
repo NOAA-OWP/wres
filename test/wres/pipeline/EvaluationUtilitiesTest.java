@@ -13,11 +13,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimePools;
 import wres.metrics.SummaryStatisticsCalculator;
+import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.SummaryStatistic;
@@ -32,7 +36,7 @@ import wres.statistics.generated.TimeWindow;
 class EvaluationUtilitiesTest
 {
     @Test
-    void testGetSummaryStatisticsCalculatorsWithTwoTimeWindowsAndTwoThresholds()
+    void testGetSummaryStatisticsCalculatorsWithTwoTimeWindowsAndTwoThresholdsAcrossAllFeatures()
     {
         // Create the declaration
         LeadTimeInterval leadTimeInterval = new LeadTimeInterval( java.time.Duration.ofHours( 0 ),
@@ -128,7 +132,7 @@ class EvaluationUtilitiesTest
     }
 
     @Test
-    void testGetSummaryStatisticsCalculatorsForNamedThresholds()
+    void testGetSummaryStatisticsCalculatorsForNamedThresholdsAcrossAllFeatures()
     {
         // Create the declaration
         Threshold pOneValue = Threshold.newBuilder()
@@ -185,4 +189,86 @@ class EvaluationUtilitiesTest
                                .test( statistics ) );
     }
 
+    @Test
+    void testGetSummaryStatisticsCalculatorsWithTwoTimeWindowsAcrossFeatureGroups()
+    {
+        // Create the declaration
+        LeadTimeInterval leadTimeInterval = new LeadTimeInterval( java.time.Duration.ofHours( 0 ),
+                                                                  java.time.Duration.ofHours( 40 ) );
+        TimePools leadTimePools = new TimePools( java.time.Duration.ofHours( 23 ),
+                                                 java.time.Duration.ofHours( 17 ) );
+
+        // Add some summary statistics
+        SummaryStatistic first = SummaryStatistic.newBuilder()
+                                                 .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                 .setDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
+                                                 .build();
+
+        SummaryStatistic second = SummaryStatistic.newBuilder()
+                                                  .setStatistic( SummaryStatistic.StatisticName.HISTOGRAM )
+                                                  .setDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
+                                                  .setHistogramBins( 10 )
+                                                  .build();
+
+        Set<SummaryStatistic> summaryStatistics = new LinkedHashSet<>();
+        summaryStatistics.add( first );
+        summaryStatistics.add( second );
+
+        GeometryTuple firstTuple = GeometryTuple.newBuilder()
+                                                .setLeft( Geometry.newBuilder()
+                                                                  .setName( "fooOne" ) )
+                                                .setRight( Geometry.newBuilder()
+                                                                   .setName( "fooOne" ) )
+                                                .build();
+
+        GeometryTuple secondTuple = GeometryTuple.newBuilder()
+                                                 .setLeft( Geometry.newBuilder()
+                                                                   .setName( "fooTwo" ) )
+                                                 .setRight( Geometry.newBuilder()
+                                                                    .setName( "fooTwo" ) )
+                                                 .build();
+
+        GeometryGroup firstGroup = GeometryGroup.newBuilder()
+                                                .addGeometryTuples( firstTuple )
+                                                .addGeometryTuples( secondTuple )
+                                                .setRegionName( "fooRegion" )
+                                                .build();
+
+        GeometryTuple thirdTuple = GeometryTuple.newBuilder()
+                                                .setLeft( Geometry.newBuilder()
+                                                                  .setName( "barOne" ) )
+                                                .setRight( Geometry.newBuilder()
+                                                                   .setName( "barOne" ) )
+                                                .build();
+
+        GeometryTuple fourthTuple = GeometryTuple.newBuilder()
+                                                 .setLeft( Geometry.newBuilder()
+                                                                   .setName( "barTwo" ) )
+                                                 .setRight( Geometry.newBuilder()
+                                                                    .setName( "barTwo" ) )
+                                                 .build();
+
+        GeometryGroup secondGroup = GeometryGroup.newBuilder()
+                                                 .addGeometryTuples( thirdTuple )
+                                                 .addGeometryTuples( fourthTuple )
+                                                 .setRegionName( "barRegion" )
+                                                 .build();
+
+        Set<GeometryGroup> geometryGroups = Set.of( firstGroup, secondGroup );
+
+        FeatureGroups featureGroups = new FeatureGroups( geometryGroups );
+
+        EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
+                                                                       .leadTimes( leadTimeInterval )
+                                                                       .leadTimePools( leadTimePools )
+                                                                       .featureGroups( featureGroups )
+                                                                       .summaryStatistics( summaryStatistics )
+                                                                       .build();
+
+        List<SummaryStatisticsCalculator> calculators =
+                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation );
+
+        // Eight filters
+        assertEquals( 4, calculators.size() );
+    }
 }
