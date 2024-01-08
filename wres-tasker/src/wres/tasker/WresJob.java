@@ -665,6 +665,7 @@ public class WresJob
         JOB_RESULTS.setDatabaseName( jobId, usedDatabaseName );
         JOB_RESULTS.setDatabaseHost( jobId, usedDatabaseHost );
         JOB_RESULTS.setDatabasePort( jobId, usedDatabasePort );
+        JOB_RESULTS.setKeepPostedInputData( jobId, keepInput );
         JOB_RESULTS.setInQueue( jobId );
         LOGGER.info( "For verb {}, the declaration message was sent with job id {}, priority {}, and "
                      + "database host='{}', port='{}', and name='{}'. There {} jobs preceding it in the queue.",
