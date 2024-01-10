@@ -45,6 +45,9 @@ import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.MetricsAndThresholds;
+import wres.datamodel.thresholds.OneOrTwoThresholds;
+import wres.datamodel.thresholds.ThresholdOuter;
+import wres.datamodel.thresholds.ThresholdSlicer;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
@@ -1530,53 +1533,42 @@ class EvaluationUtilities
                                                                     Function<wres.statistics.generated.Pool, Threshold> thresholdGetter,
                                                                     boolean separateMetricsForBaseline )
     {
-        List<Predicate<Statistics>> filters = new ArrayList<>();
-
-        // Find the unique thresholds using the threshold names when present, otherwise the full threshold information
-        Set<Threshold> uniqueThresholds = thresholds;
-        // Named thresholds?
-        if ( uniqueThresholds.stream()
-                             .anyMatch( n -> !n.getName()
-                                               .isBlank() ) )
+        if ( thresholds.isEmpty() )
         {
-            uniqueThresholds = new HashSet<>( uniqueThresholds.stream()
-                                                              .collect( Collectors.toMap( Threshold::getName,
-                                                                                          Function.identity(),
-                                                                                          ( a, b ) -> a ) )
-                                                              .values() );
+            LOGGER.debug( "No thresholds to filter." );
+            return List.of();
         }
 
-        // Iterate the thresholds
-        if ( !uniqueThresholds.isEmpty() )
-        {
-            for ( Threshold next : uniqueThresholds )
-            {
-                Predicate<Statistics> thresholdFilterMain =
-                        statistics -> statistics.hasPool()
-                                      // Thresholds with equal names or equal thresholds
-                                      && ( ( !next.getName()
-                                                  .isBlank()
-                                             && next.getName()
-                                                    .equals( thresholdGetter.apply( statistics.getPool() )
-                                                                            .getName() ) )
-                                           || next.equals( thresholdGetter.apply( statistics.getPool() ) ) );
-                filters.add( thresholdFilterMain );
+        List<Predicate<Statistics>> filters = new ArrayList<>();
 
-                // Separate metrics for baseline?
-                if ( separateMetricsForBaseline )
-                {
-                    Predicate<Statistics> thresholdFilterBase =
-                            statistics -> !statistics.hasPool()
-                                          && statistics.hasBaselinePool()
-                                          // Thresholds with equal names or equal thresholds
-                                          && ( ( !next.getName()
-                                                      .isBlank()
-                                                 && next.getName()
-                                                        .equals( thresholdGetter.apply( statistics.getBaselinePool() )
-                                                                                .getName() ) )
-                                               || next.equals( thresholdGetter.apply( statistics.getBaselinePool() ) ) );
-                    filters.add( thresholdFilterBase );
-                }
+        // Find the unique logical thresholds
+        Comparator<Threshold> comparator = ( a, b ) ->
+                ThresholdSlicer.getLogicalThresholdComparator()
+                               .compare( OneOrTwoThresholds.of( ThresholdOuter.of( a ) ),
+                                         OneOrTwoThresholds.of( ThresholdOuter.of( b ) ) );
+        Set<Threshold> uniqueThresholds = new TreeSet<>( comparator );
+        uniqueThresholds.addAll( thresholds );
+
+        // Iterate the thresholds
+        for ( Threshold next : uniqueThresholds )
+        {
+            Predicate<Statistics> thresholdFilterMain =
+                    s -> s.hasPool()
+                         // Logically equal thresholds
+                         && comparator.compare( next, thresholdGetter.apply( s.getPool() ) )
+                            == 0;
+            filters.add( thresholdFilterMain );
+
+            // Separate metrics for baseline?
+            if ( separateMetricsForBaseline )
+            {
+                Predicate<Statistics> thresholdFilterBase =
+                        s -> !s.hasPool()
+                             && s.hasBaselinePool()
+                             // Logically equal thresholds
+                             && comparator.compare( next, thresholdGetter.apply( s.getBaselinePool() ) )
+                                == 0;
+                filters.add( thresholdFilterBase );
             }
         }
 
@@ -1723,8 +1715,12 @@ class EvaluationUtilities
         {
             GeometryGroup featureGroup = next.geometryGroup();
             Predicate<Statistics> featureFilter = next.filter();
-            BinaryOperator<Statistics> metadataAdapter =
+            BinaryOperator<Statistics> featureAdapter =
                     EvaluationUtilities.getMetadataAdapterForFeatureGroup( featureGroup );
+            BinaryOperator<Statistics> thresholdAdapter =
+                    EvaluationUtilities.getMetadataAdapterForThresholds();
+            BinaryOperator<Statistics> metadataAdapter = (p,q) ->
+                    thresholdAdapter.apply( featureAdapter.apply( p,q ), q );
 
             for ( Predicate<Statistics> nextInnerFilter : timeWindowAndThresholdFilters )
             {
@@ -1772,6 +1768,43 @@ class EvaluationUtilities
             {
                 adjusted.getPoolBuilder()
                         .setGeometryGroup( geometryGroup );
+            }
+
+            return adjusted.build();
+        };
+    }
+
+    /**
+     * Creates a metadata adapter that removes threshold values if they are unequal across instances.
+     *
+     * @return the metadata adapter
+     */
+
+    private static BinaryOperator<Statistics> getMetadataAdapterForThresholds()
+    {
+        return ( existing, latest ) ->
+        {
+            boolean isBaselinePool = !existing.hasPool()
+                                     && existing.hasBaselinePool();
+
+            Statistics.Builder adjusted = existing.toBuilder();
+
+            wres.statistics.generated.Pool.Builder existingPool =
+                    isBaselinePool ? adjusted.getBaselinePoolBuilder() : adjusted.getPoolBuilder();
+
+            wres.statistics.generated.Pool latestPool =
+                    isBaselinePool ? latest.getBaselinePool() : latest.getPool();
+
+            // Clear the threshold values unless they are equal across statistics
+            if ( existingPool.hasEventThreshold()
+                 && !Objects.equals( existingPool.getEventThreshold()
+                                                .getLeftThresholdValue(),
+                                    latestPool.getEventThreshold()
+                                              .getLeftThresholdValue() ) )
+            {
+                existingPool.getEventThresholdBuilder()
+                            .clearLeftThresholdValue()
+                            .clearRightThresholdValue();
             }
 
             return adjusted.build();
@@ -1945,9 +1978,9 @@ class EvaluationUtilities
         List<Predicate<Statistics>> thresholdFilters =
                 EvaluationUtilities.getThresholdFilters( thresholds, separateMetricsForBaseline );
 
-        LOGGER.debug( "Discovered {} thresholds, which produced {} filters.",
-                      thresholds.size(),
-                      thresholds.size() );
+        LOGGER.info( "Discovered {} thresholds, which produced {} filters.",
+                     thresholds.size(),
+                     thresholdFilters.size() );
 
         List<Predicate<Statistics>> joined = EvaluationUtilities.join( timeWindowFilters, thresholdFilters );
 

@@ -823,10 +823,7 @@ public class TestDataGenerator
                                                                             Duration.ofHours( 24 ) );
         TimeWindowOuter timeOne = TimeWindowOuter.of( innerOne );
 
-        OneOrTwoThresholds threshold =
-                OneOrTwoThresholds.of( ThresholdOuter.of( OneOrTwoDoubles.of( Double.NEGATIVE_INFINITY ),
-                                                          ThresholdOperator.GREATER,
-                                                          ThresholdOrientation.LEFT ) );
+        OneOrTwoThresholds threshold = OneOrTwoThresholds.of( ThresholdOuter.ALL_DATA );
 
         GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, null );
         GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( "JUNP1_JUNP1", geoTuple );

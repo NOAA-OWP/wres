@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import wres.ExecutionResult;
 import wres.config.MultiDeclarationFactory;
 import wres.config.yaml.DeclarationException;
+import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureGroups;
@@ -750,8 +751,15 @@ public class Evaluator
             // Create the summary statistics calculators to increment with raw statistics
             List<SummaryStatisticsCalculator> summaryStatisticsCalculators =
                     EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds );
-            List<SummaryStatisticsCalculator> summaryStatisticsCalculatorsForBaseline =
-                    EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds );
+            List<SummaryStatisticsCalculator> summaryStatisticsCalculatorsForBaseline = List.of();
+            boolean separateMetricsForBaseline = DeclarationUtilities.hasBaseline( declaration )
+                                                 && declaration.baseline()
+                                                               .separateMetrics();
+            if ( separateMetricsForBaseline )
+            {
+                summaryStatisticsCalculatorsForBaseline =
+                        EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds );
+            }
 
             // Create and publish the raw evaluation statistics
             PoolDetails poolDetails = new PoolDetails( poolFactory, poolRequests, poolReporter, groupTracker );

@@ -51,16 +51,10 @@ import wres.statistics.generated.Threshold;
 
 public class ThresholdSlicer
 {
-    /**
-     * Logger.
-     */
-
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ThresholdSlicer.class );
 
-    /**
-     * The number of decimal places to use when rounding.
-     */
-
+    /** The number of decimal places to use when rounding. */
     private static final int DECIMALS = 5;
 
     /**
@@ -173,7 +167,10 @@ public class ThresholdSlicer
 
             // Compare the first threshold by label if both have a label. Thresholds with a label have the same meaning
             // across features.
-            if ( one.first().hasLabel() && another.first().hasLabel() )
+            if ( one.first()
+                    .hasLabel()
+                 && another.first()
+                           .hasLabel() )
             {
                 return Objects.compare( one.first().getLabel(),
                                         another.first().getLabel(),
@@ -182,7 +179,10 @@ public class ThresholdSlicer
 
             // Compare by probability threshold if both are probability thresholds. Thresholds that are probability 
             // thresholds have the same meaning across features.
-            if ( one.first().hasProbabilities() && another.first().hasProbabilities() )
+            if ( one.first()
+                    .hasProbabilities()
+                 && another.first()
+                           .hasProbabilities() )
             {
                 return Objects.compare( one.first().getProbabilities(),
                                         another.first().getProbabilities(),

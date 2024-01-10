@@ -482,7 +482,9 @@ public final class Slicer
     {
         Objects.requireNonNull( input, NULL_INPUT_EXCEPTION );
 
-        return input.stream().collect( Collectors.groupingBy( pair -> pair.getRight().size() ) );
+        return input.stream()
+                    .collect( Collectors.groupingBy( pair -> pair.getRight()
+                                                                 .size() ) );
     }
 
     /**
