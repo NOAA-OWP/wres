@@ -1825,6 +1825,16 @@ dependencies
         exclude group: 'org.checkerframework', module: 'checker-qual'
     }
 
+    // To persist job metadata while keeping it relatively fast
+    implementation( 'org.redisson:redisson:3.18.0' )
+            {
+                // Because of CVE-2022-24823. TODO: remove when Redisson catches up
+                exclude group: 'io.netty'
+            }
+
+    // Because of CVE-2022-24823. TODO: remove when Redisson catches up
+    implementation group: 'io.netty', name: 'netty-all', version: '4.1.103.Final'
+
     implementation( 'edu.ucar:cdm-core:5.4.2' )
     {
         // Because we use slf4j, not jcl:
