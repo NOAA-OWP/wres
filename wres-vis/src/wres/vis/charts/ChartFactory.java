@@ -1615,47 +1615,16 @@ public class ChartFactory
             name += " for predictions of";
         }
 
-        String variableName = this.getVariableNameForTitle( metadata, metricName, metricComponentName );
-
-        if ( !variableName.isBlank() )
-        {
-            name += " " + variableName;
-        }
-
-        String baselineScenario = this.getBaselineScenarioForTitle( metadata, metricName );
-
-        if ( !baselineScenario.isBlank() )
-        {
-            name += " " + baselineScenario;
-        }
+        name += this.getVariableNameForTitle( metadata, metricName, metricComponentName );
+        name += this.getBaselineScenarioForTitle( metadata, metricName );
 
         ChartType chartType = parameters.chartType();
         StatisticType statisticType = parameters.statisticType();
         ChronoUnit durationUnits = parameters.durationUnits();
 
-        String timeScale = this.getTimeScaleForTitle( metadata, durationUnits );
-
-        if ( !timeScale.isBlank() )
-        {
-            name += " with a time scale of " + timeScale;
-        }
-
-        String timeWindow = this.getTimeWindowForTitle( metadata, chartType, statisticType, durationUnits );
-
-        if ( !timeWindow.isBlank() )
-        {
-            // Add a new line for the time window
-            name += " and a time window that has " + timeWindow;
-        }
-
-        String threshold = this.getThresholdForTitle( metadata, chartType, statisticType );
-
-        if ( !threshold.isBlank() )
-        {
-            // Add a new line for the time window
-            name += " and a threshold of " + threshold;
-        }
-
+        name += this.getTimeScaleForTitle( metadata, durationUnits );
+        name += this.getTimeWindowForTitle( metadata, chartType, statisticType, durationUnits );
+        name += this.getThresholdForTitle( metadata, chartType, statisticType );
         name += this.getQuantilesQualifier( metricName,
                                             parameters.quantiles(),
                                             isSummaryStatistic );
@@ -1869,17 +1838,21 @@ public class ChartFactory
         Evaluation evaluation = metadata.getEvaluation();
 
         // Default to left
-        String variableName = evaluation.getLeftVariableName();
+        String variableName = " ";
 
         if ( Objects.nonNull( component ) )
         {
             // Get the name that corresponds to the side of the component. Again, should probably use the triple.
             switch ( component )
             {
-                case RIGHT -> variableName = evaluation.getRightVariableName();
-                case BASELINE -> variableName = evaluation.getBaselineVariableName();
-                default -> variableName = evaluation.getLeftVariableName();
+                case RIGHT -> variableName += evaluation.getRightVariableName();
+                case BASELINE -> variableName += evaluation.getBaselineVariableName();
+                default -> variableName += evaluation.getLeftVariableName();
             }
+        }
+        else
+        {
+            variableName += evaluation.getLeftVariableName();
         }
 
         return variableName;
@@ -1890,7 +1863,7 @@ public class ChartFactory
      *
      * @param metadata the statistics metadata
      * @param durationUnits the lead duration units
-     * @return the time scale
+     * @return the timescale
      * @throws NullPointerException if either input is null
      */
 
@@ -1902,11 +1875,14 @@ public class ChartFactory
         String timeScale = "";
         if ( metadata.hasTimeScale() )
         {
-            // Use the default string representation of an instantaneous time scale
+            timeScale = " with a time scale of ";
+
+            // Use the default string representation of an instantaneous timescale
             // See #62867
             if ( metadata.getTimeScale().isInstantaneous() )
             {
-                timeScale = metadata.getTimeScale().toString();
+                timeScale += metadata.getTimeScale()
+                                     .toString();
             }
             else
             {
@@ -1926,7 +1902,8 @@ public class ChartFactory
                     joiner.add( period );
                 }
 
-                joiner.add( timeScaleOuter.getFunction().toString() );
+                joiner.add( timeScaleOuter.getFunction()
+                                          .toString() );
 
                 MonthDay startMonthDay = timeScaleOuter.getStartMonthDay();
 
@@ -1942,7 +1919,7 @@ public class ChartFactory
                     joiner.add( endMonthDay.toString() );
                 }
 
-                timeScale = joiner.toString();
+                timeScale += joiner.toString();
             }
         }
 
@@ -1969,11 +1946,18 @@ public class ChartFactory
 
         String threshold = "";
 
-        if ( chartType == ChartType.THRESHOLD_LEAD && statisticType == StatisticType.DIAGRAM )
+        if ( ( chartType == ChartType.THRESHOLD_LEAD
+               && statisticType == StatisticType.DIAGRAM )
+             || ( statisticType == StatisticType.BOXPLOT_PER_POOL
+                  && metadata.hasThresholds()
+                  && !metadata.getThresholds()
+                              .first()
+                              .isAllDataThreshold() ) )
         {
-            threshold = metadata.getThresholds()
-                                .first()
-                                .toString();
+            threshold = " and a threshold of "
+                        + metadata.getThresholds()
+                                  .first()
+                                  .toString();
         }
 
         return threshold;
@@ -2000,7 +1984,7 @@ public class ChartFactory
              && !metric.isInGroup( SampleDataGroup.DICHOTOMOUS )
              && metric != MetricConstants.KLING_GUPTA_EFFICIENCY )
         {
-
+            baselineScenario = " ";
             String baselineSuffix = metadata.getEvaluation()
                                             .getBaselineDataName();
 
@@ -2016,7 +2000,7 @@ public class ChartFactory
                                          .replace( "_", " " );
             }
 
-            baselineScenario = "against predictions from " + baselineSuffix;
+            baselineScenario += "against predictions from " + baselineSuffix;
         }
 
         return baselineScenario;
@@ -2138,6 +2122,11 @@ public class ChartFactory
 
             timeWindowString += start + middle
                                 + durationUnits.toString().toUpperCase();
+        }
+
+        if ( !timeWindowString.isBlank() )
+        {
+            timeWindowString = " and a time window that has " + timeWindowString;
         }
 
         return timeWindowString;

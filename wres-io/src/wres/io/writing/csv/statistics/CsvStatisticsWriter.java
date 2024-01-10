@@ -1098,7 +1098,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
         String qualifier = "";
 
-        if ( Objects.nonNull( ensembleAverageType ) && metricName.isInGroup( SampleDataGroup.SINGLE_VALUED )
+        if ( Objects.nonNull( ensembleAverageType )
+             && metricName.isInGroup( SampleDataGroup.SINGLE_VALUED )
              && ensembleAverageType != EnsembleAverageType.NONE )
         {
             qualifier = "ENSEMBLE " + ensembleAverageType.name();
@@ -1565,7 +1566,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         joiner.merge( poolDescription );
 
         // Add the metric name, pretty printed
-        MetricConstants metricName = MetricConstants.valueOf( metric.getName().name() );
+        MetricConstants metricName = MetricConstants.valueOf( metric.getName()
+                                                                    .name() );
         this.append( joiner, metricName.toString(), false );
 
         // Add the component name            

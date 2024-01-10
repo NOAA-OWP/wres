@@ -25,6 +25,7 @@ import wres.config.MetricConstants;
 import wres.config.MetricConstants.StatisticType;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool.EnsembleAverageType;
@@ -351,14 +352,26 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
 
             if ( !innerSlice.isEmpty() )
             {
-                // Group by summary statistic presence/absence
-                List<List<BoxplotStatisticOuter>> grouped =
-                        GraphicsWriter.groupBySummaryStatistics( innerSlice,
-                                                                 s -> s.getStatistic()
-                                                                       .getMetric()
-                                                                       .getVariable(),
-                                                                 Set.of( SummaryStatistic.StatisticName.BOX_PLOT ) );
-                sliced.addAll( grouped );
+
+                // Map by threshold
+                Map<ThresholdOuter, List<BoxplotStatisticOuter>> groupedByThreshold =
+                        innerSlice.stream()
+                                  .collect( Collectors.groupingBy( c -> c.getPoolMetadata()
+                                                                         .getThresholds()
+                                                                         .first() ) );
+                for ( Map.Entry<ThresholdOuter, List<BoxplotStatisticOuter>> boxes : groupedByThreshold.entrySet() )
+                {
+                    List<BoxplotStatisticOuter> nextSlice = boxes.getValue();
+
+                    // Group by summary statistic presence/absence
+                    List<List<BoxplotStatisticOuter>> grouped =
+                            GraphicsWriter.groupBySummaryStatistics( nextSlice,
+                                                                     s -> s.getStatistic()
+                                                                           .getMetric()
+                                                                           .getVariable(),
+                                                                     Set.of( SummaryStatistic.StatisticName.BOX_PLOT ) );
+                    sliced.addAll( grouped );
+                }
             }
         }
 
@@ -463,6 +476,23 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                 append += "_";
             }
             append += name;
+        }
+
+        // Qualify by threshold, if not "all data"
+        Optional<ThresholdOuter> matched = statistics.stream()
+                                                     .map( t -> t.getPoolMetadata()
+                                                                 .getThresholds()
+                                                                 .first() )
+                                                     .filter( t -> !t.isAllDataThreshold() )
+                                                     .findFirst();
+
+        if ( matched.isPresent() )
+        {
+            if ( !append.isBlank() )
+            {
+                append += "_";
+            }
+            append += DataUtilities.toStringSafe( matched.get() );
         }
 
         return append;

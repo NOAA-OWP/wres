@@ -31,11 +31,10 @@ class BoxplotGraphicsWriterTest
      * Tests the writing of {@link BoxplotStatisticOuter} to file.
      * 
      * @throws IOException if the chart could not be written
-     * @throws InterruptedException if the process is interrupted
      */
 
     @Test
-    void testWriteCreatesOneBoxplotChartByObservedValue() throws IOException, InterruptedException
+    void testWriteCreatesOneBoxplotChartByObservedValue() throws IOException
     {
         Outputs outputs = Outputs.newBuilder()
                                  .setPng( PngFormat.getDefaultInstance() )
@@ -78,11 +77,10 @@ class BoxplotGraphicsWriterTest
      * Tests the writing of {@link BoxplotStatisticOuter} to file.
      * 
      * @throws IOException if the chart could not be written
-     * @throws InterruptedException if the process is interrupted
      */
 
     @Test
-    void testWriteCreatesOneBoxplotChart() throws IOException, InterruptedException
+    void testWriteCreatesOneBoxplotChart() throws IOException
     {
         Outputs outputs = Outputs.newBuilder()
                                  .setPng( PngFormat.getDefaultInstance() )
@@ -111,7 +109,8 @@ class BoxplotGraphicsWriterTest
         // Check the expected number of paths: #61841
         assertEquals( 1, paths.size() );
 
-        Path actual = paths.iterator().next();
+        Path actual = paths.iterator()
+                           .next();
 
         // Check the expected path: #61841
         assertEquals( expected, actual );
