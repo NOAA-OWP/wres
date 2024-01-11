@@ -144,6 +144,8 @@ public class EvaluationService implements ServletContextListener
     // related concern.
     private static final Cache<Long, EvaluationMetadata> CAFFEINE_CACHE;
 
+    private static RedissonClient redissonClient;
+
     private static final int DEFAULT_REDIS_PORT = 6379;
     private static String redisHost = null;
     private static int redisPort = DEFAULT_REDIS_PORT;
@@ -187,7 +189,7 @@ public class EvaluationService implements ServletContextListener
                           // Set SO_KEEPALIVE for what it's worth:
                           .setKeepAlive( true );
 
-            RedissonClient redissonClient = Redisson.create( redissonConfig );
+            redissonClient = Redisson.create( redissonConfig );
             EVALUATION_METADATA_MAP = redissonClient.getMapCache( "evalMetadataById" );
             EVALUATION_METADATA_MAP.setMaxSize( 50 );
             CAFFEINE_CACHE = null;
@@ -429,9 +431,8 @@ public class EvaluationService implements ServletContextListener
             if ( Objects.nonNull( cachedEntry.getOutputs() ) )
             {
                 LOGGER.info( "Returning outputs from cache" );
-
-                StreamingOutput streamingOutput = outputSream -> {
-                    Writer writer = new BufferedWriter( new OutputStreamWriter( outputSream ) );
+                StreamingOutput streamingOutput = outputStream -> {
+                    Writer writer = new BufferedWriter( new OutputStreamWriter( outputStream ) );
                     for ( java.nio.file.Path path : cachedEntry.getOutputs() )
                     {
                         writer.write( path.toString() + "\n" );
@@ -854,8 +855,8 @@ public class EvaluationService implements ServletContextListener
             }
 
             // Put output paths in a stream to send to user
-            StreamingOutput streamingOutput = outputSream -> {
-                Writer writer = new BufferedWriter( new OutputStreamWriter( outputSream ) );
+            StreamingOutput streamingOutput = outputStream -> {
+                Writer writer = new BufferedWriter( new OutputStreamWriter( outputStream ) );
                 for ( java.nio.file.Path path : outputPaths )
                 {
                     writer.write( path.toString() + "\n" );
@@ -1267,6 +1268,12 @@ public class EvaluationService implements ServletContextListener
         {
             LOGGER.info( "Terminating database activities..." );
             database.shutdown();
+        }
+
+        // Shuts down cache instance (Not server)
+        if ( Objects.nonNull( redissonClient ) )
+        {
+            redissonClient.shutdown();
         }
 
         // Close ChunkedOutput streams
