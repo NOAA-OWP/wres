@@ -94,6 +94,8 @@ services:
                 condition: service_healthy
             eventsbroker:
                 condition: service_started
+            persister:
+              condition: service_healthy
         volumes:
          # To write user output data:
          - /mnt/wres_share/evaluations:/mnt/wres_share/evaluations
