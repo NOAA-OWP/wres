@@ -1835,6 +1835,13 @@ dependencies
     // Because of CVE-2022-24823. TODO: remove when Redisson catches up
     implementation group: 'io.netty', name: 'netty-all', version: '4.1.103.Final'
 
+    // Upgrade jackson-databind used by redisson (CVE-2020-36518)
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.0'
+    // Upgrade some jackson libs used by redisson for good measure
+    implementation 'com.fasterxml.jackson:jackson-bom:2.16.0'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.16.0'
+    implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.16.0'
+
     implementation( 'edu.ucar:cdm-core:5.4.2' )
     {
         // Because we use slf4j, not jcl:
