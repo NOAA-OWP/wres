@@ -1,28 +1,18 @@
 package wres;
 
-import java.io.IOException;
 import java.lang.Thread.UncaughtExceptionHandler;
-import java.sql.SQLException;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 import wres.config.MultiDeclarationFactory;
-import wres.events.broker.BrokerConnectionFactory;
-import wres.events.broker.BrokerUtilities;
 import wres.events.broker.CouldNotLoadBrokerConfigurationException;
 import wres.eventsbroker.embedded.CouldNotStartEmbeddedBrokerException;
-import wres.eventsbroker.embedded.EmbeddedBroker;
-import wres.io.database.ConnectionSupplier;
-import wres.io.database.Database;
-import wres.io.database.DatabaseOperations;
+import wres.helpers.MainUtilities;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
 import wres.system.SettingsFactory;
@@ -83,7 +73,7 @@ public class Main
             function = "execute";
         }
         // Apply the known function
-        else if ( Functions.hasOperation( args[0] ) )
+        else if ( MainUtilities.hasOperation( args[0] ) )
         {
             function = args[0];
 
@@ -96,7 +86,7 @@ public class Main
             LOGGER.warn( "The function \"{}\" is not supported.", args[0] );
 
             // Print help information
-            Functions.call( function, null );
+            MainUtilities.call( function, null );
 
             return;
         }
@@ -107,12 +97,10 @@ public class Main
         if ( LOGGER.isInfoEnabled() )
         {
             List<String> curtailedArgs = Arrays.stream( finalArgs )
-                                               .map( Functions::curtail )
+                                               .map( MainUtilities::curtail )
                                                .toList();
             LOGGER.info( "Running function '{}' with arguments '{}'.", finalFunction, curtailedArgs );
         }
-
-        Instant beganExecution = Instant.now();
 
         // Log any uncaught exceptions
         UncaughtExceptionHandler handler = ( a, b ) -> {
@@ -135,7 +123,7 @@ public class Main
             LOGGER.warn( "Failed to find the process id" );
         }
 
-        Main.completeExecution( finalFunction, finalArgs, beganExecution );
+        Main.completeExecution( finalFunction, finalArgs );
     }
 
     /**
@@ -147,7 +135,7 @@ public class Main
 
     private static boolean isSimpleOperation( String[] args )
     {
-        return args.length == 0 || Functions.isSimpleOperation( args[0] );
+        return args.length == 0 || MainUtilities.isSimpleOperation( args[0] );
     }
 
     /**
@@ -172,12 +160,10 @@ public class Main
 
         Functions.SharedResources sharedResources =
                 new Functions.SharedResources( SYSTEM_SETTINGS,
-                                               null,
-                                               null,
                                                function,
                                                argList );
 
-        Functions.call( function, sharedResources );
+        MainUtilities.call( function, sharedResources );
     }
 
     /**
@@ -202,27 +188,11 @@ public class Main
      * Completes an execution.
      * @param function the function to execute
      * @param args the arguments to execute
-     * @param beganExecution the time when the execution began
      */
 
-    private static void completeExecution( String function, String[] args, Instant beganExecution )
+    private static void completeExecution( String function, String[] args )
     {
         ExecutionResult result = null;
-        Database database = Main.getAndMigrateDatabaseIfRequired();
-
-        // Create the broker connections for statistics messaging
-        Properties brokerConnectionProperties =
-                BrokerUtilities.getBrokerConnectionProperties( BrokerConnectionFactory.DEFAULT_PROPERTIES );
-
-        // Create an embedded broker for statistics messages, if needed
-        EmbeddedBroker broker = null;
-        if ( BrokerUtilities.isEmbeddedBrokerRequired( brokerConnectionProperties ) )
-        {
-            broker = EmbeddedBroker.of( brokerConnectionProperties, false );
-        }
-
-        // Create the broker connection factory
-        BrokerConnectionFactory brokerConnectionFactory = BrokerConnectionFactory.of( brokerConnectionProperties );
 
         try
         {
@@ -230,37 +200,10 @@ public class Main
                                          .toList();
             Functions.SharedResources sharedResources =
                     new Functions.SharedResources( SYSTEM_SETTINGS,
-                                                   database,
-                                                   brokerConnectionFactory,
                                                    function,
                                                    argList );
 
-            result = Functions.call( function, sharedResources );
-            Instant endedExecution = Instant.now();
-
-            // Log the execution to the database if a database is used
-            if ( SYSTEM_SETTINGS.isUseDatabase() )
-            {
-                // Log both the operation and the args
-                String[] argsToLog = new String[args.length + 1];
-                argsToLog[0] = function;
-                System.arraycopy( args, 0, argsToLog, 1, args.length );
-
-                DatabaseOperations.LogParameters logParameters =
-                        new DatabaseOperations.LogParameters( Arrays.stream( argsToLog )
-                                                                    .toList(),
-                                                              result.getName(),
-                                                              result.getDeclaration(),
-                                                              result.getHash(),
-                                                              beganExecution,
-                                                              endedExecution,
-                                                              result.failed(),
-                                                              result.getException(),
-                                                              Main.getVersion() );
-
-                DatabaseOperations.logExecution( database,
-                                                 logParameters );
-            }
+            result = MainUtilities.call( function, sharedResources );
 
             if ( result.failed() )
             {
@@ -273,75 +216,11 @@ public class Main
         {
             LOGGER.warn( "Failed to create the broker connections.", e );
         }
-        finally
-        {
-            LOGGER.info( "Closing the application..." );
 
-            if ( SYSTEM_SETTINGS.isUseDatabase() && Objects.nonNull( database ) )
-            {
-                // #81660
-                if ( Objects.nonNull( result ) && result.succeeded() )
-                {
-                    LOGGER.info( "Closing database activities..." );
-                    database.shutdown();
-                    LOGGER.info( "The database activities have been closed." );
-                }
-                else
-                {
-                    LOGGER.info( "Forcefully closing database activities (you may see some errors)..." );
-                    List<Runnable> abandoned = database.forceShutdown( 6, TimeUnit.SECONDS );
-                    LOGGER.info( "Abandoned {} database tasks.", abandoned.size() );
-                }
-            }
-
-            if ( Objects.nonNull( broker ) )
-            {
-                try
-                {
-                    broker.close();
-                }
-                catch ( IOException e )
-                {
-                    LOGGER.warn( "Failed to close the embedded broker.", e );
-                }
-            }
-
-            LOGGER.info( "The application has been closed." );
-        }
 
         // Exit non-zero, if required. A nominal exit should not reach this point as clean-up has completed and all
         // remaining threads should be daemon threads, allowing the JVM to exit cleanly. This is a last resort.
         Main.forceExitOnErrorIfNeeded( result );
-    }
-
-    /**
-     * Returns a database, if required, and migrates it as needed.
-     *
-     * @return a database or null 
-     */
-
-    private static Database getAndMigrateDatabaseIfRequired()
-    {
-        Database database = null;
-        if ( SYSTEM_SETTINGS.isUseDatabase() )
-        {
-            database = new Database( new ConnectionSupplier( SYSTEM_SETTINGS ) );
-
-            // Migrate the database, as needed
-            if ( database.getAttemptToMigrate() )
-            {
-                try
-                {
-                    DatabaseOperations.migrateDatabase( database );
-                }
-                catch ( SQLException e )
-                {
-                    throw new IllegalStateException( "Failed to migrate the WRES database.", e );
-                }
-            }
-        }
-
-        return database;
     }
 
     /**

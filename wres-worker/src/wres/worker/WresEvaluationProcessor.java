@@ -474,7 +474,7 @@ class WresEvaluationProcessor implements Callable<Integer>
     {
         URI theOutputResource = path.toUri();
 
-        LOGGER.info( "Sending output uri {} to broker.", theOutputResource );
+        LOGGER.debug( "Sending output uri {} to broker.", theOutputResource );
 
         JobOutput.job_output jobOutputMessage = JobOutput.job_output
                 .newBuilder()

@@ -1,10 +1,5 @@
 package wres.server;
 
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.Objects;
-import java.util.Properties;
-
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.HttpChannel;
@@ -23,14 +18,6 @@ import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.events.broker.BrokerConnectionFactory;
-import wres.events.broker.BrokerUtilities;
-import wres.eventsbroker.embedded.EmbeddedBroker;
-import wres.io.database.ConnectionSupplier;
-import wres.io.database.Database;
-import wres.io.database.DatabaseOperations;
-import wres.system.SettingsFactory;
-import wres.system.SystemSettings;
 
 /**
  * Runs the core application as a long-running instance or web server that accepts evaluation requests. See issue
@@ -51,35 +38,6 @@ public class WebServer
      */
     private static final int MAX_SERVER_THREADS = 20;
 
-    /**
-     * The embedded broker for statistics messaging if using one
-     */
-    private static EmbeddedBroker broker = null;
-
-    private static final SystemSettings SYSTEM_SETTINGS = SettingsFactory.createSettingsFromDefaultXml();
-
-    private static Database database = null;
-
-    // Migrate the database, as needed
-    static
-    {
-        if ( SYSTEM_SETTINGS.isUseDatabase() )
-        {
-            database = new Database( new ConnectionSupplier( SYSTEM_SETTINGS ) );
-            // Migrate the database, as needed
-            if ( database.getAttemptToMigrate() )
-            {
-                try
-                {
-                    DatabaseOperations.migrateDatabase( database );
-                }
-                catch ( SQLException e )
-                {
-                    throw new IllegalStateException( "Failed to migrate the WRES database.", e );
-                }
-            }
-        }
-    }
 
     /**
      * Ensure that the X-Frame-Options header element is included in the response.
@@ -98,27 +56,6 @@ public class WebServer
         }
     };
 
-    /**
-     * Creates the embedded broker and broker connections for statistics messaging on this server.
-     * Will close it when closing the server
-     *
-     * @return BrokerConnectionFactory
-     */
-    private static BrokerConnectionFactory createBroker()
-    {
-
-        // Create the broker connections for statistics messaging
-        Properties brokerConnectionProperties =
-                BrokerUtilities.getBrokerConnectionProperties( BrokerConnectionFactory.DEFAULT_PROPERTIES );
-
-        // Create an embedded broker for statistics messages, if needed
-        if ( BrokerUtilities.isEmbeddedBrokerRequired( brokerConnectionProperties ) )
-        {
-            broker = EmbeddedBroker.of( brokerConnectionProperties, false );
-        }
-
-        return BrokerConnectionFactory.of( brokerConnectionProperties );
-    }
 
     /**
      * Get the port that is passed in from args, if not present then use default port
@@ -163,12 +100,8 @@ public class WebServer
         dynamicHolder.setInitParameter( "jakarta.ws.rs.Application",
                                         JaxRSApplication.class.getCanonicalName() );
 
-        // Registering the EvaluationService explicitly so that we can add constructor arguments
-        ServletContainer servlet = new ServletContainer(
-                new ResourceConfig().register(
-                        new EvaluationService( WebServer.SYSTEM_SETTINGS, WebServer.database, WebServer.createBroker() )
-                )
-        );
+        // Registering the EvaluationService explicitly so stream redirects are sent real time
+        ServletContainer servlet = new ServletContainer( new ResourceConfig().register( new EvaluationService() ) );
         dynamicHolder.setServlet( servlet );
 
         LOGGER.debug( "Setting dynamic holder initialization to {}", JaxRSApplication.class.getCanonicalName() );
@@ -230,23 +163,6 @@ public class WebServer
         }
         finally
         {
-            if ( SYSTEM_SETTINGS.isUseDatabase() && Objects.nonNull( database ) )
-            {
-                LOGGER.info( "Terminating database activities..." );
-                database.shutdown();
-            }
-
-            if ( Objects.nonNull( broker ) )
-            {
-                try
-                {
-                    broker.close();
-                }
-                catch ( IOException e )
-                {
-                    LOGGER.warn( "Failed to destroy the embedded broker used for statistics messaging.", e );
-                }
-            }
             jettyServer.destroy();
         }
     }
