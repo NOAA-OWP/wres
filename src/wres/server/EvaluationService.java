@@ -15,10 +15,6 @@ import java.io.Writer;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.sql.SQLException;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -60,21 +56,15 @@ import org.slf4j.LoggerFactory;
 import static wres.messages.generated.EvaluationStatusOuterClass.EvaluationStatus.*;
 
 import wres.ExecutionResult;
+import wres.Functions;
 import wres.Main;
-import wres.events.broker.BrokerConnectionFactory;
-import wres.io.database.ConnectionSupplier;
-import wres.io.database.Database;
-import wres.io.database.DatabaseOperations;
 import wres.io.database.locking.DatabaseLockFailed;
-import wres.io.database.locking.DatabaseLockManager;
 import wres.messages.generated.EvaluationStatusOuterClass;
 import wres.messages.generated.Job;
 import wres.pipeline.Canceller;
-import wres.pipeline.Evaluator;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
 import wres.system.DatabaseSettings;
-import wres.system.DatabaseType;
 import wres.system.SettingsFactory;
 import wres.system.SystemSettings;
 
@@ -145,7 +135,6 @@ public class EvaluationService implements ServletContextListener
     private static final Cache<Long, EvaluationMetadata> CAFFEINE_CACHE;
 
     private static RedissonClient redissonClient;
-
     private static final int DEFAULT_REDIS_PORT = 6379;
     private static String redisHost = null;
     private static int redisPort = DEFAULT_REDIS_PORT;
@@ -203,30 +192,11 @@ public class EvaluationService implements ServletContextListener
         }
     }
 
-    private SystemSettings systemSettings;
+    private static SystemSettings systemSettings = SettingsFactory.createSettingsFromDefaultXml();
 
-    private Database database;
-
-    private final BrokerConnectionFactory broker;
-
-    private Evaluator evaluator;
-
-    /**
-     * Constructor
-     * @param systemSettings The system settings passed along from the server
-     * @param database The initial database created for us by the server
-     * @param broker The broker to deal with connections
-     */
-    public EvaluationService( SystemSettings systemSettings,
-                              Database database,
-                              BrokerConnectionFactory broker )
+    public EvaluationService()
     {
-        this.systemSettings = systemSettings;
-        this.database = database;
-        this.broker = broker;
-        this.evaluator = new Evaluator( systemSettings,
-                                        database,
-                                        broker );
+        //Needed to register this servlet
     }
 
     /**
@@ -491,11 +461,6 @@ public class EvaluationService implements ServletContextListener
         // Cancel evaluation tied to this canceler
         EVALUATION_CANCELLER.get().cancel();
 
-        // The canceled evaluation also takes out the database/evaluator this hack adds it back
-        // TODO: remove this as part of the clean up ticket #122596
-        database = new Database( new ConnectionSupplier( systemSettings ) );
-        evaluator = new Evaluator( systemSettings, database, broker );
-
         return Response.status( Response.Status.OK )
                        .entity( "Successfully canceled evaluation" )
                        .build();
@@ -518,31 +483,26 @@ public class EvaluationService implements ServletContextListener
                     + "is no database to migrate." );
         }
 
-        //Used for logging
-        Instant beganExecution = Instant.now();
-
         // Convert the raw message into a job
         Job.job jobMessage = createJobFromByteArray( message );
 
-        try
-        {
-            // Checks if database information has changed in the jobMessage and swap to that database
-            swapDatabaseIfNeeded( jobMessage );
+        // Checks if database information has changed in the jobMessage and swap to that database
+        updateSystemSettingsIfNeeded( jobMessage );
 
-            logJobHeaderInformation();
-            //The migrateDatabase method deals with database locking, so we don't need to worry about that here
-            DatabaseOperations.migrateDatabase( database );
-            logJobFinishInformation( jobMessage, ExecutionResult.success(), beganExecution );
-        }
-        catch ( SQLException se )
+        Functions.SharedResources sharedResources =
+                new Functions.SharedResources( systemSettings,
+                                               "migratedatabase",
+                                               Collections.emptyList() );
+
+        logJobHeaderInformation();
+        ExecutionResult result = Functions.migrateDatabase( sharedResources );
+
+        if ( result.failed() )
         {
             String errorMessage = "Failed to migrate the database.";
-            LOGGER.info( errorMessage, se );
-            InternalWresException e = new InternalWresException( errorMessage, se );
-            logJobFinishInformation( jobMessage, ExecutionResult.failure( se, false ), beganExecution );
+            LOGGER.info( errorMessage );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
-                           .entity( "Unable to migrate the database with the error: "
-                                    + e.getMessage() )
+                           .entity( "Unable to migrate the database with the error: " )
                            .build();
         }
 
@@ -566,40 +526,31 @@ public class EvaluationService implements ServletContextListener
                                                 + "is no database to clean." );
         }
 
-        //Used for logging
-        Instant beganExecution = Instant.now();
-
         // Convert the raw message into a job
         Job.job jobMessage = createJobFromByteArray( message );
 
         // Checks if database information has changed in the jobMessage and swap to that database
-        swapDatabaseIfNeeded( jobMessage );
+        updateSystemSettingsIfNeeded( jobMessage );
 
-        DatabaseLockManager lockManager =
-                DatabaseLockManager.from( systemSettings,
-                                          () -> database.getRawConnection() );
         try
         {
+            Functions.SharedResources sharedResources =
+                    new Functions.SharedResources( systemSettings,
+                                                   "cleandatabase",
+                                                   Collections.emptyList() );
+
             logJobHeaderInformation();
-            lockManager.lockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
-            DatabaseOperations.cleanDatabase( database );
-            lockManager.unlockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
-            logJobFinishInformation( jobMessage, ExecutionResult.success(), beganExecution );
+            Functions.cleanDatabase( sharedResources );
         }
-        catch ( IllegalStateException | DatabaseLockFailed | SQLException se )
+        catch ( IllegalStateException | DatabaseLockFailed se )
         {
             String errorMessage = "Failed to clean the database. Unable to acquire lock or communicate with database";
             InternalWresException e = new InternalWresException( errorMessage, se );
             LOGGER.info( errorMessage, se );
-            logJobFinishInformation( jobMessage, ExecutionResult.failure( e, false ), beganExecution );
             return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                            .entity( "Unable to clean the database with the error: "
                                     + e.getMessage() )
                            .build();
-        }
-        finally
-        {
-            lockManager.shutdown();
         }
 
         return Response.ok( "Database cleaned" )
@@ -628,8 +579,13 @@ public class EvaluationService implements ServletContextListener
             // on StackOverflow question id 5827023.
             projectId = RANDOM.nextLong() & Long.MAX_VALUE;
 
+            Functions.SharedResources sharedResources =
+                    new Functions.SharedResources( systemSettings,
+                                                   "evaluate",
+                                                   List.of( projectConfig ) );
+
             Canceller canceller = Canceller.of();
-            ExecutionResult result = evaluator.evaluate( projectConfig, canceller );
+            ExecutionResult result = Functions.evaluate( sharedResources, canceller );
             Set<java.nio.file.Path> outputPaths = result.getResources();
 
             // persist information
@@ -772,9 +728,6 @@ public class EvaluationService implements ServletContextListener
             // Convert the raw message into a job
             Job.job jobMessage = createJobFromByteArray( message );
 
-            //Used for logging
-            Instant beganExecution = Instant.now();
-
             EVALUATION_STAGE.set( ONGOING );
             LOGGER.info( "Kicking off evaluation on server with the internal ID of: {}", id );
             Set<java.nio.file.Path> outputPaths;
@@ -782,7 +735,7 @@ public class EvaluationService implements ServletContextListener
             try
             {
                 // Checks if database information has changed in the jobMessage and swap to that database
-                swapDatabaseIfNeeded( jobMessage );
+                updateSystemSettingsIfNeeded( jobMessage );
 
                 // Print system setting at the top of the job log to help debug
                 logJobHeaderInformation();
@@ -790,11 +743,14 @@ public class EvaluationService implements ServletContextListener
                 // Execute an evaluation
                 EVALUATION_CANCELLER.set( canceller );
 
-                ExecutionResult result =
-                        this.evaluator.evaluate( jobMessage.getProjectConfig(), EVALUATION_CANCELLER.get() );
+                Functions.SharedResources sharedResources =
+                        new Functions.SharedResources( systemSettings,
+                                                       "execute",
+                                                       List.of( jobMessage.getProjectConfig() ) );
+
+                ExecutionResult result = Functions.evaluate( sharedResources, EVALUATION_CANCELLER.get() );
 
                 LOGGER.info( "Evaluation has finished executing" );
-                logJobFinishInformation( jobMessage, result, beganExecution );
 
                 // get files written
                 outputPaths = result.getResources();
@@ -832,9 +788,6 @@ public class EvaluationService implements ServletContextListener
             catch ( UserInputException e )
             {
                 String failureMessage = "I received something I could not parse. The top-level exception was";
-                logJobFinishInformation( jobMessage,
-                                         ExecutionResult.failure( e, canceller.cancelled() ),
-                                         beganExecution );
                 LOGGER.info( failureMessage, e );
                 EVALUATION_STAGE.set( COMPLETED );
                 return Response.status( Response.Status.BAD_REQUEST )
@@ -844,9 +797,6 @@ public class EvaluationService implements ServletContextListener
             catch ( InternalWresException iwe )
             {
                 String failureMessage = "WRES experienced an internal issue. The top-level exception was";
-                logJobFinishInformation( jobMessage,
-                                         ExecutionResult.failure( iwe, canceller.cancelled() ),
-                                         beganExecution );
                 LOGGER.info( failureMessage, iwe );
                 EVALUATION_STAGE.set( COMPLETED );
                 return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
@@ -1022,47 +972,6 @@ public class EvaluationService implements ServletContextListener
         timeoutThread.start();
     }
 
-    /**
-     * Logs information about the end of a job
-     * @param jobMessage The job message used by the evaluation
-     * @param result The result of the execution
-     * @param beganExecution When the evaluation started
-     */
-    private void logJobFinishInformation( Job.job jobMessage, ExecutionResult result, Instant beganExecution )
-    {
-        // Log timing of execution
-        if ( LOGGER.isInfoEnabled() )
-        {
-            Instant endedExecution = Instant.now();
-            Duration duration = Duration.between( beganExecution, endedExecution );
-            LOGGER.info( "The function '{}' took {}", jobMessage.getVerb(), duration );
-        }
-
-        // Log the execution to the database if a database is used
-        if ( this.systemSettings.isUseDatabase() )
-        {
-            Instant endedExecution = Instant.now();
-            // Log both the operation and the args
-            List<String> argList = new ArrayList<>();
-            argList.add( jobMessage.getVerb().toString() );
-            argList.addAll( jobMessage.getAdditionalArgumentsList().stream().toList() );
-
-            DatabaseOperations.LogParameters logParameters =
-                    new DatabaseOperations.LogParameters( argList,
-                                                          result.getName(),
-                                                          result.getDeclaration(),
-                                                          result.getHash(),
-                                                          beganExecution,
-                                                          endedExecution,
-                                                          result.failed(),
-                                                          result.getException(),
-                                                          Main.getVersion() );
-
-            DatabaseOperations.logExecution( database,
-                                             logParameters );
-        }
-    }
-
     private void logJobHeaderInformation()
     {
         // Print some information about the software version and runtime
@@ -1074,10 +983,10 @@ public class EvaluationService implements ServletContextListener
     }
 
     /**
-     * If the job contains database information different from the current database then change what database we are using
+     * If the job contains database information different from the current database then change the systemSettings
      * @param job The job we are about to evaluate
      */
-    private void swapDatabaseIfNeeded( Job.job job )
+    private static void updateSystemSettingsIfNeeded( Job.job job )
     {
         boolean databaseChangeDetected = false;
         String databaseName = job.getDatabaseName();
@@ -1107,49 +1016,15 @@ public class EvaluationService implements ServletContextListener
         // If we did change something, update Evaluator
         if ( databaseChangeDetected )
         {
-            changeDatabase( databaseBuilder );
-        }
-    }
-
-    /**
-     * Changes the database and creates a new corresponding Evaluator
-     * @param databaseBuilder The builder to be used for the new database
-     */
-    private void changeDatabase( DatabaseSettings.DatabaseSettingsBuilder databaseBuilder )
-    {
-        // DatabaseSettings have fields that are conditionally created in respect to host, port, and name; update those here
-        String passwordOverrides = SettingsFactory.getPasswordOverrides( databaseBuilder.build() );
-        if ( passwordOverrides != null )
-        {
-            databaseBuilder.password( passwordOverrides );
-        }
-
-        systemSettings = systemSettings.toBuilder().databaseConfiguration( databaseBuilder.build() ).build();
-
-        if ( systemSettings.isUseDatabase() )
-        {
-            if ( Objects.nonNull( database ) )
+            // DatabaseSettings have fields that are conditionally created in respect to host, port, and name; update those here
+            String passwordOverrides = SettingsFactory.getPasswordOverrides( databaseBuilder.build() );
+            if ( passwordOverrides != null )
             {
-                LOGGER.info( "Terminating current database connections" );
-                database.shutdown();
+                databaseBuilder.password( passwordOverrides );
             }
 
-            database = new Database( new ConnectionSupplier( systemSettings ) );
-            // Migrate the database, as needed
-            if ( database.getAttemptToMigrate() )
-            {
-                try
-                {
-                    DatabaseOperations.migrateDatabase( database );
-                }
-                catch ( SQLException e )
-                {
-                    String errorMessage = "Failed to migrate the WRES database.";
-                    throw new IllegalStateException( errorMessage, e );
-                }
-            }
+            systemSettings = systemSettings.toBuilder().databaseConfiguration( databaseBuilder.build() ).build();
         }
-        evaluator = new Evaluator( systemSettings, database, broker );
     }
 
     private Job.job createJobFromByteArray( byte[] message )
@@ -1178,7 +1053,10 @@ public class EvaluationService implements ServletContextListener
         // RedissonClient is present, use that
         else
         {
-            EVALUATION_METADATA_MAP.fastPut( String.valueOf( id ), evaluationMetadata, EvaluationService.redisEntryTimeoutInHours, TimeUnit.HOURS );
+            EVALUATION_METADATA_MAP.fastPut( String.valueOf( id ),
+                                             evaluationMetadata,
+                                             EvaluationService.redisEntryTimeoutInHours,
+                                             TimeUnit.HOURS );
         }
     }
 
@@ -1263,13 +1141,6 @@ public class EvaluationService implements ServletContextListener
     @Override
     public void contextDestroyed( ServletContextEvent event )
     {
-        // Perform action during application's shutdown
-        if ( systemSettings.isUseDatabase() && Objects.nonNull( database ) )
-        {
-            LOGGER.info( "Terminating database activities..." );
-            database.shutdown();
-        }
-
         // Shuts down cache instance (Not server)
         if ( Objects.nonNull( redissonClient ) )
         {
