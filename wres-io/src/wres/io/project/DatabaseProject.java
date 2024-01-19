@@ -343,15 +343,15 @@ public class DatabaseProject implements Project
         }
 
         return switch ( orientation )
-                {
-                    case LEFT -> this.getDeclaration()
-                                     .left();
-                    case RIGHT -> this.getDeclaration()
-                                      .right();
-                    case BASELINE -> this.getDeclaration()
-                                         .baseline()
-                                         .dataset();
-                };
+        {
+            case LEFT -> this.getDeclaration()
+                             .left();
+            case RIGHT -> this.getDeclaration()
+                              .right();
+            case BASELINE -> this.getDeclaration()
+                                 .baseline()
+                                 .dataset();
+        };
     }
 
     @Override
@@ -360,11 +360,11 @@ public class DatabaseProject implements Project
         Objects.requireNonNull( orientation );
 
         return switch ( orientation )
-                {
-                    case LEFT -> this.getLeftVariableName();
-                    case RIGHT -> this.getRightVariableName();
-                    case BASELINE -> this.getBaselineVariableName();
-                };
+        {
+            case LEFT -> this.getLeftVariableName();
+            case RIGHT -> this.getRightVariableName();
+            case BASELINE -> this.getBaselineVariableName();
+        };
     }
 
     @Override
@@ -427,11 +427,11 @@ public class DatabaseProject implements Project
         Boolean usesGriddedData;
 
         usesGriddedData = switch ( orientation )
-                {
-                    case LEFT -> this.leftUsesGriddedData;
-                    case RIGHT -> this.rightUsesGriddedData;
-                    case BASELINE -> this.baselineUsesGriddedData;
-                };
+        {
+            case LEFT -> this.leftUsesGriddedData;
+            case RIGHT -> this.rightUsesGriddedData;
+            case BASELINE -> this.baselineUsesGriddedData;
+        };
 
         if ( usesGriddedData == null )
         {
@@ -798,7 +798,7 @@ public class DatabaseProject implements Project
                                                                                orientation.name()
                                                                                           .toLowerCase() );
             StringBuilder message = new StringBuilder();
-            message.append( "There is no '" )
+            message.append( "    - There is no '" )
                    .append( this.getVariableName( orientation ) )
                    .append( "' data available for the " )
                    .append( orientation )
@@ -806,13 +806,8 @@ public class DatabaseProject implements Project
 
             if ( !availableVariables.isEmpty() )
             {
-                message.append( " Available variable(s):" );
-                for ( String variable : availableVariables )
-                {
-                    message.append( System.lineSeparator() )
-                           .append( "    " )
-                           .append( variable );
-                }
+                message.append( " Available variable(s): " )
+                       .append( availableVariables );
             }
             else
             {
@@ -1388,11 +1383,11 @@ public class DatabaseProject implements Project
         Objects.requireNonNull( orientation );
 
         return switch ( orientation )
-                {
-                    case LEFT -> this.getDeclaredLeftVariableName();
-                    case RIGHT -> this.getDeclaredRightVariableName();
-                    case BASELINE -> this.getDeclaredBaselineVariableName();
-                };
+        {
+            case LEFT -> this.getDeclaredLeftVariableName();
+            case RIGHT -> this.getDeclaredRightVariableName();
+            case BASELINE -> this.getDeclaredBaselineVariableName();
+        };
     }
 
     /**
