@@ -896,7 +896,8 @@ public final class Functions
                                                           endedExecution,
                                                           executionResult.failed(),
                                                           executionResult.getException(),
-                                                          Main.getVersion() );
+                                                          Main.getVersion(),
+                                                          executionResult.getEvaluationId() );
 
             DatabaseOperations.logExecution( database,
                                              logParameters );
