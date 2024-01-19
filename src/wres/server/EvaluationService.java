@@ -755,7 +755,7 @@ public class EvaluationService implements ServletContextListener
 
                 ExecutionResult result = Functions.evaluate( sharedResources, EVALUATION_CANCELLER.get() );
 
-                LOGGER.info( "Evaluation has finished executing" );
+                LOGGER.info( "Evaluation {} with the internal ID of: {} has returned", result.getEvaluationId(), id );
 
                 // get files written
                 outputPaths = result.getResources();
