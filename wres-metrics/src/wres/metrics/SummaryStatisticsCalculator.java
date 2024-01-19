@@ -71,9 +71,6 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                                   .filter( Objects::nonNull )
                                   .toList();
 
-    /** Repeated string. */
-    private static final String OF_THE = " of the ";
-
     /** The cached samples of score statistics. */
     private final Map<DoubleScoreName, MutableDoubleList> doubleScores;
 
@@ -790,18 +787,8 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
             DoubleScoreName name = nextScore.getKey();
             String nameString = name.metricName()
                                     .toString();
-            // Format the name string
-            nameString = nameString.replace( "_", " " );
-
-            if ( name.metricComponentName() != DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
-            {
-                nameString = name.metricComponentName()
-                                 .toString()
-                                 .replace( "_", " " )
-                             + OF_THE
-                             + nameString;
-            }
-
+            String componentNameString = name.metricComponentName()
+                                             .toString();
             MutableDoubleList scores = nextScore.getValue();
             double[] rawScores = scores.toArray();
             DoubleScoreStatistic.Builder b = this.doubleScoreTemplates.get( name.metricName() );
@@ -810,8 +797,9 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                                  .getMetric()
                                  .getUnits();
             Map<SummaryStatisticComponentName, String> names =
-                    Map.of( SummaryStatisticComponentName.VARIABLE, nameString,
-                            SummaryStatisticComponentName.VARIABLE_UNIT, unitString );
+                    Map.of( SummaryStatisticComponentName.METRIC_NAME, nameString,
+                            SummaryStatisticComponentName.METRIC_COMPONENT_NAME, componentNameString,
+                            SummaryStatisticComponentName.METRIC_UNIT, unitString );
             DiagramStatistic nextDiagram = diagram.apply( names, rawScores );
             diagramList.add( nextDiagram );
         }
@@ -830,17 +818,17 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
         for ( Map.Entry<DurationScoreName, List<Duration>> nextScore : this.durationScores.entrySet() )
         {
             DurationScoreName name = nextScore.getKey();
-            String nameString = name.metricComponentName()
-                                + OF_THE
-                                + name.metricName()
-                                      .toString()
-                                      .replace( "_", " " );
+            String nameString = name.metricName()
+                                    .toString();
+            String componentNameString = name.metricComponentName()
+                                             .toString();
 
             List<Duration> scores = nextScore.getValue();
             Duration[] rawScores = scores.toArray( new Duration[0] );
             Map<SummaryStatisticComponentName, String> names =
-                    Map.of( SummaryStatisticComponentName.VARIABLE, nameString,
-                            SummaryStatisticComponentName.VARIABLE_UNIT, this.timeUnit.name() );
+                    Map.of( SummaryStatisticComponentName.METRIC_NAME, nameString,
+                            SummaryStatisticComponentName.METRIC_COMPONENT_NAME, componentNameString,
+                            SummaryStatisticComponentName.METRIC_UNIT, this.timeUnit.name() );
             BiFunction<Map<SummaryStatisticComponentName, String>, Duration[], DiagramStatistic>
                     durationDiagram = FunctionFactory.ofDurationDiagramFromUnivariateFunction( diagram, this.timeUnit );
             DiagramStatistic nextDiagram = durationDiagram.apply( names, rawScores );
@@ -862,13 +850,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
         {
             DoubleScoreName name = nextScore.getKey();
             String nameString = name.metricName()
-                                    .toString()
-                                    .replace( "_", " " );
-
-            if ( name.metricComponentName() != DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
-            {
-                nameString += "-" + name.metricComponentName();
-            }
+                                    .toString();
 
             MutableDoubleList scores = nextScore.getValue();
             double[] rawScores = scores.toArray();
@@ -878,8 +860,10 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                                  .getMetric()
                                  .getUnits();
             Map<SummaryStatisticComponentName, String> names =
-                    Map.of( SummaryStatisticComponentName.VARIABLE, nameString,
-                            SummaryStatisticComponentName.VARIABLE_UNIT, unitString );
+                    Map.of( SummaryStatisticComponentName.METRIC_NAME, nameString,
+                            SummaryStatisticComponentName.METRIC_COMPONENT_NAME, name.metricComponentName()
+                                                                                     .name(),
+                            SummaryStatisticComponentName.METRIC_UNIT, unitString );
 
             BoxplotStatistic nextBoxplot = boxplot.apply( names, rawScores );
             boxplotList.add( nextBoxplot );
@@ -899,11 +883,10 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
         for ( Map.Entry<DurationScoreName, List<Duration>> nextScore : this.durationScores.entrySet() )
         {
             DurationScoreName name = nextScore.getKey();
-            String nameString = name.metricComponentName()
-                                + OF_THE
-                                + name.metricName()
-                                      .toString()
-                                      .replace( "_", " " );
+            String nameString = name.metricName()
+                                    .toString();
+            String metricComponentName = name.metricComponentName()
+                                             .toString();
 
             List<Duration> scores = nextScore.getValue();
             Duration[] rawScores = scores.toArray( new Duration[0] );
@@ -912,8 +895,9 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
             String unitString = this.timeUnit.toString()
                                              .toUpperCase();
             Map<SummaryStatisticComponentName, String> names =
-                    Map.of( SummaryStatisticComponentName.VARIABLE, nameString,
-                            SummaryStatisticComponentName.VARIABLE_UNIT, unitString );
+                    Map.of( SummaryStatisticComponentName.METRIC_NAME, nameString,
+                            SummaryStatisticComponentName.METRIC_COMPONENT_NAME, metricComponentName,
+                            SummaryStatisticComponentName.METRIC_UNIT, unitString );
 
             BoxplotStatistic nextBoxplot = boxplot.apply( names, rawScoresDecimal );
             boxplotList.add( nextBoxplot );

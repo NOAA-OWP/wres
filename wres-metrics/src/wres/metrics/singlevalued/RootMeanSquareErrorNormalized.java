@@ -25,7 +25,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * The Root Mean Square Error (RMSE) normalized by the standard deviation of the observations (SDO), also known as
  * the RMSE Standard Deviation Ratio (RSR): RSR = RMSE / SDO.
- * 
+ *
  * @author James Brown
  */
 public class RootMeanSquareErrorNormalized extends DoubleErrorScore<Pool<Pair<Double, Double>>>
@@ -38,13 +38,14 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<Pool<Pair<Do
                                                                           .build();
 
     /** Main score component. */
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( 0 )
-                                                                                    .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                    .setOptimum( 0 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.ROOT_MEAN_SQUARE_ERROR_NORMALIZED.getMinimum() )
+                                      .setMaximum( MetricConstants.ROOT_MEAN_SQUARE_ERROR_NORMALIZED.getMaximum() )
+                                      .setOptimum( MetricConstants.ROOT_MEAN_SQUARE_ERROR_NORMALIZED.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                      .build();
 
     /** Full description of the metric. */
     public static final DoubleScoreMetric METRIC_INNER = DoubleScoreMetric.newBuilder()
@@ -63,7 +64,7 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<Pool<Pair<Do
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -94,7 +95,8 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<Pool<Pair<Do
     }
 
     @Override
-    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter statistic, Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter statistic,
+                                                        Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing the {} from the intermediate statistic, {}.", this, this.getCollectionOf() );
 

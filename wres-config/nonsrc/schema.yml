@@ -878,7 +878,7 @@ definitions:
 
   SeasonFilter:
     title: A season filter.
-    description: "A filter to only include pairs whose valid times fall within 
+    description: "A filter to only include pairs whose datetimes fall within 
     a prescribed season."
     type: object
     additionalProperties: false

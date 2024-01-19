@@ -83,9 +83,11 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotMetric.QuantileValueType;
+import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentType;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.statistics.generated.SummaryStatistic;
@@ -308,7 +310,7 @@ public class ChartFactory
         PoolMetadata metadata = first.getPoolMetadata();
         MetricConstants metricName = first.getMetricName();
         DiagramMetricComponent domain = first.getComponent( DiagramComponentType.PRIMARY_DOMAIN_AXIS );
-        String summaryStatisticNameQualifier = this.getsummaryStatisticNameQualifier( first );
+        String summaryStatisticNameQualifier = this.getDiagramStatisticNameQualifier( first );
 
         DiagramMetricComponent range = first.getComponent( DiagramComponentType.PRIMARY_RANGE_AXIS );
         MetricDimension domainDimension = first.getComponentName( DiagramComponentType.PRIMARY_DOMAIN_AXIS );
@@ -592,9 +594,17 @@ public class ChartFactory
         String summaryStatisticNameQualifier = null;
         if ( Objects.nonNull( summaryStatistic ) )
         {
-            summaryStatisticNameQualifier = first.getStatistic()
-                                                 .getMetric()
-                                                 .getVariable();
+            summaryStatisticNameQualifier = metric.getStatisticName()
+                                                  .toString()
+                                                  .replace( "_", " " );
+
+            if ( !Objects.equals( metric.getStatisticComponentName(), MetricName.UNDEFINED.name() ) )
+            {
+                summaryStatisticNameQualifier = metric.getStatisticComponentName()
+                                                + OF_THE
+                                                + summaryStatisticNameQualifier;
+            }
+
             typeString = summaryStatisticNameQualifier;
         }
 
@@ -2377,17 +2387,28 @@ public class ChartFactory
      * @return the name qualifier
      */
 
-    private String getsummaryStatisticNameQualifier( DiagramStatisticOuter statistic )
+    private String getDiagramStatisticNameQualifier( DiagramStatisticOuter statistic )
     {
         String qualifier = "";
-        // For a diagram summary statistic, the underlying metric being summarized is recorded as a component name
-        // qualifier for all components
+        // For a diagram summary statistic, the underlying metric being summarized is recorded separately
+        DiagramMetric metric = statistic.getStatistic()
+                                        .getMetric();
         if ( statistic.isSummaryStatistic()
-             && !statistic.getComponentNameQualifiers()
-                          .isEmpty() )
+             && metric.getStatisticName() != MetricName.UNDEFINED )
         {
-            qualifier = statistic.getComponentNameQualifiers()
-                                 .first();
+            qualifier = statistic.getStatistic()
+                                 .getMetric()
+                                 .getStatisticName()
+                                 .toString()
+                                 .replace( "_", " " );
+
+            if ( !Objects.equals( metric.getStatisticComponentName(), MetricName.UNDEFINED.name() ) )
+            {
+                qualifier = metric.getStatisticComponentName()
+                                  .replace( "_", " " )
+                            + OF_THE
+                            + qualifier;
+            }
         }
 
         return qualifier;

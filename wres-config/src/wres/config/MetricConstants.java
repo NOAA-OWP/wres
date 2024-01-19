@@ -24,13 +24,16 @@ import wres.statistics.generated.MetricName;
 public enum MetricConstants
 {
     /** Fractional bias or relative mean error. */
-    BIAS_FRACTION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
+    BIAS_FRACTION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
+                   new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0 ) ),
 
     /** Brier Score. */
-    BRIER_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE ),
+    BRIER_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE,
+                 new Limits( 0, 1, 0 ) ),
 
     /** Brier Skill Score. */
-    BRIER_SKILL_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, true ),
+    BRIER_SKILL_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, true,
+                       new Limits( Double.NEGATIVE_INFINITY, 1, 1 ) ),
 
     /** Box plot of errors by observed value. */
     BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE( SampleDataGroup.ENSEMBLE, StatisticType.BOXPLOT_PER_PAIR ),
@@ -45,106 +48,139 @@ public enum MetricConstants
     BOX_PLOT_OF_PERCENTAGE_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticType.BOXPLOT_PER_POOL ),
 
     /** Coefficient of determination.*/
-    COEFFICIENT_OF_DETERMINATION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
+    COEFFICIENT_OF_DETERMINATION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
+                                  new Limits( 0, 1, 1 ) ),
 
     /** Mean Continuous Ranked Probability Score. */
-    CONTINUOUS_RANKED_PROBABILITY_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE ),
+    CONTINUOUS_RANKED_PROBABILITY_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE,
+                                         new Limits( 0, 1, 0 ) ),
 
     /** Mean Continuous Ranked Probability Skill Score. */
-    CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE, true ),
+    CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE, true,
+                                               new Limits( Double.NEGATIVE_INFINITY, 1, 1 ) ),
 
     /** Contingency Table.*/
     CONTINGENCY_TABLE( new SampleDataGroup[] { SampleDataGroup.DICHOTOMOUS,
             SampleDataGroup.MULTICATEGORY },
-                       StatisticType.DOUBLE_SCORE, false, null,
+                       StatisticType.DOUBLE_SCORE, false,
+                       new Limits( 0, Double.POSITIVE_INFINITY, Double.NaN ),
                        MetricGroup.CONTINGENCY_TABLE ),
 
     /** False alarm ratio.*/
-    FALSE_ALARM_RATIO( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
+    FALSE_ALARM_RATIO( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE,
+                       new Limits( 0, 1, 0 ) ),
 
     /** Pearson's product-moment correlation coefficient.*/
-    PEARSON_CORRELATION_COEFFICIENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
+    PEARSON_CORRELATION_COEFFICIENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
+                                     new Limits( -1, 1, 1 ) ),
 
     /** Threat Score. */
-    THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
+    THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE,
+                  new Limits( 0, 1, 1 ) ),
 
     /** Equitable Threat Score.*/
-    EQUITABLE_THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, true ),
+    EQUITABLE_THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, true,
+                            new Limits( -1.0 / 3, Double.POSITIVE_INFINITY, 1 ) ),
 
     /** Frequency Bias.*/
-    FREQUENCY_BIAS( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
+    FREQUENCY_BIAS( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE,
+                    new Limits( 0, Double.POSITIVE_INFINITY, 1 ) ),
 
     /** Index of Agreement. */
-    INDEX_OF_AGREEMENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
+    INDEX_OF_AGREEMENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
+                        new Limits( 0, 1, 1 ) ),
 
     /** Kling-Gupta Efficiency index. */
-    KLING_GUPTA_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true ),
+    KLING_GUPTA_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
+                            new Limits( Double.NEGATIVE_INFINITY, 1, 1 ) ),
 
     /** Mean Absolute Error.*/
-    MEAN_ABSOLUTE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
+    MEAN_ABSOLUTE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
+                         new Limits( 0, Double.POSITIVE_INFINITY, 0 ) ),
 
     /** Mean Absolute Error Skill Score.*/
-    MEAN_ABSOLUTE_ERROR_SKILL_SCORE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true ),
+    MEAN_ABSOLUTE_ERROR_SKILL_SCORE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
+                                     new Limits( Double.NEGATIVE_INFINITY, 1, 1 ) ),
 
     /** Mean Error. */
-    MEAN_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
+    MEAN_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
+                new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0 ) ),
 
     /** Mean Square Error.*/
-    MEAN_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
+    MEAN_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
+                       new Limits( 0, Double.POSITIVE_INFINITY, 0 ) ),
 
     /** Mean Square Error Skill Score.*/
-    MEAN_SQUARE_ERROR_SKILL_SCORE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true ),
+    MEAN_SQUARE_ERROR_SKILL_SCORE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
+                                   new Limits( Double.NEGATIVE_INFINITY, 1, 1 ) ),
 
     /** Mean Square Error Skill Score, normalized. */
-    MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true ),
+    MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
+                                              new Limits( 0, 1, 1 ) ),
 
     /** Median Error.*/
-    MEDIAN_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
+    MEDIAN_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
+                  new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0 ) ),
 
     /** Peirce Skill Score. */
     PEIRCE_SKILL_SCORE( new SampleDataGroup[] { SampleDataGroup.DICHOTOMOUS, SampleDataGroup.MULTICATEGORY },
-                        StatisticType.DOUBLE_SCORE, true, null ),
+                        StatisticType.DOUBLE_SCORE, true,
+                        new Limits( -1, 1, 1 ) ),
 
     /** Probability Of Detection. */
-    PROBABILITY_OF_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
+    PROBABILITY_OF_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE,
+                              new Limits( 0, 1, 1 ) ),
 
     /** Probability Of False Detection.*/
-    PROBABILITY_OF_FALSE_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE ),
+    PROBABILITY_OF_FALSE_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE,
+                                    new Limits( 0, 1, 0 ) ),
 
     /** Quantile-quantile diagram. */
-    QUANTILE_QUANTILE_DIAGRAM( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM ),
+    QUANTILE_QUANTILE_DIAGRAM( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM,
+                               new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ) ),
 
     /** Ensemble Quantile-quantile diagram. */
-    ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM( SampleDataGroup.ENSEMBLE, StatisticType.DIAGRAM ),
+    ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM( SampleDataGroup.ENSEMBLE, StatisticType.DIAGRAM,
+                                        new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ) ),
 
     /** Rank Histogram. */
-    RANK_HISTOGRAM( SampleDataGroup.ENSEMBLE, StatisticType.DIAGRAM ),
+    RANK_HISTOGRAM( SampleDataGroup.ENSEMBLE, StatisticType.DIAGRAM,
+                    new Limits( 0, Double.POSITIVE_INFINITY, Double.NaN ) ),
 
     /** Relative Operating Characteristic. */
-    RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DIAGRAM ),
+    RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DIAGRAM,
+                                               new Limits( 0, 1, Double.NaN ) ),
 
     /** Relative Operating Characteristic Score. */
-    RELATIVE_OPERATING_CHARACTERISTIC_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, true ),
+    RELATIVE_OPERATING_CHARACTERISTIC_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, true,
+                                             new Limits( 0, 1, 1 ) ),
 
     /** Reliability Diagram. */
-    RELIABILITY_DIAGRAM( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DIAGRAM ),
+    RELIABILITY_DIAGRAM( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DIAGRAM,
+                         new Limits( 0, 1, Double.NaN ) ),
 
     /** Root Mean Square Error. */
-    ROOT_MEAN_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
+    ROOT_MEAN_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
+                            new Limits( 0, Double.POSITIVE_INFINITY, 0 ) ),
 
     /** Root Mean Square Error normalized by the standard deviation of the left values. */
-    ROOT_MEAN_SQUARE_ERROR_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
+    ROOT_MEAN_SQUARE_ERROR_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
+                                       new Limits( 0, Double.POSITIVE_INFINITY, 0 ) ),
 
     /** Sample size. */
     SAMPLE_SIZE( new SampleDataGroup[] { SampleDataGroup.SINGLE_VALUED,
             SampleDataGroup.ENSEMBLE },
-                 StatisticType.DOUBLE_SCORE, false, null, MetricGroup.UNIVARIATE_STATISTIC ),
+                 StatisticType.DOUBLE_SCORE, false,
+                 new Limits( 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY ),
+                 MetricGroup.UNIVARIATE_STATISTIC ),
 
     /** Sum of Square Error. */
-    SUM_OF_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
+    SUM_OF_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
+                         new Limits( 0, Double.POSITIVE_INFINITY, 0 ) ),
 
     /** Volumetric Efficiency. */
-    VOLUMETRIC_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE ),
+    VOLUMETRIC_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
+                           new Limits( Double.NEGATIVE_INFINITY, 1, 1 ) ),
 
     /** Time-to-Peak Error. */
     TIME_TO_PEAK_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_DIAGRAM ),
@@ -159,26 +195,31 @@ public enum MetricConstants
     TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_SCORE ),
 
     /** Mean statistic. */
-    MEAN( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC,
-          MetricGroup.LRB ),
+    MEAN( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
+          new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ),
+          MetricGroup.UNIVARIATE_STATISTIC, MetricGroup.LRB ),
 
     /** Median statistic. Not currently used to "score" a single side of paired data. */
-    MEDIAN( MetricGroup.UNIVARIATE_STATISTIC ),
+    MEDIAN( new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ),
+            MetricGroup.UNIVARIATE_STATISTIC ),
 
     /** Standard deviation statistic. */
-    STANDARD_DEVIATION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC,
-                        MetricGroup.LRB ),
+    STANDARD_DEVIATION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
+                        new Limits( 0, Double.POSITIVE_INFINITY, Double.NaN ),
+                        MetricGroup.UNIVARIATE_STATISTIC, MetricGroup.LRB ),
 
     /** Minimum statistic. */
-    MINIMUM( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC,
-             MetricGroup.LRB ),
+    MINIMUM( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
+             new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ),
+             MetricGroup.UNIVARIATE_STATISTIC, MetricGroup.LRB ),
 
     /** Maximum statistic. */
-    MAXIMUM( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, MetricGroup.UNIVARIATE_STATISTIC,
-             MetricGroup.LRB ),
+    MAXIMUM( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
+             new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ),
+             MetricGroup.UNIVARIATE_STATISTIC, MetricGroup.LRB ),
 
     /** Mean absolute statistic. Not currently used to measure a single side of paired data. */
-    MEAN_ABSOLUTE( MetricGroup.UNIVARIATE_STATISTIC ),
+    MEAN_ABSOLUTE( new Limits( 0, Double.POSITIVE_INFINITY, Double.NaN ), MetricGroup.UNIVARIATE_STATISTIC ),
 
     /** Histogram. Not currently used to measure a single side of paired data. */
     HISTOGRAM( null, StatisticType.DIAGRAM, MetricGroup.UNIVARIATE_STATISTIC ),
@@ -187,91 +228,104 @@ public enum MetricConstants
     BOX_PLOT( null, StatisticType.BOXPLOT_PER_POOL, MetricGroup.UNIVARIATE_STATISTIC ),
 
     /** Quantile. Not currently used to measure a single side of paired data. */
-    QUANTILE( MetricGroup.UNIVARIATE_STATISTIC ),
+    QUANTILE( new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ),
+              MetricGroup.UNIVARIATE_STATISTIC ),
 
     /** Time to peak error, mean across all instances. */
     TIME_TO_PEAK_ERROR_MEAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
                              StatisticType.DURATION_SCORE,
-                             MetricConstants.TIME_TO_PEAK_ERROR,
-                             MetricConstants.MEAN,
-                             MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
+                             new Heritage( MetricConstants.TIME_TO_PEAK_ERROR,
+                                           MetricConstants.MEAN,
+                                           MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
+                             new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0 ) ),
 
     /** Time to peak error, median across all instances. */
     TIME_TO_PEAK_ERROR_MEDIAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
                                StatisticType.DURATION_SCORE,
-                               MetricConstants.TIME_TO_PEAK_ERROR,
-                               MetricConstants.MEDIAN,
-                               MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
+                               new Heritage( MetricConstants.TIME_TO_PEAK_ERROR,
+                                             MetricConstants.MEDIAN,
+                                             MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
+                               new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0 ) ),
 
     /** Time to peak error, minimum across all instances. */
     TIME_TO_PEAK_ERROR_MINIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
                                 StatisticType.DURATION_SCORE,
-                                MetricConstants.TIME_TO_PEAK_ERROR,
-                                MetricConstants.MINIMUM,
-                                MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
+                                new Heritage( MetricConstants.TIME_TO_PEAK_ERROR,
+                                              MetricConstants.MINIMUM,
+                                              MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
+                                new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0 ) ),
 
     /** Time to peak error, maximum across all instances. */
     TIME_TO_PEAK_ERROR_MAXIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
                                 StatisticType.DURATION_SCORE,
-                                MetricConstants.TIME_TO_PEAK_ERROR,
-                                MetricConstants.MAXIMUM,
-                                MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
+                                new Heritage( MetricConstants.TIME_TO_PEAK_ERROR,
+                                              MetricConstants.MAXIMUM,
+                                              MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
+                                new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0 ) ),
 
     /** Time to peak error, standard deviation across all instances. */
     TIME_TO_PEAK_ERROR_STANDARD_DEVIATION( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
                                            StatisticType.DURATION_SCORE,
-                                           MetricConstants.TIME_TO_PEAK_ERROR,
-                                           MetricConstants.STANDARD_DEVIATION,
-                                           MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
+                                           new Heritage( MetricConstants.TIME_TO_PEAK_ERROR,
+                                                         MetricConstants.STANDARD_DEVIATION,
+                                                         MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
+                                           new Limits( 0, Double.POSITIVE_INFINITY, Double.NaN ) ),
 
     /** Time to peak error, mean absolute value across all instances. */
     TIME_TO_PEAK_ERROR_MEAN_ABSOLUTE( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
                                       StatisticType.DURATION_SCORE,
-                                      MetricConstants.TIME_TO_PEAK_ERROR,
-                                      MetricConstants.MEAN_ABSOLUTE,
-                                      MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
+                                      new Heritage( MetricConstants.TIME_TO_PEAK_ERROR,
+                                                    MetricConstants.MEAN_ABSOLUTE,
+                                                    MetricConstants.TIME_TO_PEAK_ERROR_STATISTIC ),
+                                      new Limits( 0, Double.POSITIVE_INFINITY, 0 ) ),
 
     /** Time to peak relative error, mean across all instances. */
     TIME_TO_PEAK_RELATIVE_ERROR_MEAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
                                       StatisticType.DURATION_SCORE,
-                                      MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
-                                      MetricConstants.MEAN,
-                                      MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
+                                      new Heritage( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
+                                                    MetricConstants.MEAN,
+                                                    MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
+                                      new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0 ) ),
 
     /** Time to peak relative error, median across all instances. */
     TIME_TO_PEAK_RELATIVE_ERROR_MEDIAN( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
                                         StatisticType.DURATION_SCORE,
-                                        MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
-                                        MetricConstants.MEDIAN,
-                                        MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
+                                        new Heritage( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
+                                                      MetricConstants.MEDIAN,
+                                                      MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
+                                        new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0 ) ),
 
     /** Time to peak relative error, minimum across all instances. */
     TIME_TO_PEAK_RELATIVE_ERROR_MINIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
                                          StatisticType.DURATION_SCORE,
-                                         MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
-                                         MetricConstants.MINIMUM,
-                                         MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
+                                         new Heritage( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
+                                                       MetricConstants.MINIMUM,
+                                                       MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
+                                         new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0 ) ),
 
     /** Time to peak relative error, maximum across all instances. */
     TIME_TO_PEAK_RELATIVE_ERROR_MAXIMUM( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
                                          StatisticType.DURATION_SCORE,
-                                         MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
-                                         MetricConstants.MAXIMUM,
-                                         MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
+                                         new Heritage( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
+                                                       MetricConstants.MAXIMUM,
+                                                       MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
+                                         new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0 ) ),
 
     /** Time to peak relative error, standard deviation across all instances. */
     TIME_TO_PEAK_RELATIVE_ERROR_STANDARD_DEVIATION( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
                                                     StatisticType.DURATION_SCORE,
-                                                    MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
-                                                    MetricConstants.STANDARD_DEVIATION,
-                                                    MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
+                                                    new Heritage( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
+                                                                  MetricConstants.STANDARD_DEVIATION,
+                                                                  MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
+                                                    new Limits( 0, Double.POSITIVE_INFINITY, Double.NaN ) ),
 
     /** Time to peak relative error, mean absolute value across all instances. */
     TIME_TO_PEAK_RELATIVE_ERROR_MEAN_ABSOLUTE( SampleDataGroup.SINGLE_VALUED_TIME_SERIES,
                                                StatisticType.DURATION_SCORE,
-                                               MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
-                                               MetricConstants.MEAN_ABSOLUTE,
-                                               MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
+                                               new Heritage( MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR,
+                                                             MetricConstants.MEAN_ABSOLUTE,
+                                                             MetricConstants.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC ),
+                                               new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0 ) ),
 
     /** Indicator for no decomposition. */
     NONE( MetricGroup.NONE ),
@@ -333,154 +387,219 @@ public enum MetricConstants
     /** The component of a univariate statistic that applies to the baseline-sided data within a pairing. */
     BASELINE( MetricGroup.LRB );
 
-    /**
-     * The {@link SampleDataGroup}.
-     */
-
+    /** The {@link SampleDataGroup}. */
     private final SampleDataGroup[] inGroups;
 
-    /**
-     * The {@link StatisticType} or null if the {@link MetricConstants} does not belong to a group.
-     */
-
+    /** The {@link StatisticType} or null if the {@link MetricConstants} does not belong to a group. */
     private final StatisticType outGroup;
 
-    /**
-     * The array of {@link MetricGroup} to which this {@link MetricConstants} belongs.
-     */
-
+    /** The array of {@link MetricGroup} to which this {@link MetricConstants} belongs. */
     private final MetricGroup[] metricGroups;
 
-    /**
-     * Is <code>true</code> if the metric measures skill relative to a baseline, otherwise <code>false</code>.
-     */
-
+    /** Is <code>true</code> if the metric measures skill relative to a baseline, otherwise <code>false</code>. */
     private final boolean isSkillMetric;
 
-    /**
-     * A parent metric, may be null.
-     */
-
+    /** A parent metric, may be null. */
     private final MetricConstants parent;
 
-    /**
-     * A child metric, may be null.
-     */
-
+    /** A child metric, may be null. */
     private final MetricConstants child;
 
-    /**
-     * A collection metric, may be null. This is used to distinguish a group of statistics that are associated with a
+    /** A collection metric, may be null. This is used to distinguish a group of statistics that are associated with a
      * common parent metric, but are distinct from the parent metric. For example, a {@link #TIME_TO_PEAK_ERROR_MEAN}
      * is a summary error statistics associated with a {@link #TIME_TO_PEAK_ERROR}, but the {@link #TIME_TO_PEAK_ERROR}
      * is a statistic itself (not summarized). In this case, the {@link #TIME_TO_PEAK_ERROR_STATISTIC} is used to
      * collect the {@link #TIME_TO_PEAK_ERROR_MEAN}, together with all related summary statistics, allowing them to be
-     * identified collectively, but separately from the statistics produced by the {@link #TIME_TO_PEAK_ERROR}.
-     */
+     * identified collectively, but separately from the statistics produced by the {@link #TIME_TO_PEAK_ERROR}. */
 
     private final MetricConstants collection;
 
+    /** The optimum value of the metric. */
+    private final double optimum;
+
+    /** The minimum value of the metric. */
+    private final double minimum;
+
+    /** The minimum value of the metric. */
+    private final double maximum;
+
     /**
-     * Construct with a {@link SampleDataGroup} and a {@link StatisticType} and whether the metric is a skill metric.
+     * Creates an instance.
+     *
+     * @param inGroup the input group
+     * @param outGroup the output group
+     */
+
+    MetricConstants( SampleDataGroup inGroup,
+                     StatisticType outGroup )
+    {
+        this( new SampleDataGroup[] { inGroup },
+              outGroup,
+              false,
+              new Heritage( null, null, null ),
+              new Limits( Double.NaN, Double.NaN, Double.NaN ) );
+    }
+
+    /**
+     * Creates an instance.
      *
      * @param inGroup the input group
      * @param outGroup the output group
      * @param isSkillMetric is true if the metric is a skill metric
-     */
-
-    MetricConstants( SampleDataGroup inGroup, StatisticType outGroup, boolean isSkillMetric )
-    {
-        this( new SampleDataGroup[] { inGroup }, outGroup, isSkillMetric, null );
-    }
-
-    /**
-     * Construct with a {@link SampleDataGroup} and a {@link StatisticType} and whether the metric is a skill metric,
-     * as well as a child, parent and collection metric, optionally.
-     *
-     * @param inGroup the input group
-     * @param outGroup the output group
-     * @param parent the parent metric
-     * @param child the child metric
-     * @param collection the collection metric
+     * @param limits the limits of the metric
      */
 
     MetricConstants( SampleDataGroup inGroup,
                      StatisticType outGroup,
-                     MetricConstants parent,
-                     MetricConstants child,
-                     MetricConstants collection )
+                     boolean isSkillMetric,
+                     Limits limits )
     {
-        this( new SampleDataGroup[] { inGroup }, outGroup, false, parent, child, collection, ( MetricGroup ) null );
+        this( new SampleDataGroup[] { inGroup },
+              outGroup,
+              isSkillMetric,
+              new Heritage( null, null, null ),
+              limits );
     }
 
     /**
-     * Construct with a {@link SampleDataGroup} and a {@link StatisticType}.
+     * Creates an instance.
      *
      * @param inGroup the input group
      * @param outGroup the output group
      * @param metricGroup the metric group
      */
 
-    MetricConstants( SampleDataGroup inGroup, StatisticType outGroup, MetricGroup... metricGroup )
-    {
-        this( new SampleDataGroup[] { inGroup }, outGroup, false, null, null, null, metricGroup );
-    }
-
-    /**
-     * Construct with multiple {@link SampleDataGroup} and a {@link StatisticType}.
-     *
-     * @param inGroups the input groups
-     * @param outGroup the output group
-     * @param isSkillMetric is true if the metric is a skill metric, otherwise false
-     * @param parent the parent metric, may be null
-     * @param metricGroup the metric group
-     */
-
-    MetricConstants( SampleDataGroup[] inGroups,
+    MetricConstants( SampleDataGroup inGroup,
                      StatisticType outGroup,
-                     boolean isSkillMetric,
-                     MetricConstants parent,
                      MetricGroup... metricGroup )
     {
-        this( inGroups, outGroup, isSkillMetric, parent, null, null, metricGroup );
+        this( new SampleDataGroup[] { inGroup },
+              outGroup,
+              false,
+              new Heritage( null, null, null ),
+              new Limits( Double.NaN, Double.NaN, Double.NaN ),
+              metricGroup );
     }
 
     /**
-     * Construct with multiple {@link SampleDataGroup} and a {@link StatisticType}.
+     * Creates an instance.
+     *
+     * @param inGroup the input group
+     * @param outGroup the output group
+     * @param limits the metric limits
+     * @param metricGroup the metric group
+     */
+
+    MetricConstants( SampleDataGroup inGroup,
+                     StatisticType outGroup,
+                     Limits limits,
+                     MetricGroup... metricGroup )
+    {
+        this( new SampleDataGroup[] { inGroup },
+              outGroup,
+              false,
+              new Heritage( null, null, null ),
+              limits,
+              metricGroup );
+    }
+
+    /**
+     * Creates an instance.
+     *
+     * @param inGroup the input group
+     * @param outGroup the output group
+     * @param heritage the metric heritage
+     * @param limits the metric limits
+     * @param metricGroup the metric group
+     */
+
+    MetricConstants( SampleDataGroup inGroup,
+                     StatisticType outGroup,
+                     Heritage heritage,
+                     Limits limits,
+                     MetricGroup... metricGroup )
+    {
+        this( new SampleDataGroup[] { inGroup },
+              outGroup,
+              false,
+              heritage,
+              limits,
+              metricGroup );
+    }
+
+    /**
+     * Creates an instance.
      *
      * @param inGroups the input groups
      * @param outGroup the output group
      * @param isSkillMetric is true if the metric is a skill metric, otherwise false
-     * @param parent the parent metric, may be null
-     * @param child the child metric, may be null
-     * @param collection the name used to collect the statistics associated with the parent, but are distinct from it
+     * @param limits the metric limits
      * @param metricGroup the metric group
      */
 
     MetricConstants( SampleDataGroup[] inGroups,
                      StatisticType outGroup,
                      boolean isSkillMetric,
-                     MetricConstants parent,
-                     MetricConstants child,
-                     MetricConstants collection,
+                     Limits limits,
+                     MetricGroup... metricGroup )
+    {
+        this( inGroups,
+              outGroup,
+              isSkillMetric,
+              new Heritage( null, null, null ),
+              limits,
+              metricGroup );
+    }
+
+    /**
+     * Creates an instance.
+     *
+     * @param inGroups the input groups
+     * @param outGroup the output group
+     * @param isSkillMetric is true if the metric is a skill metric, otherwise false
+     * @param heritage the heritage of the metric
+     * @param limits the limits of the metric
+     * @param metricGroup the metric group
+     */
+
+    MetricConstants( SampleDataGroup[] inGroups,
+                     StatisticType outGroup,
+                     boolean isSkillMetric,
+                     Heritage heritage,
+                     Limits limits,
                      MetricGroup... metricGroup )
     {
         this.inGroups = inGroups;
         this.outGroup = outGroup;
         this.metricGroups = metricGroup;
         this.isSkillMetric = isSkillMetric;
-        this.parent = parent;
-        this.child = child;
-        this.collection = collection;
+        this.parent = heritage.parent();
+        this.child = heritage.child();
+        this.collection = heritage.collection();
+        this.minimum = limits.minimum();
+        this.maximum = limits.maximum();
+        this.optimum = limits.optimum();
     }
 
     /**
-     * Construct with a varargs of {@link MetricGroup}.
+     * Creates an instance.
      *
      * @param decGroup the decomposition groups to which the {@link MetricConstants} belongs
      */
 
     MetricConstants( MetricGroup... decGroup )
+    {
+        this( new Limits( Double.NaN, Double.NaN, Double.NaN ), decGroup );
+    }
+
+    /**
+     * Creates an instance.
+     *
+     * @param limits the metric limits
+     * @param decGroup the decomposition groups to which the {@link MetricConstants} belongs
+     */
+
+    MetricConstants( Limits limits, MetricGroup... decGroup )
     {
         this.metricGroups = decGroup;
         this.inGroups = null;
@@ -489,6 +608,9 @@ public enum MetricConstants
         this.child = null;
         this.collection = null;
         this.isSkillMetric = false;
+        this.minimum = limits.minimum();
+        this.maximum = limits.maximum();
+        this.optimum = limits.optimum();
     }
 
     /**
@@ -736,6 +858,33 @@ public enum MetricConstants
     public MetricName getCanonicalName()
     {
         return MetricName.valueOf( this.name() );
+    }
+
+    /**
+     * Returns the minimum value of the metric or {@link Double#NaN} where undefined.
+     * @return the minimum
+     */
+    public double getMinimum()
+    {
+        return this.minimum;
+    }
+
+    /**
+     * Returns the maximum value of the metric or {@link Double#NaN} where undefined.
+     * @return the maximum
+     */
+    public double getMaximum()
+    {
+        return this.maximum;
+    }
+
+    /**
+     * Returns the optimum value of the metric or {@link Double#NaN} where undefined.
+     * @return the optimum
+     */
+    public double getOptimum()
+    {
+        return this.optimum;
     }
 
     /**
@@ -1014,68 +1163,68 @@ public enum MetricConstants
 
     public enum MetricDimension
     {
-        /** Identifier for probability of false detection. */
+        /** Probability of false detection. */
         PROBABILITY_OF_FALSE_DETECTION,
 
-        /** Identifier for probability of detection. */
+        /** Probability of detection. */
         PROBABILITY_OF_DETECTION,
 
-        /** Identifier for a rank ordering. */
+        /** Rank order. */
         RANK_ORDER,
 
-        /** Identifier for a forecast probability. */
+        /** Forecast probability. */
         FORECAST_PROBABILITY,
 
-        /** Identifier for the observed relative frequency with which an event occurs. */
+        /** Observed relative frequency with which an event occurs. */
         OBSERVED_RELATIVE_FREQUENCY,
 
-        /** Identifier for observed quantiles. */
+        /** Observed quantiles. */
         OBSERVED_QUANTILES,
 
-        /** Identifier for predicted quantiles. */
+        /** Predicted quantiles. */
         PREDICTED_QUANTILES,
 
-        /** Identifier for error. */
+        /** Forecast error. */
         FORECAST_ERROR,
 
-        /** Identifier for observed value. */
+        /** Observed value. */
         OBSERVED_VALUE,
 
-        /** Identifier for forecast value. */
+        /** Forecast value. */
         FORECAST_VALUE,
 
-        /** Identifier for ensemble mean. */
+        /** Ensemble mean. */
         ENSEMBLE_MEAN,
 
-        /** Identifier for ensemble median. */
+        /** Ensemble median. */
         ENSEMBLE_MEDIAN,
 
-        /** Identifier for a sample size. */
+        /** Sample size. */
         SAMPLE_SIZE,
 
-        /** Identifier for true positives. */
+        /** True positives. */
         TRUE_POSITIVES,
 
-        /** Identifier for false positives. */
+        /** False positives. */
         FALSE_POSITIVES,
 
-        /** Identifier for false negatives. */
+        /** False negatives. */
         FALSE_NEGATIVES,
 
-        /** Identifier for true negatives. */
+        /** True negatives. */
         TRUE_NEGATIVES,
 
-        /** Identifier for error as a percentage of the verifying value. */
+        /** Error as a percentage of the verifying value. */
         ERROR_PERCENT_OF_VERIFYING_VALUE,
 
-        /** Identifier for the upper bound of a histogram bin. */
+        /** The upper bound of a histogram bin. */
         BIN_UPPER_BOUND,
 
-        /** Identifier for a count. */
+        /** A count. */
         COUNT,
 
-        /** Identifier for a variable. */
-        VARIABLE;
+        /** A statistic. */
+        STATISTIC;
 
         /**
          * Returns a string representation.
@@ -1088,5 +1237,27 @@ public enum MetricConstants
         {
             return name().replace( "_", " " );
         }
+    }
+
+    /**
+     * The limits of the metric.
+     * @param minimum the minimum value
+     * @param maximum the maximum value
+     * @param optimum the optimum value
+     */
+    private record Limits( double minimum, double maximum, double optimum )
+    {
+    }
+
+    /**
+     * The heritage of the metric.
+     * @param parent the parent metric, may be null
+     * @param child the child metric, may be null
+     * @param collection the name used to collect the statistics associated with the parent, but are distinct from it
+     */
+    private record Heritage( MetricConstants parent,
+                             MetricConstants child,
+                             MetricConstants collection )
+    {
     }
 }

@@ -17,7 +17,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * The Equitable Threat Score (ETS) is a dichotomous measure of the fraction of all predicted outcomes that occurred
  * (i.e. were true positives), after factoring out the correct predictions that were due to chance.
- * 
+ *
  * @author James Brown
  */
 public class EquitableThreatScore extends ContingencyTableScore
@@ -35,13 +35,14 @@ public class EquitableThreatScore extends ContingencyTableScore
      * Main score component.
      */
 
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( -1.0 / 3 )
-                                                                                    .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                    .setOptimum( 1 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.EQUITABLE_THREAT_SCORE.getMinimum() )
+                                      .setMaximum( MetricConstants.EQUITABLE_THREAT_SCORE.getMaximum() )
+                                      .setOptimum( MetricConstants.EQUITABLE_THREAT_SCORE.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                      .build();
 
     /**
      * Full description of the metric.
@@ -55,7 +56,7 @@ public class EquitableThreatScore extends ContingencyTableScore
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 

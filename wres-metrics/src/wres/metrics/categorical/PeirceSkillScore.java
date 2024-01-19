@@ -24,10 +24,10 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * where the climatological probability of identifying the correct category is factored out. For a dichotomous
  * predictand, the Peirce Skill Score corresponds to the difference between the {@link ProbabilityOfDetection} and the
  * {@link ProbabilityOfFalseDetection}. 
- * 
+ *
  * <p>TODO: The {@link #applyIntermediate(DoubleScoreStatisticOuter, Pool)} is implemented for the multicategory case.
  * Abstract this to somewhere appropriately visible for extensibility. 
- * 
+ *
  * @author James Brown
  */
 public class PeirceSkillScore extends ContingencyTableScore
@@ -45,13 +45,14 @@ public class PeirceSkillScore extends ContingencyTableScore
      * Main score component.
      */
 
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( -1 )
-                                                                                    .setMaximum( 1 )
-                                                                                    .setOptimum( 1 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.PEIRCE_SKILL_SCORE.getMinimum() )
+                                      .setMaximum( MetricConstants.PEIRCE_SKILL_SCORE.getMaximum() )
+                                      .setOptimum( MetricConstants.PEIRCE_SKILL_SCORE.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                      .build();
 
     /**
      * Full description of the metric.
@@ -64,7 +65,7 @@ public class PeirceSkillScore extends ContingencyTableScore
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -104,7 +105,7 @@ public class PeirceSkillScore extends ContingencyTableScore
 
     /**
      * Computes the score for the 2x2 contingency table.
-     * 
+     *
      * @param contingencyTable the 2x2 contingency table components
      * @return the score
      */
@@ -149,7 +150,7 @@ public class PeirceSkillScore extends ContingencyTableScore
     /**
      * Computes the score for the NxN contingency table. The elements must be ordered from top-left to bottom right,
      * based on the mapped dimension name.
-     * 
+     *
      * @param contingencyTable the NxN contingency table components
      * @return the score
      */
@@ -159,7 +160,7 @@ public class PeirceSkillScore extends ContingencyTableScore
         //Check the input
         this.isContingencyTable( contingencyTable, this );
 
-        int square = (int) Math.sqrt( contingencyTable.getComponents().size() );
+        int square = ( int ) Math.sqrt( contingencyTable.getComponents().size() );
 
         double[][] cm = new double[square][square];
 

@@ -28,7 +28,7 @@ import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 /**
  * Creates a quantile-quantile curve for each trace in an ensemble. Uses as many quantiles as the smaller of the number
  * of order statistics and the {@link #DEFAULT_PROBABILITY_COUNT}.
- * 
+ *
  * @author James Brown
  */
 
@@ -39,20 +39,23 @@ public class EnsembleQuantileQuantileDiagram extends Diagram<Pool<Pair<Double, E
      * Observed quantiles.
      */
 
-    public static final DiagramMetricComponent OBSERVED_QUANTILES = DiagramMetricComponent.newBuilder()
-                                                                                          .setName( DiagramComponentName.OBSERVED_QUANTILES )
-                                                                                          .setType( DiagramComponentType.PRIMARY_DOMAIN_AXIS )
-                                                                                          .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                                          .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                          .build();
+    public static final DiagramMetricComponent OBSERVED_QUANTILES =
+            DiagramMetricComponent.newBuilder()
+                                  .setName( DiagramComponentName.OBSERVED_QUANTILES )
+                                  .setType( DiagramComponentType.PRIMARY_DOMAIN_AXIS )
+                                  .setMinimum( MetricConstants.ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM.getMinimum() )
+                                  .setMaximum( MetricConstants.ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM.getMaximum() )
+                                  .build();
 
     /**
      * Predicted quantiles.
      */
 
     public static final DiagramMetricComponent PREDICTED_QUANTILES = DiagramMetricComponent.newBuilder()
-                                                                                           .setName( DiagramComponentName.PREDICTED_QUANTILES )
-                                                                                           .setType( DiagramComponentType.PRIMARY_RANGE_AXIS )
+                                                                                           .setName(
+                                                                                                   DiagramComponentName.PREDICTED_QUANTILES )
+                                                                                           .setType(
+                                                                                                   DiagramComponentType.PRIMARY_RANGE_AXIS )
                                                                                            .setMinimum( Double.NEGATIVE_INFINITY )
                                                                                            .setMaximum( Double.POSITIVE_INFINITY )
                                                                                            .build();

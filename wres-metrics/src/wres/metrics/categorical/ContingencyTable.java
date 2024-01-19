@@ -9,6 +9,7 @@ import wres.config.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.datamodel.units.Units;
 import wres.metrics.Collectable;
 import wres.metrics.Metric;
 import wres.statistics.generated.MetricName;
@@ -24,12 +25,12 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
  * associated with each of the N possible outcomes of an N-category variable. The rows of the contingency
  * table store the number of predicted outcomes and the columns store the number of observed outcomes.
  * </p>
- * 
+ *
  * @author James Brown
  */
 
 public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter>,
-        Collectable<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+                                         Collectable<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
 {
     /**
      * Basic description of the metric.
@@ -43,11 +44,14 @@ public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, Do
      * True positives.
      */
 
-    public static final DoubleScoreMetricComponent TRUE_POSITIVES = DoubleScoreMetricComponent.newBuilder()
-                                                                                              .setMinimum( 0 )
-                                                                                              .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                              .setName( ComponentName.TRUE_POSITIVES )
-                                                                                              .build();
+    public static final DoubleScoreMetricComponent TRUE_POSITIVES =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.CONTINGENCY_TABLE.getMinimum() )
+                                      .setMaximum( MetricConstants.CONTINGENCY_TABLE.getMaximum() )
+                                      .setOptimum( MetricConstants.CONTINGENCY_TABLE.getOptimum() )
+                                      .setName( ComponentName.TRUE_POSITIVES )
+                                      .setUnits( Units.COUNT )
+                                      .build();
 
     /**
      * False positives.
@@ -57,6 +61,7 @@ public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, Do
                                                                                                .setMinimum( 0 )
                                                                                                .setMaximum( Double.POSITIVE_INFINITY )
                                                                                                .setName( ComponentName.FALSE_POSITIVES )
+                                                                                               .setUnits( Units.COUNT )
                                                                                                .build();
     /**
      * True negatives.
@@ -66,6 +71,7 @@ public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, Do
                                                                                               .setMinimum( 0 )
                                                                                               .setMaximum( Double.POSITIVE_INFINITY )
                                                                                               .setName( ComponentName.TRUE_NEGATIVES )
+                                                                                              .setUnits( Units.COUNT )
                                                                                               .build();
 
     /**
@@ -76,6 +82,7 @@ public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, Do
                                                                                                .setMinimum( 0 )
                                                                                                .setMaximum( Double.POSITIVE_INFINITY )
                                                                                                .setName( ComponentName.FALSE_NEGATIVES )
+                                                                                               .setUnits( Units.COUNT )
                                                                                                .build();
 
     /**
@@ -92,7 +99,7 @@ public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, Do
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -182,7 +189,8 @@ public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, Do
     }
 
     @Override
-    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output, Pool<Pair<Boolean, Boolean>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output,
+                                                        Pool<Pair<Boolean, Boolean>> pool )
     {
         Objects.requireNonNull( output );
 

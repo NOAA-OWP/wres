@@ -15,7 +15,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 
 /**
  * The Probability of Detection (PoD) measures the fraction of observed occurrences that were hits.
- * 
+ *
  * @author James Brown
  */
 public class ProbabilityOfDetection extends ContingencyTableScore
@@ -33,13 +33,14 @@ public class ProbabilityOfDetection extends ContingencyTableScore
      * Main score component.
      */
 
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( 0 )
-                                                                                    .setMaximum( 1 )
-                                                                                    .setOptimum( 1 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .setUnits( "PROBABILITY" )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.PROBABILITY_OF_DETECTION.getMinimum() )
+                                      .setMaximum( MetricConstants.PROBABILITY_OF_DETECTION.getMaximum() )
+                                      .setOptimum( MetricConstants.PROBABILITY_OF_DETECTION.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .setUnits( "PROBABILITY" )
+                                      .build();
 
     /**
      * Full description of the metric.
@@ -52,7 +53,7 @@ public class ProbabilityOfDetection extends ContingencyTableScore
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 

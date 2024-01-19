@@ -10,6 +10,7 @@ import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.datamodel.units.Units;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
@@ -47,7 +48,7 @@ class SampleSize<S extends Pool<?>> implements Score<S, DoubleScoreStatisticOute
                                                                                     .setMaximum( Double.POSITIVE_INFINITY )
                                                                                     .setOptimum( Double.POSITIVE_INFINITY )
                                                                                     .setName( ComponentName.MAIN )
-                                                                                    .setUnits( "COUNT" )
+                                                                                    .setUnits( Units.COUNT )
                                                                                     .build();
     /**
      * A full description of the metric.

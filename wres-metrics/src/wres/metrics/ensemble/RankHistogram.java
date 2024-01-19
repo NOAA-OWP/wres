@@ -19,6 +19,7 @@ import wres.config.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.statistics.DiagramStatisticOuter;
+import wres.datamodel.units.Units;
 import wres.metrics.Diagram;
 import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
@@ -51,9 +52,9 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
             DiagramMetricComponent.newBuilder()
                                   .setName( DiagramComponentName.RANK_ORDER )
                                   .setType( DiagramComponentType.PRIMARY_DOMAIN_AXIS )
-                                  .setMinimum( 0 ) // Strictly 1, but the zeroth position should be visible
-                                  .setMaximum( Double.POSITIVE_INFINITY )
-                                  .setUnits( "COUNT" )
+                                  .setMinimum( MetricConstants.RANK_HISTOGRAM.getMinimum() )
+                                  .setMaximum( MetricConstants.RANK_HISTOGRAM.getMaximum() )
+                                  .setUnits( Units.COUNT )
                                   .build();
 
     /**

@@ -33,12 +33,13 @@ public class MeanSquareError extends SumOfSquareError
                                                                           .build();
 
     /** Main score component. */
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( 0 )
-                                                                                    .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                    .setOptimum( 0 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.MEAN_SQUARE_ERROR.getMinimum() )
+                                      .setMaximum( MetricConstants.MEAN_SQUARE_ERROR.getMaximum() )
+                                      .setOptimum( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .build();
 
     /** Full description of the metric. */
     public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()

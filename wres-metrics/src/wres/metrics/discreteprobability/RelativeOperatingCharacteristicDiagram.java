@@ -40,15 +40,14 @@ public class RelativeOperatingCharacteristicDiagram
      * Probability of detection.
      */
 
-    public static final DiagramMetricComponent PROBABILITY_OF_DETECTION = DiagramMetricComponent.newBuilder()
-                                                                                                .setName(
-                                                                                                        DiagramComponentName.PROBABILITY_OF_DETECTION )
-                                                                                                .setType(
-                                                                                                        DiagramComponentType.PRIMARY_RANGE_AXIS )
-                                                                                                .setMinimum( 0 )
-                                                                                                .setMaximum( 1 )
-                                                                                                .setUnits( "PROBABILITY" )
-                                                                                                .build();
+    public static final DiagramMetricComponent PROBABILITY_OF_DETECTION =
+            DiagramMetricComponent.newBuilder()
+                                  .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                  .setType( DiagramComponentType.PRIMARY_RANGE_AXIS )
+                                  .setMinimum( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM.getMinimum() )
+                                  .setMaximum( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_DIAGRAM.getMaximum() )
+                                  .setUnits( "PROBABILITY" )
+                                  .build();
 
     /**
      * Probability of false detection.

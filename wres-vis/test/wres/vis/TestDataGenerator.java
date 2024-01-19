@@ -25,6 +25,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.datamodel.units.Units;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramMetric;
@@ -414,7 +415,7 @@ public class TestDataGenerator
                                       .setType( DiagramComponentType.PRIMARY_DOMAIN_AXIS )
                                       .setMinimum( 0 ) // Strictly 1, but the zeroth position should be visible
                                       .setMaximum( Double.POSITIVE_INFINITY )
-                                      .setUnits( "COUNT" )
+                                      .setUnits( Units.COUNT )
                                       .build();
 
         DiagramMetricComponent observedFrequency = DiagramMetricComponent.newBuilder()

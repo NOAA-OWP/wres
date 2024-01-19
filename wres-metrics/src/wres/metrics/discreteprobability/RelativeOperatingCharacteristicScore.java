@@ -62,13 +62,14 @@ public class RelativeOperatingCharacteristicScore
      * Main score component.
      */
 
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( 0 )
-                                                                                    .setMaximum( 1 )
-                                                                                    .setOptimum( 1 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE.getMinimum() )
+                                      .setMaximum( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE.getMaximum() )
+                                      .setOptimum( MetricConstants.RELATIVE_OPERATING_CHARACTERISTIC_SCORE.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                      .build();
 
     /**
      * Full description of the metric.

@@ -224,7 +224,8 @@ public final class TimeSeriesSlicer
         return timeSeries -> {
 
             // Seasons currently only apply to reference times
-            if ( timeSeries.getReferenceTimes().isEmpty() )
+            if ( timeSeries.getReferenceTimes()
+                           .isEmpty() )
             {
                 return true;
             }
@@ -241,7 +242,9 @@ public final class TimeSeriesSlicer
                 Instant latest = nextInterval.getRight();
 
                 // Is the reference time within the interval?
-                if ( next.isAfter( earliest ) && ( next.isBefore( latest ) || next.equals( latest ) ) )
+                if ( next.isAfter( earliest )
+                     && ( next.isBefore( latest )
+                          || next.equals( latest ) ) )
                 {
                     return true;
                 }

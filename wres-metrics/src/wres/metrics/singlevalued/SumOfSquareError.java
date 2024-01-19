@@ -35,12 +35,13 @@ public class SumOfSquareError extends DecomposableScore<Pool<Pair<Double, Double
                                                                           .build();
 
     /** Main score component.*/
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( 0 )
-                                                                                    .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                    .setOptimum( 0 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.SUM_OF_SQUARE_ERROR.getMinimum() )
+                                      .setMaximum( MetricConstants.SUM_OF_SQUARE_ERROR.getMaximum() )
+                                      .setOptimum( MetricConstants.SUM_OF_SQUARE_ERROR.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .build();
 
     /** Full description of the metric.*/
     public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
@@ -128,7 +129,8 @@ public class SumOfSquareError extends DecomposableScore<Pool<Pair<Double, Double
     }
 
     @Override
-    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output,
+                                                        Pool<Pair<Double, Double>> pool )
     {
         if ( Objects.isNull( output ) )
         {

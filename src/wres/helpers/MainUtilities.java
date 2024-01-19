@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.Function;
+
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,14 +18,14 @@ import wres.ExecutionResult;
 import wres.Functions;
 
 /**
- * Utilities class to enable a standalone deploy to interface with the Function.java class
+ * Utilities class to enable a standalone deploy to interface with the {@link Functions}.
  */
 public final class MainUtilities
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( MainUtilities.class );
 
-    // Mapping of String names to corresponding methods
+    /** Mapping of String names to corresponding methods. */
     private static final Map<WresFunction, Function<Functions.SharedResources, ExecutionResult>>
             FUNCTIONS_MAP = MainUtilities.createMap();
 
@@ -60,7 +61,8 @@ public final class MainUtilities
      * @param operation the operation
      * @return a result that may contain the operation
      */
-    private static Optional<Entry<WresFunction, Function<Functions.SharedResources, ExecutionResult>>> getOperation( String operation )
+    private static Optional<Entry<WresFunction, Function<Functions.SharedResources, ExecutionResult>>> getOperation(
+            String operation )
     {
         Objects.requireNonNull( operation );
         String finalOperation = operation.toLowerCase();
@@ -76,6 +78,7 @@ public final class MainUtilities
      *
      * @param operation The name of the desired method to call
      * @param sharedResources The resources required, including args.
+     * @return the execution result
      */
     public static ExecutionResult call( String operation, Functions.SharedResources sharedResources )
     {
@@ -142,11 +145,12 @@ public final class MainUtilities
     }
 
     /**
-      * Creates the "print_commands" method
-      *
-      * @return Method that prints all available commands by name
-      */
-    public static ExecutionResult printCommands( final Functions.SharedResources sharedResources )
+     * Creates the "print_commands" method
+     *
+     * @param sharedResources the shared resources
+     * @return Method that prints all available commands by name
+     */
+    public static ExecutionResult printCommands( Functions.SharedResources sharedResources )
     {
         LOGGER.info( "\tAvailable functions:" );
         for ( final WresFunction command : FUNCTIONS_MAP.keySet() )
@@ -205,7 +209,10 @@ public final class MainUtilities
                        Functions::migrateInline );
         functions.put( new WresFunction( "-r", "refreshdatabase", "Refreshes the database.", false ),
                        Functions::refreshDatabase );
-        functions.put( new WresFunction( "-s", "server", "Starts a long-running worker server. Visit localhost/evaluation for further help.", true ),
+        functions.put( new WresFunction( "-s",
+                                         "server",
+                                         "Starts a long-running worker server. Visit localhost/evaluation for further help.",
+                                         true ),
                        Functions::startServer );
         functions.put( new WresFunction( "-v",
                                          "validate",

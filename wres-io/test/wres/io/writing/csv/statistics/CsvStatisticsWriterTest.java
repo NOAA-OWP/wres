@@ -38,30 +38,28 @@ import wres.statistics.generated.SummaryStatistic;
 class CsvStatisticsWriterTest
 {
     /** Fixed header to expect. */
-    private static final String LINE_ZERO_EXPECTED = "LEFT VARIABLE NAME,RIGHT VARIABLE NAME,BASELINE VARIABLE NAME,"
-                                                     + "POOL NUMBER,EVALUATION SUBJECT,FEATURE GROUP NAME,LEFT FEATURE "
-                                                     + "NAME,LEFT FEATURE WKT,LEFT FEATURE SRID,LEFT FEATURE "
-                                                     + "DESCRIPTION,RIGHT FEATURE NAME,RIGHT FEATURE WKT,RIGHT FEATURE "
-                                                     + "SRID,RIGHT FEATURE DESCRIPTION,BASELINE FEATURE NAME,BASELINE "
-                                                     + "FEATURE WKT,BASELINE FEATURE SRID,BASELINE FEATURE DESCRIPTION,"
-                                                     + "EARLIEST ISSUED TIME EXCLUSIVE,LATEST ISSUED TIME INCLUSIVE,"
-                                                     + "EARLIEST VALID TIME EXCLUSIVE,LATEST VALID TIME INCLUSIVE,"
-                                                     + "EARLIEST LEAD DURATION EXCLUSIVE,LATEST LEAD DURATION "
-                                                     + "INCLUSIVE,TIME SCALE DURATION,TIME SCALE FUNCTION,TIME SCALE "
-                                                     + "START MONTH-DAY INCLUSIVE,TIME SCALE END MONTH-DAY INCLUSIVE,"
-                                                     + "EVENT THRESHOLD NAME,EVENT THRESHOLD LOWER VALUE,EVENT "
-                                                     + "THRESHOLD UPPER VALUE,EVENT THRESHOLD UNITS,EVENT THRESHOLD "
-                                                     + "LOWER PROBABILITY,EVENT THRESHOLD UPPER PROBABILITY,EVENT "
-                                                     + "THRESHOLD SIDE,EVENT THRESHOLD OPERATOR,DECISION THRESHOLD "
-                                                     + "NAME,DECISION THRESHOLD LOWER VALUE,DECISION THRESHOLD UPPER "
-                                                     + "VALUE,DECISION THRESHOLD UNITS,DECISION THRESHOLD LOWER "
-                                                     + "PROBABILITY,DECISION THRESHOLD UPPER PROBABILITY,DECISION "
-                                                     + "THRESHOLD SIDE,DECISION THRESHOLD OPERATOR,METRIC NAME,METRIC "
-                                                     + "COMPONENT NAME,METRIC COMPONENT QUALIFIER,METRIC COMPONENT "
-                                                     + "UNITS,METRIC COMPONENT MINIMUM,METRIC COMPONENT MAXIMUM,METRIC "
-                                                     + "COMPONENT OPTIMUM,STATISTIC GROUP NUMBER,SUMMARY STATISTIC TYPE,"
-                                                     + "SUMMARY STATISTIC DIMENSION,SUMMARY STATISTIC QUANTILE,SAMPLE "
-                                                     + "QUANTILE,STATISTIC";
+    private static final String LINE_ZERO_EXPECTED =
+            "LEFT VARIABLE NAME,RIGHT VARIABLE NAME,BASELINE VARIABLE NAME,POOL NUMBER,"
+            + "EVALUATION SUBJECT,FEATURE GROUP NAME,LEFT FEATURE NAME,LEFT FEATURE WKT,"
+            + "LEFT FEATURE SRID,LEFT FEATURE DESCRIPTION,RIGHT FEATURE NAME,RIGHT "
+            + "FEATURE WKT,RIGHT FEATURE SRID,RIGHT FEATURE DESCRIPTION,BASELINE FEATURE "
+            + "NAME,BASELINE FEATURE WKT,BASELINE FEATURE SRID,BASELINE FEATURE "
+            + "DESCRIPTION,EARLIEST ISSUED TIME EXCLUSIVE,LATEST ISSUED TIME INCLUSIVE,"
+            + "EARLIEST VALID TIME EXCLUSIVE,LATEST VALID TIME INCLUSIVE,EARLIEST LEAD "
+            + "DURATION EXCLUSIVE,LATEST LEAD DURATION INCLUSIVE,TIME SCALE DURATION,"
+            + "TIME SCALE FUNCTION,TIME SCALE START MONTH-DAY INCLUSIVE,TIME SCALE END "
+            + "MONTH-DAY INCLUSIVE,EVENT THRESHOLD NAME,EVENT THRESHOLD LOWER VALUE,EVENT "
+            + "THRESHOLD UPPER VALUE,EVENT THRESHOLD UNITS,EVENT THRESHOLD LOWER "
+            + "PROBABILITY,EVENT THRESHOLD UPPER PROBABILITY,EVENT THRESHOLD SIDE,EVENT "
+            + "THRESHOLD OPERATOR,DECISION THRESHOLD NAME,DECISION THRESHOLD LOWER VALUE,"
+            + "DECISION THRESHOLD UPPER VALUE,DECISION THRESHOLD UNITS,DECISION THRESHOLD "
+            + "LOWER PROBABILITY,DECISION THRESHOLD UPPER PROBABILITY,DECISION THRESHOLD "
+            + "SIDE,DECISION THRESHOLD OPERATOR,METRIC NAME,METRIC COMPONENT NAME,METRIC "
+            + "COMPONENT QUALIFIER,METRIC COMPONENT UNITS,METRIC COMPONENT MINIMUM,METRIC "
+            + "COMPONENT MAXIMUM,METRIC COMPONENT OPTIMUM,STATISTIC GROUP NUMBER,SUMMARY "
+            + "STATISTIC NAME,SUMMARY STATISTIC COMPONENT NAME,SUMMARY STATISTIC UNITS,"
+            + "SUMMARY STATISTIC DIMENSION,SUMMARY STATISTIC QUANTILE,SAMPLE QUANTILE,"
+            + "STATISTIC";
 
     @Test
     void testWriteDoubleScores() throws IOException
@@ -99,7 +97,7 @@ class CsvStatisticsWriterTest
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,"
                                      + "PT1H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,"
-                                     + "MAIN,,,0.0,Infinity,0.0,1,,,,,3.0";
+                                     + "MAIN,,,0.0,Infinity,0.0,1,,,,,,,3.0";
 
             assertEquals( lineOneExpected, actual.get( 1 ) );
 
@@ -107,7 +105,7 @@ class CsvStatisticsWriterTest
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
                                      + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ERROR,MAIN,,,-Infinity,"
-                                     + "Infinity,0.0,2,,,,,2.0";
+                                     + "Infinity,0.0,2,,,,,,,2.0";
 
             assertEquals( lineTwoExpected, actual.get( 2 ) );
 
@@ -115,7 +113,7 @@ class CsvStatisticsWriterTest
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
                                        + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN SQUARE ERROR,MAIN,,,0.0,"
-                                       + "Infinity,0.0,3,,,,,1.0";
+                                       + "Infinity,0.0,3,,,,,,,1.0";
 
             assertEquals( lineThreeExpected, actual.get( 3 ) );
         }
@@ -157,7 +155,7 @@ class CsvStatisticsWriterTest
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
                                      + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,MAIN,,,"
-                                     + "0.0,Infinity,0.0,1,,,,,3.0";
+                                     + "0.0,Infinity,0.0,1,,,,,,,3.0";
 
             assertEquals( lineOneExpected, actual.get( 1 ) );
 
@@ -165,7 +163,7 @@ class CsvStatisticsWriterTest
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
                                      + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ERROR,MAIN,,,-Infinity,"
-                                     + "Infinity,0.0,2,,,,,2.0";
+                                     + "Infinity,0.0,2,,,,,,,2.0";
 
             assertEquals( lineTwoExpected, actual.get( 2 ) );
 
@@ -173,7 +171,7 @@ class CsvStatisticsWriterTest
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
                                        + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN SQUARE ERROR,MAIN,,,0.0,"
-                                       + "Infinity,0.0,3,,,,,1.0";
+                                       + "Infinity,0.0,3,,,,,,,1.0";
 
             assertEquals( lineThreeExpected, actual.get( 3 ) );
         }
@@ -215,7 +213,7 @@ class CsvStatisticsWriterTest
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT18H,"
                                      + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,TIME TO PEAK ERROR STATISTIC,"
-                                     + "MEAN,,SECONDS,0.000000000,0.000000000,0.000000000,1,,,,,3600.000000000";
+                                     + "MEAN,,SECONDS,0.000000000,0.000000000,0.000000000,1,,,,,,,3600.000000000";
 
             assertEquals( lineOneExpected, actual.get( 1 ) );
 
@@ -223,7 +221,7 @@ class CsvStatisticsWriterTest
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT18H,"
                                      + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,TIME TO PEAK ERROR STATISTIC,"
-                                     + "MEDIAN,,SECONDS,0.000000000,0.000000000,0.000000000,2,,,,,7200.000000000";
+                                     + "MEDIAN,,SECONDS,0.000000000,0.000000000,0.000000000,2,,,,,,,7200.000000000";
 
             assertEquals( lineTwoExpected, actual.get( 2 ) );
 
@@ -231,7 +229,7 @@ class CsvStatisticsWriterTest
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,"
                                        + "PT18H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,TIME TO PEAK ERROR "
-                                       + "STATISTIC,MAXIMUM,,SECONDS,0.000000000,0.000000000,0.000000000,3,,,,,"
+                                       + "STATISTIC,MAXIMUM,,SECONDS,0.000000000,0.000000000,0.000000000,3,,,,,,,"
                                        + "10800.000000000";
 
             assertEquals( lineThreeExpected, actual.get( 3 ) );
@@ -274,7 +272,7 @@ class CsvStatisticsWriterTest
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT24H,PT24H,"
                                      + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,BOX PLOT OF ERRORS BY "
-                                     + "OBSERVED VALUE,OBSERVED VALUE,,,-Infinity,Infinity,0.0,1,,,,,1.0";
+                                     + "OBSERVED VALUE,OBSERVED VALUE,,,-Infinity,Infinity,0.0,1,,,,,,,1.0";
 
             assertEquals( lineOneExpected, actual.get( 1 ) );
 
@@ -282,7 +280,7 @@ class CsvStatisticsWriterTest
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT24H,"
                                        + "PT24H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,BOX PLOT OF ERRORS "
-                                       + "BY OBSERVED VALUE,FORECAST ERROR,,,-Infinity,Infinity,0.0,2,,,,,3.0";
+                                       + "BY OBSERVED VALUE,FORECAST ERROR,,,-Infinity,Infinity,0.0,2,,,,,,,3.0";
 
             assertEquals( lineEightExpected, actual.get( 8 ) );
 
@@ -290,7 +288,8 @@ class CsvStatisticsWriterTest
                                           + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                           + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT24H,"
                                           + "PT24H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,BOX PLOT OF "
-                                          + "ERRORS BY OBSERVED VALUE,FORECAST ERROR,,,-Infinity,Infinity,0.0,7,,,,,9.0";
+                                          + "ERRORS BY OBSERVED VALUE,FORECAST ERROR,,,-Infinity,Infinity,0.0,7,,,,,,,"
+                                          + "9.0";
 
             assertEquals( lineNineteenExpected, actual.get( 19 ) );
 
@@ -298,8 +297,8 @@ class CsvStatisticsWriterTest
                                            + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                            + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT24H,"
                                            + "PT24H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,BOX PLOT OF "
-                                           + "ERRORS BY OBSERVED VALUE,FORECAST ERROR,,,-Infinity,Infinity,0.0,13,,,,,"
-                                           + "27.0";
+                                           + "ERRORS BY OBSERVED VALUE,FORECAST ERROR,,,-Infinity,Infinity,0.0,13,,,,,,"
+                                           + ",27.0";
 
             assertEquals( lineThirtyOneExpected, actual.get( 31 ) );
 
@@ -307,7 +306,7 @@ class CsvStatisticsWriterTest
                                           + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                           + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                           + "PT24H,PT24H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,"
-                                          + "BOX PLOT OF ERRORS,FORECAST ERROR,,,-Infinity,Infinity,0.0,24,,,,,77.0";
+                                          + "BOX PLOT OF ERRORS,FORECAST ERROR,,,-Infinity,Infinity,0.0,24,,,,,,,77.0";
 
             assertEquals( lineFiftyTwoExpected, actual.get( 52 ) );
         }
@@ -349,7 +348,7 @@ class CsvStatisticsWriterTest
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT24H,"
                                        + "PT24H,,,,,,11.94128,,,0.9,,LEFT,GREATER EQUAL,,,,,,,,,RELIABILITY "
-                                       + "DIAGRAM,FORECAST PROBABILITY,,,0.0,0.0,,3,,,,,0.50723";
+                                       + "DIAGRAM,FORECAST PROBABILITY,,,0.0,0.0,,3,,,,,,,0.50723";
 
             assertEquals( lineThreeExpected, actual.get( 3 ) );
 
@@ -357,7 +356,7 @@ class CsvStatisticsWriterTest
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT24H,"
                                        + "PT24H,,,,,,11.94128,,,0.9,,LEFT,GREATER EQUAL,,,,,,,,,"
-                                       + "RELIABILITY DIAGRAM,OBSERVED RELATIVE FREQUENCY,,,0.0,0.0,,3,,,,,0.5";
+                                       + "RELIABILITY DIAGRAM,OBSERVED RELATIVE FREQUENCY,,,0.0,0.0,,3,,,,,,,0.5";
 
             assertEquals( lineEightExpected, actual.get( 8 ) );
 
@@ -366,7 +365,7 @@ class CsvStatisticsWriterTest
                                           + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT24H,"
                                           + "PT24H,,,,,,11.94128,,,0.9,,LEFT,GREATER EQUAL,,,,,,,,,"
                                           + "RELIABILITY DIAGRAM,SAMPLE SIZE,,,0.0,"
-                                          + "0.0,,3,,,,,540.0";
+                                          + "0.0,,3,,,,,,,540.0";
 
             assertEquals( lineThirteenExpected, actual.get( 13 ) );
         }
@@ -409,7 +408,7 @@ class CsvStatisticsWriterTest
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,"
                                        + "PT18H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,TIME TO PEAK ERROR,"
-                                       + "UNKNOWN,,SECONDS FROM 1970-01-01T00:00:00Z,,,,2,,,,,473472000.000000000";
+                                       + "UNKNOWN,,SECONDS FROM 1970-01-01T00:00:00Z,,,,2,,,,,,,473472000.000000000";
 
             assertEquals( lineThreeExpected, actual.get( 3 ) );
 
@@ -417,7 +416,7 @@ class CsvStatisticsWriterTest
                                       + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                       + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT18H,"
                                       + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,TIME TO PEAK ERROR,ERROR,,"
-                                      + "SECONDS,-9223372036854775808.000000000,0.000000000,0.000000000,2,,,,,"
+                                      + "SECONDS,-9223372036854775808.000000000,0.000000000,0.000000000,2,,,,,,,"
                                       + "7200.000000000";
 
             assertEquals( lineFourExpected, actual.get( 4 ) );
@@ -479,7 +478,7 @@ class CsvStatisticsWriterTest
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,"
                                      + "PT1H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,"
-                                     + "MAIN,,,0.0,Infinity,0.0,1,,,,,3.0";
+                                     + "MAIN,,,0.0,Infinity,0.0,1,,,,,,,3.0";
 
             assertEquals( lineOneExpected, actual.get( 1 ) );
         }
@@ -521,7 +520,7 @@ class CsvStatisticsWriterTest
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,"
                                      + "PT1H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,"
-                                     + "MAIN,,,0.0,Infinity,0.0,1,QUANTILE,RESAMPLED,,0.95,3.0";
+                                     + "MAIN,,,0.0,Infinity,0.0,1,QUANTILE,,,RESAMPLED,,0.95,3.0";
 
             assertEquals( lineOneExpected, actual.get( 1 ) );
 
@@ -529,7 +528,7 @@ class CsvStatisticsWriterTest
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
                                      + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ERROR,MAIN,,,-Infinity,"
-                                     + "Infinity,0.0,2,QUANTILE,RESAMPLED,,0.95,2.0";
+                                     + "Infinity,0.0,2,QUANTILE,,,RESAMPLED,,0.95,2.0";
 
             assertEquals( lineTwoExpected, actual.get( 2 ) );
 
@@ -537,7 +536,7 @@ class CsvStatisticsWriterTest
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
                                        + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN SQUARE ERROR,MAIN,,,0.0,"
-                                       + "Infinity,0.0,3,QUANTILE,RESAMPLED,,0.95,1.0";
+                                       + "Infinity,0.0,3,QUANTILE,,,RESAMPLED,,0.95,1.0";
 
             assertEquals( lineThreeExpected, actual.get( 3 ) );
         }
@@ -590,7 +589,7 @@ class CsvStatisticsWriterTest
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,"
                                      + "PT1H,,,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ABSOLUTE ERROR,"
-                                     + "MAIN,,,0.0,Infinity,0.0,1,MAXIMUM,FEATURES,,,3.0";
+                                     + "MAIN,,,0.0,Infinity,0.0,1,MAXIMUM,,,FEATURES,,,3.0";
 
             assertEquals( lineOneExpected, actual.get( 1 ) );
 
@@ -598,7 +597,7 @@ class CsvStatisticsWriterTest
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                      + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
                                      + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN ERROR,MAIN,,,-Infinity,"
-                                     + "Infinity,0.0,2,MAXIMUM,FEATURES,,,2.0";
+                                     + "Infinity,0.0,2,MAXIMUM,,,FEATURES,,,2.0";
 
             assertEquals( lineTwoExpected, actual.get( 2 ) );
 
@@ -606,7 +605,7 @@ class CsvStatisticsWriterTest
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,"
                                        + "-1000000000-01-01T00:00:00Z,+1000000000-12-31T23:59:59.999999999Z,PT1H,PT1H,"
                                        + ",,,,,-Infinity,,,,,LEFT,GREATER,,,,,,,,,MEAN SQUARE ERROR,MAIN,,,0.0,"
-                                       + "Infinity,0.0,3,MAXIMUM,FEATURES,,,1.0";
+                                       + "Infinity,0.0,3,MAXIMUM,,,FEATURES,,,1.0";
 
             assertEquals( lineThreeExpected, actual.get( 3 ) );
         }

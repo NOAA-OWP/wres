@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import wres.config.MetricConstants;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.BoxplotMetric;
@@ -1274,11 +1275,12 @@ class SummaryStatisticsCalculatorTest
                                                        .build();
         BoxplotMetric boxplotMetric = BoxplotMetric.newBuilder()
                                                    .setName( MetricName.BOX_PLOT )
-                                                   .setVariable( "BIAS FRACTION" )
+                                                   .setStatisticName( MetricName.BIAS_FRACTION )
+                                                   .setStatisticComponentName( MetricConstants.MAIN.name() )
                                                    .setUnits( "DIMENSIONLESS" )
                                                    .setMinimum( Double.NEGATIVE_INFINITY )
                                                    .setMaximum( Double.POSITIVE_INFINITY )
-                                                   .setQuantileValueType( BoxplotMetric.QuantileValueType.VARIABLE )
+                                                   .setQuantileValueType( BoxplotMetric.QuantileValueType.STATISTIC )
                                                    .addAllQuantiles( List.of( 0.0, 0.25, 0.5, 0.75, 1.0 ) )
                                                    .build();
         BoxplotStatistic boxStatistic = BoxplotStatistic.newBuilder()

@@ -14,6 +14,7 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.MissingValues;
 import wres.datamodel.statistics.DiagramStatisticOuter;
+import wres.datamodel.units.Units;
 import wres.metrics.Diagram;
 import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
@@ -46,15 +47,14 @@ public class ReliabilityDiagram extends Diagram<Pool<Pair<Probability, Probabili
      * Forecast probability.
      */
 
-    public static final DiagramMetricComponent FORECAST_PROBABILITY = DiagramMetricComponent.newBuilder()
-                                                                                            .setName(
-                                                                                                    DiagramComponentName.FORECAST_PROBABILITY )
-                                                                                            .setType(
-                                                                                                    DiagramComponentType.PRIMARY_DOMAIN_AXIS )
-                                                                                            .setMinimum( 0 )
-                                                                                            .setMaximum( 1 )
-                                                                                            .setUnits( "PROBABILITY" )
-                                                                                            .build();
+    public static final DiagramMetricComponent FORECAST_PROBABILITY =
+            DiagramMetricComponent.newBuilder()
+                                  .setName( DiagramComponentName.FORECAST_PROBABILITY )
+                                  .setType( DiagramComponentType.PRIMARY_DOMAIN_AXIS )
+                                  .setMinimum( MetricConstants.RELIABILITY_DIAGRAM.getMinimum() )
+                                  .setMaximum( MetricConstants.RELIABILITY_DIAGRAM.getMaximum() )
+                                  .setUnits( "PROBABILITY" )
+                                  .build();
 
     /**
      * Observed frequency.
@@ -80,7 +80,7 @@ public class ReliabilityDiagram extends Diagram<Pool<Pair<Probability, Probabili
                                                                                    .setType( DiagramComponentType.SECONDARY_RANGE_AXIS )
                                                                                    .setMinimum( 0 )
                                                                                    .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                   .setUnits( "COUNT" )
+                                                                                   .setUnits( Units.COUNT )
                                                                                    .build();
 
     /**

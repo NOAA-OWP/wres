@@ -27,9 +27,9 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 /**
  * <p>Constructs a {@link Metric} that returns the difference in time between the maximum values recorded in the left
  * and right side of each time-series in the {@link Pool}. For multiple peaks with the same value, the peak with the 
- * latest {@link Instant} is chosen. The timing error is measured with a {@link Duration}. A negative {@link Duration} 
+ * latest {@link Instant} is chosen. The timing error is measured with a {@link Duration}. A negative {@link Duration}
  * indicates that the predicted peak was too early, i.e., occurred earlier than the observed peak.</p>
- * 
+ *
  * @author James Brown
  */
 public class TimeToPeakError extends TimingError
@@ -38,16 +38,17 @@ public class TimeToPeakError extends TimingError
      * Canonical representation of the metric.
      */
 
-    public static final DurationDiagramMetric METRIC = DurationDiagramMetric.newBuilder()
-                                                                            .setName( MetricName.TIME_TO_PEAK_ERROR )
-                                                                            .setMinimum( com.google.protobuf.Duration.newBuilder()
-                                                                                                                     .setSeconds( Long.MIN_VALUE ) )
-                                                                            .setMaximum( com.google.protobuf.Duration.newBuilder()
-                                                                                                                     .setSeconds( Long.MAX_VALUE )
-                                                                                                                     .setNanos( 999_999_999 ) )
-                                                                            .setOptimum( com.google.protobuf.Duration.newBuilder()
-                                                                                                                     .setSeconds( 0 ) )
-                                                                            .build();
+    public static final DurationDiagramMetric METRIC =
+            DurationDiagramMetric.newBuilder()
+                                 .setName( MetricName.TIME_TO_PEAK_ERROR )
+                                 .setMinimum( com.google.protobuf.Duration.newBuilder()
+                                                                          .setSeconds( Long.MIN_VALUE ) )
+                                 .setMaximum( com.google.protobuf.Duration.newBuilder()
+                                                                          .setSeconds( Long.MAX_VALUE )
+                                                                          .setNanos( 999_999_999 ) )
+                                 .setOptimum( com.google.protobuf.Duration.newBuilder()
+                                                                          .setSeconds( 0 ) )
+                                 .build();
 
     /**
      * Logger.
@@ -57,7 +58,7 @@ public class TimeToPeakError extends TimingError
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -68,7 +69,7 @@ public class TimeToPeakError extends TimingError
 
     /**
      * Returns an instance with a prescribed random number generator for resolving ties.
-     * 
+     *
      * @param rng the random number generator for resolving ties
      * @return an instance
      */
@@ -121,9 +122,12 @@ public class TimeToPeakError extends TimingError
                                                                                            .setSeconds( referenceTime.getEpochSecond() )
                                                                                            .setNanos( referenceTime.getNano() ) )
                                                                         .setDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                                  .setSeconds( error.getSeconds() )
-                                                                                                                  .setNanos( error.getNano() ) )
-                                                                        .setReferenceTimeType( wres.statistics.generated.ReferenceTime.ReferenceTimeType.valueOf( referenceTimeType.name() ) )
+                                                                                                                  .setSeconds(
+                                                                                                                          error.getSeconds() )
+                                                                                                                  .setNanos(
+                                                                                                                          error.getNano() ) )
+                                                                        .setReferenceTimeType( wres.statistics.generated.ReferenceTime.ReferenceTimeType.valueOf(
+                                                                                referenceTimeType.name() ) )
                                                                         .build();
 
                 builder.addStatistics( pair );
@@ -150,7 +154,7 @@ public class TimeToPeakError extends TimingError
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param rng the random number generator for resolving ties 
      */
 

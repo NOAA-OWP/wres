@@ -25,7 +25,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * Computes the Mean Square Error Skill Score Normalized (MSESSN) to (0,1]. It is related to the 
  * {@link MeanSquareErrorSkillScore} (MSESS) as: MSESSN = 1.0 / (2.0 - MSESS). 
- * 
+ *
  * @author James Brown
  */
 public class MeanSquareErrorSkillScoreNormalized extends DecomposableScore<Pool<Pair<Double, Double>>>
@@ -37,13 +37,14 @@ public class MeanSquareErrorSkillScoreNormalized extends DecomposableScore<Pool<
                                                                           .build();
 
     /** Main score component. */
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( 0 )
-                                                                                    .setMaximum( 1 )
-                                                                                    .setOptimum( 1 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED.getMinimum() )
+                                      .setMaximum( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED.getMaximum() )
+                                      .setOptimum( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                      .build();
 
     /** Full description of the metric. */
     public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
@@ -62,7 +63,7 @@ public class MeanSquareErrorSkillScoreNormalized extends DecomposableScore<Pool<
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -103,7 +104,8 @@ public class MeanSquareErrorSkillScoreNormalized extends DecomposableScore<Pool<
     }
 
     @Override
-    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output,
+                                                        Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing the {} from the intermediate statistic, {}.", this, this.getCollectionOf() );
 
@@ -122,7 +124,8 @@ public class MeanSquareErrorSkillScoreNormalized extends DecomposableScore<Pool<
         double result = 1.0 / ( 2.0 - resultInner );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( MeanSquareErrorSkillScoreNormalized.MAIN )
+                                                                               .setMetric(
+                                                                                       MeanSquareErrorSkillScoreNormalized.MAIN )
                                                                                .setValue( result )
                                                                                .build();
 

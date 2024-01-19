@@ -44,13 +44,14 @@ public class BrierSkillScore extends BrierScore
      * Main score component.
      */
 
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( 0 )
-                                                                                    .setMaximum( 1 )
-                                                                                    .setOptimum( 1 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.BRIER_SKILL_SCORE.getMinimum() )
+                                      .setMaximum( MetricConstants.BRIER_SKILL_SCORE.getMaximum() )
+                                      .setOptimum( MetricConstants.BRIER_SKILL_SCORE.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                      .build();
 
     /**
      * Full description of the metric.
@@ -139,12 +140,6 @@ public class BrierSkillScore extends BrierScore
 
     @Override
     public boolean isStrictlyProper()
-    {
-        return false;
-    }
-
-    @Override
-    public boolean hasRealUnits()
     {
         return false;
     }

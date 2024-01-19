@@ -74,8 +74,13 @@ public class Units
     public static final String KG_M_2_S = "kg/m2.s";
     /** kg/kg */
     public static final String KG_KG = "kg/kg";
+    /** Count. */
+    public static final String COUNT = "COUNT";
 
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( Units.class );
+
+    /** Unit format. */
     private static final UnitFormat UNIT_FORMAT = UCUMFormat.getInstance( CASE_SENSITIVE );
 
     /** Volume dimension. */

@@ -26,6 +26,8 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.DiagramMetric;
+import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 import wres.statistics.generated.Pool.EnsembleAverageType;
@@ -206,8 +208,11 @@ public class DiagramGraphicsWriter extends GraphicsWriter
 
                 List<List<DiagramStatisticOuter>> grouped =
                         GraphicsWriter.groupBySummaryStatistics( innerSlice,
-                                                                 s -> s.getComponentNameQualifiers()
-                                                                       .first(),
+                                                                 s -> s.getStatistic().getMetric()
+                                                                       .getStatisticName()
+                                                                      + "_"
+                                                                      + s.getStatistic().getMetric()
+                                                                         .getStatisticComponentName(),
                                                                  Set.of( SummaryStatistic.StatisticName.MEAN,
                                                                          SummaryStatistic.StatisticName.MEDIAN,
                                                                          SummaryStatistic.StatisticName.HISTOGRAM,
@@ -304,7 +309,9 @@ public class DiagramGraphicsWriter extends GraphicsWriter
         // #51670
         SortedSet<EnsembleAverageType> types =
                 Slicer.discover( statistics,
-                                 next -> next.getPoolMetadata().getPool().getEnsembleAverageType() );
+                                 next -> next.getPoolMetadata()
+                                             .getPool()
+                                             .getEnsembleAverageType() );
 
         Optional<EnsembleAverageType> type =
                 types.stream()
@@ -338,21 +345,29 @@ public class DiagramGraphicsWriter extends GraphicsWriter
     private static String getSummaryStatisticPathQualifier( List<DiagramStatisticOuter> statistics )
     {
         Optional<String> name;
+        Optional<String> componentName = Optional.empty();
 
         if ( statistics.stream()
                        .anyMatch( n -> n.isSummaryStatistic()
                                        && n.getSummaryStatistic().getStatistic()
                                           == SummaryStatistic.StatisticName.HISTOGRAM ) )
         {
-            name = statistics.stream()
-                             .filter( n -> n.isSummaryStatistic()
-                                           && n.getSummaryStatistic()
-                                               .getDimension()
-                                              != SummaryStatistic.StatisticDimension.RESAMPLED )
-                             .flatMap( d -> d.getComponentNameQualifiers()
-                                             .stream() )
-                             .map( String::toUpperCase )
-                             .findFirst();
+            List<DiagramMetric> metrics = statistics.stream()
+                                                    .filter( n -> n.isSummaryStatistic()
+                                                                  && n.getSummaryStatistic()
+                                                                      .getDimension()
+                                                                     != SummaryStatistic.StatisticDimension.RESAMPLED )
+                                                    .map( d -> d.getStatistic()
+                                                                .getMetric() )
+                                                    .toList();
+            name = metrics.stream()
+                          .map( m -> m.getStatisticName()
+                                      .toString() )
+                          .findFirst();
+            componentName = metrics.stream()
+                                   .map( DiagramMetric::getStatisticComponentName )
+                                   .filter( n -> !Objects.equals( n, MetricName.UNDEFINED.name() ) )
+                                   .findFirst();
         }
         else
         {
@@ -367,7 +382,13 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                              .findFirst();
         }
 
-        return name.orElse( "" );
+        String combined = name.orElse( "" );
+        if ( componentName.isPresent() )
+        {
+            combined += "_" + componentName.get();
+        }
+
+        return combined;
     }
 
     /**
