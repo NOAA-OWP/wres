@@ -35,13 +35,14 @@ public class MeanAbsoluteErrorSkillScore extends DoubleErrorScore<Pool<Pair<Doub
         implements Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
 {
     /** Main score component. */
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                                    .setMaximum( 1 )
-                                                                                    .setOptimum( 1 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.MEAN_ABSOLUTE_ERROR_SKILL_SCORE.getMinimum() )
+                                      .setMaximum( MetricConstants.MEAN_ABSOLUTE_ERROR_SKILL_SCORE.getMaximum() )
+                                      .setOptimum( MetricConstants.MEAN_ABSOLUTE_ERROR_SKILL_SCORE.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                      .build();
 
     /** Full description of the metric.*/
     public static final DoubleScoreMetric METRIC_INNER
@@ -83,7 +84,8 @@ public class MeanAbsoluteErrorSkillScore extends DoubleErrorScore<Pool<Pair<Doub
     }
 
     @Override
-    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output,
+                                                        Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing the {} from the intermediate statistic, {}.", this, this.getCollectionOf() );
 
@@ -123,7 +125,7 @@ public class MeanAbsoluteErrorSkillScore extends DoubleErrorScore<Pool<Pair<Doub
             else
             {
                 double meanLeft = FunctionFactory.mean()
-                                       .applyAsDouble( Slicer.getLeftSide( pool ) );
+                                                 .applyAsDouble( Slicer.getLeftSide( pool ) );
                 for ( Pair<Double, Double> next : pool.get() )
                 {
                     denominator += Math.abs( next.getLeft() - meanLeft );

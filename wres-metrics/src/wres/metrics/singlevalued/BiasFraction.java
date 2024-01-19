@@ -5,7 +5,6 @@ import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
 
 import wres.config.MetricConstants;
-import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
@@ -22,7 +21,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * Computes the mean error of a single-valued prediction as a fraction of the mean observed value or, in other words,
  * the sum of right values divided by the sum of left values minus one.
- * 
+ *
  * @author James Brown
  */
 public class BiasFraction extends DoubleErrorScore<Pool<Pair<Double, Double>>>
@@ -40,13 +39,14 @@ public class BiasFraction extends DoubleErrorScore<Pool<Pair<Double, Double>>>
      * Main score component.
      */
 
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                                    .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                    .setOptimum( 0 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.BIAS_FRACTION.getMinimum() )
+                                      .setMaximum( MetricConstants.BIAS_FRACTION.getMaximum() )
+                                      .setOptimum( MetricConstants.BIAS_FRACTION.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                      .build();
 
     /**
      * Full description of the metric.
@@ -59,7 +59,7 @@ public class BiasFraction extends DoubleErrorScore<Pool<Pair<Double, Double>>>
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -87,7 +87,7 @@ public class BiasFraction extends DoubleErrorScore<Pool<Pair<Double, Double>>>
         }
 
         double result = Double.NaN;
-        if( leftSum > 0 )
+        if ( leftSum > 0 )
         {
             result = errorSum / leftSum;
         }
@@ -110,18 +110,6 @@ public class BiasFraction extends DoubleErrorScore<Pool<Pair<Double, Double>>>
     public MetricConstants getMetricName()
     {
         return MetricConstants.BIAS_FRACTION;
-    }
-
-    @Override
-    public boolean isDecomposable()
-    {
-        return false;
-    }
-
-    @Override
-    public MetricGroup getScoreOutputGroup()
-    {
-        return MetricGroup.NONE;
     }
 
     @Override

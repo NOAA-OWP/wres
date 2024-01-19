@@ -24,7 +24,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * {@link ContinuousRankedProbabilityScore} associated with one set of predictions when compared to another. The perfect
  * score is 1.0. 
  * </p>
- * 
+ *
  * @author James Brown
  */
 public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProbabilityScore
@@ -42,26 +42,28 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
      * Main score component.
      */
 
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                                    .setMaximum( 1 )
-                                                                                    .setOptimum( 1 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE.getMinimum() )
+                                      .setMaximum( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE.getMaximum() )
+                                      .setOptimum( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                      .build();
 
     /**
      * Full description of the metric.
      */
 
     public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
-                                                                    .addComponents( ContinuousRankedProbabilitySkillScore.MAIN )
+                                                                    .addComponents(
+                                                                            ContinuousRankedProbabilitySkillScore.MAIN )
                                                                     .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
                                                                     .build();
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -90,10 +92,12 @@ public class ContinuousRankedProbabilitySkillScore extends ContinuousRankedProba
                                   .getStatistic()
                                   .getValue();
 
-        double result = FunctionFactory.skill().applyAsDouble( numerator, denominator );
+        double result = FunctionFactory.skill()
+                                       .applyAsDouble( numerator, denominator );
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric( ContinuousRankedProbabilitySkillScore.MAIN )
+                                                                               .setMetric(
+                                                                                       ContinuousRankedProbabilitySkillScore.MAIN )
                                                                                .setValue( result )
                                                                                .build();
         DoubleScoreStatistic score =

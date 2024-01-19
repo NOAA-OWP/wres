@@ -18,7 +18,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * Measures the fraction of observed occurrences that were incorrectly predicted. A ratio of 0.0 indicates that all
  * observed occurrences were predicted correctly and a ratio of 1.0 indicates that all observed occurrences were 
  * predicted incorrectly.
- * 
+ *
  * @author James Brown
  */
 public class FalseAlarmRatio extends ContingencyTableScore
@@ -29,13 +29,14 @@ public class FalseAlarmRatio extends ContingencyTableScore
                                                                           .build();
 
     /** Main score component. */
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( 0 )
-                                                                                    .setMaximum( 1 )
-                                                                                    .setOptimum( 0 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.FALSE_ALARM_RATIO.getMinimum() )
+                                      .setMaximum( MetricConstants.FALSE_ALARM_RATIO.getMaximum() )
+                                      .setOptimum( MetricConstants.FALSE_ALARM_RATIO.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                      .build();
 
     /** Full description of the metric. */
     public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
@@ -45,7 +46,7 @@ public class FalseAlarmRatio extends ContingencyTableScore
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -73,7 +74,7 @@ public class FalseAlarmRatio extends ContingencyTableScore
         double fP = output.getComponent( MetricConstants.FALSE_POSITIVES )
                           .getStatistic()
                           .getValue();
-        
+
         final double value =
                 FunctionFactory.finiteOrMissing().applyAsDouble( ( fP ) / ( tP + fP ) );
 

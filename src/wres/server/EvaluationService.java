@@ -103,7 +103,9 @@ public class EvaluationService implements ServletContextListener
     /** Stream identifier. */
     public enum WhichStream
     {
+        /** Standard error stream. */
         STDERR,
+        /** Standard output stream. */
         STDOUT
     }
 
@@ -194,6 +196,9 @@ public class EvaluationService implements ServletContextListener
 
     private static SystemSettings systemSettings = SettingsFactory.createSettingsFromDefaultXml();
 
+    /**
+     * Public constructor to allow registration.
+     */
     public EvaluationService()
     {
         //Needed to register this servlet

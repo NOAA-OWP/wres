@@ -37,12 +37,13 @@ public class QuantileQuantileDiagram extends Diagram<Pool<Pair<Double, Double>>,
      * Observed quantiles.
      */
 
-    public static final DiagramMetricComponent OBSERVED_QUANTILES = DiagramMetricComponent.newBuilder()
-                                                                                          .setName( DiagramComponentName.OBSERVED_QUANTILES )
-                                                                                          .setType( DiagramComponentType.PRIMARY_DOMAIN_AXIS )
-                                                                                          .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                                          .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                          .build();
+    public static final DiagramMetricComponent OBSERVED_QUANTILES =
+            DiagramMetricComponent.newBuilder()
+                                  .setName( DiagramComponentName.OBSERVED_QUANTILES )
+                                  .setType( DiagramComponentType.PRIMARY_DOMAIN_AXIS )
+                                  .setMinimum( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.getMinimum() )
+                                  .setMaximum( MetricConstants.QUANTILE_QUANTILE_DIAGRAM.getMaximum() )
+                                  .build();
 
     /**
      * Predicted quantiles.

@@ -24,7 +24,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * Originally a quadratic score, different exponents may be used in practice. By default, the absolute errors are 
  * computed with an exponent of one, in order to minimize the influence of extreme errors.</p>  
  * <p>Willmott, C. J. 1981. On the validation of models. <i>Physical Geography</i>, <b>2</b>, 184-194</p>
- * 
+ *
  * @author James Brown
  */
 public class IndexOfAgreement extends DoubleErrorScore<Pool<Pair<Double, Double>>>
@@ -42,13 +42,14 @@ public class IndexOfAgreement extends DoubleErrorScore<Pool<Pair<Double, Double>
      * Main score component.
      */
 
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( 0 )
-                                                                                    .setMaximum( 1 )
-                                                                                    .setOptimum( 1 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.INDEX_OF_AGREEMENT.getMinimum() )
+                                      .setMaximum( MetricConstants.INDEX_OF_AGREEMENT.getMaximum() )
+                                      .setOptimum( MetricConstants.INDEX_OF_AGREEMENT.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                      .build();
 
     /**
      * Full description of the metric.
@@ -67,7 +68,7 @@ public class IndexOfAgreement extends DoubleErrorScore<Pool<Pair<Double, Double>
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -101,7 +102,7 @@ public class IndexOfAgreement extends DoubleErrorScore<Pool<Pair<Double, Double>
                               .mapToDouble( Pair::getLeft )
                               .average().orElse( Double.NaN );
 
-            if( ! Double.isNaN( oBar ) )
+            if ( !Double.isNaN( oBar ) )
             {
                 //Compute the score
                 double numerator = 0.0;

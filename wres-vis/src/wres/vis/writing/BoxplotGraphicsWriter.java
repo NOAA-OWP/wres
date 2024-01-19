@@ -27,6 +27,8 @@ import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.BoxplotMetric;
+import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.statistics.generated.SummaryStatistic;
@@ -352,8 +354,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
 
             if ( !innerSlice.isEmpty() )
             {
-
-                // Map by threshold
+                // Group by threshold
                 Map<ThresholdOuter, List<BoxplotStatisticOuter>> groupedByThreshold =
                         innerSlice.stream()
                                   .collect( Collectors.groupingBy( c -> c.getPoolMetadata()
@@ -368,7 +369,11 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                             GraphicsWriter.groupBySummaryStatistics( nextSlice,
                                                                      s -> s.getStatistic()
                                                                            .getMetric()
-                                                                           .getVariable(),
+                                                                           .getStatisticName()
+                                                                          + "_"
+                                                                          + s.getStatistic()
+                                                                             .getMetric()
+                                                                             .getStatisticComponentName(),
                                                                      Set.of( SummaryStatistic.StatisticName.BOX_PLOT ) );
                     sliced.addAll( grouped );
                 }
@@ -506,6 +511,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
     private static String getSummaryStatisticPathQualifier( List<BoxplotStatisticOuter> statistics )
     {
         Optional<String> name = Optional.empty();
+        Optional<String> componentName = Optional.empty();
 
         if ( statistics.stream()
                        .anyMatch( n -> n.isSummaryStatistic()
@@ -513,20 +519,31 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                                            .getStatistic()
                                           == SummaryStatistic.StatisticName.BOX_PLOT ) )
         {
-            name = statistics.stream()
-                             .filter( n -> n.isSummaryStatistic()
-                                           && n.getSummaryStatistic()
-                                               .getDimension()
-                                              != SummaryStatistic.StatisticDimension.RESAMPLED )
-                             .map( d -> d.getStatistic()
-                                         .getMetric()
-                                         .getVariable()
-                                         .toUpperCase()
-                                         .replace( " ", "_" ) )
-                             .findFirst();
+            List<BoxplotMetric> metrics = statistics.stream()
+                                                    .filter( n -> n.isSummaryStatistic()
+                                                                  && n.getSummaryStatistic()
+                                                                      .getDimension()
+                                                                     != SummaryStatistic.StatisticDimension.RESAMPLED )
+                                                    .map( d -> d.getStatistic()
+                                                                .getMetric() )
+                                                    .toList();
+            name = metrics.stream()
+                          .map( m -> m.getStatisticName()
+                                      .toString() )
+                          .findFirst();
+            componentName = metrics.stream()
+                                   .map( BoxplotMetric::getStatisticComponentName )
+                                   .filter( n -> !Objects.equals( n, MetricName.UNDEFINED.name() ) )
+                                   .findFirst();
         }
 
-        return name.orElse( "" );
+        String combined = name.orElse( "" );
+        if ( componentName.isPresent() )
+        {
+            combined += "_" + componentName.get();
+        }
+
+        return combined;
     }
 
     /**

@@ -30,6 +30,28 @@ message DiagramMetric
     bool has_diagonal = 3;
     // Is true if the diagram contains a diaogonal line, false otherwise.
 
+    MetricName statistic_name = 4;
+    // If this diagram is summarizing a distribution of raw statistics, this 
+    // field contains the name of the raw metric being summarized. For 
+    // example, if the mean error is calculated across geographic features and 
+    // its distribution is summarized with a histogram, then the metric in this 
+    // context is the mean error.
+
+    string statistic_component_name = 5;
+    // The name of the metric component being summarized.
+
+    string statistic_units = 6;
+    // The units of the metric being summarized.
+
+    double statistic_optimum = 7; 
+    // Optimum value of the metric being summarized.
+    
+    double statistic_minimum = 8;
+    // The lower bound of the metric being summarized.
+
+    double statistic_maximum = 9;
+    // The upper bound of the metric being summarized.   
+
     message DiagramMetricComponent
     {
         // A component of a diagram metric.

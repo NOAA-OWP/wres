@@ -20,7 +20,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * <p>The {@link VolumetricEfficiency} (VE) accumulates the absolute observations (VO) and, separately, it accumulates 
  * the absolute errors of the predictions (VP). It then expresses the difference between the two as a fraction of the 
  * accumulated observations, i.e. VE = (VO - VP) / VO.</p> 
- * 
+ *
  * <p>A score of 1 denotes perfect efficiency and a score of 0 denotes a VP that matches the VO. The lower bound of 
  * the measure is <code>-Inf</code> and a score below zero indicates a VP that exceeds the VO.</p>
  *
@@ -40,13 +40,14 @@ public class VolumetricEfficiency extends DoubleErrorScore<Pool<Pair<Double, Dou
      * Main score component.
      */
 
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                                    .setMaximum( 1 )
-                                                                                    .setOptimum( 1 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.VOLUMETRIC_EFFICIENCY.getMinimum() )
+                                      .setMaximum( MetricConstants.VOLUMETRIC_EFFICIENCY.getMaximum() )
+                                      .setOptimum( MetricConstants.VOLUMETRIC_EFFICIENCY.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                      .build();
 
     /**
      * Full description of the metric.
@@ -59,7 +60,7 @@ public class VolumetricEfficiency extends DoubleErrorScore<Pool<Pair<Double, Dou
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 

@@ -27,6 +27,7 @@ import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.units.Units;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramMetric;
@@ -74,7 +75,7 @@ public class FunctionFactory
                                                 .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_RANGE_AXIS )
                                                 .setMinimum( 0 )
                                                 .setMaximum( Double.POSITIVE_INFINITY )
-                                                .setUnits( "COUNT" )
+                                                .setUnits( Units.COUNT )
                                                 .build();
 
     /** Histogram metric. */
@@ -88,10 +89,8 @@ public class FunctionFactory
     private static final BoxplotMetric BOXPLOT_METRIC = BoxplotMetric.newBuilder()
                                                                      .setName( MetricName.BOX_PLOT )
                                                                      .setLinkedValueType( BoxplotMetric.LinkedValueType.NONE )
-                                                                     .setQuantileValueType( BoxplotMetric.QuantileValueType.VARIABLE )
+                                                                     .setQuantileValueType( BoxplotMetric.QuantileValueType.STATISTIC )
                                                                      .addAllQuantiles( FunctionFactory.DEFAULT_PROBABILITIES )
-                                                                     .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                     .setMaximum( Double.POSITIVE_INFINITY )
                                                                      .build();
 
     /** Function for rounding the errors. */
@@ -430,26 +429,42 @@ public class FunctionFactory
 
         BiFunction<Map<SummaryStatisticComponentName, String>, double[], DiagramStatistic> f = ( p, d ) ->
         {
-            Objects.requireNonNull( p.get( SummaryStatisticComponentName.VARIABLE ),
-                                    "Cannot create a histogram without a variable name." );
-            Objects.requireNonNull( p.get( SummaryStatisticComponentName.VARIABLE_UNIT ),
-                                    "Cannot create a histogram without a variable unit." );
+            Objects.requireNonNull( p.get( SummaryStatisticComponentName.METRIC_NAME ),
+                                    "Cannot create a histogram without a metric name." );
+            Objects.requireNonNull( p.get( SummaryStatisticComponentName.METRIC_UNIT ),
+                                    "Cannot create a histogram without a metric unit." );
 
-            String variableName = p.get( SummaryStatisticComponentName.VARIABLE );
-            String unitName = p.get( SummaryStatisticComponentName.VARIABLE_UNIT );
+            String metricNameString = p.get( SummaryStatisticComponentName.METRIC_NAME );
+            String componentName = p.get( SummaryStatisticComponentName.METRIC_COMPONENT_NAME );
+
+            MetricConstants metricNameEnum = MetricConstants.valueOf( metricNameString );
+            MetricName metricName = metricNameEnum.getCanonicalName();
+
+            String unitName = p.get( SummaryStatisticComponentName.METRIC_UNIT );
 
             DiagramMetric.DiagramMetricComponent domainAxis = FunctionFactory.HISTOGRAM_BINS.toBuilder()
                                                                                             .setUnits( unitName )
                                                                                             .build();
 
-            DiagramMetric metric = FunctionFactory.HISTOGRAM_METRIC.toBuilder()
-                                                                   .setComponents( 0, domainAxis )
-                                                                   .build();
+            DiagramMetric.Builder metric = FunctionFactory.HISTOGRAM_METRIC.toBuilder()
+                                                                           .setStatisticUnits( unitName )
+                                                                           .setStatisticName( metricName )
+                                                                           .setStatisticMinimum( metricNameEnum.getMinimum() )
+                                                                           .setStatisticMaximum( metricNameEnum.getMaximum() )
+                                                                           .setStatisticOptimum( metricNameEnum.getOptimum() )
+                                                                           .setComponents( 0, domainAxis );
+
+            if ( Objects.nonNull( componentName ) )
+            {
+                metric.setStatisticComponentName( componentName );
+            }
 
             EmpiricalDistribution empirical = new EmpiricalDistribution( bins );
             empirical.load( d );
 
             List<Double> binUpperBounds = Arrays.stream( empirical.getUpperBounds() )
+                                                // Remove infinite bounds
+                                                .map( x -> Double.isInfinite( x ) ? Double.NaN : x )
                                                 .boxed()
                                                 .toList();
             List<Double> binCounts = empirical.getBinStats()
@@ -461,14 +476,12 @@ public class FunctionFactory
             DiagramStatistic.DiagramStatisticComponent domainStatistic =
                     DiagramStatistic.DiagramStatisticComponent.newBuilder()
                                                               .setMetric( domainAxis )
-                                                              .setName( variableName )
                                                               .addAllValues( binUpperBounds )
                                                               .build();
 
             DiagramStatistic.DiagramStatisticComponent rangeStatistic =
                     DiagramStatistic.DiagramStatisticComponent.newBuilder()
                                                               .setMetric( FunctionFactory.HISTOGRAM_COUNT )
-                                                              .setName( variableName )
                                                               .addAllValues( binCounts )
                                                               .build();
 
@@ -502,18 +515,28 @@ public class FunctionFactory
 
         BiFunction<Map<SummaryStatisticComponentName, String>, double[], BoxplotStatistic> f = ( p, d ) ->
         {
-            Objects.requireNonNull( p.get( SummaryStatisticComponentName.VARIABLE ),
-                                    "Cannot create a box plot without a variable name." );
-            Objects.requireNonNull( p.get( SummaryStatisticComponentName.VARIABLE_UNIT ),
-                                    "Cannot create a box plot without a variable unit." );
+            Objects.requireNonNull( p.get( SummaryStatisticComponentName.METRIC_NAME ),
+                                    "Cannot create a box plot without a metric name." );
+            Objects.requireNonNull( p.get( SummaryStatisticComponentName.METRIC_UNIT ),
+                                    "Cannot create a box plot without a metric unit." );
 
-            String variableName = p.get( SummaryStatisticComponentName.VARIABLE );
-            String unitName = p.get( SummaryStatisticComponentName.VARIABLE_UNIT );
+            String metricName = p.get( SummaryStatisticComponentName.METRIC_NAME );
+            MetricConstants subjectMetricConstant = MetricConstants.valueOf( metricName );
+            MetricName subjectMetric = subjectMetricConstant.getCanonicalName();
+            String componentName = p.get( SummaryStatisticComponentName.METRIC_COMPONENT_NAME );
+            String unitName = p.get( SummaryStatisticComponentName.METRIC_UNIT );
 
-            BoxplotMetric metric = BOXPLOT_METRIC.toBuilder()
-                                                 .setVariable( variableName )
-                                                 .setUnits( unitName )
-                                                 .build();
+            BoxplotMetric.Builder metric = BOXPLOT_METRIC.toBuilder()
+                                                         .setStatisticName( subjectMetric )
+                                                         .setMinimum( subjectMetricConstant.getMinimum() )
+                                                         .setMaximum( subjectMetricConstant.getMaximum() )
+                                                         .setOptimum( subjectMetricConstant.getOptimum() )
+                                                         .setUnits( unitName );
+
+            if ( Objects.nonNull( componentName ) )
+            {
+                metric.setStatisticComponentName( componentName );
+            }
 
             // Compute the quantiles at a rounded precision
             List<Double> box = FunctionFactory.DEFAULT_PROBABILITIES.stream()

@@ -17,7 +17,7 @@ message BoxplotMetric
     
     repeated double quantiles = 2;
     // The quantiles at which the whiskers are defined.
-    
+
     enum LinkedValueType
     {
         //The type of value linked to each box.
@@ -41,9 +41,9 @@ message BoxplotMetric
         FORECAST = 0;
         FORECAST_ERROR = 1;
         ERROR_PERCENT_OF_VERIFYING_VALUE = 2;
-        VARIABLE = 3;
-        // An arbitrary variable whose name may be qualified in the variable
-        // field.
+        STATISTIC = 3;
+        // A statistic whose corresponding metric name is provided in 
+        // the statistic field.
     }
 
     QuantileValueType quantile_value_type = 4;
@@ -61,6 +61,13 @@ message BoxplotMetric
     double maximum = 8;
     // The upper bound of the quantiles.
 
-    string variable = 9;
-    // The name of the variable whose quantiles are being plotted.
+    MetricName statistic_name = 9;
+    // If this box plot is summarizing a distribution of raw statistics, this 
+    // field contains the name of the raw metric being summarized. For 
+    // example, if the mean error is calculated across geographic features and 
+    // its distribution is summarized with a box plot, then the metric in this 
+    // context is the mean error.
+
+    string statistic_component_name = 10;
+    // The name of the metric component being summarized.
 }

@@ -40,13 +40,14 @@ public class MeanSquareErrorSkillScore extends DecomposableScore<Pool<Pair<Doubl
                                                                           .build();
 
     /** Main score component. */
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                                    .setMaximum( 1 )
-                                                                                    .setOptimum( 1 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE.getMinimum() )
+                                      .setMaximum( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE.getMaximum() )
+                                      .setOptimum( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                      .build();
 
     /** Full description of the metric.*/
     public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()

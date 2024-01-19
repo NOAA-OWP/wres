@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.datamodel.MissingValues;
 import wres.config.MetricConstants;
+import wres.datamodel.units.Units;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.DiagramMetric;
@@ -194,7 +195,8 @@ class FunctionFactoryTest
     void testOfScalarSummaryStatisticWithWrongInput()
     {
         IllegalArgumentException exception = assertThrows( IllegalArgumentException.class,
-                                                           () -> FunctionFactory.ofScalarSummaryStatistic( MetricConstants.MAIN ) );
+                                                           () -> FunctionFactory.ofScalarSummaryStatistic(
+                                                                   MetricConstants.MAIN ) );
 
         assertEquals( "The statistic 'MAIN' is not a recognized statistic in this context.", exception.getMessage() );
     }
@@ -229,8 +231,8 @@ class FunctionFactoryTest
 
         double[] data = new double[] { 1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6 };
         Map<SummaryStatisticComponentName, String> p =
-                Map.of( SummaryStatisticComponentName.VARIABLE, "foo",
-                        SummaryStatisticComponentName.VARIABLE_UNIT, "bar" );
+                Map.of( SummaryStatisticComponentName.METRIC_NAME, "MEAN",
+                        SummaryStatisticComponentName.METRIC_UNIT, "bar" );
 
         DiagramStatistic actual = histogram.apply( p, data );
 
@@ -250,26 +252,29 @@ class FunctionFactoryTest
                                                     .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_RANGE_AXIS )
                                                     .setMinimum( 0 )
                                                     .setMaximum( Double.POSITIVE_INFINITY )
-                                                    .setUnits( "COUNT" )
+                                                    .setUnits( Units.COUNT )
                                                     .build();
 
         DiagramMetric metric = DiagramMetric.newBuilder()
                                             .addComponents( domainMetric )
                                             .addComponents( rangeMetric )
                                             .setName( MetricName.HISTOGRAM )
+                                            .setStatisticName( MetricName.MEAN )
+                                            .setStatisticUnits( "bar" )
+                                            .setStatisticMinimum( Double.NEGATIVE_INFINITY )
+                                            .setStatisticMaximum( Double.POSITIVE_INFINITY )
+                                            .setStatisticOptimum( Double.NaN )
                                             .build();
 
         DiagramStatistic.DiagramStatisticComponent domainStatistic =
                 DiagramStatistic.DiagramStatisticComponent.newBuilder()
                                                           .setMetric( domainMetric )
-                                                          .setName( "foo" )
                                                           .addAllValues( List.of( 2.0, 3.0, 4.0, 5.0, 6.0 ) )
                                                           .build();
 
         DiagramStatistic.DiagramStatisticComponent rangeStatistic =
                 DiagramStatistic.DiagramStatisticComponent.newBuilder()
                                                           .setMetric( rangeMetric )
-                                                          .setName( "foo" )
                                                           .addAllValues( List.of( 3.0, 3.0, 4.0, 5.0, 6.0 ) )
                                                           .build();
 
@@ -306,8 +311,8 @@ class FunctionFactoryTest
                 new Duration[] { one, two, two, three, three, three, four, four, four, four, five, five, five, five,
                         five, six, six, six, six, six, six };
         Map<SummaryStatisticComponentName, String> p =
-                Map.of( SummaryStatisticComponentName.VARIABLE, "foo",
-                        SummaryStatisticComponentName.VARIABLE_UNIT, "bar" );
+                Map.of( SummaryStatisticComponentName.METRIC_NAME, "MEAN",
+                        SummaryStatisticComponentName.METRIC_UNIT, "bar" );
 
         DiagramStatistic actual = durationHistogram.apply( p, data );
 
@@ -327,19 +332,23 @@ class FunctionFactoryTest
                                                     .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_RANGE_AXIS )
                                                     .setMinimum( 0 )
                                                     .setMaximum( Double.POSITIVE_INFINITY )
-                                                    .setUnits( "COUNT" )
+                                                    .setUnits( Units.COUNT )
                                                     .build();
 
         DiagramMetric metric = DiagramMetric.newBuilder()
                                             .addComponents( domainMetric )
                                             .addComponents( rangeMetric )
                                             .setName( MetricName.HISTOGRAM )
+                                            .setStatisticName( MetricName.MEAN )
+                                            .setStatisticUnits( "bar" )
+                                            .setStatisticMinimum( Double.NEGATIVE_INFINITY )
+                                            .setStatisticMaximum( Double.POSITIVE_INFINITY )
+                                            .setStatisticOptimum( Double.NaN )
                                             .build();
 
         DiagramStatistic.DiagramStatisticComponent domainStatistic =
                 DiagramStatistic.DiagramStatisticComponent.newBuilder()
                                                           .setMetric( domainMetric )
-                                                          .setName( "foo" )
                                                           .addAllValues( List.of( 7200.0,
                                                                                   10800.0,
                                                                                   14400.0,
@@ -350,7 +359,6 @@ class FunctionFactoryTest
         DiagramStatistic.DiagramStatisticComponent rangeStatistic =
                 DiagramStatistic.DiagramStatisticComponent.newBuilder()
                                                           .setMetric( rangeMetric )
-                                                          .setName( "foo" )
                                                           .addAllValues( List.of( 3.0, 3.0, 4.0, 5.0, 6.0 ) )
                                                           .build();
 
@@ -374,20 +382,21 @@ class FunctionFactoryTest
 
         double[] data = new double[] { 1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 7, 7, 7 };
         Map<SummaryStatisticComponentName, String> p =
-                Map.of( SummaryStatisticComponentName.VARIABLE, "foo",
-                        SummaryStatisticComponentName.VARIABLE_UNIT, "bar" );
+                Map.of( SummaryStatisticComponentName.METRIC_NAME, "MEAN",
+                        SummaryStatisticComponentName.METRIC_UNIT, "bar" );
 
         BoxplotStatistic actual = boxplot.apply( p, data );
 
         BoxplotMetric metric = BoxplotMetric.newBuilder()
                                             .setName( MetricName.BOX_PLOT )
                                             .setLinkedValueType( BoxplotMetric.LinkedValueType.NONE )
-                                            .setQuantileValueType( BoxplotMetric.QuantileValueType.VARIABLE )
-                                            .setVariable( "foo" )
+                                            .setQuantileValueType( BoxplotMetric.QuantileValueType.STATISTIC )
+                                            .setStatisticName( MetricName.MEAN )
                                             .setUnits( "bar" )
                                             .addAllQuantiles( FunctionFactory.DEFAULT_PROBABILITIES )
                                             .setMinimum( Double.NEGATIVE_INFINITY )
                                             .setMaximum( Double.POSITIVE_INFINITY )
+                                            .setOptimum( Double.NaN )
                                             .build();
 
         // Compute the quantiles at a rounded precision

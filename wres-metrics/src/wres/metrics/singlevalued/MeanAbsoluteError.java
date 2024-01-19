@@ -20,7 +20,7 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
 /**
  * The mean absolute error applies to continuous variables and is the average unsigned difference between a
  * single-valued predictand and verifying observation. It measures the first-order bias of the predictand.
- * 
+ *
  * @author James Brown
  */
 public class MeanAbsoluteError extends DoubleErrorScore<Pool<Pair<Double, Double>>>
@@ -30,9 +30,9 @@ public class MeanAbsoluteError extends DoubleErrorScore<Pool<Pair<Double, Double
     public static final DoubleScoreMetric METRIC_INNER =
             DoubleScoreMetric.newBuilder()
                              .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( 0 )
-                                                                       .setMaximum( Double.POSITIVE_INFINITY )
-                                                                       .setOptimum( 0 )
+                                                                       .setMinimum( MetricConstants.MEAN_ABSOLUTE_ERROR.getMinimum() )
+                                                                       .setMaximum( MetricConstants.MEAN_ABSOLUTE_ERROR.getMaximum() )
+                                                                       .setOptimum( MetricConstants.MEAN_ABSOLUTE_ERROR.getOptimum() )
                                                                        .setName( ComponentName.MAIN ) )
                              .setName( MetricName.MEAN_ABSOLUTE_ERROR )
                              .build();
@@ -42,7 +42,7 @@ public class MeanAbsoluteError extends DoubleErrorScore<Pool<Pair<Double, Double
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -64,7 +64,8 @@ public class MeanAbsoluteError extends DoubleErrorScore<Pool<Pair<Double, Double
     }
 
     @Override
-    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter statistic, Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter statistic,
+                                                        Pool<Pair<Double, Double>> pool )
     {
         if ( Objects.isNull( statistic ) )
         {

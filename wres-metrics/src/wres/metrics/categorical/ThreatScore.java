@@ -21,7 +21,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * accuracy of a set of predictions at detecting observed occurrences, removing the possibly large number of observed
  * non-occurrences that were predicted correctly.
  * </p>
- * 
+ *
  * @author James Brown
  */
 public class ThreatScore extends ContingencyTableScore
@@ -39,13 +39,14 @@ public class ThreatScore extends ContingencyTableScore
      * Main score component.
      */
 
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( 0 )
-                                                                                    .setMaximum( 1 )
-                                                                                    .setOptimum( 1 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.THREAT_SCORE.getMinimum() )
+                                      .setMaximum( MetricConstants.THREAT_SCORE.getMaximum() )
+                                      .setOptimum( MetricConstants.THREAT_SCORE.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                      .build();
 
     /**
      * Full description of the metric.
@@ -58,7 +59,7 @@ public class ThreatScore extends ContingencyTableScore
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 

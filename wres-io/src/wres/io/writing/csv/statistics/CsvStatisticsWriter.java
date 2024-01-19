@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.ThreadSafe;
 
+import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.OneOrTwoDoubles;
 import wres.config.MetricConstants;
@@ -110,8 +111,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                          + "SIDE,DECISION THRESHOLD OPERATOR,METRIC NAME,METRIC COMPONENT NAME,METRIC "
                                          + "COMPONENT QUALIFIER,METRIC COMPONENT UNITS,METRIC COMPONENT MINIMUM,METRIC "
                                          + "COMPONENT MAXIMUM,METRIC COMPONENT OPTIMUM,STATISTIC GROUP NUMBER,SUMMARY "
-                                         + "STATISTIC TYPE,SUMMARY STATISTIC DIMENSION,SUMMARY STATISTIC QUANTILE,"
-                                         + "SAMPLE QUANTILE,STATISTIC";
+                                         + "STATISTIC NAME,SUMMARY STATISTIC COMPONENT NAME,SUMMARY STATISTIC UNITS,"
+                                         + "SUMMARY STATISTIC DIMENSION,SUMMARY STATISTIC QUANTILE,SAMPLE QUANTILE,"
+                                         + "STATISTIC";
 
     /** The CSV delimiter. */
     private static final String DELIMITER = ",";
@@ -796,6 +798,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         {
             this.writeBoxPlots( mergeDescription,
                                 statistics.getOneBoxPerPairList(),
+                                summaryStatistic,
                                 writer,
                                 groupNumber,
                                 ensembleAverageType );
@@ -807,6 +810,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         {
             this.writeBoxPlots( mergeDescription,
                                 statistics.getOneBoxPerPoolList(),
+                                summaryStatistic,
                                 writer,
                                 groupNumber,
                                 ensembleAverageType );
@@ -913,7 +917,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
     {
         // Sort in metric name order
         Comparator<DiagramStatistic> comparator =
-                Comparator.comparing( a -> a.getMetric().getName() );
+                Comparator.comparing( a -> a.getMetric()
+                                            .getName() );
 
         List<DiagramStatistic> sorted = new ArrayList<>( statistics );
         sorted.sort( comparator );
@@ -929,6 +934,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
      *
      * @param poolDescription the pool description
      * @param statistics the statistics
+     * @param summaryStatistic the summary statistic, where applicable
      * @param writer a shared writer, not to be closed
      * @param groupNumber the statistics group number
      * @param ensembleAverageType the ensemble average type, where applicable
@@ -937,6 +943,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
     private void writeBoxPlots( StringJoiner poolDescription,
                                 List<BoxplotStatistic> statistics,
+                                SummaryStatistic summaryStatistic,
                                 BufferedOutputStream writer,
                                 AtomicInteger groupNumber,
                                 EnsembleAverageType ensembleAverageType )
@@ -951,7 +958,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
         for ( BoxplotStatistic next : sorted )
         {
-            this.writeBoxplot( poolDescription, next, writer, groupNumber, ensembleAverageType );
+            this.writeBoxplot( poolDescription, next, summaryStatistic, writer, groupNumber, ensembleAverageType );
         }
     }
 
@@ -1023,11 +1030,14 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
             DoubleScoreMetricComponent metricComponent = next.getMetric();
 
             // Add the metric name, pretty printed
-            MetricConstants namedMetric = MetricConstants.valueOf( metric.getName().name() );
+            String name = metric.getName()
+                                .name();
+            MetricConstants namedMetric = MetricConstants.valueOf( name );
             this.append( joiner, namedMetric.toString(), false );
 
             // Add the metric component name, pretty printed
-            MetricConstants namedMetricComponent = MetricConstants.valueOf( metricComponent.getName().name() );
+            MetricConstants namedMetricComponent = MetricConstants.valueOf( metricComponent.getName()
+                                                                                           .name() );
             this.append( joiner, namedMetricComponent.toString(), false );
 
             // Name qualifier
@@ -1050,7 +1060,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
             this.append( joiner, String.valueOf( groupNumber.getAndIncrement() ), false );
 
             // Add the summary statistic, if available
-            this.writeSummaryStatistic( summaryStatistic, joiner );
+            this.writeSummaryStatistic( summaryStatistic, metricComponent.getUnits(), joiner );
 
             // Add the statistic value
             String formattedValue = this.getDecimalFormatter()
@@ -1156,7 +1166,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
             // Relative timing errors
             if ( metric.getName() == MetricName.TIME_TO_PEAK_RELATIVE_ERROR_STATISTIC )
             {
-                this.append( joiner, durationUnits.toString().toUpperCase() + " PER HOUR", false );
+                String units = durationUnits.toString()
+                                            .toUpperCase() + " PER HOUR";
+                this.append( joiner, units, false );
 
                 // Add the metric limits
                 this.addDurationMetricLimits( joiner,
@@ -1168,7 +1180,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                 this.append( joiner, String.valueOf( groupNumber.getAndIncrement() ), false );
 
                 // Add the summary statistic, if available
-                this.writeSummaryStatistic( summaryStatistic, joiner );
+                this.writeSummaryStatistic( summaryStatistic, units, joiner );
 
                 // Add the statistic value
                 com.google.protobuf.Duration protoDuration = next.getValue();
@@ -1183,7 +1195,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
             // Absolute timing errors
             else
             {
-                this.append( joiner, durationUnits.toString().toUpperCase(), false );
+                String units = durationUnits.toString()
+                                            .toUpperCase();
+                this.append( joiner, units, false );
 
                 // Add the metric limits
                 this.addDurationMetricLimits( joiner,
@@ -1195,7 +1209,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                 this.append( joiner, String.valueOf( groupNumber.getAndIncrement() ), false );
 
                 // Add the summary statistic, if available
-                this.writeSummaryStatistic( summaryStatistic, joiner );
+                this.writeSummaryStatistic( summaryStatistic, units, joiner );
 
                 // Add the statistic value
                 com.google.protobuf.Duration protoDuration = next.getValue();
@@ -1290,42 +1304,47 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                 // Add the pool description
                 joiner.merge( poolDescription );
 
+                // Add the metric information, depending on whether this is a summary statistic
                 DiagramMetricComponent metricComponent = next.getMetric();
+                MetricDetails details = this.getMetricDetails( metric, metricComponent, summaryStatistic );
 
-                // Add the metric name, pretty printed
-                MetricConstants namedMetric = MetricConstants.valueOf( metric.getName().name() );
-                this.append( joiner, namedMetric.toString(), false );
+                // Add the metric name
+                this.append( joiner, details.metricName(), false );
 
-                // Add the metric component name, pretty printed
-                MetricDimension namedMetricComponent = MetricDimension.valueOf( metricComponent.getName().name() );
-                this.append( joiner, namedMetricComponent.toString(), false );
+                // Add the metric component name
+                this.append( joiner, details.metricComponentName(), false );
 
-                // Name qualifier: use an explicit name qualifier first, else the ensemble average type for single-
-                // valued metrics. These two things do not overlap.
+                // Name qualifier: use an explicit name qualifier first, else the ensemble average type for
+                // single-valued metrics. These two things do not overlap.
                 String qualifier = next.getName();
                 if ( qualifier.isBlank() )
                 {
-                    qualifier = this.getMetricComponentQualifier( namedMetric, ensembleAverageType );
+                    String enumString = DeclarationUtilities.toEnumName( details.metricName() );
+                    MetricConstants metricName = MetricConstants.valueOf( enumString );
+                    qualifier = this.getMetricComponentQualifier( metricName, ensembleAverageType );
                 }
                 this.append( joiner, qualifier, false );
 
                 // Add the metric component units
-                this.append( joiner, metricComponent.getUnits(), false );
+                this.append( joiner, details.units(), false );
 
-                // Add the minimum value
-                this.append( joiner, String.valueOf( metricComponent.getMinimum() ), false );
+                this.append( joiner, details.minimum(), false );
 
                 // Add the maximum value
-                this.append( joiner, String.valueOf( metricComponent.getMaximum() ), false );
+                this.append( joiner, details.maximum(), false );
 
-                // No optimum value
-                CsvStatisticsWriter.addEmptyValues( joiner, 1 );
+                // Optimum value
+                this.append( joiner, details.optimum(), false );
 
                 // Add the statistic group number
                 this.append( joiner, String.valueOf( innerGroupNumber ), false );
 
                 // Add the summary statistic, if available
-                this.writeSummaryStatistic( summaryStatistic, joiner );
+                this.writeSummaryStatistic( summaryStatistic,
+                                            details.summaryStatisticMetricName(),
+                                            details.summaryStatisticMetricComponentName(),
+                                            details.units(),
+                                            joiner );
 
                 // Add the statistic value
                 String formattedValue = this.getDecimalFormatter()
@@ -1352,6 +1371,91 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
     }
 
     /**
+     * Generates the descriptive details of a metric.
+     * @param metric the metric
+     * @param metricComponent the metric component
+     * @param summaryStatistic the summary statistic, if present
+     * @return the metric details
+     */
+    private MetricDetails getMetricDetails( DiagramMetric metric,
+                                            DiagramMetricComponent metricComponent,
+                                            SummaryStatistic summaryStatistic )
+    {
+        String metricName;
+        String metricComponentName;
+        String units;
+        String minimum;
+        String maximum;
+        String optimum;
+        String summaryStatisticMetricName;
+        String summaryStatisticMetricComponentName;
+
+        // The diagram is itself a summary statistic for a named metric (e.g., histogram of mean errors)
+        if ( Objects.nonNull( summaryStatistic )
+             && metric.getStatisticName() != MetricName.UNDEFINED )
+        {
+            metricName = metric.getStatisticName()
+                               .name()
+                               .replace( "_", " " );
+            metricComponentName = metric.getStatisticComponentName();
+            units = metricComponent.getUnits();
+            minimum = String.valueOf( metric.getStatisticMinimum() );
+            maximum = String.valueOf( metric.getStatisticMaximum() );
+            optimum = String.valueOf( metric.getStatisticOptimum() );
+            summaryStatisticMetricName = metric.getName()
+                                               .name()
+                                               .replace( "_", " " );
+            summaryStatisticMetricComponentName = metricComponent.getName()
+                                                                 .name()
+                                                                 .replace( "_", " " );
+        }
+        // Diagram that contains summary statistic values, such as a quantile-quantile diagram whose quantiles
+        // represent a mean value across geographic features
+        else if ( Objects.nonNull( summaryStatistic ) )
+        {
+            metricName = metric.getName()
+                               .name()
+                               .replace( "_", " " );
+            metricComponentName = metricComponent.getName()
+                                                 .name()
+                                                 .replace( "_", " " );
+            units = metricComponent.getUnits();
+            minimum = String.valueOf( metricComponent.getMinimum() );
+            maximum = String.valueOf( metricComponent.getMaximum() );
+            optimum = "";
+            summaryStatisticMetricName = summaryStatistic.getStatistic()
+                                                         .name()
+                                                         .replace( "_", " " );
+            summaryStatisticMetricComponentName = "";
+        }
+        // Diagram is a raw metric (e.g., quantile-quantile diagram for one geographic feature)
+        else
+        {
+            metricName = metric.getName()
+                               .name()
+                               .replace( "_", " " );
+            metricComponentName = metricComponent.getName()
+                                                 .name()
+                                                 .replace( "_", " " );
+            units = metricComponent.getUnits();
+            minimum = String.valueOf( metricComponent.getMinimum() );
+            maximum = String.valueOf( metricComponent.getMaximum() );
+            optimum = "";
+            summaryStatisticMetricName = "";
+            summaryStatisticMetricComponentName = "";
+        }
+
+        return new MetricDetails( metricName,
+                                  metricComponentName,
+                                  units,
+                                  minimum,
+                                  maximum,
+                                  optimum,
+                                  summaryStatisticMetricName,
+                                  summaryStatisticMetricComponentName );
+    }
+
+    /**
      * Writes a duration diagram.
      *
      * @param poolDescription the pool description
@@ -1374,7 +1478,10 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         DurationDiagramMetric metric = diagram.getMetric();
 
         Instant epoch = Instant.ofEpochMilli( 0 );
-        String epochString = durationUnits.toString().toUpperCase() + " FROM " + epoch;
+        String epochString = durationUnits.toString()
+                                          .toUpperCase()
+                             + " FROM "
+                             + epoch;
 
         for ( PairOfInstantAndDuration next : diagram.getStatisticsList() )
         {
@@ -1382,16 +1489,20 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
             writer.write( CsvStatisticsWriter.LINE_SEPARATOR );
             StringJoiner joiner = new StringJoiner( CsvStatisticsWriter.DELIMITER );
             joiner.merge( poolDescription );
-            MetricConstants namedMetric = MetricConstants.valueOf( metric.getName().name() );
+            MetricConstants namedMetric = MetricConstants.valueOf( metric.getName()
+                                                                         .name() );
             this.append( joiner, namedMetric.toString(), false );
-            ReferenceTimeType referenceTimeType = ReferenceTimeType.valueOf( next.getReferenceTimeType().name() );
+            ReferenceTimeType referenceTimeType = ReferenceTimeType.valueOf( next.getReferenceTimeType()
+                                                                                 .name() );
             this.append( joiner, referenceTimeType.toString(), false );
 
             // Name qualifier
             this.append( joiner, "", false );
 
+            // Units
             this.append( joiner, epochString, false );
-            Instant time = Instant.ofEpochSecond( next.getTime().getSeconds(), next.getTime().getNanos() );
+            Instant time = Instant.ofEpochSecond( next.getTime().getSeconds(), next.getTime()
+                                                                                   .getNanos() );
 
             BigDecimal nanoAdd = BigDecimal.valueOf( time.getNano(), 9 );
             BigDecimal epochDurationInUserUnits = BigDecimal.valueOf( time.getEpochSecond() )
@@ -1407,7 +1518,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
             this.append( joiner, String.valueOf( gNumber ), false );
 
             // Add the summary statistic, if available
-            this.writeSummaryStatistic( summaryStatistic, joiner );
+            this.writeSummaryStatistic( summaryStatistic, epochString, joiner );
 
             String formattedValue = epochDurationInUserUnits.toPlainString();
             this.append( joiner, formattedValue, false );
@@ -1425,7 +1536,10 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
             // Name qualifier
             this.append( joinerTwo, "", false );
 
-            this.append( joinerTwo, durationUnits.toString().toUpperCase(), false );
+            // Units
+            String units = durationUnits.toString()
+                                        .toUpperCase();
+            this.append( joinerTwo, units, false );
 
             com.google.protobuf.Duration protoDuration = next.getDuration();
             BigDecimal nanoDurationAdd = BigDecimal.valueOf( protoDuration.getNanos(), 9 );
@@ -1440,7 +1554,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
             this.append( joinerTwo, String.valueOf( gNumber ), false );
 
             // Add the summary statistic, if available
-            this.writeSummaryStatistic( summaryStatistic, joinerTwo );
+            this.writeSummaryStatistic( summaryStatistic, units, joinerTwo );
 
             String formattedValueDuration = durationInUserUnits.toPlainString();
             this.append( joinerTwo, formattedValueDuration, false );
@@ -1455,6 +1569,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
      *
      * @param poolDescription the pool description
      * @param boxplot the box plot
+     * @param summaryStatistic the summary statistic, where applicable
      * @param writer a shared writer, not to be closed
      * @param groupNumber the statistics group number
      * @param ensembleAverageType the ensemble average type, where applicable
@@ -1463,6 +1578,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
     private void writeBoxplot( StringJoiner poolDescription,
                                BoxplotStatistic boxplot,
+                               SummaryStatistic summaryStatistic,
                                BufferedOutputStream writer,
                                AtomicInteger groupNumber,
                                EnsembleAverageType ensembleAverageType )
@@ -1488,13 +1604,14 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                 String componentName = MetricDimension.valueOf( valueType.name() )
                                                       .toString();
                 double statistic = next.getLinkedValue();
-                this.writeBoxplotElement( poolDescription,
-                                          metric,
-                                          componentName,
-                                          gNumber + addToGroupNumber,
-                                          statistic,
-                                          writer,
-                                          ensembleAverageType );
+                BoxplotElement element = new BoxplotElement( poolDescription,
+                                                             metric,
+                                                             componentName,
+                                                             summaryStatistic,
+                                                             gNumber + addToGroupNumber,
+                                                             statistic,
+                                                             ensembleAverageType );
+                this.writeBoxplotElement( element, writer );
 
                 // Do not increment group number here: tie to the first probability/quantile of a box.
             }
@@ -1504,13 +1621,14 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
             for ( int i = 0; i < probabilities.size(); i++ )
             {
-                this.writeBoxplotElement( poolDescription,
-                                          metric,
-                                          PROBABILITY,
-                                          gNumber + addToGroupNumber + i,
-                                          probabilities.get( i ),
-                                          writer,
-                                          ensembleAverageType );
+                BoxplotElement element = new BoxplotElement( poolDescription,
+                                                             metric,
+                                                             PROBABILITY,
+                                                             summaryStatistic,
+                                                             gNumber + addToGroupNumber + i,
+                                                             probabilities.get( i ),
+                                                             ensembleAverageType );
+                this.writeBoxplotElement( element, writer );
             }
 
             // Add the quantiles
@@ -1518,13 +1636,14 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
             for ( int i = 0; i < probabilities.size(); i++ )
             {
-                this.writeBoxplotElement( poolDescription,
-                                          metric,
-                                          quantileValueTypeString,
-                                          gNumber + addToGroupNumber + i,
-                                          quantiles.get( i ),
-                                          writer,
-                                          ensembleAverageType );
+                BoxplotElement element = new BoxplotElement( poolDescription,
+                                                             metric,
+                                                             quantileValueTypeString,
+                                                             summaryStatistic,
+                                                             gNumber + addToGroupNumber + i,
+                                                             quantiles.get( i ),
+                                                             ensembleAverageType );
+                this.writeBoxplotElement( element, writer );
             }
 
             // Increment the group number
@@ -1538,25 +1657,21 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
     /**
      * Writes a box plot statistic.
      *
-     * @param poolDescription the pool descriptions
-     * @param metric the metric
-     * @param metricComponentName the metric component name
-     * @param groupNumber the statistics group number
-     * @param statistic the statistic
-     * @param writer the writer
-     * @param ensembleAverageType the ensemble average type, where applicable
+     * @param element the boxplot element
+     * @param writer thw writer
      * @throws IOException if the statistic could not be written
      */
 
-    private void writeBoxplotElement( StringJoiner poolDescription,
-                                      BoxplotMetric metric,
-                                      String metricComponentName,
-                                      int groupNumber,
-                                      double statistic,
-                                      BufferedOutputStream writer,
-                                      EnsembleAverageType ensembleAverageType )
+    private void writeBoxplotElement( BoxplotElement element,
+                                      BufferedOutputStream writer )
             throws IOException
     {
+        StringJoiner poolDescription = element.poolDescription();
+        SummaryStatistic summaryStatistic = element.summaryStatistic();
+        int groupNumber = element.groupNumber();
+        double statistic = element.statistic();
+        EnsembleAverageType ensembleAverageType = element.ensembleAverageType();
+
         // Add a line separator for the next row
         writer.write( CsvStatisticsWriter.LINE_SEPARATOR );
 
@@ -1565,40 +1680,42 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         // Add the pool description
         joiner.merge( poolDescription );
 
-        // Add the metric name, pretty printed
-        MetricConstants metricName = MetricConstants.valueOf( metric.getName()
-                                                                    .name() );
-        this.append( joiner, metricName.toString(), false );
+        // Add the metric information, depending on whether this is a summary statistic
+        MetricDetails details = this.getMetricDetails( element, summaryStatistic );
 
-        // Add the component name            
-        this.append( joiner, metricComponentName, false );
+        // Add the metric name
+        this.append( joiner, details.metricName(), false );
 
-        // Add the component qualifier
+        this.append( joiner, details.metricComponentName(), false );
+
+        // Add the qualifier
+        String enumString = DeclarationUtilities.toEnumName( details.metricName() );
+        MetricConstants metricName = MetricConstants.valueOf( enumString );
         String qualifier = this.getMetricComponentQualifier( metricName, ensembleAverageType );
+
         this.append( joiner, qualifier, false );
 
         // Add the metric component units
-        String units = metric.getUnits();
-        if ( PROBABILITY.equals( metricComponentName ) )
-        {
-            units = PROBABILITY;
-        }
-        this.append( joiner, units, false );
+        this.append( joiner, details.units(), false );
 
         // Add the minimum value
-        this.append( joiner, String.valueOf( metric.getMinimum() ), false );
+        this.append( joiner, details.minimum(), false );
 
         // Add the maximum value
-        this.append( joiner, String.valueOf( metric.getMaximum() ), false );
+        this.append( joiner, details.maximum(), false );
 
         // Add the optimum value
-        this.append( joiner, String.valueOf( metric.getOptimum() ), false );
+        this.append( joiner, details.optimum(), false );
 
         // Add the statistics group number
         this.append( joiner, String.valueOf( groupNumber ), false );
 
-        // Add the summary statistic, which is missing
-        CsvStatisticsWriter.addEmptyValues( joiner, 4 );
+        // Write the summary statistic
+        this.writeSummaryStatistic( summaryStatistic,
+                                    details.summaryStatisticMetricName(),
+                                    details.summaryStatisticMetricComponentName(),
+                                    details.units(),
+                                    joiner );
 
         // Add the statistic value
         String formattedValue = this.getDecimalFormatter()
@@ -1612,23 +1729,147 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
     }
 
     /**
-     * Writes the metadata for a summary statistic.
+     * Generates the descriptive details of a metric.
+     * @param boxplotElement the boxplot element
+     * @param summaryStatistic the summary statistic, if present
+     * @return the metric details
+     */
+    private MetricDetails getMetricDetails( BoxplotElement boxplotElement,
+                                            SummaryStatistic summaryStatistic )
+    {
+        BoxplotMetric metric = boxplotElement.metric();
+        String metricName;
+        String metricComponentName;
+        String units = metric.getUnits();
+        String minimum = String.valueOf( metric.getMinimum() );
+        String maximum = String.valueOf( metric.getMaximum() );
+        String optimum = String.valueOf( metric.getOptimum() );
+        String summaryStatisticMetricName;
+        String summaryStatisticMetricComponentName;
+
+        // The diagram is itself a summary statistic for a named metric (e.g., histogram of mean errors)
+        if ( Objects.nonNull( summaryStatistic )
+             && metric.getStatisticName() != MetricName.UNDEFINED )
+        {
+            metricName = metric.getStatisticName()
+                               .name()
+                               .replace( "_", " " );
+            metricComponentName = metric.getStatisticComponentName()
+                                        .replace( "_", " " );
+
+            summaryStatisticMetricName = metric.getName()
+                                               .name()
+                                               .replace( "_", " " );
+            summaryStatisticMetricComponentName = boxplotElement.metricComponentName()
+                                                                .replace( "_", " " );
+        }
+        // Diagram that contains summary statistic values, such as a quantile-quantile diagram whose quantiles
+        // represent a mean value across geographic features
+        else if ( Objects.nonNull( summaryStatistic ) )
+        {
+            metricName = metric.getName()
+                               .name()
+                               .replace( "_", " " );
+            metricComponentName = boxplotElement.metricComponentName()
+                                                .replace( "_", " " );
+            summaryStatisticMetricName = summaryStatistic.getStatistic()
+                                                         .name()
+                                                         .replace( "_", " " );
+            summaryStatisticMetricComponentName = "";
+        }
+        // Diagram is a raw metric (e.g., quantile-quantile diagram for one geographic feature)
+        else
+        {
+            metricName = metric.getName()
+                               .name()
+                               .replace( "_", " " );
+            metricComponentName = boxplotElement.metricComponentName()
+                                                .replace( "_", " " );
+            summaryStatisticMetricName = "";
+            summaryStatisticMetricComponentName = "";
+        }
+
+        if ( PROBABILITY.equals( metricComponentName )
+             || PROBABILITY.equals( summaryStatisticMetricComponentName ) )
+        {
+            units = PROBABILITY;
+        }
+
+        return new MetricDetails( metricName,
+                                  metricComponentName,
+                                  units,
+                                  minimum,
+                                  maximum,
+                                  optimum,
+                                  summaryStatisticMetricName,
+                                  summaryStatisticMetricComponentName );
+    }
+
+    /**
+     * Writes the metadata for a summary statistic, which includes a resampled quantile.
      *
      * @param summaryStatistic the summary statistic
+     * @param units the summary statistic units
      * @param joiner the string joiner to which the summary statistic will be appended
      */
 
     private void writeSummaryStatistic( SummaryStatistic summaryStatistic,
+                                        String units,
+                                        StringJoiner joiner )
+    {
+        this.writeSummaryStatistic( summaryStatistic,
+                                    MetricName.UNDEFINED.toString(),
+                                    MetricName.UNDEFINED.toString(),
+                                    units,
+                                    joiner );
+    }
+
+    /**
+     * Writes the metadata for a summary statistic, which includes a resampled quantile.
+     *
+     * @param summaryStatistic the summary statistic
+     * @param subject the subject metric of the summary statistic, where applicable
+     * @param subjectComponent the component name of the subject metric of the summary statistic, where applicable
+     * @param units the summary statistic units
+     * @param joiner the string joiner to which the summary statistic will be appended
+     */
+
+    private void writeSummaryStatistic( SummaryStatistic summaryStatistic,
+                                        String subject,
+                                        String subjectComponent,
+                                        String units,
                                         StringJoiner joiner )
     {
         if ( Objects.nonNull( summaryStatistic ) )
         {
-            String statisticName = summaryStatistic.getStatistic()
-                                                   .toString();
-            this.append( joiner, statisticName, false );
+            // Write the subject, where defined
+            if ( !Objects.equals( subject, MetricName.UNDEFINED.toString() ) )
+            {
+                this.append( joiner, subject.replace( "_", " " ),
+                             false );
+
+                // Write the subject component, where defined
+                if ( !Objects.equals( subjectComponent, MetricName.UNDEFINED.toString() ) )
+                {
+                    String component = subjectComponent.replace( "_", " " );
+                    this.append( joiner, component, false );
+                }
+            }
+            else
+            {
+                String statisticName = summaryStatistic.getStatistic()
+                                                       .toString()
+                                                       .replace( "_", " " );
+
+                this.append( joiner, statisticName, false );
+                CsvStatisticsWriter.addEmptyValues( joiner, 1 );
+            }
+
+            this.append( joiner, units, false );
 
             String statisticDimension = summaryStatistic.getDimension()
-                                                        .toString();
+                                                        .toString()
+                                                        .replace( "_", " " );
             this.append( joiner, statisticDimension, false );
 
             // Quantile for the summary statistic?
@@ -1657,7 +1898,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         }
         else
         {
-            CsvStatisticsWriter.addEmptyValues( joiner, 4 );
+            CsvStatisticsWriter.addEmptyValues( joiner, 6 );
         }
     }
 
@@ -1891,8 +2132,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                + "\"String\",\"String\",\"String\",\"String\",\"String\",\"String\",\"Real\",\"Real\","
                                + "\"String\",\"Real\",\"Real\",\"String\",\"String\",\"String\",\"Real\",\"Real\","
                                + "\"String\",\"Real\",\"Real\",\"String\",\"String\",\"String\",\"String\",\"String\","
-                               + "\"String\",\"Real\",\"Real\",\"Real\",\"Integer\",\"String\",\"String\",\"Real\","
-                               + "\"Real\",\"Real\"";
+                               + "\"String\",\"Real\",\"Real\",\"Real\",\"Integer\",\"String\",\"String\",\"String\","
+                               + "\"String\",\"Real\",\"Real\",\"Real\"";
 
         // Sanity check that the number of column classes equals the number of columns
         int classCount = columnClasses.split( "," ).length;
@@ -1915,6 +2156,48 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                            StandardOpenOption.TRUNCATE_EXISTING );
 
         return pathToCsvtInner;
+    }
+
+    /**
+     * A boxplot element.
+     * @param poolDescription the pool descriptions
+     * @param metric the metric
+     * @param summaryStatistic the summary statistic, where applicable
+     * @param metricComponentName the metric component name
+     * @param groupNumber the statistics group number
+     * @param statistic the statistic
+     * @param ensembleAverageType the ensemble average type, where applicable
+     */
+    private record BoxplotElement( StringJoiner poolDescription,
+                                   BoxplotMetric metric,
+                                   String metricComponentName,
+                                   SummaryStatistic summaryStatistic,
+                                   int groupNumber,
+                                   double statistic,
+                                   EnsembleAverageType ensembleAverageType )
+    {
+    }
+
+    /**
+     * Descriptive details of a metric.
+     * @param metricName the metric name
+     * @param metricComponentName the metric component name
+     * @param units the unit of the metric component
+     * @param minimum the minimum value of the metric component
+     * @param maximum the maximum value of the metric component
+     * @param optimum the optimal value of the metric component
+     * @param summaryStatisticMetricName the summary statistic metric name
+     * @param summaryStatisticMetricComponentName the component name of the summary statistic metric
+     */
+    private record MetricDetails( String metricName,
+                                  String metricComponentName,
+                                  String units,
+                                  String minimum,
+                                  String maximum,
+                                  String optimum,
+                                  String summaryStatisticMetricName,
+                                  String summaryStatisticMetricComponentName )
+    {
     }
 
 }

@@ -38,6 +38,9 @@ import org.slf4j.LoggerFactory;
 
 public class WebClient
 {
+
+    private static final String MUST_PASS_AN_HTTP_URI_GOT = "Must pass an http uri, got ";
+
     // Have OkHttpClient print stack traces where resources are not closed.
     static
     {
@@ -78,6 +81,7 @@ public class WebClient
 
     /**
      * Creates an instance.
+     * @param okHttpClient the client
      */
     public WebClient( OkHttpClient okHttpClient )
     {
@@ -110,7 +114,7 @@ public class WebClient
         if ( !uri.getScheme().startsWith( "http" ) )
         {
             throw new IllegalArgumentException(
-                    "Must pass an http uri, got " + uri );
+                    MUST_PASS_AN_HTTP_URI_GOT + uri );
         }
         LOGGER.debug( "getFromWeb {}", uri );
 
@@ -152,7 +156,7 @@ public class WebClient
         if ( !uri.getScheme().startsWith( "http" ) )
         {
             throw new IllegalArgumentException(
-                    "Must pass an http uri, got " + uri );
+                    MUST_PASS_AN_HTTP_URI_GOT + uri );
         }
         LOGGER.debug( "getFromWeb {}", uri );
 
@@ -254,7 +258,7 @@ public class WebClient
         if ( !uri.getScheme().startsWith( "http" ) )
         {
             throw new IllegalArgumentException(
-                    "Must pass an http uri, got " + uri );
+                    MUST_PASS_AN_HTTP_URI_GOT + uri );
         }
 
         LOGGER.debug( "postToWeb {}", uri );

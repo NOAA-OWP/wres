@@ -51,13 +51,14 @@ public class BrierScore extends DecomposableScore<Pool<Pair<Probability, Probabi
      * Main score component.
      */
 
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( 0 )
-                                                                                    .setMaximum( 1 )
-                                                                                    .setOptimum( 0 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.BRIER_SCORE.getMinimum() )
+                                      .setMaximum( MetricConstants.BRIER_SCORE.getMaximum() )
+                                      .setOptimum( MetricConstants.BRIER_SCORE.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                      .build();
 
     /**
      * Full description of the metric.

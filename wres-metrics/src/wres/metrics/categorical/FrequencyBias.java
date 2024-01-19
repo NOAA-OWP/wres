@@ -17,7 +17,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * Measures the predicted fraction of occurrences against the observed fraction of occurrences. A ratio of 1.0 
  * indicates an absence of any bias in the predicted and observed frequencies with which an event occurs.
- * 
+ *
  * @author James Brown
  */
 public class FrequencyBias extends ContingencyTableScore
@@ -35,13 +35,14 @@ public class FrequencyBias extends ContingencyTableScore
      * Main score component.
      */
 
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( 0 )
-                                                                                    .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                    .setOptimum( 1 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.FREQUENCY_BIAS.getMinimum() )
+                                      .setMaximum( MetricConstants.FREQUENCY_BIAS.getMaximum() )
+                                      .setOptimum( MetricConstants.FREQUENCY_BIAS.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                      .build();
 
     /**
      * Full description of the metric.
@@ -54,7 +55,7 @@ public class FrequencyBias extends ContingencyTableScore
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 

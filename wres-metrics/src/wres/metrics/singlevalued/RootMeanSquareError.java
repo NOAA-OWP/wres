@@ -23,7 +23,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * As with the MSE, the Root Mean Square Error (RMSE) or Root Mean Square Deviation (RMSD) is a measure of accuracy.
  * However, the RMSE is expressed in the original (unsquared) units of the predictand and no decompositions are
  * available for the RMSE.
- * 
+ *
  * @author James Brown
  */
 public class RootMeanSquareError extends DoubleErrorScore<Pool<Pair<Double, Double>>>
@@ -36,12 +36,13 @@ public class RootMeanSquareError extends DoubleErrorScore<Pool<Pair<Double, Doub
                                                                           .build();
 
     /** Main score component. */
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( 0 )
-                                                                                    .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                    .setOptimum( 0 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.ROOT_MEAN_SQUARE_ERROR.getMinimum() )
+                                      .setMaximum( MetricConstants.ROOT_MEAN_SQUARE_ERROR.getMaximum() )
+                                      .setOptimum( MetricConstants.ROOT_MEAN_SQUARE_ERROR.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .build();
 
     /** Full description of the metric. */
     public static final DoubleScoreMetric METRIC_INNER = DoubleScoreMetric.newBuilder()
@@ -51,13 +52,13 @@ public class RootMeanSquareError extends DoubleErrorScore<Pool<Pair<Double, Doub
 
     /** Instance of {@link SumOfSquareError}. */
     private final SumOfSquareError sse;
-    
+
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( RootMeanSquareError.class );
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -87,7 +88,8 @@ public class RootMeanSquareError extends DoubleErrorScore<Pool<Pair<Double, Doub
     }
 
     @Override
-    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output,
+                                                        Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing the {} from the intermediate statistic, {}.", this, this.getCollectionOf() );
 

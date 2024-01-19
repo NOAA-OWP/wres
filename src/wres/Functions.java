@@ -62,19 +62,28 @@ import wres.system.SystemSettings;
 
 /**
  * General purpose API for core wres functions.
- * If you want these to be accessible from a standalone deploy then you will need to add an entry in MainUtilities.java
+ * If you want these to be accessible from a standalone deploy then you will need to add an entry in
+ * {@link wres.helpers.MainUtilities}.
+ *
  * @author Chris Tubbs
  * @author James Brown
+ * @author Evan Pagryzinski
  */
 public final class Functions
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( Functions.class );
 
+    /** Default port for the local server. */
+    private static final String DEFAULT_PORT = "8010";
+
+    /** Database. */
     private static Database database;
 
+    /** Within-process broker for statistics messaging. */
     private static EmbeddedBroker broker;
 
+    /** Connections for the statistics message broker. */
     private static BrokerConnectionFactory brokerConnectionFactory;
 
     /**
@@ -85,7 +94,7 @@ public final class Functions
 
     public static ExecutionResult evaluate( SharedResources sharedResources )
     {
-        return evaluate( sharedResources, Canceller.of() );
+        return Functions.evaluate( sharedResources, Canceller.of() );
     }
 
     /**
@@ -120,21 +129,21 @@ public final class Functions
 
             ExecutionResult result = evaluator.evaluate( declarationOrPath, canceller );
 
-            logResults( sharedResources, result, startedExecution );
+            Functions.logResults( sharedResources, result, startedExecution );
             return result;
         }
         finally
         {
-            teardownConnections();
+            Functions.teardownConnections();
         }
     }
 
     /**
-     * Creates the "connectToDB" method
+     * Connects to the database.
      *
-     * @return method that will attempt to connect to the database to prove that a connection is possible. The version 
-     * of the connected database will be printed.
+     * @return the execution result
      */
+
     public static ExecutionResult connectToDatabase( SharedResources sharedResources )
     {
         Instant start = Instant.now();
@@ -154,17 +163,17 @@ public final class Functions
         }
         finally
         {
-            logResults( sharedResources, start );
-            teardownConnections();
+            Functions.logResults( sharedResources, start );
+            Functions.teardownConnections();
         }
     }
 
     /**
-     * Cleans the database specified in the systemSettings provided in the SharedResources
+     * Cleans the database.
      *
-     * @return A method that will remove all dynamic forecast, observation, and variable data from the database. 
-     * Prepares the database for a cold start.
+     * @return the execution result
      */
+
     public static ExecutionResult cleanDatabase( SharedResources sharedResources )
     {
         if ( !sharedResources.systemSettings()
@@ -178,7 +187,7 @@ public final class Functions
         try
         {
             Instant start = Instant.now();
-            setupConnections( sharedResources );
+            Functions.setupConnections( sharedResources );
 
             DatabaseLockManager lockManager =
                     DatabaseLockManager.from( sharedResources.systemSettings(),
@@ -203,20 +212,21 @@ public final class Functions
                 lockManager.shutdown();
             }
 
-            logResults( sharedResources, ExecutionResult.success(), start );
+            Functions.logResults( sharedResources, ExecutionResult.success(), start );
             return ExecutionResult.success();
         }
         finally
         {
-            teardownConnections();
+            Functions.teardownConnections();
         }
     }
 
     /**
-     * Creates the "migrateDatabase" method
+     * Migrates the database.
      *
-     * @return A method that will attempt to migrate the specified database according to steps in the db.changelog-master.xml
+     * @return the execution result
      */
+
     public static ExecutionResult migrateDatabase( SharedResources sharedResources )
     {
         if ( !sharedResources.systemSettings()
@@ -246,12 +256,12 @@ public final class Functions
                 return ExecutionResult.failure( e, false );
             }
 
-            logResults( sharedResources, ExecutionResult.success(), start );
+            Functions.logResults( sharedResources, ExecutionResult.success(), start );
             return ExecutionResult.success();
         }
         finally
         {
-            teardownConnections();
+            Functions.teardownConnections();
         }
     }
 
@@ -260,6 +270,7 @@ public final class Functions
      * @param sharedResources the shared resources
      * @return the execution result
      */
+
     public static ExecutionResult validateNetcdfGrid( SharedResources sharedResources )
     {
         Instant start = Instant.now();
@@ -306,7 +317,7 @@ public final class Functions
         }
         finally
         {
-            logResults( sharedResources, start );
+            Functions.logResults( sharedResources, start );
         }
     }
 
@@ -345,13 +356,13 @@ public final class Functions
         }
         finally
         {
-            logResults( sharedResources, start );
-            teardownConnections();
+            Functions.logResults( sharedResources, start );
+            Functions.teardownConnections();
         }
     }
 
     /**
-     * Starts a long-running worker server that takes in a port to run on.
+     * Starts a long-running server.
      * @param sharedResources the shared resources
      * @return the execution result
      */
@@ -375,11 +386,11 @@ public final class Functions
                 return ExecutionResult.failure( e, false ); // Or return 400 - Bad Request (see #41467)
             }
 
-            String port = "8010";
+            String port = DEFAULT_PORT;
             if ( args.size() == 1 )
             {
                 String message =
-                        "Starting server on default port 8010, if you would like to provide a port to use  do so like this: "
+                        "Starting server on default port 8010. An alternative port can be provided like this: "
                         + "bin/wres.bat server 8010";
                 LOGGER.info( message );
             }
@@ -404,7 +415,7 @@ public final class Functions
         }
         finally
         {
-            logResults( sharedResources, start );
+            Functions.logResults( sharedResources, start );
         }
     }
 
@@ -544,8 +555,8 @@ public final class Functions
         }
         finally
         {
-            logResults( sharedResources, start );
-            teardownConnections();
+            Functions.logResults( sharedResources, start );
+            Functions.teardownConnections();
         }
     }
 
@@ -605,7 +616,7 @@ public final class Functions
         }
         finally
         {
-            logResults( sharedResources, start );
+            Functions.logResults( sharedResources, start );
         }
     }
 
@@ -699,7 +710,7 @@ public final class Functions
         }
         finally
         {
-            logResults( sharedResources, startTime );
+            Functions.logResults( sharedResources, startTime );
         }
     }
 
@@ -770,7 +781,7 @@ public final class Functions
         }
         finally
         {
-            logResults( sharedResources, start );
+            Functions.logResults( sharedResources, start );
         }
     }
 
@@ -809,7 +820,7 @@ public final class Functions
             broker = EmbeddedBroker.of( brokerConnectionProperties, false );
         }
 
-        brokerConnectionFactory = BrokerConnectionFactory.of( brokerConnectionProperties );
+        Functions.brokerConnectionFactory = BrokerConnectionFactory.of( brokerConnectionProperties );
     }
 
     /**
@@ -826,11 +837,11 @@ public final class Functions
             LOGGER.info( "The database activities have been closed." );
         }
 
-        if ( Objects.nonNull( broker ) )
+        if ( Objects.nonNull( Functions.broker ) )
         {
             try
             {
-                broker.close();
+                Functions.broker.close();
             }
             catch ( IOException e )
             {

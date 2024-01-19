@@ -51,12 +51,13 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
                              .build();
 
     /** Main score component. */
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( 0 )
-                                                                                    .setMaximum( 1 )
-                                                                                    .setOptimum( 0 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE.getMinimum() )
+                                      .setMaximum( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE.getMaximum() )
+                                      .setOptimum( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .build();
 
     /** Full description of the metric. */
     public static final DoubleScoreMetric METRIC =

@@ -21,7 +21,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 /**
  * Computes the square of Pearson's product-moment correlation coefficient between the left and right sides of the
  * {SingleValuedPairs} input.
- * 
+ *
  * @author James Brown
  */
 public class CoefficientOfDetermination extends CorrelationPearsons
@@ -32,13 +32,14 @@ public class CoefficientOfDetermination extends CorrelationPearsons
                                                                           .build();
 
     /** Main score component. */
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( 0 )
-                                                                                    .setMaximum( 1 )
-                                                                                    .setOptimum( 1 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.COEFFICIENT_OF_DETERMINATION.getMinimum() )
+                                      .setMaximum( MetricConstants.COEFFICIENT_OF_DETERMINATION.getMaximum() )
+                                      .setOptimum( MetricConstants.COEFFICIENT_OF_DETERMINATION.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                      .build();
 
     /** Full description of the metric. */
     public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
@@ -51,7 +52,7 @@ public class CoefficientOfDetermination extends CorrelationPearsons
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -75,7 +76,8 @@ public class CoefficientOfDetermination extends CorrelationPearsons
     }
 
     @Override
-    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output,
+                                                        Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing the {} from the intermediate statistic, {}.", this, this.getCollectionOf() );
 
@@ -112,12 +114,6 @@ public class CoefficientOfDetermination extends CorrelationPearsons
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
         return super.apply( input );
-    }
-
-    @Override
-    public MetricConstants getCollectionOf()
-    {
-        return MetricConstants.PEARSON_CORRELATION_COEFFICIENT;
     }
 
     /**

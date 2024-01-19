@@ -6,8 +6,10 @@ package wres.metrics;
  */
 public enum SummaryStatisticComponentName
 {
-    /** The variable to which the diagram refers. */
-    VARIABLE,
-    /** The unit of the variable. */
-    VARIABLE_UNIT
+    /** The metric to which the diagram refers. Must be a name from {@link wres.config.MetricConstants}. */
+    METRIC_NAME,
+    /** The Metric component name. Must be a name from {@link wres.config.MetricConstants}. */
+    METRIC_COMPONENT_NAME,
+    /** The unit of the metric. */
+    METRIC_UNIT
 }

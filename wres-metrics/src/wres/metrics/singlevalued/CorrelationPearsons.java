@@ -29,11 +29,11 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  * Computes Pearson's product-moment correlation coefficient between the left and right sides of the {SingleValuedPairs}
  * input. Implements {@link Collectable} to avoid repeated calculations of derivative metrics, such as the
  * {@link CoefficientOfDetermination} when both appear in a {@link MetricCollection}.
- * 
+ *
  * @author James Brown
  */
 public class CorrelationPearsons implements Score<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter>,
-        Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+                                            Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
 {
     /** Basic description of the metric. */
     public static final DoubleScoreMetric BASIC_METRIC = DoubleScoreMetric.newBuilder()
@@ -41,13 +41,14 @@ public class CorrelationPearsons implements Score<Pool<Pair<Double, Double>>, Do
                                                                           .build();
 
     /** Main score component. */
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( -1 )
-                                                                                    .setMaximum( 1 )
-                                                                                    .setOptimum( 1 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.PEARSON_CORRELATION_COEFFICIENT.getMinimum() )
+                                      .setMaximum( MetricConstants.PEARSON_CORRELATION_COEFFICIENT.getMaximum() )
+                                      .setOptimum( MetricConstants.PEARSON_CORRELATION_COEFFICIENT.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                      .build();
 
     /** Full description of the metric. */
     public static final DoubleScoreMetric METRIC = DoubleScoreMetric.newBuilder()
@@ -63,7 +64,7 @@ public class CorrelationPearsons implements Score<Pool<Pair<Double, Double>>, Do
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 
@@ -76,7 +77,7 @@ public class CorrelationPearsons implements Score<Pool<Pair<Double, Double>>, Do
     public DoubleScoreStatisticOuter apply( Pool<Pair<Double, Double>> pool )
     {
         LOGGER.debug( "Computing the {}.", MetricConstants.PEARSON_CORRELATION_COEFFICIENT );
-        
+
         if ( Objects.isNull( pool ) )
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
@@ -131,7 +132,8 @@ public class CorrelationPearsons implements Score<Pool<Pair<Double, Double>>, Do
     }
 
     @Override
-    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output, Pool<Pair<Double, Double>> pool )
+    public DoubleScoreStatisticOuter applyIntermediate( DoubleScoreStatisticOuter output,
+                                                        Pool<Pair<Double, Double>> pool )
     {
         if ( Objects.isNull( output ) )
         {

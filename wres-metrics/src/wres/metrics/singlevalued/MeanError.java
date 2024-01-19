@@ -12,7 +12,7 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
 /**
  * The mean error applies to continuous variables and is the average signed difference between a single-valued
  * predictand and a verifying observation. It measures the first-order bias of the predictand.
- * 
+ *
  * @author James Brown
  */
 public class MeanError extends DoubleErrorScore<Pool<Pair<Double, Double>>>
@@ -24,16 +24,16 @@ public class MeanError extends DoubleErrorScore<Pool<Pair<Double, Double>>>
     public static final DoubleScoreMetric METRIC_INNER =
             DoubleScoreMetric.newBuilder()
                              .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                       .setMaximum( Double.POSITIVE_INFINITY )
-                                                                       .setOptimum( 0 )
+                                                                       .setMinimum( MetricConstants.MEAN_ERROR.getMinimum() )
+                                                                       .setMaximum( MetricConstants.MEAN_ERROR.getMaximum() )
+                                                                       .setOptimum( MetricConstants.MEAN_ERROR.getOptimum() )
                                                                        .setName( ComponentName.MAIN ) )
                              .setName( MetricName.MEAN_ERROR )
                              .build();
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 

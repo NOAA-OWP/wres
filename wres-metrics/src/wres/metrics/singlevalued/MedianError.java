@@ -14,7 +14,7 @@ import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.Co
  * The median error applies to continuous variables and is the median signed difference 
  * between a single-valued predictand and a verifying observation. It measures the 
  * median bias of the predictand.
- * 
+ *
  * @author James Brown
  */
 public class MedianError extends DoubleErrorScore<Pool<Pair<Double, Double>>>
@@ -27,16 +27,16 @@ public class MedianError extends DoubleErrorScore<Pool<Pair<Double, Double>>>
     public static final DoubleScoreMetric METRIC_INNER =
             DoubleScoreMetric.newBuilder()
                              .addComponents( DoubleScoreMetricComponent.newBuilder()
-                                                                       .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                       .setMaximum( Double.POSITIVE_INFINITY )
-                                                                       .setOptimum( 0 )
+                                                                       .setMinimum( MetricConstants.MEDIAN_ERROR.getMinimum() )
+                                                                       .setMaximum( MetricConstants.MEDIAN_ERROR.getMaximum() )
+                                                                       .setOptimum( MetricConstants.MEDIAN_ERROR.getOptimum() )
                                                                        .setName( ComponentName.MAIN ) )
                              .setName( MetricName.MEDIAN_ERROR )
                              .build();
 
     /**
      * Returns an instance.
-     * 
+     *
      * @return an instance
      */
 

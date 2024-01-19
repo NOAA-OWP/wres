@@ -51,13 +51,14 @@ public class KlingGuptaEfficiency extends DecomposableScore<Pool<Pair<Double, Do
      * Main score component.
      */
 
-    public static final DoubleScoreMetricComponent MAIN = DoubleScoreMetricComponent.newBuilder()
-                                                                                    .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                                    .setMaximum( 1 )
-                                                                                    .setOptimum( 1 )
-                                                                                    .setName( ComponentName.MAIN )
-                                                                                    .setUnits( MeasurementUnit.DIMENSIONLESS )
-                                                                                    .build();
+    public static final DoubleScoreMetricComponent MAIN =
+            DoubleScoreMetricComponent.newBuilder()
+                                      .setMinimum( MetricConstants.KLING_GUPTA_EFFICIENCY.getMinimum() )
+                                      .setMaximum( MetricConstants.KLING_GUPTA_EFFICIENCY.getMaximum() )
+                                      .setOptimum( MetricConstants.KLING_GUPTA_EFFICIENCY.getOptimum() )
+                                      .setName( ComponentName.MAIN )
+                                      .setUnits( MeasurementUnit.DIMENSIONLESS )
+                                      .build();
 
     /**
      * Full description of the metric.

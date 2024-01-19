@@ -60,4 +60,6 @@ enum MetricName
     MEAN_ABSOLUTE_ERROR_SKILL_SCORE = 47;
     HISTOGRAM = 48;
     BOX_PLOT = 49;
+    MEDIAN = 50;
+    MEAN_ABSOLUTE = 51;
 }
