@@ -346,6 +346,9 @@ public class Evaluator
         String projectHash;
         Set<Path> pathsWrittenTo = new TreeSet<>();
         ScheduledExecutorService monitoringService = null;
+
+        // Get a unique evaluation identifier
+        String evaluationId = EvaluationEventUtilities.getId();
         try
         {
             // Mark the WRES as doing an evaluation.
@@ -375,7 +378,8 @@ public class Evaluator
                                    executors,
                                    this.getBrokerConnectionFactory(),
                                    monitor,
-                                   canceller );
+                                   canceller,
+                                   evaluationId );
             pathsWrittenTo.addAll( innerPathsAndProjectHash.getLeft() );
             projectHash = innerPathsAndProjectHash.getRight();
             monitor.setDataHash( projectHash );
@@ -392,7 +396,8 @@ public class Evaluator
             return ExecutionResult.failure( declaration.label(),
                                             rawDeclaration,
                                             userInputException,
-                                            canceller.cancelled() );
+                                            canceller.cancelled(),
+                                            evaluationId );
         }
         catch ( RuntimeException | IOException | SQLException internalException )
         {
@@ -403,7 +408,8 @@ public class Evaluator
             return ExecutionResult.failure( declaration.label(),
                                             rawDeclaration,
                                             internalWresException,
-                                            canceller.cancelled() );
+                                            canceller.cancelled(),
+                                            evaluationId );
         }
         // Shutdown
         finally
@@ -424,7 +430,8 @@ public class Evaluator
         return ExecutionResult.success( declaration.label(),
                                         rawDeclaration,
                                         projectHash,
-                                        pathsWrittenTo );
+                                        pathsWrittenTo,
+                                        evaluationId );
     }
 
     /**
@@ -437,6 +444,7 @@ public class Evaluator
      * @param connections broker connections
      * @param monitor an event that monitors the life cycle of the evaluation, not null
      * @param canceller a callback to allow for cancellation of the running evaluation, not null
+     * @param evaluationId the id of the evaluation we are executing
      * @return the resources written and the hash of the project data
      * @throws WresProcessingException if the evaluation processing fails
      * @throws DeclarationException if the declaration is incorrect
@@ -450,7 +458,8 @@ public class Evaluator
                                               EvaluationExecutors executors,
                                               BrokerConnectionFactory connections,
                                               EvaluationEvent monitor,
-                                              Canceller canceller )
+                                              Canceller canceller,
+                                              String evaluationId )
             throws IOException
     {
         Objects.requireNonNull( systemSettings );
@@ -468,9 +477,6 @@ public class Evaluator
 
         Set<Path> resources = new TreeSet<>();
         String projectHash;
-
-        // Get a unique evaluation identifier
-        String evaluationId = EvaluationEventUtilities.getId();
 
         // Set the identifier where needed
         monitor.setEvaluationId( evaluationId );

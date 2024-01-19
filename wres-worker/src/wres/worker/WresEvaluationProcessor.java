@@ -320,7 +320,7 @@ class WresEvaluationProcessor implements Callable<Integer>
                                                                                  RETRY_STATES )
         )
         {
-            LOGGER.info( "Evaluation returned" );
+            LOGGER.info( "Evaluation with internal id {} for job {} has returned", evaluationId, this.getJobId() );
             // The job succeeded and sent output
             if ( clientResponse.getStatusCode() == 200 )
             {
