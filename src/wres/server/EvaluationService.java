@@ -755,7 +755,9 @@ public class EvaluationService implements ServletContextListener
 
                 ExecutionResult result = Functions.evaluate( sharedResources, EVALUATION_CANCELLER.get() );
 
-                LOGGER.info( "Evaluation {} with the internal ID of: {} has returned", result.getEvaluationId(), id );
+                // We rely on these log statements for tying IDs together easier while debugging.
+                // Check findJobID.sh in the scripts directory to see how this is used before changing/removing
+                LOGGER.info( "Evaluation with internal ID {} and evaluation ID of {} has returned", id, result.getEvaluationId() );
 
                 // get files written
                 outputPaths = result.getResources();

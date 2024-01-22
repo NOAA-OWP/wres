@@ -149,6 +149,9 @@ public class Evaluator
             throw new InternalWresException( "Expected a non-null cancellation callback." );
         }
 
+        // Get a unique evaluation identifier
+        String evaluationId = EvaluationEventUtilities.getId();
+
         // Create a record of failure, but only commit if a failure actually occurs
         EvaluationEvent failure = EvaluationEvent.of();
         failure.begin();
@@ -167,7 +170,7 @@ public class Evaluator
             UserInputException translated = new UserInputException( "The evaluation declaration was invalid.", e );
             failure.setFailed();
             failure.commit();
-            return ExecutionResult.failure( translated, canceller.cancelled() );
+            return ExecutionResult.failure( translated, canceller.cancelled(), evaluationId );
         }
 
         SystemSettings settings = this.getSystemSettings();
@@ -176,7 +179,7 @@ public class Evaluator
             LOGGER.info( "Running evaluation in memory." );
         }
 
-        return this.evaluate( declaration, rawDeclaration, canceller );
+        return this.evaluate( declaration, rawDeclaration, canceller, evaluationId );
     }
 
     /**
@@ -190,7 +193,8 @@ public class Evaluator
 
     private ExecutionResult evaluate( EvaluationDeclaration declaration,
                                       String rawDeclaration,
-                                      Canceller canceller )
+                                      Canceller canceller,
+                                      String evaluationId )
     {
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( canceller );
@@ -347,8 +351,6 @@ public class Evaluator
         Set<Path> pathsWrittenTo = new TreeSet<>();
         ScheduledExecutorService monitoringService = null;
 
-        // Get a unique evaluation identifier
-        String evaluationId = EvaluationEventUtilities.getId();
         try
         {
             // Mark the WRES as doing an evaluation.

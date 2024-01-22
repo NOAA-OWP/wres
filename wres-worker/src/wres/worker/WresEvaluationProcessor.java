@@ -320,7 +320,9 @@ class WresEvaluationProcessor implements Callable<Integer>
                                                                                  RETRY_STATES )
         )
         {
-            LOGGER.info( "Evaluation with internal id {} for job {} has returned", evaluationId, this.getJobId() );
+            // We rely on these log statements for tying IDs together easier while debugging.
+            // Check findJobID.sh in the scripts directory to see how this is used before changing/removing
+            LOGGER.info( "Evaluation with internal ID {} and job ID {} has returned", evaluationId, this.getJobId() );
             // The job succeeded and sent output
             if ( clientResponse.getStatusCode() == 200 )
             {
