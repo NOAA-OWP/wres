@@ -598,7 +598,7 @@ public class ChartFactory
                                                   .toString()
                                                   .replace( "_", " " );
 
-            if ( !Objects.equals( metric.getStatisticComponentName(), MetricName.UNDEFINED.name() ) )
+            if ( GraphicsUtils.isNotDefaultMetricComponentName( metric.getStatisticComponentName() ) )
             {
                 summaryStatisticNameQualifier = metric.getStatisticComponentName()
                                                 + OF_THE
@@ -2402,7 +2402,7 @@ public class ChartFactory
                                  .toString()
                                  .replace( "_", " " );
 
-            if ( !Objects.equals( metric.getStatisticComponentName(), MetricName.UNDEFINED.name() ) )
+            if ( GraphicsUtils.isNotDefaultMetricComponentName( metric.getStatisticComponentName() ) )
             {
                 qualifier = metric.getStatisticComponentName()
                                   .replace( "_", " " )

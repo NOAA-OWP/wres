@@ -28,13 +28,13 @@ import wres.datamodel.statistics.BoxplotStatisticOuter;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.BoxplotMetric;
-import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.TimeWindow;
 import wres.vis.charts.ChartBuildingException;
 import wres.vis.charts.ChartFactory;
+import wres.vis.charts.GraphicsUtils;
 
 /**
  * Helps write charts comprising {@link BoxplotStatisticOuter} to graphics formats.
@@ -533,7 +533,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                           .findFirst();
             componentName = metrics.stream()
                                    .map( BoxplotMetric::getStatisticComponentName )
-                                   .filter( n -> !Objects.equals( n, MetricName.UNDEFINED.name() ) )
+                                   .filter( GraphicsUtils::isNotDefaultMetricComponentName )
                                    .findFirst();
         }
 

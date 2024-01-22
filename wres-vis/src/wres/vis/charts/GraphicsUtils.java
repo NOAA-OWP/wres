@@ -3,8 +3,12 @@ package wres.vis.charts;
 import java.awt.Color;
 import java.awt.Paint;
 import java.util.ArrayList;
+import java.util.Objects;
 
 import org.jfree.chart.plot.DefaultDrawingSupplier;
+
+import wres.config.MetricConstants;
+import wres.statistics.generated.MetricName;
 
 /**
  * A utility class for graphics.
@@ -89,6 +93,16 @@ public class GraphicsUtils
         }
 
         return palette;
+    }
+
+    /**
+     * @param name the metric component name to test
+     * @return whether the metric component name is a default name
+     */
+    public static boolean isNotDefaultMetricComponentName( String name )
+    {
+        return !Objects.equals( name, MetricName.UNDEFINED.name() )
+               && !Objects.equals( name, MetricConstants.MAIN.name() );
     }
 
     /**
