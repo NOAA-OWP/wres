@@ -18,10 +18,10 @@ import org.jfree.chart.renderer.xy.XYItemRendererState;
 import org.jfree.data.xy.XYDataset;
 
 /**
-* A renderer that draws box plot items on an {@link org.jfree.chart.plot.XYPlot}.
-* 
-* @author James Brown
-*/
+ * A renderer that draws box plot items on an {@link org.jfree.chart.plot.XYPlot}.
+ *
+ * @author James Brown
+ */
 
 class BoxplotRenderer extends AbstractXYItemRenderer
 {
@@ -62,11 +62,11 @@ class BoxplotRenderer extends AbstractXYItemRenderer
                           CrosshairState crosshairState,
                           int pass )
     {
-        this.drawVerticalItem( g2, dataArea, plot, domainAxis, rangeAxis, series, item );
+        this.drawItem( g2, dataArea, plot, domainAxis, rangeAxis, series, item );
     }
 
     /**
-     * Draws a single data item in the vertical orientation.
+     * Draws a single box.
      *
      * @param g2 the graphics device
      * @param plotArea the area within which the plot is being drawn
@@ -76,14 +76,21 @@ class BoxplotRenderer extends AbstractXYItemRenderer
      * @param series the series index (zero-based)
      * @param item the item index (zero-based)
      */
-    private void drawVerticalItem( Graphics2D g2,
-                                   Rectangle2D plotArea,
-                                   XYPlot plot,
-                                   ValueAxis domainAxis,
-                                   ValueAxis rangeAxis,
-                                   int series,
-                                   int item )
+    private void drawItem( Graphics2D g2,
+                           Rectangle2D plotArea,
+                           XYPlot plot,
+                           ValueAxis domainAxis,
+                           ValueAxis rangeAxis,
+                           int series,
+                           int item )
     {
+        // There is a separate series for each quantile. Only render the box for the first series because this renderer
+        // plots the complete box in one call
+        if ( series != 0 )
+        {
+            return;
+        }
+
         XYDataset dataset = plot.getDataset();
 
         // The x-axis value
@@ -109,31 +116,37 @@ class BoxplotRenderer extends AbstractXYItemRenderer
             g2.setStroke( s );
         }
 
+        // Draw the vertical line between the extreme whiskers
+        double yMin = rangeAxis.valueToJava2D( data[0], plotArea, plot.getRangeAxisEdge() );
+        double yMax = rangeAxis.valueToJava2D( data[data.length - 1], plotArea, plot.getRangeAxisEdge() );
+        Shape line3 = new Line2D.Double( xPixels, yMin, xPixels, yMax );
+
+        g2.setPaint( this.getDefaultPaint() );
+        g2.draw( line3 );
+
         // Draw the box
 
         // Only draw if there are at least 4 items
-        int boxLowerBoundIndex = -1;
-        int boxUpperBoundIndex = -1;
         if ( data.length > 3 )
         {
-            boxLowerBoundIndex = (int) Math.round( 0.2 * ( data.length - 1 ) ); //20% 
-            boxUpperBoundIndex = (int) Math.round( 0.8 * ( data.length - 1 ) ); //80%
+            int boxLowerBoundIndex = ( int ) Math.round( 0.2 * ( data.length - 1 ) ); //20%
+            int boxUpperBoundIndex = ( int ) Math.round( 0.8 * ( data.length - 1 ) ); //80%
 
             // Size and position the box
             double yLower = data[boxLowerBoundIndex]; //used to use bBound
             double yUpper = data[boxUpperBoundIndex]; //used to use tBound
 
             // Only draw the box if it is defined
-            if ( !Double.isNaN( yLower ) && !Double.isNaN( yUpper ) )
+            if ( !Double.isNaN( yLower )
+                 && !Double.isNaN( yUpper ) )
             {
                 double yyLower = rangeAxis.valueToJava2D( yLower, plotArea, plot.getRangeAxisEdge() );
                 double yyUpper = rangeAxis.valueToJava2D( yUpper, plotArea, plot.getRangeAxisEdge() );
 
-                Shape box =
-                        new Rectangle2D.Double( xPixels - boxWidth / 2,
-                                                yyUpper,
-                                                boxWidth,
-                                                Math.abs( yyUpper - yyLower ) );
+                Shape box = new Rectangle2D.Double( xPixels - boxWidth / 2,
+                                                    yyUpper,
+                                                    boxWidth,
+                                                    Math.abs( yyUpper - yyLower ) );
 
                 // Draw the box in the color of the fill
                 g2.setPaint( this.getDefaultFillPaint() );
@@ -157,7 +170,8 @@ class BoxplotRenderer extends AbstractXYItemRenderer
         {
             double yLower = data[i];
             double yUpper = data[i + 1];
-            if ( !Double.isNaN( yLower ) && !Double.isNaN( yUpper ) )
+            if ( !Double.isNaN( yLower )
+                 && !Double.isNaN( yUpper ) )
             {
                 double yyLower = rangeAxis.valueToJava2D( yLower, plotArea, plot.getRangeAxisEdge() );
                 double yyUpper = rangeAxis.valueToJava2D( yUpper, plotArea, plot.getRangeAxisEdge() );
@@ -168,13 +182,6 @@ class BoxplotRenderer extends AbstractXYItemRenderer
 
                 g2.draw( line1 );
                 g2.draw( line2 );
-
-                // The vertical line
-                if ( ( boxLowerBoundIndex < 0 ) || ( i < boxLowerBoundIndex ) || ( i >= boxUpperBoundIndex ) )
-                {
-                    Shape line3 = new Line2D.Double( xPixels, yyLower, xPixels, yyUpper );
-                    g2.draw( line3 );
-                }
             }
         }
 

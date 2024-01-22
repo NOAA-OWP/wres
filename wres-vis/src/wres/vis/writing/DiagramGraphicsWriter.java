@@ -27,13 +27,13 @@ import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.DiagramMetric;
-import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 import wres.statistics.generated.Pool.EnsembleAverageType;
 import wres.statistics.generated.SummaryStatistic;
 import wres.vis.charts.ChartBuildingException;
 import wres.vis.charts.ChartFactory;
+import wres.vis.charts.GraphicsUtils;
 
 /**
  * Helps write charts comprising {@link DiagramStatisticOuter} to graphics formats.
@@ -366,7 +366,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
                           .findFirst();
             componentName = metrics.stream()
                                    .map( DiagramMetric::getStatisticComponentName )
-                                   .filter( n -> !Objects.equals( n, MetricName.UNDEFINED.name() ) )
+                                   .filter( GraphicsUtils::isNotDefaultMetricComponentName )
                                    .findFirst();
         }
         else
