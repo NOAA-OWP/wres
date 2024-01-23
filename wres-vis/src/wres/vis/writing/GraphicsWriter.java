@@ -144,10 +144,11 @@ abstract class GraphicsWriter
         try
         {
             // Default is png
-            if ( outputs.hasPng() && !outputs.getPng()
-                                             .getOptions()
-                                             .getIgnoreList()
-                                             .contains( metric ) )
+            if ( outputs.hasPng()
+                 && !outputs.getPng()
+                            .getOptions()
+                            .getIgnoreList()
+                            .contains( metric ) )
             {
                 int height = GraphicsWriter.getGraphicHeight( outputs.getPng().getOptions().getHeight() );
                 int width = GraphicsWriter.getGraphicWidth( outputs.getPng().getOptions().getWidth() );
@@ -165,10 +166,11 @@ abstract class GraphicsWriter
                     ChartUtils.saveChartAsPNG( outputImageFile, chart, width, height );
                 }
             }
-            if ( outputs.hasSvg() && !outputs.getSvg()
-                                             .getOptions()
-                                             .getIgnoreList()
-                                             .contains( metric ) )
+            if ( outputs.hasSvg()
+                 && !outputs.getSvg()
+                            .getOptions()
+                            .getIgnoreList()
+                            .contains( metric ) )
             {
                 int height = GraphicsWriter.getGraphicHeight( outputs.getPng().getOptions().getHeight() );
                 int width = GraphicsWriter.getGraphicWidth( outputs.getPng().getOptions().getWidth() );
@@ -498,7 +500,7 @@ abstract class GraphicsWriter
 
             if ( outputs.hasPng()
                  && outputs.getPng()
-                                            .hasOptions() )
+                           .hasOptions() )
             {
                 graphicsOptions = outputs.getPng()
                                          .getOptions();

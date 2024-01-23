@@ -1,10 +1,6 @@
 package wres.vis.charts;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Paint;
-import java.awt.Shape;
-import java.awt.Stroke;
+import java.awt.*;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.io.Serial;
@@ -25,12 +21,12 @@ import org.jfree.data.xy.XYDataset;
 
 class BoxplotRenderer extends AbstractXYItemRenderer
 {
-    /**
-     * Serial version identifier.
-     */
-
+    /** Serial version identifier. */
     @Serial
     private static final long serialVersionUID = 255814654677603115L;
+
+    /** Box line stroke. See #124931. */
+    private static final Stroke LINE_STROKE = new BasicStroke( 1.1f );
 
     /**
      * Draws a single data item.
@@ -63,6 +59,19 @@ class BoxplotRenderer extends AbstractXYItemRenderer
                           int pass )
     {
         this.drawItem( g2, dataArea, plot, domainAxis, rangeAxis, series, item );
+    }
+
+    /**
+     * Returns the item stroke.
+     *
+     * @param series the row (or series) index (zero-based).
+     * @param item the column (or category) index (zero-based).
+     * @return the stroke
+     */
+    @Override
+    public Stroke getItemStroke( int series, int item )
+    {
+        return BoxplotRenderer.LINE_STROKE;
     }
 
     /**
