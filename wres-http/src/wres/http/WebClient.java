@@ -234,7 +234,7 @@ public class WebClient
     public ClientResponse postToWeb( URI uri )
             throws IOException
     {
-        return postToWeb( uri, new byte[0] );
+        return postToWeb( uri, "" );
     }
 
     /**
@@ -249,7 +249,7 @@ public class WebClient
      * @throws NullPointerException When any argument is null.
      */
 
-    public ClientResponse postToWeb( URI uri, byte[] jobMessage )
+    public ClientResponse postToWeb( URI uri, String jobMessage )
             throws IOException
     {
         Objects.requireNonNull( uri );

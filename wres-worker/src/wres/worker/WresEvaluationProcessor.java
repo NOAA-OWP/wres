@@ -50,13 +50,13 @@ class WresEvaluationProcessor implements Callable<Integer>
 
     private static final String START_EVAL_URI = "http://localhost:%d/evaluation/getEvaluation/%s";
 
-    private static final String OPEN_EVAL_URI = "http://localhost:%d/evaluation/startEvaluation";
+    private static final String OPEN_EVAL_URI = "http://localhost:%d/evaluation/startEvaluation?dbHost=%s&dbName=%s&dbPort=%s";
 
     private static final String CLOSE_EVAL_URI = "http://localhost:%d/evaluation/close";
 
-    private static final String CLEAN_DATABASE_URI = "http://localhost:%d/evaluation/cleanDatabase";
+    private static final String CLEAN_DATABASE_URI = "http://localhost:%d/evaluation/cleanDatabase?dbHost=%s&dbName=%s&dbPort=%s";
 
-    private static final String MIGRATE_DATABASE_URI = "http://localhost:%d/evaluation/migrateDatabase";
+    private static final String MIGRATE_DATABASE_URI = "http://localhost:%d/evaluation/migrateDatabase?dbHost=%s&dbName=%s&dbPort=%s";
 
     private static final List<Integer> RETRY_STATES = List.of( 503, 504 );
 
@@ -165,11 +165,11 @@ class WresEvaluationProcessor implements Callable<Integer>
         // Check if the Job is to manipulate the database in some way
         if ( job.getVerb().equals( Job.job.Verb.CLEANDATABASE ) )
         {
-            return manipulateDatabase( CLEAN_DATABASE_URI );
+            return manipulateDatabase( CLEAN_DATABASE_URI, job );
         }
         if ( job.getVerb().equals( Job.job.Verb.MIGRATEDATABASE ) )
         {
-            return manipulateDatabase( MIGRATE_DATABASE_URI );
+            return manipulateDatabase( MIGRATE_DATABASE_URI, job );
         }
 
         // If we do not have a special verb, run this job as an execution
@@ -199,7 +199,7 @@ class WresEvaluationProcessor implements Callable<Integer>
         ExecutorService executorService = Executors.newFixedThreadPool( 3 );
 
         // Open and start an evaluation
-        String evaluationId = startEvaluation();
+        String evaluationId = startEvaluation( job );
 
         // Halt evaluation if we are unable to open a project successfully
         // an empty response means there is a bad state on the server but we are accepting a new job
@@ -284,10 +284,14 @@ class WresEvaluationProcessor implements Callable<Integer>
      * Helper method to prepare and start an evaluation
      * @return String representation of an evaluation id
      */
-    private String startEvaluation()
+    private String startEvaluation( Job.job job )
     {
-        URI prepareEval = URI.create( String.format( OPEN_EVAL_URI, this.getPort() ) );
-        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval, jobMessage ) )
+        String databaseName = job.getDatabaseName();
+        String databaseHost = job.getDatabaseHost();
+        String databasePort = job.getDatabasePort();
+
+        URI prepareEval = URI.create( String.format( OPEN_EVAL_URI, this.getPort(), databaseHost, databaseName, databasePort ) );
+        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval, job.getProjectConfig() ) )
         {
             if ( evaluationIdRequest.getStatusCode() == HttpURLConnection.HTTP_BAD_REQUEST )
             {
@@ -348,10 +352,13 @@ class WresEvaluationProcessor implements Callable<Integer>
      * Helper method to enable database modification methods to be called like CLEAN and MIGRATE
      * @return String representation of an evaluation id
      */
-    private int manipulateDatabase( String uriToCall )
+    private int manipulateDatabase( String uriToCall, Job.job job )
     {
-        URI prepareEval = URI.create( String.format( uriToCall, this.getPort() ) );
-        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval, jobMessage ) )
+        String databaseName = job.getDatabaseName();
+        String databaseHost = job.getDatabaseHost();
+        String databasePort = job.getDatabasePort();
+        URI prepareEval = URI.create( String.format( uriToCall, this.getPort(), databaseHost, databaseName, databasePort ) );
+        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval ) )
         {
             if ( evaluationIdRequest.getStatusCode() != HttpURLConnection.HTTP_OK )
             {

@@ -15,7 +15,6 @@ import java.io.Writer;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -30,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import jakarta.inject.Singleton;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
@@ -39,6 +37,7 @@ import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -60,7 +59,6 @@ import wres.Functions;
 import wres.Main;
 import wres.io.database.locking.DatabaseLockFailed;
 import wres.messages.generated.EvaluationStatusOuterClass;
-import wres.messages.generated.Job;
 import wres.pipeline.Canceller;
 import wres.pipeline.InternalWresException;
 import wres.pipeline.UserInputException;
@@ -81,7 +79,6 @@ import wres.system.SystemSettings;
  * NOTE: Currently there is a 1:1 relationship between a server and an evaluation. That is to say each server can only
  * serve 1 evaluation at a time. For this reason we are currently using Atomic variables to track certain states and
  * information on an evaluation.
- * TODO: Swap to using a persistant cache to support async/multiple simultaneous evaluations
  */
 
 @Path( "/evaluation" )
@@ -333,14 +330,19 @@ public class EvaluationService implements ServletContextListener
 
     /**
      * Starts an evaluation and returns the ID of the evaluation created.
-     *
-     * @param message the evaluation message
+     * @param projectDeclaration the evaluation declaration we are exectuing
+     * @param host the database host if a user wants to specify
+     * @param name the database name if a user wants to specify
+     * @param port the database port if a user wants to specify
      * @return ID of evaluation kicked off
      */
     @POST
     @Path( "/startEvaluation" )
     @Produces( MediaType.TEXT_PLAIN )
-    public Response createEvaluation( byte[] message )
+    public Response createEvaluation( String projectDeclaration,
+                                      @QueryParam( "dbHost" ) String host,
+                                      @QueryParam( "dbName" ) String name,
+                                      @QueryParam( "dbPort" ) String port )
     {
         if ( EVALUATION_ID.get() > 0
              || !( EVALUATION_STAGE.get().equals( CLOSED )
@@ -367,7 +369,9 @@ public class EvaluationService implements ServletContextListener
         // Start a timer to prevent abandoned jobs from blocking the queue
         evaluationTimeoutThread();
 
-        evaluationResponse = startEvaluation( message, projectId );
+        updateSystemSettingsIfNeeded( host, name, port );
+
+        evaluationResponse = startEvaluation( projectDeclaration, projectId );
 
         persistInformation( projectId, new EvaluationMetadata( String.valueOf( projectId ) ) );
 
@@ -473,13 +477,17 @@ public class EvaluationService implements ServletContextListener
 
     /**
      * Kicks off a database Migration
-     * @param message the job message
+     * @param host the database host if a user wants to specify
+     * @param name the database name if a user wants to specify
+     * @param port the database port if a user wants to specify
      * @return Good response
      */
     @POST
     @Path( "/migrateDatabase" )
     @Produces( MediaType.TEXT_PLAIN )
-    public Response migrateDatabase( byte[] message )
+    public Response migrateDatabase( @QueryParam( "dbHost" ) String host,
+                                     @QueryParam( "dbName" ) String name,
+                                     @QueryParam( "dbPort" ) String port )
     {
         if ( !systemSettings.isUseDatabase() )
         {
@@ -488,11 +496,8 @@ public class EvaluationService implements ServletContextListener
                     + "is no database to migrate." );
         }
 
-        // Convert the raw message into a job
-        Job.job jobMessage = createJobFromByteArray( message );
-
         // Checks if database information has changed in the jobMessage and swap to that database
-        updateSystemSettingsIfNeeded( jobMessage );
+        updateSystemSettingsIfNeeded( host, name, port );
 
         Functions.SharedResources sharedResources =
                 new Functions.SharedResources( systemSettings,
@@ -517,13 +522,17 @@ public class EvaluationService implements ServletContextListener
 
     /**
      * Kicks off a database Clean
-     * @param message the job message
+     * @param host the database host if a user wants to specify
+     * @param name the database name if a user wants to specify
+     * @param port the database port if a user wants to specify
      * @return Good response
      */
     @POST
     @Path( "/cleanDatabase" )
     @Produces( MediaType.TEXT_PLAIN )
-    public Response cleanDatabase( byte[] message )
+    public Response cleanDatabase( @QueryParam( "dbHost" ) String host,
+                                   @QueryParam( "dbName" ) String name,
+                                   @QueryParam( "dbPort" ) String port )
     {
         if ( !systemSettings.isUseDatabase() )
         {
@@ -531,11 +540,8 @@ public class EvaluationService implements ServletContextListener
                                                 + "is no database to clean." );
         }
 
-        // Convert the raw message into a job
-        Job.job jobMessage = createJobFromByteArray( message );
-
         // Checks if database information has changed in the jobMessage and swap to that database
-        updateSystemSettingsIfNeeded( jobMessage );
+        updateSystemSettingsIfNeeded( host, name, port );
 
         try
         {
@@ -619,8 +625,6 @@ public class EvaluationService implements ServletContextListener
                                     + e.getMessage() )
                            .build();
         }
-
-        // TODO: Swap to not using cache once we can find root cause of files not being written
 
         return Response.ok( "I received project " + projectId
                             + ", and successfully ran it. Visit /project/"
@@ -721,17 +725,15 @@ public class EvaluationService implements ServletContextListener
 
     /**
      * Starts an opened Evaluation
+     * @param projectDeclaration the declaration we are evaluating
      * @param id the evaluation identifier
-     * @param message job message containing the evaluation and database settings
      * @return a Future<Response> of the evaluation
      */
-    private Future<Response> startEvaluation( byte[] message, Long id )
+    private Future<Response> startEvaluation( String projectDeclaration, Long id )
     {
         ExecutorService executorService = Executors.newSingleThreadExecutor();
 
         return executorService.submit( () -> {
-            // Convert the raw message into a job
-            Job.job jobMessage = createJobFromByteArray( message );
 
             EVALUATION_STAGE.set( ONGOING );
             LOGGER.info( "Kicking off evaluation on server with the internal ID of: {}", id );
@@ -739,9 +741,6 @@ public class EvaluationService implements ServletContextListener
             Canceller canceller = Canceller.of();
             try
             {
-                // Checks if database information has changed in the jobMessage and swap to that database
-                updateSystemSettingsIfNeeded( jobMessage );
-
                 // Print system setting at the top of the job log to help debug
                 logJobHeaderInformation();
 
@@ -751,13 +750,15 @@ public class EvaluationService implements ServletContextListener
                 Functions.SharedResources sharedResources =
                         new Functions.SharedResources( systemSettings,
                                                        "execute",
-                                                       List.of( jobMessage.getProjectConfig() ) );
+                                                       List.of( projectDeclaration ) );
 
                 ExecutionResult result = Functions.evaluate( sharedResources, EVALUATION_CANCELLER.get() );
 
                 // We rely on these log statements for tying IDs together easier while debugging.
                 // Check findJobID.sh in the scripts directory to see how this is used before changing/removing
-                LOGGER.info( "Evaluation with internal ID {} and evaluation ID of {} has returned", id, result.getEvaluationId() );
+                LOGGER.info( "Evaluation with internal ID {} and evaluation ID of {} has returned",
+                             id,
+                             result.getEvaluationId() );
 
                 // get files written
                 outputPaths = result.getResources();
@@ -991,32 +992,32 @@ public class EvaluationService implements ServletContextListener
 
     /**
      * If the job contains database information different from the current database then change the systemSettings
-     * @param job The job we are about to evaluate
+     * @param host the database host if a user wants to specify
+     * @param name the database name if a user wants to specify
+     * @param port the database port if a user wants to specify
      */
-    private static void updateSystemSettingsIfNeeded( Job.job job )
+    private static void updateSystemSettingsIfNeeded( String host, String name, String port )
     {
         boolean databaseChangeDetected = false;
-        String databaseName = job.getDatabaseName();
-        String databaseHost = job.getDatabaseHost();
-        String databasePort = job.getDatabasePort();
 
         DatabaseSettings databaseConfiguration = systemSettings.getDatabaseConfiguration();
         DatabaseSettings.DatabaseSettingsBuilder databaseBuilder = databaseConfiguration.toBuilder();
 
         // Attempt to apply any changes detected
-        if ( !databaseName.isEmpty() && !databaseName.equals( databaseConfiguration.getDatabaseName() ) )
+        if ( Objects.nonNull( name ) && !name.isEmpty() && !name.equals( databaseConfiguration.getDatabaseName() ) )
         {
-            databaseBuilder.databaseName( databaseName );
+            databaseBuilder.databaseName( name );
             databaseChangeDetected = true;
         }
-        if ( !databaseHost.isEmpty() && !databaseHost.equals( databaseConfiguration.getHost() ) )
+        if ( Objects.nonNull( host ) && !host.isEmpty() && !host.equals( databaseConfiguration.getHost() ) )
         {
-            databaseBuilder.host( databaseHost );
+            databaseBuilder.host( host );
             databaseChangeDetected = true;
         }
-        if ( !databasePort.isEmpty() && !databasePort.equals( String.valueOf( databaseConfiguration.getPort() ) ) )
+        if ( Objects.nonNull( port ) && !port.isEmpty()
+             && !port.equals( String.valueOf( databaseConfiguration.getPort() ) ) )
         {
-            databaseBuilder.port( Integer.parseInt( databasePort ) );
+            databaseBuilder.port( Integer.parseInt( port ) );
             databaseChangeDetected = true;
         }
 
@@ -1031,18 +1032,6 @@ public class EvaluationService implements ServletContextListener
             }
 
             systemSettings = systemSettings.toBuilder().databaseConfiguration( databaseBuilder.build() ).build();
-        }
-    }
-
-    private Job.job createJobFromByteArray( byte[] message )
-    {
-        try
-        {
-            return Job.job.parseFrom( message );
-        }
-        catch ( InvalidProtocolBufferException ipbe )
-        {
-            throw new IllegalArgumentException( "Bad message received: " + Arrays.toString( message ), ipbe );
         }
     }
 
