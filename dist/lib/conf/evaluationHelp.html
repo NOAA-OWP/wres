@@ -1,30 +1,33 @@
 <!DOCTYPE html>
-
-<html>
+<html lang="">
     <head>
+        <link rel='stylesheet' type='text/css' />
         <title>Evaluation Help</title>
     </head>
-
     <h1>Standalone Server Help</h1>
-
     <h3> How do I execute an evaluation? </h3>
     <body>
         <p> Using your preferred tool for network data transfers, such as Client for URL (CURL): </p>
-        <p> curl -X POST -d "$(cat [DECLARATION_FILE])" localhost:[PORT]}/evaluation/evaluate </p>
+        <p> First close any existing evaluation to prepare the server </p>
+        <p> curl -X POST localhost:[PORT]/evaluation/close </p>
+        <p> Then you can execute the following call to start an evaluation and get the ID returned to you </p>
+        <p> curl -X POST -d "$(cat [DECLARATION_FILE])" localhost:[PORT]/evaluation/startEvaluation </p>
     </body>
-
     <h3> How do I obtain a list of the outputs generated? </h3>
     <body>
-        <p>curl -X GET localhost:[PORT]/evaluation/[PROJECT_ID]</p>
+        <p> Take the ID generated from the startEvaluation call and make the following get call </p>
+        <p> This will return a list of paths for the output when the evaluation finishes </p>
+        <p> curl -X GET localhost:[PORT]/evaluation/getEvaluation/[PROJECT_ID] </p>
     </body>
-
+    <h3> How do I obtain the stdOut logs of the evaluation? </h3>
+    <body>
+        <p> Take the ID generated from the startEvaluation call and make the following get call</p>
+        <p> This will return all the logs if the evaluation is finished or a real-time stream for ongoing evaluations </p>
+        <p> curl -X GET localhost:[PORT]/evaluation/stdOut/[PROJECT_ID] </p>
+    </body>
     <h3> How do I obtain an output file? </h3>
     <body>
-        <p>curl -o [FILE_NAME] -X GET localhost:[PORT]/evaluation/[PROJECT_ID]/[FILE_NAME]</p>
-    </body>
-
-    <h3> How do I view evaluation logs? </h3>
-    <body>
-        <p>Logging information will be printed in the terminal window</p>
+        <p> You can visit the paths produced by the getEvaluation call or you can get an individual file with the following call </p>
+        <p> curl -o [FILE_NAME] -X GET localhost:[PORT]/evaluation/[PROJECT_ID]/[FILE_NAME] </p>
     </body>
 </html>
