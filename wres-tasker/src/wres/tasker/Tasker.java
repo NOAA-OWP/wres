@@ -135,9 +135,8 @@ public class Tasker
 
         try
         {
-            String result = wresJob.getWresJob();
-            LOGGER.info( "{}: I will take wres job requests and queue them.",
-                         result );
+            wresJob.checkComponentConnectivity();
+            LOGGER.info( "Able to connect to other components. I will take wres job requests and queue them." );
         }
         catch ( WresJob.ConnectivityException ce )
         {

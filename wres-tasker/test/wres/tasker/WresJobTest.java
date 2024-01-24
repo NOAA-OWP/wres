@@ -227,6 +227,9 @@ public class WresJobTest
                             approvedCiphersJoiner.toString() );
 
         // This class does not test redis integration.
+
+        System.setProperty( BrokerManagerHelper.WRES_MONITOR_PASSWORD_SYSTEM_PROPERTY_NAME,
+                            "test" );
     }
 
     @Test

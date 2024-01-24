@@ -90,25 +90,34 @@ public class WresJob
     private static final String ADMIN_TOKEN_SYSTEM_PROPERTY_NAME = "wres.adminToken";
     private static final byte[] salt = new byte[16];
     private static byte[] adminTokenHash = null; //Empty means password not specified.
+
     /**
      * The count of evaluations combined with the maximum length below (which
      * is around 1x-2.5x the bytes) that could be handled by broker with current
      * broker memory limits minus 100MiB usually used by broker.
      */
     private static final short MAXIMUM_EVALUATION_COUNT = 50;
+
     /**
      * A maximum length less than the largest-seen successful project sent
      * to a worker-shim with the current worker-shim heap limits. E.g. no OOME.
      */
     private static final int MAXIMUM_PROJECT_DECLARATION_LENGTH = 5_000_000;
+
     /**
      * A smaller-than-minimum number of bytes expected in a project declaration.
      */
     private static final int MINIMUM_PROJECT_DECLARATION_LENGTH = 100;
+
     //Database information
     private static String activeDatabaseName = "";
     private static String activeDatabaseHost = "";
     private static String activeDatabasePort = "";
+
+    /**
+     * Used to facilitate communication with the broker manager API.
+     */
+    private static BrokerManagerHelper brokerMgrHelper;
 
     static
     {
@@ -224,6 +233,9 @@ public class WresJob
                 portBucket.set( activeDatabasePort );
             }
         }
+
+        //Initialize the broker manager helper once.
+        brokerMgrHelper = new BrokerManagerHelper();
     }
 
     /** Shared job result state, exposed below */
@@ -233,9 +245,12 @@ public class WresJob
     /** Guards connection */
     private static final Object CONNECTION_LOCK = new Object();
 
-    @GET
-    @Produces( "text/plain; charset=utf-8" )
-    public String getWresJob()
+    
+    /**
+     * Check for connectivity to the broker and persister.
+     * @throws ConnectivityException if check fails.
+     */
+    public void checkComponentConnectivity()
     {
         // Test connectivity to broker
         try ( Connection conn = CONNECTION_FACTORY.newConnection() )
@@ -254,6 +269,7 @@ public class WresJob
                                              CONNECTION_FACTORY.getPort(),
                                              e );
         }
+        // Test connectivity to persister.
         if ( REDISSON_CLIENT != null )
         {
             String dummyId = "dummyObjectId" + System.currentTimeMillis();
@@ -278,6 +294,44 @@ public class WresJob
                                                  re );
             }
         }
+    }
+
+    @GET
+    @Produces( "text/plain; charset=utf-8" )
+    public String getWresJob()
+    {
+        // Test connectivity to other componetns 
+        try
+        {
+            checkComponentConnectivity();
+        }
+        catch (ConnectivityException ce)
+        {
+            LOGGER.warn( "Unable to connect to either the broker or persister. Reporting 'Down'. "
+                         + "Exception message: {}", ce.getMessage() );
+            LOGGER.debug( "Full exception trace: {}", ce );
+            return "Down";
+        }
+        
+        //If there are no workers connected to the broker, then the service is considered down.
+        try
+        {
+            int workerCount = brokerMgrHelper.getBrokerWorkerConnectionCount();
+            if ( workerCount <= 0 )
+            {
+                LOGGER.warn( "No workers are connected to the broker. Reporting 'Down'." );
+                return "Down";
+            }
+            LOGGER.info( "Found {} workers connected to the broker", workerCount ); 
+        }
+        catch ( IOException e )
+        {
+            LOGGER.warn( "Unable to obtain a worker count from the broker manager. Reporting 'Down'. "
+                         + " Exception message: {}", e.getMessage() );
+            LOGGER.debug( "Full exception trace: ", e );
+            return "Down";
+        }
+
         return "Up";
     }
 
@@ -287,7 +341,7 @@ public class WresJob
     public Response getEvaluationInQueue()
     {
         int inQueueCount = JOB_RESULTS.getJobStatusCount( JobMetadata.JobState.IN_QUEUE );
-        double queueUsePercentage = ( ( double ) inQueueCount / MAXIMUM_EVALUATION_COUNT ) * 100;
+        double queueUsePercentage = ( (double) inQueueCount / MAXIMUM_EVALUATION_COUNT ) * 100;
         String totalWorkers = System.getProperty( "wres.numberOfWorkers" );
         int totalWorkersNumber = 0;
         try
@@ -297,21 +351,30 @@ public class WresJob
         catch ( NumberFormatException e )
         {
             LOGGER.warn( "Discovered an invalid 'wres.numberOfWorkers'. Expected a number, but got: "
-                         + " {}.", totalWorkers );
+                         + " {}.",
+                         totalWorkers );
         }
         int inProgressCount = JOB_RESULTS.getJobStatusCount( JobMetadata.JobState.IN_PROGRESS );
         double workersUsePercentage = 0;
         if ( totalWorkersNumber != 0 )
         {
-            workersUsePercentage = ( ( double ) inProgressCount / totalWorkersNumber ) * 100;
+            workersUsePercentage = ( (double) inProgressCount / totalWorkersNumber ) * 100;
         }
         DecimalFormat df = new DecimalFormat( "0.00" );
 
         String htmlResponse = "<html><body><h1>Evaluations in Queue and In Progress</h1>"
-                              + "<p>IN_QUEUE Count: " + inQueueCount + "</p>"
-                              + "<p>IN_PROGRESS Count: " + inProgressCount + "</p>"
-                              + "<p>Queue Used Percentage: " + df.format( queueUsePercentage ) + "%</p>"
-                              + "<p>Worker Used Percentage: " + df.format( workersUsePercentage ) + "%</p>"
+                              + "<p>IN_QUEUE Count: "
+                              + inQueueCount
+                              + "</p>"
+                              + "<p>IN_PROGRESS Count: "
+                              + inProgressCount
+                              + "</p>"
+                              + "<p>Queue Used Percentage: "
+                              + df.format( queueUsePercentage )
+                              + "%</p>"
+                              + "<p>Worker Used Percentage: "
+                              + df.format( workersUsePercentage )
+                              + "%</p>"
                               + "</body></html>";
 
         return Response.ok( htmlResponse ).build();
@@ -756,7 +819,7 @@ public class WresJob
                             + A_P_BODY_HTML )
                        .build();
     }
-    
+
     /**
      * Afford the client the ability to remove all resources after the client is
      * finished reading the resources it cares about.
@@ -776,11 +839,11 @@ public class WresJob
     public Response deleteProjectOutputResourcesPlain( @PathParam( "jobId" ) String id )
     {
         LOGGER.debug( "Deleting input (if any) and output resources from job {}", id );
-        
+
         try
         {
             WresJob.getSharedJobResults().deleteOutputs( id );
-            
+
             //Make sure to force delete inputs, since the user requested it.
             WresJob.getSharedJobResults().deleteInputs( id, true );
         }
@@ -788,26 +851,30 @@ public class WresJob
         {
             LOGGER.error( "Could not find metadata for the job {}.", id, jnfe );
             return Response.status( Response.Status.NOT_FOUND )
-                    .entity( "Could not find job " + id )
-                    .build();
+                           .entity( "Could not find job " + id )
+                           .build();
         }
         catch ( IOException ioe )
         {
             LOGGER.error( "Failed to delete resources for job {} at request of client.",
-                          id, ioe );
+                          id,
+                          ioe );
             return Response.serverError()
-                    .entity( "Failed to delete all resources for job " + id +
-                             " though some may have been deleted before the exception occurred." )
-                    .build();
+                           .entity( "Failed to delete all resources for job " + id
+                                    +
+                                    " though some may have been deleted before the exception occurred." )
+                           .build();
         }
         catch ( IllegalStateException ise )
         {
             LOGGER.error( "Internal error deleting resources for job {}.",
-                          id, ise );
+                          id,
+                          ise );
             return Response.serverError()
-                    .entity( "Internal error deleting all resources for job " + id +
-                             " though some may have been deleted before the exception occurred." )
-                    .build();
+                           .entity( "Internal error deleting all resources for job " + id
+                                    +
+                                    " though some may have been deleted before the exception occurred." )
+                           .build();
         }
 
         return Response.ok( "Successfully deleted input (if any) and output resources for job " + id )
@@ -840,11 +907,11 @@ public class WresJob
             String jobStatusExchange = JobResults.getJobStatusExchangeName();
             AMQP.BasicProperties properties =
                     new AMQP.BasicProperties.Builder()
-                            .replyTo( jobStatusExchange )
-                            .correlationId( jobId )
-                            .deliveryMode( 2 )
-                            .priority( priority )
-                            .build();
+                                                      .replyTo( jobStatusExchange )
+                                                      .correlationId( jobId )
+                                                      .deliveryMode( 2 )
+                                                      .priority( priority )
+                                                      .build();
             // Inform the JobResults class to start looking for correlationId.
             // Share a connection, but not a channel, aim for channel-per-thread.
             // I think something needs to be watching the queue or else messages
@@ -929,9 +996,9 @@ public class WresJob
     {
         return Response.serverError()
                        .entity(
-                               "<!DOCTYPE html><html><head><title>Our mistake</title></head><body><h1>Internal Server Error</h1><p>"
-                               + message
-                               + P_BODY_HTML )
+                                "<!DOCTYPE html><html><head><title>Our mistake</title></head><body><h1>Internal Server Error</h1><p>"
+                                + message
+                                + P_BODY_HTML )
                        .build();
     }
 
@@ -939,9 +1006,9 @@ public class WresJob
     {
         return Response.status( Response.Status.SERVICE_UNAVAILABLE )
                        .entity(
-                               "<!DOCTYPE html><html><head><title>Service temporarily unavailable</title></head><body><h1>Service Unavailable</h1><p>"
-                               + message
-                               + P_BODY_HTML )
+                                "<!DOCTYPE html><html><head><title>Service temporarily unavailable</title></head><body><h1>Service Unavailable</h1><p>"
+                                + message
+                                + P_BODY_HTML )
                        .build();
     }
 
@@ -958,9 +1025,9 @@ public class WresJob
     {
         return Response.status( Response.Status.BAD_REQUEST )
                        .entity(
-                               "<!DOCTYPE html><html><head><title>Bad Request</title></head><body><h1>Bad Request</h1><p>"
-                               + message
-                               + P_BODY_HTML )
+                                "<!DOCTYPE html><html><head><title>Bad Request</title></head><body><h1>Bad Request</h1><p>"
+                                + message
+                                + P_BODY_HTML )
                        .build();
     }
 
@@ -968,9 +1035,9 @@ public class WresJob
     {
         return Response.status( Response.Status.UNAUTHORIZED )
                        .entity(
-                               "<!DOCTYPE html><html><head><title>Unauthorized</title></head><body><h1>Unauthorized</h1><p>"
-                               + message
-                               + P_BODY_HTML )
+                                "<!DOCTYPE html><html><head><title>Unauthorized</title></head><body><h1>Unauthorized</h1><p>"
+                                + message
+                                + P_BODY_HTML )
                        .build();
     }
 
@@ -1068,5 +1135,16 @@ public class WresJob
                    cause );
         }
     }
+
+    static final class NoWorkersException extends RuntimeException
+    {
+        private static final long serialVersionUID = 4143746909778499342L;
+
+        private NoWorkersException()
+        {
+            super( "The broker appears to have no workers connected to it." );
+        }
+    }
 }
+
 

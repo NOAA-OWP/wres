@@ -1250,6 +1250,7 @@ project(':wres-tasker')
         implementation project( ':wres-config' )
         implementation project( ':wres-messages' )
         implementation project( ':wres-statistics' )
+        implementation project( ':wres-http' )
         implementation 'org.slf4j:slf4j-api:2.0.9'
         implementation 'com.rabbitmq:amqp-client:5.20.0'
         implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
@@ -1296,6 +1297,20 @@ project(':wres-tasker')
 
         // Because of CVE-2022-24823. TODO: remove when Redisson catches up
         implementation group: 'io.netty', name: 'netty-all', version: '4.1.103.Final'
+
+        // Better-than-Java's HTTP client. Used to talk to manager.
+        implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+
+        // Update vulnerable kotlin-stdlib that okhttp/okio uses
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.0'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.0'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0'
+
+        // JSON deserialization uses jackson directly. Specify recent version.
+        implementation 'com.fasterxml.jackson:jackson-bom:2.16.0'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.0'
+        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.16.0'
+        implementation 'com.fasterxml.jackson.core:jackson-core:2.16.0'
 
         // For ToStringBuilder
         implementation 'org.apache.commons:commons-lang3:3.14.0'
@@ -2073,3 +2088,4 @@ configurations.runtimeOnly
 }
 
 defaultTasks 'installDist', 'test', 'javadoc'
+

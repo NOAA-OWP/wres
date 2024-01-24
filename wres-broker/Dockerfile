@@ -12,6 +12,7 @@ RUN echo "wres_docker:x:498:1370800073::/home/wres_docker:" >> /etc/passwd \
 
 # Enable authentication with x509 client certificates (requires some conf too):
 RUN rabbitmq-plugins enable --offline rabbitmq_auth_mechanism_ssl
+RUN rabbitmq-plugins enable --offline rabbitmq_management
 
 WORKDIR /etc/rabbitmq
 COPY nonsrc/rabbitmq.conf .
