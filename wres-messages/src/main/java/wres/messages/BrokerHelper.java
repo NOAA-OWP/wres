@@ -149,7 +149,7 @@ public class BrokerHelper
      * @return the TrustManager
      */
 
-    private static TrustManager getDefaultTrustManager()
+    public static TrustManager getDefaultTrustManager()
     {
         String ourCustomTrustFileName = "trustedCertificateAuthorities.jks";
 

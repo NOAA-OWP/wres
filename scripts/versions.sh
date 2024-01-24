@@ -36,7 +36,7 @@ do
     # For those with zips, we want to change versions when dependencies change.
     if [[ "$directory" == "wres-tasker" ]]
     then
-        version=$( get_ver ${directory} "wres-messages" "wres-config" )
+        version=$( get_ver ${directory} "wres-messages" "wres-config" "wres-http" )
     elif [[ "$directory" == "wres-worker" ]]
     then
         version=$( get_ver ${directory} "wres-messages" )
