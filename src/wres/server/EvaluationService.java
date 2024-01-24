@@ -206,7 +206,7 @@ public class EvaluationService implements ServletContextListener
      * @return Help message
      */
     @GET
-    @Produces( MediaType.TEXT_PLAIN )
+    @Produces( MediaType.TEXT_HTML )
     public Response help()
     {
         InputStream resourceAsStream =
@@ -225,12 +225,6 @@ public class EvaluationService implements ServletContextListener
     @Produces( MediaType.TEXT_PLAIN )
     public Response heartbeat()
     {
-        // We heartbeat the server before accepting a new job and periodically through docker
-        // Set status to AWAITING if the last project has been CLOSED
-        if ( EVALUATION_STAGE.get().equals( CLOSED ) )
-        {
-            EVALUATION_STAGE.set( AWAITING );
-        }
         return Response.ok( "The Server is Up \n" )
                        .build();
     }
@@ -266,6 +260,12 @@ public class EvaluationService implements ServletContextListener
     @Produces( MediaType.TEXT_PLAIN )
     public Response getStatus( @PathParam( "id" ) Long id )
     {
+        if ( id != EVALUATION_ID.get() )
+        {
+            return Response.status( Response.Status.NOT_FOUND )
+                           .entity( "Can only check the status of the current evaluation" )
+                           .build();
+        }
         return Response.ok( EVALUATION_STAGE.get().toString() )
                        .build();
     }
@@ -569,98 +569,6 @@ public class EvaluationService implements ServletContextListener
     }
 
     /**
-     * A simplistic evaluate API, if using this call then the user will not have access to stdout, stderror or status
-     * The output paths written are returned to the user and not stored anywhere
-     *
-     * @param projectConfig the evaluation project declaration string
-     * @return the state of the evaluation
-     * @deprecated
-     */
-    @POST
-    @Path( "/evaluate" )
-    @Produces( MediaType.TEXT_XML )
-    @Deprecated( since = "6.17" )
-    public Response postEvaluate( String projectConfig )
-    {
-        long projectId;
-        try
-        {
-            // Guarantee a positive number. Using Math.abs would open up failure
-            // in edge cases. A while loop seems complex. Thanks to Ted Hopp
-            // on StackOverflow question id 5827023.
-            projectId = RANDOM.nextLong() & Long.MAX_VALUE;
-
-            Functions.SharedResources sharedResources =
-                    new Functions.SharedResources( systemSettings,
-                                                   "evaluate",
-                                                   List.of( projectConfig ) );
-
-            Canceller canceller = Canceller.of();
-            ExecutionResult result = Functions.evaluate( sharedResources, canceller );
-            Set<java.nio.file.Path> outputPaths = result.getResources();
-
-            // persist information
-            EvaluationMetadata evaluationMetadata = new EvaluationMetadata( String.valueOf( projectId ) );
-            evaluationMetadata.setOutputs( outputPaths );
-            persistInformation( projectId, evaluationMetadata );
-        }
-        catch ( UserInputException e )
-        {
-            return Response.status( Response.Status.BAD_REQUEST )
-                           .entity( "I received something I could not parse. The top-level exception was: "
-                                    + e.getMessage() )
-                           .build();
-        }
-        catch ( InternalWresException iwe )
-        {
-            return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
-                           .entity( "WRES experienced an internal issue. The top-level exception was: "
-                                    + iwe.getMessage() )
-                           .build();
-        }
-        catch ( Exception e )
-        {
-            return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
-                           .entity( "WRES experienced an unexpected internal issue. The top-level exception was: "
-                                    + e.getMessage() )
-                           .build();
-        }
-
-        return Response.ok( "I received project " + projectId
-                            + ", and successfully ran it. Visit /project/"
-                            + projectId
-                            + " for more." )
-                       .build();
-    }
-
-    /**
-     * @param id the evaluation job identifier
-     * @return the evaluation results
-     * @deprecated
-     */
-
-    @GET
-    @Path( "/{id}" )
-    @Produces( MediaType.TEXT_PLAIN )
-    @Deprecated( since = "6.17" )
-    public Response getProjectResults( @PathParam( "id" ) Long id )
-    {
-        Set<java.nio.file.Path> paths = getCachedEntry( id ).getOutputs();
-
-        if ( paths == null )
-        {
-            return Response.status( Response.Status.NOT_FOUND )
-                           .entity( "Could not find job " + id )
-                           .build();
-        }
-
-        Set<String> resources = getSetOfResources( id, paths );
-
-        return Response.ok( "Here are result resources: " + resources )
-                       .build();
-    }
-
-    /**
      * @param id the evaluation job identifier
      * @param resourceName the resource name
      * @return the resource
@@ -669,7 +577,6 @@ public class EvaluationService implements ServletContextListener
 
     @GET
     @Path( "/{id}/{resourceName}" )
-    @Deprecated( since = "6.17" )
     public Response getProjectResource( @PathParam( "id" ) Long id,
                                         @PathParam( "resourceName" ) String resourceName )
     {
