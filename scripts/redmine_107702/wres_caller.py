@@ -84,7 +84,7 @@ parser = argparse.ArgumentParser(
                     epilog='Not sure if an epilog in the help will be needed, but this is where it would go.')
 parser.add_argument('filename',           help='Declaration filename')
 parser.add_argument('-u', '--host',       help='Cluster WRES instance host (without the http prefix); defaults to WRES_HOST_NAME environment variable.')
-parser.add_argument('-c', '--cert',       help='The certificate .pem file to authenticate the WRES instance; defaults to WRES_CA_FOLE environment variable.')
+parser.add_argument('-c', '--cert',       help='The certificate .pem file to authenticate the WRES instance; defaults to WRES_CA_FILE environment variable.')
 parser.add_argument('-o', '--output',     help='Directory where output is to be written.', default=".")
 parser.add_argument('-l', '--observed',   help='Data to post for the observed sources either one file or a directory.')
 parser.add_argument('-p', '--predicted',  help='Data to post for the predicted sources either one file or a directory.')
