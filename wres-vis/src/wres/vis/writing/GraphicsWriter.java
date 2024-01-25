@@ -308,13 +308,16 @@ abstract class GraphicsWriter
                 Slicer.filter( statistics,
                                summaryStat );
 
-        // Partition the summary statistics by statistic name
-        Map<Pair<SummaryStatistic.StatisticName, String>, List<T>> grouped =
+        // Partition the summary statistics by statistic name and dimension
+        Map<Pair<Pair<SummaryStatistic.StatisticName, SummaryStatistic.StatisticDimension>, String>, List<T>> grouped =
                 summaryStats.stream()
                             .filter( s -> allowed.contains( s.getSummaryStatistic()
                                                              .getStatistic() ) )
-                            .collect( Collectors.groupingBy( s -> Pair.of( s.getSummaryStatistic()
-                                                                            .getStatistic(), qualifier.apply( s ) ) ) );
+                            .collect( Collectors.groupingBy( s -> Pair.of( Pair.of( s.getSummaryStatistic()
+                                                                                     .getStatistic(),
+                                                                                    s.getSummaryStatistic()
+                                                                                     .getDimension() ),
+                                                                           qualifier.apply( s ) ) ) );
 
         List<T> noSummaryStats =
                 Slicer.filter( statistics,

@@ -280,11 +280,6 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
         // Build chart
         try
         {
-            MetricConstants metricName = statistics.get( 0 )
-                                                   .getMetricName();
-            PoolMetadata metadata = statistics.get( 0 )
-                                              .getPoolMetadata();
-
             // Collection of graphics parameters, one for each set of charts to write across N formats.
             Collection<Outputs> outputsMap =
                     GraphicsWriter.getOutputsGroupedByGraphicsParameters( outputsDescription );
@@ -302,6 +297,10 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
                 {
                     TimeWindowOuter nextTimeWindow = nextPlot.getKey();
                     List<BoxplotStatisticOuter> nextStatistics = nextPlot.getValue();
+                    MetricConstants metricName = nextStatistics.get( 0 )
+                                                               .getMetricName();
+                    PoolMetadata metadata = nextStatistics.get( 0 )
+                                                          .getPoolMetadata();
 
                     // Build the chart engine
                     JFreeChart chart = factory.getBoxplotChart( nextStatistics,

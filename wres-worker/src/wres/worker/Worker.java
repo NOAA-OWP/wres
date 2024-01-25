@@ -2,9 +2,9 @@ package wres.worker;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -68,7 +68,7 @@ public class Worker
      * Expects exactly one arg with a path to WRES executable
      * @param args arguments, but only one is expected, a WRES executable
      * @throws IOException when communication with queue fails or process start fails.
-     * @throws IllegalArgumentException when the first argument is not a WRES executable
+     * @throws IllegalArgumentException when the first argument is not a WRES executable or the server URI is incorrect
      * @throws java.net.ConnectException when connection to queue fails.
      * @throws TimeoutException when connection to the queue times out.
      * @throws InterruptedException when interrupted while waiting for work.
@@ -96,7 +96,8 @@ public class Worker
         }
 
         // This is to satisfy SonarQube and IntelliJ IDEA re: infinite loop
-        Runtime.getRuntime().addShutdownHook( new Thread( () -> {Worker.killed = true;} ) );
+        Runtime.getRuntime()
+               .addShutdownHook( new Thread( () -> Worker.killed = true ) );
 
         // Set up connection parameters for connection to broker
         ConnectionFactory factory = createConnectionFactory();
@@ -108,7 +109,7 @@ public class Worker
             // Take precisely one job at a time:
             receiveChannel.basicQos( 1 );
 
-            Map<String, Object> queueArgs = new HashMap<String, Object>();
+            Map<String, Object> queueArgs = new HashMap<>();
             queueArgs.put( "x-max-priority", 2 );
             receiveChannel.queueDeclare( RECV_QUEUE_NAME, true, false, false, queueArgs );
 
@@ -132,7 +133,7 @@ public class Worker
                 {
                     // Checks if server is ready for a new job, throws exception to restart the server
                     // We should not be accepting another job if the server is in a bad state
-                    isServerReadyForWork();
+                    Worker.isServerReadyForWork();
 
                     // Launch WRES if the consumer found a message saying so.
                     Integer responseCode = wresEvaluationProcessor.call();
@@ -159,19 +160,15 @@ public class Worker
         }
         catch ( IOException | TimeoutException | InterruptedException e )
         {
-            String message = "Checked exception while talking to the broker";
-            LOGGER.error( message, e );
+            String message = "Checked exception while talking to the broker.";
+            LOGGER.error( message );
             throw e;
         }
         catch ( RuntimeException re )
         {
-            String message = "Unchecked exception while talking to the broker";
-            LOGGER.error( message, re );
+            String message = "Unchecked exception while talking to the broker.";
+            LOGGER.error( message );
             throw re;
-        }
-        catch ( URISyntaxException e )
-        {
-            throw new RuntimeException( e );
         }
     }
 
@@ -203,7 +200,7 @@ public class Worker
 
     /**
      * Uses the wresExecutable passed in to start a worker server wrapped in a ProcessBuilder
-     * @param wresExecutable
+     * @param wresExecutable the executable location
      * @return a Process containing a worker server
      */
     private static Process startWorkerServer( File wresExecutable )
@@ -215,7 +212,8 @@ public class Worker
         // inner worker process, as distinct from this shim process.
         String innerJavaOpts = System.getenv( "INNER_JAVA_OPTS" );
 
-        if ( innerJavaOpts != null && innerJavaOpts.length() > 0 )
+        if ( innerJavaOpts != null
+             && !innerJavaOpts.isEmpty() )
         {
             javaOpts = innerJavaOpts;
         }
@@ -245,7 +243,7 @@ public class Worker
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new UncheckedIOException( e );
         }
 
         // We cannot start a worker-server, kill the worker-shim
@@ -258,15 +256,14 @@ public class Worker
      * Method to check if the server is ready to accept a new job
      * @throws IOException, URISyntaxException
      */
-    private static void isServerReadyForWork() throws IOException, URISyntaxException
+    private static void isServerReadyForWork() throws IOException
     {
-        URI uri = new URI( String.format( SERVER_READY_FOR_WORK_CHECK_URI, DEFAULT_PORT ) );
-        try (
-                WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() )
-        )
+        URI uri = URI.create( String.format( SERVER_READY_FOR_WORK_CHECK_URI, DEFAULT_PORT ) );
+        try ( WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() ) )
         {
-            if ( fromWeb.getStatusCode() != HttpURLConnection.HTTP_OK ) {
-                throw new IOException( "Server was not ready for work, restarting container " );
+            if ( fromWeb.getStatusCode() != HttpURLConnection.HTTP_OK )
+            {
+                throw new IOException( "Server was not ready for work, restarting container." );
             }
         }
     }

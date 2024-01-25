@@ -1674,9 +1674,18 @@ public class ChartFactory
                 }
             }
 
+            // Report the dimension. If the statistic aggregates a feature group, report as features because the group
+            // is qualified separately
+            String dimension = summaryStatistic.getDimension()
+                                               .toString();
+            if( summaryStatistic.getDimension() == SummaryStatistic.StatisticDimension.FEATURE_GROUP )
+            {
+                dimension = SummaryStatistic.StatisticDimension.FEATURES.toString();
+            }
+
             name = statisticName
                    + " across "
-                   + summaryStatistic.getDimension()
+                   + dimension
                    + OF_THE;
         }
 

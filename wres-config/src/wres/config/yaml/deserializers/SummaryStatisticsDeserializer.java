@@ -42,10 +42,48 @@ public class SummaryStatisticsDeserializer
         // A template builder
         SummaryStatistic.Builder template = SummaryStatistic.newBuilder();
 
-        // Plain array
+        // Plain array of statistics
         if ( node.isArray() )
         {
             this.readStatisticsFromArrayNode( node, summaryStatistics, mapper, template );
+        }
+        // Qualified statistics
+        else if ( node.isObject()
+                  && node.has( "statistics" ) )
+        {
+            JsonNode metricsNode = node.get( "statistics" );
+            this.readStatisticsFromArrayNode( metricsNode, summaryStatistics, mapper, template );
+
+            // Create one summary statistic for each qualified dimension
+            if ( node.has( "dimensions" ) )
+            {
+                JsonNode dimensionsNode = node.get( "dimensions" );
+                int count = dimensionsNode.size();
+                Set<SummaryStatistic> dimensionedStatistics = new LinkedHashSet<>();
+                for ( int i = 0; i < count; i++ )
+                {
+                    String nodeText = dimensionsNode.get( i )
+                                                    .asText();
+
+                    String enumName = DeclarationUtilities.toEnumName( nodeText );
+
+                    // Declared in the plural, build in the singular.
+                    if ( enumName.equals( "FEATURE_GROUPS" ) )
+                    {
+                        enumName = "FEATURE_GROUP";
+                    }
+
+                    SummaryStatistic.StatisticDimension dimension =
+                            SummaryStatistic.StatisticDimension.valueOf( enumName );
+
+                    summaryStatistics.forEach( n -> dimensionedStatistics.add( n.toBuilder()
+                                                                                .setDimension( dimension )
+                                                                                .build() ) );
+                }
+
+                // Add any extras to the overall set of statistics
+                summaryStatistics = dimensionedStatistics;
+            }
         }
 
         return Collections.unmodifiableSet( summaryStatistics );
