@@ -86,6 +86,16 @@ public class ExecutionResult
     }
 
     /**
+     * Create a default unsuccessful result with an exception thrown.
+     * @return an execution result
+     */
+
+    public static ExecutionResult failure()
+    {
+        return new ExecutionResult( null, null, null, new Exception( "default failure" ), Set.of(), false, null );
+    }
+
+    /**
      * Create an unsuccessful result with a project name and an exception thrown.
      * @param declaration the project declaration string
      * @param e the exception thrown
