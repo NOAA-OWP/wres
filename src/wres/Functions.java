@@ -104,6 +104,8 @@ public final class Functions
      */
     public static ExecutionResult evaluate( SharedResources sharedResources, Canceller canceller )
     {
+        ExecutionResult result = ExecutionResult.failure();
+        Instant startedExecution = Instant.now();
         try
         {
             setupConnections( sharedResources );
@@ -118,22 +120,21 @@ public final class Functions
                                  + "bin/wres.bat execute c:/path/to/evaluation.yml";
                 LOGGER.error( message );
                 UserInputException e = new UserInputException( message );
-                return ExecutionResult.failure( e, false ); // Or return 400 - Bad Request (see #41467)
+                result = ExecutionResult.failure( e, false ); // Or return 400 - Bad Request (see #41467)
+                return result;
             }
 
             // Attempt to read the declaration
             String declarationOrPath = args.get( 0 )
                                            .trim();
 
-            Instant startedExecution = Instant.now();
 
-            ExecutionResult result = evaluator.evaluate( declarationOrPath, canceller );
-
-            Functions.logResults( sharedResources, result, startedExecution );
+            result = evaluator.evaluate( declarationOrPath, canceller );
             return result;
         }
         finally
         {
+            Functions.logResults( sharedResources, result, startedExecution );
             Functions.teardownConnections();
         }
     }
@@ -146,24 +147,27 @@ public final class Functions
 
     public static ExecutionResult connectToDatabase( SharedResources sharedResources )
     {
-        Instant start = Instant.now();
+        ExecutionResult result = ExecutionResult.failure();
+        Instant startedExecution = Instant.now();
         try
         {
             setupConnections( sharedResources );
             DatabaseOperations.testDatabaseConnection( database );
 
-            return ExecutionResult.success();
+            result = ExecutionResult.success();
+            return result;
         }
         catch ( SQLException | IOException se )
         {
             String message = "Could not connect to database.";
             LOGGER.warn( message, se );
             InternalWresException e = new InternalWresException( message );
-            return ExecutionResult.failure( e, false );
+            result = ExecutionResult.failure( e, false );
+            return result;
         }
         finally
         {
-            Functions.logResults( sharedResources, start );
+            Functions.logResults( sharedResources, result, startedExecution );
             Functions.teardownConnections();
         }
     }
@@ -184,6 +188,8 @@ public final class Functions
                     + "is no database to clean." );
         }
 
+        ExecutionResult result = ExecutionResult.failure();
+        Instant startedExecution = Instant.now();
         try
         {
             Instant start = Instant.now();
@@ -237,6 +243,8 @@ public final class Functions
                     + "is no database to migrate." );
         }
 
+        ExecutionResult result = ExecutionResult.failure();
+        Instant startedExecution = Instant.now();
         try
         {
             Instant start = Instant.now();
@@ -273,7 +281,8 @@ public final class Functions
 
     public static ExecutionResult validateNetcdfGrid( SharedResources sharedResources )
     {
-        Instant start = Instant.now();
+        ExecutionResult result = ExecutionResult.failure();
+        Instant startedExecution = Instant.now();
         try
         {
             List<String> args = sharedResources.arguments();
@@ -291,7 +300,8 @@ public final class Functions
                     String message = "The given variable is not a valid projected grid variable.";
                     UserInputException e = new UserInputException( message );
                     LOGGER.error( message );
-                    return ExecutionResult.failure( e, false );
+                    result = ExecutionResult.failure( e, false );
+                    return result;
                 }
                 else
                 {
@@ -299,11 +309,13 @@ public final class Functions
 
                     if ( coordSystem != null )
                     {
-                        return ExecutionResult.success();
+                        result = ExecutionResult.success();
+                        return result;
                     }
 
                     String message = "The given coordinate system is not valid.";
-                    return ExecutionResult.failure( new UserInputException( message ), false );
+                    result = ExecutionResult.failure( new UserInputException( message ), false );
+                    return result;
                 }
             }
             catch ( IOException e )
@@ -312,12 +324,13 @@ public final class Functions
                                  + "' is not a valid Netcdf Grid Dataset.";
                 UserInputException uie = new UserInputException( message, e );
                 LOGGER.error( message );
-                return ExecutionResult.failure( uie, false );
+                result = ExecutionResult.failure( uie, false );
+                return result;
             }
         }
         finally
         {
-            Functions.logResults( sharedResources, start );
+            Functions.logResults( sharedResources, result, startedExecution );
         }
     }
 
@@ -329,7 +342,8 @@ public final class Functions
 
     public static ExecutionResult refreshDatabase( final SharedResources sharedResources )
     {
-        Instant start = Instant.now();
+        ExecutionResult result = ExecutionResult.failure();
+        Instant startedExecution = Instant.now();
         try
         {
             setupConnections( sharedResources );
@@ -342,12 +356,14 @@ public final class Functions
                 lockManager.lockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
                 DatabaseOperations.refreshDatabase( database );
                 lockManager.unlockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
-                return ExecutionResult.success();
+                result = ExecutionResult.success();
+                return result;
             }
             catch ( SQLException | RuntimeException e )
             {
                 LOGGER.error( "refreshDatabase failed.", e );
-                return ExecutionResult.failure( e, false );
+                result = ExecutionResult.failure( e, false );
+                return result;
             }
             finally
             {
@@ -356,7 +372,7 @@ public final class Functions
         }
         finally
         {
-            Functions.logResults( sharedResources, start );
+            Functions.logResults( sharedResources, result, startedExecution );
             Functions.teardownConnections();
         }
     }
@@ -369,7 +385,8 @@ public final class Functions
 
     public static ExecutionResult startServer( final SharedResources sharedResources )
     {
-        Instant start = Instant.now();
+        ExecutionResult result = ExecutionResult.failure();
+        Instant startedExecution = Instant.now();
         try
         {
             List<String> args = sharedResources.arguments();
@@ -383,7 +400,8 @@ public final class Functions
                         """;
                 LOGGER.error( message );
                 UserInputException e = new UserInputException( message );
-                return ExecutionResult.failure( e, false ); // Or return 400 - Bad Request (see #41467)
+                result = ExecutionResult.failure( e, false ); // Or return 400 - Bad Request (see #41467)
+                return result;
             }
 
             String port = DEFAULT_PORT;
@@ -408,14 +426,16 @@ public final class Functions
             catch ( Exception e )
             {
                 LOGGER.error( "Failed to start the server", e );
-                return ExecutionResult.failure( e, false );
+                result = ExecutionResult.failure( e, false );
+                return result;
             }
 
-            return ExecutionResult.success();
+            result = ExecutionResult.success();
+            return result;
         }
         finally
         {
-            Functions.logResults( sharedResources, start );
+            Functions.logResults( sharedResources, result, startedExecution );
         }
     }
 
@@ -427,7 +447,8 @@ public final class Functions
 
     public static ExecutionResult ingest( SharedResources sharedResources )
     {
-        Instant start = Instant.now();
+        ExecutionResult result = ExecutionResult.failure();
+        Instant startedExecution = Instant.now();
         try
         {
             setupConnections( sharedResources );
@@ -529,12 +550,14 @@ public final class Functions
                                        readingExecutor );
 
                     lockManager.unlockShared( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
-                    return ExecutionResult.success( declaration.label(), declarationString );
+                    result = ExecutionResult.success( declaration.label(), declarationString );
+                    return result;
                 }
                 catch ( RuntimeException | SQLException e )
                 {
                     LOGGER.error( "Failed to ingest from {}", projectPath, e );
-                    return ExecutionResult.failure( declaration.label(), declarationString, e, false );
+                    result = ExecutionResult.failure( declaration.label(), declarationString, e, false );
+                    return result;
                 }
                 finally
                 {
@@ -550,12 +573,13 @@ public final class Functions
                                  + "usage: ingest <path to configuration>";
                 IllegalArgumentException e = new IllegalArgumentException( message );
                 LOGGER.error( message );
-                return ExecutionResult.failure( e, false );
+                result = ExecutionResult.failure( e, false );
+                return result;
             }
         }
         finally
         {
-            Functions.logResults( sharedResources, start );
+            Functions.logResults( sharedResources, result, startedExecution );
             Functions.teardownConnections();
         }
     }
@@ -568,7 +592,8 @@ public final class Functions
 
     public static ExecutionResult validate( SharedResources sharedResources )
     {
-        Instant start = Instant.now();
+        ExecutionResult result = ExecutionResult.failure();
+        Instant startedExecution = Instant.now();
         try
         {
             List<String> args = sharedResources.arguments();
@@ -592,7 +617,8 @@ public final class Functions
                                                   true );
 
                     LOGGER.info( "The supplied declaration is valid: '{}'.", pathOrDeclaration );
-                    return ExecutionResult.success();
+                    result = ExecutionResult.success();
+                    return result;
                 }
                 catch ( IOException | DeclarationException error )
                 {
@@ -601,9 +627,10 @@ public final class Functions
                                      + pathOrDeclaration
                                      + "'";
                     UserInputException e = new UserInputException( message, error );
-                    return ExecutionResult.failure( rawDeclaration,
+                    result = ExecutionResult.failure( rawDeclaration,
                                                     e,
                                                     false ); // Or return 400 - Bad Request (see #41467)
+                    return result;
                 }
             }
             else
@@ -611,12 +638,13 @@ public final class Functions
                 String message = "Could not find a project declaration to validate. Usage: validate <path to project>";
                 LOGGER.error( message );
                 UserInputException e = new UserInputException( message );
-                return ExecutionResult.failure( e, false );
+                result = ExecutionResult.failure( e, false );
+                return result;
             }
         }
         finally
         {
-            Functions.logResults( sharedResources, start );
+            Functions.logResults( sharedResources, result, startedExecution );
         }
     }
 
@@ -652,7 +680,8 @@ public final class Functions
 
     public static ExecutionResult migrate( SharedResources sharedResources, boolean inlineThresholds )
     {
-        Instant startTime = Instant.now();
+        ExecutionResult result = ExecutionResult.failure();
+        Instant startedExecution = Instant.now();
         try
         {
             List<String> args = sharedResources.arguments();
@@ -692,12 +721,14 @@ public final class Functions
                                             + yaml );
                     }
 
-                    return ExecutionResult.success();
+                    result = ExecutionResult.success();
+                    return result;
                 }
                 catch ( UserInputException | IOException e )
                 {
                     LOGGER.error( "Failed to unmarshal project declaration from command line argument.", e );
-                    return ExecutionResult.failure( e, false );
+                    result = ExecutionResult.failure( e, false );
+                    return result;
                 }
             }
             else
@@ -705,12 +736,13 @@ public final class Functions
                 String message = "The declaration path or string was missing. Usage: validate "
                                  + "<path to declaration or string>";
                 UserInputException e = new UserInputException( message );
-                return ExecutionResult.failure( e, false );
+                result = ExecutionResult.failure( e, false );
+                return result;
             }
         }
         finally
         {
-            Functions.logResults( sharedResources, startTime );
+            Functions.logResults( sharedResources, result, startedExecution );
         }
     }
 
@@ -721,7 +753,8 @@ public final class Functions
      */
     public static ExecutionResult createNetCDFTemplate( SharedResources sharedResources )
     {
-        Instant start = Instant.now();
+        ExecutionResult result = ExecutionResult.failure();
+        Instant startedExecution = Instant.now();
         try
         {
             List<String> args = sharedResources.arguments();
@@ -742,7 +775,8 @@ public final class Functions
                                                                     + "template file must "
                                                                     + "have a valid source "
                                                                     + "file." );
-                        return ExecutionResult.failure( e, false );
+                        result = ExecutionResult.failure( e, false );
+                        return result;
                     }
 
                     if ( !toFileName.toLowerCase().endsWith( "nc" ) )
@@ -753,7 +787,8 @@ public final class Functions
                                                                     + "'*.nc' to indicate "
                                                                     + "that it is a Netcdf "
                                                                     + "file." );
-                        return ExecutionResult.failure( e, false );
+                        result = ExecutionResult.failure( e, false );
+                        return result;
                     }
 
                     try ( NetCDFCopier writer = new NetCDFCopier( fromFileName, toFileName, ZonedDateTime.now() ) )
@@ -761,12 +796,14 @@ public final class Functions
                         writer.write();
                     }
 
-                    return ExecutionResult.success();
+                    result = ExecutionResult.success();
+                    return result;
                 }
                 catch ( IOException | RuntimeException error )
                 {
                     LOGGER.error( "createNetCDFTemplate failed.", error );
-                    return ExecutionResult.failure( error, false );
+                    result = ExecutionResult.failure( error, false );
+                    return result;
                 }
             }
             else
@@ -776,12 +813,13 @@ public final class Functions
                                  + "usage: createnetcdftemplate <path to original file> <path to template>";
                 LOGGER.error( message );
                 UserInputException e = new UserInputException( message );
-                return ExecutionResult.failure( e, false );
+                result = ExecutionResult.failure( e, false );
+                return result;
             }
         }
         finally
         {
-            Functions.logResults( sharedResources, start );
+            Functions.logResults( sharedResources, result, startedExecution );
         }
     }
 
@@ -793,7 +831,7 @@ public final class Functions
     private static void setupConnections( SharedResources sharedResources )
     {
         // If this complex operation involves a database, check that one exists
-        if ( sharedResources.systemSettings.isUseDatabase() )
+        if ( sharedResources.systemSettings.isUseDatabase() && ( Objects.isNull( database ) || database.isShutdown() ) )
         {
             database = new Database( new ConnectionSupplier( sharedResources.systemSettings ) );
             // Migrate the database, as needed
@@ -810,17 +848,20 @@ public final class Functions
             }
         }
 
-        // Create the broker connections for statistics messaging
-        Properties brokerConnectionProperties =
-                BrokerUtilities.getBrokerConnectionProperties( BrokerConnectionFactory.DEFAULT_PROPERTIES );
-
-        // Create an embedded broker for statistics messages, if needed
-        if ( BrokerUtilities.isEmbeddedBrokerRequired( brokerConnectionProperties ) )
+        if ( Objects.isNull( broker ) || !broker.isActive() )
         {
-            broker = EmbeddedBroker.of( brokerConnectionProperties, false );
-        }
+            // Create the broker connections for statistics messaging
+            Properties brokerConnectionProperties =
+                    BrokerUtilities.getBrokerConnectionProperties( BrokerConnectionFactory.DEFAULT_PROPERTIES );
 
-        Functions.brokerConnectionFactory = BrokerConnectionFactory.of( brokerConnectionProperties );
+            // Create an embedded broker for statistics messages, if needed
+            if ( BrokerUtilities.isEmbeddedBrokerRequired( brokerConnectionProperties ) )
+            {
+                broker = EmbeddedBroker.of( brokerConnectionProperties, false );
+            }
+
+            Functions.brokerConnectionFactory = BrokerConnectionFactory.of( brokerConnectionProperties );
+        }
     }
 
     /**
@@ -881,6 +922,7 @@ public final class Functions
         // Log the execution to the database if a database is used
         if ( sharedResources.systemSettings.isUseDatabase() )
         {
+            setupConnections( sharedResources );
             Instant endedExecution = Instant.now();
             // Log both the operation and the args
             List<String> argList = new ArrayList<>();
@@ -901,6 +943,7 @@ public final class Functions
 
             DatabaseOperations.logExecution( database,
                                              logParameters );
+            teardownConnections();
         }
     }
 

@@ -56,6 +56,11 @@ public class Database
         this.sqlTasks = createService();
     }
 
+    public boolean isShutdown()
+    {
+        return this.sqlTasks.isShutdown();
+    }
+
     /**
      * Shuts down the database in an orderly sequence.
      */

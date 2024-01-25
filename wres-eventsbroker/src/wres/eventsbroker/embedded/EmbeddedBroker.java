@@ -252,6 +252,11 @@ public class EmbeddedBroker implements Closeable
         }
     }
 
+    public boolean isActive()
+    {
+        return this.broker.isActive();
+    }
+
     /**
      * Kills the broker.
      * @throws IOException if the broker could not be stopped
