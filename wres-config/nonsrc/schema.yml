@@ -200,15 +200,9 @@ definitions:
             minItems: 1
             uniqueItems: true
       summary_statistics:
-        type: array
-        items:
-          anyOf:
-            - "$ref": "#/definitions/SummaryStatisticsEnum"
-            - "$ref": "#/definitions/SummaryStatisticsWithParametersEnum"
-            - "$ref": "#/definitions/Histogram"
-            - "$ref": "#/definitions/Quantiles"
-        minItems: 1
-        uniqueItems: true
+        anyOf:
+          - "$ref": "#/definitions/SummaryStatistics"
+          - "$ref": "#/definitions/SummaryStatisticsWithDimensions"
       duration_format:
         "$ref": "#/definitions/DurationEnum"
       decimal_format:
@@ -422,27 +416,6 @@ definitions:
     required:
       - name
 
-  CrossPair:
-    title: Cross-pairing of time-series for consistency
-    description: "Applies cross-pairing to the time-series within an evaluation
-    to ensure that the same reference times and valid times are present across
-    some or all of the datasets within the evaluation, depending on the type of 
-    cross-pairing chosen."
-    anyOf:
-      - "$ref": "#/definitions/CrossPairEnum"
-      - "$ref": "#/definitions/CrossPairFull"
-
-  CrossPairFull:
-    type: object
-    additionalProperties: false
-    properties:
-      method:
-        "$ref": "#/definitions/CrossPairEnum"
-      scope:
-        "$ref": "#/definitions/CrossPairScopeEnum"
-    required:
-      - method
-
   Source:
     title: A data source.
     description: "Provides details about the source of the data. The text value 
@@ -590,6 +563,58 @@ definitions:
     required:
       - period
       - unit
+
+  CrossPair:
+    title: Cross-pairing of time-series for consistency
+    description: "Applies cross-pairing to the time-series within an evaluation
+    to ensure that the same reference times and valid times are present across
+    some or all of the datasets within the evaluation, depending on the type of 
+    cross-pairing chosen."
+    anyOf:
+      - "$ref": "#/definitions/CrossPairEnum"
+      - "$ref": "#/definitions/CrossPairFull"
+
+  CrossPairFull:
+    type: object
+    additionalProperties: false
+    properties:
+      method:
+        "$ref": "#/definitions/CrossPairEnum"
+      scope:
+        "$ref": "#/definitions/CrossPairScopeEnum"
+    required:
+      - method
+
+  SummaryStatistics:
+    title: Summary statistics to calculate.
+    description: "Declares a list of summary statistics to calculate."
+    type: array
+    items:
+      anyOf:
+        - "$ref": "#/definitions/SummaryStatisticsEnum"
+        - "$ref": "#/definitions/SummaryStatisticsWithParametersEnum"
+        - "$ref": "#/definitions/Histogram"
+        - "$ref": "#/definitions/Quantiles"
+    minItems: 1
+    uniqueItems: true
+  
+  SummaryStatisticsWithDimensions:
+    title: Summary statistics to calculate for one or more explicit dimensions.
+    description: "Declares the summary statistics to calculate for one or more 
+    named dimensions, such as features or feature groups."
+    type: object
+    additionalProperties: false
+    properties:
+      dimensions:
+        type: array
+        items:
+          - "$ref": "#/definitions/SummaryStatisticDimensionsEnum"
+        minItems: 1
+        uniqueItems: true
+      statistics:
+        "$ref": "#/definitions/SummaryStatistics"
+    required:
+      - statistics
 
   SamplingUncertainty:
     title: Sampling uncertainty estimation.
@@ -1654,6 +1679,12 @@ definitions:
       - greater equal
       - less
       - less equal
+
+  SummaryStatisticDimensionsEnum:
+    type: string
+    enum:
+      - features
+      - feature groups
 
   # Originally, this type was used to direct ingest to either a set of
   # "forecast" or "observation" tables in the database. See discussion in

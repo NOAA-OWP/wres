@@ -129,9 +129,6 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         // Build charts
         try
         {
-            MetricConstants metricName = statistics.get( 0 ).getMetricName();
-            PoolMetadata metadata = statistics.get( 0 ).getPoolMetadata();
-
             // Collection of graphics parameters, one for each set of charts to write across N formats.
             Collection<Outputs> outputsMap =
                     GraphicsWriter.getOutputsGroupedByGraphicsParameters( outputsDescription );
@@ -147,6 +144,12 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
 
                 for ( List<DoubleScoreStatisticOuter> nextOutput : allOutputs )
                 {
+                    MetricConstants metricName = nextOutput.get( 0 )
+                                                           .getMetricName();
+
+                    PoolMetadata metadata = nextOutput.get( 0 )
+                                                      .getPoolMetadata();
+
                     Map<MetricConstants, JFreeChart> engines = chartFactory.getScoreCharts( nextOutput,
                                                                                             helper.getGraphicShape(),
                                                                                             helper.getDurationUnits() );
@@ -159,6 +162,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                                                                                               metricName,
                                                                                               append,
                                                                                               nextOutputs );
+
                     pathsWrittenTo.addAll( paths );
                 }
             }
@@ -196,6 +200,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
                                    value -> type == value.getPoolMetadata()
                                                          .getPool()
                                                          .getEnsembleAverageType() );
+
             // Slice by secondary threshold
             if ( !innerSlice.isEmpty() )
             {
@@ -331,7 +336,7 @@ public class DoubleScoreGraphicsWriter extends GraphicsWriter
         Set<Path> pathsWrittenTo = new HashSet<>();
 
         // Build the outputs
-        for ( final Entry<MetricConstants, JFreeChart> nextEntry : engines.entrySet() )
+        for ( Entry<MetricConstants, JFreeChart> nextEntry : engines.entrySet() )
         {
             // Qualify with the component name unless there is one component and it is main
             MetricConstants componentName = null;

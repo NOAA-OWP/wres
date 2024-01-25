@@ -596,11 +596,11 @@ class DeclarationFactoryTest
                                                 .setStatistic( SummaryStatistic.StatisticName.MEAN )
                                                 .build();
         SummaryStatistic median = SummaryStatistic.newBuilder()
-                                                .setStatistic( SummaryStatistic.StatisticName.MEDIAN )
-                                                .build();
+                                                  .setStatistic( SummaryStatistic.StatisticName.MEDIAN )
+                                                  .build();
         SummaryStatistic minimum = SummaryStatistic.newBuilder()
-                                                .setStatistic( SummaryStatistic.StatisticName.MINIMUM )
-                                                .build();
+                                                   .setStatistic( SummaryStatistic.StatisticName.MINIMUM )
+                                                   .build();
         summaryStatistics.add( mean );
         summaryStatistics.add( median );
         summaryStatistics.add( minimum );
@@ -1988,9 +1988,9 @@ class DeclarationFactoryTest
                                                        .setProbability( 0.5 )
                                                        .build();
         SummaryStatistic quantileThree = SummaryStatistic.newBuilder()
-                                                       .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
-                                                       .setProbability( 0.9 )
-                                                       .build();
+                                                         .setStatistic( SummaryStatistic.StatisticName.QUANTILE )
+                                                         .setProbability( 0.9 )
+                                                         .build();
         SummaryStatistic histogram = SummaryStatistic.newBuilder()
                                                      .setStatistic( SummaryStatistic.StatisticName.HISTOGRAM )
                                                      .setHistogramBins( DeclarationFactory.DEFAULT_HISTOGRAM_BINS )
@@ -2049,6 +2049,55 @@ class DeclarationFactoryTest
         summaryStatistics.add( quantileOne );
         summaryStatistics.add( quantileTwo );
         summaryStatistics.add( histogram );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .summaryStatistics( summaryStatistics )
+                                                                     .build();
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithSummaryStatisticsAndExplicitDimensions() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                summary_statistics:
+                  statistics:
+                    - mean
+                    - standard deviation
+                  dimensions:
+                    - features
+                    - feature groups
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        Set<SummaryStatistic> summaryStatistics = new LinkedHashSet<>();
+        SummaryStatistic mean = SummaryStatistic.newBuilder()
+                                                .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                .build();
+
+        SummaryStatistic stdev = SummaryStatistic.newBuilder()
+                                                 .setStatistic( SummaryStatistic.StatisticName.STANDARD_DEVIATION )
+                                                 .build();
+
+        SummaryStatistic meanFeatureGroups = mean.toBuilder()
+                                                 .setDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
+                                                 .build();
+
+        SummaryStatistic stdevFeatureGroups = stdev.toBuilder()
+                                                   .setDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
+                                                   .build();
+
+        summaryStatistics.add( mean );
+        summaryStatistics.add( stdev );
+        summaryStatistics.add( meanFeatureGroups );
+        summaryStatistics.add( stdevFeatureGroups );
 
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
                                                                      .left( this.observedDataset )
