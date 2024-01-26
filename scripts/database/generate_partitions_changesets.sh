@@ -9,8 +9,8 @@ then
     exit 1
 fi
 
-index_file=../wres-io/dist/lib/conf/database/wres.TimeSeriesValue_generated_remove_constraints_v1.xml
-partition_file=../wres-io/dist/lib/conf/database/wres.TimeSeriesValue_generated_alter_partitions_v1.xml
+index_file=../../wres-io/dist/lib/conf/database/wres.TimeSeriesValue_generated_remove_constraints_v1.xml
+partition_file=../../wres-io/dist/lib/conf/database/wres.TimeSeriesValue_generated_alter_partitions_v1.xml
 cat liquibase_partition_header.xml > $partition_file
 cat liquibase_partition_header.xml > $index_file
 
