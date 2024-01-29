@@ -202,14 +202,14 @@ public class PoolGroupTracker
 
             Pair<Long, Boolean> result = this.publicationState.updateAndGet( updater );
 
-            if ( Boolean.TRUE.equals( result.getLeft() == 0 && result.getRight() ) && !this.evaluation.isFailed() )
+            if ( Boolean.TRUE.equals( result.getLeft() == 0
+                                      && result.getRight() )
+                 && !this.evaluation.isFailed() )
             {
                 this.evaluation.markGroupPublicationCompleteReportedSuccess( this.groupId );
 
                 LOGGER.debug( "Marked publication complete for message group {}.", this.groupId );
             }
         }
-
     }
-
 }

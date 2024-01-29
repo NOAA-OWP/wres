@@ -109,6 +109,9 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     /** The summary statistics calculators for a baseline when calculating separate statistics for a baseline. */
     private final List<SummaryStatisticsCalculator> summaryStatisticsForBaseline;
 
+    /** Whether to publish the raw statistics or only factor them into summary statistics */
+    private final boolean publishStatistics;
+
     /** The pool supplier. */
     private Supplier<Pool<TimeSeries<Pair<L, R>>>> poolSupplier;
 
@@ -163,14 +166,18 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             baseline.forEach( n -> this.summaryStatisticsForBaseline.forEach( p -> p.test( n ) ) );
         }
 
-        // Publish the statistics
-        Status status = this.publish( this.evaluation,
-                                      statistics,
-                                      this.getMessageGroupId() );
+        // Publish the statistics if required
+        Status status = Status.STATISTICS_AVAILABLE_NOT_PUBLISHED;
+        if ( this.publishStatistics )
+        {
+            status = this.publish( this.evaluation,
+                                   statistics,
+                                   this.getMessageGroupId() );
 
-        // Register publication of the statistics for this pool/message group
-        this.poolGroupTracker.registerPublication( this.getMessageGroupId(),
-                                                   status == Status.STATISTICS_PUBLISHED );
+            // Register publication of the statistics for this pool/message group
+            this.poolGroupTracker.registerPublication( this.getMessageGroupId(),
+                                                       status == Status.STATISTICS_PUBLISHED );
+        }
 
         // TODO: extract the pair writing to the product writers, i.e., publish the pairs
         // Write the main pairs
@@ -250,6 +257,9 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
 
         /** The summary statistics calculators for a separate baseline. Allowed to be empty. */
         private List<SummaryStatisticsCalculator> summaryStatisticsForBaseline = new ArrayList<>();
+
+        /** Whether to publish the raw statistics or only factor them into the calculation of summary statistics. */
+        private boolean publishStatistics;
 
         /**
          * @param evaluation the evaluation to set
@@ -420,6 +430,16 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         }
 
         /**
+         * @param publishStatistics whether to publish the raw statistics
+         * @return this builder
+         */
+        public Builder<L, R> setPublishStatistics( boolean publishStatistics )
+        {
+            this.publishStatistics = publishStatistics;
+            return this;
+        }
+
+        /**
          * @return an instance of a pool processor
          */
 
@@ -430,8 +450,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
     }
 
     /**
-     * Creates and publishes the statistics for the supplied pool, generating estimates of the sampling uncertainty, as
-     * needed.
+     * Creates the statistics for the supplied pool, generating estimates of the sampling uncertainty, as needed.
      * @param pool the pool
      * @param samplingUncertainty the sampling uncertainty declaration
      * @param blockSizeEstimator the stationary bootstrap block size estimator for calculating sampling uncertainty
@@ -1037,6 +1056,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         this.samplingUncertainty = builder.samplingUncertainty;
         this.samplingUncertaintyExecutor = builder.samplingUncertaintyExecutor;
         this.blockSize = builder.blockSize;
+        this.publishStatistics = builder.publishStatistics;
 
         Objects.requireNonNull( this.evaluation );
         Objects.requireNonNull( this.monitor );

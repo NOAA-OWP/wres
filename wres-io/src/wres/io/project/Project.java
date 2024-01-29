@@ -67,11 +67,20 @@ public interface Project
 
     /**
      * Returns the set of {@link FeatureGroup} for the project.
-     * @return A set of all feature groups involved in the project
+     * @return a set of all feature groups involved in the project
      * @throws IllegalStateException if the features have not been set
      */
 
     Set<FeatureGroup> getFeatureGroups();
+
+    /**
+     * Returns a set of singleton {@link FeatureGroup} for which statistics should not be published. These groups are
+     * used to calculate summary statistics only. They were not declared, explicitly, as singletons.
+     * @return a set of singleton feature groups whose statistics should not be published
+     * @throws IllegalStateException if the features have not been set
+     */
+
+    Set<FeatureGroup> getFeatureGroupsForWhichStatisticsShouldNotBePublished();
 
     /**
      * @param orientation the side of data for which the variable is required

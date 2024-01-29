@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,6 +81,9 @@ public class DatabaseProject implements Project
 
     /** The feature groups related to the project. */
     private Set<FeatureGroup> featureGroups;
+
+    /** The singleton feature groups for which statistics should not be published, if any. */
+    private Set<FeatureGroup> doNotPublish;
 
     /** Indicates whether this project was inserted on upon this execution of the project. */
     private boolean performedInsert;
@@ -329,6 +331,17 @@ public class DatabaseProject implements Project
         }
 
         return Collections.unmodifiableSet( this.featureGroups );
+    }
+
+    @Override
+    public Set<FeatureGroup> getFeatureGroupsForWhichStatisticsShouldNotBePublished()
+    {
+        if ( Objects.isNull( this.doNotPublish ) )
+        {
+            throw new IllegalStateException( "The feature groups used only for summary statistics have not been set." );
+        }
+
+        return this.doNotPublish;
     }
 
     @Override
@@ -592,7 +605,6 @@ public class DatabaseProject implements Project
         LOGGER.info( "Validating the project and loading preliminary metadata..." );
 
         LOGGER.trace( "prepareForExecution() entered" );
-        Database db = this.getDatabase();
 
         // Validates that the required variables are present
         this.validateVariables();
@@ -602,10 +614,11 @@ public class DatabaseProject implements Project
         // data for each feature on each side, but does not guarantee pairs.
         synchronized ( this.featureLock )
         {
-            this.setFeaturesAndFeatureGroups( db );
+            this.setFeaturesAndFeatureGroups();
         }
 
-        if ( this.features.isEmpty() && this.featureGroups.isEmpty() )
+        if ( this.features.isEmpty()
+             && this.featureGroups.isEmpty() )
         {
             throw new NoDataException( "Failed to identify any features with data on all required sides (left, right "
                                        + "and, when declared, baseline) for the variables and other declaration "
@@ -624,17 +637,110 @@ public class DatabaseProject implements Project
 
     /**
      * Sets the features and feature groups.
-     * @param db the database
      * @throws DataAccessException if the features and/or feature groups could not be set
      */
 
-    private void setFeaturesAndFeatureGroups( Database db )
+    private void setFeaturesAndFeatureGroups()
     {
         LOGGER.debug( "Setting the features and feature groups for project {}.", this.getId() );
-        Pair<Set<FeatureTuple>, Set<FeatureGroup>> innerFeatures = this.getIntersectingFeatures( db );
+
+        Set<FeatureTuple> singletons = new HashSet<>(); // Singleton feature tuples
+        Set<FeatureTuple> grouped = new HashSet<>(); // Multi-tuple groups
+
+        // Gridded features? #74266
+        // Yes
+        if ( this.usesGriddedData( DatasetOrientation.RIGHT ) )
+        {
+            Set<FeatureTuple> griddedTuples = this.getGriddedFeatureTuples();
+            singletons.addAll( griddedTuples );
+        }
+        // No
+        else
+        {
+            Features fCache = this.getCaches()
+                                  .getFeaturesCache();
+
+            // At this point, features should already have been correlated by
+            // the declaration or by a location service. In the latter case, the
+            // WRES will have generated the List<Feature> and replaced them in
+            // a new ProjectConfig, so this code cannot tell the difference.
+
+
+            // Deal with the special case of singletons first
+            Set<GeometryTuple> singletonFeatures = this.getDeclaredFeatures();
+
+            // If there are no declared singletons, allow features to be discovered, but only if there are no declared
+            // multi-feature groups.
+            Set<GeometryGroup> declaredGroups = this.getDeclaredFeatureGroups();
+            if ( !singletonFeatures.isEmpty() || declaredGroups.isEmpty() )
+            {
+                DataScripter script =
+                        ProjectScriptGenerator.createIntersectingFeaturesScript( database,
+                                                                                 this.getId(),
+                                                                                 singletonFeatures,
+                                                                                 this.hasBaseline(),
+                                                                                 false );
+
+                LOGGER.debug( "getIntersectingFeatures will run for singleton features: {}", script );
+                Set<FeatureTuple> innerSingletons = this.readFeaturesFromScript( script, fCache );
+
+                singletons.addAll( innerSingletons );
+                LOGGER.debug( "getIntersectingFeatures completed for singleton features, which identified "
+                              + "{} features.",
+                              innerSingletons.size() );
+            }
+
+            // Now deal with feature groups that contain one or more
+            Set<GeometryTuple> groupedFeatures = declaredGroups.stream()
+                                                               .flatMap( next -> next.getGeometryTuplesList()
+                                                                                     .stream() )
+                                                               .collect( Collectors.toSet() );
+
+            if ( !groupedFeatures.isEmpty() )
+            {
+                DataScripter scriptForGroups =
+                        ProjectScriptGenerator.createIntersectingFeaturesScript( database,
+                                                                                 this.getId(),
+                                                                                 groupedFeatures,
+                                                                                 this.hasBaseline(),
+                                                                                 true );
+
+                LOGGER.debug( "getIntersectingFeatures will run for grouped features: {}", scriptForGroups );
+                Set<FeatureTuple> innerGroups = this.readFeaturesFromScript( scriptForGroups, fCache );
+                grouped.addAll( innerGroups );
+                LOGGER.debug( "getIntersectingFeatures completed for grouped features, which identified {} features",
+                              innerGroups.size() );
+            }
+        }
+
+        // Filter the singleton features against any spatial mask, unless there is gridded data, which is masked upfront
+        // Do this before forming the groups, which include singleton groups
+        if ( !this.usesGriddedData( DatasetOrientation.RIGHT ) )
+        {
+            singletons = ProjectUtilities.filterFeatures( singletons, this.getDeclaration()
+                                                                          .spatialMask() );
+        }
+
+        // Combine the singletons and feature groups into groups that contain one or more tuples
+        ProjectUtilities.FeatureGroupsPlus
+                groups = ProjectUtilities.getFeatureGroups( Collections.unmodifiableSet( singletons ),
+                                                            Collections.unmodifiableSet( grouped ),
+                                                            this.getDeclaration(),
+                                                            this.getId() );
+
+        Set<FeatureGroup> finalGroups = groups.featureGroups();
+
+        // Filter the multi-group features against any spatial mask, unless there is gridded data, which is masked
+        // upfront
+        if ( !this.usesGriddedData( DatasetOrientation.RIGHT ) )
+        {
+            finalGroups = ProjectUtilities.filterFeatureGroups( finalGroups, this.getDeclaration()
+                                                                                 .spatialMask() );
+        }
 
         // Immutable on construction
-        this.featureGroups = innerFeatures.getRight();
+        this.featureGroups = finalGroups;
+        this.doNotPublish = groups.doNotPublish();
 
         LOGGER.debug( "Finished setting the feature groups for project {}. Discovered {} feature groups: {}.",
                       this.getId(),
@@ -642,7 +748,6 @@ public class DatabaseProject implements Project
                       this.featureGroups );
 
         // Features are the union of the singletons and grouped features
-        Set<FeatureTuple> singletons = new HashSet<>( innerFeatures.getLeft() );
         this.featureGroups.stream()
                           .flatMap( next -> next.getFeatures()
                                                 .stream() )
@@ -1040,111 +1145,6 @@ public class DatabaseProject implements Project
         }
 
         return Collections.unmodifiableList( failed );
-    }
-
-    /**
-     * Get a set of features for this project with intersecting data.
-     * Does not check if the data is pairable, simply checks that there is data
-     * on each of the left and right for this variable at a given feature.
-     * @param database The database to use.
-     * @return The sets of features to evaluate, ungrouped on the left side and grouped on the right side
-     * @throws DataAccessException if the intersecting features could not be determined
-     */
-
-    private Pair<Set<FeatureTuple>, Set<FeatureGroup>> getIntersectingFeatures( Database database )
-    {
-        Set<FeatureTuple> singletons = new HashSet<>(); // Singleton feature tuples
-        Set<FeatureTuple> grouped = new HashSet<>(); // Multi-tuple groups
-
-        // Gridded features? #74266
-        // Yes
-        if ( this.usesGriddedData( DatasetOrientation.RIGHT ) )
-        {
-            Set<FeatureTuple> griddedTuples = this.getGriddedFeatureTuples();
-            singletons.addAll( griddedTuples );
-        }
-        // No
-        else
-        {
-            Features fCache = this.getCaches()
-                                  .getFeaturesCache();
-
-            // At this point, features should already have been correlated by
-            // the declaration or by a location service. In the latter case, the
-            // WRES will have generated the List<Feature> and replaced them in
-            // a new ProjectConfig, so this code cannot tell the difference.
-
-
-            // Deal with the special case of singletons first
-            Set<GeometryTuple> singletonFeatures = this.getDeclaredFeatures();
-
-            // If there are no declared singletons, allow features to be discovered, but only if there are no declared
-            // multi-feature groups.
-            Set<GeometryGroup> declaredGroups = this.getDeclaredFeatureGroups();
-            if ( !singletonFeatures.isEmpty() || declaredGroups.isEmpty() )
-            {
-                DataScripter script =
-                        ProjectScriptGenerator.createIntersectingFeaturesScript( database,
-                                                                                 this.getId(),
-                                                                                 singletonFeatures,
-                                                                                 this.hasBaseline(),
-                                                                                 false );
-
-                LOGGER.debug( "getIntersectingFeatures will run for singleton features: {}", script );
-                Set<FeatureTuple> innerSingletons = this.readFeaturesFromScript( script, fCache );
-
-                singletons.addAll( innerSingletons );
-                LOGGER.debug( "getIntersectingFeatures completed for singleton features, which identified "
-                              + "{} features.",
-                              innerSingletons.size() );
-            }
-
-            // Now deal with feature groups that contain one or more
-            Set<GeometryTuple> groupedFeatures = declaredGroups.stream()
-                                                               .flatMap( next -> next.getGeometryTuplesList()
-                                                                                     .stream() )
-                                                               .collect( Collectors.toSet() );
-
-            if ( !groupedFeatures.isEmpty() )
-            {
-                DataScripter scriptForGroups =
-                        ProjectScriptGenerator.createIntersectingFeaturesScript( database,
-                                                                                 this.getId(),
-                                                                                 groupedFeatures,
-                                                                                 this.hasBaseline(),
-                                                                                 true );
-
-                LOGGER.debug( "getIntersectingFeatures will run for grouped features: {}", scriptForGroups );
-                Set<FeatureTuple> innerGroups = this.readFeaturesFromScript( scriptForGroups, fCache );
-                grouped.addAll( innerGroups );
-                LOGGER.debug( "getIntersectingFeatures completed for grouped features, which identified {} features",
-                              innerGroups.size() );
-            }
-        }
-
-        // Filter the singleton features against any spatial mask, unless there is gridded data, which is masked upfront
-        // Do this before forming the groups, which include singleton groups
-        if ( !this.usesGriddedData( DatasetOrientation.RIGHT ) )
-        {
-            singletons = ProjectUtilities.filterFeatures( singletons, this.getDeclaration()
-                                                                          .spatialMask() );
-        }
-
-        // Combine the singletons and feature groups into groups that contain one or more tuples
-        Set<FeatureGroup> groups = ProjectUtilities.getFeatureGroups( Collections.unmodifiableSet( singletons ),
-                                                                      Collections.unmodifiableSet( grouped ),
-                                                                      this.getDeclaration(),
-                                                                      this.getId() );
-
-        // Filter the multi-group features against any spatial mask, unless there is gridded data, which is masked
-        // upfront
-        if ( !this.usesGriddedData( DatasetOrientation.RIGHT ) )
-        {
-            groups = ProjectUtilities.filterFeatureGroups( groups, this.getDeclaration()
-                                                                       .spatialMask() );
-        }
-
-        return Pair.of( Collections.unmodifiableSet( singletons ), groups );
     }
 
     /**
