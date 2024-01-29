@@ -74,10 +74,11 @@ class ProjectUtilitiesTest
                                                             FeatureTuple.of( leftRightBaseline ),
                                                             FeatureTuple.of( leftRightBaselineOther ) );
 
-        Set<FeatureGroup> actual =
+        ProjectUtilities.FeatureGroupsPlus actual =
                 ProjectUtilities.getFeatureGroups( featuresWithData, groupedFeaturesWithData, evaluation, 1 );
 
-        assertEquals( 4, actual.size() );
+        assertEquals( 4, actual.featureGroups()
+                               .size() );
     }
 
     @Test
@@ -199,9 +200,9 @@ class ProjectUtilitiesTest
 
         // Entire group removed
         GeometryGroup groupThree = GeometryGroup.newBuilder()
-                                              .setRegionName( "baz" )
-                                              .addGeometryTuples( tupleThree )
-                                              .build();
+                                                .setRegionName( "baz" )
+                                                .addGeometryTuples( tupleThree )
+                                                .build();
 
         FeatureGroup featureGroupOne = FeatureGroup.of( groupOne );
         FeatureGroup featureGroupTwo = FeatureGroup.of( groupTwo );

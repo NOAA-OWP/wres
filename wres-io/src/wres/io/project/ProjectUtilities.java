@@ -32,6 +32,7 @@ import wres.datamodel.space.FeatureTuple;
 import wres.io.retrieving.DataAccessException;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.SummaryStatistic;
 
 /**
  * Utilities for working with {@link Project}.
@@ -63,10 +64,22 @@ class ProjectUtilities
 
     /**
      * Small value class to hold variable names.
+     * @param leftVariableName the left variable name
+     * @param rightVariableName the right variable name
+     * @param baselineVariableName the baseline variable name
      * @author James Brown
      */
 
     record VariableNames( String leftVariableName, String rightVariableName, String baselineVariableName ) {}
+
+    /**
+     * Small value class to hold feature group information.
+     * @param featureGroups the feature groups
+     * @param doNotPublish a set of feature groups for which statistics should not be published
+     * @author James Brown
+     */
+
+    record FeatureGroupsPlus( Set<FeatureGroup> featureGroups, Set<FeatureGroup> doNotPublish ) {}
 
     /**
      * Creates feature groups from the inputs.
@@ -77,7 +90,7 @@ class ProjectUtilities
      * @return the feature groups
      */
 
-    static Set<FeatureGroup> getFeatureGroups( Set<FeatureTuple> singletonsWithData,
+    static FeatureGroupsPlus getFeatureGroups( Set<FeatureTuple> singletonsWithData,
                                                Set<FeatureTuple> groupedFeaturesWithData,
                                                EvaluationDeclaration declaration,
                                                long projectId )
@@ -87,11 +100,14 @@ class ProjectUtilities
         LOGGER.debug( "Discovered these singleton features with time-series data: {}.", singletonsWithData );
         LOGGER.debug( "Discovered these grouped features with time-series data: {}.", groupedFeaturesWithData );
 
-        Set<FeatureGroup> innerGroups = new HashSet<>();
-
         // Add the singleton groups
-        singletonsWithData.forEach( next -> innerGroups.add( FeatureGroup.of( MessageFactory.getGeometryGroup( next.toStringShort(),
-                                                                                                               next ) ) ) );
+        Set<FeatureGroup> singletonGroups
+                = singletonsWithData.stream()
+                                    .map( f -> FeatureGroup.of( MessageFactory.getGeometryGroup( f.toStringShort(),
+                                                                                                 f ) ) )
+                                    .collect( Collectors.toUnmodifiableSet() );
+        Set<FeatureGroup> innerGroups = new HashSet<>( singletonGroups );
+
         LOGGER.debug( "Added {} singleton feature groups to project {}.", innerGroups.size(), projectId );
 
         // Add the multi-feature groups
@@ -160,8 +176,24 @@ class ProjectUtilities
                      + "should be expected for this many feature groups at most).",
                      innerGroups.size() );
 
+        // When summary statistics are required for feature groups, add the singleton members regardless of whether they
+        // were declared, because the statistics are needed for every singleton feature
+        // If summary statistics are required for feature groups, ensure that all singletons are present too
+        Set<FeatureGroup> doNotPublish = new HashSet<>();
+        if ( declaration.summaryStatistics()
+                        .stream()
+                        .anyMatch( s -> s.getDimension() == SummaryStatistic.StatisticDimension.FEATURE_GROUP ) )
+        {
+            groupedFeaturesWithData.forEach( f -> doNotPublish.add( FeatureGroup.of( MessageFactory.getGeometryGroup( f ) ) ) );
+            // Remove all the declared singletons
+            doNotPublish.removeAll( singletonGroups );
+            LOGGER.debug( "Added the following singleton feature groups to calculate summary statistics only: {}",
+                          doNotPublish );
+            innerGroups.addAll( doNotPublish );
+        }
 
-        return Collections.unmodifiableSet( innerGroups );
+        return new FeatureGroupsPlus( Collections.unmodifiableSet( innerGroups ),
+                                      Collections.unmodifiableSet( doNotPublish ) );
     }
 
     /**
@@ -318,19 +350,19 @@ class ProjectUtilities
         }
 
         return switch ( lenience )
-                {
-                    case ALL -> true;
-                    case NONE -> false;
-                    case LEFT -> orientation == DatasetOrientation.LEFT;
-                    case RIGHT -> orientation == DatasetOrientation.RIGHT;
-                    case BASELINE -> orientation == DatasetOrientation.BASELINE;
-                    case LEFT_AND_RIGHT -> orientation == DatasetOrientation.LEFT
-                                           || orientation == DatasetOrientation.RIGHT;
-                    case LEFT_AND_BASELINE -> orientation == DatasetOrientation.LEFT
-                                              || orientation == DatasetOrientation.BASELINE;
-                    case RIGHT_AND_BASELINE -> orientation == DatasetOrientation.RIGHT
-                                               || orientation == DatasetOrientation.BASELINE;
-                };
+        {
+            case ALL -> true;
+            case NONE -> false;
+            case LEFT -> orientation == DatasetOrientation.LEFT;
+            case RIGHT -> orientation == DatasetOrientation.RIGHT;
+            case BASELINE -> orientation == DatasetOrientation.BASELINE;
+            case LEFT_AND_RIGHT -> orientation == DatasetOrientation.LEFT
+                                   || orientation == DatasetOrientation.RIGHT;
+            case LEFT_AND_BASELINE -> orientation == DatasetOrientation.LEFT
+                                      || orientation == DatasetOrientation.BASELINE;
+            case RIGHT_AND_BASELINE -> orientation == DatasetOrientation.RIGHT
+                                       || orientation == DatasetOrientation.BASELINE;
+        };
     }
 
     /**
@@ -515,13 +547,13 @@ class ProjectUtilities
     {
         Objects.requireNonNull( labels );
 
-        if( Objects.isNull( ensembleFilter ) )
+        if ( Objects.isNull( ensembleFilter ) )
         {
             return labels;
         }
 
         SortedSet<String> labelsToFilter = new TreeSet<>( labels );
-        if( ensembleFilter.exclude() )
+        if ( ensembleFilter.exclude() )
         {
             labelsToFilter.removeAll( ensembleFilter.members() );
         }

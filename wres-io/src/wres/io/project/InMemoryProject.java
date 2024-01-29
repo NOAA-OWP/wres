@@ -74,6 +74,9 @@ public class InMemoryProject implements Project
     /** The feature groups related to the project. */
     private Set<FeatureGroup> featureGroups;
 
+    /** The singleton feature groups for which statistics should not be published, if any. */
+    private Set<FeatureGroup> doNotPublish;
+
     /** Whether the left data is gridded. */
     private boolean leftUsesGriddedData = false;
 
@@ -275,13 +278,34 @@ public class InMemoryProject implements Project
     @Override
     public Set<FeatureTuple> getFeatures()
     {
+        if ( Objects.isNull( this.features ) )
+        {
+            throw new IllegalStateException( "The features have not been set." );
+        }
+
         return this.features;
     }
 
     @Override
     public Set<FeatureGroup> getFeatureGroups()
     {
+        if ( Objects.isNull( this.featureGroups ) )
+        {
+            throw new IllegalStateException( "The feature groups have not been set." );
+        }
+
         return this.featureGroups;
+    }
+
+    @Override
+    public Set<FeatureGroup> getFeatureGroupsForWhichStatisticsShouldNotBePublished()
+    {
+        if ( Objects.isNull( this.doNotPublish ) )
+        {
+            throw new IllegalStateException( "The feature groups used only for summary statistics have not been set." );
+        }
+
+        return this.doNotPublish;
     }
 
     @Override
@@ -296,15 +320,15 @@ public class InMemoryProject implements Project
         }
 
         return switch ( orientation )
-                {
-                    case LEFT -> this.getDeclaration()
-                                     .left();
-                    case RIGHT -> this.getDeclaration()
-                                      .right();
-                    case BASELINE -> this.getDeclaration()
-                                         .baseline()
-                                         .dataset();
-                };
+        {
+            case LEFT -> this.getDeclaration()
+                             .left();
+            case RIGHT -> this.getDeclaration()
+                              .right();
+            case BASELINE -> this.getDeclaration()
+                                 .baseline()
+                                 .dataset();
+        };
     }
 
     @Override
@@ -313,11 +337,11 @@ public class InMemoryProject implements Project
         Objects.requireNonNull( orientation );
 
         return switch ( orientation )
-                {
-                    case LEFT -> this.getLeftVariableName();
-                    case RIGHT -> this.getRightVariableName();
-                    case BASELINE -> this.getBaselineVariableName();
-                };
+        {
+            case LEFT -> this.getLeftVariableName();
+            case RIGHT -> this.getRightVariableName();
+            case BASELINE -> this.getBaselineVariableName();
+        };
     }
 
     @Override
@@ -382,11 +406,11 @@ public class InMemoryProject implements Project
     public boolean usesGriddedData( DatasetOrientation orientation )
     {
         return switch ( orientation )
-                {
-                    case LEFT -> this.leftUsesGriddedData;
-                    case RIGHT -> this.rightUsesGriddedData;
-                    case BASELINE -> this.baselineUsesGriddedData;
-                };
+        {
+            case LEFT -> this.leftUsesGriddedData;
+            case RIGHT -> this.rightUsesGriddedData;
+            case BASELINE -> this.baselineUsesGriddedData;
+        };
     }
 
     /**
@@ -750,10 +774,12 @@ public class InMemoryProject implements Project
             Set<FeatureTuple> griddedTuples = this.getGriddedFeatureTuples();
 
             this.features = griddedTuples;
-            this.featureGroups = ProjectUtilities.getFeatureGroups( this.features,
-                                                                    Set.of(),
-                                                                    this.getDeclaration(),
-                                                                    this.getId() );
+            ProjectUtilities.FeatureGroupsPlus groups = ProjectUtilities.getFeatureGroups( this.features,
+                                                                                           Set.of(),
+                                                                                           this.getDeclaration(),
+                                                                                           this.getId() );
+            this.featureGroups = groups.featureGroups();
+            this.doNotPublish = groups.doNotPublish();
 
             LOGGER.debug( "Finished setting the features for project {}. Discovered {} gridded features.",
                           this.getId(),
@@ -828,10 +854,11 @@ public class InMemoryProject implements Project
                                                                               .spatialMask() );
             }
 
-            Set<FeatureGroup> innerFeatureGroups = ProjectUtilities.getFeatureGroups( singletons,
-                                                                                      groupedTuples,
-                                                                                      innerDeclaration,
-                                                                                      this.getId() );
+            ProjectUtilities.FeatureGroupsPlus groups = ProjectUtilities.getFeatureGroups( singletons,
+                                                                                           groupedTuples,
+                                                                                           innerDeclaration,
+                                                                                           this.getId() );
+            Set<FeatureGroup> innerFeatureGroups = groups.featureGroups();
 
             // Filter the multi-group features against any spatial mask, unless there is gridded data, which is masked
             // upfront
@@ -844,6 +871,7 @@ public class InMemoryProject implements Project
             // Filter the features and feature groups against any spatial mask
             this.features = Collections.unmodifiableSet( singletons );
             this.featureGroups = Collections.unmodifiableSet( innerFeatureGroups );
+            this.doNotPublish = groups.doNotPublish();
 
             LOGGER.debug( "Finished setting the feature groups for project {}. Discovered {} feature groups: {}.",
                           this.getId(),

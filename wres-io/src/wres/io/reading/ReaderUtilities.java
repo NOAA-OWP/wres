@@ -63,7 +63,7 @@ import wres.statistics.generated.GeometryTuple;
 import wres.system.SSLStuffThatTrustsOneCertificate;
 
 /**
- * Utilities for file reading.
+ * Utilities for reading from data sources, such as files and data services.
  *
  * @author James Brown
  * @author Christopher Tubbs

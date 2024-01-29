@@ -378,7 +378,6 @@ public class Evaluator
                                    databaseServices,
                                    declaration,
                                    executors,
-                                   this.getBrokerConnectionFactory(),
                                    monitor,
                                    canceller,
                                    evaluationId );
@@ -443,7 +442,6 @@ public class Evaluator
      * @param databaseServices the database services
      * @param declaration the project declaration
      * @param executors the executors
-     * @param connections broker connections
      * @param monitor an event that monitors the life cycle of the evaluation, not null
      * @param canceller a callback to allow for cancellation of the running evaluation, not null
      * @param evaluationId the id of the evaluation we are executing
@@ -458,7 +456,6 @@ public class Evaluator
                                               DatabaseServices databaseServices,
                                               EvaluationDeclaration declaration,
                                               EvaluationExecutors executors,
-                                              BrokerConnectionFactory connections,
                                               EvaluationEvent monitor,
                                               Canceller canceller,
                                               String evaluationId )
@@ -467,7 +464,6 @@ public class Evaluator
         Objects.requireNonNull( systemSettings );
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( executors );
-        Objects.requireNonNull( connections );
         Objects.requireNonNull( monitor );
         Objects.requireNonNull( canceller );
 
@@ -476,6 +472,8 @@ public class Evaluator
         {
             Objects.requireNonNull( databaseServices );
         }
+
+        BrokerConnectionFactory connections = this.getBrokerConnectionFactory();
 
         Set<Path> resources = new TreeSet<>();
         String projectHash;
@@ -664,20 +662,20 @@ public class Evaluator
             EvaluationDeclaration declarationWithFeaturesAndThresholds =
                     ReaderUtilities.readAndFillThresholds( declarationWithFeatures, unitMapper );
 
-            // Update the small bag-o-state
-            evaluationDetails = EvaluationDetailsBuilder.builder( evaluationDetails )
-                                                        .declaration( declarationWithFeaturesAndThresholds )
-                                                        .build();
             // Get the features, as described in the ingested time-series data, which may differ in number and details
             // from the declared features. For example, they are filtered for data availability, spatial mask etc. and
             // may include extra descriptive information, such as a geometry or location description.
-            Set<FeatureTuple> features = project.getFeatures();
+            Set<FeatureTuple> features = new HashSet<>( project.getFeatures() );
             Set<GeometryTuple> unwrappedFeatures = features.stream()
                                                            .map( FeatureTuple::getGeometryTuple )
                                                            .collect( Collectors.toUnmodifiableSet() );
 
             // Create the feature groups
             Set<FeatureGroup> featureGroups = EvaluationUtilities.getFeatureGroups( project, features );
+
+            // If summary statistics are required for feature groups, ensure that all the singletons within feature
+            // groups are part of the singletons list, but do not publish statistics for any missing features
+            Set<FeatureGroup> doNotPublish = project.getFeatureGroupsForWhichStatisticsShouldNotBePublished();
 
             // Adjust the declaration to include the fully described features based on the ingested data
             Features dataFeatures = new Features( unwrappedFeatures );
@@ -734,13 +732,6 @@ public class Evaluator
             // Start the evaluation
             evaluationMessager.start();
 
-            // Set the project and evaluation, metrics and thresholds
-            evaluationDetails = EvaluationDetailsBuilder.builder( evaluationDetails )
-                                                        .project( project )
-                                                        .evaluation( evaluationMessager )
-                                                        .metricsAndThresholds( metricsAndThresholds )
-                                                        .build();
-
             PoolFactory poolFactory = PoolFactory.of( project );
             List<PoolRequest> poolRequests = EvaluationUtilities.getPoolRequests( poolFactory, evaluationDescription );
 
@@ -757,32 +748,42 @@ public class Evaluator
             PoolGroupTracker groupTracker = PoolGroupTracker.ofFeatureGroupTracker( evaluationMessager, poolRequests );
 
             // Create the summary statistics calculators to increment with raw statistics
-            List<SummaryStatisticsCalculator> summaryStatisticsCalculators =
+            List<SummaryStatisticsCalculator> summaryStatsCalculators =
                     EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds );
-            List<SummaryStatisticsCalculator> summaryStatisticsCalculatorsForBaseline = List.of();
+            List<SummaryStatisticsCalculator> summaryStataCalculatorsForBaseline = List.of();
             boolean separateMetricsForBaseline = DeclarationUtilities.hasBaseline( declaration )
                                                  && declaration.baseline()
                                                                .separateMetrics();
             if ( separateMetricsForBaseline )
             {
-                summaryStatisticsCalculatorsForBaseline =
+                summaryStataCalculatorsForBaseline =
                         EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds );
             }
+
+            // Set the project and evaluation, metrics and thresholds and summary statistics
+            evaluationDetails = EvaluationDetailsBuilder.builder( evaluationDetails )
+                                                        .project( project )
+                                                        .evaluation( evaluationMessager )
+                                                        .declaration( declarationWithFeaturesAndThresholds )
+                                                        .metricsAndThresholds( metricsAndThresholds )
+                                                        .summaryStatistics( summaryStatsCalculators )
+                                                        .summaryStatisticsForBaseline(
+                                                                summaryStataCalculatorsForBaseline )
+                                                        .summaryStatisticsOnly( doNotPublish )
+                                                        .build();
 
             // Create and publish the raw evaluation statistics
             PoolDetails poolDetails = new PoolDetails( poolFactory, poolRequests, poolReporter, groupTracker );
             EvaluationUtilities.createAndPublishStatistics( evaluationDetails,
                                                             poolDetails,
-                                                            summaryStatisticsCalculators,
-                                                            summaryStatisticsCalculatorsForBaseline,
                                                             sharedWriters,
                                                             executors );
 
             // Create and publish any summary statistics derived from the raw statistics
-            EvaluationUtilities.createAndPublishSummaryStatistics( summaryStatisticsCalculators,
+            EvaluationUtilities.createAndPublishSummaryStatistics( summaryStatsCalculators,
                                                                    evaluationMessager );
 
-            EvaluationUtilities.createAndPublishSummaryStatistics( summaryStatisticsCalculatorsForBaseline,
+            EvaluationUtilities.createAndPublishSummaryStatistics( summaryStataCalculatorsForBaseline,
                                                                    evaluationMessager );
 
             // Report that all publication was completed. At this stage, a message is sent indicating the expected

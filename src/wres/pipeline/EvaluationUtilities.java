@@ -138,8 +138,6 @@ class EvaluationUtilities
      *
      * @param evaluationDetails the evaluation details
      * @param poolDetails the pool details
-     * @param summaryStatistics the summary statistics calculators, possibly empty
-     * @param summaryStatisticsForBaseline the summary statistics calculators for a separate baseline, possibly empty
      * @param sharedWriters the shared writers
      * @param executors the executor services
      * @throws NullPointerException if any input is null
@@ -147,15 +145,11 @@ class EvaluationUtilities
 
     static void createAndPublishStatistics( EvaluationDetails evaluationDetails,
                                             PoolDetails poolDetails,
-                                            List<SummaryStatisticsCalculator> summaryStatistics,
-                                            List<SummaryStatisticsCalculator> summaryStatisticsForBaseline,
                                             SharedWriters sharedWriters,
                                             EvaluationExecutors executors )
     {
         Objects.requireNonNull( evaluationDetails );
         Objects.requireNonNull( poolDetails );
-        Objects.requireNonNull( summaryStatistics );
-        Objects.requireNonNull( summaryStatisticsForBaseline );
         Objects.requireNonNull( sharedWriters );
         Objects.requireNonNull( executors );
 
@@ -177,8 +171,6 @@ class EvaluationUtilities
         // completes exceptionally, whichever happens first
         CompletableFuture<Object> poolTaskChain = EvaluationUtilities.getPoolTasks( evaluationDetails,
                                                                                     poolDetails,
-                                                                                    summaryStatistics,
-                                                                                    summaryStatisticsForBaseline,
                                                                                     sharedWriters,
                                                                                     executors );
 
@@ -777,8 +769,6 @@ class EvaluationUtilities
      *
      * @param evaluationDetails the evaluation details
      * @param poolDetails the pool details
-     * @param summaryStatistics the summary statistics calculators, possibly empty
-     * @param summaryStatisticsForBaseline the summary statistics calculators for a separate baseline, possibly empty
      * @param sharedWriters the shared writers
      * @param executors the executor services
      * @return the pool task chain
@@ -786,8 +776,6 @@ class EvaluationUtilities
 
     private static CompletableFuture<Object> getPoolTasks( EvaluationDetails evaluationDetails,
                                                            PoolDetails poolDetails,
-                                                           List<SummaryStatisticsCalculator> summaryStatistics,
-                                                           List<SummaryStatisticsCalculator> summaryStatisticsForBaseline,
                                                            SharedWriters sharedWriters,
                                                            EvaluationExecutors executors )
     {
@@ -803,8 +791,6 @@ class EvaluationUtilities
             List<PoolProcessor<Double, Ensemble>> poolProcessors =
                     EvaluationUtilities.getEnsemblePoolProcessors( evaluationDetails,
                                                                    poolDetails,
-                                                                   summaryStatistics,
-                                                                   summaryStatisticsForBaseline,
                                                                    sharedWriters,
                                                                    executors );
 
@@ -818,8 +804,6 @@ class EvaluationUtilities
             List<PoolProcessor<Double, Double>> poolProcessors =
                     EvaluationUtilities.getSingleValuedPoolProcessors( evaluationDetails,
                                                                        poolDetails,
-                                                                       summaryStatistics,
-                                                                       summaryStatisticsForBaseline,
                                                                        sharedWriters,
                                                                        executors );
 
@@ -835,8 +819,6 @@ class EvaluationUtilities
      * Returns a list of processors for processing single-valued pools, one for each pool request.
      * @param evaluationDetails the evaluation details
      * @param poolDetails the pool details
-     * @param summaryStatistics the summary statistics calculators, possibly empty
-     * @param summaryStatisticsForBaseline the summary statistics calculators for a separate baseline, possibly empty
      * @param sharedWriters the shared writers
      * @param executors the executors
      * @return the single-valued processors
@@ -844,8 +826,6 @@ class EvaluationUtilities
 
     private static List<PoolProcessor<Double, Double>> getSingleValuedPoolProcessors( EvaluationDetails evaluationDetails,
                                                                                       PoolDetails poolDetails,
-                                                                                      List<SummaryStatisticsCalculator> summaryStatistics,
-                                                                                      List<SummaryStatisticsCalculator> summaryStatisticsForBaseline,
                                                                                       SharedWriters sharedWriters,
                                                                                       EvaluationExecutors executors )
     {
@@ -915,6 +895,12 @@ class EvaluationUtilities
         for ( Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Double>>>>> next : poolSuppliers )
         {
             PoolRequest poolRequest = next.getKey();
+
+            // Publish statistics?
+            boolean publishStatistics =
+                    EvaluationUtilities.shouldPublishStatistics( poolRequest,
+                                                                 evaluationDetails.summaryStatisticsOnly() );
+
             Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolSupplier = next.getValue();
 
             PoolProcessor<Double, Double> poolProcessor =
@@ -934,8 +920,9 @@ class EvaluationUtilities
                             .setTraceCountEstimator( SINGLE_VALUED_TRACE_COUNT_ESTIMATOR )
                             .setSeparateMetricsForBaseline( separateMetrics )
                             .setPoolGroupTracker( poolDetails.poolGroupTracker() )
-                            .setSummaryStatisticsCalculators( summaryStatistics )
-                            .setSummaryStatisticsCalculatorsForBaseline( summaryStatisticsForBaseline )
+                            .setSummaryStatisticsCalculators( evaluationDetails.summaryStatistics() )
+                            .setSummaryStatisticsCalculatorsForBaseline( evaluationDetails.summaryStatisticsForBaseline() )
+                            .setPublishStatistics( publishStatistics )
                             .build();
 
             poolProcessors.add( poolProcessor );
@@ -948,8 +935,6 @@ class EvaluationUtilities
      * Returns a list of processors for processing ensemble pools, one for each pool request.
      * @param evaluationDetails the evaluation details
      * @param poolDetails the pool details
-     * @param summaryStatistics the summary statistics calculators, possibly empty
-     * @param summaryStatisticsForBaseline the summary statistics calculators for a separate baseline, possibly empty
      * @param sharedWriters the shared writers
      * @param executors the executors
      * @return the ensemble processors
@@ -957,8 +942,6 @@ class EvaluationUtilities
 
     private static List<PoolProcessor<Double, Ensemble>> getEnsemblePoolProcessors( EvaluationDetails evaluationDetails,
                                                                                     PoolDetails poolDetails,
-                                                                                    List<SummaryStatisticsCalculator> summaryStatistics,
-                                                                                    List<SummaryStatisticsCalculator> summaryStatisticsForBaseline,
                                                                                     SharedWriters sharedWriters,
                                                                                     EvaluationExecutors executors )
     {
@@ -1085,6 +1068,11 @@ class EvaluationUtilities
         {
             PoolRequest poolRequest = next.getKey();
 
+            // Publish statistics?
+            boolean publishStatistics =
+                    EvaluationUtilities.shouldPublishStatistics( poolRequest,
+                                                                 evaluationDetails.summaryStatisticsOnly() );
+
             Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>> poolSupplier = next.getValue();
 
             PoolProcessor<Double, Ensemble> poolProcessor =
@@ -1104,14 +1092,32 @@ class EvaluationUtilities
                             .setTraceCountEstimator( ENSEMBLE_TRACE_COUNT_ESTIMATOR )
                             .setSeparateMetricsForBaseline( separateMetrics )
                             .setPoolGroupTracker( poolDetails.poolGroupTracker() )
-                            .setSummaryStatisticsCalculators( summaryStatistics )
-                            .setSummaryStatisticsCalculatorsForBaseline( summaryStatisticsForBaseline )
+                            .setSummaryStatisticsCalculators( evaluationDetails.summaryStatistics() )
+                            .setSummaryStatisticsCalculatorsForBaseline( evaluationDetails.summaryStatisticsForBaseline() )
+                            .setPublishStatistics( publishStatistics )
                             .build();
 
             poolProcessors.add( poolProcessor );
         }
 
         return Collections.unmodifiableList( poolProcessors );
+    }
+
+    /**
+     * @param poolRequest the pool request
+     * @param summaryStatisticsOnly the singleton features for which raw statistics should not be published
+     * @return whether to publish the raw statistics for this pool request
+     */
+    private static boolean shouldPublishStatistics( PoolRequest poolRequest,
+                                                    Set<FeatureGroup> summaryStatisticsOnly )
+    {
+        // Publish if this is a multi-feature group, else a singleton that is not within the summary statistics only
+        // collection
+        return !poolRequest.getMetadata()
+                           .getFeatureGroup()
+                           .isSingleton()
+               || !summaryStatisticsOnly.contains( poolRequest.getMetadata()
+                                                              .getFeatureGroup() );
     }
 
     /**
