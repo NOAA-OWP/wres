@@ -271,9 +271,12 @@ public class DeclarationValidator
         // Check that the time pools are valid
         List<EvaluationStatusEvent> pools = DeclarationValidator.timePoolsAreValid( declaration );
         events.addAll( pools );
-        // Check that the feature declaration is valid in all contexts
+        // Check that the feature declaration is valid
         List<EvaluationStatusEvent> features = DeclarationValidator.featuresAreValid( declaration );
         events.addAll( features );
+        // Check that the feature group declaration is valid
+        List<EvaluationStatusEvent> featureGroups = DeclarationValidator.featureGroupsAreValid( declaration );
+        events.addAll( featureGroups );
         // Check that the metrics declaration is valid
         List<EvaluationStatusEvent> metrics = DeclarationValidator.metricsAreValid( declaration );
         events.addAll( metrics );
@@ -1530,6 +1533,37 @@ public class DeclarationValidator
     }
 
     /**
+     * Checks that the declaration of feature groups is valid.
+     * @param declaration the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> featureGroupsAreValid( EvaluationDeclaration declaration )
+    {
+        // Ensure feature groups are declared when needed. Unlike features, they cannot be declared implicitly, so
+        // absence is an error rather than a warning
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+        if ( Objects.isNull( declaration.featureGroups() )
+             && declaration.summaryStatistics()
+                           .stream()
+                           .anyMatch( s -> s.getDimension() == SummaryStatistic.StatisticDimension.FEATURE_GROUP ) )
+        {
+            EvaluationStatusEvent error
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "Summary statistics were declared to summarize the "
+                                                             + "evaluation results across geographic feature groups, "
+                                                             + "but no 'feature_groups' were declared for evaluation. "
+                                                             + "Please declare some 'feature_groups' or remove the "
+                                                             + "'summary_statistics' with a 'dimensions' entry of "
+                                                             + "'feature groups' and try again." )
+                                           .build();
+            events.add( error );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
      * Checks that the metrics declaration is valid.
      * @param declaration the evaluation declaration
      * @return the validation events encountered
@@ -1590,14 +1624,14 @@ public class DeclarationValidator
              && Objects.isNull( declaration.featureService() )
              && Objects.isNull( declaration.spatialMask() ) )
         {
-            EvaluationStatusEvent error
+            EvaluationStatusEvent warn
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.WARN )
                                            .setEventMessage( "Summary statistics were requested to summarize the "
                                                              + "evaluation results across geographic features, but no "
                                                              + "features were declared for evaluation." )
                                            .build();
-            events.add( error );
+            events.add( warn );
         }
 
         // Warn if the declaration contains diagrams and there are quantile statistics without a median
@@ -1999,7 +2033,8 @@ public class DeclarationValidator
             }
 
             // Do not allow legacy netcdf together with feature groups
-            if ( outputs.hasNetcdf() && Objects.nonNull( declaration.featureGroups() ) )
+            if ( outputs.hasNetcdf()
+                 && Objects.nonNull( declaration.featureGroups() ) )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
@@ -2014,7 +2049,8 @@ public class DeclarationValidator
             }
 
             // Warn about netcdf2 when feature groups are declared
-            if ( outputs.hasNetcdf2() && Objects.nonNull( declaration.featureGroups() ) )
+            if ( outputs.hasNetcdf2()
+                 && Objects.nonNull( declaration.featureGroups() ) )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()

@@ -56,8 +56,8 @@ public interface Project
     TimeScaleOuter getDesiredTimeScale();
 
     /**
-     * Returns the set of {@link FeatureTuple} for the project. If none have been created yet, then it is evaluated. If
-     * there is no specification within the declaration, all features that have been ingested are retrieved
+     * Returns the set of {@link FeatureTuple} declared in all contexts, whether as singletons or part of multi-feature
+     * groups.
      * @return a set of all feature tuples involved in the project
      * @throws DataAccessException if the features cannot be retrieved
      * @throws IllegalStateException if the features have not been set
@@ -66,7 +66,7 @@ public interface Project
     Set<FeatureTuple> getFeatures();
 
     /**
-     * Returns the set of {@link FeatureGroup} for the project.
+     * Returns the set of {@link FeatureGroup} to evaluate, including singletons.
      * @return a set of all feature groups involved in the project
      * @throws IllegalStateException if the features have not been set
      */

@@ -129,7 +129,7 @@ public class TarredReader implements TimeSeriesReader
 
     /**
      * Returns a time-series supplier from the inputs.
-     * 
+     *
      * @param dataSource the data source
      * @param inputStream the stream to read
      * @return a time-series supplier
@@ -159,7 +159,7 @@ public class TarredReader implements TimeSeriesReader
 
             try
             {
-                TarArchiveEntry archivedSource = archiveStream.getNextTarEntry();
+                TarArchiveEntry archivedSource = archiveStream.getNextEntry();
 
                 // Flag to indicate when the loop should stop
                 boolean proceed = true;
@@ -181,13 +181,14 @@ public class TarredReader implements TimeSeriesReader
                     }
 
                     // Try again until we find the next entry with one or more time-series or reach the end
-                    archivedSource = archiveStream.getNextTarEntry();
+                    archivedSource = archiveStream.getNextEntry();
 
                     // Proceed while there is another archive entry, another future awaiting retrieval or another 
                     // retrieved tuple awaiting return 
                     proceed = Objects.nonNull( archivedSource )
-                              || ( Objects.nonNull( lastTuples.get() ) && !lastTuples.get()
-                                                                                     .isEmpty() )
+                              || ( Objects.nonNull( lastTuples.get() )
+                                   && !lastTuples.get()
+                                                 .isEmpty() )
                               || !tuples.isEmpty();
 
                     LOGGER.trace( "Archived entry? {}. Last tuples? {}. How many tuples are queued? {}.",
@@ -226,7 +227,8 @@ public class TarredReader implements TimeSeriesReader
                                                            CountDownLatch startGettingOnTasks )
     {
         // Find the next one that is a file
-        if ( Objects.nonNull( archivedSource ) && archivedSource.isFile() )
+        if ( Objects.nonNull( archivedSource )
+             && archivedSource.isFile() )
         {
             // Create the stream, which means reading the bytes but not translating them yet
             Stream<TimeSeriesTuple> stream = this.readTarEntry( dataSource,
@@ -308,7 +310,7 @@ public class TarredReader implements TimeSeriesReader
     {
         LOGGER.debug( "Attempting to read a tar entry from {}.", dataSource );
 
-        int expectedByteCount = (int) archiveEntry.getSize();
+        int expectedByteCount = ( int ) archiveEntry.getSize();
         URI archivedFileName = URI.create( tarName + PATH_DELIM + archiveEntry.getName() );
 
         // Detect the data disposition using a markable stream
@@ -395,8 +397,8 @@ public class TarredReader implements TimeSeriesReader
     }
 
     /**
-    * @return the reader factory
-    */
+     * @return the reader factory
+     */
 
     private TimeSeriesReaderFactory getReaderFactory()
     {
@@ -428,7 +430,8 @@ public class TarredReader implements TimeSeriesReader
 
         ThreadFactory tarredSourceFactory = new BasicThreadFactory.Builder().namingPattern( "Tarred Reading Thread %d" )
                                                                             .build();
-        BlockingQueue<Runnable> tarredSourceQueue = new ArrayBlockingQueue<>( systemSettings.getMaximumArchiveThreads() );
+        BlockingQueue<Runnable> tarredSourceQueue =
+                new ArrayBlockingQueue<>( systemSettings.getMaximumArchiveThreads() );
         this.executor = new ThreadPoolExecutor( systemSettings.getMaximumArchiveThreads(),
                                                 systemSettings.getMaximumArchiveThreads(),
                                                 systemSettings.getPoolObjectLifespan(),

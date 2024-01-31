@@ -36,7 +36,6 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLe
 
 public class PoolReporter implements Consumer<PoolProcessingResult>
 {
-
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( PoolReporter.class );
 
@@ -112,14 +111,19 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
 
         switch ( result.getStatus() )
         {
-            case STATISTICS_AVAILABLE_NOT_PUBLISHED ->
-                    reportStatisticsAvailableNotPublished( featureGroup, timeWindow );
+            case STATISTICS_AVAILABLE_NOT_PUBLISHED_ERROR_STATE ->
+                    this.reportStatisticsAvailableNotPublished( featureGroup, timeWindow );
+            case STATISTICS_PUBLICATION_SKIPPED ->
+            {
+                this.successfulPools.add( result.getPoolRequest() );
+                this.reportStatisticsSkipped( featureGroup, timeWindow );
+            }
             case STATISTICS_NOT_AVAILABLE ->
-                    reportStatisticsNotAvailable( featureGroup, timeWindow, result.getEvaluationStatusEvents() );
+                    this.reportStatisticsNotAvailable( featureGroup, timeWindow, result.getEvaluationStatusEvents() );
             case STATISTICS_PUBLISHED ->
             {
                 this.successfulPools.add( result.getPoolRequest() );
-                reportStatisticsPublished( featureGroup, timeWindow );
+                this.reportStatisticsPublished( featureGroup, timeWindow );
             }
         }
 
@@ -361,6 +365,25 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
             LOGGER.warn( "[{}/{}] Completed a pool in feature group '{}', which produced statistics, but these "
                          + "statistics were not published because the evaluation was in an errored state and closing. "
                          + "The time window was: {}.",
+                         this.processed.incrementAndGet(),
+                         this.totalPools,
+                         featureGroup.getName(),
+                         TIME_WINDOW_STRINGIFIER.apply( timeWindow ) );
+        }
+    }
+
+    /**
+     * Report statistics produced, not published.
+     * @param featureGroup the feature group
+     * @param timeWindow the time window
+     */
+
+    private void reportStatisticsSkipped( FeatureGroup featureGroup, TimeWindowOuter timeWindow )
+    {
+        if ( LOGGER.isInfoEnabled() )
+        {
+            LOGGER.info( "[{}/{}] Completed a pool in feature group '{}', which produced statistics, but these "
+                         + "statistics were only used to generate summary statistics. The time window was: {}.",
                          this.processed.incrementAndGet(),
                          this.totalPools,
                          featureGroup.getName(),

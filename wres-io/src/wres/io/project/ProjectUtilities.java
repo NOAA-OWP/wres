@@ -111,66 +111,9 @@ class ProjectUtilities
         LOGGER.debug( "Added {} singleton feature groups to project {}.", innerGroups.size(), projectId );
 
         // Add the multi-feature groups
-        Set<GeometryGroup> declaredGroups =
-                ProjectUtilities.getAndValidateDeclaredFeatureGroups( groupedFeaturesWithData,
-                                                                      declaration );
-
-        AtomicInteger groupNumber = new AtomicInteger( 1 ); // For naming when no name is present        
-
-        // Iterate the declared feature groups and correlate with features that have data
-        for ( GeometryGroup nextGroup : declaredGroups )
-        {
-            Set<FeatureTuple> groupedTuples = new HashSet<>();
-            Set<FeatureTuple> noDataTuples = new HashSet<>();
-
-            for ( GeometryTuple nextFeature : nextGroup.getGeometryTuplesList() )
-            {
-                FeatureTuple foundTuple = ProjectUtilities.findFeature( nextFeature,
-                                                                        groupedFeaturesWithData,
-                                                                        nextGroup );
-
-                // The next feature in a declared group was not matched by a feature with data
-                if ( Objects.isNull( foundTuple ) )
-                {
-                    FeatureTuple noData = FeatureTuple.of( nextFeature );
-                    noDataTuples.add( noData );
-                }
-                // The next feature in a declared group was matched by a feature with data
-                else
-                {
-                    groupedTuples.add( foundTuple );
-                }
-            }
-
-            String groupName = ProjectUtilities.getFeatureGroupNameFrom( nextGroup, groupNumber );
-
-            if ( !groupedTuples.isEmpty() )
-            {
-                GeometryGroup geoGroup = MessageFactory.getGeometryGroup( groupName, groupedTuples );
-                FeatureGroup newGroup = FeatureGroup.of( geoGroup );
-                innerGroups.add( newGroup );
-                LOGGER.debug( "Discovered a new feature group, {}.", newGroup );
-
-                if ( !noDataTuples.isEmpty() && LOGGER.isWarnEnabled() )
-                {
-                    LOGGER.warn( "While processing feature group {}, discovered {} feature tuples without time-series "
-                                 + "data. The statistics from this group will contain {} features instead of {} "
-                                 + "features. The features without time-series data are: {}.",
-                                 groupName,
-                                 noDataTuples.size(),
-                                 groupedTuples.size(),
-                                 groupedTuples.size() + noDataTuples.size(),
-                                 noDataTuples );
-                }
-            }
-            else
-            {
-                LOGGER.warn( "Skipping feature group {} because there were no features with time-series data. The "
-                             + "following features had no data: {}.",
-                             groupName,
-                             noDataTuples );
-            }
-        }
+        Set<FeatureGroup> multiFeatureGroups = ProjectUtilities.getMultiFeatureGroups( declaration,
+                                                                                       groupedFeaturesWithData );
+        innerGroups.addAll( multiFeatureGroups );
 
         LOGGER.info( "Discovered {} feature groups with data on both the left and right sides (statistics "
                      + "should be expected for this many feature groups at most).",
@@ -184,7 +127,8 @@ class ProjectUtilities
                         .stream()
                         .anyMatch( s -> s.getDimension() == SummaryStatistic.StatisticDimension.FEATURE_GROUP ) )
         {
-            groupedFeaturesWithData.forEach( f -> doNotPublish.add( FeatureGroup.of( MessageFactory.getGeometryGroup( f ) ) ) );
+            groupedFeaturesWithData.forEach( f -> doNotPublish.add( FeatureGroup.of( MessageFactory.getGeometryGroup( f.toStringShort(),
+                                                                                                                      f ) ) ) );
             // Remove all the declared singletons
             doNotPublish.removeAll( singletonGroups );
             LOGGER.debug( "Added the following singleton feature groups to calculate summary statistics only: {}",
@@ -736,6 +680,82 @@ class ProjectUtilities
                                             + ". Please declare an explicit variable name for "
                                             + "each required data source to disambiguate." );
         }
+    }
+
+    /**
+     * Generates the multi-feature groups for evaluation.
+     * @param declaration the declaration
+     * @param groupedFeaturesWithData the groped features with data
+     * @return the multi-feature-groups
+     */
+    private static Set<FeatureGroup> getMultiFeatureGroups( EvaluationDeclaration declaration,
+                                                            Set<FeatureTuple> groupedFeaturesWithData )
+    {
+        Set<GeometryGroup> declaredGroups =
+                ProjectUtilities.getAndValidateDeclaredFeatureGroups( groupedFeaturesWithData,
+                                                                      declaration );
+
+        AtomicInteger groupNumber = new AtomicInteger( 1 ); // For naming when no name is present
+
+        Set<FeatureGroup> grouped = new HashSet<>();
+
+        // Iterate the declared feature groups and correlate with features that have data
+        for ( GeometryGroup nextGroup : declaredGroups )
+        {
+            Set<FeatureTuple> groupedTuples = new HashSet<>();
+            Set<FeatureTuple> noDataTuples = new HashSet<>();
+
+            for ( GeometryTuple nextFeature : nextGroup.getGeometryTuplesList() )
+            {
+                FeatureTuple foundTuple = ProjectUtilities.findFeature( nextFeature,
+                                                                        groupedFeaturesWithData,
+                                                                        nextGroup );
+
+                // The next feature in a declared group was not matched by a feature with data
+                if ( Objects.isNull( foundTuple ) )
+                {
+                    FeatureTuple noData = FeatureTuple.of( nextFeature );
+                    noDataTuples.add( noData );
+                }
+                // The next feature in a declared group was matched by a feature with data
+                else
+                {
+                    groupedTuples.add( foundTuple );
+                }
+            }
+
+            String groupName = ProjectUtilities.getFeatureGroupNameFrom( nextGroup, groupNumber );
+
+            if ( !groupedTuples.isEmpty() )
+            {
+                GeometryGroup geoGroup = MessageFactory.getGeometryGroup( groupName, groupedTuples );
+                FeatureGroup newGroup = FeatureGroup.of( geoGroup );
+                grouped.add( newGroup );
+                LOGGER.debug( "Discovered a new feature group, {}.", newGroup );
+
+                if ( !noDataTuples.isEmpty()
+                     && LOGGER.isWarnEnabled() )
+                {
+                    LOGGER.warn( "While processing feature group {}, discovered {} feature tuples without time-series "
+                                 + "data. The statistics from this group will contain {} features instead of {} "
+                                 + "features. The features without time-series data are: {}.",
+                                 groupName,
+                                 noDataTuples.size(),
+                                 groupedTuples.size(),
+                                 groupedTuples.size() + noDataTuples.size(),
+                                 noDataTuples );
+                }
+            }
+            else
+            {
+                LOGGER.warn( "Skipping feature group {} because there were no features with time-series data. The "
+                             + "following features had no data: {}.",
+                             groupName,
+                             noDataTuples );
+            }
+        }
+
+        return Collections.unmodifiableSet( grouped );
     }
 
     /**
