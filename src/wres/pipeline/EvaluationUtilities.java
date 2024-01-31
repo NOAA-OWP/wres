@@ -736,31 +736,40 @@ class EvaluationUtilities
      * @param featureGroups the existing feature groups
      * @param features the singleton features
      * @param summaryStatistics the summary statistics declaration
+     * @param doNotPublish the feature groups for which statistics should not be published
      * @return the adjusted feature groups
      */
-    static Set<FeatureGroup> getFeatureGroupsForSummaryStatistics( Set<FeatureGroup> featureGroups,
-                                                                   Set<GeometryTuple> features,
-                                                                   Set<SummaryStatistic> summaryStatistics )
+    static Set<FeatureGroup> getFeatureGroupsForNetcdf( Set<FeatureGroup> featureGroups,
+                                                        Set<GeometryTuple> features,
+                                                        Set<SummaryStatistic> summaryStatistics,
+                                                        Set<FeatureGroup> doNotPublish )
     {
+        // Remove any unwanted feature groups and re-assign to the input variable for further use
+        featureGroups = new HashSet<>( featureGroups );
+        featureGroups.removeAll( doNotPublish );
+
         // Summary statistics across geographic features?
+        // No, do not add an all-feature group
         if ( summaryStatistics.stream()
                               .noneMatch( n -> n.getDimension() == SummaryStatistic.StatisticDimension.FEATURES ) )
         {
             LOGGER.debug( "No summary statistics across features that require an extra feature group." );
-            return featureGroups;
+        }
+        // Yes, add an all-feature group
+        else
+        {
+            GeometryGroup summaryStatisticsGroup = GeometryGroup.newBuilder()
+                                                                .addAllGeometryTuples( features )
+                                                                .setRegionName( EvaluationUtilities.SUMMARY_STATISTICS_ACROSS_FEATURES )
+                                                                .build();
+            FeatureGroup summaryStatisticsFeatureGroup = FeatureGroup.of( summaryStatisticsGroup );
+            featureGroups.add( summaryStatisticsFeatureGroup );
+
+            LOGGER.debug( "Added a summary statistics feature group: {}.", summaryStatisticsFeatureGroup );
+
         }
 
-        Set<FeatureGroup> adjustedFeatureGroups = new HashSet<>( featureGroups );
-        GeometryGroup summaryStatisticsGroup = GeometryGroup.newBuilder()
-                                                            .addAllGeometryTuples( features )
-                                                            .setRegionName( EvaluationUtilities.SUMMARY_STATISTICS_ACROSS_FEATURES )
-                                                            .build();
-        FeatureGroup summaryStatisticsFeatureGroup = FeatureGroup.of( summaryStatisticsGroup );
-        adjustedFeatureGroups.add( summaryStatisticsFeatureGroup );
-
-        LOGGER.debug( "Added a summary statistics feature group: {}.", summaryStatisticsFeatureGroup );
-
-        return Collections.unmodifiableSet( adjustedFeatureGroups );
+        return Collections.unmodifiableSet( featureGroups );
     }
 
     /**
