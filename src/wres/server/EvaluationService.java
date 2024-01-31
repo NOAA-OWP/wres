@@ -260,12 +260,7 @@ public class EvaluationService implements ServletContextListener
     @Produces( MediaType.TEXT_PLAIN )
     public Response getStatus( @PathParam( "id" ) Long id )
     {
-        if ( id != EVALUATION_ID.get() )
-        {
-            return Response.status( Response.Status.NOT_FOUND )
-                           .entity( "Can only check the status of the current evaluation" )
-                           .build();
-        }
+        //TODO log finished status in cache to get stash of non-current jobs
         return Response.ok( EVALUATION_STAGE.get().toString() )
                        .build();
     }
