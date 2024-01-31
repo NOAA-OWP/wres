@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.DoubleFunction;
@@ -153,6 +154,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
     /** Path to the supplementary CSVT file created for applications that use the GDAL geospatial library. */
     private final Path pathToCsvt;
 
+    /** Whether the header has been written. */
+    private final AtomicBoolean headerWritten = new AtomicBoolean();
+
     /**
      * Returns an instance, which writes to the prescribed path. Uses default value formatting, which means durations in
      * units of seconds and {@link String#valueOf(double)} for real values.
@@ -221,6 +225,8 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
         try
         {
+            // Create the CSV file if not already created
+            this.testCreateCsvFile( this.bufferedWriter );
             this.writeStatistics( statistics, this.bufferedWriter, groupNumber );
         }
         catch ( IOException e )
@@ -2007,6 +2013,16 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         // Create the evaluation description from the evaluation
         this.evaluationDescription = this.createEvaluationDescription( evaluation );
 
+        // Path to the CSVT file
+        String name = path.getFileName()
+                          .toString();
+        name = name.replace( ".csv", ".csvt" );
+        name = name.replace( ".gz", "" );
+
+        // Resolve the path for the CSVT file
+        this.pathToCsvt = path.getParent()
+                              .resolve( name );
+
         try
         {
             // Gzip?
@@ -2022,14 +2038,32 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                                                                        StandardOpenOption.CREATE,
                                                                                        StandardOpenOption.APPEND ) );
             }
-            this.writeHeader( this.bufferedWriter );
-
-            // Write the CSVT file that helps with import into GDAL-enabled off-the-shelf GIS tools.
-            this.pathToCsvt = this.writeCsvtFileForGdalApplications( path );
         }
         catch ( IOException e )
         {
             throw new CommaSeparatedWriteException( "Encountered an exception while building a CSV writer.", e );
+        }
+    }
+
+    /**
+     * Attempts to create the CSV file with a standard header and the associated CSVT file.
+     * @param writer the writer
+     */
+    private void testCreateCsvFile( BufferedOutputStream writer )
+    {
+        if ( !this.headerWritten.getAndSet( true ) )
+        {
+            try
+            {
+                this.writeHeader( writer );
+
+                // Write the CSVT file that helps with import into GDAL-enabled off-the-shelf GIS tools.
+                this.writeCsvtFileForGdalApplications( this.pathToCsvt );
+            }
+            catch ( IOException e )
+            {
+                throw new CommaSeparatedWriteException( "Encountered an exception while building a CSV writer.", e );
+            }
         }
     }
 
@@ -2112,20 +2146,10 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
      *
      * @param path the base path, which will be adjusted
      * @throws IOException if the file could not be written
-     * @return the path created
      */
 
-    private Path writeCsvtFileForGdalApplications( Path path ) throws IOException
+    private void writeCsvtFileForGdalApplications( Path path ) throws IOException
     {
-        String name = path.getFileName()
-                          .toString();
-        name = name.replace( ".csv", ".csvt" );
-        name = name.replace( ".gz", "" );
-
-        // Resolve the path for the CSVT file
-        Path pathToCsvtInner = path.getParent()
-                                   .resolve( name );
-
         String columnClasses = "\"String\",\"String\",\"String\",\"String\",\"Integer\",\"String\",\"String\",\"WKT\","
                                + "\"Integer\",\"String\",\"String\",\"WKT\",\"Integer\",\"String\",\"String\",\"WKT\","
                                + "\"Integer\",\"String\",\"String\",\"String\",\"String\",\"String\",\"String\","
@@ -2149,13 +2173,11 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                    + ". They must be equal." );
         }
 
-        Files.writeString( pathToCsvtInner,
+        Files.writeString( path,
                            columnClasses,
                            StandardCharsets.UTF_8,
                            StandardOpenOption.CREATE,
                            StandardOpenOption.TRUNCATE_EXISTING );
-
-        return pathToCsvtInner;
     }
 
     /**

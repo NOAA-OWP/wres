@@ -700,9 +700,12 @@ public class Evaluator
 
             // Create any netcdf blobs for writing. See #80267-137.
             Set<FeatureGroup> adjustedFeatureGroups =
-                    EvaluationUtilities.getFeatureGroupsForSummaryStatistics( featureGroups,
-                                                                              unwrappedFeatures,
-                                                                              declaration.summaryStatistics() );
+                    EvaluationUtilities.getFeatureGroupsForNetcdf( featureGroups,
+                                                                   unwrappedFeatures,
+                                                                   declaration.summaryStatistics(),
+                                                                   doNotPublish );
+
+
             EvaluationUtilities.createNetcdfBlobs( netcdfWriters,
                                                    adjustedFeatureGroups,
                                                    metricsAndThresholds );

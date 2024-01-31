@@ -413,7 +413,9 @@ public class PoolFactory
         Project innerProject = this.getProject();
         EvaluationDeclaration declaration = innerProject.getDeclaration();
 
-        Set<FeatureGroup> featureGroups = innerProject.getFeatureGroups();
+        // Use a consistent order for the feature groups, which ensures consistent pool identification across
+        // evaluations
+        Set<FeatureGroup> featureGroups = new TreeSet<>( innerProject.getFeatureGroups() );
 
         // If summary statistics are declared for feature groups, suppress pair generation for multi-feature groups
         if ( declaration.summaryStatistics()
@@ -1007,6 +1009,10 @@ public class PoolFactory
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( featureGroup );
+
+        LOGGER.debug( "Generating pool requests for feature group {} and time windows: {}.",
+                      featureGroup,
+                      timeWindows );
 
         List<PoolRequest> poolRequests = new ArrayList<>();
 
@@ -1951,7 +1957,8 @@ public class PoolFactory
             }
 
             // Equal, absent the expected differences?
-            if ( Objects.nonNull( lastPools ) && !lastPools.equals( updatedPools ) )
+            if ( Objects.nonNull( lastPools )
+                 && !lastPools.equals( updatedPools ) )
             {
                 return false;
             }
