@@ -20,9 +20,12 @@ public class PoolProcessingResult
         /** Nominal situation. */
         STATISTICS_PUBLISHED,
         /** Exceptional situation where an evaluation has failed and some statistics were created and not published. */
-        STATISTICS_AVAILABLE_NOT_PUBLISHED,
+        STATISTICS_AVAILABLE_NOT_PUBLISHED_ERROR_STATE,
         /** No data situation. */
-        STATISTICS_NOT_AVAILABLE
+        STATISTICS_NOT_AVAILABLE,
+        /** Publication of statistics skipped because they are only required for an intermediary step, such as summary
+         * statistics. */
+        STATISTICS_PUBLICATION_SKIPPED
     }
     
     /** The pool description. */

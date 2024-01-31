@@ -167,7 +167,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         }
 
         // Publish the statistics if required
-        Status status = Status.STATISTICS_AVAILABLE_NOT_PUBLISHED;
+        Status status = Status.STATISTICS_PUBLICATION_SKIPPED;
         if ( this.publishStatistics )
         {
             status = this.publish( this.evaluation,
@@ -877,7 +877,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             }
             else
             {
-                status = Status.STATISTICS_AVAILABLE_NOT_PUBLISHED;
+                status = Status.STATISTICS_AVAILABLE_NOT_PUBLISHED_ERROR_STATE;
                 LOGGER.debug( "Statistics were available for a pool but were not published, because the "
                               + "evaluation was marked failed. The pool is: {}.",
                               this.poolRequest );

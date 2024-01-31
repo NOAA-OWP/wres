@@ -221,6 +221,11 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
             thresholdSources = this.emptyOrUnmodifiableSet( thresholdSources, "threshold sources" );
         }
 
+        if ( Objects.isNull( summaryStatistics ) )
+        {
+            summaryStatistics = this.emptyOrUnmodifiableSet( summaryStatistics, "summary statistics" );
+        }
+
         if ( Objects.isNull( durationFormat ) )
         {
             durationFormat = ChronoUnit.SECONDS;

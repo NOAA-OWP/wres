@@ -1840,6 +1840,31 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testSummaryStatisticsAcrossFeatureGroupsWithoutFeatureGroupsProducesError()
+    {
+        SummaryStatistic summaryStatistic = SummaryStatistic.newBuilder()
+                                                            .setDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
+                                                            .setStatistic( SummaryStatistic.StatisticName.MEDIAN )
+                                                            .build();
+
+        Set<SummaryStatistic> summaryStatistics = Set.of( summaryStatistic );
+
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "no 'feature_groups' were declared",
+                                                       StatusLevel.ERROR ) );
+
+    }
+
+    @Test
     void testInconsistentGraphicsOrientationAndPoolingDeclarationProducesError() throws IOException  // NOSONAR
     {
         // #57969-86

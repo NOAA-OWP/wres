@@ -80,6 +80,7 @@ import wres.io.retrieving.CachingSupplier;
 import wres.io.retrieving.RetrieverFactory;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.SummaryStatistic;
 
 /**
  * A factory class for generating the pools of pairs associated with an evaluation.
@@ -413,6 +414,18 @@ public class PoolFactory
         EvaluationDeclaration declaration = innerProject.getDeclaration();
 
         Set<FeatureGroup> featureGroups = innerProject.getFeatureGroups();
+
+        // If summary statistics are declared for feature groups, suppress pair generation for multi-feature groups
+        if ( declaration.summaryStatistics()
+                        .stream()
+                        .anyMatch( s -> s.getDimension() == SummaryStatistic.StatisticDimension.FEATURE_GROUP ) )
+        {
+            LOGGER.warn( "Discovered declaration for summary statistics across feature groups. By default, the "
+                         + "pooling of pairs across these feature groups will be suppressed." );
+            featureGroups = featureGroups.stream()
+                                         .filter( FeatureGroup::isSingleton )
+                                         .collect( Collectors.toUnmodifiableSet() );
+        }
 
         // Get the desired timescale
         TimeScaleOuter desiredTimeScale = innerProject.getDesiredTimeScale();
