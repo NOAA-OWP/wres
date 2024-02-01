@@ -705,7 +705,6 @@ public class Evaluator
                                                                    declaration.summaryStatistics(),
                                                                    doNotPublish );
 
-
             EvaluationUtilities.createNetcdfBlobs( netcdfWriters,
                                                    adjustedFeatureGroups,
                                                    metricsAndThresholds );
@@ -752,7 +751,7 @@ public class Evaluator
 
             // Create the summary statistics calculators to increment with raw statistics
             List<SummaryStatisticsCalculator> summaryStatsCalculators =
-                    EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds );
+                    EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds, poolCount );
             List<SummaryStatisticsCalculator> summaryStataCalculatorsForBaseline = List.of();
             boolean separateMetricsForBaseline = DeclarationUtilities.hasBaseline( declaration )
                                                  && declaration.baseline()
@@ -760,7 +759,7 @@ public class Evaluator
             if ( separateMetricsForBaseline )
             {
                 summaryStataCalculatorsForBaseline =
-                        EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds );
+                        EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds, poolCount );
             }
 
             // Set the project and evaluation, metrics and thresholds and summary statistics

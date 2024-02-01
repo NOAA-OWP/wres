@@ -125,7 +125,7 @@ class EvaluationUtilitiesTest
                                                                        .build();
 
         List<SummaryStatisticsCalculator> calculators =
-                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation );
+                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, 0 );
 
         // Eight filters
         assertEquals( 8, calculators.size() );
@@ -166,7 +166,7 @@ class EvaluationUtilitiesTest
                                                                        .build();
 
         List<SummaryStatisticsCalculator> calculators =
-                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation );
+                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, 0 );
 
         // One filter
         assertEquals( 1, calculators.size() );
@@ -266,7 +266,7 @@ class EvaluationUtilitiesTest
                                                                        .build();
 
         List<SummaryStatisticsCalculator> calculators =
-                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation );
+                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, 0 );
 
         // Eight filters
         assertEquals( 4, calculators.size() );
