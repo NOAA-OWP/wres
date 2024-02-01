@@ -418,6 +418,7 @@ public class PoolFactory
         Set<FeatureGroup> featureGroups = new TreeSet<>( innerProject.getFeatureGroups() );
 
         // If summary statistics are declared for feature groups, suppress pair generation for multi-feature groups
+        // because the raw statistics are not generated for pooled pairs
         if ( declaration.summaryStatistics()
                         .stream()
                         .anyMatch( s -> s.getDimension() == SummaryStatistic.StatisticDimension.FEATURE_GROUP ) )
