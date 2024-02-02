@@ -3,6 +3,8 @@ import argparse
 import requests
 import time
 import re
+import warnings
+warnings.filterwarnings("ignore")
 
 # Environment variables to provide defaults if URL or cert are not provided at the command line.
 WRES_HOST_NAME = os.getenv('WRES_HOST_NAME')
@@ -56,19 +58,27 @@ def post_data_files(files, job_location, side):
     :param: side: The job side to which to post the data, either 'left', 'right', or 'baseline'.
     :raise: Exception if a problem is encountered posting data.
     """
+    if not args.silent:
+        print(f"Uploading data to the {side} side")
     for filename in files:
-        print(f"Posting the file {filename} to {side} side of the evaluation {job_location}...")
-        file_content = open(filename, "rb")
+        if os.path.getsize(filename) > 0:
+            file_content = open(filename, "rb")
 
-        # The use of files in this command ensures the data is posted as 
-        # multipart/form-data, which is required of data posted to a cluster service.
-        data_post_response = requests.post( url=job_location + "/input/" + side,
-                                             verify = wres_ca_file,
-                                             files = {"data": file_content} )
+            # The use of files in this command ensures the data is posted as
+            # multipart/form-data, which is required of data posted to a cluster service.
+            data_post_response = requests.post( url=job_location + "/input/" + side,
+                                                 verify = wres_ca_file,
+                                                 files = {"data": file_content} )
+            # Anything other than a 200 or 201 indicates a problem.
+            if data_post_response.status_code != 201 and data_post_response.status_code != 200:
+                raise Exception("The response code was NOT 201 nor 200, failed to post data.")
+            if not args.silent:
+                print(f"Posted the file {filename}")
+                if keep_input:
+                    print(f"File persisted at {data_post_response.headers['content-location']}")
+    if not args.silent:
+        print(f"Finished uploading data to the {side} side\n")
 
-        # Anything other than a 200 or 201 indicates a problem.                                     
-        if data_post_response.status_code != 201 and data_post_response.status_code != 200:
-            raise Exception("The response code was NOT 201 nor 200, failed to post data.")
             
 
 #==============================================================================
@@ -82,7 +92,7 @@ parser = argparse.ArgumentParser(
                     prog='call_wres',
                     description='Calls a cluster instance of the WRES, such as the COWRES.',
                     epilog='Not sure if an epilog in the help will be needed, but this is where it would go.')
-parser.add_argument('filename',           help='Declaration filename')
+parser.add_argument('-f', '--filename',   help='Declaration filename')
 parser.add_argument('-u', '--host',       help='Cluster WRES instance host (without the http prefix); defaults to WRES_HOST_NAME environment variable.')
 parser.add_argument('-c', '--cert',       help='The certificate .pem file to authenticate the WRES instance; defaults to WRES_CA_FILE environment variable.')
 parser.add_argument('-o', '--output',     help='Directory where output is to be written.', default=".")
@@ -90,6 +100,7 @@ parser.add_argument('-l', '--observed',   help='Data to post for the observed so
 parser.add_argument('-p', '--predicted',  help='Data to post for the predicted sources either one file or a directory.')
 parser.add_argument('-b', '--baseline',   help='Data to post for the baseline sources either one file or a directory.')
 parser.add_argument('-k', '--keep_input', help='Instruct COWRES to not remove posted data after evaluation is completed', default=False, action="store_true")
+parser.add_argument('-s', '--silent',     help='Suppresses additional logging produced by this script', default=False, action="store_true")
 
 # Parse the arguments.
 args = parser.parse_args()
@@ -102,7 +113,8 @@ host = args.host
 if host is None:
     host = WRES_HOST_NAME
     if host is None:
-        print('WRES host name was not specified as argument or environment variable. Aborting!')
+        if not args.silent:
+            print('WRES host name was not specified as argument or environment variable. Aborting!')
         exit(1)
 
 # A cert file is not required if we have the environment variable available to us.
@@ -110,7 +122,8 @@ wres_ca_file = args.cert
 if wres_ca_file is None:
     wres_ca_file = WRES_CA_FILE
     if wres_ca_file is None:
-        print('Certificate was not specified as argument or environment variable. Aborting!')
+        if not args.silent:
+            print('Certificate was not specified as argument or environment variable. Aborting!')
         exit(1)
 
 # The output file argument has a default, so no checking is needed.
@@ -134,6 +147,29 @@ except Exception as e:
     print(f"Failed to obtain file list for baseline. Exception: {e}")
     exit(1)
 
+# Is data-direct posting to be performed? Check the length of the
+# lists containing the files for each side. If data is to be posted,
+# will it be kept? Identify the flag based on the argument.
+data_posted = (len(predicted_files) > 0) or (len(observed_files) > 0) or (len(baseline_files) > 0)
+if data_posted:
+    keep_input="false"
+    if args.keep_input:
+        keep_input="true"
+
+# Printing arguments passed in
+if not args.silent:
+    print( "Executing the script with the following information provided")
+    print( f"Declaration file:    {args.filename}")
+    print( f"Host:                {args.host}")
+    print( f"Cert Location:       {args.cert}")
+    print( f"Output Location:     {args.output}")
+    print( f"Predicted Data:      {args.predicted}")
+    print( f"Baseline Data:       {args.baseline}")
+    print( f"Observed Data:       {args.observed}")
+    print( f"Data Posted:         {data_posted}")
+    print( f"Keep Data:           {args.keep_input}")
+    print( f"Silent:              {args.silent}\n")
+
 #==============================================================================
 # Prepare for the evaluation!
 # The declaration must be read into memory, and we need to determine if data
@@ -141,23 +177,12 @@ except Exception as e:
 #==============================================================================
 
 # Read the declaration into memory.
-print ( f"Reading the declaration file, {declaration_filename}..." )
+#print ( f"Reading the declaration file, {declaration_filename}..." )
 with open(declaration_filename,'r') as decfile:
     evaluation = decfile.read()
 if evaluation is None:
     print('Unable to read evalution from declaration file.')
     exit(4)
-
-# Is data-direct posting to be performed? Check the length of the 
-# lists containing the files for each side. If data is to be posted, 
-# will it be kept? Identify the flag based on the argument.
-data_posted = (len(predicted_files) > 0) or (len(observed_files) > 0) or (len(baseline_files) > 0)
-if data_posted:
-    print("Data was provided for either the observed, predicted or baseline sources, so data is to be posted!")
-    keep_input="false"    
-    if args.keep_input:
-        print("The data posted will be marked as kept so that its not deleted after the evaluation is completed.")
-        keep_input="true"
 
 #====================================================================================
 # First, post the evaluation using the read in declaration. The data handed off to
@@ -165,7 +190,8 @@ if data_posted:
 # posted. If the evaluation is successfully posted, then obtain the location URL from
 # the response.
 #====================================================================================
-print( "Posting the declaration to the WRES host {host}..." )
+if not args.silent:
+    print( f"Posting the declaration to the WRES host: {host}..." )
 
 # By default, the data posted is just the evaluation declaration.
 data = { 'projectConfig': evaluation }
@@ -187,20 +213,18 @@ post_result = requests.post( url="https://"+host+"/job",
 # occurred. Abort the execution.
 # I'm including detailed prints for this call, being the first post, as an illustration.
 # For latter requests, I'll only print a message if an error code is returned.
-print( "The response from the server was:" )
-print( post_result )
-print( "The last status code in the response was " + str( post_result.status_code ) )
 if post_result.status_code == 201 or post_result.status_code == 200:
-    print( "The response code was successful: " + str( post_result.status_code ) )
+    if not args.silent:
+        print( "Post the job successfully: " + str( post_result.status_code ) )
 else:
-    print( "The response code was NOT 201 nor 200, failed to create evaluation. Aborting!" )
+    if not args.silent:
+        print( "The response code was NOT 201 nor 200, failed to create evaluation. Aborting!" )
     exit( 1 )
-print( "Detailed response was printed above for the initial declaration posting, but will "
-       "not be included for further requests, below." )
 
 # Obtain the job location for future use.
 job_location = post_result.headers['Location']
-print( "The location of the resource created by server was " + job_location )
+if not args.silent:
+    print( "You can see the job at: " + job_location + "\n")
 
 #====================================================================================
 # Second, if data is to be posted, then post it. Data must be posted for observed
@@ -211,32 +235,35 @@ print( "The location of the resource created by server was " + job_location )
 # Handle the posted data files if any were specified by the user. This uses the 
 # post_data_files function near the top of this script.
 if data_posted:
-    print( "Posting data for the evaluation..." )
-try:
-    post_data_files(observed_files, job_location, "left")
-except Exception as e:
-    print( f"Failed to post at least one of the indicated observed files to the 'left' side. Exception: {e}" )
-    exit( 1 )
-try:
-    post_data_files(predicted_files, job_location, "right")
-except Exception as e:
-    print( f"Failed to post at least one of the indicated predicted files to the 'right' side. Exception: {e}" )
-    exit( 1 )
-try:
-    post_data_files(baseline_files, job_location, "baseline")
-except Exception as e:
-    print( f"Failed to post at least one of the indicated baseline files to the 'baseline' side. Exception: {e}" )
-    exit( 1 )
+    if not args.silent:
+        print( "Posting data for the evaluation..." )
+    try:
+        post_data_files(observed_files, job_location, "left")
+    except Exception as e:
+        print( f"Failed to post at least one of the indicated observed files to the 'left' side. Exception: {e}" )
+        exit( 1 )
+    try:
+        post_data_files(predicted_files, job_location, "right")
+    except Exception as e:
+        print( f"Failed to post at least one of the indicated predicted files to the 'right' side. Exception: {e}" )
+        exit( 1 )
+    try:
+        post_data_files(baseline_files, job_location, "baseline")
+    except Exception as e:
+        print( f"Failed to post at least one of the indicated baseline files to the 'baseline' side. Exception: {e}" )
+        exit( 1 )
 
 # Post postInputDone = true if data was posted per the data_posted flag.
 if data_posted:
-    print(f"Posting 'postInputDone=true' to {job_location}/input...")
     data_post_done = requests.post( url=job_location + "/input",
                                     verify = wres_ca_file,
                                     data = {'postInputDone': 'true'} )
     if data_post_done.status_code != 201 and data_post_done.status_code != 200:
-        print( "The response code was NOT 201 nor 200, failed to post postInputDone. Aborting!" )
+        if not args.silent:
+            print( "The response code was NOT 201 nor 200, failed to post postInputDone. Aborting!" )
         exit( 1 )
+    if not args.silent:
+        print("Finished uploading data successfully\nStarting evaluation now")
 
 #====================================================================================
 # Third, with the evaluation now ongoing, poll the job status with GET requests until
@@ -244,7 +271,10 @@ if data_posted:
 # or NOT_FOUND (happens only for expired jobs).
 #====================================================================================
 evaluation_status=""
-print(f"Evaluation {job_location} is proceeding. Checking the status until done...")
+current_time=0
+print_time=5
+if not args.silent:
+    print("Job IN_PROGRESS checking every 5 seconds, printing again in 5 seconds")
 while ( evaluation_status != "COMPLETED_REPORTED_SUCCESS"
         and evaluation_status != "COMPLETED_REPORTED_FAILURE"
         and evaluation_status != "NOT_FOUND" ):
@@ -252,16 +282,27 @@ while ( evaluation_status != "COMPLETED_REPORTED_SUCCESS"
     # If your evaluations take around 2 minutes to 2 hours this is appropriate.
     # If your evaluations take over 2 hours, increase to 20 seconds.
     # If your evaluations take less than 2 minutes, drop to 0.2 seconds.
-    time.sleep( 2 )
     evaluation_status = requests.get( url = job_location + "/status",
                                       verify = wres_ca_file
                                     ).text
+    if current_time >= print_time:
+        print_time=print_time*2
+        if not args.silent:
+            print(f"Job IN_PROGRESS checking every 5 seconds, printing again in {print_time} seconds")
+    time.sleep( 5 )
+    current_time=current_time+5
+
+print( f"{evaluation_status}\n" )
 
 # Check for success. If not, then there is no reason to push any further.
 if evaluation_status != "COMPLETED_REPORTED_SUCCESS":
-    print( f"Evalaution did not succeed. Status is {evaluation_status}. Exiting run." )
+    stdout = requests.get( url = job_location + "/stdout",
+                          verify = wres_ca_file
+                         ).text
+    if not args.silent:
+        print("Failure reason is as follows: "+ stdout.split("EvaluationService The evaluation failed with the following stack trace:",1)[1])
     exit( 1 )
-                                    
+
 #==============================================================================
 # Fourth, obtain the output. This section of code grabs and parses the full url
 # of each line in the output using regular expressions.
@@ -272,7 +313,6 @@ if evaluation_status != "COMPLETED_REPORTED_SUCCESS":
 # beginning of the code with the name of each output image/file. This is necessary
 # for the request.get to pull each of the files on the /output url.
 #==============================================================================
-print( "Evaluation succeeded. Obtaining the list of outputs and downloading the files..." )
 response = requests.get(job_location + "/output/", allow_redirects=True,
                         verify = wres_ca_file,
                         headers = { 'Accept': 'text/html' })
@@ -283,31 +323,30 @@ results = regex.findall(output, re.IGNORECASE | re.DOTALL)
 
 # This is the bit that actually pulls down the data from the WRES site and
 # writes it to files in awips.
+job_id = job_location.split("/job/",1)[1]
+os.mkdir(output_folder + "/" + job_id)
+
 for result in results:
    output_link = job_location + "/" + result[0]
-   filename = output_folder + "/" + result[1]
+   filename = output_folder + "/" + job_id + "/" + result[1]
    r = requests.get(output_link, allow_redirects = True, verify = wres_ca_file,
                         headers = { 'Accept': 'text/html' })
    with open(filename, "wb") as f:
             f.write(r.content)
-
-print( f"Files have been downloaded to the directory {output_folder}." )
+if not args.silent:
+    print( f"Stored the data at {output_folder}/{job_id}" )
    
 #==============================================================================
 # Fifth: after completing the evaluation, and retrieving any data from it, it is
 # important to clean up resources created by the evaluation. Therefore we 
 # DELETE the output data through the service API.
 #==============================================================================
-print( f"Posting a delete request for the job {job_location}..." )
+if not args.silent:
+    print( f"Posting a delete request for the job {job_location}..." )
 remove_output = requests.delete( url = job_location + "/output",
                  verify = wres_ca_file )
-print( "The last status code in the response for deleting the evaluation was "
+if not args.silent:
+    print( "The last status code in the response for deleting the evaluation was "
        + str( remove_output.status_code ) )
-       
-print( "" )
-print( "Congratulations! You successfully used the WRES HTTP API to" )
-print( "1. run an evaluation," )
-print( "2. process the results, and" )
-print( "3. clean up." )
 exit( 0 )
 

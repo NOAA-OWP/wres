@@ -18,12 +18,12 @@ usage() {
  echo "-f, --filename     Declaration filename"
  echo "-u, --host         Cluster WRES instance host (without the http prefix); defaults to WRES_HOST_NAME environment variable."
  echo "-c, --cert         The certificate .pem file to authenticate the WRES instance; defaults to WRES_CA_FILE environment variable."
- echo "-o, --output       Directory where output is to be written."
+ echo "-o, --output       Directory where output is to be written in relation to directory calling the script from."
  echo "-l, --observed     Data to post for the observed_path sources either one file or a directory."
  echo "-p, --predicted    Data to post for the predicted sources either one file or a directory."
  echo "-b, --baseline     Data to post for the baseline sources either one file or a directory."
  echo "-k, --keep_input   Instruct COWRES to not remove posted data after evaluation is completed"
- echo "-s, --silent       Suppresses logging produced by this script, if successful output will be sent to the output location"
+ echo "-s, --silent       Suppresses additional logging produced by this script"
 }
 
 # Posts the data needed for an evaluation
@@ -38,19 +38,19 @@ post_data() {
 
     if [[ -s "$file" ]]; then
       post_result=$(curl -i -s --cacert $cert -F data="@$file" https://$host/job/$job_location/input/$2 )
-      if [[ "$silent" != true ]]; then
-        echo "Uploading: $file"
-      fi
-
 
       post_result_http_code=$( echo -n "$post_result" | grep HTTP | tail -n 1 | cut -d' ' -f2 )
 
       if [ "$post_result_http_code" == "201" ] || [ "$post_result_http_code" == "200" ]
       then
         if [[ "$silent" != true ]]; then
-          echo "The response code was successful: $post_result_http_code"
+          echo "Uploaded $file successfully: $post_result_http_code"
+          if [[ "$keep_input" = true ]]; then
+            echo "File persisted at: $( echo "$post_result" | grep Location )"
+          fi
         fi
       else
+        echo "test"
         if [[ "$silent" != true ]]; then
           echo "The response code was NOT 201 nor 200, exiting..."
           echo "Response was: $post_result"
@@ -59,6 +59,10 @@ post_data() {
       fi
     fi
   done
+  if [[ "$silent" != true ]]; then
+    echo "Finished uploading data to $2 side"
+    echo " "
+  fi
 }
 
 # Posts that data upload has finished
@@ -70,6 +74,7 @@ post_data_finish() {
   then
     if [[ "$silent" != true ]]; then
       echo "Finished uploading data successfully: $post_result_http_code"
+      echo "Starting evaluation now"
     fi
   else
     if [[ "$silent" != true ]]; then
@@ -107,13 +112,17 @@ post_job() {
 get_job_output() {
   post_result=$(curl -s --cacert $cert https://$host/job/$job_location/output )
 
-  cd "./$output_location"
+  if [[ "$silent" != true ]]; then
+    echo "Creating the directory $output_location/$job_location to store output"
+  fi
+  mkdir "./$output_location/$job_location"
+  cd "./$output_location/$job_location"
   while IFS= read -r line; do
     $(curl -i -s --cacert $cert -O https://$host/job/$job_location/$line )
   done <<< "$post_result"
 
   if [[ "$silent" != true ]]; then
-    echo "Stored the data at $output_location"
+    echo "Stored the data at $output_location/$job_location"
   fi
 
 }
@@ -134,6 +143,9 @@ wait_for_job_finish() {
   post_result=""
   time=0
   print_time=5
+  if [[ "$silent" != true ]]; then
+    echo "Job IN_PROGRESS, checking every 5 second, printing again in 5 seconds"
+  fi
   while [[ "$post_result" != *"COMPLETED_REPORTED_SUCCESS"* && "$post_result" != *"COMPLETED_REPORTED_FAILURE"* && "$post_result" != *"NOT_FOUND"* ]]
   do
     post_result=$(curl -s --cacert $cert https://$host/job/$job_location/status )
@@ -151,8 +163,8 @@ wait_for_job_finish() {
     job_failed=true
   fi
 
-  echo " "
   echo "$post_result"
+  echo " "
 }
 
 has_argument() {
@@ -293,17 +305,6 @@ fi
 
 if [[ -n "$observed" ]] || [[ -n "$predicted" ]] || [[ -n "$baseline" ]]; then
   data_posted=true
-else
-  if [[ "$keep_input" = true ]]; then
-    if [[ "$silent" != true ]]; then
-      echo "!!------------------------------------------------------------------------------------!!"
-      echo "!There was no input provided to keep, but keep_input was set to true. Changing to false!"
-      echo "!!------------------------------------------------------------------------------------!!"
-      echo " "
-    fi
-    keep_input=false
-  fi
-  data_posted=false
 fi
 
 if [[ "$silent" != true ]]; then
@@ -321,7 +322,6 @@ if [[ "$silent" != true ]]; then
   echo " "
 fi
 
-# TODO SET UP BASE JOB
 
 if [[ "$silent" != true ]]; then
   echo "Posting the declaration to the WRES host: $host..."
@@ -357,10 +357,11 @@ if [[ "$job_failed" == true ]]; then
     echo "Failure reason is as follows: "
     echo "$( echo "$post_result" | sed -n -e '/The\ evaluation\ failed with/,$p' )"
   fi
-else
-  # Get output and clean up if the job didn't fail
-  get_job_output
-  delete_job_output
+  exit 1
 fi
+
+# Get output and clean up if the job didn't fail
+get_job_output
+delete_job_output
 
 exit 0
