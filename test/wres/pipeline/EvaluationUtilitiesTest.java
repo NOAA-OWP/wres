@@ -1,7 +1,9 @@
 package wres.pipeline;
 
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.google.protobuf.DoubleValue;
@@ -124,11 +126,14 @@ class EvaluationUtilitiesTest
                                                                        .summaryStatistics( summaryStatistics )
                                                                        .build();
 
-        List<SummaryStatisticsCalculator> calculators =
+        Map<String, List<SummaryStatisticsCalculator>> calculators =
                 EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, 0 );
 
         // Eight filters
-        assertEquals( 8, calculators.size() );
+        assertEquals( 8, calculators.values()
+                                    .stream()
+                                    .mapToInt( List::size )
+                                    .sum() );
     }
 
     @Test
@@ -165,7 +170,7 @@ class EvaluationUtilitiesTest
                                                                        .summaryStatistics( summaryStatistics )
                                                                        .build();
 
-        List<SummaryStatisticsCalculator> calculators =
+        Map<String, List<SummaryStatisticsCalculator>> calculators =
                 EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, 0 );
 
         // One filter
@@ -185,8 +190,9 @@ class EvaluationUtilitiesTest
                                         .setTimeWindow( big ) )
                           .build();
 
-        assertTrue( calculators.get( 0 )
-                               .test( statistics ) );
+        assertTrue( calculators.values().stream()
+                               .flatMap( Collection::stream )
+                               .anyMatch( c -> c.test( statistics ) ) );
     }
 
     @Test
@@ -265,10 +271,13 @@ class EvaluationUtilitiesTest
                                                                        .summaryStatistics( summaryStatistics )
                                                                        .build();
 
-        List<SummaryStatisticsCalculator> calculators =
+        Map<String, List<SummaryStatisticsCalculator>> calculators =
                 EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, 0 );
 
         // Eight filters
-        assertEquals( 4, calculators.size() );
+        assertEquals( 4, calculators.values()
+                                    .stream()
+                                    .mapToInt( List::size )
+                                    .sum() );
     }
 }

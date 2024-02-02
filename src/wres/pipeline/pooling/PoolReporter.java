@@ -52,6 +52,9 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
     /** The project configuration.*/
     private final EvaluationDeclaration declaration;
 
+    /** Feature groups for summary statistics. The raw statistics for these feature groups are not published. */
+    private final Set<FeatureGroup> featureGroupsForSummaryStatistics;
+
     /** The number of pools processed so far. */
     private final AtomicInteger processed;
 
@@ -68,12 +71,16 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
      * Build a {@link PoolReporter}.
      *
      * @param declaration the project configuration
+     * @param featureGroupsForSummaryStatistics the feature groups for summary statistics only
      * @param totalPools the total number of pools to process
      * @param printDetailedReport is true to print a detailed report on completion, false to summarize
      * @throws NullPointerException if the project configuration is null
      */
 
-    public PoolReporter( EvaluationDeclaration declaration, int totalPools, boolean printDetailedReport )
+    public PoolReporter( EvaluationDeclaration declaration,
+                         Set<FeatureGroup> featureGroupsForSummaryStatistics,
+                         int totalPools,
+                         boolean printDetailedReport )
     {
         Objects.requireNonNull( declaration,
                                 "Specify non-null project configuration when building the feature report." );
@@ -83,6 +90,7 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
         this.printDetailedReport = printDetailedReport;
         this.successfulPools = new ConcurrentLinkedQueue<>();
         this.processed = new AtomicInteger( 0 );
+        this.featureGroupsForSummaryStatistics = featureGroupsForSummaryStatistics;
     }
 
     /**
@@ -158,23 +166,45 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
         // Detailed report
         if ( LOGGER.isInfoEnabled() &&
              this.printDetailedReport
-             &&
-             !successfulFeaturesToReport.isEmpty() )
+             && !successfulFeaturesToReport.isEmpty() )
         {
             if ( Objects.isNull( this.endTime ) )
             {
                 this.endTime = Instant.now();
             }
 
-            LOGGER.info( "Statistics were created for {} pools, which included {} features groups and {} time windows. "
-                         + "The feature groups were: {}. The time windows were: {}. The time elapsed between the "
-                         + "completion of the first and last pools was: {}.",
-                         successfulPoolsToReport.size(),
-                         successfulFeaturesToReport.size(),
-                         successfulTimeWindowsToReport.size(),
-                         PoolReporter.getPoolItemDescription( successfulFeaturesToReport, FeatureGroup::getName ),
-                         PoolReporter.getPoolItemDescription( successfulTimeWindowsToReport, TIME_WINDOW_STRINGIFIER ),
-                         Duration.between( this.startTime, this.endTime ) );
+            if ( this.featureGroupsForSummaryStatistics.isEmpty() )
+            {
+                LOGGER.info( "Statistics were created for {} pools, which included {} features groups and {} time "
+                             + "windows. The time elapsed between the completion of the first and last pools was: {}."
+                             + "The feature groups were: {}. The time windows were: {}.",
+                             successfulPoolsToReport.size(),
+                             successfulFeaturesToReport.size(),
+                             successfulTimeWindowsToReport.size(),
+                             Duration.between( this.startTime, this.endTime ),
+                             PoolReporter.getPoolItemDescription( successfulFeaturesToReport, FeatureGroup::getName ),
+                             PoolReporter.getPoolItemDescription( successfulTimeWindowsToReport,
+                                                                  TIME_WINDOW_STRINGIFIER ) );
+            }
+            else
+            {
+                LOGGER.info( "Statistics were created for {} pools, which included {} features groups and {} time "
+                             + "windows. In addition, {} feature groups were evaluated for summary statistics only. "
+                             + "The time elapsed between the completion of the first and last pools was: {}. The "
+                             + "feature groups were: {}. The time windows were: {}. The feature groups for summary "
+                             + "statistics were: {}",
+                             successfulPoolsToReport.size(),
+                             successfulFeaturesToReport.size(),
+                             successfulTimeWindowsToReport.size(),
+                             this.featureGroupsForSummaryStatistics.size(),
+                             Duration.between( this.startTime, this.endTime ),
+                             PoolReporter.getPoolItemDescription( successfulFeaturesToReport,
+                                                                  FeatureGroup::getName ),
+                             PoolReporter.getPoolItemDescription( successfulTimeWindowsToReport,
+                                                                  TIME_WINDOW_STRINGIFIER ),
+                             PoolReporter.getPoolItemDescription( this.featureGroupsForSummaryStatistics,
+                                                                  FeatureGroup::getName ) );
+            }
         }
 
         // Exception after detailed report: in practice, this should be handled earlier

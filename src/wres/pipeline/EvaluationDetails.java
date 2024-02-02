@@ -1,6 +1,7 @@
 package wres.pipeline;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -50,8 +51,8 @@ record EvaluationDetails( SystemSettings systemSettings,
                           Project project,
                           EvaluationMessager evaluation,
                           TimeSeriesStore timeSeriesStore,
-                          List<SummaryStatisticsCalculator> summaryStatistics,
-                          List<SummaryStatisticsCalculator> summaryStatisticsForBaseline,
+                          Map<String, List<SummaryStatisticsCalculator>> summaryStatistics,
+                          Map<String, List<SummaryStatisticsCalculator>> summaryStatisticsForBaseline,
                           Set<FeatureGroup> summaryStatisticsOnly )
 {
     /**

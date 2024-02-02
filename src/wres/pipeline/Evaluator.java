@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
@@ -674,7 +675,7 @@ public class Evaluator
             Set<FeatureGroup> featureGroups = EvaluationUtilities.getFeatureGroups( project, features );
 
             // If summary statistics are required for feature groups, ensure that all the singletons within feature
-            // groups are part of the singletons list, but do not publish statistics for any missing features
+            // groups are part of the singletons list, but do not publish statistics for these features
             Set<FeatureGroup> doNotPublish = project.getFeatureGroupsForWhichStatisticsShouldNotBePublished();
 
             // Adjust the declaration to include the fully described features based on the ingested data
@@ -700,10 +701,10 @@ public class Evaluator
 
             // Create any netcdf blobs for writing. See #80267-137.
             Set<FeatureGroup> adjustedFeatureGroups =
-                    EvaluationUtilities.getFeatureGroupsForNetcdf( featureGroups,
-                                                                   unwrappedFeatures,
-                                                                   declaration.summaryStatistics(),
-                                                                   doNotPublish );
+                    EvaluationUtilities.getFeatureGroupsForSummaryStatistics( featureGroups,
+                                                                              unwrappedFeatures,
+                                                                              declaration.summaryStatistics(),
+                                                                              doNotPublish );
 
             EvaluationUtilities.createNetcdfBlobs( netcdfWriters,
                                                    adjustedFeatureGroups,
@@ -742,6 +743,7 @@ public class Evaluator
 
             // Report on the completion state of all pools
             PoolReporter poolReporter = new PoolReporter( declarationWithFeaturesAndThresholds,
+                                                          adjustedFeatureGroups,
                                                           poolCount,
                                                           true );
 
@@ -750,16 +752,18 @@ public class Evaluator
             PoolGroupTracker groupTracker = PoolGroupTracker.ofFeatureGroupTracker( evaluationMessager, poolRequests );
 
             // Create the summary statistics calculators to increment with raw statistics
-            List<SummaryStatisticsCalculator> summaryStatsCalculators =
-                    EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds, poolCount );
-            List<SummaryStatisticsCalculator> summaryStataCalculatorsForBaseline = List.of();
+            Map<String, List<SummaryStatisticsCalculator>> summaryStatsCalculators =
+                    EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds,
+                                                                         poolCount );
+            Map<String, List<SummaryStatisticsCalculator>> summaryStataCalculatorsForBaseline = Map.of();
             boolean separateMetricsForBaseline = DeclarationUtilities.hasBaseline( declaration )
                                                  && declaration.baseline()
                                                                .separateMetrics();
             if ( separateMetricsForBaseline )
             {
                 summaryStataCalculatorsForBaseline =
-                        EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds, poolCount );
+                        EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds,
+                                                                             poolCount );
             }
 
             // Set the project and evaluation, metrics and thresholds and summary statistics
