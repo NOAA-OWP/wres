@@ -1073,7 +1073,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         }
 
         // Set the message group identifier
-        this.messageGroupId = poolGroupTracker.getGroupId( this.poolRequest );
+        this.messageGroupId = this.poolGroupTracker.getGroupId( this.poolRequest );
 
         LOGGER.debug( "Created a PoolProcessor that belongs to message group {}. The pool request is: {}.",
                       this.messageGroupId,

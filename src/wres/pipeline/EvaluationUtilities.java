@@ -184,11 +184,11 @@ class EvaluationUtilities
 
     /**
      * Creates and publishes the summary statistics.
-     * @param summaryStatistics the summary statistics
+     * @param summaryStatistics the summary statistics calculators, mapped by message group identifier
      * @param messager the evaluation messager
      * @throws NullPointerException if any input is null
      */
-    static void createAndPublishSummaryStatistics( List<SummaryStatisticsCalculator> summaryStatistics,
+    static void createAndPublishSummaryStatistics( Map<String, List<SummaryStatisticsCalculator>> summaryStatistics,
                                                    EvaluationMessager messager )
     {
         Objects.requireNonNull( summaryStatistics );
@@ -197,16 +197,25 @@ class EvaluationUtilities
         LOGGER.debug( "Publishing summary statistics from {} summary statistics calculators.",
                       summaryStatistics.size() );
 
-        // Create a group identifier for the summary statistics
-        String groupId = EvaluationEventUtilities.getId();
-        for ( SummaryStatisticsCalculator calculator : summaryStatistics )
+        // Publish the summary statistics per message group
+        Set<String> groupIds = new HashSet<>();
+        for ( Map.Entry<String, List<SummaryStatisticsCalculator>> next : summaryStatistics.entrySet() )
         {
             // Generate the summary statistics
-            List<Statistics> nextStatistics = calculator.get();
+            String groupId = next.getKey();
+            List<SummaryStatisticsCalculator> calculators = next.getValue();
+            List<Statistics> nextStatistics = calculators.stream()
+                                                         .flatMap( c -> c.get()
+                                                                         .stream() )
+                                                         .toList();
             nextStatistics.forEach( m -> messager.publish( m, groupId ) );
+            groupIds.add( groupId );
 
-            LOGGER.debug( "Published {} summary statistics.", nextStatistics.size() );
+            LOGGER.debug( "Published {} summary statistics for group {}", nextStatistics.size(), groupId );
         }
+
+        // Mark the publication complete for all groups
+        groupIds.forEach( messager::markGroupPublicationCompleteReportedSuccess );
 
         LOGGER.debug( "Finished publishing summary statistics." );
     }
@@ -221,8 +230,8 @@ class EvaluationUtilities
      * @throws IllegalArgumentException if the dimension is unsupported
      */
 
-    static List<SummaryStatisticsCalculator> getSummaryStatisticsCalculators( EvaluationDeclaration declaration,
-                                                                              long poolCount )
+    static Map<String, List<SummaryStatisticsCalculator>> getSummaryStatisticsCalculators( EvaluationDeclaration declaration,
+                                                                                           long poolCount )
     {
         Objects.requireNonNull( declaration );
 
@@ -232,7 +241,7 @@ class EvaluationUtilities
         {
             LOGGER.debug( "No summary statistics were declared." );
 
-            return List.of();
+            return Map.of();
         }
 
         // Collect the geographic feature dimensions to aggregate, which are the only supported dimensions
@@ -745,10 +754,10 @@ class EvaluationUtilities
      * @param doNotPublish the feature groups for which statistics should not be published
      * @return the adjusted feature groups
      */
-    static Set<FeatureGroup> getFeatureGroupsForNetcdf( Set<FeatureGroup> featureGroups,
-                                                        Set<GeometryTuple> features,
-                                                        Set<SummaryStatistic> summaryStatistics,
-                                                        Set<FeatureGroup> doNotPublish )
+    static Set<FeatureGroup> getFeatureGroupsForSummaryStatistics( Set<FeatureGroup> featureGroups,
+                                                                   Set<GeometryTuple> features,
+                                                                   Set<SummaryStatistic> summaryStatistics,
+                                                                   Set<FeatureGroup> doNotPublish )
     {
         // Remove any unwanted feature groups and re-assign to the input variable for further use
         featureGroups = new HashSet<>( featureGroups );
@@ -918,6 +927,18 @@ class EvaluationUtilities
 
             Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolSupplier = next.getValue();
 
+            List<SummaryStatisticsCalculator> calculators = evaluationDetails.summaryStatistics()
+                                                                             .values()
+                                                                             .stream()
+                                                                             .flatMap( List::stream )
+                                                                             .toList();
+
+            List<SummaryStatisticsCalculator> baselineCalculators = evaluationDetails.summaryStatisticsForBaseline()
+                                                                                     .values()
+                                                                                     .stream()
+                                                                                     .flatMap( List::stream )
+                                                                                     .toList();
+
             PoolProcessor<Double, Double> poolProcessor =
                     new PoolProcessor.Builder<Double, Double>()
                             .setPairsWriter( pairsWriter )
@@ -935,8 +956,8 @@ class EvaluationUtilities
                             .setTraceCountEstimator( SINGLE_VALUED_TRACE_COUNT_ESTIMATOR )
                             .setSeparateMetricsForBaseline( separateMetrics )
                             .setPoolGroupTracker( poolDetails.poolGroupTracker() )
-                            .setSummaryStatisticsCalculators( evaluationDetails.summaryStatistics() )
-                            .setSummaryStatisticsCalculatorsForBaseline( evaluationDetails.summaryStatisticsForBaseline() )
+                            .setSummaryStatisticsCalculators( calculators )
+                            .setSummaryStatisticsCalculatorsForBaseline( baselineCalculators )
                             .setPublishStatistics( publishStatistics )
                             .build();
 
@@ -1090,6 +1111,18 @@ class EvaluationUtilities
 
             Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>> poolSupplier = next.getValue();
 
+            List<SummaryStatisticsCalculator> calculators = evaluationDetails.summaryStatistics()
+                                                                             .values()
+                                                                             .stream()
+                                                                             .flatMap( List::stream )
+                                                                             .toList();
+
+            List<SummaryStatisticsCalculator> baselineCalculators = evaluationDetails.summaryStatisticsForBaseline()
+                                                                                     .values()
+                                                                                     .stream()
+                                                                                     .flatMap( List::stream )
+                                                                                     .toList();
+
             PoolProcessor<Double, Ensemble> poolProcessor =
                     new PoolProcessor.Builder<Double, Ensemble>()
                             .setPairsWriter( pairsWriter )
@@ -1107,8 +1140,8 @@ class EvaluationUtilities
                             .setTraceCountEstimator( ENSEMBLE_TRACE_COUNT_ESTIMATOR )
                             .setSeparateMetricsForBaseline( separateMetrics )
                             .setPoolGroupTracker( poolDetails.poolGroupTracker() )
-                            .setSummaryStatisticsCalculators( evaluationDetails.summaryStatistics() )
-                            .setSummaryStatisticsCalculatorsForBaseline( evaluationDetails.summaryStatisticsForBaseline() )
+                            .setSummaryStatisticsCalculators( calculators )
+                            .setSummaryStatisticsCalculatorsForBaseline( baselineCalculators )
                             .setPublishStatistics( publishStatistics )
                             .build();
 
@@ -1646,9 +1679,9 @@ class EvaluationUtilities
      * @throws IllegalArgumentException if the dimension is unsupported
      */
 
-    private static List<SummaryStatisticsCalculator> getSummaryStatisticsForFeatures( EvaluationDeclaration declaration,
-                                                                                      Set<SummaryStatistic.StatisticDimension> dimensions,
-                                                                                      long poolCount )
+    private static Map<String, List<SummaryStatisticsCalculator>> getSummaryStatisticsForFeatures( EvaluationDeclaration declaration,
+                                                                                                   Set<SummaryStatistic.StatisticDimension> dimensions,
+                                                                                                   long poolCount )
     {
         Objects.requireNonNull( declaration );
 
@@ -1738,9 +1771,12 @@ class EvaluationUtilities
                       timeUnits );
 
         // Generate one calculator for each combination of filters
-        List<SummaryStatisticsCalculator> calculators = new ArrayList<>();
+        Map<String, List<SummaryStatisticsCalculator>> calculators = new HashMap<>();
         for ( FeatureGroupFilterAdapter nextOuterFilter : featureFilters )
         {
+            // Messaging by feature group: get a group id for the next group
+            String groupId = EvaluationEventUtilities.getId();
+
             Predicate<Statistics> featureFilter = nextOuterFilter.filter();
             BinaryOperator<Statistics> featureAdapter = nextOuterFilter.adapter();
 
@@ -1760,6 +1796,8 @@ class EvaluationUtilities
                                                                         .filter( n -> n.statistic()
                                                                                        .getDimension() == dimension )
                                                                         .collect( Collectors.toUnmodifiableSet() );
+
+            List<SummaryStatisticsCalculator> nextCalculators = new ArrayList<>();
 
             for ( TimeWindowAndThresholdFilterAdapter nextInnerFilter : timeWindowAndThresholdFilters )
             {
@@ -1784,15 +1822,17 @@ class EvaluationUtilities
                                                                                          metadataAdapter,
                                                                                          timeUnits );
 
-                calculators.add( calculator );
+                nextCalculators.add( calculator );
             }
+
+            calculators.put( groupId, Collections.unmodifiableList( nextCalculators ) );
         }
 
         LOGGER.debug( "After joining the geometry groups to the time windows and thresholds, produced {} summary "
                       + "statistics calculators.",
                       calculators.size() );
 
-        return Collections.unmodifiableList( calculators );
+        return Collections.unmodifiableMap( calculators );
     }
 
     /**
