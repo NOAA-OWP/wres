@@ -3,8 +3,6 @@ import argparse
 import requests
 import time
 import re
-import warnings
-warnings.filterwarnings("ignore")
 
 # Environment variables to provide defaults if URL or cert are not provided at the command line.
 WRES_HOST_NAME = os.getenv('WRES_HOST_NAME')
