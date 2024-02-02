@@ -302,6 +302,11 @@ if [[ -z "$cert" ]]; then
   fi
 fi
 
+if [[ -z "$declaration" ]]; then
+  echo "A project declaration is required to use this script. Please pass one in with the -f or --filename flags"
+  exit 1
+fi
+
 
 if [[ -n "$observed" ]] || [[ -n "$predicted" ]] || [[ -n "$baseline" ]]; then
   data_posted=true
