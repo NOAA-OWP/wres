@@ -106,13 +106,17 @@ args = parser.parse_args()
 # Declartion filename is required.
 declaration_filename = args.filename
 
+if declaration_filename is None:
+    print('A project declaration is required to use this script. Please pass one in with the -f or --filename flags')
+    exit(1)
+
+
 # The host name is not required if we have the environment variable available to us.
 host = args.host
 if host is None:
     host = WRES_HOST_NAME
     if host is None:
-        if not args.silent:
-            print('WRES host name was not specified as argument or environment variable. Aborting!')
+        print('WRES host name was not specified as argument or environment variable. Aborting!')
         exit(1)
 
 # A cert file is not required if we have the environment variable available to us.
@@ -120,8 +124,7 @@ wres_ca_file = args.cert
 if wres_ca_file is None:
     wres_ca_file = WRES_CA_FILE
     if wres_ca_file is None:
-        if not args.silent:
-            print('Certificate was not specified as argument or environment variable. Aborting!')
+        print('Certificate was not specified as argument or environment variable. Aborting!')
         exit(1)
 
 # The output file argument has a default, so no checking is needed.
@@ -154,6 +157,20 @@ if data_posted:
     if args.keep_input:
         keep_input="true"
 
+#==============================================================================
+# Prepare for the evaluation!
+# The declaration must be read into memory, and we need to determine if data
+# is to be posted.
+#==============================================================================
+
+# Read the declaration into memory.
+#print ( f"Reading the declaration file, {declaration_filename}..." )
+with open(declaration_filename,'r') as decfile:
+    evaluation = decfile.read()
+if evaluation is None:
+    print('Unable to read evaluation from declaration file.')
+    exit(4)
+
 # Printing arguments passed in
 if not args.silent:
     print( "Executing the script with the following information provided")
@@ -167,20 +184,6 @@ if not args.silent:
     print( f"Data Posted:         {data_posted}")
     print( f"Keep Data:           {args.keep_input}")
     print( f"Silent:              {args.silent}\n")
-
-#==============================================================================
-# Prepare for the evaluation!
-# The declaration must be read into memory, and we need to determine if data
-# is to be posted.
-#==============================================================================
-
-# Read the declaration into memory.
-#print ( f"Reading the declaration file, {declaration_filename}..." )
-with open(declaration_filename,'r') as decfile:
-    evaluation = decfile.read()
-if evaluation is None:
-    print('Unable to read evalution from declaration file.')
-    exit(4)
 
 #====================================================================================
 # First, post the evaluation using the read in declaration. The data handed off to
