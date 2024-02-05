@@ -46,7 +46,7 @@ post_data() {
         if [[ "$silent" != true ]]; then
           echo "Uploaded $file successfully: $post_result_http_code"
           if [[ "$keep_input" = true ]]; then
-            echo "File persisted at: $( echo "$post_result" | grep Location )"
+            echo "File persisted at $( echo "$post_result" | grep Location | cut -c 19- )"
           fi
         fi
       else
@@ -129,6 +129,9 @@ get_job_output() {
 
 # Delete the evaluation job outputs
 delete_job_output() {
+  if [[ "$silent" != true ]]; then
+    echo "Posting a delete request for the job $job_location..."
+  fi
   post_result=$(curl -X "DELETE" -s --cacert $cert https://$host/job/$job_location/output )
 
   if [[ "$silent" != true ]]; then
@@ -137,14 +140,14 @@ delete_job_output() {
 
 }
 
-# Posts that data upload has finished
+# Method that repeatedly calls the status endpoint until a termination status is returned
 wait_for_job_finish() {
 
   post_result=""
   time=0
   print_time=5
   if [[ "$silent" != true ]]; then
-    echo "Job IN_PROGRESS, checking every 5 second, printing again in 5 seconds"
+    echo "Job IN_PROGRESS, checking every 5 seconds, printing again in 5 seconds"
   fi
   while [[ "$post_result" != *"COMPLETED_REPORTED_SUCCESS"* && "$post_result" != *"COMPLETED_REPORTED_FAILURE"* && "$post_result" != *"NOT_FOUND"* ]]
   do
@@ -152,7 +155,7 @@ wait_for_job_finish() {
     if [[ "$time" -ge "$print_time" ]]; then
       print_time=$(($print_time * 2))
       if [[ "$silent" != true ]]; then
-        echo "Job IN_PROGRESS, checking every 5 second, printing again in $print_time seconds"
+        echo "Job IN_PROGRESS, checking every 5 seconds, printing again in $print_time seconds"
       fi
     fi
     time=$(($time + 5))
@@ -286,6 +289,12 @@ fi
 # Main script execution
 handle_options "$@"
 
+
+#====================================================================================
+# Verify all the needed information to use this script is present
+#====================================================================================
+
+# The host we are sending the request to
 if [[ -z "$host" ]]; then
   host=$WRES_HOST_NAME
   if [[ -z "$host" ]]; then
@@ -294,6 +303,7 @@ if [[ -z "$host" ]]; then
   fi
 fi
 
+# The cert to verify the host in question
 if [[ -z "$cert" ]]; then
   host=$WRES_CA_FILE
   if [[ -z "$cert" ]]; then
@@ -302,11 +312,17 @@ if [[ -z "$cert" ]]; then
   fi
 fi
 
+# We have a declaration for the evaluation we want to run
 if [[ -z "$declaration" ]]; then
   echo "A project declaration is required to use this script. Please pass one in with the -f or --filename flags"
   exit 1
 fi
 
+# The evaluation is non-empty
+if [[ ! -e "$declaration" ]]; then
+  echo "Unable to read evaluation from declaration file."
+  exit 1
+fi
 
 if [[ -n "$observed" ]] || [[ -n "$predicted" ]] || [[ -n "$baseline" ]]; then
   data_posted=true
@@ -332,10 +348,21 @@ if [[ "$silent" != true ]]; then
   echo "Posting the declaration to the WRES host: $host..."
 fi
 
+
+#====================================================================================
+# First, post the evaluation using the read in declaration. The data handed off to
+# the service may need to include postInput and keepInput if evaluation data is to be 
+# posted. If the evaluation is successfully posted, then obtain the location URL from
+# the response.
+#====================================================================================
 post_job "$data_posted"
 
 
-# Post data
+#====================================================================================
+# Second, if data is to be posted, then post it. Data must be posted for observed
+# (left), predicted (right), and baseline separately, and each file must be posted
+# independently.  Post a postInputDone=true at the end once we are done posting data.
+#====================================================================================
 if [[ -n "$observed" ]]; then
    post_data "$observed" "left"
 fi
@@ -348,13 +375,20 @@ if [[ -n "$baseline" ]]; then
   post_data "$baseline" "baseline"
 fi
 
+# After posting all data we send a signal that we are done so the evaluation can start
 if [[ "$data_posted" == true ]]; then
   post_data_finish
 fi
 
-# Wait for job to no longer be IN_PROGRESS
+#====================================================================================
+# Third, with the evaluation now ongoing, poll the job status with GET requests until
+# the job status changes to be COMPLETED_REPORTED_SUCCESS, COMPLETED_REPORTED_FAILURE,
+# or NOT_FOUND (happens only for expired jobs).
+#====================================================================================
 wait_for_job_finish
 
+# If the job returns a failed status we don't need to get the output
+# You can get the stdout endpoint to find the reason for a failure
 if [[ "$job_failed" == true ]]; then
   if [[ "$silent" != true ]]; then
     echo " "
@@ -365,8 +399,23 @@ if [[ "$job_failed" == true ]]; then
   exit 1
 fi
 
-# Get output and clean up if the job didn't fail
+#==============================================================================
+# Fourth, obtain the output. This section of code grabs and parses the full url
+# of each line in the output using regular expressions.
+# 
+# output_link will contain the full url including the .png, .csv etc extension.
+# 
+# The code then creates the output file name by combining the filepath at the
+# beginning of the code with the name of each output image/file. This is necessary
+# for the request.get to pull each of the files on the /output url.
+#==============================================================================
 get_job_output
+
+#==============================================================================
+# Fifth: after completing the evaluation, and retrieving any data from it, it is
+# important to clean up resources created by the evaluation. Therefore we 
+# DELETE the output data through the service API.
+#==============================================================================
 delete_job_output
 
 exit 0
