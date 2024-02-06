@@ -12,6 +12,9 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.messages.generated.EvaluationStatusOuterClass;
+import wres.statistics.generated.EvaluationStatus;
+
 /**
  * Represents the metadata about a single WRES execution submission aka job.
  * Mutable but intended to be thread safe.
@@ -28,6 +31,8 @@ public class EvaluationMetadata implements Serializable
     private String stdout;
 
     private String stderr;
+
+    private EvaluationStatusOuterClass.EvaluationStatus status;
 
     public EvaluationMetadata( String id )
     {
@@ -54,14 +59,19 @@ public class EvaluationMetadata implements Serializable
         return this.id;
     }
 
-    /**
-     * Required for redisson, do not use!
-     * @param id The id.
-     */
-
     public void setId( String id )
     {
         this.id = id;
+    }
+
+    public EvaluationStatusOuterClass.EvaluationStatus getStatus()
+    {
+        return this.status;
+    }
+
+    public void setStatus( EvaluationStatusOuterClass.EvaluationStatus status )
+    {
+        this.status = status;
     }
 
 

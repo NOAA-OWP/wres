@@ -260,7 +260,20 @@ public class EvaluationService implements ServletContextListener
     @Produces( MediaType.TEXT_PLAIN )
     public Response getStatus( @PathParam( "id" ) Long id )
     {
-        //TODO log finished status in cache to get stash of non-current jobs
+        // Check if the request is for an ongoing evaluation or one that's cached
+        if ( EVALUATION_ID.get() != id )
+        {
+            // If evaluation is still in cache, pull results from there
+            EvaluationMetadata cachedEntry = getCachedEntry( id );
+            if ( Objects.nonNull( cachedEntry.getStatus() ) )
+            {
+                LOGGER.info( "Returning status from cache" );
+                return Response.ok( cachedEntry.getStatus() ).build();
+            }
+            return Response.status( Response.Status.NOT_FOUND )
+                           .entity( "Unable to find project status with that ID. Check the persisted logs " + id )
+                           .build();
+        }
         return Response.ok( EVALUATION_STAGE.get().toString() )
                        .build();
     }
@@ -275,7 +288,7 @@ public class EvaluationService implements ServletContextListener
     @Produces( "application/octet-stream" )
     public Response getOutStream( @PathParam( "id" ) Long id )
     {
-        // Check that this evaluation should be ran
+        // Check if the request is for an ongoing evaluation or one that's cached
         if ( EVALUATION_ID.get() != id )
         {
             // If evaluation is still in cache, just pull results from there
@@ -304,7 +317,7 @@ public class EvaluationService implements ServletContextListener
     @Produces( "application/octet-stream" )
     public Response getErrorStream( @PathParam( "id" ) Long id )
     {
-        // Check that this evaluation should be ran
+        // Check if the request is for an ongoing evaluation or one that's cached
         if ( EVALUATION_ID.get() != id )
         {
             // If evaluation is still in cache, just pull results from there
@@ -368,7 +381,9 @@ public class EvaluationService implements ServletContextListener
 
         evaluationResponse = startEvaluation( projectDeclaration, projectId );
 
-        persistInformation( projectId, new EvaluationMetadata( String.valueOf( projectId ) ) );
+        EvaluationMetadata evaluationMetadata = new EvaluationMetadata( String.valueOf( projectId ) );
+        evaluationMetadata.setStatus( OPENED );
+        persistInformation( projectId, evaluationMetadata );
 
         return Response.ok( Response.Status.CREATED )
                        .entity( projectId )
@@ -636,8 +651,11 @@ public class EvaluationService implements ServletContextListener
         ExecutorService executorService = Executors.newSingleThreadExecutor();
 
         return executorService.submit( () -> {
-
             EVALUATION_STAGE.set( ONGOING );
+            EvaluationMetadata evaluationMetadata = getCachedEntry( id );
+            evaluationMetadata.setStatus( ONGOING );
+            persistInformation( id, evaluationMetadata );
+
             LOGGER.info( "Kicking off evaluation on server with the internal ID of: {}", id );
             Set<java.nio.file.Path> outputPaths;
             Canceller canceller = Canceller.of();
@@ -666,8 +684,8 @@ public class EvaluationService implements ServletContextListener
                 outputPaths = result.getResources();
 
                 // Persist output into cache
-                EvaluationMetadata evaluationMetadata = getCachedEntry( id );
-
+                evaluationMetadata = getCachedEntry( id );
+                evaluationMetadata.setStatus( COMPLETED );
                 evaluationMetadata.setOutputs( outputPaths );
                 persistInformation( id, evaluationMetadata );
 
