@@ -10,10 +10,10 @@ import org.apache.commons.lang3.tuple.Pair;
 import wres.datamodel.MissingValues;
 import wres.datamodel.pools.Pool;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.MetricName;
 
 /**
  * Score that applies a function to each side of a paired dataset and returns the score components.
@@ -172,15 +172,15 @@ class UnivariateScore implements Function<Pool<Pair<Double, Double>>, DoubleScor
         this.metric = metric;
 
         this.left = template.toBuilder()
-                            .setName( ComponentName.LEFT )
+                            .setName( MetricName.LEFT )
                             .build();
 
         this.right = template.toBuilder()
-                             .setName( ComponentName.RIGHT )
+                             .setName( MetricName.RIGHT )
                              .build();
 
         this.baseline = template.toBuilder()
-                                .setName( ComponentName.BASELINE )
+                                .setName( MetricName.BASELINE )
                                 .build();
     }
 

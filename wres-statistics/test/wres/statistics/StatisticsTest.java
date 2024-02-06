@@ -10,7 +10,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 
 /**
  * Tests the generated statistics messages.
@@ -25,7 +24,7 @@ class StatisticsTest
     void testThatAStatisticCanBeCreated()
     {
         DoubleScoreMetricComponent metric = DoubleScoreMetricComponent.newBuilder()
-                                                                      .setName( ComponentName.SHARPNESS )
+                                                                      .setName( MetricName.SHARPNESS )
                                                                       .build();
         DoubleScoreStatistic aScore =
                 DoubleScoreStatistic.newBuilder()

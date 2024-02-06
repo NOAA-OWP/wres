@@ -458,7 +458,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                        .stream()
                        .allMatch( Map::isEmpty ) )
         {
-            throw new IOException( "Could not identify any thresholds from which to create blobs." );
+            throw new IOException( "Could not identify any metrics for which NetCDF writing is supported. Only score "
+                                   + "metrics are supported for NetCDF writing. Please add some scores to your "
+                                   + "evaluation or remove the NetCDF writing option and try again." );
         }
 
         // Units, if declared
@@ -1116,22 +1118,53 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
             // Decompose, except for the sample size, which has a large number of associations
             // that are not relevant here
-            if ( components.size() > 1 && nextMetric != MetricConstants.SAMPLE_SIZE )
+            if ( components.size() > 1
+                 && nextMetric != MetricConstants.SAMPLE_SIZE )
             {
-                components.forEach( nextComponent -> returnMe.put( new MetricNames( nextMetric,
-                                                                                    nextComponent,
-                                                                                    nextMetric.name()
-                                                                                    + "_"
-                                                                                    + nextComponent.name() ),
+                components.forEach( nextComponent -> returnMe.put( this.getMetricName( nextMetric, nextComponent ),
                                                                    nextThresholds ) );
             }
             else
             {
-                returnMe.put( new MetricNames( nextMetric, null, nextMetric.name() ), nextThresholds );
+                MetricNames names = this.getMetricName( nextMetric, null );
+                returnMe.put( names, nextThresholds );
             }
         }
 
         return Collections.unmodifiableMap( returnMe );
+    }
+
+    /**
+     * Creates a {@link MetricNames} from the inputs.
+     * @param metricName the metric name
+     * @param componentName the metric component name
+     * @return a name collection
+     */
+    private MetricNames getMetricName( MetricConstants metricName, MetricConstants componentName )
+    {
+        // Component present
+        if ( Objects.nonNull( componentName ) )
+        {
+            return new MetricNames( metricName,
+                                    componentName,
+                                    metricName.name()
+                                    + "_"
+                                    + componentName.name() );
+        }
+        // A collected metric. Use the collection name and child name to form the metric name
+        else if ( Objects.nonNull( metricName.getCollection() ) )
+        {
+            return new MetricNames( metricName, null, metricName.getCollection()
+                                                                .name()
+                                                      + "_"
+                                                      + metricName.getChild()
+                                                                  .name() );
+        }
+        // No metric component
+        else
+        {
+            return new MetricNames( metricName, null, metricName.name() );
+        }
     }
 
     private boolean isGridded()
@@ -1165,8 +1198,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * <p>See #85491. It is essential that the logic for creating blobs in this method is mirrored by the logic for
      * finding blobs in {@link TimeWindowWriter#getVariableName(MetricConstants, DoubleScoreComponentOuter)}.
      *
-     * <p>Removes any metrics that do not produce {@link MetricConstants.StatisticType#DOUBLE_SCORE} because this writer
-     * currently only handles scores.
+     * <p>Removes any metrics that do not produce {@link MetricConstants.StatisticType#DOUBLE_SCORE} or
+     * {@link MetricConstants.StatisticType#DURATION_SCORE} because this writer currently only handles scores.
      *
      * @param metricsAndThresholds the thresholds to search
      * @return the unique thresholds for which blobs should be created
@@ -1194,8 +1227,9 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                 {
                     MetricConstants nextMetric = nextEntry.getKey();
 
-                    // Only allow scores 
-                    if ( nextMetric.isInGroup( StatisticType.DOUBLE_SCORE ) )
+                    // Only allow scores. Duration scores must be written as double scores at write time
+                    if ( nextMetric.isInGroup( StatisticType.DOUBLE_SCORE )
+                         || nextMetric.isInGroup( StatisticType.DURATION_SCORE ) )
                     {
                         // Get the existing mapping or a new sorted set instantiated with the threshold comparator
                         SortedSet<OneOrTwoThresholds> mapped =
@@ -1316,7 +1350,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         void write( List<DoubleScoreStatisticOuter> scores )
                 throws IOException, InvalidRangeException
         {
-            //this now needs to somehow get all metadata for all metrics
+            // This now needs to somehow get all metadata for all metrics
             // Ensure that the output file exists
             for ( DoubleScoreStatisticOuter score : scores )
             {

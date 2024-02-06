@@ -1678,7 +1678,7 @@ public class ChartFactory
             // is qualified separately
             String dimension = summaryStatistic.getDimension()
                                                .toString();
-            if( summaryStatistic.getDimension() == SummaryStatistic.StatisticDimension.FEATURE_GROUP )
+            if ( summaryStatistic.getDimension() == SummaryStatistic.StatisticDimension.FEATURE_GROUP )
             {
                 dimension = SummaryStatistic.StatisticDimension.FEATURES.toString();
             }
@@ -2414,6 +2414,7 @@ public class ChartFactory
             if ( GraphicsUtils.isNotDefaultMetricComponentName( metric.getStatisticComponentName() ) )
             {
                 qualifier = metric.getStatisticComponentName()
+                                  .name()
                                   .replace( "_", " " )
                             + OF_THE
                             + qualifier;

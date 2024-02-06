@@ -20,7 +20,6 @@ import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
-import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentType;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
@@ -49,7 +48,7 @@ public class ReliabilityDiagram extends Diagram<Pool<Pair<Probability, Probabili
 
     public static final DiagramMetricComponent FORECAST_PROBABILITY =
             DiagramMetricComponent.newBuilder()
-                                  .setName( DiagramComponentName.FORECAST_PROBABILITY )
+                                  .setName( MetricName.FORECAST_PROBABILITY )
                                   .setType( DiagramComponentType.PRIMARY_DOMAIN_AXIS )
                                   .setMinimum( MetricConstants.RELIABILITY_DIAGRAM.getMinimum() )
                                   .setMaximum( MetricConstants.RELIABILITY_DIAGRAM.getMaximum() )
@@ -60,23 +59,21 @@ public class ReliabilityDiagram extends Diagram<Pool<Pair<Probability, Probabili
      * Observed frequency.
      */
 
-    public static final DiagramMetricComponent OBSERVED_RELATIVE_FREQUENCY = DiagramMetricComponent.newBuilder()
-                                                                                                   .setName(
-                                                                                                           DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
-                                                                                                   .setType(
-                                                                                                           DiagramComponentType.PRIMARY_RANGE_AXIS )
-                                                                                                   .setMinimum( 0 )
-                                                                                                   .setMaximum( 1 )
-                                                                                                   .setUnits(
-                                                                                                           "PROBABILITY" )
-                                                                                                   .build();
+    public static final DiagramMetricComponent OBSERVED_RELATIVE_FREQUENCY =
+            DiagramMetricComponent.newBuilder()
+                                  .setName( MetricName.OBSERVED_RELATIVE_FREQUENCY )
+                                  .setType( DiagramComponentType.PRIMARY_RANGE_AXIS )
+                                  .setMinimum( 0 )
+                                  .setMaximum( 1 )
+                                  .setUnits( "PROBABILITY" )
+                                  .build();
 
     /**
      * Sample size or sharpness.
      */
 
     public static final DiagramMetricComponent SAMPLE_SIZE = DiagramMetricComponent.newBuilder()
-                                                                                   .setName( DiagramComponentName.SAMPLE_SIZE )
+                                                                                   .setName( MetricName.SAMPLE_SIZE )
                                                                                    .setType( DiagramComponentType.SECONDARY_RANGE_AXIS )
                                                                                    .setMinimum( 0 )
                                                                                    .setMaximum( Double.POSITIVE_INFINITY )

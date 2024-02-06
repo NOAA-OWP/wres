@@ -11,7 +11,6 @@ import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -34,7 +33,7 @@ public class FalseAlarmRatio extends ContingencyTableScore
                                       .setMinimum( MetricConstants.FALSE_ALARM_RATIO.getMinimum() )
                                       .setMaximum( MetricConstants.FALSE_ALARM_RATIO.getMaximum() )
                                       .setOptimum( MetricConstants.FALSE_ALARM_RATIO.getOptimum() )
-                                      .setName( ComponentName.MAIN )
+                                      .setName( MetricName.MAIN )
                                       .setUnits( MeasurementUnit.DIMENSIONLESS )
                                       .build();
 

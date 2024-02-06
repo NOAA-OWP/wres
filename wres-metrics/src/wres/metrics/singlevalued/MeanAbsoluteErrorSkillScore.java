@@ -19,7 +19,6 @@ import wres.metrics.MetricCalculationException;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
@@ -40,7 +39,7 @@ public class MeanAbsoluteErrorSkillScore extends DoubleErrorScore<Pool<Pair<Doub
                                       .setMinimum( MetricConstants.MEAN_ABSOLUTE_ERROR_SKILL_SCORE.getMinimum() )
                                       .setMaximum( MetricConstants.MEAN_ABSOLUTE_ERROR_SKILL_SCORE.getMaximum() )
                                       .setOptimum( MetricConstants.MEAN_ABSOLUTE_ERROR_SKILL_SCORE.getOptimum() )
-                                      .setName( ComponentName.MAIN )
+                                      .setName( MetricName.MAIN )
                                       .setUnits( MeasurementUnit.DIMENSIONLESS )
                                       .build();
 

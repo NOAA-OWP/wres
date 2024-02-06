@@ -138,11 +138,11 @@ class NetcdfOutputWriterTest
 
         Formats formats = Mockito.mock( Formats.class );
         Mockito.when( declaration.formats() )
-                       .thenReturn( formats );
+               .thenReturn( formats );
         Mockito.when( formats.outputs() )
-                       .thenReturn( Outputs.newBuilder()
-                                           .setNetcdf2( Outputs.Netcdf2Format.getDefaultInstance() )
-                                           .build() );
+               .thenReturn( Outputs.newBuilder()
+                                   .setNetcdf2( Outputs.Netcdf2Format.getDefaultInstance() )
+                                   .build() );
 
         ChronoUnit durationUnits = ChronoUnit.HOURS;
 
@@ -240,7 +240,7 @@ class NetcdfOutputWriterTest
             // Create the statistics to write
             DoubleScoreMetric.DoubleScoreMetricComponent
                     metricComponent = DoubleScoreMetric.DoubleScoreMetricComponent.newBuilder()
-                                                                                  .setName( DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
+                                                                                  .setName( MetricName.MAIN )
                                                                                   .build();
             DoubleScoreMetric metric = DoubleScoreMetric.newBuilder()
                                                         .addComponents( metricComponent )

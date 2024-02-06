@@ -1655,6 +1655,22 @@ public final class TimeSeriesSlicer
     }
 
     /**
+     * Returns a decimal representation of the duration in the prescribed units with conversion to millisecond
+     * precision. For greater precision, use a {@link java.math.BigDecimal}, but they are expensive.
+     * @param duration the duration
+     * @param unit the unit
+     * @return the duration with millisecond precision
+     */
+    public static double durationToDecimalMilliPrecision( Duration duration, ChronoUnit unit )
+    {
+        Objects.requireNonNull( unit );
+        Objects.requireNonNull( duration );
+
+        return ( duration.getSeconds() * 1000 + ( duration.getNano() / 1_000_000.0 ) ) / unit.getDuration()
+                                                                                             .toMillis();
+    }
+
+    /**
      * Returns the reference times that fall within the right-closed time window.
      *
      * @param referenceTimes the reference times

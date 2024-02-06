@@ -3,9 +3,11 @@ package wres.pipeline;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -16,8 +18,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.datamodel.statistics.DoubleScoreStatisticOuter;
+import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.StatisticsToFormatsRouter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.events.subscribe.ConsumerFactory;
 import wres.io.writing.csv.statistics.CommaSeparatedBoxPlotWriter;
 import wres.io.writing.csv.statistics.CommaSeparatedDiagramWriter;
@@ -28,7 +33,12 @@ import wres.io.writing.netcdf.NetcdfOutputWriter;
 import wres.io.writing.protobuf.ProtobufWriter;
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.Consumer;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DurationScoreMetric;
+import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.Consumer.Format;
@@ -85,8 +95,12 @@ class StatisticsConsumerFactory implements ConsumerFactory
         {
             for ( NetcdfOutputWriter writer : this.netcdfWriters )
             {
-                builder.addDoubleScoreConsumer( wres.config.yaml.components.Format.NETCDF,
-                                                writer );
+                builder.addDoubleScoreConsumer( wres.config.yaml.components.Format.NETCDF, writer );
+
+                // Add a duration score consumer that writes double scores
+                Function<List<DurationScoreStatisticOuter>, Set<Path>> durationScoreWriter =
+                        scores -> writer.apply( this.mapDurationScores( scores ) );
+                builder.addDurationScoreConsumer( wres.config.yaml.components.Format.NETCDF, durationScoreWriter );
             }
         }
 
@@ -306,5 +320,81 @@ class StatisticsConsumerFactory implements ConsumerFactory
 
             return Double.toString( doubleValue );
         };
+    }
+
+    /**
+     * Maps duration scores to double scores for writing.
+     * @param scores the duration scores
+     * @return the double scores
+     */
+    private List<DoubleScoreStatisticOuter> mapDurationScores( List<DurationScoreStatisticOuter> scores )
+    {
+        List<DoubleScoreStatisticOuter> mapped = new ArrayList<>();
+
+        // Get the preferred duration units
+        ChronoUnit units = this.declaration.durationFormat();
+
+        for ( DurationScoreStatisticOuter next : scores )
+        {
+            List<DurationScoreStatistic.DurationScoreStatisticComponent> c = next.getStatistic()
+                                                                                 .getStatisticsList();
+
+            List<DoubleScoreStatistic.DoubleScoreStatisticComponent> d = new ArrayList<>();
+            List<DoubleScoreMetric.DoubleScoreMetricComponent> e = new ArrayList<>();
+            for ( DurationScoreStatistic.DurationScoreStatisticComponent nextComponent : c )
+            {
+                DurationScoreMetric.DurationScoreMetricComponent metricComponent = nextComponent.getMetric();
+                MetricName metricName = metricComponent.getName();
+
+                com.google.protobuf.Duration minimum = metricComponent.getMinimum();
+                Duration minimumDuration = MessageFactory.parse( minimum );
+                double minimumDecimal = TimeSeriesSlicer.durationToDecimalMilliPrecision( minimumDuration, units );
+                com.google.protobuf.Duration maximum = metricComponent.getMaximum();
+                Duration maximumDuration = MessageFactory.parse( maximum );
+                double maximumDecimal = TimeSeriesSlicer.durationToDecimalMilliPrecision( maximumDuration, units );
+                com.google.protobuf.Duration optimum = metricComponent.getOptimum();
+                Duration optimumDuration = MessageFactory.parse( optimum );
+                double optimumDecimal = TimeSeriesSlicer.durationToDecimalMilliPrecision( optimumDuration, units );
+
+                DoubleScoreMetric.DoubleScoreMetricComponent doubleMetric =
+                        DoubleScoreMetric.DoubleScoreMetricComponent.newBuilder()
+                                                                    .setName( metricName )
+                                                                    .setMinimum( minimumDecimal )
+                                                                    .setMaximum( maximumDecimal )
+                                                                    .setOptimum( optimumDecimal )
+                                                                    .setUnits( units.name() )
+                                                                    .build();
+
+                com.google.protobuf.Duration statistic = nextComponent.getValue();
+                Duration statisticDuration = MessageFactory.parse( statistic );
+                double decimalStatistic = TimeSeriesSlicer.durationToDecimalMilliPrecision( statisticDuration, units );
+                DoubleScoreStatistic.DoubleScoreStatisticComponent doubleStatistic =
+                        DoubleScoreStatistic.DoubleScoreStatisticComponent.newBuilder()
+                                                                          .setMetric( doubleMetric )
+                                                                          .setValue( decimalStatistic )
+                                                                          .build();
+                d.add( doubleStatistic );
+                e.add( doubleMetric );
+            }
+
+            DurationScoreStatistic durationScore = next.getStatistic();
+            DurationScoreMetric durationMetric = durationScore.getMetric();
+            DoubleScoreMetric doubleMetric = DoubleScoreMetric.newBuilder()
+                                                              .setName( durationMetric.getName() )
+                                                              .addAllComponents( e )
+                                                              .build();
+
+            DoubleScoreStatistic nextDouble = DoubleScoreStatistic.newBuilder()
+                                                                  .addAllStatistics( d )
+                                                                  .setMetric( doubleMetric )
+                                                                  .addAllStatistics( d )
+                                                                  .build();
+            DoubleScoreStatisticOuter outer = DoubleScoreStatisticOuter.of( nextDouble,
+                                                                            next.getPoolMetadata(),
+                                                                            next.getSummaryStatistic() );
+            mapped.add( outer );
+        }
+
+        return Collections.unmodifiableList( mapped );
     }
 }

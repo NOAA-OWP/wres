@@ -17,7 +17,6 @@ import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -40,7 +39,7 @@ public class SumOfSquareError extends DecomposableScore<Pool<Pair<Double, Double
                                       .setMinimum( MetricConstants.SUM_OF_SQUARE_ERROR.getMinimum() )
                                       .setMaximum( MetricConstants.SUM_OF_SQUARE_ERROR.getMaximum() )
                                       .setOptimum( MetricConstants.SUM_OF_SQUARE_ERROR.getOptimum() )
-                                      .setName( ComponentName.MAIN )
+                                      .setName( MetricName.MAIN )
                                       .build();
 
     /** Full description of the metric.*/

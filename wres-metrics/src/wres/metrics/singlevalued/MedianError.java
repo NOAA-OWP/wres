@@ -8,7 +8,6 @@ import wres.metrics.FunctionFactory;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 
 /**
  * The median error applies to continuous variables and is the median signed difference 
@@ -30,7 +29,7 @@ public class MedianError extends DoubleErrorScore<Pool<Pair<Double, Double>>>
                                                                        .setMinimum( MetricConstants.MEDIAN_ERROR.getMinimum() )
                                                                        .setMaximum( MetricConstants.MEDIAN_ERROR.getMaximum() )
                                                                        .setOptimum( MetricConstants.MEDIAN_ERROR.getOptimum() )
-                                                                       .setName( ComponentName.MAIN ) )
+                                                                       .setName( MetricName.MAIN ) )
                              .setName( MetricName.MEDIAN_ERROR )
                              .build();
 

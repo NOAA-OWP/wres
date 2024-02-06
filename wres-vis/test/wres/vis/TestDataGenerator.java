@@ -47,11 +47,9 @@ import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotMetric.QuantileValueType;
 import wres.statistics.generated.BoxplotStatistic.Box;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
-import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentType;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
@@ -71,9 +69,10 @@ public class TestDataGenerator
     private static final Geometry NWM_FEATURE = wres.statistics.MessageFactory.getGeometry( "18384141" );
     private static final FeatureGroup FEATURE_GROUP =
             FeatureGroup.of( wres.statistics.MessageFactory.getGeometryGroup( "DRRC2-09165000-18384141",
-                                                                              wres.statistics.MessageFactory.getGeometryTuple( USGS_FEATURE,
-                                                                                                               NWS_FEATURE,
-                                                                                                               NWM_FEATURE ) ) );
+                                                                              wres.statistics.MessageFactory.getGeometryTuple(
+                                                                                      USGS_FEATURE,
+                                                                                      NWS_FEATURE,
+                                                                                      NWM_FEATURE ) ) );
 
     private static final String CMS = "CMS";
 
@@ -126,6 +125,9 @@ public class TestDataGenerator
 
         DoubleScoreStatisticComponent componentOne = DoubleScoreStatisticComponent.newBuilder()
                                                                                   .setValue( 0.1 )
+                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                                                        .setName(
+                                                                                                                                MetricName.MAIN ) )
                                                                                   .build();
 
         DoubleScoreComponentOuter componentOneOuter = DoubleScoreComponentOuter.of( componentOne, poolOne );
@@ -147,9 +149,12 @@ public class TestDataGenerator
 
         PoolMetadata poolTwo = PoolMetadata.of( EVALUATION, innerPoolTwo );
 
-        DoubleScoreStatisticComponent componentTwo = DoubleScoreStatisticComponent.newBuilder()
-                                                                                  .setValue( 0.2 )
-                                                                                  .build();
+        DoubleScoreStatisticComponent componentTwo =
+                DoubleScoreStatisticComponent.newBuilder()
+                                             .setValue( 0.2 )
+                                             .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                   .setName( MetricName.MAIN ) )
+                                             .build();
 
         DoubleScoreComponentOuter componentOuterTwo = DoubleScoreComponentOuter.of( componentTwo, poolTwo );
 
@@ -233,30 +238,30 @@ public class TestDataGenerator
         PoolMetadata source = PoolMetadata.of( EVALUATION, pool );
 
         double[] scores = new double[] {
-                                         -0.39228763627058233,
-                                         -0.38540392640098137,
-                                         -0.37290595138891640,
-                                         -0.29294118442636000,
-                                         -0.21904815321579500,
-                                         -0.15832253472025700,
-                                         -0.29244152171401800,
-                                         -0.28854939865963400,
-                                         -0.32666816357502900,
-                                         -0.29652842873636000,
-                                         -0.28174289655134900,
-                                         -0.26014386674719100,
-                                         -0.20220839431888500,
-                                         -0.26801048204027200,
-                                         -0.28350781433349200,
-                                         -0.27907401971041900,
-                                         -0.25723312071583900,
-                                         -0.28349542374488600,
-                                         -0.27544986528110100,
-                                         -0.25307837568226800,
-                                         -0.24993043930250200,
-                                         -0.27070337571167200,
-                                         -0.25422214821455900,
-                                         -0.28105802405674500
+                -0.39228763627058233,
+                -0.38540392640098137,
+                -0.37290595138891640,
+                -0.29294118442636000,
+                -0.21904815321579500,
+                -0.15832253472025700,
+                -0.29244152171401800,
+                -0.28854939865963400,
+                -0.32666816357502900,
+                -0.29652842873636000,
+                -0.28174289655134900,
+                -0.26014386674719100,
+                -0.20220839431888500,
+                -0.26801048204027200,
+                -0.28350781433349200,
+                -0.27907401971041900,
+                -0.25723312071583900,
+                -0.28349542374488600,
+                -0.27544986528110100,
+                -0.25307837568226800,
+                -0.24993043930250200,
+                -0.27070337571167200,
+                -0.25422214821455900,
+                -0.28105802405674500
         };
         // Build the map
         for ( int i = 0; i < scores.length; i++ )
@@ -276,8 +281,10 @@ public class TestDataGenerator
                                                                      .setName( MetricName.BIAS_FRACTION ) )
                                         .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                      .setValue( scores[i] )
-                                                                                     .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                           .setName( ComponentName.MAIN ) ) )
+                                                                                     .setMetric(
+                                                                                             DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName(
+                                                                                                                               MetricName.MAIN ) ) )
                                         .build();
 
             rawData.add( DoubleScoreStatisticOuter.of( one, PoolMetadata.of( source, timeWindow ) ) );
@@ -332,8 +339,10 @@ public class TestDataGenerator
                                                                      .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) )
                                         .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                      .setValue( sixHourOutputs[i] )
-                                                                                     .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                           .setName( ComponentName.MAIN ) ) )
+                                                                                     .setMetric(
+                                                                                             DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName(
+                                                                                                                               MetricName.MAIN ) ) )
                                         .build();
 
             DoubleScoreStatisticOuter sixHourOutput =
@@ -351,8 +360,10 @@ public class TestDataGenerator
                                                                      .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) )
                                         .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                      .setValue( twelveHourOutputs[i] )
-                                                                                     .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                           .setName( ComponentName.MAIN ) ) )
+                                                                                     .setMetric(
+                                                                                             DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName(
+                                                                                                                               MetricName.MAIN ) ) )
                                         .build();
 
             DoubleScoreStatisticOuter twelveHourOutput =
@@ -370,8 +381,10 @@ public class TestDataGenerator
                                                                      .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) )
                                         .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                      .setValue( eighteenHourOutputs[i] )
-                                                                                     .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                           .setName( ComponentName.MAIN ) ) )
+                                                                                     .setMetric(
+                                                                                             DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName(
+                                                                                                                               MetricName.MAIN ) ) )
                                         .build();
 
             DoubleScoreStatisticOuter eighteenHourOutput =
@@ -389,8 +402,10 @@ public class TestDataGenerator
                                                                      .setName( MetricName.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE ) )
                                         .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                      .setValue( twentyFourHourOutputs[i] )
-                                                                                     .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                           .setName( ComponentName.MAIN ) ) )
+                                                                                     .setMetric(
+                                                                                             DoubleScoreMetricComponent.newBuilder()
+                                                                                                                       .setName(
+                                                                                                                               MetricName.MAIN ) ) )
                                         .build();
 
             DoubleScoreStatisticOuter twentyFourHourOutput =
@@ -411,7 +426,7 @@ public class TestDataGenerator
 
         DiagramMetricComponent rankOrder =
                 DiagramMetricComponent.newBuilder()
-                                      .setName( DiagramComponentName.RANK_ORDER )
+                                      .setName( MetricName.RANK_ORDER )
                                       .setType( DiagramComponentType.PRIMARY_DOMAIN_AXIS )
                                       .setMinimum( 0 ) // Strictly 1, but the zeroth position should be visible
                                       .setMaximum( Double.POSITIVE_INFINITY )
@@ -419,7 +434,7 @@ public class TestDataGenerator
                                       .build();
 
         DiagramMetricComponent observedFrequency = DiagramMetricComponent.newBuilder()
-                                                                         .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                                                         .setName( MetricName.OBSERVED_RELATIVE_FREQUENCY )
                                                                          .setType( DiagramComponentType.PRIMARY_RANGE_AXIS )
                                                                          .setMinimum( 0 )
                                                                          .setMaximum( 1 )
@@ -536,7 +551,8 @@ public class TestDataGenerator
                                                                                                      .setSeconds( Long.MIN_VALUE ) )
                                                             .setMaximum( com.google.protobuf.Duration.newBuilder()
                                                                                                      .setSeconds( Long.MIN_VALUE )
-                                                                                                     .setNanos( 999_999_999 ) )
+                                                                                                     .setNanos(
+                                                                                                             999_999_999 ) )
                                                             .setMaximum( com.google.protobuf.Duration.newBuilder()
                                                                                                      .setSeconds( 0 ) )
                                                             .build();
@@ -562,7 +578,8 @@ public class TestDataGenerator
                                                                                     .setSeconds( thirdInstant.getEpochSecond() )
                                                                                     .setNanos( thirdInstant.getNano() ) )
                                                                  .setDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                           .setSeconds( 7200 ) )
+                                                                                                           .setSeconds(
+                                                                                                                   7200 ) )
                                                                  .build();
 
         PairOfInstantAndDuration four = PairOfInstantAndDuration.newBuilder()
@@ -570,7 +587,8 @@ public class TestDataGenerator
                                                                                    .setSeconds( fourthInstant.getEpochSecond() )
                                                                                    .setNanos( fourthInstant.getNano() ) )
                                                                 .setDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                          .setSeconds( 14400 ) )
+                                                                                                          .setSeconds(
+                                                                                                                  14400 ) )
                                                                 .build();
 
         PairOfInstantAndDuration five = PairOfInstantAndDuration.newBuilder()
@@ -578,7 +596,8 @@ public class TestDataGenerator
                                                                                    .setSeconds( fifthInstant.getEpochSecond() )
                                                                                    .setNanos( fifthInstant.getNano() ) )
                                                                 .setDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                          .setSeconds( 28800 ) )
+                                                                                                          .setSeconds(
+                                                                                                                  28800 ) )
                                                                 .build();
 
         PairOfInstantAndDuration six = PairOfInstantAndDuration.newBuilder()
@@ -594,7 +613,8 @@ public class TestDataGenerator
                                                                                     .setSeconds( seventhInstant.getEpochSecond() )
                                                                                     .setNanos( seventhInstant.getNano() ) )
                                                                  .setDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                           .setSeconds( -57600 ) )
+                                                                                                           .setSeconds(
+                                                                                                                   -57600 ) )
                                                                  .build();
 
         PairOfInstantAndDuration eight = PairOfInstantAndDuration.newBuilder()
@@ -602,7 +622,8 @@ public class TestDataGenerator
                                                                                     .setSeconds( eighthInstant.getEpochSecond() )
                                                                                     .setNanos( eighthInstant.getNano() ) )
                                                                  .setDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                           .setSeconds( -79200 ) )
+                                                                                                           .setSeconds(
+                                                                                                                   -79200 ) )
                                                                  .build();
 
         PairOfInstantAndDuration nine = PairOfInstantAndDuration.newBuilder()
@@ -618,7 +639,8 @@ public class TestDataGenerator
                                                                                   .setSeconds( tenthInstant.getEpochSecond() )
                                                                                   .setNanos( tenthInstant.getNano() ) )
                                                                .setDuration( com.google.protobuf.Duration.newBuilder()
-                                                                                                         .setSeconds( 86400 ) )
+                                                                                                         .setSeconds(
+                                                                                                                 86400 ) )
                                                                .build();
 
         DurationDiagramStatistic expectedSource = DurationDiagramStatistic.newBuilder()
@@ -704,42 +726,61 @@ public class TestDataGenerator
                 DurationScoreStatistic.newBuilder()
                                       .setMetric( metric )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
-                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.MEAN ) )
+                                                                                     .setMetric(
+                                                                                             DurationScoreMetricComponent.newBuilder()
+                                                                                                                         .setName(
+                                                                                                                                 MetricName.MEAN ) )
 
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                                                            .setSeconds( 9360 ) ) )
+                                                                                                                            .setSeconds(
+                                                                                                                                    9360 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
-                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.MEDIAN ) )
+                                                                                     .setMetric(
+                                                                                             DurationScoreMetricComponent.newBuilder()
+                                                                                                                         .setName(
+                                                                                                                                 MetricName.MEDIAN ) )
 
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                                                            .setSeconds( -3600 ) ) )
+                                                                                                                            .setSeconds(
+                                                                                                                                    -3600 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
-                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.STANDARD_DEVIATION ) )
+                                                                                     .setMetric(
+                                                                                             DurationScoreMetricComponent.newBuilder()
+                                                                                                                         .setName(
+                                                                                                                                 MetricName.STANDARD_DEVIATION ) )
 
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                                                            .setSeconds( 48_364 )
-                                                                                                                            .setNanos( 615_000_000 ) ) )
+                                                                                                                            .setSeconds(
+                                                                                                                                    48_364 )
+                                                                                                                            .setNanos(
+                                                                                                                                    615_000_000 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
-                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.MINIMUM ) )
+                                                                                     .setMetric(
+                                                                                             DurationScoreMetricComponent.newBuilder()
+                                                                                                                         .setName(
+                                                                                                                                 MetricName.MINIMUM ) )
 
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                                                            .setSeconds( -79_200 ) ) )
+                                                                                                                            .setSeconds(
+                                                                                                                                    -79_200 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
-                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.MAXIMUM ) )
+                                                                                     .setMetric(
+                                                                                             DurationScoreMetricComponent.newBuilder()
+                                                                                                                         .setName(
+                                                                                                                                 MetricName.MAXIMUM ) )
 
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                                                            .setSeconds( 86_400 ) ) )
+                                                                                                                            .setSeconds(
+                                                                                                                                    86_400 ) ) )
                                       .addStatistics( DurationScoreStatisticComponent.newBuilder()
-                                                                                     .setMetric( DurationScoreMetricComponent.newBuilder()
-                                                                                                                             .setName( DurationScoreMetricComponent.ComponentName.MEAN_ABSOLUTE ) )
+                                                                                     .setMetric(
+                                                                                             DurationScoreMetricComponent.newBuilder()
+                                                                                                                         .setName(
+                                                                                                                                 MetricName.MEAN_ABSOLUTE ) )
 
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
-                                                                                                                            .setSeconds( 36_720 ) ) )
+                                                                                                                            .setSeconds(
+                                                                                                                                    36_720 ) ) )
                                       .build();
 
         return List.of( DurationScoreStatisticOuter.of( score, meta ) );
@@ -748,7 +789,7 @@ public class TestDataGenerator
 
     /**
      * Returns a {@link List} containing {@link BoxplotStatisticOuter} for several pairs.
-     * 
+     *
      * @return a box plot per pair
      */
 
@@ -810,7 +851,7 @@ public class TestDataGenerator
 
     /**
      * Returns a {@link List} containing {@link BoxplotStatisticOuter} for two pools of data.
-     * 
+     *
      * @return a box plot per pool for two pools
      */
 

@@ -27,7 +27,6 @@ import wres.statistics.generated.DurationDiagramStatistic;
 import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
 import wres.statistics.generated.DurationScoreStatistic;
-import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
 import wres.statistics.generated.MetricName;
 
@@ -221,7 +220,7 @@ public class TimingErrorDurationStatistics
     {
         String summaryNameString = identifier.getChild()
                                              .name();
-        ComponentName componentName = ComponentName.valueOf( summaryNameString );
+        MetricName componentName = MetricName.valueOf( summaryNameString );
         DurationScoreMetricComponent.Builder builder = DurationScoreMetricComponent.newBuilder()
                                                                                    .setName( componentName );
 

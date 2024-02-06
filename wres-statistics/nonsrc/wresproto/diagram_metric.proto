@@ -37,7 +37,7 @@ message DiagramMetric
     // its distribution is summarized with a histogram, then the metric in this 
     // context is the mean error.
 
-    string statistic_component_name = 5;
+    MetricName statistic_component_name = 5;
     // The name of the metric component being summarized.
 
     string statistic_units = 6;
@@ -55,26 +55,8 @@ message DiagramMetric
     message DiagramMetricComponent
     {
         // A component of a diagram metric.
-    
-        enum DiagramComponentName 
-        {
-            // The name of a diagram component.
 
-            UNKNOWN = 0;
-            PROBABILITY_OF_FALSE_DETECTION = 1;
-            PROBABILITY_OF_DETECTION = 2;
-            RANK_ORDER = 3;
-            FORECAST_PROBABILITY = 4;
-            OBSERVED_RELATIVE_FREQUENCY = 5;
-            OBSERVED_QUANTILES = 6;
-            PREDICTED_QUANTILES = 7;
-            SAMPLE_SIZE = 8;
-            COUNT = 9;
-            BIN_UPPER_BOUND = 10;
-            // The upper bound of a bin interval.
-        }
-
-        DiagramComponentName name = 1;
+        MetricName name = 1;
         // The metric component name.
 
         string units = 2;

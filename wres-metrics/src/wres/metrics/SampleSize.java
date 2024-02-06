@@ -15,7 +15,6 @@ import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.MetricName;
 
 /**
@@ -47,7 +46,7 @@ class SampleSize<S extends Pool<?>> implements Score<S, DoubleScoreStatisticOute
                                                                                     .setMinimum( 0 )
                                                                                     .setMaximum( Double.POSITIVE_INFINITY )
                                                                                     .setOptimum( Double.POSITIVE_INFINITY )
-                                                                                    .setName( ComponentName.MAIN )
+                                                                                    .setName( MetricName.MAIN )
                                                                                     .setUnits( Units.COUNT )
                                                                                     .build();
     /**

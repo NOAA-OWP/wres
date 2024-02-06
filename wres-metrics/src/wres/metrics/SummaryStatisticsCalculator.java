@@ -32,12 +32,9 @@ import wres.config.MetricConstants;
 
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.BoxplotStatistic;
-import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
-import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationDiagramStatistic;
-import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Statistics;
@@ -72,14 +69,14 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                                   .toList();
 
     /** The cached samples of score statistics. */
-    private final Map<DoubleScoreName, MutableDoubleList> doubleScores;
+    private final Map<MetricNames, MutableDoubleList> doubleScores;
 
     /** The cached sample of diagram statistics with each column containing one sample and each row containing all
      * samples for one index of the diagram component. */
-    private final Map<DiagramName, List<MutableDoubleList>> diagrams;
+    private final Map<MetricNames, List<MutableDoubleList>> diagrams;
 
     /** The cached sample of duration score statistics. */
-    private final Map<DurationScoreName, List<Duration>> durationScores;
+    private final Map<MetricNames, List<Duration>> durationScores;
 
     /** The cached sample of duration diagram statistics. */
     private final Map<MetricName, Map<Instant, List<Duration>>> durationDiagrams;
@@ -313,9 +310,10 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                                          .getName();
             for ( DoubleScoreStatistic.DoubleScoreStatisticComponent component : score.getStatisticsList() )
             {
-                DoubleScoreName name = new DoubleScoreName( metricName,
-                                                            component.getMetric()
-                                                                     .getName() );
+                MetricNames name = new MetricNames( metricName,
+                                                    component.getMetric()
+                                                             .getName(),
+                                                    null );
 
                 MutableDoubleList samples = this.getOrAddDoubleScoreSlot( name );
                 double scoreValue = component.getValue();
@@ -329,7 +327,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
      * @param name the named metric
      * @return the slot
      */
-    private MutableDoubleList getOrAddDoubleScoreSlot( DoubleScoreName name )
+    private MutableDoubleList getOrAddDoubleScoreSlot( MetricNames name )
     {
         // Add a thread-safe mutable list
         this.doubleScores.putIfAbsent( name, new DoubleArrayList().asSynchronized() );
@@ -351,9 +349,10 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                                          .getName();
             for ( DurationScoreStatistic.DurationScoreStatisticComponent component : score.getStatisticsList() )
             {
-                DurationScoreName name = new DurationScoreName( metricName,
-                                                                component.getMetric()
-                                                                         .getName() );
+                MetricNames name = new MetricNames( metricName,
+                                                    component.getMetric()
+                                                             .getName(),
+                                                    null );
 
                 List<Duration> samples = this.getOrAddDurationScoreSlot( name );
                 Duration nextScore = MessageFactory.parse( component.getValue() );
@@ -367,7 +366,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
      * @param name the named metric
      * @return the slot
      */
-    private List<Duration> getOrAddDurationScoreSlot( DurationScoreName name )
+    private List<Duration> getOrAddDurationScoreSlot( MetricNames name )
     {
         // Add a thread-safe mutable list
         this.durationScores.putIfAbsent( name, new FastList<Duration>().asSynchronized() );
@@ -389,7 +388,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                                            .getName();
             for ( DiagramStatistic.DiagramStatisticComponent component : diagram.getStatisticsList() )
             {
-                DiagramName name = new DiagramName( metricName,
+                MetricNames name = new MetricNames( metricName,
                                                     component.getMetric()
                                                              .getName(),
                                                     component.getName() );
@@ -411,7 +410,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
      * @param name the named metric
      * @return the slot
      */
-    private List<MutableDoubleList> getOrAddDiagramSlot( DiagramName name )
+    private List<MutableDoubleList> getOrAddDiagramSlot( MetricNames name )
     {
         // Add a thread-safe list (of lists)
         this.diagrams.putIfAbsent( name, new FastList<MutableDoubleList>().asSynchronized() );
@@ -648,9 +647,10 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                     score.getStatisticsBuilderList();
             for ( DoubleScoreStatistic.DoubleScoreStatisticComponent.Builder component : componentBuilders )
             {
-                DoubleScoreName name = new DoubleScoreName( metricName,
-                                                            component.getMetric()
-                                                                     .getName() );
+                MetricNames name = new MetricNames( metricName,
+                                                    component.getMetric()
+                                                             .getName(),
+                                                    null );
                 MutableDoubleList samples = this.doubleScores.get( name );
                 double[] raw = samples.toArray();
                 double statisticValue = summaryStatistic.applyAsDouble( raw );
@@ -679,9 +679,9 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                     score.getStatisticsBuilderList();
             for ( DurationScoreStatistic.DurationScoreStatisticComponent.Builder component : componentBuilders )
             {
-                DurationScoreName name = new DurationScoreName( metricName,
-                                                                component.getMetric()
-                                                                         .getName() );
+                MetricNames name = new MetricNames( metricName,
+                                                    component.getMetric()
+                                                             .getName(), null );
                 List<Duration> samples = this.durationScores.get( name );
 
                 // Filter any null values and sort. Null values can occur if the pairs were empty, for example,
@@ -714,7 +714,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                     diagram.getStatisticsBuilderList();
             for ( DiagramStatistic.DiagramStatisticComponent.Builder component : componentBuilders )
             {
-                DiagramName name = new DiagramName( metricName,
+                MetricNames name = new MetricNames( metricName,
                                                     component.getMetric()
                                                              .getName(),
                                                     component.getName() );
@@ -782,12 +782,12 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
     private List<DiagramStatistic> calculateDiagramStatisticForDoubleScores( DiagramSummaryStatisticFunction diagram )
     {
         List<DiagramStatistic> diagramList = new ArrayList<>();
-        for ( Map.Entry<DoubleScoreName, MutableDoubleList> nextScore : this.doubleScores.entrySet() )
+        for ( Map.Entry<MetricNames, MutableDoubleList> nextScore : this.doubleScores.entrySet() )
         {
-            DoubleScoreName name = nextScore.getKey();
+            MetricNames name = nextScore.getKey();
             String nameString = name.metricName()
                                     .toString();
-            String componentNameString = name.metricComponentName()
+            String componentNameString = name.componentName()
                                              .toString();
             MutableDoubleList scores = nextScore.getValue();
             double[] rawScores = scores.toArray();
@@ -815,12 +815,12 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
     private List<DiagramStatistic> calculateDiagramStatisticForDurationScores( DiagramSummaryStatisticFunction diagram )
     {
         List<DiagramStatistic> diagramList = new ArrayList<>();
-        for ( Map.Entry<DurationScoreName, List<Duration>> nextScore : this.durationScores.entrySet() )
+        for ( Map.Entry<MetricNames, List<Duration>> nextScore : this.durationScores.entrySet() )
         {
-            DurationScoreName name = nextScore.getKey();
+            MetricNames name = nextScore.getKey();
             String nameString = name.metricName()
                                     .toString();
-            String componentNameString = name.metricComponentName()
+            String componentNameString = name.componentName()
                                              .toString();
 
             List<Duration> scores = nextScore.getValue();
@@ -846,9 +846,9 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
     private List<BoxplotStatistic> calculateBoxplotStatisticForDoubleScores( BoxplotSummaryStatisticFunction boxplot )
     {
         List<BoxplotStatistic> boxplotList = new ArrayList<>();
-        for ( Map.Entry<DoubleScoreName, MutableDoubleList> nextScore : this.doubleScores.entrySet() )
+        for ( Map.Entry<MetricNames, MutableDoubleList> nextScore : this.doubleScores.entrySet() )
         {
-            DoubleScoreName name = nextScore.getKey();
+            MetricNames name = nextScore.getKey();
             String nameString = name.metricName()
                                     .toString();
 
@@ -861,7 +861,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                                  .getUnits();
             Map<SummaryStatisticComponentName, String> names =
                     Map.of( SummaryStatisticComponentName.METRIC_NAME, nameString,
-                            SummaryStatisticComponentName.METRIC_COMPONENT_NAME, name.metricComponentName()
+                            SummaryStatisticComponentName.METRIC_COMPONENT_NAME, name.componentName()
                                                                                      .name(),
                             SummaryStatisticComponentName.METRIC_UNIT, unitString );
 
@@ -880,12 +880,12 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
     private List<BoxplotStatistic> calculateBoxplotStatisticForDurationScores( BoxplotSummaryStatisticFunction boxplot )
     {
         List<BoxplotStatistic> boxplotList = new ArrayList<>();
-        for ( Map.Entry<DurationScoreName, List<Duration>> nextScore : this.durationScores.entrySet() )
+        for ( Map.Entry<MetricNames, List<Duration>> nextScore : this.durationScores.entrySet() )
         {
-            DurationScoreName name = nextScore.getKey();
+            MetricNames name = nextScore.getKey();
             String nameString = name.metricName()
                                     .toString();
-            String metricComponentName = name.metricComponentName()
+            String metricComponentName = name.componentName()
                                              .toString();
 
             List<Duration> scores = nextScore.getValue();
@@ -1079,27 +1079,10 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
     /**
      * The fully qualified name of a score whose sample quantiles must be estimated.
      * @param metricName the metric name
-     * @param metricComponentName the metric component name
-     */
-    private record DoubleScoreName( MetricName metricName,
-                                    DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName metricComponentName ) {}
-
-    /**
-     * The fully qualified name of a diagram whose sample quantiles must be estimated.
-     * @param metricName the metric name
-     * @param metricComponentName the metric component name
+     * @param componentName the metric component name
      * @param qualifier the qualifier to use when the same component name is repeated
      */
-    private record DiagramName( MetricName metricName,
-                                DiagramMetric.DiagramMetricComponent.DiagramComponentName metricComponentName,
+    private record MetricNames( MetricName metricName,
+                                MetricName componentName,
                                 String qualifier ) {}
-
-    /**
-     * The fully qualified name of a duration score whose sample quantiles must be estimated.
-     * @param metricName the metric name
-     * @param metricComponentName the metric component name
-     */
-    private record DurationScoreName( MetricName metricName,
-                                      DurationScoreMetric.DurationScoreMetricComponent.ComponentName metricComponentName ) {}
-
 }

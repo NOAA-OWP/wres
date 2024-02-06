@@ -24,30 +24,9 @@ message DoubleScoreMetric
     
     message DoubleScoreMetricComponent
     {
-        // A score component.
-        
-        enum ComponentName 
-        {
-            // The name of a score component.
-            
-            MAIN = 0;
-            RELIABILITY = 1; // Type-I bias
-            RESOLUTION = 2;
-            UNCERTAINTY = 3;
-            TYPE_II_BIAS = 4;
-            DISCRIMINATION = 5;
-            SHARPNESS = 6;
-            POTENTIAL = 7; 
-            TRUE_POSITIVES = 8;
-            FALSE_POSITIVES = 9;
-            FALSE_NEGATIVES = 10;
-            TRUE_NEGATIVES = 11;
-            LEFT = 12;
-            RIGHT = 13;
-            BASELINE = 14;
-        }
+        // A double score metric component.
 
-        ComponentName name = 1;
+        MetricName name = 1;
         // The metric component name.
 
         string units = 2;

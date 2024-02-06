@@ -49,10 +49,8 @@ import wres.statistics.generated.BoxplotMetric.QuantileValueType;
 import wres.statistics.generated.BoxplotStatistic;
 import wres.statistics.generated.BoxplotStatistic.Box;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
-import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.DurationDiagramStatistic.PairOfInstantAndDuration;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
@@ -304,17 +302,17 @@ public class WriterTestHelper
 
         DiagramMetricComponent forecastComponent =
                 DiagramMetricComponent.newBuilder()
-                                      .setName( DiagramComponentName.FORECAST_PROBABILITY )
+                                      .setName( MetricName.FORECAST_PROBABILITY )
                                       .build();
 
         DiagramMetricComponent observedComponent =
                 DiagramMetricComponent.newBuilder()
-                                      .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                      .setName( MetricName.OBSERVED_RELATIVE_FREQUENCY )
                                       .build();
 
         DiagramMetricComponent sampleComponent =
                 DiagramMetricComponent.newBuilder()
-                                      .setName( DiagramComponentName.SAMPLE_SIZE )
+                                      .setName( MetricName.SAMPLE_SIZE )
                                       .build();
 
         DiagramMetric metric = DiagramMetric.newBuilder()
@@ -493,12 +491,13 @@ public class WriterTestHelper
 
         DoubleScoreStatistic one =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_SQUARE_ERROR ) )
+                                    .setMetric( DoubleScoreMetric.newBuilder()
+                                                                 .setName( MetricName.MEAN_SQUARE_ERROR ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 1.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN )
+                                                                                                                               MetricName.MAIN )
                                                                                                                        .setMinimum(
                                                                                                                                0 )
                                                                                                                        .setMaximum(
@@ -514,7 +513,7 @@ public class WriterTestHelper
                                                                                  .setValue( 2.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN )
+                                                                                                                               MetricName.MAIN )
                                                                                                                        .setMinimum(
                                                                                                                                Double.NEGATIVE_INFINITY )
                                                                                                                        .setMaximum(
@@ -531,7 +530,7 @@ public class WriterTestHelper
                                                                                  .setValue( 3.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN )
+                                                                                                                               MetricName.MAIN )
                                                                                                                        .setMinimum(
                                                                                                                                0 )
                                                                                                                        .setMaximum(
@@ -602,7 +601,7 @@ public class WriterTestHelper
                                                                                      .setMetric(
                                                                                              DurationScoreMetricComponent.newBuilder()
                                                                                                                          .setName(
-                                                                                                                                 DurationScoreMetricComponent.ComponentName.MEAN ) )
+                                                                                                                                 MetricName.MEAN ) )
 
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
                                                                                                                             .setSeconds(
@@ -611,7 +610,7 @@ public class WriterTestHelper
                                                                                      .setMetric(
                                                                                              DurationScoreMetricComponent.newBuilder()
                                                                                                                          .setName(
-                                                                                                                                 DurationScoreMetricComponent.ComponentName.MEDIAN ) )
+                                                                                                                                 MetricName.MEDIAN ) )
 
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
                                                                                                                             .setSeconds(
@@ -620,7 +619,7 @@ public class WriterTestHelper
                                                                                      .setMetric(
                                                                                              DurationScoreMetricComponent.newBuilder()
                                                                                                                          .setName(
-                                                                                                                                 DurationScoreMetricComponent.ComponentName.MAXIMUM ) )
+                                                                                                                                 MetricName.MAXIMUM ) )
 
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
                                                                                                                             .setSeconds(
@@ -679,7 +678,7 @@ public class WriterTestHelper
                                                                                  .setValue( 1.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN ) ) )
+                                                                                                                               MetricName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatisticOuter fakeOutputA = DoubleScoreStatisticOuter.of( one, fakeMetadataA );

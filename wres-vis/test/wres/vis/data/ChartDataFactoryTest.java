@@ -162,7 +162,7 @@ class ChartDataFactoryTest
     {
         DoubleScoreMetric.DoubleScoreMetricComponent metric
                 = DoubleScoreMetric.DoubleScoreMetricComponent.newBuilder()
-                                                              .setName( DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
+                                                              .setName( MetricName.MAIN )
                                                               .build();
 
         DoubleScoreStatistic.DoubleScoreStatisticComponent
@@ -228,7 +228,7 @@ class ChartDataFactoryTest
     {
         DoubleScoreMetric.DoubleScoreMetricComponent metric
                 = DoubleScoreMetric.DoubleScoreMetricComponent.newBuilder()
-                                                              .setName( DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
+                                                              .setName( MetricName.MAIN )
                                                               .build();
         TimeWindow timeWindow = TimeWindow.newBuilder()
                                           .setEarliestLeadDuration( Duration.newBuilder().setSeconds( 0 ) )
@@ -282,12 +282,12 @@ class ChartDataFactoryTest
     {
         DiagramMetric.DiagramMetricComponent observedQuantiles =
                 DiagramMetric.DiagramMetricComponent.newBuilder()
-                                                    .setName( DiagramMetric.DiagramMetricComponent.DiagramComponentName.OBSERVED_QUANTILES )
+                                                    .setName( MetricName.OBSERVED_QUANTILES )
                                                     .build();
 
         DiagramMetric.DiagramMetricComponent predictedQuantiles =
                 DiagramMetric.DiagramMetricComponent.newBuilder()
-                                                    .setName( DiagramMetric.DiagramMetricComponent.DiagramComponentName.PREDICTED_QUANTILES )
+                                                    .setName( MetricName.PREDICTED_QUANTILES )
                                                     .build();
 
         DiagramMetric metric = DiagramMetric.newBuilder()

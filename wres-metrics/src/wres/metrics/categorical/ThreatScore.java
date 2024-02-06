@@ -11,7 +11,6 @@ import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -44,7 +43,7 @@ public class ThreatScore extends ContingencyTableScore
                                       .setMinimum( MetricConstants.THREAT_SCORE.getMinimum() )
                                       .setMaximum( MetricConstants.THREAT_SCORE.getMaximum() )
                                       .setOptimum( MetricConstants.THREAT_SCORE.getOptimum() )
-                                      .setName( ComponentName.MAIN )
+                                      .setName( MetricName.MAIN )
                                       .setUnits( MeasurementUnit.DIMENSIONLESS )
                                       .build();
 

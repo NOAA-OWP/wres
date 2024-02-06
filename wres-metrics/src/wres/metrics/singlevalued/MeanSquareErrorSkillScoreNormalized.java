@@ -19,7 +19,6 @@ import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -42,7 +41,7 @@ public class MeanSquareErrorSkillScoreNormalized extends DecomposableScore<Pool<
                                       .setMinimum( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED.getMinimum() )
                                       .setMaximum( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED.getMaximum() )
                                       .setOptimum( MetricConstants.MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED.getOptimum() )
-                                      .setName( ComponentName.MAIN )
+                                      .setName( MetricName.MAIN )
                                       .setUnits( MeasurementUnit.DIMENSIONLESS )
                                       .build();
 

@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import wres.config.MetricConstants;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.BoxplotMetric;
@@ -59,7 +58,7 @@ class SummaryStatisticsCalculatorTest
                                                             .setMinimum( Double.NEGATIVE_INFINITY )
                                                             .setMaximum( Double.POSITIVE_INFINITY )
                                                             .setOptimum( 0 )
-                                                            .setName( DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
+                                                            .setName( MetricName.MAIN )
                                                             .setUnits( MeasurementUnit.DIMENSIONLESS )
                                                             .build();
 
@@ -144,7 +143,7 @@ class SummaryStatisticsCalculatorTest
     {
         DiagramMetric.DiagramMetricComponent pod =
                 DiagramMetric.DiagramMetricComponent.newBuilder()
-                                                    .setName( DiagramMetric.DiagramMetricComponent.DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                                    .setName( MetricName.PROBABILITY_OF_DETECTION )
                                                     .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_RANGE_AXIS )
                                                     .setMinimum( 0 )
                                                     .setMaximum( 1 )
@@ -153,7 +152,7 @@ class SummaryStatisticsCalculatorTest
 
         DiagramMetric.DiagramMetricComponent pofd =
                 DiagramMetric.DiagramMetricComponent.newBuilder()
-                                                    .setName( DiagramMetric.DiagramMetricComponent.DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                                    .setName( MetricName.PROBABILITY_OF_FALSE_DETECTION )
                                                     .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_DOMAIN_AXIS )
                                                     .setMinimum( 0 )
                                                     .setMaximum( 1 )
@@ -281,7 +280,7 @@ class SummaryStatisticsCalculatorTest
 
         DurationScoreMetric.DurationScoreMetricComponent main =
                 DurationScoreMetric.DurationScoreMetricComponent.newBuilder()
-                                                                .setName( DurationScoreMetric.DurationScoreMetricComponent.ComponentName.MEAN )
+                                                                .setName( MetricName.MEAN )
                                                                 .build();
 
         DurationScoreStatistic.DurationScoreStatisticComponent
@@ -514,7 +513,7 @@ class SummaryStatisticsCalculatorTest
                                                             .setMinimum( Double.NEGATIVE_INFINITY )
                                                             .setMaximum( Double.POSITIVE_INFINITY )
                                                             .setOptimum( 0 )
-                                                            .setName( DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
+                                                            .setName( MetricName.MAIN )
                                                             .setUnits( MeasurementUnit.DIMENSIONLESS )
                                                             .build();
 
@@ -582,7 +581,7 @@ class SummaryStatisticsCalculatorTest
                                                             .setMinimum( Double.NEGATIVE_INFINITY )
                                                             .setMaximum( Double.POSITIVE_INFINITY )
                                                             .setOptimum( 0 )
-                                                            .setName( DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
+                                                            .setName( MetricName.MAIN )
                                                             .setUnits( MeasurementUnit.DIMENSIONLESS )
                                                             .build();
 
@@ -604,7 +603,7 @@ class SummaryStatisticsCalculatorTest
 
         DurationScoreMetric.DurationScoreMetricComponent durationScoreMain =
                 DurationScoreMetric.DurationScoreMetricComponent.newBuilder()
-                                                                .setName( DurationScoreMetric.DurationScoreMetricComponent.ComponentName.MEAN )
+                                                                .setName( MetricName.MEAN )
                                                                 .build();
 
         DurationScoreStatistic.DurationScoreStatisticComponent
@@ -624,7 +623,7 @@ class SummaryStatisticsCalculatorTest
         // Create the nominal diagram
         DiagramMetric.DiagramMetricComponent pod =
                 DiagramMetric.DiagramMetricComponent.newBuilder()
-                                                    .setName( DiagramMetric.DiagramMetricComponent.DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                                    .setName( MetricName.PROBABILITY_OF_DETECTION )
                                                     .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_RANGE_AXIS )
                                                     .setMinimum( 0 )
                                                     .setMaximum( 1 )
@@ -633,7 +632,7 @@ class SummaryStatisticsCalculatorTest
 
         DiagramMetric.DiagramMetricComponent pofd =
                 DiagramMetric.DiagramMetricComponent.newBuilder()
-                                                    .setName( DiagramMetric.DiagramMetricComponent.DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                                    .setName( MetricName.PROBABILITY_OF_FALSE_DETECTION )
                                                     .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_DOMAIN_AXIS )
                                                     .setMinimum( 0 )
                                                     .setMaximum( 1 )
@@ -908,7 +907,7 @@ class SummaryStatisticsCalculatorTest
                                                             .setMinimum( Double.NEGATIVE_INFINITY )
                                                             .setMaximum( Double.POSITIVE_INFINITY )
                                                             .setOptimum( 0 )
-                                                            .setName( DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
+                                                            .setName( MetricName.MAIN )
                                                             .setUnits( MeasurementUnit.DIMENSIONLESS )
                                                             .build();
 
@@ -972,7 +971,7 @@ class SummaryStatisticsCalculatorTest
                                                             .setMinimum( Double.NEGATIVE_INFINITY )
                                                             .setMaximum( Double.POSITIVE_INFINITY )
                                                             .setOptimum( 0 )
-                                                            .setName( DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
+                                                            .setName( MetricName.MAIN )
                                                             .setUnits( MeasurementUnit.DIMENSIONLESS )
                                                             .build();
 
@@ -1043,7 +1042,7 @@ class SummaryStatisticsCalculatorTest
                                                             .setMinimum( Double.NEGATIVE_INFINITY )
                                                             .setMaximum( Double.POSITIVE_INFINITY )
                                                             .setOptimum( 0 )
-                                                            .setName( DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
+                                                            .setName( MetricName.MAIN )
                                                             .setUnits( MeasurementUnit.DIMENSIONLESS )
                                                             .build();
 
@@ -1071,7 +1070,7 @@ class SummaryStatisticsCalculatorTest
                                                             .setMinimum( -1 )
                                                             .setMaximum( 1 )
                                                             .setOptimum( 1 )
-                                                            .setName( DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
+                                                            .setName( MetricName.MAIN )
                                                             .setUnits( MeasurementUnit.DIMENSIONLESS )
                                                             .build();
 
@@ -1131,7 +1130,7 @@ class SummaryStatisticsCalculatorTest
                                                             .setMinimum( Double.NEGATIVE_INFINITY )
                                                             .setMaximum( Double.POSITIVE_INFINITY )
                                                             .setOptimum( 0 )
-                                                            .setName( DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
+                                                            .setName( MetricName.MAIN )
                                                             .setUnits( MeasurementUnit.DIMENSIONLESS )
                                                             .build();
 
@@ -1226,7 +1225,7 @@ class SummaryStatisticsCalculatorTest
                                                             .setMinimum( Double.NEGATIVE_INFINITY )
                                                             .setMaximum( Double.POSITIVE_INFINITY )
                                                             .setOptimum( 0 )
-                                                            .setName( DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName.MAIN )
+                                                            .setName( MetricName.MAIN )
                                                             .setUnits( MeasurementUnit.DIMENSIONLESS )
                                                             .build();
 
@@ -1276,7 +1275,7 @@ class SummaryStatisticsCalculatorTest
         BoxplotMetric boxplotMetric = BoxplotMetric.newBuilder()
                                                    .setName( MetricName.BOX_PLOT )
                                                    .setStatisticName( MetricName.BIAS_FRACTION )
-                                                   .setStatisticComponentName( MetricConstants.MAIN.name() )
+                                                   .setStatisticComponentName( MetricName.MAIN )
                                                    .setUnits( "DIMENSIONLESS" )
                                                    .setMinimum( Double.NEGATIVE_INFINITY )
                                                    .setMaximum( Double.POSITIVE_INFINITY )

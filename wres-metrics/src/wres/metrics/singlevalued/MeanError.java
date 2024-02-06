@@ -7,7 +7,6 @@ import wres.datamodel.pools.Pool;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 
 /**
  * The mean error applies to continuous variables and is the average signed difference between a single-valued
@@ -27,7 +26,7 @@ public class MeanError extends DoubleErrorScore<Pool<Pair<Double, Double>>>
                                                                        .setMinimum( MetricConstants.MEAN_ERROR.getMinimum() )
                                                                        .setMaximum( MetricConstants.MEAN_ERROR.getMaximum() )
                                                                        .setOptimum( MetricConstants.MEAN_ERROR.getOptimum() )
-                                                                       .setName( ComponentName.MAIN ) )
+                                                                       .setName( MetricName.MAIN ) )
                              .setName( MetricName.MEAN_ERROR )
                              .build();
 

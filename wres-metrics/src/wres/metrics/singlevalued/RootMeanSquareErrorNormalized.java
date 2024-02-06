@@ -19,7 +19,6 @@ import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -43,7 +42,7 @@ public class RootMeanSquareErrorNormalized extends DoubleErrorScore<Pool<Pair<Do
                                       .setMinimum( MetricConstants.ROOT_MEAN_SQUARE_ERROR_NORMALIZED.getMinimum() )
                                       .setMaximum( MetricConstants.ROOT_MEAN_SQUARE_ERROR_NORMALIZED.getMaximum() )
                                       .setOptimum( MetricConstants.ROOT_MEAN_SQUARE_ERROR_NORMALIZED.getOptimum() )
-                                      .setName( ComponentName.MAIN )
+                                      .setName( MetricName.MAIN )
                                       .setUnits( MeasurementUnit.DIMENSIONLESS )
                                       .build();
 

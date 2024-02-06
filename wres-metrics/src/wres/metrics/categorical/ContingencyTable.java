@@ -17,7 +17,6 @@ import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 
 /**
  * <p>
@@ -49,7 +48,7 @@ public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, Do
                                       .setMinimum( MetricConstants.CONTINGENCY_TABLE.getMinimum() )
                                       .setMaximum( MetricConstants.CONTINGENCY_TABLE.getMaximum() )
                                       .setOptimum( MetricConstants.CONTINGENCY_TABLE.getOptimum() )
-                                      .setName( ComponentName.TRUE_POSITIVES )
+                                      .setName( MetricName.TRUE_POSITIVES )
                                       .setUnits( Units.COUNT )
                                       .build();
 
@@ -60,7 +59,7 @@ public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, Do
     public static final DoubleScoreMetricComponent FALSE_POSITIVES = DoubleScoreMetricComponent.newBuilder()
                                                                                                .setMinimum( 0 )
                                                                                                .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                               .setName( ComponentName.FALSE_POSITIVES )
+                                                                                               .setName( MetricName.FALSE_POSITIVES )
                                                                                                .setUnits( Units.COUNT )
                                                                                                .build();
     /**
@@ -70,7 +69,7 @@ public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, Do
     public static final DoubleScoreMetricComponent TRUE_NEGATIVES = DoubleScoreMetricComponent.newBuilder()
                                                                                               .setMinimum( 0 )
                                                                                               .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                              .setName( ComponentName.TRUE_NEGATIVES )
+                                                                                              .setName( MetricName.TRUE_NEGATIVES )
                                                                                               .setUnits( Units.COUNT )
                                                                                               .build();
 
@@ -81,7 +80,7 @@ public class ContingencyTable implements Metric<Pool<Pair<Boolean, Boolean>>, Do
     public static final DoubleScoreMetricComponent FALSE_NEGATIVES = DoubleScoreMetricComponent.newBuilder()
                                                                                                .setMinimum( 0 )
                                                                                                .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                               .setName( ComponentName.FALSE_NEGATIVES )
+                                                                                               .setName( MetricName.FALSE_NEGATIVES )
                                                                                                .setUnits( Units.COUNT )
                                                                                                .build();
 

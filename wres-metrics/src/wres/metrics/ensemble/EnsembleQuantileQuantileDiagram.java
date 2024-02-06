@@ -21,7 +21,6 @@ import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
-import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentType;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
@@ -41,7 +40,7 @@ public class EnsembleQuantileQuantileDiagram extends Diagram<Pool<Pair<Double, E
 
     public static final DiagramMetricComponent OBSERVED_QUANTILES =
             DiagramMetricComponent.newBuilder()
-                                  .setName( DiagramComponentName.OBSERVED_QUANTILES )
+                                  .setName( MetricName.OBSERVED_QUANTILES )
                                   .setType( DiagramComponentType.PRIMARY_DOMAIN_AXIS )
                                   .setMinimum( MetricConstants.ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM.getMinimum() )
                                   .setMaximum( MetricConstants.ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM.getMaximum() )
@@ -51,14 +50,13 @@ public class EnsembleQuantileQuantileDiagram extends Diagram<Pool<Pair<Double, E
      * Predicted quantiles.
      */
 
-    public static final DiagramMetricComponent PREDICTED_QUANTILES = DiagramMetricComponent.newBuilder()
-                                                                                           .setName(
-                                                                                                   DiagramComponentName.PREDICTED_QUANTILES )
-                                                                                           .setType(
-                                                                                                   DiagramComponentType.PRIMARY_RANGE_AXIS )
-                                                                                           .setMinimum( Double.NEGATIVE_INFINITY )
-                                                                                           .setMaximum( Double.POSITIVE_INFINITY )
-                                                                                           .build();
+    public static final DiagramMetricComponent PREDICTED_QUANTILES =
+            DiagramMetricComponent.newBuilder()
+                                  .setName( MetricName.PREDICTED_QUANTILES )
+                                  .setType( DiagramComponentType.PRIMARY_RANGE_AXIS )
+                                  .setMinimum( Double.NEGATIVE_INFINITY )
+                                  .setMaximum( Double.POSITIVE_INFINITY )
+                                  .build();
 
     /**
      * Basic description of the metric.

@@ -25,7 +25,6 @@ import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
-import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentType;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 
@@ -50,7 +49,7 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
 
     public static final DiagramMetricComponent RANK_ORDER =
             DiagramMetricComponent.newBuilder()
-                                  .setName( DiagramComponentName.RANK_ORDER )
+                                  .setName( MetricName.RANK_ORDER )
                                   .setType( DiagramComponentType.PRIMARY_DOMAIN_AXIS )
                                   .setMinimum( MetricConstants.RANK_HISTOGRAM.getMinimum() )
                                   .setMaximum( MetricConstants.RANK_HISTOGRAM.getMaximum() )
@@ -63,7 +62,7 @@ public class RankHistogram extends Diagram<Pool<Pair<Double, Ensemble>>, Diagram
 
     public static final DiagramMetricComponent OBSERVED_RELATIVE_FREQUENCY =
             DiagramMetricComponent.newBuilder()
-                                  .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                  .setName( MetricName.OBSERVED_RELATIVE_FREQUENCY )
                                   .setType( DiagramComponentType.PRIMARY_RANGE_AXIS )
                                   .setMinimum( 0 )
                                   .setMaximum( 1 )
