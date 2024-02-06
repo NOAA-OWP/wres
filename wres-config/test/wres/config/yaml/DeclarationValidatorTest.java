@@ -33,6 +33,8 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.FeatureService;
+import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.Formats;
 import wres.config.yaml.components.GeneratedBaseline;
@@ -1865,6 +1867,35 @@ class DeclarationValidatorTest
         assertTrue( DeclarationValidatorTest.contains( events,
                                                        "no 'feature_groups' were declared",
                                                        StatusLevel.ERROR ) );
+
+    }
+
+    @Test
+    void testSummaryStatisticsAcrossFeatureGroupsPassesValidationWhenFeatureServiceGroupsAreDeclared()
+    {
+        // #124265-44
+        SummaryStatistic summaryStatistic = SummaryStatistic.newBuilder()
+                                                            .setDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
+                                                            .setStatistic( SummaryStatistic.StatisticName.MEDIAN )
+                                                            .build();
+
+        Set<SummaryStatistic> summaryStatistics = Set.of( summaryStatistic );
+
+        FeatureServiceGroup group = new FeatureServiceGroup( "a", "b", true );
+        FeatureService featureService = new FeatureService( URI.create( "http://foo.bar" ), Set.of( group ) );
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .featureService( featureService )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertFalse( DeclarationValidatorTest.contains( events,
+                                                        "no 'feature_groups' were declared",
+                                                        StatusLevel.ERROR ) );
 
     }
 
