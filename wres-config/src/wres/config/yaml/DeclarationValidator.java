@@ -2019,7 +2019,8 @@ public class DeclarationValidator
         if ( Objects.nonNull( formats ) )
         {
             Outputs outputs = formats.outputs();
-            if ( outputs.hasNetcdf() && outputs.hasNetcdf2() )
+            if ( outputs.hasNetcdf()
+                 && outputs.hasNetcdf2() )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
@@ -2039,31 +2040,73 @@ public class DeclarationValidator
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
                                                .setStatusLevel( StatusLevel.ERROR )
-                                               .setEventMessage(
-                                                       "The 'output_formats' includes 'netcdf', which does not "
-                                                       + "support 'feature_groups'. Please replace the 'netcdf'"
-                                                       + "option with 'netcdf2', which does support "
-                                                       + "'feature_groups'." )
+                                               .setEventMessage( "The 'output_formats' includes 'netcdf', which does "
+                                                                 + "not support 'feature_groups'. Please replace the "
+                                                                 + "'netcdf' option with 'netcdf2', which does support "
+                                                                 + "'feature_groups'." )
+                                               .build();
+                events.add( event );
+            }
+
+            // Check for some score metrics when netcdf is declared
+            if ( ( outputs.hasNetcdf() || outputs.hasNetcdf2() )
+                 && declaration.metrics()
+                               .stream()
+                               .noneMatch( DeclarationValidator::isScore ) )
+            {
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setEventMessage( "When declaring the 'netcdf' or 'netcdf2' format "
+                                                                 + "option, the evaluation must include at least one "
+                                                                 + "score metric because these formats only support "
+                                                                 + "the writing of verification scores. Please add a "
+                                                                 + "score metric to the declaration or remove the "
+                                                                 + "unused format from the list of 'output_formats'. A "
+                                                                 + "score is a metric that measures quality with a "
+                                                                 + "single number, such as the mean square error." )
                                                .build();
                 events.add( event );
             }
 
             // Warn about netcdf2 when feature groups are declared
-            if ( outputs.hasNetcdf2()
-                 && Objects.nonNull( declaration.featureGroups() ) )
             {
-                EvaluationStatusEvent event
-                        = EvaluationStatusEvent.newBuilder()
-                                               .setStatusLevel( StatusLevel.WARN )
-                                               .setEventMessage(
-                                                       "The 'output_formats' includes 'netcdf2', which supports "
-                                                       + "'feature_groups', but the group statistics are "
-                                                       + "repeated across every member of the group." )
-                                               .build();
-                events.add( event );
+                if ( outputs.hasNetcdf2()
+                     && Objects.nonNull( declaration.featureGroups() ) )
+                {
+                    EvaluationStatusEvent event
+                            = EvaluationStatusEvent.newBuilder()
+                                                   .setStatusLevel( StatusLevel.WARN )
+                                                   .setEventMessage(
+                                                           "The 'output_formats' includes 'netcdf2', which supports "
+                                                           + "'feature_groups', but the group statistics are "
+                                                           + "repeated across every member of the group." )
+                                                   .build();
+                    events.add( event );
+                }
             }
         }
+
         return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Determines whether the metric is a score.
+     * @param metric the metric
+     * @return whether the metric is a score
+     */
+
+    private static boolean isScore( Metric metric )
+    {
+        // Double scores or timing error metrics with summary statistics
+        return metric.name()
+                     .isInGroup( MetricConstants.StatisticType.DOUBLE_SCORE )
+               || ( metric.name()
+                          .isInGroup( MetricConstants.StatisticType.DURATION_DIAGRAM )
+                    && Objects.nonNull( metric.parameters() )
+                    && !metric.parameters()
+                              .summaryStatistics()
+                              .isEmpty() );
     }
 
     /**

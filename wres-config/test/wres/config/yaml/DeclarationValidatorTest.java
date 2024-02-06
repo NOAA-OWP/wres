@@ -946,7 +946,11 @@ class DeclarationValidatorTest
                                                                         "The 'output_formats' includes "
                                                                         + "'netcdf2', which supports 'feature_groups', "
                                                                         + "but",
-                                                                        StatusLevel.WARN ) )
+                                                                        StatusLevel.WARN ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "these formats only support the writing "
+                                                                        + "of verification scores",
+                                                                        StatusLevel.ERROR ) )
         );
     }
 
