@@ -40,7 +40,6 @@ import wres.statistics.generated.Statistics;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 
 /**
  * Tests the {@link GraphicsClient}.
@@ -230,7 +229,7 @@ class GraphicsClientTest
                                                                                  .setValue( 1.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN )
+                                                                                                                               MetricName.MAIN )
                                                                                                                        .setUnits(
                                                                                                                                CMS ) ) )
                                     .build();
@@ -242,7 +241,7 @@ class GraphicsClientTest
                                                                                  .setValue( 2.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN )
+                                                                                                                               MetricName.MAIN )
                                                                                                                        .setUnits(
                                                                                                                                CMS ) ) )
                                     .build();
@@ -255,7 +254,7 @@ class GraphicsClientTest
                                                                                  .setValue( 3.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN )
+                                                                                                                               MetricName.MAIN )
                                                                                                                        .setUnits(
                                                                                                                                CMS ) ) )
                                     .build();

@@ -15,7 +15,6 @@ import wres.metrics.FunctionFactory;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 
 /**
  * The mean absolute error applies to continuous variables and is the average unsigned difference between a
@@ -33,7 +32,7 @@ public class MeanAbsoluteError extends DoubleErrorScore<Pool<Pair<Double, Double
                                                                        .setMinimum( MetricConstants.MEAN_ABSOLUTE_ERROR.getMinimum() )
                                                                        .setMaximum( MetricConstants.MEAN_ABSOLUTE_ERROR.getMaximum() )
                                                                        .setOptimum( MetricConstants.MEAN_ABSOLUTE_ERROR.getOptimum() )
-                                                                       .setName( ComponentName.MAIN ) )
+                                                                       .setName( MetricName.MAIN ) )
                              .setName( MetricName.MEAN_ABSOLUTE_ERROR )
                              .build();
 

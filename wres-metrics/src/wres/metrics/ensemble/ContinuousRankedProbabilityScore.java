@@ -24,7 +24,6 @@ import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -56,7 +55,7 @@ public class ContinuousRankedProbabilityScore extends DecomposableScore<Pool<Pai
                                       .setMinimum( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE.getMinimum() )
                                       .setMaximum( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE.getMaximum() )
                                       .setOptimum( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SCORE.getOptimum() )
-                                      .setName( ComponentName.MAIN )
+                                      .setName( MetricName.MAIN )
                                       .build();
 
     /** Full description of the metric. */

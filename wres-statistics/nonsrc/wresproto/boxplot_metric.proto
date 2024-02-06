@@ -68,6 +68,6 @@ message BoxplotMetric
     // its distribution is summarized with a box plot, then the metric in this 
     // context is the mean error.
 
-    string statistic_component_name = 10;
+    MetricName statistic_component_name = 10;
     // The name of the metric component being summarized.
 }

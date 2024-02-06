@@ -62,4 +62,26 @@ enum MetricName
     BOX_PLOT = 49;
     MEDIAN = 50;
     MEAN_ABSOLUTE = 51;
+    MAIN = 52;  // Main component of a score.
+    RELIABILITY = 53; // Type-I bias.
+    RESOLUTION = 54;
+    UNCERTAINTY = 55;
+    TYPE_II_BIAS = 56;
+    DISCRIMINATION = 57;
+    SHARPNESS = 58;
+    POTENTIAL = 59; 
+    TRUE_POSITIVES = 60;
+    FALSE_POSITIVES = 61;
+    FALSE_NEGATIVES = 62;
+    TRUE_NEGATIVES = 63;
+    LEFT = 64;  // Left-oriented score.
+    RIGHT = 65;  // Right-oriented score.
+    BASELINE = 66;  // Baseline-oriented score.
+    RANK_ORDER = 67;
+    FORECAST_PROBABILITY = 68;
+    OBSERVED_RELATIVE_FREQUENCY = 69;
+    OBSERVED_QUANTILES = 70;
+    PREDICTED_QUANTILES = 71;
+    COUNT = 72;
+    BIN_UPPER_BOUND = 73;
 }

@@ -533,6 +533,7 @@ public class BoxplotGraphicsWriter extends GraphicsWriter
             componentName = metrics.stream()
                                    .map( BoxplotMetric::getStatisticComponentName )
                                    .filter( GraphicsUtils::isNotDefaultMetricComponentName )
+                                   .map( Enum::name )
                                    .findFirst();
         }
 

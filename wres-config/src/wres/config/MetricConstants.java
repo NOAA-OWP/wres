@@ -407,10 +407,10 @@ public enum MetricConstants
 
     /** A collection metric, may be null. This is used to distinguish a group of statistics that are associated with a
      * common parent metric, but are distinct from the parent metric. For example, a {@link #TIME_TO_PEAK_ERROR_MEAN}
-     * is a summary error statistics associated with a {@link #TIME_TO_PEAK_ERROR}, but the {@link #TIME_TO_PEAK_ERROR}
+     * is a summary error statistic associated with a {@link #TIME_TO_PEAK_ERROR}, but the {@link #TIME_TO_PEAK_ERROR}
      * is a statistic itself (not summarized). In this case, the {@link #TIME_TO_PEAK_ERROR_STATISTIC} is used to
-     * collect the {@link #TIME_TO_PEAK_ERROR_MEAN}, together with all related summary statistics, allowing them to be
-     * identified collectively, but separately from the statistics produced by the {@link #TIME_TO_PEAK_ERROR}. */
+     * collect the {@link #TIME_TO_PEAK_ERROR_MEAN} and all related summary statistics separately from the statistics
+     * produced by the {@link #TIME_TO_PEAK_ERROR}. */
 
     private final MetricConstants collection;
 

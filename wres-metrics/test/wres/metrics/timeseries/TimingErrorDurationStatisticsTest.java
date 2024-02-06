@@ -21,7 +21,6 @@ import wres.metrics.MetricParameterException;
 import wres.metrics.MetricTestDataFactory;
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent;
-import wres.statistics.generated.DurationScoreMetric.DurationScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DurationScoreMetric;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic.DurationScoreStatisticComponent;
@@ -52,7 +51,7 @@ public final class TimingErrorDurationStatisticsTest
         com.google.protobuf.Duration expectedSource = wres.statistics.MessageFactory.parse( Duration.ofHours( 3 ) );
 
         DurationScoreMetricComponent metricComponent = DurationScoreMetricComponent.newBuilder()
-                                                                                   .setName( ComponentName.MEAN )
+                                                                                   .setName( MetricName.MEAN )
                                                                                    .setMinimum( com.google.protobuf.Duration.newBuilder()
                                                                                                                             .setSeconds(
                                                                                                                                     Long.MIN_VALUE ) )
@@ -145,20 +144,20 @@ public final class TimingErrorDurationStatisticsTest
                                             .build();
 
         DurationScoreMetricComponent meanMetricComponent = DurationScoreMetricComponent.newBuilder( baseMetric )
-                                                                                       .setName( ComponentName.MEAN )
+                                                                                       .setName( MetricName.MEAN )
                                                                                        .build();
 
         DurationScoreMetricComponent minMetricComponent = DurationScoreMetricComponent.newBuilder( baseMetric )
-                                                                                      .setName( ComponentName.MINIMUM )
+                                                                                      .setName( MetricName.MINIMUM )
                                                                                       .build();
 
         DurationScoreMetricComponent maxMetricComponent = DurationScoreMetricComponent.newBuilder( baseMetric )
-                                                                                      .setName( ComponentName.MAXIMUM )
+                                                                                      .setName( MetricName.MAXIMUM )
                                                                                       .build();
 
         DurationScoreMetricComponent meanAbsMetricComponent
                 = DurationScoreMetricComponent.newBuilder()
-                                              .setName( ComponentName.MEAN_ABSOLUTE )
+                                              .setName( MetricName.MEAN_ABSOLUTE )
                                               .setMinimum( com.google.protobuf.Duration.newBuilder()
                                                                                        .setSeconds(
                                                                                                0 ) )

@@ -19,7 +19,6 @@ import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
-import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentType;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.MetricName;
@@ -81,13 +80,13 @@ class DiagramStatisticOuterTest
 
         this.podComponent =
                 DiagramMetricComponent.newBuilder()
-                                      .setName( DiagramComponentName.PROBABILITY_OF_DETECTION )
+                                      .setName( MetricName.PROBABILITY_OF_DETECTION )
                                       .setType( DiagramComponentType.PRIMARY_RANGE_AXIS )
                                       .build();
 
         this.pofdComponent =
                 DiagramMetricComponent.newBuilder()
-                                      .setName( DiagramComponentName.PROBABILITY_OF_FALSE_DETECTION )
+                                      .setName( MetricName.PROBABILITY_OF_FALSE_DETECTION )
                                       .setType( DiagramComponentType.PRIMARY_DOMAIN_AXIS )
                                       .build();
 

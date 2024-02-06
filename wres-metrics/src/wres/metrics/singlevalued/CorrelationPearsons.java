@@ -22,7 +22,6 @@ import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -46,7 +45,7 @@ public class CorrelationPearsons implements Score<Pool<Pair<Double, Double>>, Do
                                       .setMinimum( MetricConstants.PEARSON_CORRELATION_COEFFICIENT.getMinimum() )
                                       .setMaximum( MetricConstants.PEARSON_CORRELATION_COEFFICIENT.getMaximum() )
                                       .setOptimum( MetricConstants.PEARSON_CORRELATION_COEFFICIENT.getOptimum() )
-                                      .setName( ComponentName.MAIN )
+                                      .setName( MetricName.MAIN )
                                       .setUnits( MeasurementUnit.DIMENSIONLESS )
                                       .build();
 

@@ -367,6 +367,7 @@ public class DiagramGraphicsWriter extends GraphicsWriter
             componentName = metrics.stream()
                                    .map( DiagramMetric::getStatisticComponentName )
                                    .filter( GraphicsUtils::isNotDefaultMetricComponentName )
+                                   .map( Enum::name )
                                    .findFirst();
         }
         else

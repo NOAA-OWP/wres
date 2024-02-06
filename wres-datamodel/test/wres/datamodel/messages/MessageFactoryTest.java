@@ -88,7 +88,6 @@ import wres.statistics.generated.Pool;
 import wres.statistics.generated.Statistics;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
-import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentName;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotStatistic;
@@ -98,7 +97,6 @@ import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DiagramStatistic.DiagramStatisticComponent;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.statistics.generated.ValueFilter;
 
@@ -663,7 +661,7 @@ class MessageFactoryTest
                                                                                  .setValue( 1.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN ) ) )
+                                                                                                                               MetricName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic two =
@@ -673,7 +671,7 @@ class MessageFactoryTest
                                                                                  .setValue( 2.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN ) ) )
+                                                                                                                               MetricName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic three =
@@ -684,7 +682,7 @@ class MessageFactoryTest
                                                                                  .setValue( 3.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN ) ) )
+                                                                                                                               MetricName.MAIN ) ) )
                                     .build();
 
         fakeOutputs.add( DoubleScoreStatisticOuter.of( one, metadata ) );
@@ -733,17 +731,17 @@ class MessageFactoryTest
 
         DiagramMetricComponent forecastComponent =
                 DiagramMetricComponent.newBuilder()
-                                      .setName( DiagramComponentName.FORECAST_PROBABILITY )
+                                      .setName( MetricName.FORECAST_PROBABILITY )
                                       .build();
 
         DiagramMetricComponent observedComponent =
                 DiagramMetricComponent.newBuilder()
-                                      .setName( DiagramComponentName.OBSERVED_RELATIVE_FREQUENCY )
+                                      .setName( MetricName.OBSERVED_RELATIVE_FREQUENCY )
                                       .build();
 
         DiagramMetricComponent sampleComponent =
                 DiagramMetricComponent.newBuilder()
-                                      .setName( DiagramComponentName.SAMPLE_SIZE )
+                                      .setName( MetricName.SAMPLE_SIZE )
                                       .build();
 
         DiagramMetric metric = DiagramMetric.newBuilder()
@@ -953,7 +951,7 @@ class MessageFactoryTest
                                                                                      .setMetric(
                                                                                              DurationScoreMetricComponent.newBuilder()
                                                                                                                          .setName(
-                                                                                                                                 DurationScoreMetricComponent.ComponentName.MEAN ) )
+                                                                                                                                 MetricName.MEAN ) )
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
                                                                                                                             .setSeconds(
                                                                                                                                     3_600 ) ) )
@@ -961,7 +959,7 @@ class MessageFactoryTest
                                                                                      .setMetric(
                                                                                              DurationScoreMetricComponent.newBuilder()
                                                                                                                          .setName(
-                                                                                                                                 DurationScoreMetricComponent.ComponentName.MEDIAN ) )
+                                                                                                                                 MetricName.MEDIAN ) )
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
                                                                                                                             .setSeconds(
                                                                                                                                     7_200 ) ) )
@@ -969,7 +967,7 @@ class MessageFactoryTest
                                                                                      .setMetric(
                                                                                              DurationScoreMetricComponent.newBuilder()
                                                                                                                          .setName(
-                                                                                                                                 DurationScoreMetricComponent.ComponentName.MAXIMUM ) )
+                                                                                                                                 MetricName.MAXIMUM ) )
                                                                                      .setValue( com.google.protobuf.Duration.newBuilder()
                                                                                                                             .setSeconds(
                                                                                                                                     10_800 ) ) )

@@ -13,7 +13,6 @@ import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -45,7 +44,7 @@ public class VolumetricEfficiency extends DoubleErrorScore<Pool<Pair<Double, Dou
                                       .setMinimum( MetricConstants.VOLUMETRIC_EFFICIENCY.getMinimum() )
                                       .setMaximum( MetricConstants.VOLUMETRIC_EFFICIENCY.getMaximum() )
                                       .setOptimum( MetricConstants.VOLUMETRIC_EFFICIENCY.getOptimum() )
-                                      .setName( ComponentName.MAIN )
+                                      .setName( MetricName.MAIN )
                                       .setUnits( MeasurementUnit.DIMENSIONLESS )
                                       .build();
 

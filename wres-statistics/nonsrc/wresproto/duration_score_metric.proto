@@ -25,21 +25,9 @@ message DurationScoreMetric
     
     message DurationScoreMetricComponent
     {
-        // A score component.
-    
-        enum ComponentName 
-        {
-            // A score component name.
-            
-            MEAN = 0;
-            MEDIAN = 1;
-            MINIMUM = 2;
-            MAXIMUM = 3;
-            STANDARD_DEVIATION = 4;
-            MEAN_ABSOLUTE = 5;
-        }
+        // A duration score metric component.
 
-        ComponentName name = 1;
+        MetricName name = 1;
         // The metric component name.
 
         google.protobuf.Duration optimum = 2; 

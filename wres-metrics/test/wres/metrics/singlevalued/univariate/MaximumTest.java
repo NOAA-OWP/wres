@@ -23,7 +23,6 @@ import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -71,14 +70,14 @@ public final class MaximumTest
                                                              .setUnits( input.getMetadata()
                                                                              .getMeasurementUnit()
                                                                              .toString() )
-                                                             .setName( ComponentName.LEFT )
+                                                             .setName( MetricName.LEFT )
                                                              .build();
 
         DoubleScoreMetricComponent rightMetric = this.template.toBuilder()
                                                               .setUnits( input.getMetadata()
                                                                               .getMeasurementUnit()
                                                                               .toString() )
-                                                              .setName( ComponentName.RIGHT )
+                                                              .setName( MetricName.RIGHT )
                                                               .build();
 
         DoubleScoreStatisticComponent leftStatistic = DoubleScoreStatisticComponent.newBuilder()

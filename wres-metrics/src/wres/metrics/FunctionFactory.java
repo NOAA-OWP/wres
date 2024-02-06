@@ -27,6 +27,7 @@ import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricGroup;
 import wres.datamodel.Slicer;
 import wres.datamodel.pools.Pool;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.units.Units;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotStatistic;
@@ -62,7 +63,7 @@ public class FunctionFactory
     /** Bin axis for a histogram. */
     private static final DiagramMetric.DiagramMetricComponent HISTOGRAM_BINS =
             DiagramMetric.DiagramMetricComponent.newBuilder()
-                                                .setName( DiagramMetric.DiagramMetricComponent.DiagramComponentName.BIN_UPPER_BOUND )
+                                                .setName( MetricName.BIN_UPPER_BOUND )
                                                 .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_DOMAIN_AXIS )
                                                 .setMinimum( Double.NEGATIVE_INFINITY )
                                                 .setMaximum( Double.POSITIVE_INFINITY )
@@ -71,7 +72,7 @@ public class FunctionFactory
     /** Count axis for a histogram. */
     private static final DiagramMetric.DiagramMetricComponent HISTOGRAM_COUNT =
             DiagramMetric.DiagramMetricComponent.newBuilder()
-                                                .setName( DiagramMetric.DiagramMetricComponent.DiagramComponentName.COUNT )
+                                                .setName( MetricName.COUNT )
                                                 .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_RANGE_AXIS )
                                                 .setMinimum( 0 )
                                                 .setMaximum( Double.POSITIVE_INFINITY )
@@ -456,7 +457,8 @@ public class FunctionFactory
 
             if ( Objects.nonNull( componentName ) )
             {
-                metric.setStatisticComponentName( componentName );
+                MetricName componentNameEnum = MetricName.valueOf( componentName );
+                metric.setStatisticComponentName( componentNameEnum );
             }
 
             EmpiricalDistribution empirical = new EmpiricalDistribution( bins );
@@ -535,7 +537,8 @@ public class FunctionFactory
 
             if ( Objects.nonNull( componentName ) )
             {
-                metric.setStatisticComponentName( componentName );
+                MetricName componentNameEnum = MetricName.valueOf( componentName );
+                metric.setStatisticComponentName( componentNameEnum );
             }
 
             // Compute the quantiles at a rounded precision
@@ -666,12 +669,7 @@ public class FunctionFactory
         Objects.requireNonNull( units );
 
         return Arrays.stream( durations )
-                     .mapToDouble( a -> ( a.getSeconds()
-                                          * 1000 )
-                                        + ( a.getNano()
-                                            / 1_000_000.0 ) )
-                     .map( fu -> fu / units.getDuration()
-                                           .toMillis() )
+                     .mapToDouble( n -> TimeSeriesSlicer.durationToDecimalMilliPrecision( n, units ) )
                      .toArray();
     }
 

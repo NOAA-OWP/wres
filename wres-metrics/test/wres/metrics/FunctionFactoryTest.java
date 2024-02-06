@@ -239,7 +239,7 @@ class FunctionFactoryTest
         // Build the expectation
         DiagramMetric.DiagramMetricComponent domainMetric =
                 DiagramMetric.DiagramMetricComponent.newBuilder()
-                                                    .setName( DiagramMetric.DiagramMetricComponent.DiagramComponentName.BIN_UPPER_BOUND )
+                                                    .setName( MetricName.BIN_UPPER_BOUND )
                                                     .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_DOMAIN_AXIS )
                                                     .setMinimum( Double.NEGATIVE_INFINITY )
                                                     .setMaximum( Double.POSITIVE_INFINITY )
@@ -248,7 +248,7 @@ class FunctionFactoryTest
 
         DiagramMetric.DiagramMetricComponent rangeMetric =
                 DiagramMetric.DiagramMetricComponent.newBuilder()
-                                                    .setName( DiagramMetric.DiagramMetricComponent.DiagramComponentName.COUNT )
+                                                    .setName( MetricName.COUNT )
                                                     .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_RANGE_AXIS )
                                                     .setMinimum( 0 )
                                                     .setMaximum( Double.POSITIVE_INFINITY )
@@ -319,7 +319,7 @@ class FunctionFactoryTest
         // Build the expectation
         DiagramMetric.DiagramMetricComponent domainMetric =
                 DiagramMetric.DiagramMetricComponent.newBuilder()
-                                                    .setName( DiagramMetric.DiagramMetricComponent.DiagramComponentName.BIN_UPPER_BOUND )
+                                                    .setName( MetricName.BIN_UPPER_BOUND )
                                                     .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_DOMAIN_AXIS )
                                                     .setMinimum( Double.NEGATIVE_INFINITY )
                                                     .setMaximum( Double.POSITIVE_INFINITY )
@@ -328,7 +328,7 @@ class FunctionFactoryTest
 
         DiagramMetric.DiagramMetricComponent rangeMetric =
                 DiagramMetric.DiagramMetricComponent.newBuilder()
-                                                    .setName( DiagramMetric.DiagramMetricComponent.DiagramComponentName.COUNT )
+                                                    .setName( MetricName.COUNT )
                                                     .setType( DiagramMetric.DiagramMetricComponent.DiagramComponentType.PRIMARY_RANGE_AXIS )
                                                     .setMinimum( 0 )
                                                     .setMaximum( Double.POSITIVE_INFINITY )

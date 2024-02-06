@@ -19,8 +19,8 @@ import wres.metrics.Score;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
+import wres.statistics.generated.MetricName;
 
 /**
  * A generic implementation of an error score that cannot be decomposed. For scores that can be computed in a single-pass,
@@ -72,7 +72,7 @@ public abstract class DoubleErrorScore<S extends Pool<Pair<Double, Double>>>
 
         Optional<DoubleScoreMetricComponent> main = this.metric.getComponentsList()
                                                                .stream()
-                                                               .filter( next -> next.getName() == ComponentName.MAIN )
+                                                               .filter( next -> next.getName() == MetricName.MAIN )
                                                                .findFirst();
 
         DoubleScoreStatisticComponent.Builder component = DoubleScoreStatisticComponent.newBuilder()

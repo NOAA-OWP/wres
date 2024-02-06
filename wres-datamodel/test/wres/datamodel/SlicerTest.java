@@ -47,7 +47,6 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -220,24 +219,24 @@ class SlicerTest
         PoolMetadata meta = PoolMetadata.of();
 
 
-        DoubleScoreStatisticComponent reliability = DoubleScoreStatisticComponent.newBuilder()
-                                                                                 .setValue( 0.5 )
-                                                                                 .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName(
-                                                                                                                               ComponentName.RELIABILITY ) )
-                                                                                 .build();
-        DoubleScoreStatisticComponent resolution = DoubleScoreStatisticComponent.newBuilder()
-                                                                                .setValue( 0.2 )
-                                                                                .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                      .setName(
-                                                                                                                              ComponentName.RESOLUTION ) )
-                                                                                .build();
+        DoubleScoreStatisticComponent reliability =
+                DoubleScoreStatisticComponent.newBuilder()
+                                             .setValue( 0.5 )
+                                             .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                   .setName( MetricName.RELIABILITY ) )
+                                             .build();
+        DoubleScoreStatisticComponent resolution =
+                DoubleScoreStatisticComponent.newBuilder()
+                                             .setValue( 0.2 )
+                                             .setMetric( DoubleScoreMetricComponent.newBuilder()
+                                                                                   .setName( MetricName.RESOLUTION ) )
+                                             .build();
 
         DoubleScoreStatisticComponent sharpness = DoubleScoreStatisticComponent.newBuilder()
                                                                                .setValue( 0.1 )
                                                                                .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                      .setName(
-                                                                                                                             ComponentName.SHARPNESS ) )
+                                                                                                                             MetricName.SHARPNESS ) )
                                                                                .build();
 
         DoubleScoreStatistic one =
@@ -452,7 +451,7 @@ class SlicerTest
                                                                                  .setValue( 0.1 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN ) ) )
+                                                                                                                               MetricName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic two =
@@ -462,7 +461,7 @@ class SlicerTest
                                                                                  .setValue( 0.2 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN ) ) )
+                                                                                                                               MetricName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic three =
@@ -473,7 +472,7 @@ class SlicerTest
                                                                                  .setValue( 0.3 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN ) ) )
+                                                                                                                               MetricName.MAIN ) ) )
                                     .build();
 
         List<DoubleScoreStatisticOuter> listOfOutputs =
@@ -555,7 +554,7 @@ class SlicerTest
                                                                                  .setValue( 0.1 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN ) ) )
+                                                                                                                               MetricName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic two =
@@ -565,7 +564,7 @@ class SlicerTest
                                                                                  .setValue( 0.2 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN ) ) )
+                                                                                                                               MetricName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic three =
@@ -576,7 +575,7 @@ class SlicerTest
                                                                                  .setValue( 0.3 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN ) ) )
+                                                                                                                               MetricName.MAIN ) ) )
                                     .build();
 
         List<DoubleScoreStatisticOuter> listOfOutputs =
@@ -718,7 +717,7 @@ class SlicerTest
                                                                                  .setValue( 0.1 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN ) ) )
+                                                                                                                               MetricName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic two =
@@ -728,7 +727,7 @@ class SlicerTest
                                                                                  .setValue( 0.2 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN ) ) )
+                                                                                                                               MetricName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic three =
@@ -739,7 +738,7 @@ class SlicerTest
                                                                                  .setValue( 0.3 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN ) ) )
+                                                                                                                               MetricName.MAIN ) ) )
                                     .build();
 
         List<DoubleScoreStatisticOuter> unorderedStatistics =

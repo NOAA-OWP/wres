@@ -27,7 +27,6 @@ import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -91,7 +90,7 @@ public class ProtobufWriterTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 1.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName( MetricName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic two =
@@ -100,7 +99,7 @@ public class ProtobufWriterTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 2.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName( MetricName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic three =
@@ -110,7 +109,7 @@ public class ProtobufWriterTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 3.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName( MetricName.MAIN ) ) )
                                     .build();
 
         poolOne.addScores( one )
@@ -143,7 +142,7 @@ public class ProtobufWriterTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 1.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName( MetricName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic five =
@@ -152,7 +151,7 @@ public class ProtobufWriterTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 2.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( ComponentName.MAIN ) ) )
+                                                                                                                       .setName( MetricName.MAIN ) ) )
                                     .build();
 
         poolTwo.addScores( four )

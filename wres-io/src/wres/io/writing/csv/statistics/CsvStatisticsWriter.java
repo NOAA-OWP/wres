@@ -1403,7 +1403,9 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
             metricName = metric.getStatisticName()
                                .name()
                                .replace( "_", " " );
-            metricComponentName = metric.getStatisticComponentName();
+            metricComponentName = metric.getStatisticComponentName()
+                                        .name()
+                                        .replace( "_", " " );
             units = metricComponent.getUnits();
             minimum = String.valueOf( metric.getStatisticMinimum() );
             maximum = String.valueOf( metric.getStatisticMaximum() );
@@ -1761,6 +1763,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
                                .name()
                                .replace( "_", " " );
             metricComponentName = metric.getStatisticComponentName()
+                                        .name()
                                         .replace( "_", " " );
 
             summaryStatisticMetricName = metric.getName()

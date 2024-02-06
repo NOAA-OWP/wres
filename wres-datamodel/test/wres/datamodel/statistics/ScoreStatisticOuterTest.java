@@ -19,7 +19,6 @@ import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 import wres.statistics.generated.SummaryStatistic;
 
@@ -66,12 +65,13 @@ class ScoreStatisticOuterTest
 
         this.one =
                 DoubleScoreStatistic.newBuilder()
-                                    .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_ERROR ) )
+                                    .setMetric( DoubleScoreMetric.newBuilder()
+                                                                 .setName( MetricName.MEAN_ERROR ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 1.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN ) ) )
+                                                                                                                               MetricName.MAIN ) ) )
                                     .build();
 
         this.summaryStatistic = SummaryStatistic.newBuilder()
@@ -132,7 +132,7 @@ class ScoreStatisticOuterTest
                                                                                  .setValue( 2.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
                                                                                                                        .setName(
-                                                                                                                               ComponentName.MAIN ) ) )
+                                                                                                                               MetricName.MAIN ) ) )
                                     .build();
 
         assertNotEquals( DoubleScoreStatisticOuter.of( two, m1 ), s );
@@ -141,12 +141,10 @@ class ScoreStatisticOuterTest
                 DoubleScoreStatisticOuter.of( this.one, m2 );
         ScoreStatistic<DoubleScoreStatistic, DoubleScoreComponentOuter> r =
                 DoubleScoreStatisticOuter.of( this.one, m3 );
-        assertEquals( q, q );
         assertNotEquals( q, r );
 
         DoubleScoreStatisticOuter u = DoubleScoreStatisticOuter.of( two, m1, this.summaryStatistic );
         DoubleScoreStatisticOuter v = DoubleScoreStatisticOuter.of( this.one, m1, null );
-        assertEquals( u, u );
         assertEquals( s, v );
         assertNotEquals( u, v );
     }

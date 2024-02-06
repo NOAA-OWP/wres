@@ -17,7 +17,6 @@ import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
-import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent.ComponentName;
 import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticComponent;
 
 /**
@@ -56,7 +55,7 @@ public class KlingGuptaEfficiency extends DecomposableScore<Pool<Pair<Double, Do
                                       .setMinimum( MetricConstants.KLING_GUPTA_EFFICIENCY.getMinimum() )
                                       .setMaximum( MetricConstants.KLING_GUPTA_EFFICIENCY.getMaximum() )
                                       .setOptimum( MetricConstants.KLING_GUPTA_EFFICIENCY.getOptimum() )
-                                      .setName( ComponentName.MAIN )
+                                      .setName( MetricName.MAIN )
                                       .setUnits( MeasurementUnit.DIMENSIONLESS )
                                       .build();
 
