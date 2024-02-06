@@ -141,7 +141,7 @@ public final class Functions
 
     /**
      * Connects to the database.
-     *
+     * @param sharedResources the shared resources
      * @return the execution result
      */
 
@@ -174,7 +174,7 @@ public final class Functions
 
     /**
      * Cleans the database.
-     *
+     * @param sharedResources the shared resources
      * @return the execution result
      */
 
@@ -188,8 +188,6 @@ public final class Functions
                     + "is no database to clean." );
         }
 
-        ExecutionResult result = ExecutionResult.failure();
-        Instant startedExecution = Instant.now();
         try
         {
             Instant start = Instant.now();
@@ -229,7 +227,7 @@ public final class Functions
 
     /**
      * Migrates the database.
-     *
+     * @param sharedResources the shared resources
      * @return the execution result
      */
 
@@ -243,8 +241,6 @@ public final class Functions
                     + "is no database to migrate." );
         }
 
-        ExecutionResult result = ExecutionResult.failure();
-        Instant startedExecution = Instant.now();
         try
         {
             Instant start = Instant.now();
