@@ -1678,7 +1678,7 @@ class DeclarationValidatorTest
     }
 
     @Test
-    void testSamplingUncertaintyQuantilesAreMissingProducesError()
+    void testSamplingUncertaintyQuantilesAreMissingProducesWarning()
     {
         SamplingUncertainty samplingUncertainty = SamplingUncertaintyBuilder.builder()
                                                                             .build();
@@ -1693,7 +1693,7 @@ class DeclarationValidatorTest
 
         assertTrue( DeclarationValidatorTest.contains( events,
                                                        "does not contain any 'quantiles', which are required",
-                                                       StatusLevel.ERROR ) );
+                                                       StatusLevel.WARN ) );
     }
 
     @Test

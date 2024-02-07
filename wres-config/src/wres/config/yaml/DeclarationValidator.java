@@ -1748,18 +1748,23 @@ public class DeclarationValidator
                                            .build();
             events.add( warn );
 
-            // Quantiles are invalid
+            // Quantiles are missing
             if ( Objects.isNull( samplingUncertainty.quantiles() )
                  || samplingUncertainty.quantiles()
-                                       .isEmpty() )
+                                       .isEmpty()
+                 // Identity equals to default
+                 || samplingUncertainty.quantiles() == DeclarationFactory.DEFAULT_QUANTILES_RESAMPLING )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
-                                               .setStatusLevel( StatusLevel.ERROR )
+                                               .setStatusLevel( StatusLevel.WARN )
                                                .setEventMessage( "The 'sampling_uncertainty' declaration does not "
                                                                  + "contain any 'quantiles', which are required. "
-                                                                 + "Please declare one or more 'quantiles' and try "
-                                                                 + AGAIN )
+                                                                 + "Default values will be used, which are "
+                                                                 + DeclarationFactory.DEFAULT_QUANTILES_RESAMPLING
+                                                                 + ". If you prefer different quantiles, please "
+                                                                 + "declare the quantiles explicitly (e.g.: quantiles: "
+                                                                 + "[0.1,0.9])." )
                                                .build();
 
                 events.add( event );
