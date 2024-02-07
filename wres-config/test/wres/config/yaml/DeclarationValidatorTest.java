@@ -1865,7 +1865,7 @@ class DeclarationValidatorTest
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
         assertTrue( DeclarationValidatorTest.contains( events,
-                                                       "no 'feature_groups' were declared",
+                                                       "no feature groups with multiple features were declared",
                                                        StatusLevel.ERROR ) );
 
     }
@@ -1896,6 +1896,37 @@ class DeclarationValidatorTest
         assertFalse( DeclarationValidatorTest.contains( events,
                                                         "no 'feature_groups' were declared",
                                                         StatusLevel.ERROR ) );
+
+    }
+
+
+    @Test
+    void testSummaryStatisticsAcrossFeatureGroupsFailsValidationWhenFeatureServiceGroupsAreSingletons()
+    {
+        // #124265-44
+        SummaryStatistic summaryStatistic = SummaryStatistic.newBuilder()
+                                                            .setDimension( SummaryStatistic.StatisticDimension.FEATURE_GROUP )
+                                                            .setStatistic( SummaryStatistic.StatisticName.MEDIAN )
+                                                            .build();
+
+        Set<SummaryStatistic> summaryStatistics = Set.of( summaryStatistic );
+
+        // Feature service group whose members are singletons
+        FeatureServiceGroup group = new FeatureServiceGroup( "a", "b", false );
+        FeatureService featureService = new FeatureService( URI.create( "http://foo.bar" ), Set.of( group ) );
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .featureService( featureService )
+                                            .summaryStatistics( summaryStatistics )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "no feature groups with multiple features were declared",
+                                                       StatusLevel.ERROR ) );
 
     }
 
