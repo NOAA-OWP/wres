@@ -112,6 +112,10 @@ public class DeclarationFactory
     public static final SortedSet<Double> DEFAULT_QUANTILES =
             Collections.unmodifiableSortedSet( new TreeSet<>( Set.of( 0.1, 0.5, 0.9 ) ) );
 
+    /** Default probabilities for sampling uncertainty estimation. */
+    public static final SortedSet<Double> DEFAULT_QUANTILES_RESAMPLING =
+            Collections.unmodifiableSortedSet( new TreeSet<>( Set.of( 0.05, 0.95 ) ) );
+
     /** Default number of bins in a histogram summary statistic when not declared. */
     public static final int DEFAULT_HISTOGRAM_BINS = 10;
 

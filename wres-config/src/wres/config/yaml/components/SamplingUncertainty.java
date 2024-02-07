@@ -10,6 +10,8 @@ import io.soabase.recordbuilder.core.RecordBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.DeclarationFactory;
+
 /**
  * The parameters to use when estimating the sampling uncertainty of a verification statistic.
  *
@@ -35,8 +37,7 @@ public record SamplingUncertainty( @JsonProperty( "quantiles" ) SortedSet<Double
     {
         if ( Objects.isNull( quantiles ) )
         {
-            // Undefined is the sentinel for "all valid"
-            quantiles = Collections.emptySortedSet();
+            quantiles = DeclarationFactory.DEFAULT_QUANTILES_RESAMPLING;
         }
         else
         {

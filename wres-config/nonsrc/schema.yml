@@ -619,8 +619,8 @@ definitions:
   SamplingUncertainty:
     title: Sampling uncertainty estimation.
     description: "Declares the need to estimate the sampling uncertainty of the 
-    verification statistics using the stationary bootstrap. Requires one or 
-    more quantiles to estimate and the sample size required."
+    verification statistics using the stationary bootstrap. Requires a sample 
+    size and, optionally, a set of quantiles, otherwise defaults are chosen."
     type: object
     additionalProperties: false
     properties:
@@ -631,7 +631,6 @@ definitions:
         "$ref": "#/definitions/QuantilesList"
     required:
       - sample_size
-      - quantiles
 
   QuantilesList:
     title: A list of quantiles from a probability distribution.

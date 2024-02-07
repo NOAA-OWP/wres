@@ -156,14 +156,22 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         if ( groups.containsKey( DatasetOrientation.RIGHT ) )
         {
             List<Statistics> right = groups.get( DatasetOrientation.RIGHT );
-            right.forEach( n -> this.summaryStatistics.forEach( p -> p.test( n ) ) );
+            right.stream()
+                 // Ignore quantiles for sampling uncertainty, which is the only type of summary statistic present for
+                 // the raw statistics
+                 .filter( r -> !r.hasSummaryStatistic() )
+                 .forEach( n -> this.summaryStatistics.forEach( p -> p.test( n ) ) );
         }
 
         // Summary statistics for a separate baseline?
         if ( groups.containsKey( DatasetOrientation.BASELINE ) )
         {
             List<Statistics> baseline = groups.get( DatasetOrientation.BASELINE );
-            baseline.forEach( n -> this.summaryStatisticsForBaseline.forEach( p -> p.test( n ) ) );
+            baseline.stream()
+                    // Ignore quantiles for sampling uncertainty, which is the only type of summary statistic present
+                    // for the raw statistics
+                    .filter( b -> !b.hasSummaryStatistic() )
+                    .forEach( n -> this.summaryStatisticsForBaseline.forEach( p -> p.test( n ) ) );
         }
 
         // Publish the statistics if required
