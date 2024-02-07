@@ -409,4 +409,32 @@ class FunctionFactoryTest
                                                     .build();
         assertEquals( expected, actual );
     }
+
+    @Test
+    void testOfScalarSummaryStatisticWithMissingValuesAndMinimumSampleSizeProducesMissing()
+    {
+        SummaryStatistic summaryStatistic = SummaryStatistic.newBuilder()
+                                                            .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                            .build();
+        ScalarSummaryStatisticFunction f = FunctionFactory.ofScalarSummaryStatistic( summaryStatistic,
+                                                                                     3 );
+
+        double[] data = new double[] { 1.0, 2.0, MissingValues.DOUBLE };
+
+        assertEquals( MissingValues.DOUBLE, f.applyAsDouble( data ) );
+    }
+
+    @Test
+    void testOfScalarSummaryStatisticWithMissingValuesAndMinimumSampleSizeProducesNonMissing()
+    {
+        SummaryStatistic summaryStatistic = SummaryStatistic.newBuilder()
+                                                            .setStatistic( SummaryStatistic.StatisticName.MEAN )
+                                                            .build();
+        ScalarSummaryStatisticFunction f = FunctionFactory.ofScalarSummaryStatistic( summaryStatistic,
+                                                                                     3 );
+
+        double[] data = new double[] { 1.0, 2.0, 3.0, MissingValues.DOUBLE };
+
+        assertEquals( 2.0, f.applyAsDouble( data ) );
+    }
 }

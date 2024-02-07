@@ -598,6 +598,22 @@ public class FunctionFactory
 
     public static ScalarSummaryStatisticFunction ofScalarSummaryStatistic( SummaryStatistic statistic )
     {
+        return FunctionFactory.ofScalarSummaryStatistic( statistic, 0 );
+    }
+
+    /**
+     * Returns a {@link ScalarSummaryStatisticFunction} from a {@link SummaryStatistic}.
+     *
+     * @param statistic the statistic
+     * @param minimumSampleSize the minimum sample size
+     * @return the statistic calculator
+     * @throws NullPointerException if the input is null
+     * @throws IllegalArgumentException if the statistic is not a valid summary statistic in this context
+     */
+
+    public static ScalarSummaryStatisticFunction ofScalarSummaryStatistic( SummaryStatistic statistic,
+                                                                           int minimumSampleSize )
+    {
         Objects.requireNonNull( statistic );
 
         if ( statistic.getStatistic() == SummaryStatistic.StatisticName.QUANTILE )
@@ -609,7 +625,23 @@ public class FunctionFactory
         MetricConstants name = MetricConstants.valueOf( statistic.getStatistic()
                                                                  .name() );
 
-        ToDoubleFunction<double[]> calculator = FunctionFactory.ofScalarSummaryStatistic( name );
+        // Filter missing values and apply the summary statistic
+        ToDoubleFunction<double[]> summaryStatistic = FunctionFactory.ofScalarSummaryStatistic( name );
+        ToDoubleFunction<double[]> calculator = array ->
+        {
+            double[] filtered = Arrays.stream( array )
+                                      .filter( MissingValues::isNotMissingValue )
+                                      .sorted()
+                                      .toArray();
+
+            // Insufficient samples?
+            if ( filtered.length < minimumSampleSize )
+            {
+                return MissingValues.DOUBLE;
+            }
+
+            return summaryStatistic.applyAsDouble( filtered );
+        };
 
         return new ScalarSummaryStatisticFunction( statistic, calculator );
     }
