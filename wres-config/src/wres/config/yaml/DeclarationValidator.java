@@ -33,6 +33,7 @@ import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.FeatureAuthority;
+import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.Formats;
 import wres.config.yaml.components.GeneratedBaseline;
 import wres.config.yaml.components.GeneratedBaselines;
@@ -1589,7 +1590,8 @@ public class DeclarationValidator
              && ( Objects.isNull( declaration.featureService() )
                   || declaration.featureService()
                                 .featureGroups()
-                                .isEmpty() )
+                                .stream()
+                                .noneMatch( FeatureServiceGroup::pool ) )
              && declaration.summaryStatistics()
                            .stream()
                            .anyMatch( s -> s.getDimension() == SummaryStatistic.StatisticDimension.FEATURE_GROUP ) )
@@ -1599,8 +1601,9 @@ public class DeclarationValidator
                                            .setStatusLevel( StatusLevel.ERROR )
                                            .setEventMessage( "Summary statistics were declared to summarize the "
                                                              + "evaluation results across geographic feature groups, "
-                                                             + "but no 'feature_groups' were declared for evaluation. "
-                                                             + "Please declare some 'feature_groups' or remove the "
+                                                             + "but no feature groups with multiple features were "
+                                                             + "declared for evaluation. Please declare some feature "
+                                                             + "groups that contain multiple features or remove the "
                                                              + "'summary_statistics' with a 'dimensions' entry of "
                                                              + "'feature groups' and try again." )
                                            .build();
