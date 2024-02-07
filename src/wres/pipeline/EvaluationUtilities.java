@@ -545,7 +545,7 @@ class EvaluationUtilities
         Set<Format> formats = new HashSet<>();
 
         // Add external graphics if required
-        if ( Objects.nonNull( externalGraphics ) && "true".equalsIgnoreCase( externalGraphics ) )
+        if ( Objects.nonNull( externalGraphics ) && "true" .equalsIgnoreCase( externalGraphics ) )
         {
             formats.add( Format.PNG );
             formats.add( Format.SVG );
@@ -1759,7 +1759,10 @@ class EvaluationUtilities
             }
             else
             {
-                ScalarSummaryStatisticFunction nextScalar = FunctionFactory.ofScalarSummaryStatistic( nextStatistic );
+                // No minimum sample size for summary statistics at present (no declaration hook)
+                // Not re-using the minimum sample size on pairs
+                ScalarSummaryStatisticFunction nextScalar =
+                        FunctionFactory.ofScalarSummaryStatistic( nextStatistic, 0 );
                 scalar.add( nextScalar );
                 LOGGER.debug( "Discovered a scalar summary statistic: {}.", name );
             }
