@@ -20,8 +20,7 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * Runs the core application as a long-running instance or web server that accepts evaluation requests. See issue
- * #68482.
+ * Runs the core application as a long-running instance or web server that accepts evaluation requests
  */
 public class WebServer
 {

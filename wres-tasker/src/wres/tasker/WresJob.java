@@ -4,8 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
 import java.security.spec.KeySpec;
 import java.text.DecimalFormat;
 import java.util.Arrays;
@@ -15,7 +14,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLContext;
@@ -380,6 +378,26 @@ public class WresJob
         return Response.ok( htmlResponse ).build();
     }
 
+    private byte[] validateDeclaration( String projectConfig ) throws IOException
+    {
+        // Obtain the evaluation status events.
+        List<EvaluationStatusEvent> events;
+
+        events = DeclarationValidator.validate( projectConfig );
+
+
+        //Write the events to a delimited byte stream.
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        for ( EvaluationStatusEvent event : events )
+        {
+            event.writeDelimitedTo( byteStream );
+        }
+
+
+        //Return an OK response with the byte array as the content.
+        return byteStream.toByteArray();
+    }
+
     /**
      * Post a declaration to be validated. This calls the same validation functionality used by the 
      * core WRES and does a schema-based validation as well as some business logic checks.
@@ -393,38 +411,81 @@ public class WresJob
     @Produces( "application/octet-stream" )
     public Response postWresValidate( @FormParam( "projectConfig" ) @DefaultValue( "" ) String projectConfig )
     {
-        // Obtain the evaluation status events.
-        List<EvaluationStatusEvent> events;
         try
         {
-            events = DeclarationValidator.validate( projectConfig );
+            return Response.ok( validateDeclaration( projectConfig ) ).build();
         }
         catch ( IOException e1 )
         {
-            LOGGER.warn( "Unable to validate project configuration due to internal error.", e1 );
+            LOGGER.warn( "Unable to validate project configuration due to internal I/O error.", e1 );
             return WresJob.internalServerError( "Unable to validate project configuration due to internal error." );
         }
+    }
 
-        //Write the events to a delimited byte stream.
-        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+    /**
+     * Post a declaration to be validated. This calls the same validation functionality used by the
+     * core WRES and does a schema-based validation as well as some business logic checks.
+     * @param projectConfig The declaration to be validated.
+     * @return HTTP 200 on success with status events encoded in byte array as content. 4XX or 5XX
+     * otherwise as appropriate.
+     */
+    @POST
+    @Path( "/validate/html" )
+    @Consumes( APPLICATION_FORM_URLENCODED )
+    @Produces( "text/html; charset=utf-8" )
+    public Response postWresValidateHtml( @FormParam( "projectConfig" ) @DefaultValue( "" ) String projectConfig )
+    {
         try
         {
-            for ( EvaluationStatusEvent event : events )
-            {
-                event.writeDelimitedTo( byteStream );
-            }
+            byte[] bytes = validateDeclaration( projectConfig );
+            return Response.status( Response.Status.OK )
+                           .entity( "<!DOCTYPE html><html><head><title>Validation Results</title></head>"
+                                    + "<head>"
+                                    + "    <meta charset=\"UTF-8\">"
+                                    + "    <title>Water Resources Evaluation Service</title>"
+                                    + "    <style type=\"text/css\">"
+                                    + "        html, body"
+                                    + "        {"
+                                    + "            height: 100%;"
+                                    + "            margin: 0;"
+                                    + "            padding: 0.5em;"
+                                    + "        }"
+                                    + "        .evaluation"
+                                    + "        {"
+                                    + "            width: 60em;"
+                                    + "            height: 55em;"
+                                    + "        }"
+                                    + "        p"
+                                    + "        {"
+                                    + "            max-width: 40em;"
+                                    + "        }"
+                                    + "        p, form, h1"
+                                    + "        {"
+                                    + "            margin: 16pt;"
+                                    + "        }"
+                                    + "    </style>"
+                                    + "</head>"
+                                    + "<body><h1>Declaration</h1>"
+                                    + "<form action=\"/job\" method=\"post\">"
+                                    + "    Evaluation project declaration full text:<br />"
+                                    + "    <textarea id=\"projectConfig\" class=\"evaluation\" name=\"projectConfig\" required=\"true\">"
+                                    + projectConfig
+                                    + "    </textarea>"
+                                    + "    <br />"
+                                    + "    <button type=\"submit\" name=\"Submit\" formaction=\"/job\">Submit</button>"
+                                    + "    <button type=\"submit\" name=\"Validate\" formaction=\"/job/validate/html\">Check</button><br/>"
+                                    + "</form>"
+                                    + "    </body>"
+                                    +"<h1> Validation Issues </h1>"
+                                    + new String( bytes )
+                                    + "</h1></body></html>" )
+                           .build();
         }
-        catch ( IOException e2 )
+        catch ( IOException e1 )
         {
-            LOGGER.warn(
-                         "Unable to write protobuf response byte array due to I/O exception.",
-                         e2 );
-            return WresJob.internalServerError(
-                                                "Unable to write protobuf response byte array due to I/O exception." );
+            LOGGER.warn( "Unable to validate project configuration due to internal I/O error.", e1 );
+            return WresJob.internalServerError( "Unable to validate project configuration due to internal error." );
         }
-
-        //Return an OK response with the byte array as the content.
-        return Response.ok( byteStream.toByteArray() ).build();
     }
 
     /**
