@@ -22,9 +22,12 @@ import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.events.EvaluationEventUtilities;
 import wres.events.EvaluationMessager;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.events.broker.BrokerUtilities;
+import wres.events.client.MessagingClient;
+import wres.events.subscribe.ConsumerFactory;
 import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
@@ -42,12 +45,12 @@ import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.DoubleScoreMetric.DoubleScoreMetricComponent;
 
 /**
- * Tests the {@link GraphicsClient}.
+ * Tests the {@link GraphicsConsumerFactory} in the context of a {@link MessagingClient}.
  *
  * @author James Brown
  */
 
-class GraphicsClientTest
+class GraphicsConsumerFactoryTest
 {
     /**
      * Embedded broker.
@@ -90,11 +93,11 @@ class GraphicsClientTest
     {
         // Create and start and embedded broker
         Properties properties = BrokerUtilities.getBrokerConnectionProperties( "eventbroker.properties" );
-        GraphicsClientTest.broker = EmbeddedBroker.of( properties, true );
-        GraphicsClientTest.broker.start();
+        GraphicsConsumerFactoryTest.broker = EmbeddedBroker.of( properties, true );
+        GraphicsConsumerFactoryTest.broker.start();
 
         // Create a connection factory to supply broker connections
-        GraphicsClientTest.connections = BrokerConnectionFactory.of( properties, 2 );
+        GraphicsConsumerFactoryTest.connections = BrokerConnectionFactory.of( properties, 2 );
     }
 
     @BeforeEach
@@ -127,14 +130,19 @@ class GraphicsClientTest
         // Open an evaluation, closing on completion
         Path basePath;
 
-        GraphicsClient graphics = GraphicsClient.of( GraphicsClientTest.connections );
+        // Client identifier = identifier of the one subscriber it composes
+        String subscriberId = EvaluationEventUtilities.getId();
+
+        // A factory that creates consumers on demand
+        ConsumerFactory consumerFactory = new GraphicsConsumerFactory( subscriberId );
+        MessagingClient graphics = MessagingClient.of( GraphicsConsumerFactoryTest.connections, consumerFactory );
 
         // Start the graphics client
         graphics.start();
 
         try ( // This is the evaluation instance that declares png output
               EvaluationMessager evaluation = EvaluationMessager.of( this.oneEvaluation,
-                                                                     GraphicsClientTest.connections,
+                                                                     GraphicsConsumerFactoryTest.connections,
                                                                      "aClient" ) )
         {
             // Start the evaluation
@@ -270,9 +278,9 @@ class GraphicsClientTest
     @AfterAll
     static void runAfterAllTests() throws IOException
     {
-        if ( Objects.nonNull( GraphicsClientTest.broker ) )
+        if ( Objects.nonNull( GraphicsConsumerFactoryTest.broker ) )
         {
-            GraphicsClientTest.broker.close();
+            GraphicsConsumerFactoryTest.broker.close();
         }
     }
 

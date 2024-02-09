@@ -305,11 +305,18 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
         common.retainAll( secondTimes.keySet() );
         if ( firstTimes.isEmpty() || secondTimes.isEmpty() || common.isEmpty() )
         {
-            throw new PairingException( "While attempting to cross pair time-series " + first.getMetadata()
-                                        + " against time-series "
+            throw new PairingException( "Encountered an error while inspecting time-series to cross-pair. Attempted to "
+                                        + "calculate the total duration between the commonly typed "
+                                        + "reference times of two time-series, but no commonly typed reference times "
+                                        + "were discovered, which is not allowed. The first time-series was: "
+                                        + first.getMetadata()
+                                        + ". The second time-series was: "
                                         + second.getMetadata()
-                                        + " using their common reference times by type, found no common reference time "
-                                        + "types, which is not allowed." );
+                                        + ". The first time-series had reference time types of: "
+                                        + firstTimes.keySet()
+                                        + "The second time-series had reference time types of: "
+                                        + secondTimes.keySet()
+                                        + "." );
         }
 
         // The neutral difference
@@ -331,6 +338,4 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
 
         return returnMe;
     }
-
-
 }

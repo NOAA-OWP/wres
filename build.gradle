@@ -1530,6 +1530,9 @@ project(':wres-events')
         // Because of CVE-2022-24823. TODO: remove when Qpid catches up
         implementation group: 'io.netty', name: 'netty-all', version: '4.1.103.Final'
 
+        // For various utilities
+        implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.14.0'
+
         runtimeOnly( 'ch.qos.logback:logback-classic:1.4.14' )
         {
             // Not used at runtime, bloat

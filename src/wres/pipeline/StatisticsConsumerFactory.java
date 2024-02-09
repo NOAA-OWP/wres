@@ -86,7 +86,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
         StatisticsToFormatsRouter.Builder builder = new StatisticsToFormatsRouter.Builder();
         ChronoUnit durationUnits = this.declaration.durationFormat();
 
-        // Netcdf and protobuf are incremental formats, plus box plots per pair where graphics are required
+        // Netcdf, CSV2 and protobuf are incremental formats, plus box plots per pair where graphics are required
 
         // Netcdf: unlike other formats this writer is injected because it has an oddball choreography whereby blob
         // creation needs to happen before statistics are written, but after thresholds are read. When creation/writing 
@@ -323,7 +323,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
     }
 
     /**
-     * Maps duration scores to double scores for writing.
+     * Maps duration scores to double scores for writing to NetCDF, which only consumes double scores.
      * @param scores the duration scores
      * @return the double scores
      */
