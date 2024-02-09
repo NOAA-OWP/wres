@@ -29,7 +29,6 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
  */
 public final class TimeSeriesCrossPairerTest
 {
-
     private static final String KG_H = "kg/h";
     private static final Feature GEORGIA = Feature.of(
             MessageFactory.getGeometry( "Georgia" ) );
@@ -529,10 +528,7 @@ public final class TimeSeriesCrossPairerTest
         // TODO, make an exception specific to the situation, assert that
         // the exception type is thrown, skip attempting to match message text.
         assertTrue( exception.getMessage()
-                             .startsWith( "While attempting to cross pair time-series" ) );
-        assertTrue( exception.getMessage()
-                             .endsWith(
-                                     "using their common reference times by type, found no common reference time types, which is not allowed." ) );
+                             .contains( "no commonly typed reference times" ) );
     }
 
 }

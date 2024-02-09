@@ -1,21 +1,23 @@
-package wres.vis.client;
+package wres.events.client;
 
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeSet;
 
 /**
- * Used to retrieve the version of the WRES software (top-level, wres jar)
+ * Used to retrieve the version of the client application.
  */
 
 class Version
 {
     private static final String UNKNOWN_VERSION = "unknown";
+
     private final Package rawPackage;
 
     Version()
     {
-        this.rawPackage = this.getClass().getPackage();
+        this.rawPackage = this.getClass()
+                              .getPackage();
     }
 
     /**
@@ -27,7 +29,8 @@ class Version
     {
         Package toGetVersion = this.getRawPackage();
 
-        if (toGetVersion != null && toGetVersion.getImplementationVersion() != null)
+        if (toGetVersion != null
+            && toGetVersion.getImplementationVersion() != null)
         {
             // When running from a released zip, the version should show up.
             return toGetVersion.getImplementationVersion();
@@ -49,11 +52,11 @@ class Version
 
         if ( !shortVersion.equals( UNKNOWN_VERSION ) )
         {
-            return "WRES Graphics Client version " + shortVersion;
+            return "WRES messaging client version " + shortVersion;
         }
         else
         {
-            return "WRES Graphics Client version is " + UNKNOWN_VERSION
+            return "WRES messaging client version is " + UNKNOWN_VERSION
                    + ", probably developer version.";
         }
     }
