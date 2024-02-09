@@ -169,7 +169,7 @@ public class SingleValuedForecastRetrieverTest
 
         // Create the first expected series
         TimeSeriesMetadata expectedMetadata =
-                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                T2023_04_01T00_00_00Z ),
                                        TimeScaleOuter.of(),
                                        VARIABLE_NAME,
@@ -190,7 +190,7 @@ public class SingleValuedForecastRetrieverTest
 
         // Create the second expected series
         TimeSeriesMetadata expectedMetadataTwo =
-                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                T2023_04_01T17_00_00Z ),
                                        TimeScaleOuter.of(),
                                        VARIABLE_NAME,
@@ -252,7 +252,7 @@ public class SingleValuedForecastRetrieverTest
 
         // Create the first expected series
         TimeSeriesMetadata expectedMetadata =
-                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                T2023_04_01T00_00_00Z ),
                                        TimeScaleOuter.of(),
                                        VARIABLE_NAME,
@@ -269,7 +269,7 @@ public class SingleValuedForecastRetrieverTest
 
         // Create the second expected series
         TimeSeriesMetadata expectedMetadataTwo =
-                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
+                TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                T2023_04_01T17_00_00Z ),
                                        TimeScaleOuter.of(),
                                        VARIABLE_NAME,

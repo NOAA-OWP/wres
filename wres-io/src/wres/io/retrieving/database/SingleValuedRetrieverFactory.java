@@ -26,7 +26,6 @@ import wres.io.project.Project;
 import wres.io.retrieving.DataAccessException;
 import wres.io.retrieving.RetrieverFactory;
 import wres.io.retrieving.DuplicatePolicy;
-import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * <p>A factory class that creates retrievers for the single-valued left and right datasets associated with one 
@@ -281,23 +280,18 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
                                               .getLatestAnalysisDuration();
 
         return switch ( dataType )
-                {
-                    case SINGLE_VALUED_FORECASTS ->
-                            new SingleValuedForecastRetriever.Builder().setReferenceTimeType( ReferenceTimeType.T0 );
-                    case OBSERVATIONS -> new ObservationRetriever.Builder();
-                    case SIMULATIONS ->
-                            new ObservationRetriever.Builder().setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
-                    case ANALYSES ->
-                            new AnalysisRetriever.Builder().setEarliestAnalysisDuration( earliestAnalysisDuration )
-                                                           .setLatestAnalysisDuration( latestAnalysisDuration )
-                                                           .setDuplicatePolicy( DuplicatePolicy.KEEP_LATEST_REFERENCE_TIME )
-                                                           .setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
-                    default -> throw new IllegalArgumentException(
-                            "Unrecognized data type from which to create the single-valued "
-                            + "retriever: "
-                            + dataType
-                            + "'." );
-                };
+        {
+            case SINGLE_VALUED_FORECASTS -> new SingleValuedForecastRetriever.Builder();
+            case OBSERVATIONS, SIMULATIONS -> new ObservationRetriever.Builder();
+            case ANALYSES -> new AnalysisRetriever.Builder().setEarliestAnalysisDuration( earliestAnalysisDuration )
+                                                            .setLatestAnalysisDuration( latestAnalysisDuration )
+                                                            .setDuplicatePolicy( DuplicatePolicy.KEEP_LATEST_REFERENCE_TIME );
+            default -> throw new IllegalArgumentException(
+                    "Unrecognized data type from which to create the single-valued "
+                    + "retriever: "
+                    + dataType
+                    + "'." );
+        };
     }
 
     /**
@@ -311,21 +305,16 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
     private SingleValuedGriddedRetriever.Builder getGriddedRetrieverBuilder( DataType dataType )
     {
         return switch ( dataType )
-                {
-                    case SINGLE_VALUED_FORECASTS ->
-                            ( SingleValuedGriddedRetriever.Builder ) new SingleValuedGriddedRetriever.Builder()
-                                    .setIsForecast( true )
-                                    .setReferenceTimeType(
-                                            ReferenceTimeType.T0 );
-                    case OBSERVATIONS, SIMULATIONS ->
-                            ( SingleValuedGriddedRetriever.Builder ) new SingleValuedGriddedRetriever.Builder()
-                                    .setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
-                    default -> throw new IllegalArgumentException(
-                            "Unrecognized data type from which to create the single-valued "
-                            + "retriever: "
-                            + dataType
-                            + "'." );
-                };
+        {
+            case SINGLE_VALUED_FORECASTS -> new SingleValuedGriddedRetriever.Builder()
+                    .setIsForecast( true );
+            case OBSERVATIONS, SIMULATIONS -> new SingleValuedGriddedRetriever.Builder();
+            default -> throw new IllegalArgumentException(
+                    "Unrecognized data type from which to create the single-valued "
+                    + "retriever: "
+                    + dataType
+                    + "'." );
+        };
     }
 
     /**

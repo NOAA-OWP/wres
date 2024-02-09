@@ -24,7 +24,6 @@ import wres.io.database.caching.MeasurementUnits;
 import wres.io.database.Database;
 import wres.io.project.Project;
 import wres.io.retrieving.RetrieverFactory;
-import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * <p>A factory class that creates retrievers for the single-valued left and ensemble right datasets associated with one 
@@ -227,7 +226,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     {
         if ( dataType == DataType.ENSEMBLE_FORECASTS )
         {
-            return (EnsembleForecastRetriever.Builder) new EnsembleForecastRetriever.Builder().setReferenceTimeType( ReferenceTimeType.T0 );
+            return new EnsembleForecastRetriever.Builder();
         }
         else
         {

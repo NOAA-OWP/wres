@@ -27,7 +27,6 @@ import wres.io.database.caching.MeasurementUnits;
 import wres.io.project.Project;
 import wres.io.retrieving.DuplicatePolicy;
 import wres.io.retrieving.RetrieverFactory;
-import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * <p>A factory class that creates retrievers for single-valued left datasets, ensemble right datasets and
@@ -114,21 +113,21 @@ public class EnsembleSingleValuedRetrieverFactory implements RetrieverFactory<Do
                       features,
                       timeWindow );
 
-        return this.getEnsembleRetrieverBuilder()
-                   .setEnsemblesCache( this.getEnsemblesCache() )
-                   .setDatabase( this.getDatabase() )
-                   .setFeaturesCache( this.getFeaturesCache() )
-                   .setMeasurementUnitsCache( this.getMeasurementUnitsCache() )
-                   .setProjectId( this.project.getId() )
-                   .setFeatures( features )
-                   .setVariableName( this.project.getVariableName( DatasetOrientation.RIGHT ) )
-                   .setDatasetOrientation( DatasetOrientation.RIGHT )
-                   .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( rightDataset ) )
-                   .setDesiredTimeScale( this.desiredTimeScale )
-                   .setSeasonStart( this.seasonStart )
-                   .setSeasonEnd( this.seasonEnd )
-                   .setTimeWindow( timeWindow )
-                   .build();
+        return new EnsembleForecastRetriever.Builder().setEnsemblesCache( this.getEnsemblesCache() )
+                                                      .setDatabase( this.getDatabase() )
+                                                      .setFeaturesCache( this.getFeaturesCache() )
+                                                      .setMeasurementUnitsCache( this.getMeasurementUnitsCache() )
+                                                      .setProjectId( this.project.getId() )
+                                                      .setFeatures( features )
+                                                      .setVariableName( this.project.getVariableName( DatasetOrientation.RIGHT ) )
+                                                      .setDatasetOrientation( DatasetOrientation.RIGHT )
+                                                      .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale(
+                                                              rightDataset ) )
+                                                      .setDesiredTimeScale( this.desiredTimeScale )
+                                                      .setSeasonStart( this.seasonStart )
+                                                      .setSeasonEnd( this.seasonEnd )
+                                                      .setTimeWindow( timeWindow )
+                                                      .build();
     }
 
     @Override
@@ -233,35 +232,17 @@ public class EnsembleSingleValuedRetrieverFactory implements RetrieverFactory<Do
                                               .getLatestAnalysisDuration();
 
         return switch ( dataType )
-                {
-                    case SINGLE_VALUED_FORECASTS ->
-                            new SingleValuedForecastRetriever.Builder().setReferenceTimeType( ReferenceTimeType.T0 );
-                    case OBSERVATIONS -> new ObservationRetriever.Builder();
-                    case SIMULATIONS ->
-                            new ObservationRetriever.Builder().setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
-                    case ANALYSES ->
-                            new AnalysisRetriever.Builder().setEarliestAnalysisDuration( earliestAnalysisDuration )
-                                                           .setLatestAnalysisDuration( latestAnalysisDuration )
-                                                           .setDuplicatePolicy( DuplicatePolicy.KEEP_LATEST_REFERENCE_TIME )
-                                                           .setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME );
-                    default -> throw new IllegalArgumentException( "Unrecognized data type from which to create the "
-                                                                   + "retriever: "
-                                                                   + dataType
-                                                                   + "'." );
-                };
-    }
-
-    /**
-     * Returns a builder for a right-ish retriever.
-     *
-     * @return the retriever
-     * @throws IllegalArgumentException if the data type is unrecognized in this context
-     */
-
-    private EnsembleForecastRetriever.Builder getEnsembleRetrieverBuilder()
-    {
-        return ( EnsembleForecastRetriever.Builder )
-                new EnsembleForecastRetriever.Builder().setReferenceTimeType( ReferenceTimeType.T0 );
+        {
+            case SINGLE_VALUED_FORECASTS -> new SingleValuedForecastRetriever.Builder();
+            case OBSERVATIONS, SIMULATIONS -> new ObservationRetriever.Builder();
+            case ANALYSES -> new AnalysisRetriever.Builder().setEarliestAnalysisDuration( earliestAnalysisDuration )
+                                                            .setLatestAnalysisDuration( latestAnalysisDuration )
+                                                            .setDuplicatePolicy( DuplicatePolicy.KEEP_LATEST_REFERENCE_TIME );
+            default -> throw new IllegalArgumentException( "Unrecognized data type from which to create the "
+                                                           + "retriever: "
+                                                           + dataType
+                                                           + "'." );
+        };
     }
 
     /**
