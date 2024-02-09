@@ -1339,6 +1339,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
             // Reference time type
             row[2] = referenceTime.getKey()
                                   .toString();
+
             rows.add( row );
         }
 

@@ -65,9 +65,6 @@ class TimeSeriesRetrieverTest
                                                             Mockito.any() ) )
                .thenCallRealMethod();
 
-        Mockito.when( retriever.getReferenceTimeType() )
-               .thenReturn( ReferenceTimeType.T0 );
-
         Mockito.when( retriever.getDatasetOrientation() )
                .thenReturn( DatasetOrientation.LEFT );
 
@@ -161,7 +158,7 @@ class TimeSeriesRetrieverTest
                                                 .addEvent( Event.of( Instant.parse( "1985-12-01T03:00:00Z" ), 3.0 ) )
                                                 .addEvent( Event.of( Instant.parse( "1985-12-01T04:00:00Z" ), 4.0 ) )
                                                 .addEvent( Event.of( Instant.parse( "1985-12-01T05:00:00Z" ), 5.0 ) )
-                                                .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
+                                                .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
                                                                                              Instant.parse( T1985_12_01T00_00_00Z ) ),
                                                                                      TimeScaleOuter.of( Duration.ofMillis( 1000 ) ),
                                                                                      A_VARIABLE,
@@ -188,9 +185,6 @@ class TimeSeriesRetrieverTest
                                                             Mockito.any(),
                                                             Mockito.any() ) )
                .thenCallRealMethod();
-
-        Mockito.when( retriever.getReferenceTimeType() )
-               .thenReturn( ReferenceTimeType.T0 );
 
         Mockito.when( retriever.getDatasetOrientation() )
                .thenReturn( DatasetOrientation.LEFT );
@@ -314,7 +308,7 @@ class TimeSeriesRetrieverTest
                                                 .addEvent( Event.of( Instant.parse( "1985-12-01T03:00:00Z" ), 3.0 ) )
                                                 .addEvent( Event.of( Instant.parse( "1985-12-01T04:00:00Z" ), 4.0 ) )
                                                 .addEvent( Event.of( Instant.parse( "1985-12-01T05:00:00Z" ), 5.0 ) )
-                                                .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
+                                                .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
                                                                                              Instant.parse( T1985_12_01T00_00_00Z ) ),
                                                                                      TimeScaleOuter.of( Duration.ofMillis( 1000 ) ),
                                                                                      A_VARIABLE,
@@ -328,7 +322,7 @@ class TimeSeriesRetrieverTest
                                                 .addEvent( Event.of( Instant.parse( "1985-12-02T03:00:00Z" ), 8.0 ) )
                                                 .addEvent( Event.of( Instant.parse( "1985-12-02T04:00:00Z" ), 9.0 ) )
                                                 .addEvent( Event.of( Instant.parse( "1985-12-02T05:00:00Z" ), 10.0 ) )
-                                                .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
+                                                .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
                                                                                              Instant.parse( T1985_12_02T00_00_00Z ) ),
                                                                                      TimeScaleOuter.of( Duration.ofMillis( 1000 ) ),
                                                                                      A_VARIABLE,
@@ -355,9 +349,6 @@ class TimeSeriesRetrieverTest
                                                             Mockito.any(),
                                                             Mockito.any() ) )
                .thenCallRealMethod();
-
-        Mockito.when( retriever.getReferenceTimeType() )
-               .thenReturn( ReferenceTimeType.T0 );
 
         Mockito.when( retriever.getDatasetOrientation() )
                .thenReturn( DatasetOrientation.LEFT );
@@ -449,7 +440,7 @@ class TimeSeriesRetrieverTest
 
         TimeSeries<Double> expectedSeriesOne =
                 new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1985-12-01T01:00:00Z" ), 1.0 ) )
-                                                .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
+                                                .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
                                                                                              Instant.parse( T1985_12_01T00_00_00Z ) ),
                                                                                      TimeScaleOuter.of( Duration.ofMillis( 1000 ) ),
                                                                                      A_VARIABLE,
@@ -459,7 +450,7 @@ class TimeSeriesRetrieverTest
 
         TimeSeries<Double> expectedSeriesTwo =
                 new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1985-12-02T01:00:00Z" ), 2.0 ) )
-                                                .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
+                                                .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
                                                                                              Instant.parse( T1985_12_02T00_00_00Z ) ),
                                                                                      TimeScaleOuter.of( Duration.ofMillis( 1000 ) ),
                                                                                      A_VARIABLE,
@@ -469,7 +460,7 @@ class TimeSeriesRetrieverTest
 
         TimeSeries<Double> expectedSeriesThree =
                 new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1985-12-03T01:00:00Z" ), 3.0 ) )
-                                                .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
+                                                .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
                                                                                              Instant.parse( "1985-12-03T00:00:00Z" ) ),
                                                                                      TimeScaleOuter.of( Duration.ofMillis( 1000 ) ),
                                                                                      A_VARIABLE,

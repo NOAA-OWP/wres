@@ -21,7 +21,7 @@ import wres.io.retrieving.DataAccessException;
 
 /**
  * Retrieves {@link TimeSeries} of single-valued forecasts from the WRES database.
- * 
+ *
  * @author James Brown
  */
 
@@ -81,7 +81,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
     /**
      * Overrides the default implementation to get all time-series in one pull, rather than one pull for each series.
-     * 
+     *
      * @return the possible object
      * @throws DataAccessException if the data could not be accessed for whatever reason
      */
@@ -100,7 +100,8 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         dataScripter.addTab().addLine( "GROUP BY S.source_id," );
         dataScripter.addTab( 2 ).addLine( S_MEASUREMENTUNIT_ID );
         dataScripter.addTab( 2 ).addLine( "TimeScale.duration_ms," );
-        dataScripter.addTab( 2 ).addLine( "TimeScale.function_name" );
+        dataScripter.addTab( 2 ).addLine( "TimeScale.function_name," );
+        dataScripter.addTab( 2 ).addLine( "TSRT.reference_time_type" );
         dataScripter.addLine( ") AS metadata " );
         dataScripter.addLine( "INNER JOIN wres.TimeSeries TS" );
         dataScripter.addTab().addLine( "ON TS.source_id = metadata.series_id" );
@@ -240,7 +241,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
     /**
      * Returns a function that obtains the measured value.
-     * 
+     *
      * @return a function to obtain the measured value
      */
 
@@ -262,7 +263,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
     /**
      * Returns the start of a script to acquire a time-series from the WRES database for all time-series.
-     * 
+     *
      * @return the start of a script for the time-series
      */
 
@@ -274,6 +275,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         scripter.addTab().addLine( "metadata.series_id AS series_id," );
         scripter.addTab().addLine( "metadata.reference_time + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
         scripter.addTab().addLine( "metadata.reference_time," );
+        scripter.addTab().addLine( "metadata.reference_time_type," );
         scripter.addTab().addLine( "TSV.series_value AS trace_value," );
         scripter.addTab().addLine( "metadata.measurementunit_id," );
         scripter.addTab().addLine( "metadata.scale_period," );
@@ -286,6 +288,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         scripter.addTab().addLine( SELECT );
         scripter.addTab( 2 ).addLine( "S.source_id AS series_id," );
         scripter.addTab( 2 ).addLine( "MAX( reference_time ) AS reference_time," );
+        scripter.addTab( 2 ).addLine( "reference_time_type," );
         scripter.addTab( 2 ).addLine( "S.feature_id," );
         scripter.addTab( 2 ).addLine( S_MEASUREMENTUNIT_ID );
         scripter.addTab( 2 ).addLine( "TimeScale.duration_ms AS scale_period," );
@@ -306,7 +309,7 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
 
     /**
      * Returns the start of a script to acquire the time-series identifiers.
-     * 
+     *
      * @return the start of a script for the time-series identifiers
      */
 

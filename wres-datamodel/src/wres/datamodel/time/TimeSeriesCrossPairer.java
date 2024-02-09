@@ -314,7 +314,7 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
                                         + second.getMetadata()
                                         + ". The first time-series had reference time types of: "
                                         + firstTimes.keySet()
-                                        + "The second time-series had reference time types of: "
+                                        + ". The second time-series had reference time types of: "
                                         + secondTimes.keySet()
                                         + "." );
         }

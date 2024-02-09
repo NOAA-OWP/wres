@@ -56,6 +56,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 {
     // Re-used strings
     private static final String REFERENCE_TIME = "reference_time";
+    private static final String REFERENCE_TIME_TYPE = "reference_time_type";
     private static final String OCCURRENCES = "occurrences";
     private static final String AND = " = ? AND ";
     private static final String WHILE_BUILDING_THE_RETRIEVER = "While building the retriever for project_id '{}' "
@@ -113,11 +114,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /** The lead duration column name, including the table alias (e.g., TSV.lead). */
     private final String leadDurationColumn;
-
-    /** Reference time type. If there are multiple instances per time-series in future, then the shape of retrieval will 
-     * substantively differ and the reference time type would necessarily become inline to the time-series, not 
-     * declared upfront. */
-    private final ReferenceTimeType referenceTimeType;
 
     /**
      * Abstract builder.
@@ -198,12 +194,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          */
 
         private MonthDay seasonEnd;
-
-        /**
-         * The reference time type.
-         */
-
-        private ReferenceTimeType referenceTimeType = ReferenceTimeType.UNKNOWN;
 
         /**
          * Sets the database.
@@ -364,22 +354,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             return this;
         }
 
-        /**
-         * Sets the {@link ReferenceTimeType}.
-         *
-         * @param referenceTimeType the reference time type
-         * @return the builder
-         */
-
-        Builder<S> setReferenceTimeType( ReferenceTimeType referenceTimeType )
-        {
-            this.referenceTimeType = referenceTimeType;
-            return this;
-        }
-
         abstract TimeSeriesRetriever<S> build();
     }
-    
+
     /**
      * Returns true if the retriever supplies forecast data.
      *
@@ -781,17 +758,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Returns the {@link ReferenceTimeType} of the retriever instance.
-     *
-     * @return the reference time type
-     */
-
-    ReferenceTimeType getReferenceTimeType()
-    {
-        return this.referenceTimeType;
-    }
-
-    /**
      * Adds a clause to a script according to the start of the last available clause. When the last available clause
      * starts with <code>WHERE</code>, then the clause added starts with <code>AND</code>, otherwise <code>WHERE</code>. 
      *
@@ -1163,11 +1129,20 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         Map<ReferenceTimeType, Instant> referenceTimes = Collections.emptyMap();
 
         // Add the explicit reference time
-        if ( provider.hasColumn( REFERENCE_TIME ) && !provider.isNull( REFERENCE_TIME ) )
+        if ( provider.hasColumn( REFERENCE_TIME )
+             && !provider.isNull( REFERENCE_TIME ) )
         {
+            ReferenceTimeType type = ReferenceTimeType.UNKNOWN;
+
+            if ( provider.hasColumn( REFERENCE_TIME_TYPE ) )
+            {
+                String typeString = provider.getString( REFERENCE_TIME_TYPE );
+                type = ReferenceTimeType.valueOf( typeString.toUpperCase() );
+            }
+
             Instant referenceTime = provider.getInstant( REFERENCE_TIME );
             referenceTimes = new EnumMap<>( ReferenceTimeType.class );
-            referenceTimes.put( this.getReferenceTimeType(), referenceTime );
+            referenceTimes.put( type, referenceTime );
             referenceTimes = Collections.unmodifiableMap( referenceTimes );
         }
 
@@ -1306,7 +1281,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             Duration period = Duration.ZERO;
 
             // Adjust the lower bound of the lead duration window by the non-instantaneous desired timescale
-            if ( Objects.nonNull( this.desiredTimeScale ) && ! this.desiredTimeScale.isInstantaneous() )
+            if ( Objects.nonNull( this.desiredTimeScale ) && !this.desiredTimeScale.isInstantaneous() )
             {
                 period = TimeScaleOuter.getOrInferPeriodFromTimeScale( this.desiredTimeScale );
             }
@@ -1670,7 +1645,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         this.declaredExistingTimeScale = builder.declaredExistingTimeScale;
         this.seasonStart = builder.seasonStart;
         this.seasonEnd = builder.seasonEnd;
-        this.referenceTimeType = builder.referenceTimeType;
         this.timeColumn = timeColumn;
         this.leadDurationColumn = leadDurationColumn;
         this.measurementUnits = builder.measurementUnits;
@@ -1689,12 +1663,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                                                 + this.seasonStart
                                                 + "Season end: "
                                                 + this.seasonEnd );
-        }
-
-        if ( Objects.isNull( this.referenceTimeType ) )
-        {
-            throw new IllegalArgumentException( "Cannot build a time-series retriever with a null reference time "
-                                                + "type." );
         }
 
         if ( this.features.isEmpty() )

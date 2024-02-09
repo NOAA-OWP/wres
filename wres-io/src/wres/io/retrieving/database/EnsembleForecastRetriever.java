@@ -154,7 +154,8 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         dataScripter.addTab().addLine( "GROUP BY S.source_id," );
         dataScripter.addTab( 2 ).addLine( "S.measurementunit_id," );
         dataScripter.addTab( 2 ).addLine( "TimeScale.duration_ms," );
-        dataScripter.addTab( 2 ).addLine( "TimeScale.function_name" );
+        dataScripter.addTab( 2 ).addLine( "TimeScale.function_name," );
+        dataScripter.addTab( 2 ).addLine( "TSRT.reference_time_type" );
         dataScripter.addLine( ") AS metadata " );
         dataScripter.addLine( "INNER JOIN wres.TimeSeries TS" );
         dataScripter.addTab().addLine( "ON TS.source_id = metadata.series_id" );
@@ -170,6 +171,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         // Add GROUP BY clause
         dataScripter.addLine( "GROUP BY metadata.series_id,"
                               + "metadata.reference_time, "
+                              + "metadata.reference_time_type, "
                               + "metadata.feature_id, "
                               + "TSV.lead, "
                               + "metadata.scale_period, "
@@ -215,7 +217,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
             for ( int i = 0; i < members.length; i++ )
             {
                 // Get the name from the cache
-                String name = null;
+                String name;
                 try
                 {
                     name = this.getEnsemblesCache()
@@ -265,6 +267,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         scripter.addTab().addLine( "metadata.series_id AS series_id," );
         scripter.addTab().addLine( "metadata.reference_time + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
         scripter.addTab().addLine( "metadata.reference_time," );
+        scripter.addTab().addLine( "metadata.reference_time_type," );
         scripter.addTab().addLine( "ARRAY_AGG(TSV.series_value ORDER BY TS.ensemble_id) AS ensemble_members," );
         scripter.addTab().addLine( "ARRAY_AGG(TS.ensemble_id ORDER BY TS.ensemble_id) AS ensemble_ids," );
         scripter.addTab().addLine( "metadata.measurementunit_id," );
@@ -278,6 +281,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         scripter.addTab().addLine( "SELECT " );
         scripter.addTab( 2 ).addLine( "S.source_id AS series_id," );
         scripter.addTab( 2 ).addLine( "MAX( reference_time ) AS reference_time," );
+        scripter.addTab( 2 ).addLine( "TSRT.reference_time_type," );
         scripter.addTab( 2 ).addLine( "S.feature_id," );
         scripter.addTab( 2 ).addLine( "S.measurementunit_id," );
         scripter.addTab( 2 ).addLine( "TimeScale.duration_ms AS scale_period," );

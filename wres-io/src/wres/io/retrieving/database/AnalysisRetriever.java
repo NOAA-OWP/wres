@@ -14,7 +14,6 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.retrieving.DuplicatePolicy;
 import wres.io.retrieving.RetrieverUtilities;
-import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * <p>Retrieves data from the wres.TimeSeries and wres.TimeSeriesValue tables but
@@ -70,7 +69,6 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
                                                            .setTimeWindow( analysisRanges )
                                                            .setFeatures( super.getFeatures() )
                                                            .setVariableName( super.getVariableName() )
-                                                           .setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME )
                                                            //.setSeasonEnd(  )
                                                            //.setSeasonStart(  )
                                                            .build();
