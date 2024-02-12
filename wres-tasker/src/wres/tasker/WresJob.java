@@ -243,7 +243,7 @@ public class WresJob
     /** Guards connection */
     private static final Object CONNECTION_LOCK = new Object();
 
-    
+
     /**
      * Check for connectivity to the broker and persister.
      * @throws ConnectivityException if check fails.
@@ -303,14 +303,14 @@ public class WresJob
         {
             checkComponentConnectivity();
         }
-        catch (ConnectivityException ce)
+        catch ( ConnectivityException ce )
         {
             LOGGER.warn( "Unable to connect to either the broker or persister. Reporting 'Down'. "
                          + "Exception message: {}", ce.getMessage() );
             LOGGER.debug( "Full exception trace: {}", ce );
             return "Down";
         }
-        
+
         //If there are no workers connected to the broker, then the service is considered down.
         try
         {
@@ -320,7 +320,7 @@ public class WresJob
                 LOGGER.warn( "No workers are connected to the broker. Reporting 'Down'." );
                 return "Down";
             }
-            LOGGER.info( "Found {} workers connected to the broker", workerCount ); 
+            LOGGER.info( "Found {} workers connected to the broker", workerCount );
         }
         catch ( IOException e )
         {
@@ -339,7 +339,7 @@ public class WresJob
     public Response getEvaluationInQueue()
     {
         int inQueueCount = JOB_RESULTS.getJobStatusCount( JobMetadata.JobState.IN_QUEUE );
-        double queueUsePercentage = ( (double) inQueueCount / MAXIMUM_EVALUATION_COUNT ) * 100;
+        double queueUsePercentage = ( ( double ) inQueueCount / MAXIMUM_EVALUATION_COUNT ) * 100;
         String totalWorkers = System.getProperty( "wres.numberOfWorkers" );
         int totalWorkersNumber = 0;
         try
@@ -356,7 +356,7 @@ public class WresJob
         double workersUsePercentage = 0;
         if ( totalWorkersNumber != 0 )
         {
-            workersUsePercentage = ( (double) inProgressCount / totalWorkersNumber ) * 100;
+            workersUsePercentage = ( ( double ) inProgressCount / totalWorkersNumber ) * 100;
         }
         DecimalFormat df = new DecimalFormat( "0.00" );
 
@@ -378,26 +378,6 @@ public class WresJob
         return Response.ok( htmlResponse ).build();
     }
 
-    private byte[] validateDeclaration( String projectConfig ) throws IOException
-    {
-        // Obtain the evaluation status events.
-        List<EvaluationStatusEvent> events;
-
-        events = DeclarationValidator.validate( projectConfig );
-
-
-        //Write the events to a delimited byte stream.
-        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-        for ( EvaluationStatusEvent event : events )
-        {
-            event.writeDelimitedTo( byteStream );
-        }
-
-
-        //Return an OK response with the byte array as the content.
-        return byteStream.toByteArray();
-    }
-
     /**
      * Post a declaration to be validated. This calls the same validation functionality used by the 
      * core WRES and does a schema-based validation as well as some business logic checks.
@@ -411,22 +391,43 @@ public class WresJob
     @Produces( "application/octet-stream" )
     public Response postWresValidate( @FormParam( "projectConfig" ) @DefaultValue( "" ) String projectConfig )
     {
+        // Obtain the evaluation status events.
+        List<EvaluationStatusEvent> events;
         try
         {
-            return Response.ok( validateDeclaration( projectConfig ) ).build();
+            events = DeclarationValidator.validate( projectConfig );
         }
         catch ( IOException e1 )
         {
-            LOGGER.warn( "Unable to validate project configuration due to internal I/O error.", e1 );
+            LOGGER.warn( "Unable to validate project configuration due to internal error.", e1 );
             return WresJob.internalServerError( "Unable to validate project configuration due to internal error." );
         }
+        //Write the events to a delimited byte stream.
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        try
+        {
+            for ( EvaluationStatusEvent event : events )
+            {
+                event.writeDelimitedTo( byteStream );
+            }
+        }
+        catch ( IOException e2 )
+        {
+            LOGGER.warn(
+                    "Unable to write protobuf response byte array due to I/O exception.",
+                    e2 );
+            return WresJob.internalServerError(
+                    "Unable to write protobuf response byte array due to I/O exception." );
+        }
+        //Return an OK response with the byte array as the content.
+        return Response.ok( byteStream.toByteArray() ).build();
     }
 
     /**
      * Post a declaration to be validated. This calls the same validation functionality used by the
      * core WRES and does a schema-based validation as well as some business logic checks.
      * @param projectConfig The declaration to be validated.
-     * @return HTTP 200 on success with status events encoded in byte array as content. 4XX or 5XX
+     * @return HTTP 200 on success with an html page to display. 4XX or 5XX
      * otherwise as appropriate.
      */
     @POST
@@ -437,24 +438,29 @@ public class WresJob
     {
         try
         {
-            byte[] bytes = validateDeclaration( projectConfig );
+            // Obtain the evaluation status events.
+            List<EvaluationStatusEvent> events = DeclarationValidator.validate( projectConfig );
+
+            StringBuilder stringBuilder = new StringBuilder();
+            events.forEach( event -> stringBuilder.append( "- " )
+                                                  .append( event.getStatusLevel() )
+                                                  .append( ": " )
+                                                  .append( event.getEventMessage() )
+                                                  .append( "\n" ) );
+
             return Response.status( Response.Status.OK )
-                           .entity( "<!DOCTYPE html><html><head><title>Validation Results</title></head>"
+                           .entity( "<!DOCTYPE html><html>"
                                     + "<head>"
-                                    + "    <meta charset=\"UTF-8\">"
+                                    + "    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">"
                                     + "    <title>Water Resources Evaluation Service</title>"
                                     + "    <style type=\"text/css\">"
-                                    + "        html, body"
-                                    + "        {"
+                                    + "        html, body {"
                                     + "            height: 100%;"
                                     + "            margin: 0;"
-                                    + "            padding: 0.5em;"
-                                    + "        }"
-                                    + "        .evaluation"
-                                    + "        {"
+                                    + "            padding: 0.5em; }"
+                                    + "        .evaluation {"
                                     + "            width: 60em;"
-                                    + "            height: 55em;"
-                                    + "        }"
+                                    + "            height: 55em; }"
                                     + "        p"
                                     + "        {"
                                     + "            max-width: 40em;"
@@ -465,6 +471,7 @@ public class WresJob
                                     + "        }"
                                     + "    </style>"
                                     + "</head>"
+                                    + "<title>Validation Results</title>"
                                     + "<body><h1>Declaration</h1>"
                                     + "<form action=\"/job\" method=\"post\">"
                                     + "    Evaluation project declaration full text:<br />"
@@ -475,10 +482,9 @@ public class WresJob
                                     + "    <button type=\"submit\" name=\"Submit\" formaction=\"/job\">Submit</button>"
                                     + "    <button type=\"submit\" name=\"Validate\" formaction=\"/job/validate/html\">Check</button><br/>"
                                     + "</form>"
-                                    + "    </body>"
-                                    +"<h1> Validation Issues </h1>"
-                                    + new String( bytes )
-                                    + "</h1></body></html>" )
+                                    + "<h1> Validation Issues </h1><pre>"
+                                    + stringBuilder
+                                    + "</pre></body></html>" )
                            .build();
         }
         catch ( IOException e1 )
@@ -968,11 +974,11 @@ public class WresJob
             String jobStatusExchange = JobResults.getJobStatusExchangeName();
             AMQP.BasicProperties properties =
                     new AMQP.BasicProperties.Builder()
-                                                      .replyTo( jobStatusExchange )
-                                                      .correlationId( jobId )
-                                                      .deliveryMode( 2 )
-                                                      .priority( priority )
-                                                      .build();
+                            .replyTo( jobStatusExchange )
+                            .correlationId( jobId )
+                            .deliveryMode( 2 )
+                            .priority( priority )
+                            .build();
             // Inform the JobResults class to start looking for correlationId.
             // Share a connection, but not a channel, aim for channel-per-thread.
             // I think something needs to be watching the queue or else messages
@@ -1057,9 +1063,9 @@ public class WresJob
     {
         return Response.serverError()
                        .entity(
-                                "<!DOCTYPE html><html><head><title>Our mistake</title></head><body><h1>Internal Server Error</h1><p>"
-                                + message
-                                + P_BODY_HTML )
+                               "<!DOCTYPE html><html><head><title>Our mistake</title></head><body><h1>Internal Server Error</h1><p>"
+                               + message
+                               + P_BODY_HTML )
                        .build();
     }
 
@@ -1067,9 +1073,9 @@ public class WresJob
     {
         return Response.status( Response.Status.SERVICE_UNAVAILABLE )
                        .entity(
-                                "<!DOCTYPE html><html><head><title>Service temporarily unavailable</title></head><body><h1>Service Unavailable</h1><p>"
-                                + message
-                                + P_BODY_HTML )
+                               "<!DOCTYPE html><html><head><title>Service temporarily unavailable</title></head><body><h1>Service Unavailable</h1><p>"
+                               + message
+                               + P_BODY_HTML )
                        .build();
     }
 
@@ -1086,9 +1092,9 @@ public class WresJob
     {
         return Response.status( Response.Status.BAD_REQUEST )
                        .entity(
-                                "<!DOCTYPE html><html><head><title>Bad Request</title></head><body><h1>Bad Request</h1><p>"
-                                + message
-                                + P_BODY_HTML )
+                               "<!DOCTYPE html><html><head><title>Bad Request</title></head><body><h1>Bad Request</h1><p>"
+                               + message
+                               + P_BODY_HTML )
                        .build();
     }
 
@@ -1096,9 +1102,9 @@ public class WresJob
     {
         return Response.status( Response.Status.UNAUTHORIZED )
                        .entity(
-                                "<!DOCTYPE html><html><head><title>Unauthorized</title></head><body><h1>Unauthorized</h1><p>"
-                                + message
-                                + P_BODY_HTML )
+                               "<!DOCTYPE html><html><head><title>Unauthorized</title></head><body><h1>Unauthorized</h1><p>"
+                               + message
+                               + P_BODY_HTML )
                        .build();
     }
 
