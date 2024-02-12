@@ -521,9 +521,10 @@ public final class TimeSeriesCrossPairerTest
 
         List<TimeSeries<Pair<Integer, Integer>>> firstThrow = List.of( firstSeries );
         List<TimeSeries<Pair<Integer, Integer>>> secondThrow = List.of( secondSeries );
+        TimeSeriesCrossPairer<Pair<Integer, Integer>> exact = TimeSeriesCrossPairer.of( CrossPairMethod.EXACT );
         PairingException exception = assertThrows( PairingException.class,
-                                                   () -> this.instance.apply( firstThrow,
-                                                                              secondThrow ) );
+                                                   () -> exact.apply( firstThrow,
+                                                                      secondThrow ) );
 
         // TODO, make an exception specific to the situation, assert that
         // the exception type is thrown, skip attempting to match message text.
