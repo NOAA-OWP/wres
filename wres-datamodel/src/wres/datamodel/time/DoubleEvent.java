@@ -8,13 +8,13 @@ import org.apache.commons.math3.util.Precision;
 /**
  * <p>A real-valued outcome at a specific {@link Instant} on the timeline. A specialization of an {@link Event} to
  * reduce memory overhead.
- * 
+ *
  * <p>TODO: remove this class when the JDK supports generics over primitive types.
- * 
+ *
  * @author James Brown
  */
 
-public class DoubleEvent implements Event<Double>
+public final class DoubleEvent implements Event<Double>
 {
     /** The event time. */
     private final Instant eventTime;
@@ -24,7 +24,7 @@ public class DoubleEvent implements Event<Double>
 
     /**
      * Returns an {@link DoubleEvent}.
-     * 
+     *
      * @param time the event time
      * @param value the event value
      * @return an event
@@ -38,7 +38,7 @@ public class DoubleEvent implements Event<Double>
 
     /**
      * Return the event time as an {@link Instant}.
-     * 
+     *
      * @return the time
      */
 
@@ -49,7 +49,7 @@ public class DoubleEvent implements Event<Double>
 
     /**
      * Returns the event value.
-     * 
+     *
      * @return the event value
      */
 
@@ -67,7 +67,7 @@ public class DoubleEvent implements Event<Double>
     @Override
     public boolean equals( Object o )
     {
-        if ( ! ( o instanceof DoubleEvent inEvent ) )
+        if ( !( o instanceof DoubleEvent inEvent ) )
         {
             return false;
         }
@@ -84,7 +84,7 @@ public class DoubleEvent implements Event<Double>
 
     /**
      * Build an event with a time, reference time and value.
-     * 
+     *
      * @param eventTime the required time
      * @param event the required event
      * @throws NullPointerException if the eventTime is null or the event is null
@@ -102,7 +102,7 @@ public class DoubleEvent implements Event<Double>
      * Compares this {@link DoubleEvent} against the input {@link DoubleEvent}, returning a negative integer, zero or 
      * positive integer as this {@link DoubleEvent} is less than, equal to, or greater than the input 
      * {@link DoubleEvent}.
-     * 
+     *
      * @return a negative integer, zero or positive integer as this object is less than, equal to or greater than the 
      *            input
      */
@@ -110,7 +110,8 @@ public class DoubleEvent implements Event<Double>
     @Override
     public int compareTo( Event<Double> o )
     {
-        int returnMe = this.getTime().compareTo( o.getTime() );
+        int returnMe = this.getTime()
+                           .compareTo( o.getTime() );
 
         if ( returnMe != 0 )
         {
