@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -1342,14 +1343,14 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
         List<EvaluationStatusMessage> statusEvents = new ArrayList<>();
 
-        // Get the end times for paired values if upscaling is required. If upscaling both the left and right, the 
-        // superset of intersecting times is thinned to a regular sequence that depends on the desired timescale and
-        // frequency
-        SortedSet<Instant> endsAt = TimeSeriesSlicer.getRegularSequenceOfIntersectingTimes( scaledLeft,
-                                                                                            scaledRight,
-                                                                                            timeWindow,
-                                                                                            desiredTimeScale,
-                                                                                            frequency );
+        // Intersecting end times for upscaling
+        SortedSet<Instant> endsAt = this.getEndTimesForUpscalingIfNeeded( upscaleLeft,
+                                                                          upscaleRight,
+                                                                          scaledLeft,
+                                                                          scaledRight,
+                                                                          timeWindow,
+                                                                          desiredTimeScale,
+                                                                          frequency );
 
         // Upscale left?
         if ( upscaleLeft )
@@ -1510,6 +1511,42 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         return new TimeSeriesPlusValidation<>( pairsToSave,
                                                generatedBaseline,
                                                statusEvents );
+    }
+
+    /**
+     * Returns the times at which upscaled values should end, if upscaling is needed.
+     * @param upscaleLeft whether to upscale the let-ish time-series
+     * @param upscaleRight whether to upscae the right-ish time-series
+     * @param scaledLeft the left-ish time-series
+     * @param scaledRight the right-ish time-series
+     * @param timeWindow the time window
+     * @param desiredTimeScale the desired timescale
+     * @param frequency the frequency
+     * @return the end times for upscaling
+     */
+
+    private SortedSet<Instant> getEndTimesForUpscalingIfNeeded( boolean upscaleLeft,
+                                                                boolean upscaleRight,
+                                                                TimeSeries<L> scaledLeft,
+                                                                TimeSeries<R> scaledRight,
+                                                                TimeWindowOuter timeWindow,
+                                                                TimeScaleOuter desiredTimeScale,
+                                                                Duration frequency )
+    {
+        // Get the end times for paired values if upscaling is required. If upscaling both the left and right, the
+        // superset of intersecting times is thinned to a regular sequence that depends on the desired timescale and
+        // frequency
+        SortedSet<Instant> endsAt = new TreeSet<>();
+        if ( upscaleLeft || upscaleRight )
+        {
+            endsAt = TimeSeriesSlicer.getRegularSequenceOfIntersectingTimes( scaledLeft,
+                                                                             scaledRight,
+                                                                             timeWindow,
+                                                                             desiredTimeScale,
+                                                                             frequency );
+        }
+
+        return Collections.unmodifiableSortedSet( endsAt );
     }
 
     /**
@@ -2029,17 +2066,17 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         Objects.requireNonNull( lrb );
 
         return switch ( lrb )
-                {
-                    case RIGHT -> this.getRightTransformer();
-                    case BASELINE -> this.getBaselineTransformer();
-                    default -> throw new IllegalArgumentException( "Unexpected orientation for transformer: " + lrb
-                                                                   + ". "
-                                                                   + EXPECTED
-                                                                   + DatasetOrientation.RIGHT
-                                                                   + " or "
-                                                                   + DatasetOrientation.BASELINE
-                                                                   + "." );
-                };
+        {
+            case RIGHT -> this.getRightTransformer();
+            case BASELINE -> this.getBaselineTransformer();
+            default -> throw new IllegalArgumentException( "Unexpected orientation for transformer: " + lrb
+                                                           + ". "
+                                                           + EXPECTED
+                                                           + DatasetOrientation.RIGHT
+                                                           + " or "
+                                                           + DatasetOrientation.BASELINE
+                                                           + "." );
+        };
     }
 
     /**
@@ -2054,17 +2091,17 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         Objects.requireNonNull( lrb );
 
         return switch ( lrb )
-                {
-                    case RIGHT -> this.getRightFilter();
-                    case BASELINE -> this.getBaselineFilter();
-                    default -> throw new IllegalArgumentException( "Unexpected orientation for filter: " + lrb
-                                                                   + ". "
-                                                                   + EXPECTED
-                                                                   + DatasetOrientation.RIGHT
-                                                                   + " or "
-                                                                   + DatasetOrientation.BASELINE
-                                                                   + "." );
-                };
+        {
+            case RIGHT -> this.getRightFilter();
+            case BASELINE -> this.getBaselineFilter();
+            default -> throw new IllegalArgumentException( "Unexpected orientation for filter: " + lrb
+                                                           + ". "
+                                                           + EXPECTED
+                                                           + DatasetOrientation.RIGHT
+                                                           + " or "
+                                                           + DatasetOrientation.BASELINE
+                                                           + "." );
+        };
     }
 
     /**
@@ -2079,17 +2116,17 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         Objects.requireNonNull( lrb );
 
         return switch ( lrb )
-                {
-                    case RIGHT -> this.getRightMissingFilter();
-                    case BASELINE -> this.getBaselineMissingFilter();
-                    default -> throw new IllegalArgumentException( "Unexpected orientation for missing filter: " + lrb
-                                                                   + ". "
-                                                                   + EXPECTED
-                                                                   + DatasetOrientation.RIGHT
-                                                                   + " or "
-                                                                   + DatasetOrientation.BASELINE
-                                                                   + "." );
-                };
+        {
+            case RIGHT -> this.getRightMissingFilter();
+            case BASELINE -> this.getBaselineMissingFilter();
+            default -> throw new IllegalArgumentException( "Unexpected orientation for missing filter: " + lrb
+                                                           + ". "
+                                                           + EXPECTED
+                                                           + DatasetOrientation.RIGHT
+                                                           + " or "
+                                                           + DatasetOrientation.BASELINE
+                                                           + "." );
+        };
     }
 
     /**

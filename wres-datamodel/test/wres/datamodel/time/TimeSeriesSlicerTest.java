@@ -1425,6 +1425,31 @@ final class TimeSeriesSlicerTest
     }
 
     @Test
+    void testGetValidTimes()
+    {
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
+                                                                     T1985_01_01T00_00_00Z ),
+                                                             TimeScaleOuter.of( Duration.ofHours( 1 ) ),
+                                                             STREAMFLOW,
+                                                             DRRC2,
+                                                             CFS );
+
+        TimeSeries<Double> series =
+                new TimeSeries.Builder<Double>().setMetadata( metadata )
+                                                .addEvent( Event.of( T1985_01_01T01_00_00Z, 3.0 ) )
+                                                .addEvent( Event.of( T1985_01_01T02_00_00Z, 4.0 ) )
+                                                .build();
+
+        SortedSet<Instant> actual = TimeSeriesSlicer.getValidTimes( series );
+
+        SortedSet<Instant> expected = new TreeSet<>();
+        expected.add( T1985_01_01T01_00_00Z );
+        expected.add( T1985_01_01T02_00_00Z );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testGetEnsembleTransformer()
     {
         UnaryOperator<Double> multiplyByThree = in -> in * 3.0;
