@@ -67,41 +67,9 @@ public class Database
     /**
      * Shuts down the database in an orderly sequence.
      */
-    public void shutdown()
+    public List<Runnable> shutdown()
     {
-        try
-        {
-            if ( !this.sqlTasks.isShutdown() )
-            {
-                LOGGER.info( "Shutting down the database..." );
-
-                // Shutdown
-                this.sqlTasks.shutdown();
-
-                // Await termination
-                boolean died = this.sqlTasks.awaitTermination( 5, TimeUnit.SECONDS );
-
-                if ( !died )
-                {
-                    List<Runnable> tasks = this.sqlTasks.shutdownNow();
-
-                    if ( !tasks.isEmpty() && LOGGER.isInfoEnabled() )
-                    {
-                        LOGGER.info( "Abandoned {} tasks from {}.",
-                                     tasks.size(),
-                                     this.sqlTasks );
-                    }
-                }
-            }
-        }
-        catch ( InterruptedException ie )
-        {
-            LOGGER.warn( "Interrupted while shutting down {}.", this.sqlTasks, ie );
-            Thread.currentThread()
-                  .interrupt();
-        }
-
-        this.closePools();
+        return this.shutdown( 5, TimeUnit.SECONDS );
     }
 
     /**
@@ -112,10 +80,10 @@ public class Database
      * @return the list of abandoned tasks
      */
 
-    public List<Runnable> forceShutdown( long timeOut,
+    public List<Runnable> shutdown( long timeOut,
                                          TimeUnit timeUnit )
     {
-        LOGGER.info( "Forcefully shutting down the database..." );
+        LOGGER.info( "Shutting down the database..." );
         List<Runnable> abandoned = new ArrayList<>();
 
         this.sqlTasks.shutdown();
@@ -126,7 +94,7 @@ public class Database
         }
         catch ( InterruptedException ie )
         {
-            LOGGER.warn( "Forced shutdown of the database interrupted.", ie );
+            LOGGER.warn( "Shutdown of the database interrupted.", ie );
             List<Runnable> abandonedDbTasks = this.sqlTasks.shutdownNow();
             abandoned.addAll( abandonedDbTasks );
             Thread.currentThread().interrupt();
@@ -135,7 +103,7 @@ public class Database
         List<Runnable> abandonedMore = this.sqlTasks.shutdownNow();
         abandoned.addAll( abandonedMore );
 
-        LOGGER.info( "Database was forcefully shut down. "
+        LOGGER.info( "Database was shut down. "
                      + "Abandoned around {} database tasks.",
                      abandoned.size() );
 
