@@ -747,7 +747,7 @@ class DeclarationValidatorTest
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
         assertTrue( DeclarationValidatorTest.contains( events, "The declaration contains one or more geospatial "
-                                                               + "features for a baseline dataset but no baseline "
+                                                               + "features for a 'baseline' dataset but no 'baseline' "
                                                                + "dataset is defined",
                                                        StatusLevel.ERROR ) );
     }
@@ -2143,6 +2143,35 @@ class DeclarationValidatorTest
                                                                         "time_scale: has a missing property "
                                                                         + "\"maximum_day\"",
                                                                         StatusLevel.ERROR ) ) );
+    }
+
+    @Test
+    void testMissingObservedDatasetProducesErrorAndDoesNotProduceNullPointerException() throws IOException
+    {
+        // #126326
+        String evaluation = """
+                label: web demo
+                observed:
+                predicted:
+                  label: HEFS
+                  sources: /mnt/wres_share/systests/data/drrc2ForecastsOneMonth/
+                unit: m3/s
+                lead_times:
+                  minimum: 0
+                  maximum: 48
+                  unit: hours
+                probability_thresholds:
+                  values: [0.002, 0.01, 0.1, 0.9, 0.99, 0.998]
+                  operator: greater equal
+                metrics:
+                  - quantile quantile diagram
+                """;
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "does not contain an 'observed'",
+                                                       StatusLevel.ERROR ) );
     }
 
     /**

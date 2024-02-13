@@ -1352,31 +1352,76 @@ final class TimeSeriesSlicerTest
     }
 
     @Test
-    void testGetReferenceTimeIsWithinSeason()
+    void testGetReferenceTimeSeasonFilterAcceptsExpectedTimeSeries()
     {
         TimeSeriesMetadata metadataOne = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                         T1985_01_01T00_00_00Z ),
-                                                                TimeScaleOuter
-                                                                        .of( Duration.ofHours( 1 ) ),
+                                                                TimeScaleOuter.of( Duration.ofHours( 1 ) ),
                                                                 STREAMFLOW,
                                                                 DRRC2,
                                                                 CFS );
-        //Add the time-series
+        // Add the time-series
         TimeSeries<Pair<Double, Double>> one = TimeSeries.of( metadataOne, new TreeSet<>() );
 
         MonthDay startFirst = MonthDay.of( 12, 30 );
         MonthDay endFirst = MonthDay.of( 1, 3 );
 
-        Predicate<TimeSeries<Pair<Double, Double>>> filter = TimeSeriesSlicer.getSeasonFilter( startFirst, endFirst );
+        Predicate<TimeSeries<Pair<Double, Double>>> filter =
+                TimeSeriesSlicer.getReferenceTimeSeasonFilter( startFirst, endFirst );
 
         MonthDay startSecond = MonthDay.of( 1, 2 );
         MonthDay endSecond = MonthDay.of( 1, 3 );
 
-        Predicate<TimeSeries<Pair<Double, Double>>> anotherFilter = TimeSeriesSlicer.getSeasonFilter( startSecond,
-                                                                                                      endSecond );
+        Predicate<TimeSeries<Pair<Double, Double>>> anotherFilter =
+                TimeSeriesSlicer.getReferenceTimeSeasonFilter( startSecond,
+                                                               endSecond );
 
         Assertions.assertAll( () -> assertTrue( filter.test( one ) ),
                               () -> assertFalse( anotherFilter.test( one ) ) );
+    }
+
+    @Test
+    void testGetValidTimeSeasonTransformerProducesExpectedTimeSeries()
+    {
+        TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
+                                                                     T1985_01_01T00_00_00Z ),
+                                                             TimeScaleOuter.of( Duration.ofHours( 1 ) ),
+                                                             STREAMFLOW,
+                                                             DRRC2,
+                                                             CFS );
+        // Add the time-series
+        TimeSeries<Double> one =
+                new TimeSeries.Builder<Double>().setMetadata( metadata )
+                                                .addEvent( Event.of( Instant.parse( "2029-03-01T12:00:00Z" ), 1.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "2029-04-01T12:00:00Z" ), 2.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "2029-05-01T12:00:00Z" ), 3.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "2029-06-01T12:00:00Z" ), 4.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "2029-07-01T12:00:00Z" ), 5.0 ) )
+                                                .build();
+
+        MonthDay startFirst = MonthDay.of( 4, 2 );
+        MonthDay endFirst = MonthDay.of( 6, 2 );
+
+        UnaryOperator<TimeSeries<Double>> transformer =
+                TimeSeriesSlicer.getValidTimeSeasonTransformer( startFirst, endFirst );
+
+        MonthDay startSecond = MonthDay.of( 11, 10 );
+        MonthDay endSecond = MonthDay.of( 2, 28 );
+
+        UnaryOperator<TimeSeries<Double>> anotherFilter =
+                TimeSeriesSlicer.getValidTimeSeasonTransformer( startSecond, endSecond );
+
+        TimeSeries<Double> expectedOne =
+                new TimeSeries.Builder<Double>().setMetadata( metadata )
+                                                .addEvent( Event.of( Instant.parse( "2029-05-01T12:00:00Z" ), 3.0 ) )
+                                                .addEvent( Event.of( Instant.parse( "2029-06-01T12:00:00Z" ), 4.0 ) )
+                                                .build();
+
+        TimeSeries<Double> expectedTwo = new TimeSeries.Builder<Double>().setMetadata( metadata )
+                                                                         .build();
+
+        Assertions.assertAll( () -> assertEquals( expectedOne, transformer.apply( one ) ),
+                              () -> assertEquals( expectedTwo, anotherFilter.apply( one ) ) );
     }
 
     @Test

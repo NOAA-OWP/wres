@@ -100,6 +100,7 @@ public final class Functions
     /**
      * Executes an evaluation.
      * @param sharedResources the shared resources
+     * @param canceller the canceller
      * @return the execution result
      */
     public static ExecutionResult evaluate( SharedResources sharedResources, Canceller canceller )
@@ -108,7 +109,9 @@ public final class Functions
         Instant startedExecution = Instant.now();
         try
         {
-            setupConnections( sharedResources );
+            // Open resources to be closed finally
+            Functions.openResources( sharedResources );
+
             Evaluator evaluator = new Evaluator( sharedResources.systemSettings,
                                                  database,
                                                  brokerConnectionFactory );
@@ -134,8 +137,9 @@ public final class Functions
         }
         finally
         {
-            Functions.logResults( sharedResources, result, startedExecution );
-            Functions.teardownConnections();
+            Functions.logExecution( sharedResources, result, startedExecution );
+            Functions.closeResources();
+            Functions.printExecutionTime( sharedResources, startedExecution );
         }
     }
 
@@ -151,8 +155,10 @@ public final class Functions
         Instant startedExecution = Instant.now();
         try
         {
-            setupConnections( sharedResources );
-            DatabaseOperations.testDatabaseConnection( database );
+            // Open resources to be closed finally
+            Functions.openResources( sharedResources );
+
+            DatabaseOperations.testDatabaseConnection( Functions.database );
 
             result = ExecutionResult.success();
             return result;
@@ -167,8 +173,9 @@ public final class Functions
         }
         finally
         {
-            Functions.logResults( sharedResources, result, startedExecution );
-            Functions.teardownConnections();
+            Functions.logExecution( sharedResources, result, startedExecution );
+            Functions.closeResources();
+            Functions.printExecutionTime( sharedResources, startedExecution );
         }
     }
 
@@ -191,7 +198,9 @@ public final class Functions
         try
         {
             Instant start = Instant.now();
-            Functions.setupConnections( sharedResources );
+
+            // Open resources to be closed finally
+            Functions.openResources( sharedResources );
 
             DatabaseLockManager lockManager =
                     DatabaseLockManager.from( sharedResources.systemSettings(),
@@ -208,7 +217,8 @@ public final class Functions
                 String message = "Failed to clean the database.";
                 LOGGER.error( message, se );
                 InternalWresException e = new InternalWresException( message, se );
-                logResults( sharedResources, ExecutionResult.failure( e, false ), start );
+                Functions.logExecution( sharedResources, ExecutionResult.failure( e, false ), start );
+                Functions.printExecutionTime( sharedResources, start );
                 return ExecutionResult.failure( e, false );
             }
             finally
@@ -216,12 +226,13 @@ public final class Functions
                 lockManager.shutdown();
             }
 
-            Functions.logResults( sharedResources, ExecutionResult.success(), start );
+            Functions.logExecution( sharedResources, ExecutionResult.success(), start );
+            Functions.printExecutionTime( sharedResources, start );
             return ExecutionResult.success();
         }
         finally
         {
-            Functions.teardownConnections();
+            Functions.closeResources();
         }
     }
 
@@ -241,31 +252,36 @@ public final class Functions
                     + "is no database to migrate." );
         }
 
+        Instant start = Instant.now();
+        ExecutionResult result = ExecutionResult.failure();
+
         try
         {
-            Instant start = Instant.now();
-            setupConnections( sharedResources );
+            // Open resources to be closed finally
+            Functions.openResources( sharedResources );
 
             try
             {
                 //The migrateDatabase method deals with database locking, so we don't need to worry about that here
-                DatabaseOperations.migrateDatabase( database );
+                DatabaseOperations.migrateDatabase( Functions.database );
             }
             catch ( SQLException se )
             {
                 String message = "Failed to migrate the database.";
                 LOGGER.error( message, se );
                 InternalWresException e = new InternalWresException( message, se );
-                logResults( sharedResources, ExecutionResult.failure( e, false ), start );
-                return ExecutionResult.failure( e, false );
+                result = ExecutionResult.failure( e, false );
+                return result;
             }
 
-            Functions.logResults( sharedResources, ExecutionResult.success(), start );
-            return ExecutionResult.success();
+            result = ExecutionResult.success();
+            return result;
         }
         finally
         {
-            Functions.teardownConnections();
+            Functions.logExecution( sharedResources, result, start );
+            Functions.closeResources();
+            Functions.printExecutionTime( sharedResources, start );
         }
     }
 
@@ -326,7 +342,8 @@ public final class Functions
         }
         finally
         {
-            Functions.logResults( sharedResources, result, startedExecution );
+            Functions.logExecution( sharedResources, result, startedExecution );
+            Functions.printExecutionTime( sharedResources, startedExecution );
         }
     }
 
@@ -342,7 +359,8 @@ public final class Functions
         Instant startedExecution = Instant.now();
         try
         {
-            setupConnections( sharedResources );
+            // Open resources to be closed finally
+            Functions.openResources( sharedResources );
             DatabaseLockManager lockManager =
                     DatabaseLockManager.from( sharedResources.systemSettings(),
                                               () -> database.getRawConnection() );
@@ -368,8 +386,9 @@ public final class Functions
         }
         finally
         {
-            Functions.logResults( sharedResources, result, startedExecution );
-            Functions.teardownConnections();
+            Functions.logExecution( sharedResources, result, startedExecution );
+            Functions.closeResources();
+            Functions.printExecutionTime( sharedResources, startedExecution );
         }
     }
 
@@ -379,7 +398,7 @@ public final class Functions
      * @return the execution result
      */
 
-    public static ExecutionResult startServer( final SharedResources sharedResources )
+    public static ExecutionResult startServer( SharedResources sharedResources )
     {
         ExecutionResult result = ExecutionResult.failure();
         Instant startedExecution = Instant.now();
@@ -431,7 +450,8 @@ public final class Functions
         }
         finally
         {
-            Functions.logResults( sharedResources, result, startedExecution );
+            Functions.logExecution( sharedResources, result, startedExecution );
+            Functions.printExecutionTime( sharedResources, startedExecution );
         }
     }
 
@@ -447,7 +467,9 @@ public final class Functions
         Instant startedExecution = Instant.now();
         try
         {
-            setupConnections( sharedResources );
+            // Open resources to be closed finally
+            Functions.openResources( sharedResources );
+
             List<String> args = sharedResources.arguments();
 
             if ( !args.isEmpty() )
@@ -575,8 +597,9 @@ public final class Functions
         }
         finally
         {
-            Functions.logResults( sharedResources, result, startedExecution );
-            Functions.teardownConnections();
+            Functions.logExecution( sharedResources, result, startedExecution );
+            Functions.closeResources();
+            Functions.printExecutionTime( sharedResources, startedExecution );
         }
     }
 
@@ -624,8 +647,8 @@ public final class Functions
                                      + "'";
                     UserInputException e = new UserInputException( message, error );
                     result = ExecutionResult.failure( rawDeclaration,
-                                                    e,
-                                                    false ); // Or return 400 - Bad Request (see #41467)
+                                                      e,
+                                                      false ); // Or return 400 - Bad Request (see #41467)
                     return result;
                 }
             }
@@ -640,7 +663,8 @@ public final class Functions
         }
         finally
         {
-            Functions.logResults( sharedResources, result, startedExecution );
+            Functions.logExecution( sharedResources, result, startedExecution );
+            Functions.printExecutionTime( sharedResources, startedExecution );
         }
     }
 
@@ -738,7 +762,8 @@ public final class Functions
         }
         finally
         {
-            Functions.logResults( sharedResources, result, startedExecution );
+            Functions.logExecution( sharedResources, result, startedExecution );
+            Functions.printExecutionTime( sharedResources, startedExecution );
         }
     }
 
@@ -815,27 +840,30 @@ public final class Functions
         }
         finally
         {
-            Functions.logResults( sharedResources, result, startedExecution );
+            Functions.logExecution( sharedResources, result, startedExecution );
+            Functions.printExecutionTime( sharedResources, startedExecution );
         }
     }
 
     /**
-     * Method to establish needed connections when running a command needs access to the database
-     * Must call teardownConnections() after the method is complete
+     * Open resources to be closed with {@link #closeResources()}.
+     * @see #closeResources()
      * @param sharedResources used to get the systemSettings associated with this command
      */
-    private static void setupConnections( SharedResources sharedResources )
+    private static void openResources( SharedResources sharedResources )
     {
         // If this complex operation involves a database, check that one exists
-        if ( sharedResources.systemSettings.isUseDatabase() && ( Objects.isNull( database ) || database.isShutdown() ) )
+        if ( sharedResources.systemSettings.isUseDatabase()
+             && ( Objects.isNull( Functions.database )
+                  || Functions.database.isShutdown() ) )
         {
-            database = new Database( new ConnectionSupplier( sharedResources.systemSettings ) );
+            Functions.database = new Database( new ConnectionSupplier( sharedResources.systemSettings ) );
             // Migrate the database, as needed
-            if ( database.getAttemptToMigrate() )
+            if ( Functions.database.getAttemptToMigrate() )
             {
                 try
                 {
-                    DatabaseOperations.migrateDatabase( database );
+                    DatabaseOperations.migrateDatabase( Functions.database );
                 }
                 catch ( SQLException e )
                 {
@@ -844,7 +872,7 @@ public final class Functions
             }
         }
 
-        if ( Objects.isNull( broker ) || !broker.isActive() )
+        if ( Objects.isNull( Functions.broker ) || !Functions.broker.isActive() )
         {
             // Create the broker connections for statistics messaging
             Properties brokerConnectionProperties =
@@ -853,7 +881,7 @@ public final class Functions
             // Create an embedded broker for statistics messages, if needed
             if ( BrokerUtilities.isEmbeddedBrokerRequired( brokerConnectionProperties ) )
             {
-                broker = EmbeddedBroker.of( brokerConnectionProperties, false );
+                Functions.broker = EmbeddedBroker.of( brokerConnectionProperties, false );
             }
 
             Functions.brokerConnectionFactory = BrokerConnectionFactory.of( brokerConnectionProperties );
@@ -861,16 +889,16 @@ public final class Functions
     }
 
     /**
-     * Method to tear down connections established for a command that needed access to the database.
-     * Must be called if setupConnections is used
+     * Close all resources opened with {@link #openResources(SharedResources)}.
+     * @see #openResources(SharedResources)
      */
-    private static void teardownConnections()
+    private static void closeResources()
     {
-        if ( Objects.nonNull( database ) )
+        if ( Objects.nonNull( Functions.database ) )
         {
             // #81660
             LOGGER.info( "Closing database activities..." );
-            database.shutdown();
+            Functions.database.shutdown();
             LOGGER.info( "The database activities have been closed." );
         }
 
@@ -888,42 +916,29 @@ public final class Functions
     }
 
     /**
-     * Log the time an execution took
-     * @param sharedResources object that contains execution details
-     * @param startTime the time this execution was started at
-     */
-    private static void logResults( SharedResources sharedResources, Instant startTime )
-    {
-        // Log timing of execution
-        if ( LOGGER.isInfoEnabled() )
-        {
-            Instant endedExecution = Instant.now();
-            Duration duration = Duration.between( startTime, endedExecution );
-            LOGGER.info( "The function '{}' took {}", sharedResources.operation, duration );
-        }
-    }
-
-    /**
-     * Logs the results of a complex execution into the database
+     * Logs the results of an execution to the database, where appropriate.
      * @param sharedResources object used to contain the execution details
      * @param executionResult the results of the execution
      * @param startTime time the execution started, used for logging total execution time
      */
-    private static void logResults( SharedResources sharedResources,
-                                    ExecutionResult executionResult,
-                                    Instant startTime )
+    private static void logExecution( SharedResources sharedResources,
+                                      ExecutionResult executionResult,
+                                      Instant startTime )
     {
-        logResults( sharedResources, startTime );
+        Objects.requireNonNull( sharedResources );
+        Objects.requireNonNull( executionResult );
+        Objects.requireNonNull( startTime );
 
         // Log the execution to the database if a database is used
-        if ( sharedResources.systemSettings.isUseDatabase() )
+        if ( sharedResources.systemSettings()
+                            .isUseDatabase() )
         {
-            setupConnections( sharedResources );
             Instant endedExecution = Instant.now();
+
             // Log both the operation and the args
             List<String> argList = new ArrayList<>();
-            argList.add( sharedResources.operation );
-            argList.addAll( sharedResources.arguments );
+            argList.add( sharedResources.operation() );
+            argList.addAll( sharedResources.arguments() );
 
             DatabaseOperations.LogParameters logParameters =
                     new DatabaseOperations.LogParameters( argList,
@@ -937,20 +952,41 @@ public final class Functions
                                                           Main.getVersion(),
                                                           executionResult.getEvaluationId() );
 
-            DatabaseOperations.logExecution( database,
+            DatabaseOperations.logExecution( Functions.database,
                                              logParameters );
-            teardownConnections();
         }
     }
 
-    /** Small value class of information for an execution */
+    /**
+     * Prints the execution time to the application log.
+     * @param sharedResources object that contains execution details
+     * @param startTime the time this execution was started at
+     */
+    private static void printExecutionTime( SharedResources sharedResources, Instant startTime )
+    {
+        // Log timing of execution
+        if ( LOGGER.isInfoEnabled() )
+        {
+            Instant endedExecution = Instant.now();
+            Duration duration = Duration.between( startTime, endedExecution );
+            LOGGER.info( "The function '{}' took {}", sharedResources.operation(), duration );
+        }
+    }
+
+    /**
+     * Small value class of information for an execution.
+     * @param systemSettings the system settings, not null
+     * @param operation the operation
+     * @param arguments the arguments, not null
+     */
     public record SharedResources( SystemSettings systemSettings,
                                    String operation,
                                    List<String> arguments )
     {
         /**
          * @param systemSettings the system settings, not null
-         * @param arguments the arguments
+         * @param operation the operation
+         * @param arguments the arguments, not null
          */
         public SharedResources
         {

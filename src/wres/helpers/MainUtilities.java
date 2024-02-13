@@ -1,7 +1,5 @@
 package wres.helpers;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -82,8 +80,6 @@ public final class MainUtilities
      */
     public static ExecutionResult call( String operation, Functions.SharedResources sharedResources )
     {
-        // Execution began
-        Instant beganExecution = Instant.now();
         // Log the operation
         if ( LOGGER.isInfoEnabled() )
         {
@@ -116,13 +112,7 @@ public final class MainUtilities
                                                                                  + operation ),
                                               false );
         }
-        // Log timing of execution
-        if ( LOGGER.isInfoEnabled() )
-        {
-            Instant endedExecution = Instant.now();
-            Duration duration = Duration.between( beganExecution, endedExecution );
-            LOGGER.info( "The function '{}' took {}", operation, duration );
-        }
+
         return result;
     }
 

@@ -545,7 +545,7 @@ class EvaluationUtilities
         Set<Format> formats = new HashSet<>();
 
         // Add external graphics if required
-        if ( Objects.nonNull( externalGraphics ) && "true" .equalsIgnoreCase( externalGraphics ) )
+        if ( Objects.nonNull( externalGraphics ) && "true".equalsIgnoreCase( externalGraphics ) )
         {
             formats.add( Format.PNG );
             formats.add( Format.SVG );
@@ -747,17 +747,18 @@ class EvaluationUtilities
     }
 
     /**
-     * Appends any feature groups associated with summary statistics (across features) to the input.
+     * Appends any feature groups associated with summary statistics (across features) to the input and removes features
+     * that should not be published, which are intended for calculating summary statistics only.
      * @param featureGroups the existing feature groups
      * @param features the singleton features
      * @param summaryStatistics the summary statistics declaration
      * @param doNotPublish the feature groups for which statistics should not be published
      * @return the adjusted feature groups
      */
-    static Set<FeatureGroup> getFeatureGroupsForSummaryStatistics( Set<FeatureGroup> featureGroups,
-                                                                   Set<GeometryTuple> features,
-                                                                   Set<SummaryStatistic> summaryStatistics,
-                                                                   Set<FeatureGroup> doNotPublish )
+    static Set<FeatureGroup> adjustFeatureGroupsForSummaryStatistics( Set<FeatureGroup> featureGroups,
+                                                                      Set<GeometryTuple> features,
+                                                                      Set<SummaryStatistic> summaryStatistics,
+                                                                      Set<FeatureGroup> doNotPublish )
     {
         // Remove any unwanted feature groups and re-assign to the input variable for further use
         featureGroups = new HashSet<>( featureGroups );
@@ -785,6 +786,41 @@ class EvaluationUtilities
         }
 
         return Collections.unmodifiableSet( featureGroups );
+    }
+
+    /**
+     * Generates the geographic feature groups for which only summary statistics are required and no raw statistics.
+     * @param featureGroups the existing feature groups
+     * @param declaration the evaluation declaration
+     * @return the adjusted feature groups
+     */
+    static Set<FeatureGroup> getFeatureGroupsForSummaryStatisticsOnly( Set<FeatureGroup> featureGroups,
+                                                                       EvaluationDeclaration declaration )
+    {
+        if ( declaration.summaryStatistics()
+                        .isEmpty() )
+        {
+            return Set.of();
+        }
+
+        Set<FeatureGroup> groups = new HashSet<>();
+
+        boolean byGroup =
+                declaration.summaryStatistics()
+                           .stream()
+                           .anyMatch( g -> g.getDimension() == SummaryStatistic.StatisticDimension.FEATURE_GROUP );
+
+        for ( FeatureGroup next : featureGroups )
+        {
+            if ( !next.isSingleton()
+                 && ( byGroup
+                      || SUMMARY_STATISTICS_ACROSS_FEATURES.equals( next.getName() ) ) )
+            {
+                groups.add( next );
+            }
+        }
+
+        return Collections.unmodifiableSet( groups );
     }
 
     /**

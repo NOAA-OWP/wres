@@ -398,9 +398,13 @@ public class DeclarationValidator
      */
     private static List<EvaluationStatusEvent> validateDatasets( EvaluationDeclaration declaration )
     {
+        // Required datasets are present
+        List<EvaluationStatusEvent> datasetsPresent = DeclarationValidator.requiredDatasetsArePresent( declaration );
+        List<EvaluationStatusEvent> events = new ArrayList<>( datasetsPresent );
+
         // Data types are consistent with other declaration
         List<EvaluationStatusEvent> typesConsistent = DeclarationValidator.typesAreConsistent( declaration );
-        List<EvaluationStatusEvent> events = new ArrayList<>( typesConsistent );
+        events.addAll( typesConsistent );
         // Ensembles cannot be present on both left and right sides
         List<EvaluationStatusEvent> ensembles = DeclarationValidator.ensembleOnOneSideOnly( declaration );
         events.addAll( ensembles );
@@ -422,6 +426,44 @@ public class DeclarationValidator
         // Check that any time-zone offsets are consistent
         List<EvaluationStatusEvent> timeZoneOffsets = DeclarationValidator.timeZoneOffsetsAreValid( declaration );
         events.addAll( timeZoneOffsets );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that each of the required datasets is present.
+     *
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+
+    private static List<EvaluationStatusEvent> requiredDatasetsArePresent( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        if ( Objects.isNull( declaration.left() ) )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "The declaration does not contain an 'observed' dataset, "
+                                                             + "which is required. Please add an 'observed' dataset "
+                                                             + "and try again." )
+                                           .build();
+            events.add( event );
+        }
+
+        if ( Objects.isNull( declaration.right() ) )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "The declaration does not contain a 'predicted' dataset, "
+                                                             + "which is required. Please add a 'predicted' dataset "
+                                                             + "and try again." )
+                                           .build();
+            events.add( event );
+        }
 
         return Collections.unmodifiableList( events );
     }
@@ -621,8 +663,10 @@ public class DeclarationValidator
      */
     private static List<EvaluationStatusEvent> ensembleOnOneSideOnly( EvaluationDeclaration declaration )
     {
-        if ( declaration.right()
-                        .type() == DataType.ENSEMBLE_FORECASTS
+        if ( Objects.nonNull( declaration.right() )
+             && declaration.right()
+                           .type() == DataType.ENSEMBLE_FORECASTS
+             && Objects.nonNull( declaration.left() )
              && declaration.left()
                            .type() == DataType.ENSEMBLE_FORECASTS )
         {
@@ -825,7 +869,8 @@ public class DeclarationValidator
         // Check the observed data
         if ( DeclarationValidator.variableIsNotDeclared( declaration, DatasetOrientation.LEFT ) )
         {
-            if ( DeclarationValidator.hasSourceInterface( declaration.left().sources(), SourceInterface.USGS_NWIS ) )
+            if ( DeclarationValidator.hasSourceInterface( declaration.left()
+                                                                     .sources(), SourceInterface.USGS_NWIS ) )
             {
                 String message = messageStart + OBSERVED + messageMiddle + SourceInterface.USGS_NWIS + messageEnd;
                 EvaluationStatusEvent event = eventBuilder.setEventMessage( message )
@@ -833,7 +878,8 @@ public class DeclarationValidator
                 events.add( event );
             }
 
-            if ( DeclarationValidator.hasSourceInterface( declaration.left().sources(), SourceInterface.WRDS_NWM ) )
+            if ( DeclarationValidator.hasSourceInterface( declaration.left()
+                                                                     .sources(), SourceInterface.WRDS_NWM ) )
             {
                 String message = messageStart + OBSERVED + messageMiddle + SourceInterface.WRDS_NWM + messageEnd;
                 EvaluationStatusEvent event = eventBuilder.setEventMessage( message )
@@ -951,15 +997,28 @@ public class DeclarationValidator
      */
     private static List<EvaluationStatusEvent> sourcesAreValid( EvaluationDeclaration declaration )
     {
-        List<EvaluationStatusEvent> events =
-                new ArrayList<>( DeclarationValidator.sourcesAreValid( declaration.left().sources(),
-                                                                       declaration.left().type(),
-                                                                       OBSERVED ) );
-        List<EvaluationStatusEvent> rightEvents =
-                DeclarationValidator.sourcesAreValid( declaration.right().sources(),
-                                                      declaration.right().type(),
-                                                      PREDICTED );
-        events.addAll( rightEvents );
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        if ( Objects.nonNull( declaration.left() ) )
+        {
+            List<EvaluationStatusEvent> leftEvents = DeclarationValidator.sourcesAreValid( declaration.left()
+                                                                                                      .sources(),
+                                                                                           declaration.left()
+                                                                                                      .type(),
+                                                                                           OBSERVED );
+            events.addAll( leftEvents );
+        }
+
+        if ( Objects.nonNull( declaration.right() ) )
+        {
+            List<EvaluationStatusEvent> rightEvents =
+                    DeclarationValidator.sourcesAreValid( declaration.right()
+                                                                     .sources(),
+                                                          declaration.right()
+                                                                     .type(),
+                                                          PREDICTED );
+            events.addAll( rightEvents );
+        }
 
         if ( DeclarationUtilities.hasBaseline( declaration ) )
         {
@@ -987,8 +1046,9 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
         // Left dataset
-        if ( Objects.nonNull( declaration.left()
-                                         .timeScale() ) )
+        if ( Objects.nonNull( declaration.left() )
+             && Objects.nonNull( declaration.left()
+                                            .timeScale() ) )
         {
             TimeScale timeScale = declaration.left()
                                              .timeScale();
@@ -1005,8 +1065,9 @@ public class DeclarationValidator
         }
 
         // Right dataset
-        if ( Objects.nonNull( declaration.right()
-                                         .timeScale() ) )
+        if ( Objects.nonNull( declaration.right() )
+             && Objects.nonNull( declaration.right()
+                                            .timeScale() ) )
         {
             TimeScale timeScale = declaration.right()
                                              .timeScale();
@@ -1109,6 +1170,14 @@ public class DeclarationValidator
     private static List<EvaluationStatusEvent> timeZoneOffsetsAreValid( Dataset dataset,
                                                                         DatasetOrientation orientation )
     {
+        if ( Objects.isNull( dataset ) )
+        {
+            LOGGER.debug( "When validating the time zone offset of the {} dataset, discovered that the dataset was "
+                          + "missing.",
+                          orientation );
+            return List.of();
+        }
+
         ZoneOffset universalOffset = dataset.timeZoneOffset();
         if ( Objects.isNull( universalOffset ) )
         {
@@ -2209,8 +2278,9 @@ public class DeclarationValidator
         Set<MetricConstants> metrics =
                 DeclarationValidator.getSingleValuedTimeSeriesMetrics( declaration );
 
-        if ( Objects.nonNull( declaration.right()
-                                         .type() )
+        if ( Objects.nonNull( declaration.right() )
+             && Objects.nonNull( declaration.right()
+                                            .type() )
              && declaration.right()
                            .type() != DataType.SINGLE_VALUED_FORECASTS
              && !metrics.isEmpty() )
@@ -2553,23 +2623,30 @@ public class DeclarationValidator
         String end = "Please add some geospatial features to the declaration (e.g., 'features', 'feature_groups' or "
                      + "'feature_service') and try again.";
 
-        Set<SourceInterface> leftRequireFeatures =
-                DeclarationValidator.getSourceInterfacesThatBeginWithNwm( declaration.left()
-                                                                                     .sources() );
-        if ( !leftRequireFeatures.isEmpty() )
+        if ( Objects.nonNull( declaration.left() ) )
         {
-            eventBuilder.setEventMessage( start + OBSERVED + middle + leftRequireFeatures + end );
-            EvaluationStatusEvent event = eventBuilder.build();
-            events.add( event );
+            Set<SourceInterface> leftRequireFeatures =
+                    DeclarationValidator.getSourceInterfacesThatBeginWithNwm( declaration.left()
+                                                                                         .sources() );
+            if ( !leftRequireFeatures.isEmpty() )
+            {
+                eventBuilder.setEventMessage( start + OBSERVED + middle + leftRequireFeatures + end );
+                EvaluationStatusEvent event = eventBuilder.build();
+                events.add( event );
+            }
         }
-        Set<SourceInterface> rightRequireFeatures =
-                DeclarationValidator.getSourceInterfacesThatBeginWithNwm( declaration.right()
-                                                                                     .sources() );
-        if ( !rightRequireFeatures.isEmpty() )
+
+        if ( Objects.nonNull( declaration.right() ) )
         {
-            eventBuilder.setEventMessage( start + PREDICTED + middle + rightRequireFeatures + end );
-            EvaluationStatusEvent event = eventBuilder.build();
-            events.add( event );
+            Set<SourceInterface> rightRequireFeatures =
+                    DeclarationValidator.getSourceInterfacesThatBeginWithNwm( declaration.right()
+                                                                                         .sources() );
+            if ( !rightRequireFeatures.isEmpty() )
+            {
+                eventBuilder.setEventMessage( start + PREDICTED + middle + rightRequireFeatures + end );
+                EvaluationStatusEvent event = eventBuilder.build();
+                events.add( event );
+            }
         }
 
         if ( DeclarationUtilities.hasBaseline( declaration ) )
@@ -2614,15 +2691,17 @@ public class DeclarationValidator
                                                      .flatMap( next -> next.getGeometryTuplesList()
                                                                            .stream() )
                                                      .anyMatch( GeometryTuple::hasBaseline );
+
             if ( singletonHasBaseline || groupHasBaseline )
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
                                                .setStatusLevel( StatusLevel.ERROR )
                                                .setEventMessage( "The declaration contains one or more geospatial "
-                                                                 + "features for a baseline dataset but no baseline "
-                                                                 + "dataset is defined. Please add a baseline dataset "
-                                                                 + "or remove the baseline features and try again." )
+                                                                 + "features for a 'baseline' dataset but no "
+                                                                 + "'baseline' dataset is defined. Please add a "
+                                                                 + "'baseline' dataset or remove the baseline "
+                                                                 + "'features' and try again." )
                                                .build();
                 events.add( event );
             }
@@ -3659,25 +3738,29 @@ public class DeclarationValidator
      * @param declaration the declaration
      * @return whether web sources are declared for the dataset with the prescribed orientation
      */
-    private static boolean hasWebSources( EvaluationDeclaration declaration, DatasetOrientation orientation )
+    private static boolean hasWebSources( EvaluationDeclaration declaration,
+                                          DatasetOrientation orientation )
     {
         if ( orientation == DatasetOrientation.LEFT )
         {
-            return DeclarationValidator.hasSourceInterface( declaration.left()
-                                                                       .sources(),
-                                                            SourceInterface.USGS_NWIS,
-                                                            SourceInterface.WRDS_AHPS,
-                                                            SourceInterface.WRDS_NWM );
+            return Objects.nonNull( declaration.left() )
+                   && DeclarationValidator.hasSourceInterface( declaration.left()
+                                                                          .sources(),
+                                                               SourceInterface.USGS_NWIS,
+                                                               SourceInterface.WRDS_AHPS,
+                                                               SourceInterface.WRDS_NWM );
         }
         else if ( orientation == DatasetOrientation.RIGHT )
         {
-            return DeclarationValidator.hasSourceInterface( declaration.right()
-                                                                       .sources(),
-                                                            SourceInterface.USGS_NWIS,
-                                                            SourceInterface.WRDS_AHPS,
-                                                            SourceInterface.WRDS_NWM );
+            return Objects.nonNull( declaration.right() )
+                   && DeclarationValidator.hasSourceInterface( declaration.right()
+                                                                          .sources(),
+                                                               SourceInterface.USGS_NWIS,
+                                                               SourceInterface.WRDS_AHPS,
+                                                               SourceInterface.WRDS_NWM );
         }
-        else if ( DeclarationUtilities.hasBaseline( declaration ) && orientation == DatasetOrientation.BASELINE )
+        else if ( DeclarationUtilities.hasBaseline( declaration )
+                  && orientation == DatasetOrientation.BASELINE )
         {
             return DeclarationValidator.hasSourceInterface( declaration.baseline()
                                                                        .dataset()
@@ -3698,17 +3781,22 @@ public class DeclarationValidator
     {
         if ( orientation == DatasetOrientation.LEFT )
         {
-            return Objects.isNull( declaration.left().variable() );
+            return Objects.nonNull( declaration.left() )
+                   && Objects.isNull( declaration.left()
+                                                 .variable() );
         }
         else if ( orientation == DatasetOrientation.RIGHT )
         {
-            return Objects.isNull( declaration.right().variable() );
+            return Objects.nonNull( declaration.right() )
+                   && Objects.isNull( declaration.right()
+                                                 .variable() );
         }
         else
         {
-            return DeclarationUtilities.hasBaseline( declaration ) && Objects.isNull( declaration.baseline()
-                                                                                                 .dataset()
-                                                                                                 .variable() );
+            return DeclarationUtilities.hasBaseline( declaration )
+                   && Objects.isNull( declaration.baseline()
+                                                 .dataset()
+                                                 .variable() );
         }
     }
 
@@ -3746,10 +3834,12 @@ public class DeclarationValidator
 
     private static boolean doesNotHaveThisDataType( DataType type, EvaluationDeclaration declaration )
     {
-        return Objects.nonNull( declaration.left()
-                                           .type() )
+        return Objects.nonNull( declaration.left() )
+               && Objects.nonNull( declaration.left()
+                                              .type() )
                && declaration.left()
                              .type() != type
+               && Objects.nonNull( declaration.right() )
                && Objects.nonNull( declaration.right()
                                               .type() )
                && declaration.right()
