@@ -172,8 +172,7 @@ public class PoolFactory
      * @param poolParameters the pool parameters
      * @return one pool supplier for each pool request, ordered in intended execution order (for optimal performance)
      * @throws NullPointerException if any input is null
-     * @throws IllegalArgumentException if the project is not consistent with the generation of pools for single-valued
-     *            data
+     * @throws IllegalArgumentException if the project is inconsistent with the generation of single-valued pools
      */
 
     public List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Double>>>>>> getSingleValuedPools( List<PoolRequest> poolRequests,
@@ -254,7 +253,7 @@ public class PoolFactory
      * @param poolParameters the pool parameters
      * @return one pool supplier for each pool request, ordered in intended execution order (for optimal performance)
      * @throws NullPointerException if the input is null
-     * @throws IllegalArgumentException if the project is not consistent with the generation of pools for ensemble data
+     * @throws IllegalArgumentException if the project is inconsistent with the generation of ensemble pools
      */
 
     public List<Pair<PoolRequest, Supplier<Pool<TimeSeries<Pair<Double, Ensemble>>>>>> getEnsemblePools( List<PoolRequest> poolRequests,
@@ -552,12 +551,21 @@ public class PoolFactory
         }
 
         // Create any required transformers for value constraints and units
-        DoubleUnaryOperator valueTransformer = this.getSingleValuedTransformer( declaration.values() );
+        DoubleUnaryOperator valueTransformer = this.getValueTransformer( declaration.values() );
         UnaryOperator<TimeSeries<Double>> valueAndUnitTransformer =
-                this.getSingleValuedTransformer( valueTransformer );
+                this.getValueTransformer( valueTransformer );
 
-        // Currently only a seasonal filter, which applies equally to all sides
-        Predicate<TimeSeries<Double>> filter = this.getSeasonalFilter( declaration.season() );
+        // Apply any valid time season transformer based on the right-ish data type
+        UnaryOperator<TimeSeries<Double>> validTimeSeasonTransformer =
+                this.getValidTimeSeasonTransformer( declaration.season(),
+                                                    declaration.right()
+                                                               .type() );
+
+        UnaryOperator<TimeSeries<Double>> composedTransformer =
+                t -> valueAndUnitTransformer.apply( validTimeSeasonTransformer.apply( t ) );
+
+        // Currently only a seasonal filter for reference times, which applies equally to all sides
+        Predicate<TimeSeries<Double>> filter = this.getReferenceTimeSeasonFilter( declaration.season() );
 
         // Missing values filter
         Predicate<Double> missingFilter = MissingValues::isNotMissingValue;
@@ -578,9 +586,9 @@ public class PoolFactory
                                                                     .setRetrieverFactory( retrieverFactory )
                                                                     .setPoolRequests( poolRequests )
                                                                     .setBaselineGenerator( baselineGenerator )
-                                                                    .setLeftTransformer( valueAndUnitTransformer )
-                                                                    .setRightTransformer( valueAndUnitTransformer )
-                                                                    .setBaselineTransformer( valueAndUnitTransformer )
+                                                                    .setLeftTransformer( composedTransformer )
+                                                                    .setRightTransformer( composedTransformer )
+                                                                    .setBaselineTransformer( composedTransformer )
                                                                     .setLeftFilter( filter )
                                                                     .setRightFilter( filter )
                                                                     .setBaselineFilter( filter )
@@ -668,9 +676,18 @@ public class PoolFactory
                                                                                          this.getUnitMapper()
                                                                                              .getUnitAliases() );
         // Left transformer
-        DoubleUnaryOperator leftValueTransformer = this.getSingleValuedTransformer( declaration.values() );
+        DoubleUnaryOperator leftValueTransformer = this.getValueTransformer( declaration.values() );
         UnaryOperator<TimeSeries<Double>> leftValueAndUnitTransformer =
-                this.getSingleValuedTransformer( leftValueTransformer );
+                this.getValueTransformer( leftValueTransformer );
+
+        // Apply any valid time season transformer based on the right-ish data type
+        UnaryOperator<TimeSeries<Double>> leftValidTimeSeasonTransformer =
+                this.getValidTimeSeasonTransformer( declaration.season(),
+                                                    declaration.right()
+                                                               .type() );
+
+        UnaryOperator<TimeSeries<Double>> composedLeftTransformer =
+                t -> leftValueAndUnitTransformer.apply( leftValidTimeSeasonTransformer.apply( t ) );
 
         // Whether to cache the sorted ensemble members, trading cpu for memory. Do this when performing sampling
         // uncertainty estimation, because repeated sorting for each realization is otherwise extremely expensive and
@@ -679,24 +696,36 @@ public class PoolFactory
 
         // Right transformer
         Dataset right = project.getDeclaredDataset( DatasetOrientation.RIGHT );
-        UnaryOperator<Event<Ensemble>> rightValueTransformer = this.getEnsembleTransformer( leftValueTransformer,
-                                                                                            right,
-                                                                                            cacheSorted );
+        UnaryOperator<Event<Ensemble>> rightValueTransformer = this.getValueTransformer( leftValueTransformer,
+                                                                                         right,
+                                                                                         cacheSorted );
         UnaryOperator<TimeSeries<Ensemble>> rightValueAndUnitTransformer =
-                this.getEnsembleTransformer( rightValueTransformer );
+                this.getValueTransformer( rightValueTransformer );
+
+        UnaryOperator<TimeSeries<Ensemble>> rightValidTimeSeasonTransformer =
+                this.getValidTimeSeasonTransformer( declaration.season(),
+                                                    declaration.right()
+                                                               .type() );
+
+        UnaryOperator<TimeSeries<Ensemble>> composedRightTransformer =
+                t -> rightValueAndUnitTransformer.apply( rightValidTimeSeasonTransformer.apply( t ) );
 
         // Baseline transformer
         Dataset baseline = project.getDeclaredDataset( DatasetOrientation.BASELINE );
-        UnaryOperator<Event<Ensemble>> baselineValueTransformer = this.getEnsembleTransformer( leftValueTransformer,
-                                                                                               baseline,
-                                                                                               cacheSorted );
+        UnaryOperator<Event<Ensemble>> baselineValueTransformer = this.getValueTransformer( leftValueTransformer,
+                                                                                            baseline,
+                                                                                            cacheSorted );
 
         UnaryOperator<TimeSeries<Ensemble>> baselineValueAndUnitTransformer =
-                this.getEnsembleTransformer( baselineValueTransformer );
+                this.getValueTransformer( baselineValueTransformer );
+
+        // Re-use the right season transformer
+        UnaryOperator<TimeSeries<Ensemble>> composedBaselineTransformer =
+                t -> baselineValueAndUnitTransformer.apply( rightValidTimeSeasonTransformer.apply( t ) );
 
         // Currently only a seasonal filter, which applies equally to all sides
-        Predicate<TimeSeries<Double>> singleValuedFilter = this.getSeasonalFilter( declaration.season() );
-        Predicate<TimeSeries<Ensemble>> ensembleFilter = this.getSeasonalFilter( declaration.season() );
+        Predicate<TimeSeries<Double>> singleValuedFilter = this.getReferenceTimeSeasonFilter( declaration.season() );
+        Predicate<TimeSeries<Ensemble>> ensembleFilter = this.getReferenceTimeSeasonFilter( declaration.season() );
 
         // Missing value filters
         Predicate<Double> leftMissingFilter = MissingValues::isNotMissingValue;
@@ -717,9 +746,9 @@ public class PoolFactory
                         .setProject( project )
                         .setRetrieverFactory( retrieverFactory )
                         .setPoolRequests( poolRequests )
-                        .setLeftTransformer( leftValueAndUnitTransformer )
-                        .setRightTransformer( rightValueAndUnitTransformer )
-                        .setBaselineTransformer( baselineValueAndUnitTransformer )
+                        .setLeftTransformer( composedLeftTransformer )
+                        .setRightTransformer( composedRightTransformer )
+                        .setBaselineTransformer( composedBaselineTransformer )
                         .setLeftUpscaler( leftUpscaler )
                         .setRightUpscaler( rightUpscaler )
                         .setBaselineUpscaler( baselineUpscaler )
@@ -805,9 +834,9 @@ public class PoolFactory
                                                                                          this.getUnitMapper()
                                                                                              .getUnitAliases() );
         // Left transformer
-        DoubleUnaryOperator leftValueTransformer = this.getSingleValuedTransformer( declaration.values() );
+        DoubleUnaryOperator leftValueTransformer = this.getValueTransformer( declaration.values() );
         UnaryOperator<TimeSeries<Double>> leftValueAndUnitTransformer =
-                this.getSingleValuedTransformer( leftValueTransformer );
+                this.getValueTransformer( leftValueTransformer );
 
         // Whether to cache the sorted ensemble members, trading cpu for memory. Do this when performing sampling
         // uncertainty estimation, because repeated sorting for each realization is otherwise extremely expensive and
@@ -816,24 +845,24 @@ public class PoolFactory
 
         // Right transformer
         Dataset right = project.getDeclaredDataset( DatasetOrientation.RIGHT );
-        UnaryOperator<Event<Ensemble>> rightValueTransformer = this.getEnsembleTransformer( leftValueTransformer,
-                                                                                            right,
-                                                                                            cacheSorted );
+        UnaryOperator<Event<Ensemble>> rightValueTransformer = this.getValueTransformer( leftValueTransformer,
+                                                                                         right,
+                                                                                         cacheSorted );
         UnaryOperator<TimeSeries<Ensemble>> rightValueAndUnitTransformer =
-                this.getEnsembleTransformer( rightValueTransformer );
+                this.getValueTransformer( rightValueTransformer );
 
         // Baseline transformer
         Dataset baseline = project.getDeclaredDataset( DatasetOrientation.BASELINE );
-        UnaryOperator<Event<Ensemble>> baselineValueTransformer = this.getEnsembleTransformer( leftValueTransformer,
-                                                                                               baseline,
-                                                                                               cacheSorted );
+        UnaryOperator<Event<Ensemble>> baselineValueTransformer = this.getValueTransformer( leftValueTransformer,
+                                                                                            baseline,
+                                                                                            cacheSorted );
 
         UnaryOperator<TimeSeries<Ensemble>> baselineValueAndUnitTransformer =
-                this.getEnsembleTransformer( baselineValueTransformer );
+                this.getValueTransformer( baselineValueTransformer );
 
         // Currently only a seasonal filter, which applies equally to all sides
-        Predicate<TimeSeries<Double>> singleValuedFilter = this.getSeasonalFilter( declaration.season() );
-        Predicate<TimeSeries<Ensemble>> ensembleFilter = this.getSeasonalFilter( declaration.season() );
+        Predicate<TimeSeries<Double>> singleValuedFilter = this.getReferenceTimeSeasonFilter( declaration.season() );
+        Predicate<TimeSeries<Ensemble>> ensembleFilter = this.getReferenceTimeSeasonFilter( declaration.season() );
 
         // Missing value filters
         Predicate<Double> leftMissingFilter = MissingValues::isNotMissingValue;
@@ -1115,13 +1144,14 @@ public class PoolFactory
     }
 
     /**
-     * Returns a transformer that applies a unit conversion, followed by the input transformation.
+     * Returns a transformer that applies a unit conversion, followed by the input transformation to a single-valued
+     * time-series.
      *
      * @param basicTransformer the transformer to apply after a unit conversion
      * @return a transformer that applies a unit conversion followed by the input transformer
      */
 
-    private UnaryOperator<TimeSeries<Double>> getSingleValuedTransformer( DoubleUnaryOperator basicTransformer )
+    private UnaryOperator<TimeSeries<Double>> getValueTransformer( DoubleUnaryOperator basicTransformer )
     {
         return toTransform -> {
 
@@ -1161,14 +1191,14 @@ public class PoolFactory
     }
 
     /**
-     * Returns a transformer that applies a unit conversion, followed by the input transformation.
+     * Returns a transformer that applies a unit conversion, followed by the input transformation to an ensemble
+     * time-series.
      *
      * @param basicTransformer the transformer to apply after a unit conversion
      * @return a transformer that applies a unit conversion followed by the input transformer
      */
 
-    private UnaryOperator<TimeSeries<Ensemble>>
-    getEnsembleTransformer( UnaryOperator<Event<Ensemble>> basicTransformer )
+    private UnaryOperator<TimeSeries<Ensemble>> getValueTransformer( UnaryOperator<Event<Ensemble>> basicTransformer )
     {
         return toTransform -> {
             // Apply the unit mapping first, then the basic transformer
@@ -1310,7 +1340,7 @@ public class PoolFactory
      * @return a transformer or null
      */
 
-    private DoubleUnaryOperator getSingleValuedTransformer( Values values )
+    private DoubleUnaryOperator getValueTransformer( Values values )
     {
         if ( Objects.isNull( values ) )
         {
@@ -1379,9 +1409,9 @@ public class PoolFactory
      * @return a transformer or null
      */
 
-    private UnaryOperator<Event<Ensemble>> getEnsembleTransformer( DoubleUnaryOperator valueTransformer,
-                                                                   Dataset dataset,
-                                                                   boolean cacheSorted )
+    private UnaryOperator<Event<Ensemble>> getValueTransformer( DoubleUnaryOperator valueTransformer,
+                                                                Dataset dataset,
+                                                                boolean cacheSorted )
     {
         List<String> inclusive = null;
         List<String> exclusive = null;
@@ -1538,11 +1568,13 @@ public class PoolFactory
     }
 
     /**
+     * Returns a season filter that applies to time-series as a whole based on their reference times.
+     *
      * @param season the season
      * @return a seasonal filter
      */
 
-    private <T> Predicate<TimeSeries<T>> getSeasonalFilter( Season season )
+    private <T> Predicate<TimeSeries<T>> getReferenceTimeSeasonFilter( Season season )
     {
         if ( Objects.isNull( season ) )
         {
@@ -1552,7 +1584,30 @@ public class PoolFactory
         MonthDay start = season.minimum();
         MonthDay end = season.maximum();
 
-        return TimeSeriesSlicer.getSeasonFilter( start, end );
+        return TimeSeriesSlicer.getReferenceTimeSeasonFilter( start, end );
+    }
+
+    /**
+     * Returns a season filter that applies to non-forecast time-series events based on their valid times.
+     *
+     * @param season the season
+     * @param type the data type
+     * @return a season transformer
+     */
+
+    private <T> UnaryOperator<TimeSeries<T>> getValidTimeSeasonTransformer( Season season,
+                                                                            DataType type )
+    {
+        if ( Objects.isNull( season )
+             || type.isForecastType() )
+        {
+            return in -> in;
+        }
+
+        MonthDay start = season.minimum();
+        MonthDay end = season.maximum();
+
+        return TimeSeriesSlicer.getValidTimeSeasonTransformer( start, end );
     }
 
     /**

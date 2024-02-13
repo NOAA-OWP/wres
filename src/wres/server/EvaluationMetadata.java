@@ -21,6 +21,7 @@ import wres.messages.generated.EvaluationStatusOuterClass;
 
 public class EvaluationMetadata implements Serializable
 {
+    /** Logger. */
     protected static final Logger LOGGER = LoggerFactory.getLogger( EvaluationMetadata.class );
 
     /**

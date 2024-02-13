@@ -58,14 +58,17 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
     /** The number of pools processed so far. */
     private final AtomicInteger processed;
 
+    /** Is {@code true} to print a detailed report in {@link #report()}, {@code false} to provide a summary. */
+    private final boolean printDetailedReport;
+
+    /** The evaluation identifier. */
+    private final String evaluationId;
+
     /** The time when the first pool was completed. */
     private Instant startTime;
 
     /** The time when the last pool was completed. */
     private Instant endTime;
-
-    /** Is {@code true} to print a detailed report in {@link #report()}, {@code false} to provide a summary. */
-    private final boolean printDetailedReport;
 
     /**
      * Build a {@link PoolReporter}.
@@ -74,13 +77,15 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
      * @param featureGroupsForSummaryStatistics the feature groups for summary statistics only
      * @param totalPools the total number of pools to process
      * @param printDetailedReport is true to print a detailed report on completion, false to summarize
+     * @param evaluationId the evaluation identifier
      * @throws NullPointerException if the project configuration is null
      */
 
     public PoolReporter( EvaluationDeclaration declaration,
                          Set<FeatureGroup> featureGroupsForSummaryStatistics,
                          int totalPools,
-                         boolean printDetailedReport )
+                         boolean printDetailedReport,
+                         String evaluationId )
     {
         Objects.requireNonNull( declaration,
                                 "Specify non-null project configuration when building the feature report." );
@@ -91,6 +96,7 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
         this.successfulPools = new ConcurrentLinkedQueue<>();
         this.processed = new AtomicInteger( 0 );
         this.featureGroupsForSummaryStatistics = featureGroupsForSummaryStatistics;
+        this.evaluationId = evaluationId;
     }
 
     /**
@@ -177,7 +183,7 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
             {
                 LOGGER.info( "Statistics were created for {} pools, which included {} features groups and {} time "
                              + "windows. The time elapsed between the completion of the first and last pools was: {}."
-                             + "The feature groups were: {}. The time windows were: {}.",
+                             + " The feature groups were: {}. The time windows were: {}.",
                              successfulPoolsToReport.size(),
                              successfulFeaturesToReport.size(),
                              successfulTimeWindowsToReport.size(),
@@ -227,17 +233,17 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
         {
             if ( this.totalPools == successfulPoolsToReport.size() )
             {
-                LOGGER.info( "Finished creating statistics for all {} pools in project {}.",
+                LOGGER.info( "Finished creating statistics for all {} pools in {}.",
                              this.totalPools,
-                             this.declaration.label() );
+                             this.getEvaluationName() );
             }
             else
             {
-                LOGGER.info( "{} out of {} pools in project {} produced statistics and {} out of {} pools did not "
+                LOGGER.info( "{} out of {} pools in {} produced statistics and {} out of {} pools did not "
                              + "produce statistics.",
                              successfulPoolsToReport.size(),
                              this.totalPools,
-                             this.declaration.label(),
+                             this.getEvaluationName(),
                              this.totalPools - successfulPoolsToReport.size(),
                              this.totalPools );
             }
@@ -354,6 +360,24 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
                              TIME_WINDOW_STRINGIFIER.apply( timeWindow ) );
             }
         }
+    }
+
+    /**
+     * @return the evaluation name
+     */
+    private String getEvaluationName()
+    {
+        String start;
+        if ( Objects.isNull( this.declaration.label() ) )
+        {
+            start = "unnamed evaluation";
+        }
+        else
+        {
+            start = "evaluation '" + declaration.label() + "'";
+        }
+
+        return start + " with identifier " + this.evaluationId;
     }
 
     /**

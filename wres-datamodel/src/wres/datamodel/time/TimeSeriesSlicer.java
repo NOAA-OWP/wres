@@ -141,8 +141,7 @@ public final class TimeSeriesSlicer
      * @throws NullPointerException if the input is null
      */
 
-    public static <S> Predicate<TimeSeries<Pair<S, S>>>
-    anyOfLeftAndAnyOfRightInTimeSeries( Predicate<S> predicate )
+    public static <S> Predicate<TimeSeries<Pair<S, S>>> anyOfLeftAndAnyOfRightInTimeSeries( Predicate<S> predicate )
     {
         Objects.requireNonNull( predicate,
                                 "Specify non-null input when slicing a time-series by any of left"
@@ -180,6 +179,7 @@ public final class TimeSeriesSlicer
     /**
      * Returns a filtered view of a time-series based on the input predicate.
      *
+     * @see #filterByEvent(TimeSeries, Predicate)
      * @param <T> the type of time-series value
      * @param timeSeries the time-series
      * @param filter the filter
@@ -190,33 +190,54 @@ public final class TimeSeriesSlicer
     public static <T> TimeSeries<T> filter( TimeSeries<T> timeSeries, Predicate<T> filter )
     {
         Objects.requireNonNull( timeSeries );
+        Objects.requireNonNull( filter );
 
+        Predicate<Event<T>> byEvent = e -> filter.test( e.getValue() );
+
+        return TimeSeriesSlicer.filterByEvent( timeSeries, byEvent );
+    }
+
+    /**
+     * Returns a filtered view of a time-series based on the input predicate.
+     *
+     * @see #filter(TimeSeries, Predicate)
+     * @param <T> the type of time-series value
+     * @param timeSeries the time-series
+     * @param filter the filter
+     * @return a filtered view of the input series
+     * @throws NullPointerException if any input is null
+     */
+
+    public static <T> TimeSeries<T> filterByEvent( TimeSeries<T> timeSeries, Predicate<Event<T>> filter )
+    {
+        Objects.requireNonNull( timeSeries );
         Objects.requireNonNull( filter );
 
         TimeSeries.Builder<T> builder = new TimeSeries.Builder<>();
 
         builder.setMetadata( timeSeries.getMetadata() );
 
-        for ( Event<T> event : timeSeries.getEvents() )
-        {
-            if ( filter.test( event.getValue() ) )
-            {
-                builder.addEvent( event );
-            }
-        }
+        timeSeries.getEvents()
+                  .stream()
+                  .filter( filter )
+                  .forEach( builder::addEvent );
 
         return builder.build();
     }
 
     /**
-     * Creates a seasonal filter from the inputs. Currently only applies to reference times.
+     * Creates a filter that indicates whether any one reference time associated with the time-series falls within the
+     * declared season.
+     *
+     * @see #getValidTimeSeasonTransformer(MonthDay, MonthDay)
      * @param <T> the time-series event value type
      * @param start the start monthday
      * @param end the end monthday
      * @return the filter
+     * @throws NullPointerException if either input is null
      */
 
-    public static <T> Predicate<TimeSeries<T>> getSeasonFilter( MonthDay start, MonthDay end )
+    public static <T> Predicate<TimeSeries<T>> getReferenceTimeSeasonFilter( MonthDay start, MonthDay end )
     {
         Objects.requireNonNull( start );
         Objects.requireNonNull( end );
@@ -234,7 +255,8 @@ public final class TimeSeriesSlicer
             Function<Instant, Pair<Instant, Instant>> intervalCalculator =
                     TimeSeriesSlicer.getIntervalFromMonthDays( start, end );
 
-            for ( Instant next : timeSeries.getReferenceTimes().values() )
+            for ( Instant next : timeSeries.getReferenceTimes()
+                                           .values() )
             {
                 Pair<Instant, Instant> nextInterval = intervalCalculator.apply( next );
 
@@ -252,6 +274,42 @@ public final class TimeSeriesSlicer
 
             return false;
         };
+    }
+
+    /**
+     * Creates a transformer that removes valid times that are outside the prescribed season.
+     *
+     * @see #getReferenceTimeSeasonFilter(MonthDay, MonthDay)
+     * @param <T> the time-series event value type
+     * @param start the start monthday
+     * @param end the end monthday
+     * @return the transformer
+     * @throws NullPointerException if either input is null
+     */
+
+    public static <T> UnaryOperator<TimeSeries<T>> getValidTimeSeasonTransformer( MonthDay start, MonthDay end )
+    {
+        Objects.requireNonNull( start );
+        Objects.requireNonNull( end );
+
+        Function<Instant, Pair<Instant, Instant>> intervalCalculator =
+                TimeSeriesSlicer.getIntervalFromMonthDays( start, end );
+
+        Predicate<Event<T>> byEvent = e ->
+        {
+            Instant nextTime = e.getTime();
+            Pair<Instant, Instant> nextInterval = intervalCalculator.apply( nextTime );
+
+            Instant earliest = nextInterval.getLeft();
+            Instant latest = nextInterval.getRight();
+
+            // Is the valid time within the interval?
+            return nextTime.isAfter( earliest )
+                   && ( nextTime.isBefore( latest )
+                        || nextTime.equals( latest ) );
+        };
+
+        return t -> TimeSeriesSlicer.filterByEvent( t, byEvent );
     }
 
     /**
@@ -359,34 +417,6 @@ public final class TimeSeriesSlicer
                 builder.addEvent( nextEvent );
             }
         }
-
-        return builder.build();
-    }
-
-    /**
-     * Returns a filtered view of a time-series based on the input predicate.
-     *
-     * @param <T> the type of time-series value
-     * @param timeSeries the time-series
-     * @param filter the filter
-     * @return a filtered view of the input series
-     * @throws NullPointerException if any input is null
-     */
-
-    public static <T> TimeSeries<T> filterByEvent( TimeSeries<T> timeSeries, Predicate<Event<T>> filter )
-    {
-        Objects.requireNonNull( timeSeries );
-
-        Objects.requireNonNull( filter );
-
-        TimeSeries.Builder<T> builder = new TimeSeries.Builder<>();
-
-        builder.setMetadata( timeSeries.getMetadata() );
-
-        timeSeries.getEvents()
-                  .stream()
-                  .filter( filter )
-                  .forEach( builder::addEvent );
 
         return builder.build();
     }

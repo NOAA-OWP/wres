@@ -16,7 +16,6 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -587,6 +586,7 @@ public class EvaluationService implements ServletContextListener
 
     @GET
     @Path( "/{id}/{resourceName}" )
+    @Deprecated( since = "6.17" )
     public Response getProjectResource( @PathParam( "id" ) Long id,
                                         @PathParam( "resourceName" ) String resourceName )
     {
@@ -1022,29 +1022,6 @@ public class EvaluationService implements ServletContextListener
         }
 
         return type;
-    }
-
-    /**
-     * Get a set of resources connected to a project.
-     * @param projectId the project identifier
-     * @param pathSet the paths
-     * @return the resources
-     */
-
-    private static Set<String> getSetOfResources( long projectId,
-                                                  Set<java.nio.file.Path> pathSet )
-    {
-        Set<String> resources = new HashSet<>();
-
-        for ( java.nio.file.Path path : pathSet )
-        {
-            resources.add( "project/"
-                           + projectId
-                           + "/"
-                           + path.getFileName() );
-        }
-
-        return Collections.unmodifiableSet( resources );
     }
 
     /**

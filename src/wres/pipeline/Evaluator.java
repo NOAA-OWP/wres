@@ -674,8 +674,9 @@ public class Evaluator
             // Create the feature groups
             Set<FeatureGroup> featureGroups = EvaluationUtilities.getFeatureGroups( project, features );
 
-            // If summary statistics are required for feature groups, ensure that all the singletons within feature
-            // groups are part of the singletons list, but do not publish statistics for these features
+            // If summary statistics are required for multi-feature groups, ensure that all the singletons within
+            // feature groups are part of the singletons list for evaluation, but do not publish statistics for these
+            // singleton features unless they were declared explicitly
             Set<FeatureGroup> doNotPublish = project.getFeatureGroupsForWhichStatisticsShouldNotBePublished();
 
             // Adjust the declaration to include the fully described features based on the ingested data
@@ -701,10 +702,10 @@ public class Evaluator
 
             // Create any netcdf blobs for writing. See #80267-137.
             Set<FeatureGroup> adjustedFeatureGroups =
-                    EvaluationUtilities.getFeatureGroupsForSummaryStatistics( featureGroups,
-                                                                              unwrappedFeatures,
-                                                                              declaration.summaryStatistics(),
-                                                                              doNotPublish );
+                    EvaluationUtilities.adjustFeatureGroupsForSummaryStatistics( featureGroups,
+                                                                                 unwrappedFeatures,
+                                                                                 declaration.summaryStatistics(),
+                                                                                 doNotPublish );
 
             EvaluationUtilities.createNetcdfBlobs( netcdfWriters,
                                                    adjustedFeatureGroups,
@@ -742,10 +743,15 @@ public class Evaluator
             monitor.setPoolCount( poolCount );
 
             // Report on the completion state of all pools
+            // Identify the feature groups for which only summary statistics are calculated - start with the adjusted
+            // features and remove all singletons as there are no summary statistics for singletons
+            Set<FeatureGroup> summaryStatisticsOnly =
+                    EvaluationUtilities.getFeatureGroupsForSummaryStatisticsOnly( adjustedFeatureGroups, declaration );
             PoolReporter poolReporter = new PoolReporter( declarationWithFeaturesAndThresholds,
-                                                          adjustedFeatureGroups,
+                                                          summaryStatisticsOnly,
                                                           poolCount,
-                                                          true );
+                                                          true,
+                                                          evaluationId );
 
             // Get a message group tracker to notify the completion of groups that encompass several pools. Currently,
             // this is feature-group shaped, but additional shapes may be desired in future
