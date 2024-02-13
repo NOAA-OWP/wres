@@ -758,7 +758,8 @@ public final class TimeSeriesSlicer
         Objects.requireNonNull( right );
         Objects.requireNonNull( timeWindow );
 
-        if ( Objects.nonNull( desiredTimeScale ) && desiredTimeScale.hasMonthDays() )
+        if ( Objects.nonNull( desiredTimeScale )
+             && desiredTimeScale.hasMonthDays() )
         {
             LOGGER.debug( WHILE_ATTEMPTING_TO_FIND_THE_INTERSECTING_TIMES_BETWEEN_THE_LEFT_SERIES_AND_THE_RIGHT
                           + "series {} at the desired time scale of {}, discovered month-day bookends in the desired "
@@ -771,8 +772,11 @@ public final class TimeSeriesSlicer
         }
 
         // Both contain reference times and those times are unequal, return the empty set
-        if ( !left.getReferenceTimes().isEmpty() && !right.getReferenceTimes().isEmpty()
-             && !left.getReferenceTimes().equals( right.getReferenceTimes() ) )
+        if ( !left.getReferenceTimes()
+                  .isEmpty() && !right.getReferenceTimes()
+                                      .isEmpty()
+             && !left.getReferenceTimes()
+                     .equals( right.getReferenceTimes() ) )
         {
             LOGGER.debug( WHILE_ATTEMPTING_TO_FIND_THE_INTERSECTING_TIMES_BETWEEN_THE_LEFT_SERIES_AND_THE_RIGHT
                           + "series {} at the desired time scale of {}, discovered unequal reference times. Returning "
@@ -784,13 +788,32 @@ public final class TimeSeriesSlicer
             return Collections.emptySortedSet();
         }
 
-        // Find the intersecting valid times
-        SortedSet<Instant> leftValidTimes = TimeSeriesSlicer.getValidTimes( left );
-        SortedSet<Instant> rightValidTimes = TimeSeriesSlicer.getValidTimes( right );
-        SortedSet<Instant> intersectingTimes = new TreeSet<>( leftValidTimes );
-        intersectingTimes.retainAll( rightValidTimes );
+        // Find the intersecting valid times. Sort by the shortest series for improved performance.
+        SortedSet<Instant> shortest;
+        TimeSeries<?> longest;
+        if ( left.getEvents()
+                 .size() < right.getEvents()
+                                .size() )
+        {
+            shortest = TimeSeriesSlicer.getValidTimes( left );
+            longest = right;
+        }
+        else
+        {
+            shortest = TimeSeriesSlicer.getValidTimes( right );
+            longest = left;
+        }
 
-        //Thinning required? If not, then return the intersecting times.
+        SortedSet<Instant> intersectingTimes = new TreeSet<>();
+        for ( Event<?> next : longest.getEvents() )
+        {
+            if ( shortest.contains( next.getTime() ) )
+            {
+                intersectingTimes.add( next.getTime() );
+            }
+        }
+
+        // Thinning required? If not, then return the intersecting times.
         boolean upscaleLeft = Objects.nonNull( desiredTimeScale ) && !desiredTimeScale.equals( left.getTimeScale() );
         boolean upscaleRight = Objects.nonNull( desiredTimeScale )
                                && !desiredTimeScale.equals( right.getTimeScale() );

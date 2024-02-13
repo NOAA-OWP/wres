@@ -56,6 +56,9 @@ public class Database
         this.sqlTasks = createService();
     }
 
+    /**
+     * @return whether the database is shutdown
+     */
     public boolean isShutdown()
     {
         return this.sqlTasks.isShutdown();
