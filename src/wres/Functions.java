@@ -898,8 +898,8 @@ public final class Functions
         {
             // #81660
             LOGGER.info( "Closing database activities..." );
-            Functions.database.shutdown();
-            LOGGER.info( "The database activities have been closed." );
+            List<Runnable> abandoned = Functions.database.shutdown();
+            LOGGER.info( "Database is closed and abandoned {} database tasks.", abandoned.size() );
         }
 
         if ( Objects.nonNull( Functions.broker ) )
