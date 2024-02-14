@@ -208,7 +208,9 @@ class EvaluationUtilities
                                                          .flatMap( c -> c.get()
                                                                          .stream() )
                                                          .toList();
+
             nextStatistics.forEach( m -> messager.publish( m, groupId ) );
+
             groupIds.add( groupId );
 
             LOGGER.debug( "Published {} summary statistics for group {}", nextStatistics.size(), groupId );
@@ -1852,7 +1854,6 @@ class EvaluationUtilities
                 BinaryOperator<Statistics> thresholdAdapter = nextInnerFilter.adapter();
                 BinaryOperator<Statistics> metadataAdapter = ( p, q ) ->
                         poolNumberAdapter.apply( featureAdapter.apply( thresholdAdapter.apply( p, q ), q ), q );
-
 
                 SummaryStatisticsCalculator calculator = SummaryStatisticsCalculator.of( nextScalar,
                                                                                          nextDiagrams,
