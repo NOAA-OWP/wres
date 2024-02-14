@@ -634,35 +634,40 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             {
                 OneOrTwoThresholds nextThreshold = nextEntry.getKey();
                 Map<DatasetOrientation, SummaryStatisticsCalculator> orientedCalculators = nextEntry.getValue();
-                Map<DatasetOrientation, List<Statistics>> statistics = grouped.get( nextThreshold );
 
-                for ( Map.Entry<DatasetOrientation, List<Statistics>> nextOrientation : statistics.entrySet() )
+                if ( grouped.containsKey( nextThreshold ) )
                 {
-                    DatasetOrientation orientation = nextOrientation.getKey();
-                    List<Statistics> nextStatistics = nextOrientation.getValue();
-                    SummaryStatisticsCalculator calculator = orientedCalculators.get( orientation );
+                    Map<DatasetOrientation, List<Statistics>> statistics = grouped.get( nextThreshold );
 
-                    // Quantile calculator available?
-                    if ( Objects.nonNull( calculator ) )
+                    for ( Map.Entry<DatasetOrientation, List<Statistics>> nextOrientation : statistics.entrySet() )
                     {
-                        nextStatistics.forEach( calculator::test );
-                    }
-                    // Log a missing quantile calculator, which can happen when resampling generates novel data for
-                    // which nominal statistics were unavailable. This is rare, but can happen, for example, when a
-                    // minimum sample size is required for the nominal statistics and the resampled pairs meets the
-                    // condition, but the nominal pairs do not
-                    else if ( LOGGER.isDebugEnabled() )
-                    {
-                        LOGGER.debug( "Discovered sample statistics for which a quantile calculator was unavailable."
-                                      + " This can happen when resampling produces a dataset that meets some "
-                                      + "constraint (e.g., a minimum sample size) that was not met for the dataset "
-                                      + "that produced the nominal statistics and for which the quantiles are "
-                                      + "calculated. These statistics will not contribute towards sampling uncertainty "
-                                      + "estimation. The pool metadata is: {}. The quantile calculator was missing for "
-                                      + "threshold {} and dataset orientation {}.",
-                                      this.poolRequest.getMetadata(),
-                                      nextThreshold,
-                                      orientation );
+                        DatasetOrientation orientation = nextOrientation.getKey();
+                        List<Statistics> nextStatistics = nextOrientation.getValue();
+                        SummaryStatisticsCalculator calculator = orientedCalculators.get( orientation );
+
+                        // Quantile calculator available?
+                        if ( Objects.nonNull( calculator ) )
+                        {
+                            nextStatistics.forEach( calculator::test );
+                        }
+                        // Log a missing quantile calculator, which can happen when resampling generates novel data for
+                        // which nominal statistics were unavailable. This is rare, but can happen, for example, when a
+                        // minimum sample size is required for the nominal statistics and the resampled pairs meets the
+                        // condition, but the nominal pairs do not
+                        else if ( LOGGER.isDebugEnabled() )
+                        {
+                            LOGGER.debug(
+                                    "Discovered sample statistics for which a quantile calculator was unavailable."
+                                    + " This can happen when resampling produces a dataset that meets some "
+                                    + "constraint (e.g., a minimum sample size) that was not met for the dataset "
+                                    + "that produced the nominal statistics and for which the quantiles are "
+                                    + "calculated. These statistics will not contribute towards sampling uncertainty "
+                                    + "estimation. The pool metadata is: {}. The quantile calculator was missing for "
+                                    + "threshold {} and dataset orientation {}.",
+                                    this.poolRequest.getMetadata(),
+                                    nextThreshold,
+                                    orientation );
+                        }
                     }
                 }
             }

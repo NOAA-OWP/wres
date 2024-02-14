@@ -65,14 +65,6 @@ public class Database
     }
 
     /**
-     * Shuts down the database in an orderly sequence.
-     */
-    public List<Runnable> shutdown()
-    {
-        return this.shutdown( 5, TimeUnit.SECONDS );
-    }
-
-    /**
      * Shuts down after all tasks have completed, or after timeout is reached,
      * whichever comes first. Tasks may be interrupted and abandoned.
      * @param timeOut the desired maximum wait, measured in timeUnit
@@ -81,7 +73,7 @@ public class Database
      */
 
     public List<Runnable> shutdown( long timeOut,
-                                         TimeUnit timeUnit )
+                                    TimeUnit timeUnit )
     {
         LOGGER.info( "Shutting down the database..." );
         List<Runnable> abandoned = new ArrayList<>();
@@ -350,7 +342,7 @@ public class Database
     /**
      * Schedules a query to run asynchronously with no regard to a result
      * @param query The query to schedule
-     * @param isHighPriority Whether or not the query should be run on a high priority connection
+     * @param isHighPriority whether the query should be run on a high priority connection
      * @return The record for the scheduled task
      */
     Future<?> issue( final Query query, final boolean isHighPriority )
@@ -449,7 +441,7 @@ public class Database
             {
                 HikariDataSource connections = this.connectionSupplier.getConnectionPool()
                                                                       .unwrap( HikariDataSource.class );
-                if( ! connections.isClosed() )
+                if ( !connections.isClosed() )
                 {
                     LOGGER.info( "Closing the ordinary priority database connection pool..." );
                     connections.close();
@@ -469,7 +461,7 @@ public class Database
             {
                 HikariDataSource connections = this.connectionSupplier.getHighPriorityConnectionPool()
                                                                       .unwrap( HikariDataSource.class );
-                if( ! connections.isClosed() )
+                if ( !connections.isClosed() )
                 {
                     LOGGER.info( "Closing the high priority database connection pool..." );
                     connections.close();

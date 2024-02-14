@@ -1511,8 +1511,8 @@ definitions:
     features', only those time-series with a common geographic feature will be 
     cross-paired with each other. When applied 'across features', all of the 
     time-series within a feature group will be cross-paired with each other and 
-    only those time-series and events retained that are present for all 
-    geographic features."
+    only those time-series and associated events retained that are present for 
+    all geographic features."
     type: string
     enum:
       - within features

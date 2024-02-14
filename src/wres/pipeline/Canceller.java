@@ -275,7 +275,7 @@ public class Canceller
             LOGGER.warn( "Cancelling database activities for evaluation {}, which may produce errors...",
                          this.evaluationId );
 
-            this.database.shutdown();
+            this.database.shutdown( 5, TimeUnit.SECONDS );
         }
     }
 

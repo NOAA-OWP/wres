@@ -24,6 +24,9 @@ import wres.config.MetricConstants;
 import wres.config.yaml.components.AnalysisTimes;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
+import wres.config.yaml.components.CrossPair;
+import wres.config.yaml.components.CrossPairMethod;
+import wres.config.yaml.components.CrossPairScope;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
@@ -1899,7 +1902,6 @@ class DeclarationValidatorTest
 
     }
 
-
     @Test
     void testSummaryStatisticsAcrossFeatureGroupsFailsValidationWhenFeatureServiceGroupsAreSingletons()
     {
@@ -1928,6 +1930,34 @@ class DeclarationValidatorTest
                                                        "no feature groups with multiple features were declared",
                                                        StatusLevel.ERROR ) );
 
+    }
+
+    @Test
+    void testSamplingUncertaintyAndFeatureGroupsWithUnexpectedCrossPairingOptionProducesWarning()
+    {
+        SamplingUncertainty samplingUncertainty = SamplingUncertaintyBuilder.builder()
+                                                                            .sampleSize( 1000 )
+                                                                            .build();
+
+        FeatureServiceGroup group = new FeatureServiceGroup( "a", "b", true );
+        FeatureService featureService = new FeatureService( URI.create( "http://foo.bar" ), Set.of( group ) );
+        CrossPair crossPair = new CrossPair( CrossPairMethod.FUZZY, CrossPairScope.WITHIN_FEATURES );
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .baseline( new BaselineDataset( this.defaultDataset, null, null ) )
+                                            .featureService( featureService )
+                                            .sampleUncertainty( samplingUncertainty )
+                                            .crossPair( crossPair )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "please consider declaring these two cross-pairing "
+                                                       + "options",
+                                                       StatusLevel.WARN ) );
     }
 
     @Test
