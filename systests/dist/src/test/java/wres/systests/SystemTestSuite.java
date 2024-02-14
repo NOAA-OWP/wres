@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 import wres.io.database.ConnectionSupplier;
 import wres.io.database.Database;
@@ -114,7 +115,7 @@ public class SystemTestSuite
             DatabaseOperations.cleanDatabase( database );
             Instant stopped = Instant.now();
             Duration duration = Duration.between( started, stopped );
-            database.shutdown();
+            database.shutdown( 5, TimeUnit.SECONDS );
 
             LOGGER.info( "Finished cleaning the test database instance {}, which took {}.",
                          dbName,

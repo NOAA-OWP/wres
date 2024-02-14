@@ -4,13 +4,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Objects;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import com.zaxxer.hikari.HikariDataSource;
 import liquibase.database.Database;
@@ -51,12 +52,13 @@ public class DataSourcesTest
 
     private Connection rawConnection;
     private Database liquibaseDatabase;
+    private AutoCloseable openMocks;
 
     @Before
     public void beforeEachTest() throws Exception
     {
         LOGGER.debug( "'@Before' started" );
-        MockitoAnnotations.openMocks(  this );
+        this.openMocks = MockitoAnnotations.openMocks( this );
         this.testDatabase = new TestDatabase( "DataSourcesTest"
                                               + RANDOM.nextLong() );
         this.dataSource = this.testDatabase.getNewHikariDataSource();
@@ -88,7 +90,14 @@ public class DataSourcesTest
     private DataSources initializeDataSources()
     {
         LOGGER.debug( "initializeDataSources started" );
-        DataProvider data = DataBuilder.with( "path", "hash", "is_point_data", "source_id", "variable_name", "feature_id", "measurementunit_id", "timescale_id" )
+        DataProvider data = DataBuilder.with( "path",
+                                              "hash",
+                                              "is_point_data",
+                                              "source_id",
+                                              "variable_name",
+                                              "feature_id",
+                                              "measurementunit_id",
+                                              "timescale_id" )
                                        .addRow( "/somewhere/somewhere/1.ext",
                                                 "1234",
                                                 false,
@@ -137,13 +146,13 @@ public class DataSourcesTest
         sourceDetailsOne.save( this.wresDatabase );
         Long result = dataSourcesCache.getSourceId( "deadbeef" );
 
-        assertTrue("The id should be an integer greater than zero.",
-                   result > 0);
+        assertTrue( "The id should be an integer greater than zero.",
+                    result > 0 );
 
-        Long result2 = dataSourcesCache.getSourceId( "deadbeef");
+        Long result2 = dataSourcesCache.getSourceId( "deadbeef" );
 
-        assertEquals("Getting an id with the same hash should yield the same result.",
-                     result2, result);
+        assertEquals( "Getting an id with the same hash should yield the same result.",
+                      result2, result );
 
         int countOfRows;
 
@@ -151,11 +160,11 @@ public class DataSourcesTest
               ResultSet r = statement.executeQuery( "SELECT COUNT( source_id ) FROM wres.Source" ) )
         {
             r.next();
-            countOfRows = r.getInt(1);
+            countOfRows = r.getInt( 1 );
         }
 
-        assertEquals("There should be only one row in the wres.Source table",
-                     1, countOfRows);
+        assertEquals( "There should be only one row in the wres.Source table",
+                      1, countOfRows );
 
         // Remove the source table etc. now that assertions have finished.
         this.testDatabase.dropSourceTable( this.rawConnection );
@@ -165,8 +174,7 @@ public class DataSourcesTest
     }
 
     @Test
-    public void initializeCacheWithExistingData()
-            throws URISyntaxException, SQLException, LiquibaseException
+    public void initializeCacheWithExistingData() throws SQLException, LiquibaseException
     {
         LOGGER.debug( "initializeCacheWithExistingData began" );
 
@@ -188,8 +196,8 @@ public class DataSourcesTest
 
         Long secondId = scTwo.getId( "deadbeef" );
 
-        assertEquals("Second cache should find id in database from first cache",
-                    firstId, secondId);
+        assertEquals( "Second cache should find id in database from first cache",
+                      firstId, secondId );
 
         // Remove the source table now that assertions have finished.
         this.testDatabase.dropSourceTable( this.rawConnection );
@@ -209,10 +217,10 @@ public class DataSourcesTest
 
         Assert.assertNotEquals( firstDetails, null );
 
-        Assert.assertEquals( firstDetails.getId(), (Long) 1L );
-        Assert.assertFalse(firstDetails.getIsPointData());
-        Assert.assertFalse(firstDetails.performedInsert());
-        Assert.assertEquals( firstDetails.getHash(), "1234" );
+        Assert.assertEquals( firstDetails.getId(), ( Long ) 1L );
+        Assert.assertFalse( firstDetails.getIsPointData() );
+        Assert.assertFalse( firstDetails.performedInsert() );
+        Assert.assertEquals( "1234", firstDetails.getHash() );
 
         SourceDetails secondDetails = dataSourcesCache.get( "1234" );
 
@@ -224,42 +232,46 @@ public class DataSourcesTest
 
         String secondKey = secondDetails.getKey();
 
-        Assert.assertEquals(firstDetails, secondDetails);
+        Assert.assertEquals( firstDetails, secondDetails );
 
         SourceDetails thirdDetails = dataSourcesCache.getById( 3L );
 
         Assert.assertNotEquals( thirdDetails, null );
 
-        Assert.assertEquals(thirdDetails.getId(), (Long) 3L);
-        Assert.assertFalse(thirdDetails.getIsPointData());
-        Assert.assertFalse(thirdDetails.performedInsert());
-        Assert.assertEquals( thirdDetails.getHash(), "123456" );
+        Assert.assertEquals( thirdDetails.getId(), ( Long ) 3L );
+        Assert.assertFalse( thirdDetails.getIsPointData() );
+        Assert.assertFalse( thirdDetails.performedInsert() );
+        Assert.assertEquals( "123456", thirdDetails.getHash() );
 
         String thirdKey = thirdDetails.getKey();
 
 
         Assert.assertNotEquals( secondKey, thirdKey );
 
-        Assert.assertNotEquals(secondDetails.getHash(), thirdDetails.getHash());
-        Assert.assertNotEquals(secondDetails.getId(), thirdDetails.getId());
+        Assert.assertNotEquals( secondDetails.getHash(), thirdDetails.getHash() );
+        Assert.assertNotEquals( secondDetails.getId(), thirdDetails.getId() );
 
         Assert.assertNotEquals( secondDetails, thirdDetails );
 
-        Assert.assertEquals(-1, secondDetails.compareTo(thirdDetails));
-        Assert.assertEquals(1, thirdDetails.compareTo( secondDetails ));
+        Assert.assertEquals( -1, secondDetails.compareTo( thirdDetails ) );
+        Assert.assertEquals( 1, thirdDetails.compareTo( secondDetails ) );
     }
 
     @After
-    public void afterEachTest() throws SQLException
+    public void afterEachTest() throws Exception
     {
         LOGGER.debug( "'@After' began" );
-        this.wresDatabase.shutdown();
+        this.wresDatabase.shutdown( 5, TimeUnit.SECONDS );
         this.testDatabase.dropWresSchema( this.rawConnection );
         this.rawConnection.close();
         this.rawConnection = null;
         this.dataSource.close();
         this.dataSource = null;
         this.testDatabase = null;
+        if ( Objects.nonNull( this.openMocks ) )
+        {
+            this.openMocks.close();
+        }
         LOGGER.debug( "'@After' ended" );
     }
 }

@@ -41,6 +41,7 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.Metric;
@@ -258,6 +259,24 @@ public class DeclarationUtilities
         Objects.requireNonNull( evaluation );
 
         return Objects.nonNull( evaluation.baseline() );
+    }
+
+    /**
+     * Determines whether the declaration contains feature groups.
+     * @param declaration the declaration, not null
+     * @return whether the declaration contains feature groups
+     * @throws NullPointerException if the declaration is null
+     */
+    public static boolean hasFeatureGroups( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration );
+
+        return Objects.nonNull( declaration.featureGroups() )
+               || ( Objects.nonNull( declaration.featureService() )
+                    && declaration.featureService()
+                                  .featureGroups()
+                                  .stream()
+                                  .anyMatch( FeatureServiceGroup::pool ) );
     }
 
     /**

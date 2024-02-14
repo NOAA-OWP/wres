@@ -28,12 +28,13 @@ import org.slf4j.LoggerFactory;
 import wres.config.MetricConstants;
 import wres.config.yaml.components.AnalysisTimes;
 import wres.config.yaml.components.BaselineDataset;
+import wres.config.yaml.components.CrossPairMethod;
+import wres.config.yaml.components.CrossPairScope;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.FeatureAuthority;
-import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.Formats;
 import wres.config.yaml.components.GeneratedBaseline;
 import wres.config.yaml.components.GeneratedBaselines;
@@ -112,6 +113,8 @@ public class DeclarationValidator
     private static final String DATA_DISCOVERED_AN_INTERFACE_OF = " data, discovered an interface of '";
     /** Re-used string. */
     private static final String WHICH_ADMITS_THE_DATA_TYPES = "', which admits the data types ";
+    private static final String THE_EVALUATION_REQUESTED_THE_SAMPLING_UNCERTAINTY =
+            "The evaluation requested the 'sampling_uncertainty' ";
 
     /**
      * Performs validation against the schema, followed by "business-logic" validation if there are no schema
@@ -1655,12 +1658,7 @@ public class DeclarationValidator
 
         // Ensure feature groups are declared when needed. Unlike features, they cannot be declared implicitly, so
         // absence is an error rather than a warning
-        if ( Objects.isNull( declaration.featureGroups() )
-             && ( Objects.isNull( declaration.featureService() )
-                  || declaration.featureService()
-                                .featureGroups()
-                                .stream()
-                                .noneMatch( FeatureServiceGroup::pool ) )
+        if ( !DeclarationUtilities.hasFeatureGroups( declaration )
              && declaration.summaryStatistics()
                            .stream()
                            .anyMatch( s -> s.getDimension() == SummaryStatistic.StatisticDimension.FEATURE_GROUP ) )
@@ -1810,7 +1808,7 @@ public class DeclarationValidator
             EvaluationStatusEvent warn
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.WARN )
-                                           .setEventMessage( "The evaluation requested the 'sampling_uncertainty' "
+                                           .setEventMessage( THE_EVALUATION_REQUESTED_THE_SAMPLING_UNCERTAINTY
                                                              + "option, which will be delivered using a resampling "
                                                              + "scheme that is computationally expensive. This option "
                                                              + "should be used with care and the evaluation may take "
@@ -1904,27 +1902,70 @@ public class DeclarationValidator
                 events.add( event );
             }
 
-            if ( Objects.isNull( declaration.crossPair() )
-                 && DeclarationUtilities.hasBaseline( declaration ) )
-            {
-                EvaluationStatusEvent crossPair
-                        = EvaluationStatusEvent.newBuilder()
-                                               .setStatusLevel( StatusLevel.WARN )
-                                               .setEventMessage( "The evaluation requested the 'sampling_uncertainty' "
-                                                                 + "option and contains a 'baseline' dataset, but does "
-                                                                 + "not request cross-pairing of the 'predicted' and "
-                                                                 + "'baseline' datasets ('cross_pair: fuzzy'). This is "
-                                                                 + "allowed, but can lead to the nominal value of any "
-                                                                 + "skill metrics falling outside of the prescribed "
-                                                                 + "confidence intervals because cross-pairing is "
-                                                                 + "always performed for the resampled data. More "
-                                                                 + "generally, skill calculations can be misleading "
-                                                                 + "unless the 'predicted' and 'baseline' pairs are "
-                                                                 + "coincident in time, which is enforced by "
-                                                                 + "cross-pairing." )
-                                               .build();
-                events.add( crossPair );
-            }
+            List<EvaluationStatusEvent> crossPair =
+                    DeclarationValidator.samplingUncertaintyCrossPairingIsValid( declaration );
+            events.addAll( crossPair );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the cross-pairing options are valid when sampling uncertainty is declared.
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> samplingUncertaintyCrossPairingIsValid( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+        if ( Objects.isNull( declaration.crossPair() )
+             && DeclarationUtilities.hasBaseline( declaration ) )
+        {
+            EvaluationStatusEvent crossPair
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( THE_EVALUATION_REQUESTED_THE_SAMPLING_UNCERTAINTY
+                                                             + "option and contains a 'baseline' dataset, but does "
+                                                             + "not request cross-pairing of the 'predicted' and "
+                                                             + "'baseline' datasets ('cross_pair: fuzzy'). This is "
+                                                             + "allowed, but can lead to the nominal value of any "
+                                                             + "skill metrics falling outside of the prescribed "
+                                                             + "confidence intervals because cross-pairing is "
+                                                             + "always performed for the resampled data. More "
+                                                             + "generally, skill calculations can be misleading "
+                                                             + "unless the 'predicted' and 'baseline' pairs are "
+                                                             + "coincident in time, which is enforced by "
+                                                             + "cross-pairing." )
+                                           .build();
+            events.add( crossPair );
+        }
+
+        // Warn if cross-pairing without options that are consistent with sampling uncertainty
+        if ( Objects.nonNull( declaration.crossPair() )
+             && ( declaration.crossPair()
+                             .method() != CrossPairMethod.FUZZY
+                  || declaration.crossPair()
+                                .scope() != CrossPairScope.ACROSS_FEATURES )
+             && DeclarationUtilities.hasFeatureGroups( declaration )
+             && DeclarationUtilities.hasBaseline( declaration ) )
+        {
+            EvaluationStatusEvent crossPair
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( THE_EVALUATION_REQUESTED_THE_SAMPLING_UNCERTAINTY
+                                                             + "option and contains a 'baseline' dataset to "
+                                                             + "'cross-pair' with the main pairs across multi-"
+                                                             + "feature groups. This combination of options is "
+                                                             + "allowed, but can lead to the nominal value of any "
+                                                             + "statistics falling outside of the prescribed "
+                                                             + "confidence intervals because cross-pairing is "
+                                                             + "always performed for the resampled data using "
+                                                             + "the 'method: fuzzy' and 'scope: across features', "
+                                                             + "which were not declared here. To ensure the confidence "
+                                                             + "intervals capture the nominal statistics, please "
+                                                             + "consider declaring these two cross-pairing options." )
+                                           .build();
+            events.add( crossPair );
         }
 
         return Collections.unmodifiableList( events );

@@ -42,6 +42,8 @@ import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.FeatureGroupsBuilder;
+import wres.config.yaml.components.FeatureService;
+import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.GeneratedBaseline;
 import wres.config.yaml.components.GeneratedBaselineBuilder;
@@ -2618,5 +2620,50 @@ class DeclarationUtilitiesTest
                                                                      .build();
 
         assertEquals( expected, actual );
+    }
+
+    @Test
+    void testHasFeatureGroups()
+    {
+        Geometry left = Geometry.newBuilder()
+                                .setName( "foo" )
+                                .build();
+        Geometry right = Geometry.newBuilder()
+                                 .setName( "bar" )
+                                 .build();
+        Geometry baseline = Geometry.newBuilder()
+                                    .setName( "baz" )
+                                    .build();
+
+        GeometryTuple one = GeometryTuple.newBuilder()
+                                         .setLeft( left )
+                                         .setRight( right )
+                                         .setBaseline( baseline )
+                                         .build();
+
+        Set<GeometryTuple> geometryTuples = Set.of( one );
+        GeometryGroup group = GeometryGroup.newBuilder()
+                                           .addAllGeometryTuples( geometryTuples )
+                                           .setRegionName( "foorbarbaz" )
+                                           .build();
+        FeatureGroups featureGroups = FeatureGroupsBuilder.builder()
+                                                          .geometryGroups( Set.of( group ) )
+                                                          .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .featureGroups( featureGroups )
+                                            .build();
+
+        FeatureServiceGroup serviceGroup = new FeatureServiceGroup( "a", "b", true );
+        FeatureService featureService = new FeatureService( URI.create( "http://foo.bar" ), Set.of( serviceGroup ) );
+        EvaluationDeclaration declarationTwo =
+                EvaluationDeclarationBuilder.builder()
+                                            .featureService( featureService )
+                                            .build();
+
+        assertAll( () -> assertTrue( DeclarationUtilities.hasFeatureGroups( declaration ) ),
+                   () -> assertTrue( DeclarationUtilities.hasFeatureGroups( declarationTwo ) ),
+                   () -> assertFalse( DeclarationUtilities.hasFeatureGroups( EvaluationDeclarationBuilder.builder()
+                                                                                                         .build() ) ) );
     }
 }
