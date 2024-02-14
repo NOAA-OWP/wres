@@ -105,7 +105,7 @@ public class WresJob
     /**
      * A smaller-than-minimum number of bytes expected in a project declaration.
      */
-    private static final int MINIMUM_PROJECT_DECLARATION_LENGTH = 100;
+    private static final int MINIMUM_PROJECT_DECLARATION_LENGTH = 19;
 
     //Database information
     private static String activeDatabaseName = "";
