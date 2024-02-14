@@ -254,14 +254,11 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                 LOGGER.debug( "Set the nominal statistics metadata for summary statistics calculation: {}",
                               this.nominal );
             }
-            else
-            {
-                // Transform the metadata to reflect the new information supplied
-                this.nominal = this.metadataAggregator.apply( this.nominal, latest );
 
-                LOGGER.debug( "Transformed the nominal statistics metadata for summary statistics calculation: {}.",
-                              this.nominal );
-            }
+            // Transform the metadata to reflect the new information supplied
+            this.nominal = this.metadataAggregator.apply( this.nominal, latest );
+            LOGGER.debug( "Transformed the nominal statistics metadata for summary statistics calculation: {}.",
+                          this.nominal );
         }
         finally
         {
