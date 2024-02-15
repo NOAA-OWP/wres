@@ -82,7 +82,7 @@ public class WebServer
     }
 
     /**
-     * Main method of WebServer used to spin up a long-running worker used for evaluations
+     * Main method of WebServer used to spin up a long-running worker for evaluations
      * @param args the port to run the server on
      * @throws Exception if the web server could not be created for any reason
      */
@@ -158,7 +158,8 @@ public class WebServer
         catch ( InterruptedException ie )
         {
             LOGGER.warn( "WRES Server was interrupted.", ie );
-            Thread.currentThread().interrupt();
+            Thread.currentThread()
+                  .interrupt();
         }
         finally
         {

@@ -113,8 +113,8 @@ public final class Functions
             Functions.openResources( sharedResources );
 
             Evaluator evaluator = new Evaluator( sharedResources.systemSettings,
-                                                 database,
-                                                 brokerConnectionFactory );
+                                                 Functions.database,
+                                                 Functions.brokerConnectionFactory );
 
             List<String> args = sharedResources.arguments();
             if ( args.size() != 1 )
@@ -204,7 +204,7 @@ public final class Functions
 
             DatabaseLockManager lockManager =
                     DatabaseLockManager.from( sharedResources.systemSettings(),
-                                              () -> database.getRawConnection() );
+                                              () -> Functions.database.getRawConnection() );
 
             try
             {
@@ -336,6 +336,7 @@ public final class Functions
                                  + "' is not a valid Netcdf Grid Dataset.";
                 UserInputException uie = new UserInputException( message, e );
                 LOGGER.error( message );
+                LOGGER.error( message );
                 result = ExecutionResult.failure( uie, false );
                 return result;
             }
@@ -363,12 +364,12 @@ public final class Functions
             Functions.openResources( sharedResources );
             DatabaseLockManager lockManager =
                     DatabaseLockManager.from( sharedResources.systemSettings(),
-                                              () -> database.getRawConnection() );
+                                              () -> Functions.database.getRawConnection() );
 
             try
             {
                 lockManager.lockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
-                DatabaseOperations.refreshDatabase( database );
+                DatabaseOperations.refreshDatabase( Functions.database );
                 lockManager.unlockExclusive( DatabaseType.SHARED_READ_OR_EXCLUSIVE_DESTROY_NAME );
                 result = ExecutionResult.success();
                 return result;
@@ -450,7 +451,6 @@ public final class Functions
         }
         finally
         {
-            Functions.logExecution( sharedResources, result, startedExecution );
             Functions.printExecutionTime( sharedResources, startedExecution );
         }
     }
@@ -494,7 +494,7 @@ public final class Functions
 
                 DatabaseLockManager lockManager =
                         DatabaseLockManager.from( sharedResources.systemSettings(),
-                                                  () -> database.getRawConnection() );
+                                                  () -> Functions.database.getRawConnection() );
 
                 // Executors to close
                 ExecutorService readingExecutor = null;
@@ -506,7 +506,7 @@ public final class Functions
 
                     // Build the database caches/ORMs
                     SystemSettings settings = sharedResources.systemSettings();
-                    DatabaseCaches caches = DatabaseCaches.of( database );
+                    DatabaseCaches caches = DatabaseCaches.of( Functions.database );
 
                     // Create a reading executor
                     // Inner readers may create additional thread factories (e.g., archives).
@@ -547,7 +547,7 @@ public final class Functions
 
                     TimeSeriesIngester timeSeriesIngester =
                             new DatabaseTimeSeriesIngester.Builder().setSystemSettings( settings )
-                                                                    .setDatabase( database )
+                                                                    .setDatabase( Functions.database )
                                                                     .setCaches( caches )
                                                                     .setIngestExecutor( ingestExecutor )
                                                                     .setLockManager( lockManager )
