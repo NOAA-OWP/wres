@@ -26,10 +26,10 @@ import wres.statistics.generated.Pool.EnsembleAverageType;
 
 /**
  * <p>An immutable store of metadata that describes a {@link Pool}.
- * 
+ *
  * <p>TODO: eliminate the evaluation description from this class. This would be aided by integrating the measurement
  * units into the pool description and deprecating the corresponding attribute of the evaluation description.
- * 
+ *
  * @author James Brown
  */
 
@@ -64,7 +64,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     /**
      * Creates an instance from an {@link Evaluation} and a {@link Pool}.
-     * 
+     *
      * @param evaluation the evaluation
      * @param pool the pool
      * @return an instance
@@ -78,7 +78,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     /**
      * Creates an instance from an {@link Evaluation} and a {@link Pool}.
-     * 
+     *
      * @param evaluation the evaluation
      * @param pool the pool
      * @param statusEvents a list of zero or more evaluation status events encountered while creating the pool
@@ -94,7 +94,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
     /**
      * Build a {@link PoolMetadata} object with a default {@link MeasurementUnit} of 
      * {@link MeasurementUnit#DIMENSIONLESS} and a default pool, {@link Pool#getDefaultInstance()}.
-     * 
+     *
      * @return a {@link PoolMetadata} object
      */
 
@@ -112,7 +112,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
     /**
      * Build a {@link PoolMetadata} object with a default {@link MeasurementUnit} of 
      * {@link MeasurementUnit#DIMENSIONLESS} and the status of the pool as a regular pool or baseline pool.
-     * 
+     *
      * @param isBaselinePool is true if the pool is a baseline pool, otherwise false
      * @return a {@link PoolMetadata} object
      */
@@ -132,7 +132,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     /**
      * Builds a {@link PoolMetadata} from a prescribed input source and an override {@link OneOrTwoThresholds}.
-     * 
+     *
      * @param input the source metadata
      * @param thresholds the thresholds
      * @return the pool metadata built from the combined inputs
@@ -161,7 +161,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     /**
      * Builds a {@link PoolMetadata} from a prescribed input source and an override {@link TimeWindowOuter}.
-     * 
+     *
      * @param input the source metadata
      * @param timeWindow the new time window
      * @return the pool metadata built from the combined inputs
@@ -186,7 +186,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     /**
      * Builds a {@link PoolMetadata} from a prescribed input source and an override {@link TimeScaleOuter}.
-     * 
+     *
      * @param input the source metadata
      * @param timeScale the new time scale
      * @return a {@link PoolMetadata} object
@@ -211,7 +211,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     /**
      * Builds a {@link PoolMetadata} from a prescribed input source and an override {@link EnsembleAverageType}.
-     * 
+     *
      * @param input the source metadata
      * @param ensembleAverageType the new ensemble average type
      * @return a {@link PoolMetadata} object
@@ -237,7 +237,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
     /**
      * Builds a {@link PoolMetadata} from a prescribed input source and an override {@link TimeWindowOuter} and 
      * {@link TimeScaleOuter}.
-     * 
+     *
      * @param input the source metadata
      * @param timeWindow the new time window
      * @param timeScale the new time scale
@@ -271,7 +271,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
     /**
      * Builds a {@link PoolMetadata} from a prescribed input source and an override {@link TimeWindowOuter} and 
      * {@link OneOrTwoThresholds}.
-     * 
+     *
      * @param input the source metadata
      * @param timeWindow the new time window
      * @param thresholds the thresholds
@@ -308,7 +308,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     /**
      * Builds a {@link PoolMetadata} from a prescribed input source and an override {@link FeatureGroup}.
-     * 
+     *
      * @param input the source metadata
      * @param featureGroup the new feature group
      * @return the pool metadata built from the combined inputs
@@ -373,7 +373,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
             return true;
         }
 
-        if ( ! ( o instanceof PoolMetadata p ) )
+        if ( !( o instanceof PoolMetadata p ) )
         {
             return false;
         }
@@ -428,7 +428,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     /**
      * Returns <code>true</code> if {@link #getTimeWindow()} returns non-null, otherwise <code>false</code>.
-     * 
+     *
      * @return true if {@link #getTimeWindow()} returns non-null, false otherwise.
      */
     public boolean hasTimeWindow()
@@ -438,7 +438,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     /**
      * Returns <code>true</code> if {@link #getThresholds()} returns non-null, otherwise <code>false</code>.
-     * 
+     *
      * @return true if {@link #getThresholds()} returns non-null, false otherwise.
      */
     public boolean hasThresholds()
@@ -448,7 +448,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     /**
      * Returns <code>true</code> if {@link #getTimeScale()} returns non-null, otherwise <code>false</code>.
-     * 
+     *
      * @return true if {@link #getTimeScale()} returns non-null, false otherwise.
      */
     public boolean hasTimeScale()
@@ -458,7 +458,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     /**
      * Returns <code>true</code> if {@link #getFeatureGroup()} returns non-null, otherwise <code>false</code>.
-     * 
+     *
      * @return true if {@link #getFeatureGroup()} returns non-null, false otherwise.
      */
     public boolean hasFeatureGroup()
@@ -468,7 +468,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     /**
      * Returns the measurement unit associated with the metric.
-     * 
+     *
      * @return the measurement unit
      */
 
@@ -479,7 +479,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     /**
      * Returns a {@link TimeWindowOuter} associated with the metadata or null.
-     * 
+     *
      * @return a time window or null
      */
 
@@ -490,7 +490,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     /**
      * Returns the {@link FeatureTuple} associated with the metadata.
-     * 
+     *
      * @return the feature tuples
      */
 
@@ -515,7 +515,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     /**
      * Returns a {@link OneOrTwoThresholds} associated with the metadata or null.
-     * 
+     *
      * @return a set of thresholds or null
      */
 
@@ -526,7 +526,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     /**
      * Returns a {@link TimeScaleOuter} associated with the metadata or null.
-     * 
+     *
      * @return the time scale or null
      */
 
@@ -537,7 +537,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     /**
      * Returns the evaluation description.
-     * 
+     *
      * @return the evaluation description.
      */
 
@@ -548,7 +548,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     /**
      * Returns the pool description.
-     * 
+     *
      * @return the pool description.
      */
 
@@ -559,7 +559,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     /**
      * Returns a list of evaluation status events encountered while building the pool attached to this metadata.
-     * 
+     *
      * @return the evaluation status events
      */
 
@@ -570,7 +570,7 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param evaluation the evaluation
      * @param pool the pool
      * @param statusEvents a list of zero or more events encountered while building the pool
@@ -633,7 +633,8 @@ public class PoolMetadata implements Comparable<PoolMetadata>
 
         OneOrTwoThresholds thresholdsInner = null;
 
-        if ( this.getPool().hasEventThreshold() )
+        if ( this.getPool()
+                 .hasEventThreshold() )
         {
             wres.statistics.generated.Threshold event = this.getPool()
                                                             .getEventThreshold();
@@ -641,7 +642,8 @@ public class PoolMetadata implements Comparable<PoolMetadata>
             ThresholdOuter eventOuter = ThresholdOuter.of( event );
             ThresholdOuter decisionOuter = null;
 
-            if ( this.getPool().hasDecisionThreshold() )
+            if ( this.getPool()
+                     .hasDecisionThreshold() )
             {
                 wres.statistics.generated.Threshold decision = this.getPool()
                                                                    .getDecisionThreshold();

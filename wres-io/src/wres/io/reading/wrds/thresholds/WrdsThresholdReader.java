@@ -258,7 +258,6 @@ public class WrdsThresholdReader implements ThresholdReader
         // Validate the thresholds acquired from WRDS in relation to the features for which thresholds were required
         WrdsThresholdReader.validate( serviceUri, mappedAndAdjustedFeatureNames, thresholdMapping, featureAuthority );
 
-        // Map the thresholds to featureful thresholds
         return WrdsThresholdReader.getFeaturefulThresholds( thresholdMapping,
                                                             orientation,
                                                             mappedAndAdjustedFeatureNames,
@@ -468,7 +467,8 @@ public class WrdsThresholdReader implements ThresholdReader
      */
     private static byte[] getResponseFromWeb( URI inputAddress ) throws IOException
     {
-        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( inputAddress, WebClientUtils.getDefaultRetryStates() ) )
+        try ( WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( inputAddress,
+                                                                         WebClientUtils.getDefaultRetryStates() ) )
         {
 
             if ( response.getStatusCode() >= 400 && response.getStatusCode() < 500 )

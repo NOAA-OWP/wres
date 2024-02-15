@@ -662,7 +662,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                     // Data-source baseline
                     else
                     {
-                        Set<Feature> baselineFeatures = this.getFeatures( nextPool.getMetadata(),
+                        Set<Feature> baselineFeatures = this.getFeatures( nextPool.getMetadataForBaseline(),
                                                                           FeatureTuple::getBaseline );
 
                         Supplier<Stream<TimeSeries<B>>> baselineSupplier = this.getRetrieverFactory()
@@ -1023,7 +1023,9 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         Objects.requireNonNull( featureGetter );
         return this.getPoolRequests()
                    .stream()
-                   .flatMap( next -> next.getMetadata().getFeatureTuples().stream() )
+                   .flatMap( next -> next.getMetadata()
+                                         .getFeatureTuples()
+                                         .stream() )
                    .map( featureGetter )
                    .collect( Collectors.toSet() );
 
