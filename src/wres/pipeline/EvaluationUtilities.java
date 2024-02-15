@@ -23,6 +23,7 @@ import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.google.protobuf.DoubleValue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.Ensemble;
+import wres.datamodel.MissingValues;
 import wres.datamodel.bootstrap.BlockSizeEstimator;
 import wres.datamodel.bootstrap.InsufficientDataForResamplingException;
 import wres.datamodel.pools.Pool;
@@ -1934,9 +1936,14 @@ class EvaluationUtilities
                                      latestPool.getEventThreshold()
                                                .getLeftThresholdValue() ) )
             {
-                existingPool.getEventThresholdBuilder()
-                            .clearLeftThresholdValue()
-                            .clearRightThresholdValue();
+                // Set to missing rather than clearing: #126545
+                Threshold.Builder builder = existingPool.getEventThresholdBuilder()
+                                                        .setLeftThresholdValue( DoubleValue.of( MissingValues.DOUBLE ) );
+                if ( existingPool.getEventThreshold()
+                                 .getOperator() == Threshold.ThresholdOperator.BETWEEN )
+                {
+                    builder.setRightThresholdValue( DoubleValue.of( MissingValues.DOUBLE ) );
+                }
             }
 
             return adjusted.build();
