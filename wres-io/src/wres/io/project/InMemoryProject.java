@@ -54,6 +54,7 @@ import wres.statistics.generated.GeometryTuple;
 
 public class InMemoryProject implements Project
 {
+    /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( InMemoryProject.class );
 
     /** Project declaration. */
@@ -944,7 +945,11 @@ public class InMemoryProject implements Project
             String baselineName = next.getBaseline()
                                       .getName();
 
-            if ( leftFeatures.containsKey( leftName ) && rightFeatures.containsKey( rightName ) )
+            if ( leftFeatures.containsKey( leftName )
+                 && rightFeatures.containsKey( rightName )
+                 // #126628
+                 && ( !this.hasBaseline()
+                      || baselineFeatures.containsKey( baselineName ) ) )
             {
                 Feature left = leftFeatures.get( leftName );
                 Feature right = rightFeatures.get( rightName );

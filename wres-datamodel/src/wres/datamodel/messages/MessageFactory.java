@@ -201,6 +201,7 @@ public class MessageFactory
                                                         .stream()
                                                         .map( MessageFactory::parse )
                                                         .toList();
+
             poolBuilder.addAllGeometryTuples( geoTuples );
 
             GeometryGroup.Builder geometryBuilder = GeometryGroup.newBuilder()
