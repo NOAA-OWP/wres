@@ -539,7 +539,8 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     private List<Supplier<Pool<TimeSeries<Pair<L, R>>>>> createPools()
     {
         LOGGER.debug( "Creating pool suppliers for {} pools requests: {}.",
-                      this.getPoolRequests().size(),
+                      this.getPoolRequests()
+                          .size(),
                       this.getPoolRequests() );
 
         TimeScaleOuter desiredTimeScale = this.getProject()
