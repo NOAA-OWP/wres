@@ -256,7 +256,7 @@ project(':wres-system')
 
     dependencies
     {
-        implementation 'org.slf4j:slf4j-api:2.1.0-alpha1'
+        implementation 'org.slf4j:slf4j-api:2.0.12'
 
         implementation 'org.apache.commons:commons-lang3:3.14.0'
 
@@ -318,7 +318,7 @@ project(':wres-datamodel')
 
         api 'org.apache.commons:commons-lang3:3.14.0'
 
-        implementation 'org.slf4j:slf4j-api:2.1.0-alpha1'
+        implementation 'org.slf4j:slf4j-api:2.0.12'
 
         runtimeOnly( 'ch.qos.logback:logback-classic:1.4.14' )
         {
@@ -373,7 +373,7 @@ project(':wres-io')
         implementation project(':wres-config')
         implementation project(':wres-http')
 
-        implementation 'org.slf4j:slf4j-api:2.1.0-alpha1'
+        implementation 'org.slf4j:slf4j-api:2.0.12'
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         // JSON deserialization uses jackson directly. Specify recent version.
@@ -525,7 +525,7 @@ project(':wres-metrics')
         implementation project(':wres-config')
 
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-        implementation 'org.slf4j:slf4j-api:2.1.0-alpha1'
+        implementation 'org.slf4j:slf4j-api:2.0.12'
 
         implementation group: 'org.eclipse.collections', name: 'eclipse-collections', version: '11.1.0'
 
@@ -663,7 +663,7 @@ project(':wres-statistics')
     {
         api 'com.google.protobuf:protobuf-java:3.21.12'
 
-        implementation 'org.slf4j:slf4j-api:2.1.0-alpha1'
+        implementation 'org.slf4j:slf4j-api:2.0.12'
 
         runtimeOnly( 'ch.qos.logback:logback-classic:1.4.14' )
         {
@@ -778,7 +778,7 @@ project(':wres-vis')
         implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.14.0'
         implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.1.1'
 
-        implementation 'org.slf4j:slf4j-api:2.1.0-alpha1'
+        implementation 'org.slf4j:slf4j-api:2.0.12'
 
         implementation group: 'org.jfree', name: 'jfreechart', version: '1.5.4'
 
@@ -825,7 +825,7 @@ project(':wres-config')
     dependencies
     {
         implementation project(':wres-statistics')
-        implementation 'org.slf4j:slf4j-api:2.1.0-alpha1'
+        implementation 'org.slf4j:slf4j-api:2.0.12'
 
         runtimeOnly( 'ch.qos.logback:logback-classic:1.4.14' )
         {
@@ -1040,7 +1040,7 @@ project(':wres-messages')
     {
         api 'com.google.protobuf:protobuf-java:3.21.12'
 
-        implementation 'org.slf4j:slf4j-api:2.1.0-alpha1'
+        implementation 'org.slf4j:slf4j-api:2.0.12'
 
         testImplementation 'junit:junit:4.13.2'
     }
@@ -1088,7 +1088,7 @@ project(':wres-worker')
         implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 
-        implementation 'org.slf4j:slf4j-api:2.1.0-alpha1'
+        implementation 'org.slf4j:slf4j-api:2.0.12'
         implementation 'com.rabbitmq:amqp-client:5.20.0'
 
         runtimeOnly( 'ch.qos.logback:logback-classic:1.4.14' )
@@ -1251,7 +1251,7 @@ project(':wres-tasker')
         implementation project( ':wres-messages' )
         implementation project( ':wres-statistics' )
         implementation project( ':wres-http' )
-        implementation 'org.slf4j:slf4j-api:2.1.0-alpha1'
+        implementation 'org.slf4j:slf4j-api:2.0.12'
         implementation 'com.rabbitmq:amqp-client:5.20.0'
         implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
         implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
@@ -1426,7 +1426,7 @@ project(':wres-eventsbroker')
 {
     dependencies
     {
-        implementation 'org.slf4j:slf4j-api:2.1.0-alpha1'
+        implementation 'org.slf4j:slf4j-api:2.0.12'
 
         implementation 'org.apache.commons:commons-lang3:3.14.0'
 
@@ -1505,7 +1505,7 @@ project(':wres-events')
     dependencies
     {
         implementation project( ':wres-statistics' )
-        implementation 'org.slf4j:slf4j-api:2.1.0-alpha1'
+        implementation 'org.slf4j:slf4j-api:2.0.12'
 
         // JCIP annotations
         implementation group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
@@ -1562,7 +1562,7 @@ project(':wres-http')
 {
     dependencies
     {
-        implementation 'org.slf4j:slf4j-api:2.1.0-alpha1'
+        implementation 'org.slf4j:slf4j-api:2.0.12'
 
         // Better-than-Java's HTTP client
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
@@ -1813,7 +1813,7 @@ dependencies
     implementation project(':wres-eventsbroker')
     implementation project(':wres-messages')
 
-    implementation 'org.slf4j:slf4j-api:2.1.0-alpha1'
+    implementation 'org.slf4j:slf4j-api:2.0.12'
 
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
     implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
