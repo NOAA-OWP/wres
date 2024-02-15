@@ -336,7 +336,6 @@ public final class Functions
                                  + "' is not a valid Netcdf Grid Dataset.";
                 UserInputException uie = new UserInputException( message, e );
                 LOGGER.error( message );
-                LOGGER.error( message );
                 result = ExecutionResult.failure( uie, false );
                 return result;
             }
