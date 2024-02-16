@@ -21,19 +21,20 @@ import wres.io.reading.DataSource.DataDisposition;
 class DataSourceTest
 {
     @Test
-    void testDetectFormatIdentifiesOneColumnDatacardWithComments() throws IOException
+    void testDetectFormatIdentifiesOneColumnDatacardWithComments() throws IOException  // NOSONAR
     {
-        String formatString = "$  IDENTIFIER=               DESCRIPTION=INFLOW\r\n"
-                              + "$  PERIOD OF RECORD=10/1969 THRU 05/2014\r\n"
-                              + "$  SYMBOL FOR MISSING DATA=-999.00   SYMBOL FOR ACCUMULATED DATA=-998.00\r\n"
-                              + "$ YUBA\r\n"
-                              + "$ NEW BULLARDS BAR            Regulated inflow data is a merged data set.  Regulated inflow from WY 1970-2004 comes from USGS daily data (11413520+11413515+11413510).\r\n"
-                              + "$ REGULATED INFLOW            Regulated inflow from WY2004-2014 came from USACE-SPK which got their data from YCWA.\r\n"
-                              + "$                    Some of the inflow \"noise\" was smoothed for the 1970-2004 period.\r\n"
-                              + "$ WHITIN MERGE WITH USACE\r\n"
-                              + "DATACARD      AQME L3   CFSD 24                  INFLOW\r\n"
-                              + "10  1969  5   2014  1   F10.2\r\n"
-                              + "            1069  01    135.50";
+        String formatString = """
+                $  IDENTIFIER=               DESCRIPTION=INFLOW
+                $  PERIOD OF RECORD=10/1969 THRU 05/2014
+                $  SYMBOL FOR MISSING DATA=-999.00   SYMBOL FOR ACCUMULATED DATA=-998.00
+                $ YUBA
+                $ NEW BULLARDS BAR            Regulated inflow data is a merged data set.  Regulated inflow from WY 1970-2004 comes from USGS daily data (11413520+11413515+11413510).
+                $ REGULATED INFLOW            Regulated inflow from WY2004-2014 came from USACE-SPK which got their data from YCWA.
+                $                    Some of the inflow "noise" was smoothed for the 1970-2004 period.
+                $ WHITIN MERGE WITH USACE
+                DATACARD      AQME L3   CFSD 24                  INFLOW
+                10  1969  5   2014  1   F10.2
+                            1069  01    135.50""";
 
         try ( InputStream stream = new ByteArrayInputStream( formatString.getBytes() ) )
         {
@@ -46,10 +47,11 @@ class DataSourceTest
     @Test
     void testDetectFormatIdentifiesOneColumnDatacardWithoutComments() throws IOException
     {
-        String formatString = "datacard      QME  L3   CFSD 24   11473900        MF EEL R NR DOS RIO\r\n"
-                              + "10  1948 09   2011  1   f10.2\r\n"
-                              + "11473900    1048   1   -999.00\r\n"
-                              + "11473900    1048   2   -999.00";
+        String formatString = """
+                datacard      QME  L3   CFSD 24   11473900        MF EEL R NR DOS RIO
+                10  1948 09   2011  1   f10.2
+                11473900    1048   1   -999.00
+                11473900    1048   2   -999.00""";
 
         try ( InputStream stream = new ByteArrayInputStream( formatString.getBytes() ) )
         {
@@ -62,11 +64,12 @@ class DataSourceTest
     @Test
     void testDetectFormatIdentifiesFourColumnDatacardWithCommentsAndUnixNewLines() throws IOException
     {
-        String formatString = "$ stored in the prodly/caldly database table.  id = DOLC2  pc = QRD5ZZZ\n"
-                              + "DATACARD      QME  L3   CFSD 24\n"
-                              + " 1  1951  9   2006  4   F15.6\n"
-                              + "DOLC2        151   1      42.000000      39.000000      37.000000      39.000000\n"
-                              + "DOLC2        151   2      41.000000      37.000000      33.000000      36.000000";
+        String formatString = """
+                $ stored in the prodly/caldly database table.  id = DOLC2  pc = QRD5ZZZ
+                DATACARD      QME  L3   CFSD 24
+                 1  1951  9   2006  4   F15.6
+                DOLC2        151   1      42.000000      39.000000      37.000000      39.000000
+                DOLC2        151   2      41.000000      37.000000      33.000000      36.000000""";
 
         try ( InputStream stream = new ByteArrayInputStream( formatString.getBytes() ) )
         {
@@ -79,15 +82,16 @@ class DataSourceTest
     @Test
     void testDetectFormatIdentifiesSixColumnDatacardWithCommentsAndUnixNewLines() throws IOException
     {
-        String formatString = "$  IDENTIFIER=1620           DESCRIPTION=1620                \n"
-                              + "$  PERIOD OF RECORD=01/1948 THRU 09/2013\n"
-                              + "$  SYMBOL FOR MISSING DATA=-999.00   SYMBOL FOR ACCUMULATED DATA=-998.00\n"
-                              + "$  TYPE=MAT    UNITS=   F   DIMENSIONS=TEMP   DATA TIME INTERVAL= 6 HOURS\n"
-                              + "$  OUTPUT FORMAT=(3A4,2I2,I4,6F9.3)              \n"
-                              + "DATACARD      MAT  TEMP    F  6   1620           1620                \n"
-                              + " 1  1948  9   2013  6   F9.3        \n"
-                              + "             148   1   12.111   18.084   21.048    7.573    1.365   18.053\n"
-                              + "             148   2   28.468   20.433   16.470   31.302   40.343   32.673";
+        String formatString = """
+                $  IDENTIFIER=1620           DESCRIPTION=1620               \s
+                $  PERIOD OF RECORD=01/1948 THRU 09/2013
+                $  SYMBOL FOR MISSING DATA=-999.00   SYMBOL FOR ACCUMULATED DATA=-998.00
+                $  TYPE=MAT    UNITS=   F   DIMENSIONS=TEMP   DATA TIME INTERVAL= 6 HOURS
+                $  OUTPUT FORMAT=(3A4,2I2,I4,6F9.3)             \s
+                DATACARD      MAT  TEMP    F  6   1620           1620               \s
+                 1  1948  9   2013  6   F9.3       \s
+                             148   1   12.111   18.084   21.048    7.573    1.365   18.053
+                             148   2   28.468   20.433   16.470   31.302   40.343   32.673""";
 
         try ( InputStream stream = new ByteArrayInputStream( formatString.getBytes() ) )
         {
@@ -100,22 +104,23 @@ class DataSourceTest
     @Test
     void testDetectFormatIdentifiesPublishedInterfaceXmlWithUnixNewLines() throws IOException
     {
-        String formatString = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-                              + "<TimeSeries xmlns=\"http://www.wldelft.nl/fews/PI\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd\" version=\"1.14\">\n"
-                              + "  <timeZone>0.0</timeZone>\n"
-                              + "  <series>\n"
-                              + "    <header>\n"
-                              + "      <type>instantaneous</type>\n"
-                              + "      <locationId>CKLN6</locationId>\n"
-                              + "      <parameterId>STG</parameterId>\n"
-                              + "       <timeStep unit=\"second\" multiplier=\"900\"/>\n"
-                              + "      <startDate date=\"2017-01-01\" time=\"00:00:00\"/>\n"
-                              + "      <endDate date=\"2017-12-31\" time=\"00:00:00\"/>\n"
-                              + "      <missVal>-9999.0</missVal>\n"
-                              + "      <units>FT</units>\n"
-                              + "    </header>\n"
-                              + "    <event date=\"2017-01-01\" time=\"00:00:00\" value=\"5.07\" flag=\"0\"/>\n"
-                              + "    <event date=\"2017-01-01\" time=\"00:15:00\" value=\"5.06\" flag=\"0\"/>";
+        String formatString = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <TimeSeries xmlns="http://www.wldelft.nl/fews/PI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" version="1.14">
+                  <timeZone>0.0</timeZone>
+                  <series>
+                    <header>
+                      <type>instantaneous</type>
+                      <locationId>CKLN6</locationId>
+                      <parameterId>STG</parameterId>
+                       <timeStep unit="second" multiplier="900"/>
+                      <startDate date="2017-01-01" time="00:00:00"/>
+                      <endDate date="2017-12-31" time="00:00:00"/>
+                      <missVal>-9999.0</missVal>
+                      <units>FT</units>
+                    </header>
+                    <event date="2017-01-01" time="00:00:00" value="5.07" flag="0"/>
+                    <event date="2017-01-01" time="00:15:00" value="5.06" flag="0"/>""";
 
         try ( InputStream stream = new ByteArrayInputStream( formatString.getBytes() ) )
         {
@@ -128,10 +133,11 @@ class DataSourceTest
     @Test
     void testDetectFormatIdentifiesWresCsv() throws IOException
     {
-        String formatString = "value_date,variable_name,location,measurement_unit,value\r\n"
-                              + "1985-06-01T13:00:00Z,QINE,DRRC2,CFS,747.78455\r\n"
-                              + "1985-06-01T14:00:00Z,QINE,DRRC2,CFS,735.21606\r\n"
-                              + "1985-06-01T15:00:00Z,QINE,DRRC2,CFS,722.6476";
+        String formatString = """
+                value_date,variable_name,location,measurement_unit,value
+                1985-06-01T13:00:00Z,QINE,DRRC2,CFS,747.78455
+                1985-06-01T14:00:00Z,QINE,DRRC2,CFS,735.21606
+                1985-06-01T15:00:00Z,QINE,DRRC2,CFS,722.6476""";
 
         try ( InputStream stream = new ByteArrayInputStream( formatString.getBytes() ) )
         {
@@ -144,25 +150,26 @@ class DataSourceTest
     @Test
     void testDetectFormatIdentifiesJsonWrdsAhps() throws IOException
     {
-        String formatString = "{\r\n"
-                              + "  \"header\": {\r\n"
-                              + "    \"request\": {\r\n"
-                              + "      \"url\": \" http://fake.url\",\r\n"
-                              + "      \"path\": \"/fake_bucket\"\r\n"
-                              + "    }\r\n"
-                              + "  },\r\n"
-                              + "  \"status_code\": 200,\r\n"
-                              + "  \"messsage\": \"\",\r\n"
-                              + "  \"forecasts\": [\r\n"
-                              + "    {\r\n"
-                              + "      \"location\": {\r\n"
-                              + "        \"names\": {\r\n"
-                              + "          \"nwsLid\": \"FAKE2\",\r\n"
-                              + "          \"usgsSiteCode\": \"-123456789\",\r\n"
-                              + "          \"comId\": \"-987654321\",\r\n"
-                              + "          \"nwsName\": \"FAKE2 - FAKETY, FAKE\"\r\n"
-                              + "        }\r\n"
-                              + "      },";
+        String formatString = """
+                {
+                  "header": {
+                    "request": {
+                      "url": " http://fake.url",
+                      "path": "/fake_bucket"
+                    }
+                  },
+                  "status_code": 200,
+                  "messsage": "",
+                  "forecasts": [
+                    {
+                      "location": {
+                        "names": {
+                          "nwsLid": "FAKE2",
+                          "usgsSiteCode": "-123456789",
+                          "comId": "-987654321",
+                          "nwsName": "FAKE2 - FAKETY, FAKE"
+                        }
+                      },""";
 
         try ( InputStream stream = new ByteArrayInputStream( formatString.getBytes() ) )
         {
@@ -175,18 +182,19 @@ class DataSourceTest
     @Test
     void testDetectFormatIdentifiesJsonWrdsNwm() throws IOException
     {
-        String formatString = "{\r\n"
-                              + "    \"_metrics\": {\r\n"
-                              + "        \"location_api_call\": 17.621362447738647,\r\n"
-                              + "        \"forming_location_data\": 0.0001201629638671875,\r\n"
-                              + "        \"usgs_short_range_reference_time_count\": 257,\r\n"
-                              + "        \"short_range_reference_time_count\": 257,\r\n"
-                              + "        \"validate_nwm_vars\": 0.04367184638977051,\r\n"
-                              + "        \"short_range_feature_id_count\": 1,\r\n"
-                              + "        \"scale_factor\": 0.009999999776482582,\r\n"
-                              + "        \"total_request_time\": 22.629672050476074\r\n"
-                              + "    },\r\n"
-                              + "    \"_documentation\": \"https://wrds.nwm/docs/nwm2.1/v2.0/swagger/";
+        String formatString = """
+                {
+                    "_metrics": {
+                        "location_api_call": 17.621362447738647,
+                        "forming_location_data": 0.0001201629638671875,
+                        "usgs_short_range_reference_time_count": 257,
+                        "short_range_reference_time_count": 257,
+                        "validate_nwm_vars": 0.04367184638977051,
+                        "short_range_feature_id_count": 1,
+                        "scale_factor": 0.009999999776482582,
+                        "total_request_time": 22.629672050476074
+                    },
+                    "_documentation": "https://wrds.nwm/docs/nwm2.1/v2.0/swagger/""";
 
         try ( InputStream stream = new ByteArrayInputStream( formatString.getBytes() ) )
         {
@@ -222,6 +230,34 @@ class DataSourceTest
             URI fakeUri = URI.create( "fake.fi" );
 
             assertEquals( DataDisposition.XML_FI_TIMESERIES, DataSource.detectFormat( stream, fakeUri ) );
+        }
+    }
+
+    @Test
+    void testPiXmlWithoutPrologOrFileNameHint() throws IOException
+    {
+        String formatString = """
+                <TimeSeries xmlns="http://www.wldelft.nl/fews/PI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.wldelft.nl/fews/PI http://fews.wldelft.nl/schemas/version1.0/pi-schemas/pi_timeseries.xsd" version="1.14">
+                  <timeZone>0.0</timeZone>
+                  <series>
+                    <header>
+                      <type>instantaneous</type>
+                      <locationId>CKLN6</locationId>
+                      <parameterId>STG</parameterId>
+                       <timeStep unit="second" multiplier="900"/>
+                      <startDate date="2017-01-01" time="00:00:00"/>
+                      <endDate date="2017-12-31" time="00:00:00"/>
+                      <missVal>-9999.0</missVal>
+                      <units>FT</units>
+                    </header>
+                    <event date="2017-01-01" time="00:00:00" value="5.07" flag="0"/>
+                    <event date="2017-01-01" time="00:15:00" value="5.06" flag="0"/>""";
+
+        try ( InputStream stream = new ByteArrayInputStream( formatString.getBytes() ) )
+        {
+            URI fakeUri = URI.create( "fake.foo" );
+
+            assertEquals( DataDisposition.XML_PI_TIMESERIES, DataSource.detectFormat( stream, fakeUri ) );
         }
     }
 }

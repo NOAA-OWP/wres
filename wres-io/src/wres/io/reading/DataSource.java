@@ -672,6 +672,11 @@ public class DataSource
         {
             innerDisposition = DataDisposition.CSV_WRES;
         }
+        // Sometimes a PI-XML file is returned as text/plain from tika
+        else if ( DataSource.detectPiXmlFromTextPlain( firstBytes, uri ) )
+        {
+            innerDisposition = DataDisposition.XML_PI_TIMESERIES;
+        }
         else
         {
             LOGGER.warn( "Found a text/plain document, but it did not appear to be NWS datacard: '{}'",
@@ -714,8 +719,8 @@ public class DataSource
      *            xx 00 00 00  UTF-32LE
      *            xx 00 xx 00  UTF-16LE
      *            xx xx xx xx  UTF-8
-     * @param bytes The leading bytes, at least 4 of them.
-     * @return The detected charset, null if not detected or not supported.
+     * @param bytes the leading bytes, at least 4 of them.
+     * @return the detected charset, null if not detected or not supported.
      * @throws IllegalArgumentException when bytes length is under 4.
      */
 
@@ -765,8 +770,8 @@ public class DataSource
      * assume that no byte order mark means UTF-8.
      * <a href="https://www.w3.org/TR/xml/#charencoding">https://www.w3.org/TR/xml/#charencoding</a>
      * <a href="https://en.wikipedia.org/wiki/Byte_order_mark#UTF-16">https://en.wikipedia.org/wiki/Byte_order_mark#UTF-16</a>
-     * @param bytes The leading bytes, at least 2 of them.
-     * @return The detected charset, null if not detected or not supported.
+     * @param bytes the leading bytes, at least 2 of them.
+     * @return the detected charset, null if not detected or not supported.
      * @throws IllegalArgumentException when bytes length is under 2.
      */
 
@@ -840,8 +845,8 @@ public class DataSource
     /**
      * Since tika sometimes reports tarballs as text/plain, do some more work
      * to detect.
-     * @param firstBytes The bytes to use for detection
-     * @param uri The URI to use for logging
+     * @param firstBytes the bytes to use for detection
+     * @param uri the URI to use for logging
      * @return true when a tarball, false otherwise
      */
 
@@ -980,6 +985,20 @@ public class DataSource
         }
 
         return countAgainst == 0 && countFor > 0;
+    }
+
+    /**
+     * Since tika sometimes reports pi-xml sources as text/plain, do some more work
+     * to detect.
+     * @param firstBytes the bytes to use for detection
+     * @param uri the URI to use for logging
+     * @return true when a pi-xml source, false otherwise
+     */
+
+    private static boolean detectPiXmlFromTextPlain( byte[] firstBytes,
+                                                     URI uri )
+    {
+        return DataSource.getDispositionOfXmlSubtype( firstBytes, uri ) == DataDisposition.XML_PI_TIMESERIES;
     }
 
     /**
