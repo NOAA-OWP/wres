@@ -105,7 +105,7 @@ public class WresJob
     /**
      * A smaller-than-minimum number of bytes expected in a project declaration.
      */
-    private static final int MINIMUM_PROJECT_DECLARATION_LENGTH = 19;
+    private static final int MINIMUM_PROJECT_DECLARATION_LENGTH = 20;
 
     //Database information
     private static String activeDatabaseName = "";
@@ -293,6 +293,16 @@ public class WresJob
             }
         }
     }
+    
+    /**
+     * Reformat the declaration String, trimming it and making other changes as needed.
+     * @param projectConfig The posted declaration String.
+     * @return A reformatted version ready for use with the WRES.
+    */
+    private String reformatConfig(String projectConfig)
+    {
+        return projectConfig.trim();
+    }
 
     @GET
     @Produces( "text/plain; charset=utf-8" )
@@ -391,6 +401,8 @@ public class WresJob
     @Produces( "application/octet-stream" )
     public Response postWresValidate( @FormParam( "projectConfig" ) @DefaultValue( "" ) String projectConfig )
     {
+        projectConfig = reformatConfig(projectConfig);
+	
         // Obtain the evaluation status events.
         List<EvaluationStatusEvent> events;
         try
@@ -436,6 +448,7 @@ public class WresJob
     @Produces( "text/html; charset=utf-8" )
     public Response postWresValidateHtml( @FormParam( "projectConfig" ) @DefaultValue( "" ) String projectConfig )
     {
+        projectConfig = reformatConfig(projectConfig);
         try
         {
             // Obtain the evaluation status events.
@@ -520,6 +533,8 @@ public class WresJob
                      verb,
                      postInput,
                      additionalArguments );
+        projectConfig = reformatConfig(projectConfig);
+	
         // Default priority is 0 for all tasks.
         int messagePriority = 0;
         // Default to execute per tradition and majority case.
