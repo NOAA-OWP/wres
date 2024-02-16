@@ -16,7 +16,10 @@ ARG version
 WORKDIR /opt
 COPY ./build/distributions/wres-tasker-${version}.zip .
 RUN unzip wres-tasker-${version}.zip \
-    && rm wres-tasker-${version}.zip
+    && rm wres-tasker-${version}.zip \
+    && find . -type d -exec chmod u+rwx,g+rx,g-w,o+rx,o-w {} \; \
+    && find . -type f -exec chmod u+rw,g+r,g-w,o+r,o-w {} \;
+ 
 
 WORKDIR /opt/wres-tasker-${version}
 
