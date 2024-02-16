@@ -123,7 +123,8 @@ public class TimeSeriesStore
                                                      this.baselineSingleValuedSeries,
                                                      orientation )
                               .stream()
-                              .filter( next -> features.contains( next.getMetadata().getFeature() ) )
+                              .filter( next -> features.contains( next.getMetadata()
+                                                                      .getFeature() ) )
                               .map( next -> TimeSeriesSlicer.filter( next, timeWindow ) );
     }
 
@@ -276,18 +277,17 @@ public class TimeSeriesStore
      * @throws IllegalArgumentException if the context is unrecognized
      */
 
-    private static Collection<TimeSeries<Double>>
-            getSingleValuedStore( Collection<TimeSeries<Double>> leftSingleValuedSeries,
-                                  Collection<TimeSeries<Double>> rightSingleValuedSeries,
-                                  Collection<TimeSeries<Double>> baselineSingleValuedSeries,
-                                  DatasetOrientation orientation )
+    private static Collection<TimeSeries<Double>> getSingleValuedStore( Collection<TimeSeries<Double>> leftSingleValuedSeries,
+                                                                        Collection<TimeSeries<Double>> rightSingleValuedSeries,
+                                                                        Collection<TimeSeries<Double>> baselineSingleValuedSeries,
+                                                                        DatasetOrientation orientation )
     {
         return switch ( orientation )
-                {
-                    case LEFT -> leftSingleValuedSeries;
-                    case RIGHT -> rightSingleValuedSeries;
-                    case BASELINE -> baselineSingleValuedSeries;
-                };
+        {
+            case LEFT -> leftSingleValuedSeries;
+            case RIGHT -> rightSingleValuedSeries;
+            case BASELINE -> baselineSingleValuedSeries;
+        };
     }
 
     /**
@@ -300,18 +300,17 @@ public class TimeSeriesStore
      * @throws IllegalArgumentException if the context is unrecognized
      */
 
-    private static Collection<TimeSeries<Ensemble>>
-            getEnsembleStore( Collection<TimeSeries<Ensemble>> leftEnsembleSeries,
-                              Collection<TimeSeries<Ensemble>> rightEnsembleSeries,
-                              Collection<TimeSeries<Ensemble>> baselineEnsembleSeries,
-                              DatasetOrientation context )
+    private static Collection<TimeSeries<Ensemble>> getEnsembleStore( Collection<TimeSeries<Ensemble>> leftEnsembleSeries,
+                                                                      Collection<TimeSeries<Ensemble>> rightEnsembleSeries,
+                                                                      Collection<TimeSeries<Ensemble>> baselineEnsembleSeries,
+                                                                      DatasetOrientation context )
     {
         return switch ( context )
-                {
-                    case LEFT -> leftEnsembleSeries;
-                    case RIGHT -> rightEnsembleSeries;
-                    case BASELINE -> baselineEnsembleSeries;
-                };
+        {
+            case LEFT -> leftEnsembleSeries;
+            case RIGHT -> rightEnsembleSeries;
+            case BASELINE -> baselineEnsembleSeries;
+        };
     }
 
     /**
@@ -333,7 +332,8 @@ public class TimeSeriesStore
 
         if ( LOGGER.isInfoEnabled() )
         {
-            int size = this.leftSingleValuedSeries.size() + this.rightSingleValuedSeries.size()
+            int size = this.leftSingleValuedSeries.size()
+                       + this.rightSingleValuedSeries.size()
                        + this.baselineSingleValuedSeries.size()
                        + this.leftEnsembleSeries.size()
                        + this.rightEnsembleSeries.size()
@@ -343,7 +343,8 @@ public class TimeSeriesStore
                          + "include {} single-valued time-series with an {} orientation, {} single-valued time-series "
                          + "with a {} orientation, {} single-valued time-series with a {} orientation, {} ensemble "
                          + "time-series with an {} orientation, {} ensemble time-series with a {} orientation and {} "
-                         + "ensemble time-series with a {} orientation. ",
+                         + "ensemble time-series with a {} orientation. The total number of time-series events within "
+                         + "the store is: {}.",
                          size,
                          size,
                          this.leftSingleValuedSeries.size(),
@@ -357,8 +358,40 @@ public class TimeSeriesStore
                          this.rightEnsembleSeries.size(),
                          DatasetOrientation.RIGHT,
                          this.baselineEnsembleSeries.size(),
-                         DatasetOrientation.BASELINE );
+                         DatasetOrientation.BASELINE,
+                         this.getEventCount() );
         }
+    }
+
+    /**
+     * @return the number of time-series events across all time-series in the store
+     */
+    private long getEventCount()
+    {
+        return this.leftSingleValuedSeries.stream()
+                                          .mapToLong( e -> e.getEvents()
+                                                            .size() )
+                                          .sum()
+               + this.rightSingleValuedSeries.stream()
+                                             .mapToLong( e -> e.getEvents()
+                                                               .size() )
+                                             .sum()
+               + this.baselineSingleValuedSeries.stream()
+                                                .mapToLong( e -> e.getEvents()
+                                                                  .size() )
+                                                .sum()
+               + this.leftEnsembleSeries.stream()
+                                        .mapToLong( e -> e.getEvents()
+                                                          .size() )
+                                        .sum()
+               + this.rightEnsembleSeries.stream()
+                                         .mapToLong( e -> e.getEvents()
+                                                           .size() )
+                                         .sum()
+               + this.baselineEnsembleSeries.stream()
+                                            .mapToLong( e -> e.getEvents()
+                                                              .size() )
+                                            .sum();
     }
 
 }

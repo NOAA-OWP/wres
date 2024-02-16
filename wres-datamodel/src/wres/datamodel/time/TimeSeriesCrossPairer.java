@@ -82,9 +82,13 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
         Objects.requireNonNull( first );
         Objects.requireNonNull( second );
 
+        // Sort the time-series in time order using the first reference time, if available
+        List<TimeSeries<T>> firstSorted = new ArrayList<>( first );
+        List<TimeSeries<T>> secondSorted = new ArrayList<>( second );
+
         // Filter both sets of pairs
-        List<TimeSeries<T>> filteredMain = this.crossPair( first, second, this.crossPair );
-        List<TimeSeries<T>> filteredBaseline = this.crossPair( second, filteredMain, this.crossPair );
+        List<TimeSeries<T>> filteredMain = this.crossPair( firstSorted, secondSorted, this.crossPair );
+        List<TimeSeries<T>> filteredBaseline = this.crossPair( secondSorted, filteredMain, this.crossPair );
 
         // Log the pairs removed
         if ( LOGGER.isDebugEnabled() )
@@ -160,7 +164,7 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
         for ( TimeSeries<T> next : againstThese )
         {
             // Find the nearest time-series by reference time
-            TimeSeries<T> nearest = this.getNearestByReferenceTimes( filterTheseMutable, next, method );
+            TimeSeries<T> nearest = this.getNearestByReferenceTimesWithMatchingValidTimes( filterTheseMutable, next, method );
 
             Set<Instant> validTimesToCheck = next.getEvents()
                                                  .stream()
@@ -191,6 +195,7 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
                                     .collect( Collectors.toSet() ) );
             }
 
+            // Some events to consider
             if ( !events.isEmpty() )
             {
                 // Consider only valid times that are part of the next time-series
@@ -201,8 +206,12 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
 
                 returnMe.add( nextSeries );
 
-                // Consider one time-series only once
+                // Use one time-series only once
                 filterTheseMutable.remove( nearest );
+            }
+            else
+            {
+                LOGGER.debug( "Eliminated a time-series from cross-pairing because no valid times matched." );
             }
 
         }
@@ -212,9 +221,9 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
 
     /**
      * Finds a time-series within the list of time-series whose reference times are nearest to those of the 
-     * prescribed time-series. Nearest means the first time-series with identical reference times, else the first 
-     * time-series whose common reference times differ by the minimum total duration (first if there are several such
-     * cases).
+     * prescribed time-series and at least some valid times match exactly. Nearest means the first time-series with
+     * identical reference times, else the first time-series whose common reference times differ by the minimum total
+     * duration (first if there are several such cases).
      *
      * @param lookInHere the list in which to look
      * @param lookNearToMe the time-series whose reference times will be matched as closely as possible
@@ -223,9 +232,9 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
      * @throws PairingException if there are no reference times in any one time-series
      */
 
-    private TimeSeries<T> getNearestByReferenceTimes( List<TimeSeries<T>> lookInHere,
-                                                      TimeSeries<T> lookNearToMe,
-                                                      CrossPairMethod method )
+    private TimeSeries<T> getNearestByReferenceTimesWithMatchingValidTimes( List<TimeSeries<T>> lookInHere,
+                                                                            TimeSeries<T> lookNearToMe,
+                                                                            CrossPairMethod method )
     {
         // Default to empty
         TimeSeries<T> nearest = null;
@@ -233,36 +242,64 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
 
         Map<ReferenceTimeType, Instant> refTimesToCheck = lookNearToMe.getReferenceTimes();
 
+        Set<Instant> validTimesToCheck = lookNearToMe.getEvents()
+                                                     .stream()
+                                                     .map( Event::getTime )
+                                                     .collect( Collectors.toSet() );
+
         for ( TimeSeries<T> next : lookInHere )
         {
-            // Equivalent reference times?
-            if ( refTimesToCheck.equals( next.getReferenceTimes() ) )
+            // Some common valid times?
+            if ( next.getEvents()
+                     .stream()
+                     .anyMatch( e -> validTimesToCheck.contains( e.getTime() ) ) )
             {
-                return next;
-            }
+                // Equivalent reference times?
+                if ( refTimesToCheck.equals( next.getReferenceTimes() ) )
+                {
+                    return next;
+                }
 
-            // Find the approximate nearest
-            // Find the total duration error for all reference times in the next series
-            // relative to the series to check
-            Duration nextError = this.getTotalDurationBetweenCommonTimeTypes( lookNearToMe,
-                                                                              next,
-                                                                              method );
+                // Find the approximate nearest
+                // Find the total duration error for all reference times in the next series
+                // relative to the series to check
+                Duration nextError = this.getTotalDurationBetweenCommonTimeTypes( lookNearToMe,
+                                                                                  next,
+                                                                                  method );
 
-            // If the existing nearest is null, this is the new nearest
-            if ( Objects.isNull( nearest ) )
-            {
-                nearest = next;
-                durationError = nextError;
-                continue;
-            }
+                // If the existing nearest is null, this is the new nearest
+                if ( Objects.isNull( nearest ) )
+                {
+                    nearest = next;
+                    durationError = nextError;
+                    continue;
+                }
 
-            // Is it nearer than the current nearest?
-            if ( nextError.compareTo( durationError ) < 0 )
-            {
-                nearest = next;
-                durationError = nextError;
+                // Is it nearer than the current nearest?
+                if ( nextError.compareTo( durationError ) < 0 )
+                {
+                    nearest = next;
+                    durationError = nextError;
+                }
             }
         }
+
+        return this.getNearestOrEmpty( nearest, durationError, lookInHere, lookNearToMe );
+    }
+
+    /**
+     * Returns the input time-series or an empty one if the input is null.
+     * @param nearest the nearest time-series to check
+     * @param durationError the duration error
+     * @param lookInHere the list in which to look
+     * @param lookNearToMe the time-series whose reference times will be matched as closely as possible
+     * @return the nearest time-series or any empty one
+     */
+    private TimeSeries<T> getNearestOrEmpty( TimeSeries<T> nearest,
+                                             Duration durationError,
+                                             List<TimeSeries<T>> lookInHere,
+                                             TimeSeries<T> lookNearToMe )
+    {
 
         // Return the empty time-series if nothing found or if the duration error is not zero when exact matching
         if ( Objects.isNull( nearest )

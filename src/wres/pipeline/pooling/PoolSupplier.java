@@ -1727,10 +1727,13 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
             FeatureTuple nextFeature = nextEntry.getKey();
 
             List<TimeSeries<Pair<L, R>>> nextMainPairs = nextEntry.getValue();
+
             if ( basePairs.containsKey( nextFeature ) )
             {
                 List<TimeSeries<Pair<L, R>>> nextBasePairs = basePairs.get( nextFeature );
+
                 CrossPairs<Pair<L, R>> crossPairs = crossPairer.apply( nextMainPairs, nextBasePairs );
+
                 mainPairsCrossed.put( nextFeature, crossPairs.getFirstPairs() );
                 basePairsCrossed.put( nextFeature, crossPairs.getSecondPairs() );
             }
