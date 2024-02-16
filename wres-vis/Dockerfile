@@ -20,7 +20,10 @@ ARG version
 WORKDIR /opt
 COPY ./build/distributions/wres-vis-${version}.zip .
 RUN unzip wres-vis-${version}.zip \
-    && rm wres-vis-${version}.zip
+    && rm wres-vis-${version}.zip \
+    && find . -type d -exec chmod u+rwx,g+rx,g-w,o+rx,o-w {} \; \
+    && find . -type f -exec chmod u+rw,g+r,g-w,o+r,o-w {} \;
+
 
 WORKDIR /opt/wres-vis-${version}
 
