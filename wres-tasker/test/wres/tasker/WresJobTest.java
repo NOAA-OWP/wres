@@ -247,7 +247,7 @@ public class WresJobTest
     {
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
         WresJob wresJob = new WresJob();
-        Response response = wresJob.postWresJob( "short declaration", null, null, null, false, false, Collections.emptyList() );
+        Response response = wresJob.postWresJob( "", null, null, null, false, false, Collections.emptyList() );
         assertEquals( "Expected a 400 bad request.", 400, response.getStatus() );
     }
 
