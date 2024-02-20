@@ -102,11 +102,6 @@ public class WresJob
      */
     private static final int MAXIMUM_PROJECT_DECLARATION_LENGTH = 5_000_000;
 
-    /**
-     * A smaller-than-minimum number of bytes expected in a project declaration.
-     */
-    private static final int MINIMUM_PROJECT_DECLARATION_LENGTH = 20;
-
     //Database information
     private static String activeDatabaseName = "";
     private static String activeDatabaseHost = "";
@@ -629,20 +624,20 @@ public class WresJob
                                            + ", please find a way to shrink the"
                                            + " project declaration and re-send." );
             }
-            else if ( lengthOfProjectDeclaration < MINIMUM_PROJECT_DECLARATION_LENGTH )
+            else if ( projectConfig.getBytes().length <= 1 )
             {
-                LOGGER.warn( "Received a project declaration of length {} (smaller than {}).",
-                             lengthOfProjectDeclaration,
-                             MINIMUM_PROJECT_DECLARATION_LENGTH );
-                return WresJob.badRequest( "The project declaration has "
-                                           + lengthOfProjectDeclaration
-                                           + " characters, which too small. "
-                                           + "Please double-check that you set "
-                                           + "the form parameter "
+                LOGGER.warn( "Received a project declaration that appears to be "
+                             + "one character or less." );
+                return WresJob.badRequest( "The project declaration is less " 
+                                           + "than or equal to one byte long, "
+                                           + "which is not allowed. "
+                                           + "Please double-check that you "
+                                           + "set the form parameter "
                                            + "'projectConfig' correctly and "
                                            + "re-send." );
             }
         }
+
         //For switchdatabase, cleandatabase, and migratedatabase, I need to record the database info
         //from the additional arguments.  Running clean or migrate database with no arguments
         //is fine, however.  Thus, only parse the arguments for a cleandatabase or migratedatabase if
