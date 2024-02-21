@@ -581,12 +581,10 @@ public class EvaluationService implements ServletContextListener
      * @param id the evaluation job identifier
      * @param resourceName the resource name
      * @return the resource
-     * @deprecated
      */
 
     @GET
     @Path( "/{id}/{resourceName}" )
-    @Deprecated( since = "6.17" )
     public Response getProjectResource( @PathParam( "id" ) Long id,
                                         @PathParam( "resourceName" ) String resourceName )
     {
@@ -1003,7 +1001,7 @@ public class EvaluationService implements ServletContextListener
 
     private static String getContentType( java.nio.file.Path path )
     {
-        String type = MediaType.TEXT_PLAIN_TYPE.getType();
+        String type = null;
 
         try
         {
