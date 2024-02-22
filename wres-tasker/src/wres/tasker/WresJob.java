@@ -285,11 +285,10 @@ public class WresJob
         }
         catch (IOException | RuntimeException e)
         {
-            LOGGER.debug( "Full exception trace: ", e );
+            LOGGER.info( "Attempt to get worker count failed. Full exception trace: ", e );
             throw new ConnectivityException("Unable to connect to broker for a worker "
-                                            + "count. The wres-monitor password may be "
-                                            + "incorrect. Check the broker logs to "
-                                            + "confirm.  Exception message: "
+                                            + "count as a test. Check the broker logs. "
+                                            + "Exception message: "
                                             + e.getMessage() + "."
                                            );
         }
