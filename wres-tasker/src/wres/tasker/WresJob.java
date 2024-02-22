@@ -107,11 +107,6 @@ public class WresJob
     private static String activeDatabaseHost = "";
     private static String activeDatabasePort = "";
 
-    /**
-     * Used to facilitate communication with the broker manager API.
-     */
-    private static BrokerManagerHelper brokerMgrHelper;
-
     static
     {
         // If present, record the admin's token hashed.
@@ -226,9 +221,6 @@ public class WresJob
                 portBucket.set( activeDatabasePort );
             }
         }
-
-        //Initialize the broker manager helper once.
-        brokerMgrHelper = new BrokerManagerHelper();
     }
 
     /** Shared job result state, exposed below */
@@ -237,7 +229,6 @@ public class WresJob
     private static Connection connection = null;
     /** Guards connection */
     private static final Object CONNECTION_LOCK = new Object();
-
 
     /**
      * Check for connectivity to the broker and persister.
@@ -287,6 +278,21 @@ public class WresJob
                                                  re );
             }
         }
+        // Test the ability to connect to the broker connections API.
+        try
+        {
+            int workerCount = BrokerManagerHelper.getBrokerWorkerConnectionCount();
+        }
+        catch (IOException | RuntimeException e)
+        {
+            LOGGER.debug( "Full exception trace: ", e );
+            throw new ConnectivityException("Unable to connect to broker for a worker "
+                                            + "count. The wres-monitor password may be "
+                                            + "incorrect. Check the broker logs to "
+                                            + "confirm.  Exception message: "
+                                            + e.getMessage() + "."
+                                           );
+        }
     }
     
     /**
@@ -319,7 +325,7 @@ public class WresJob
         //If there are no workers connected to the broker, then the service is considered down.
         try
         {
-            int workerCount = brokerMgrHelper.getBrokerWorkerConnectionCount();
+            int workerCount = BrokerManagerHelper.getBrokerWorkerConnectionCount();
             if ( workerCount <= 0 )
             {
                 LOGGER.warn( "No workers are connected to the broker. Reporting 'Down'." );
@@ -332,6 +338,13 @@ public class WresJob
             LOGGER.warn( "Unable to obtain a worker count from the broker manager. Reporting 'Down'. "
                          + " Exception message: {}", e.getMessage() );
             LOGGER.debug( "Full exception trace: ", e );
+            return "Down";
+        }
+        catch ( RuntimeException re )
+        {
+            LOGGER.warn( "RuntimeException obtaining worker count from the broker manager. Reporting 'Down'. "
+                         + " Exception message: {}", re.getMessage() );
+            LOGGER.debug( "Full exception trace: ", re );
             return "Down";
         }
 
@@ -1198,6 +1211,11 @@ public class WresJob
     static final class ConnectivityException extends RuntimeException
     {
         private static final long serialVersionUID = 4143746909778499341L;
+
+        private ConnectivityException( String customMessage )
+        {
+            super( customMessage );
+        }
 
         private ConnectivityException( String serviceName,
                                        String host,

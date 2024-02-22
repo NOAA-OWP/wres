@@ -25,7 +25,7 @@ import wres.http.WebClient;
 import wres.http.WebClientUtils;
 import wres.messages.BrokerHelper;
 
-public class BrokerManagerHelper
+public abstract class BrokerManagerHelper
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( BrokerManagerHelper.class );
 
@@ -43,37 +43,41 @@ public class BrokerManagerHelper
     /**
      * The port used by the broker manager.
      */
-    private int managerPort = DEFAULT_MANAGER_PORT;
+    private static int managerPort = DEFAULT_MANAGER_PORT;
 
     /**
      * Client used to interact with the broker manager API.
      */
-    private OkHttpClient httpClient;
+    private static OkHttpClient httpClient;
 
     /**
      * The base URL for the manager API endpoint.
      */
-    private String managerURL;
+    private static String managerURL;
 
     /**
      * Object mapper used to read JSON.
      */
-    ObjectMapper mapper = new ObjectMapper();
+    private static ObjectMapper mapper = new ObjectMapper();
 
     /**
      * Relies on the BrokerHelper to obtain the SSLContext and TrustManager. It primes the {@link #httpClient}
      * to be able to post requests and obtain responses from the broker manager API.
      */
-    public BrokerManagerHelper()
+    private static void initialize()
     {
+        LOGGER.info( "Initializing the broker manager helper, starting with the monitor password." );
         //Monitor password is required.
         String monitorPassword = System.getProperty( WRES_MONITOR_PASSWORD_SYSTEM_PROPERTY_NAME );
-        if ( monitorPassword == null )
+        if ( monitorPassword == null || monitorPassword.isBlank() )
         {
-            throw new IllegalStateException( "No wres-monitor password was provided via environment variable"
-                                             + WRES_MONITOR_PASSWORD_SYSTEM_PROPERTY_NAME 
-                                             + ". BrokerManagerHelper cannot be initiated." );
+            LOGGER.warn( "Either no or an empty wres-monitor password was provided "
+                         + "via environment variable "
+                         + WRES_MONITOR_PASSWORD_SYSTEM_PROPERTY_NAME 
+                         + ". Assuming a blank password which will cause errors later." );
+            monitorPassword = "";
         }
+        final String monitorPasswordFinal = monitorPassword;
 
         //Manager port is not required, but must be valid if specified.
         String managerPortStr = System.getProperty( BROKER_MANAGER_PORT_SYSTEM_PROPERTY_NAME );
@@ -122,7 +126,7 @@ public class BrokerManagerHelper
                                                        {
                                                            String credential =
                                                                    Credentials.basic( "wres-monitor",
-                                                                                      monitorPassword );
+                                                                                      monitorPasswordFinal );
                                                            return response.request()
                                                                           .newBuilder()
                                                                           .header( "Authorization", credential )
@@ -138,8 +142,15 @@ public class BrokerManagerHelper
      * @throws IOException If this is unable to communicate with the broker manager API
      * or the JSON could not be parsed.
      */
-    public int getBrokerWorkerConnectionCount() throws IOException
+    public static int getBrokerWorkerConnectionCount() throws IOException
     {
+        //Initialize if necessary.
+        if (httpClient == null)
+        {
+            initialize();
+        }
+
+        //Determine the URL.
         String connectionsURL = managerURL + "/connections";
         URI mgmtURI = null;
         try
@@ -151,6 +162,7 @@ public class BrokerManagerHelper
             LOGGER.error( "Failed to create URI from {}", connectionsURL, use );
         }
 
+        //Create the web client.
         WebClient webClient = new WebClient( httpClient );
         WebClient.ClientResponse response = webClient.getFromWeb( mgmtURI );
 
