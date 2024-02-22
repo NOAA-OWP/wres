@@ -60,14 +60,12 @@ public abstract class BrokerManagerHelper
      */
     private static ObjectMapper mapper = new ObjectMapper();
 
-    /**
-     * Relies on the BrokerHelper to obtain the SSLContext and TrustManager. It primes the {@link #httpClient}
-     * to be able to post requests and obtain responses from the broker manager API.
-     */
-    private static void initialize()
+    //Initialize static variables.
+    static 
     {
         LOGGER.info( "Initializing the broker manager helper, starting with the monitor password." );
-        //Monitor password is required.
+        
+        //Obtain the monitor password if available; use blank otherwise.
         String monitorPassword = System.getProperty( WRES_MONITOR_PASSWORD_SYSTEM_PROPERTY_NAME );
         if ( monitorPassword == null || monitorPassword.isBlank() )
         {
@@ -90,11 +88,11 @@ public abstract class BrokerManagerHelper
             }
             catch (NumberFormatException ex)
             {
-                throw new IllegalStateException( "Broker manager port specified by "
-                                                 + BROKER_MANAGER_PORT_SYSTEM_PROPERTY_NAME
-                                                 + " exists, but its value is not an integer: '"
-                                                 + managerPortStr
-                                                 + "'. BrokerManagerHelper cannot be initiated." );
+                LOGGER.warn( "Broker manager port specified by "
+                             + BROKER_MANAGER_PORT_SYSTEM_PROPERTY_NAME
+                             + " exists, but its value is not an integer: '"
+                             + managerPortStr
+                             + "'. Using it as is, but connections wil fail later." );
             }
         }
 
@@ -144,12 +142,6 @@ public abstract class BrokerManagerHelper
      */
     public static int getBrokerWorkerConnectionCount() throws IOException
     {
-        //Initialize if necessary.
-        if (httpClient == null)
-        {
-            initialize();
-        }
-
         //Determine the URL.
         String connectionsURL = managerURL + "/connections";
         URI mgmtURI = null;
