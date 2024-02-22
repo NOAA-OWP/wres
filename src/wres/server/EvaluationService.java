@@ -398,6 +398,13 @@ public class EvaluationService implements ServletContextListener
     @Produces( MediaType.TEXT_PLAIN )
     public Response closeEvaluation()
     {
+        if ( !EVALUATION_STAGE.get().equals( COMPLETED ) )
+        {
+            LOGGER.info( "No Evaluation to close" );
+            return Response.status( Response.Status.NOT_FOUND )
+                           .entity( "There is no evaluation that needs to be closed" )
+                           .build();
+        }
         close();
         return Response.ok( "Evaluation closed" )
                        .build();
