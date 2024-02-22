@@ -41,7 +41,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeSeries;
 import wres.events.EvaluationMessager;
-import wres.io.writing.csv.pairs.PairsWriter;
+import wres.writing.csv.pairs.PairsWriter;
 import wres.pipeline.EvaluationEvent;
 import wres.pipeline.WresProcessingException;
 import wres.pipeline.pooling.PoolProcessingResult.Status;

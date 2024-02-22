@@ -38,10 +38,10 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.Feature;
-import wres.io.NoDataException;
+import wres.io.BadProjectException;
 import wres.io.ingesting.IngestResult;
 import wres.io.project.ProjectUtilities.VariableNames;
-import wres.io.reading.DataSource.DataDisposition;
+import wres.reading.DataSource.DataDisposition;
 import wres.io.retrieving.DataAccessException;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -120,10 +120,10 @@ public class InMemoryProject implements Project
 
         if ( this.features.isEmpty() && this.featureGroups.isEmpty() )
         {
-            throw new NoDataException( "Failed to identify any features with data on all required sides (left, right "
-                                       + "and, when declared, baseline) for the variables and other declaration "
-                                       + "supplied. Please check that the declaration is expected to produce some "
-                                       + "features with time-series data on both sides of the pairing." );
+            throw new BadProjectException( "Failed to identify any features with data on all required sides (left, right "
+                                           + "and, when declared, baseline) for the variables and other declaration "
+                                           + "supplied. Please check that the declaration is expected to produce some "
+                                           + "features with time-series data on both sides of the pairing." );
         }
     }
 
@@ -517,7 +517,7 @@ public class InMemoryProject implements Project
     /**
      * Checks that the union of ensemble conditions will select some data, otherwise throws an exception.
      *
-     * @throws NoDataException if the conditions select no data
+     * @throws BadProjectException if the conditions select no data
      * @throws DataAccessException if one or more ensemble conditions could not be evaluated
      */
 
@@ -541,12 +541,12 @@ public class InMemoryProject implements Project
 
         if ( !failed.isEmpty() )
         {
-            throw new NoDataException( "Of the filters that were defined for ensemble names, "
-                                       + failed.size()
-                                       + " of those filters did not select any data. Fix the declared filters to "
-                                       + "ensure that each filter selects some data. The invalid filters are: "
-                                       + failed
-                                       + "." );
+            throw new BadProjectException( "Of the filters that were defined for ensemble names, "
+                                           + failed.size()
+                                           + " of those filters did not select any data. Fix the declared filters to "
+                                           + "ensure that each filter selects some data. The invalid filters are: "
+                                           + failed
+                                           + "." );
         }
     }
 

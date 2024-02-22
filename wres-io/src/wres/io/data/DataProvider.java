@@ -22,7 +22,7 @@ import javax.json.JsonValue;
 import wres.datamodel.MissingValues;
 import wres.io.database.Database;
 import wres.io.database.DatabaseOperations;
-import wres.io.reading.csv.CsvDataProvider;
+import wres.reading.csv.CsvDataProvider;
 
 /**
  * <p>Provides access to, and operations upon, tabular data.
@@ -389,29 +389,29 @@ public interface DataProvider extends AutoCloseable
                                                charColumns );
     }
 
-    /**
-     * Converts a CSV file to a DataProvider with the top line being the header
-     * @param fileName The path to the csv file
-     * @param delimiter The delimiter separating values
-     * @return A DataProvider containing the provided CSV data
-     * @throws IOException Thrown if the file could not be read
-     */
-    static DataProvider fromCsv( final URI fileName, final char delimiter ) throws IOException
-    {
-        return CsvDataProvider.from( fileName, delimiter );
-    }
-
-    /**
-     * Converts a CSV stream to a DataProvider with the top line being the header
-     * @param inputStream The CSV stream
-     * @param delimiter The delimiter separating values
-     * @return A DataProvider containing the provided CSV data
-     * @throws IOException Thrown if the file could not be read
-     */
-    static DataProvider fromCsv( final InputStream inputStream, final char delimiter ) throws IOException
-    {
-        return CsvDataProvider.from( inputStream, delimiter );
-    }
+//    /**
+//     * Converts a CSV file to a DataProvider with the top line being the header
+//     * @param fileName The path to the csv file
+//     * @param delimiter The delimiter separating values
+//     * @return A DataProvider containing the provided CSV data
+//     * @throws IOException Thrown if the file could not be read
+//     */
+//    static DataProvider fromCsv( final URI fileName, final char delimiter ) throws IOException
+//    {
+//        return CsvDataProvider.from( fileName, delimiter );
+//    }
+//
+//    /**
+//     * Converts a CSV stream to a DataProvider with the top line being the header
+//     * @param inputStream The CSV stream
+//     * @param delimiter The delimiter separating values
+//     * @return A DataProvider containing the provided CSV data
+//     * @throws IOException Thrown if the file could not be read
+//     */
+//    static DataProvider fromCsv( final InputStream inputStream, final char delimiter ) throws IOException
+//    {
+//        return CsvDataProvider.from( inputStream, delimiter );
+//    }
 
     /**
      * Creates a JSON String representation of the DataProvider

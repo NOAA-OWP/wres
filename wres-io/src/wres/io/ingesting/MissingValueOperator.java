@@ -11,8 +11,8 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
-import wres.io.reading.DataSource;
-import wres.io.reading.TimeSeriesTuple;
+import wres.reading.DataSource;
+import wres.reading.TimeSeriesTuple;
 
 /**
  * A class that applies a consistent missing value identifier for any missing values that are identified within the 

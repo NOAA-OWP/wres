@@ -19,7 +19,7 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.io.reading.DataSource;
+import wres.reading.DataSource;
 
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
