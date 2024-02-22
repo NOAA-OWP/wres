@@ -858,7 +858,10 @@ public class EvaluationService implements ServletContextListener
     {
         LOGGER.info( "Closing Evaluation" );
         // Project closed gracefully, stop the timeout thread
-        timeoutThread.interrupt();
+        if (Objects.nonNull( timeoutThread ) )
+        {
+            timeoutThread.interrupt();
+        }
 
         // Set Atomic values to a state to accept new projects
         EVALUATION_STAGE.set( CLOSED );
