@@ -15,8 +15,8 @@ import wres.datamodel.Ensemble;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.io.reading.DataSource;
-import wres.io.reading.TimeSeriesTuple;
+import wres.reading.DataSource;
+import wres.reading.TimeSeriesTuple;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime;
 

@@ -38,14 +38,14 @@ import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.Source;
-import wres.io.reading.netcdf.grid.GriddedFeatures;
-import wres.io.reading.DataSource;
-import wres.io.reading.ReaderUtilities;
-import wres.io.reading.DataSource.DataDisposition;
-import wres.io.reading.ReadException;
-import wres.io.reading.TimeSeriesReader;
-import wres.io.reading.TimeSeriesReaderFactory;
-import wres.io.reading.TimeSeriesTuple;
+import wres.reading.netcdf.grid.GriddedFeatures;
+import wres.reading.DataSource;
+import wres.reading.ReaderUtilities;
+import wres.reading.DataSource.DataDisposition;
+import wres.reading.ReadException;
+import wres.reading.TimeSeriesReader;
+import wres.reading.TimeSeriesReaderFactory;
+import wres.reading.TimeSeriesTuple;
 import wres.system.SystemSettings;
 
 /**
@@ -709,7 +709,7 @@ public class SourceLoader
         }
         catch ( IOException e )
         {
-            throw new PreIngestException( "Failed to walk the directory tree '"
+            throw new IngestException( "Failed to walk the directory tree '"
                                           + sourcePath
                                           + "':",
                                           e );
@@ -721,7 +721,7 @@ public class SourceLoader
         //none of the files.  
         if ( returnMe.isEmpty() )
         {
-            throw new PreIngestException( "Could not find any valid source files within the directory '"
+            throw new IngestException( "Could not find any valid source files within the directory '"
                                           + dataSource.getUri()
                                           + "'. The following pattern filter was used (null if no filter): \""
                                           + pattern

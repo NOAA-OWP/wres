@@ -17,8 +17,8 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
-import wres.io.reading.netcdf.grid.GridRequest;
-import wres.io.reading.netcdf.grid.GridReader;
+import wres.reading.netcdf.grid.GridRequest;
+import wres.reading.netcdf.grid.GridReader;
 import wres.io.data.DataProvider;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;

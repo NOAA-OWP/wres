@@ -7,7 +7,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.IngestResultNeedingRetry;
-import wres.io.reading.DataSource;
+import wres.reading.DataSource;
 
 /**
  * An {@link IngestResult} that stores the {@link DataSource} and is connected to an in-memory ingest implementation.

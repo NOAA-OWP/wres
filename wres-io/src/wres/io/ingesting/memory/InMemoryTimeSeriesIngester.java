@@ -10,8 +10,8 @@ import wres.datamodel.time.TimeSeriesStore;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.ingesting.TimeSeriesTracker;
-import wres.io.reading.DataSource;
-import wres.io.reading.TimeSeriesTuple;
+import wres.reading.DataSource;
+import wres.reading.TimeSeriesTuple;
 
 /**
  * Facade for ingesting time-series into an in-memory {@link TimeSeriesStore}.

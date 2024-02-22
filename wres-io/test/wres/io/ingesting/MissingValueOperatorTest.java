@@ -20,9 +20,9 @@
 //import wres.datamodel.time.Event;
 //import wres.datamodel.time.TimeSeries;
 //import wres.datamodel.time.TimeSeriesMetadata;
-//import wres.io.reading.DataSource;
-//import wres.io.reading.DataSource.DataDisposition;
-//import wres.io.reading.TimeSeriesTuple;
+//import wres.reading.DataSource;
+//import wres.reading.DataSource.DataDisposition;
+//import wres.reading.TimeSeriesTuple;
 //import wres.datamodel.time.TimeSeries.Builder;
 //import wres.statistics.generated.Geometry;
 //import wres.statistics.generated.TimeScale.TimeScaleFunction;
