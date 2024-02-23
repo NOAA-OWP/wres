@@ -28,7 +28,7 @@ import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.Features;
 import wres.datamodel.space.FeatureTuple;
-import wres.reading.ReadingException;
+import wres.reading.PreReadException;
 import wres.reading.ReaderUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -64,7 +64,7 @@ public class FeatureFiller
      *         feature declaration was fully dense.
      * @throws DeclarationException When fillFeatures cannot proceed with the given declaration due to incongruent
      *         declaration. This should be a user/caller exception.
-     * @throws ReadingException When there is a problem getting data from the declared featureService or a problem
+     * @throws PreReadException When there is a problem getting data from the declared featureService or a problem
      *         with the returned data itself. In some cases will be a user/caller exception and in others an upstream
      *         service provider exception.
      * @throws NullPointerException When projectDeclaration or required contents is null. Required: inputs, left,
@@ -196,7 +196,7 @@ public class FeatureFiller
         // No features?
         if ( filledSingletonFeatures.isEmpty() && filledGroupedFeatures.isEmpty() )
         {
-            throw new ReadingException( "No geographic features found to evaluate." );
+            throw new PreReadException( "No geographic features found to evaluate." );
         }
 
         // Set the features and feature groups

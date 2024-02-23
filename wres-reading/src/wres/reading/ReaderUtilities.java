@@ -190,7 +190,7 @@ public class ReaderUtilities
      * @param uri a uri to help with messaging
      * @return The complete TimeSeries
      * @throws IllegalArgumentException When fewer than two traces given.
-     * @throws ReadingException When ragged (non-dense) data given.
+     * @throws PreReadException When ragged (non-dense) data given.
      */
 
     public static TimeSeries<Ensemble> transformEnsemble( TimeSeriesMetadata metadata,
@@ -668,7 +668,7 @@ public class ReaderUtilities
      * (WRDS) services.
      * Looks for a system property first, then a pem on the classpath, then a default trust manager.
      * @return the resulting SSLContext or the default SSLContext if not found.
-     * @throws ReadingException if the context and trust manager cannot be built for any reason
+     * @throws PreReadException if the context and trust manager cannot be built for any reason
      */
     public static Pair<SSLContext, X509TrustManager> getSslContextTrustingDodSignerForWrds()
     {
@@ -688,7 +688,7 @@ public class ReaderUtilities
             }
             catch ( IOException e )
             {
-                throw new ReadingException( "Unable to read "
+                throw new PreReadException( "Unable to read "
                                             + pathToTrustFile
                                             + " from the supplied system property, wres.wrdsCertificateFileToTrust, "
                                             + "in order to add it to trusted certificate list for requests made to "
@@ -732,7 +732,7 @@ public class ReaderUtilities
         }
         catch ( IOException ioe )
         {
-            throw new ReadingException( "Unable to read "
+            throw new PreReadException( "Unable to read "
                                         + trustFileOnClassPath
                                         + " from classpath in order to add it"
                                         + " to trusted certificate list for "
@@ -741,7 +741,7 @@ public class ReaderUtilities
         }
         catch ( NoSuchAlgorithmException nsae )
         {
-            throw new ReadingException( "Unable to find "
+            throw new PreReadException( "Unable to find "
                                         + trustFileOnClassPath
                                         + " on classpath in order to add it"
                                         + " to trusted certificate list for "

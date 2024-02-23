@@ -53,7 +53,7 @@ import wres.datamodel.time.DoubleEvent;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.reading.ReadingException;
+import wres.reading.PreReadException;
 import wres.reading.ReadException;
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.Geometry;
@@ -1171,7 +1171,7 @@ class NwmTimeSeries implements Closeable
         }
         catch ( IOException | InvalidRangeException e )
         {
-            throw new ReadingException( "Failed to read variable "
+            throw new PreReadException( "Failed to read variable "
                                         + variableName
                                         + " at origin "
                                         + Arrays.toString( origin )
@@ -1182,7 +1182,7 @@ class NwmTimeSeries implements Closeable
 
         if ( rawValues.length != countOfRawValuesToRead )
         {
-            throw new ReadingException(
+            throw new PreReadException(
                                           "Expected to read exactly " + countOfRawValuesToRead
                                           + ""
                                           + " values from variable "
@@ -1266,7 +1266,7 @@ class NwmTimeSeries implements Closeable
         }
         catch ( IOException ioe )
         {
-            throw new ReadingException( "Failed to read Instant for variable "
+            throw new PreReadException( "Failed to read Instant for variable "
                                         + ncVariable
                                         + " from netCDF file "
                                         + netcdfFile );
@@ -1506,7 +1506,7 @@ class NwmTimeSeries implements Closeable
                          .contains( "analysis" )
                  && !ncReferenceDatetime.equals( originalReferenceDatetime ) )
             {
-                throw new ReadingException( "The reference datetime "
+                throw new PreReadException( "The reference datetime "
                                             + ncReferenceDatetime
                                             + " from netCDF resource "
                                             + netcdfFile.getLocation()
@@ -1600,9 +1600,9 @@ class NwmTimeSeries implements Closeable
                               indicesOfFeatures,
                               netcdfFile.getLocation() );
             }
-            catch ( ReadingException pie )
+            catch ( PreReadException pie )
             {
-                throw new ReadingException( "While reading netCDF data at "
+                throw new PreReadException( "While reading netCDF data at "
                                             + netcdfFile.getLocation(),
                                             pie );
             }
@@ -1678,9 +1678,9 @@ class NwmTimeSeries implements Closeable
          * @param profile The profile describing the netCDF dataset.
          * @param netcdfFile The individual netCDF resource to read.
          * @return The member number from the global attributes.
-         * @throws ReadingException When ensemble member attribute is missing.
-         * @throws ReadingException When ensemble number exceeds count in profile.
-         * @throws ReadingException When ensemble number is less than 1.
+         * @throws PreReadException When ensemble member attribute is missing.
+         * @throws PreReadException When ensemble number exceeds count in profile.
+         * @throws PreReadException When ensemble number is less than 1.
          */
         private int readEnsembleNumber( NwmProfile profile,
                                         NetcdfFile netcdfFile )
@@ -1707,7 +1707,7 @@ class NwmTimeSeries implements Closeable
 
             if ( ncEnsembleNumber == NOT_FOUND )
             {
-                throw new ReadingException( "Could not find ensemble member attribute "
+                throw new PreReadException( "Could not find ensemble member attribute "
                                             + memberNumberAttributeName
                                             +
                                             " in netCDF file "
@@ -1716,7 +1716,7 @@ class NwmTimeSeries implements Closeable
 
             if ( ncEnsembleNumber > memberCount )
             {
-                throw new ReadingException( "Ensemble number "
+                throw new PreReadException( "Ensemble number "
                                             + ncEnsembleNumber
                                             + " unexpectedly exceeds member count "
                                             + memberCount );
@@ -1724,7 +1724,7 @@ class NwmTimeSeries implements Closeable
 
             if ( ncEnsembleNumber < 1 )
             {
-                throw new ReadingException( "Ensemble number "
+                throw new PreReadException( "Ensemble number "
                                             + ncEnsembleNumber
                                             + " is unexpectedly less than 1." );
             }
@@ -1836,7 +1836,7 @@ class NwmTimeSeries implements Closeable
          * Wait for the cache to be set. This method will interrupt this thread
          * if the process of waiting for the cache is, itself, interrupted.
          * @param netcdfFileName Name of netCDF being read.
-         * @throws ReadingException when timed out waiting on cache.
+         * @throws PreReadException when timed out waiting on cache.
          */
         private void waitForCache( String netcdfFileName )
         {
@@ -1847,7 +1847,7 @@ class NwmTimeSeries implements Closeable
                                                                   TimeUnit.SECONDS );
                 if ( timedOut )
                 {
-                    throw new ReadingException(
+                    throw new PreReadException(
                                                   "While reading "
                                                   + netcdfFileName,
                                                   new TimeoutException(
@@ -1871,7 +1871,7 @@ class NwmTimeSeries implements Closeable
          * Performs safe publication of an internal map, assumes internal
          * caller, assumes that internal caller will not publish the map,
          * assumes internal caller will only read from the map.
-         * @throws ReadingException From the waitForCache method, will be
+         * @throws PreReadException From the waitForCache method, will be
          * thrown if the wait times out.
          */
 
@@ -1961,7 +1961,7 @@ class NwmTimeSeries implements Closeable
                     // exception if they differ (by content).
                     if ( !Arrays.equals( features, this.originalFeatures ) )
                     {
-                        throw new ReadingException(
+                        throw new PreReadException(
                                                       "Non-homogeneous NWM data found. The features from "
                                                       + netcdfFile.getLocation()
                                                       + " do not match those found in a previously read "
@@ -1978,7 +1978,7 @@ class NwmTimeSeries implements Closeable
             }
             catch ( IOException ioe )
             {
-                throw new ReadingException( "Failed to read features from "
+                throw new PreReadException( "Failed to read features from "
                                             + netcdfFileName,
                                             ioe );
             }

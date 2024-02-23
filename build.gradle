@@ -472,7 +472,7 @@ project(':wres-io')
             resources
             {
                 // Flatten the contents of /dist/lib/conf so that the classpath
-                // path to the liquibase changesets is exactly 
+                // path to the liquibase changesets is exactly
                 // 'database/[changeset].xml'.
                 srcDirs += 'dist/lib/conf'
             }
@@ -536,33 +536,6 @@ project(':wres-writing')
         // In-memory implementation of a java.nio.file abstract file system api
         // to test writing of files without actually writing files on the host machine
         testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.3.0'
-    }
-
-    test
-    {
-        useJUnitPlatform()
-
-        // Set the socket timeout for tests involving mockserver to 120s
-        systemProperties += [ "mockserver.maxSocketTimeout": 120000,
-                              "ucar.unidata.io.http.maxReadCacheSize": 200000,
-                              "ucar.unidata.io.http.httpBufferSize": 200000 ]
-    }
-
-
-    // Give wres-io access to the liquibase changesets on the expected classpath
-    // at test time.
-    sourceSets
-    {
-        test
-        {
-            resources
-            {
-                // Flatten the contents of /dist/lib/conf so that the classpath
-                // path to the liquibase changesets is exactly
-                // 'database/[changeset].xml'.
-                srcDirs += 'dist/lib/conf'
-            }
-        }
     }
 }
 
@@ -654,23 +627,6 @@ project(':wres-reading')
         systemProperties += [ "mockserver.maxSocketTimeout": 120000,
                              "ucar.unidata.io.http.maxReadCacheSize": 200000,
                              "ucar.unidata.io.http.httpBufferSize": 200000 ]
-    }
-
-
-    // Give wres-io access to the liquibase changesets on the expected classpath
-    // at test time.
-    sourceSets
-    {
-        test
-        {
-            resources
-            {
-                // Flatten the contents of /dist/lib/conf so that the classpath
-                // path to the liquibase changesets is exactly 
-                // 'database/[changeset].xml'.
-                srcDirs += 'dist/lib/conf'
-            }
-        }
     }
 }
 
@@ -1776,6 +1732,7 @@ project( ':wres-external-services-tests' )
     distZip.dependsOn project( ':wres-datamodel' ).tasks.jar
     distZip.dependsOn project( ':wres-statistics' ).tasks.jar
     distZip.dependsOn project( ':wres-system' ).tasks.jar
+    distTar.dependsOn project( ':wres-http' ).tasks.jar
     distTar.dependsOn project( ':wres-config' ).tasks.jar
     distTar.dependsOn project( ':wres-datamodel' ).tasks.jar
     distTar.dependsOn project( ':wres-statistics' ).tasks.jar
@@ -1805,13 +1762,13 @@ project( ':wres-external-services-tests' )
                     include 'gradle/wrapper/*'
                 }
 
-                // Add the wres-io jar.
+                // Add the wres-reading jar.
                 from( project( ':wres-reading' ).jar )
                 {
                     into( 'lib' )
                 }
 
-                // Add all the stuff on which wres-io jar depends.
+                // Add all the stuff on which wres-reading jar depends.
                 from( project( ':wres-reading').configurations.runtimeClasspath.files )
                 {
                     into( 'lib' )

@@ -57,7 +57,7 @@ public class ThresholdReaderFactory
         {
             type = DataSource.detectFormat( sourceUri );
         }
-        catch ( ReadingException e )
+        catch ( PreReadException e )
         {
             throw new ThresholdReadingException( "Encountered an error while trying to read thresholds from "
                                                  + sourceUri, e );
