@@ -8,11 +8,13 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -408,6 +410,72 @@ class FunctionFactoryTest
                                                                                         .addAllQuantiles( box ) )
                                                     .build();
         assertEquals( expected, actual );
+    }
+
+    @Test
+    void testBoxplotWithMissingValues()
+    {
+        // #126936
+        SummaryStatistic parameters = SummaryStatistic.newBuilder()
+                                                      .setStatistic( SummaryStatistic.StatisticName.BOX_PLOT )
+                                                      .setDimension( SummaryStatistic.StatisticDimension.FEATURES )
+                                                      .build();
+        BoxplotSummaryStatisticFunction boxplot = FunctionFactory.boxplot( parameters );
+
+        double[] data = new double[] { 0.8528754042115116, Double.NaN, -0.999942458964323 };
+
+        Map<SummaryStatisticComponentName, String> p =
+                Map.of( SummaryStatisticComponentName.METRIC_NAME, MetricName.PEARSON_CORRELATION_COEFFICIENT.name(),
+                        SummaryStatisticComponentName.METRIC_UNIT, "DIMENSIONLESS" );
+
+        BoxplotStatistic actual = boxplot.apply( p, data );
+
+        BoxplotMetric metric = BoxplotMetric.newBuilder()
+                                            .setName( MetricName.BOX_PLOT )
+                                            .setLinkedValueType( BoxplotMetric.LinkedValueType.NONE )
+                                            .setQuantileValueType( BoxplotMetric.QuantileValueType.STATISTIC )
+                                            .setStatisticName( MetricName.PEARSON_CORRELATION_COEFFICIENT )
+                                            .setUnits( "DIMENSIONLESS" )
+                                            .addAllQuantiles( FunctionFactory.DEFAULT_PROBABILITIES )
+                                            .setMinimum( -1.0 )
+                                            .setMaximum( 1.0 )
+                                            .setOptimum( 1.0 )
+                                            .build();
+
+        // Compute the quantiles at a rounded precision
+        List<Double> box = List.of( -0.99994246, -0.99994246, -0.07353353, 0.8528754, 0.8528754 );
+
+        BoxplotStatistic expected = BoxplotStatistic.newBuilder()
+                                                    .setMetric( metric )
+                                                    .addStatistics( BoxplotStatistic.Box.newBuilder()
+                                                                                        .addAllQuantiles( box ) )
+                                                    .build();
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testIsSorted()
+    {
+        double[] one = new double[] { 1.0, 2.0, 3.0 };
+        double[] two = new double[] { 1.0, 2.0, 3.0, Double.NaN };
+        double[] three = new double[] { Double.NaN, 1.0, 2.0, 3.0 };
+        double[] four = new double[] { 0.8528754042115116, Double.NaN, -0.999942458964323 };
+        double[] five = new double[] { Double.NaN, Double.NaN, 1.0 };
+        double[] six = new double[] { 1.0, Double.NaN, Double.NaN };
+        double[] seven = new double[] { Double.NaN, Double.NaN };
+        double[] eight = new double[] { Double.NaN, Double.POSITIVE_INFINITY };
+        double[] nine = new double[] { 1.0, 2.0, Double.POSITIVE_INFINITY, Double.NaN };
+
+        Predicate<double[]> sorted = FunctionFactory.isSorted();
+        assertAll( () -> assertTrue( sorted.test( one ) ),
+                   () -> assertTrue( sorted.test( two ) ),
+                   () -> assertFalse( sorted.test( three ) ),
+                   () -> assertFalse( sorted.test( four ) ),
+                   () -> assertFalse( sorted.test( five ) ),
+                   () -> assertTrue( sorted.test( six ) ),
+                   () -> assertTrue( sorted.test( seven ) ),
+                   () -> assertFalse( sorted.test( eight ) ),
+                   () -> assertTrue( sorted.test( nine ) ) );
     }
 
     @Test
