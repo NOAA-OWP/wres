@@ -319,7 +319,9 @@ public class FunctionFactory
     }
 
     /**
-     * Returns a function that checks for sortedness of a double array. The function has O(N) complexity.
+     * Returns a function that checks for sortedness of a double array. The function has O(N) complexity. By convention,
+     * {@link Double#NaN} is considered the largest possible value.
+     *
      * @return a function that checks for sortedness
      */
     public static Predicate<double[]> isSorted()
@@ -330,7 +332,9 @@ public class FunctionFactory
 
             for ( int i = 0; i < check.length - 1; i++ )
             {
-                if ( check[i] > check[i + 1] )
+                if ( check[i] > check[i + 1]
+                     || ( Double.isNaN( check[i] )  // NaN is always the biggest value
+                          && !Double.isNaN( check[i + 1] ) ) )
                 {
                     return false;
                 }
