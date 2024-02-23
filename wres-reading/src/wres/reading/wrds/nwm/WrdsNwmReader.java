@@ -53,7 +53,7 @@ import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.TimeInterval;
 import wres.http.WebClientUtils;
-import wres.reading.ReadingException;
+import wres.reading.PreReadException;
 import wres.reading.DataSource;
 import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
@@ -107,7 +107,7 @@ public class WrdsNwmReader implements TimeSeriesReader
                                                               sslContext.getRight() )
                                            .build();
         }
-        catch ( ReadingException e )
+        catch ( PreReadException e )
         {
             throw new ExceptionInInitializerError( "Failed to acquire the TLS context for connecting to WRDS: "
                                                    + e.getMessage() );

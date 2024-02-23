@@ -44,7 +44,7 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.reading.ReadingException;
+import wres.reading.PreReadException;
 import wres.reading.DataSource;
 import wres.reading.DataSource.DataDisposition;
 import wres.reading.ReadException;
@@ -485,7 +485,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
      * @param zoneOffset the time zone offset
      * @param missingValue the missing value sentinel
      * @throws ReadException if the event could not be read
-     * @throws ReadingException When data is improperly formatted.
+     * @throws PreReadException When data is improperly formatted.
      */
 
     private void parseEvent( XMLStreamReader reader,

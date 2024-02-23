@@ -45,7 +45,7 @@ import wres.reading.ThresholdReader;
 import wres.reading.ThresholdReadingException;
 import wres.reading.wrds.geography.Location;
 import wres.reading.wrds.geography.LocationRootVersionDocument;
-import wres.reading.ReadingException;
+import wres.reading.PreReadException;
 import wres.reading.ReaderUtilities;
 import wres.http.WebClient;
 import wres.statistics.generated.Geometry;
@@ -88,7 +88,7 @@ public class WrdsThresholdReader implements ThresholdReader
                                                               sslContext.getRight() )
                                            .build();
         }
-        catch ( ReadingException e )
+        catch ( PreReadException e )
         {
             throw new ExceptionInInitializerError( "Failed to acquire the TLS context for connecting to WRDS: "
                                                    + e.getMessage() );

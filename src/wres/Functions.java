@@ -46,7 +46,7 @@ import wres.io.database.caching.DatabaseCaches;
 import wres.reading.netcdf.grid.GriddedFeatures;
 import wres.io.database.Database;
 import wres.io.database.DatabaseOperations;
-import wres.reading.ReadingException;
+import wres.reading.PreReadException;
 import wres.io.ingesting.SourceLoader;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
@@ -485,7 +485,7 @@ public final class Functions
                 }
                 catch ( IOException ioe )
                 {
-                    Exception e = new ReadingException( "Could not read declaration from "
+                    Exception e = new PreReadException( "Could not read declaration from "
                                                         + projectPath,
                                                         ioe );
                     return ExecutionResult.failure( e, false );
