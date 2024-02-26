@@ -113,8 +113,11 @@ public class DeclarationValidator
     private static final String DATA_DISCOVERED_AN_INTERFACE_OF = " data, discovered an interface of '";
     /** Re-used string. */
     private static final String WHICH_ADMITS_THE_DATA_TYPES = "', which admits the data types ";
+    /** Re-used string. */
     private static final String THE_EVALUATION_REQUESTED_THE_SAMPLING_UNCERTAINTY =
             "The evaluation requested the 'sampling_uncertainty' ";
+    /** Re-used string. */
+    private static final String AND_TRY_AGAIN = "and try again.";
 
     /**
      * Performs validation against the schema, followed by "business-logic" validation if there are no schema
@@ -451,7 +454,7 @@ public class DeclarationValidator
                                            .setStatusLevel( StatusLevel.ERROR )
                                            .setEventMessage( "The declaration does not contain an 'observed' dataset, "
                                                              + "which is required. Please add an 'observed' dataset "
-                                                             + "and try again." )
+                                                             + AND_TRY_AGAIN )
                                            .build();
             events.add( event );
         }
@@ -463,7 +466,7 @@ public class DeclarationValidator
                                            .setStatusLevel( StatusLevel.ERROR )
                                            .setEventMessage( "The declaration does not contain a 'predicted' dataset, "
                                                              + "which is required. Please add a 'predicted' dataset "
-                                                             + "and try again." )
+                                                             + AND_TRY_AGAIN )
                                            .build();
             events.add( event );
         }
@@ -3610,19 +3613,53 @@ public class DeclarationValidator
         }
         else
         {
-            // Warn about time zone offset
-            if ( sources.stream()
-                        .anyMatch( next -> Objects.nonNull( next.timeZoneOffset() ) ) )
+            int index = 1;
+            List<Integer> invalid = new ArrayList<>();
+            for ( Source source : sources )
+            {
+                // Identify any source whose URI failed to deserialize
+                // Cannot provide full context here, but this is a compromise between validating at schema validation
+                // time or post deserialization, given that a URI is deserialized to a type that performs instant
+                // validation and exits exceptionally for invalid URIs. The compromise is to return a null URI in that
+                // case and report the error here. See #126974
+                if ( Objects.isNull( source.uri() ) )
+                {
+                    invalid.add( index );
+                }
+
+                // Warn about time zone offset
+                if ( Objects.nonNull( source.timeZoneOffset() ) )
+                {
+                    EvaluationStatusEvent event =
+                            EvaluationStatusEvent.newBuilder()
+                                                 .setStatusLevel( StatusLevel.WARN )
+                                                 .setEventMessage( "Discovered one or more '"
+                                                                   + orientation
+                                                                   + "' data sources for which a time zone was declared. "
+                                                                   + "This information is generally not required and will "
+                                                                   + "be ignored if the data source itself contains a time "
+                                                                   + "zone." )
+                                                 .build();
+                    events.add( event );
+                }
+
+                index++;
+            }
+
+            if ( !invalid.isEmpty() )
             {
                 EvaluationStatusEvent event =
                         EvaluationStatusEvent.newBuilder()
-                                             .setStatusLevel( StatusLevel.WARN )
-                                             .setEventMessage( "Discovered one or more '"
+                                             .setStatusLevel( StatusLevel.ERROR )
+                                             .setEventMessage( "The URIs ('uri') at the following positions in the '"
                                                                + orientation
-                                                               + "' data sources for which a time zone was declared. "
-                                                               + "This information is generally not required and will "
-                                                               + "be ignored if the data source itself contains a time "
-                                                               + "zone." )
+                                                               + "' data source were invalid: "
+                                                               + invalid
+                                                               + ". Each URI is validated against RFC 2396: "
+                                                               + "Uniform Resource Identifiers (URI): Generic "
+                                                               + "Syntax, amended by RFC 2732: Format for Literal "
+                                                               + "IPv6 Addresses in URLs. Please check the URI "
+                                                               + AND_TRY_AGAIN )
                                              .build();
                 events.add( event );
             }
