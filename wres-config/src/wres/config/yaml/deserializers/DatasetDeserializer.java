@@ -196,10 +196,9 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
      * Creates a list of sources from a singleton node of sources.
      * @param node the node of sources
      * @return the list of sources
-     * @throws IOException if the source URI could not be deserialized
      */
 
-    private List<Source> getSingletonSource( TextNode node ) throws IOException
+    private List<Source> getSingletonSource( TextNode node )
     {
         String nextUriString = node.asText();
         URI uri = UriDeserializer.deserializeUri( nextUriString );
