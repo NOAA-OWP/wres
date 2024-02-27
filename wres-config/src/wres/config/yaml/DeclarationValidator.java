@@ -70,7 +70,7 @@ import wres.statistics.generated.GeometryTuple;
  * <li>2. Validation that the declaration is compatible with the declaration schema, which is performed here using
  *        {@link DeclarationValidator#validate(JsonNode, JsonSchema)}; and</li>
  * <li>3. Validation that the declaration is internally consistent and reasonable (i.e., "business logic"), which is
- *        also performed here using {@link DeclarationValidator#validate(EvaluationDeclaration, boolean)}.</li>
+ *        also performed here using {@link DeclarationValidator#validate(EvaluationDeclaration, boolean, boolean)}.</li>
  * </ol>
  *
  * <p>In summary, this class performs two levels of validation, namely validation against the schema and validation of
@@ -124,14 +124,18 @@ public class DeclarationValidator
      * validation errors. First, reads the declaration string, then calls {@link #validate(JsonNode, JsonSchema)},
      * then finally calls {@link #validate(EvaluationDeclaration, boolean)}. This method is intended for a caller that
      * wants to validate the declaration without performing any subsequent activities, such as executing an evaluation.
+     * Optionally, omit the validation of data sources, which may be necessary when building a declaration from posted
+     * data.
      *
      * @param yaml a declaration string
+     * @param omitSources is true to omit validation of data sources
      * @return an ordered list of validation events encountered
      * @throws NullPointerException if the input string is null
      * @throws IOException if the schema could not be read
      */
 
-    public static List<EvaluationStatusEvent> validate( String yaml ) throws IOException
+    public static List<EvaluationStatusEvent> validate( String yaml,
+                                                        boolean omitSources ) throws IOException
     {
         Objects.requireNonNull( yaml );
 
@@ -179,7 +183,7 @@ public class DeclarationValidator
             EvaluationDeclaration deserialized = DeclarationFactory.deserialize( declaration );
 
             // Validate against business logic
-            List<EvaluationStatusEvent> businessEvents = DeclarationValidator.validate( deserialized );
+            List<EvaluationStatusEvent> businessEvents = DeclarationValidator.validate( deserialized, omitSources );
             events.addAll( businessEvents );
         }
 
@@ -187,15 +191,31 @@ public class DeclarationValidator
     }
 
     /**
+     * Performs a comprehensive validation of the supplied declaration, including all data sources. This is equivalent
+     * to {@link #validate(String, boolean)} with {@code omitSources} set to {@code false}.
+     *
+     * @see #validate(String, boolean)
+     * @param yaml a declaration string
+     * @return an ordered list of validation events encountered
+     * @throws NullPointerException if the input string is null
+     * @throws IOException if the schema could not be read
+     */
+
+    public static List<EvaluationStatusEvent> validate( String yaml ) throws IOException
+    {
+        return DeclarationValidator.validate( yaml, false );
+    }
+
+    /**
      * Performs validation of a declaration node against the schema.
+     *
      * @param declaration the declaration
      * @param schema the schema
      * @return the unique schema validation errors encountered
      * @throws NullPointerException if either input is null
      */
 
-    public static Set<EvaluationStatusEvent> validate( JsonNode declaration,
-                                                       JsonSchema schema )
+    public static Set<EvaluationStatusEvent> validate( JsonNode declaration, JsonSchema schema )
     {
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( schema );
@@ -225,17 +245,20 @@ public class DeclarationValidator
     /**
      * Performs business-logic validation and, optionally, notifies any events discovered by logging warnings and
      * aggregating errors into an exception. For raw business-logic validation, see
-     * {@link #validate(EvaluationDeclaration)}.
+     * {@link #validate(EvaluationDeclaration, boolean)}.
      *
-     * @see #validate(EvaluationDeclaration)
+     * @see #validate(EvaluationDeclaration, boolean)
      * @param declaration the declaration to validate
+     * @param omitSources is true to omit validation of data sources
      * @param notify is true to notify of any events encountered, false to remain silent
      * @throws DeclarationException if validation errors were encountered
      * @return the valid declaration
      */
-    public static List<EvaluationStatusEvent> validate( EvaluationDeclaration declaration, boolean notify )
+    public static List<EvaluationStatusEvent> validate( EvaluationDeclaration declaration,
+                                                        boolean omitSources,
+                                                        boolean notify )
     {
-        List<EvaluationStatus.EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+        List<EvaluationStatus.EvaluationStatusEvent> events = DeclarationValidator.validate( declaration, omitSources );
 
         if ( !notify )
         {
@@ -252,19 +275,35 @@ public class DeclarationValidator
     /**
      * Validates the declaration. The validation events are returned in the order they were discovered, reading from
      * the top of the declaration to the bottom. Delegates to the caller to notify about any validation events
-     * encountered. For default notification handling, see {@link #validate(EvaluationDeclaration, boolean)}.
+     * encountered. For default notification handling, see {@link #validate(EvaluationDeclaration, boolean, boolean)}.
      *
-     * @see #validate(EvaluationDeclaration, boolean)
+     * @see #validate(EvaluationDeclaration, boolean, boolean)
      * @param declaration the declaration
      * @return the validation events in the order they were discovered
      * @throws NullPointerException if the declaration is null
      */
     public static List<EvaluationStatusEvent> validate( EvaluationDeclaration declaration )
     {
+        return DeclarationValidator.validate( declaration, false );
+    }
+
+    /**
+     * Validates the declaration. The validation events are returned in the order they were discovered, reading from
+     * the top of the declaration to the bottom. Delegates to the caller to notify about any validation events
+     * encountered. For default notification handling, see {@link #validate(EvaluationDeclaration, boolean, boolean)}.
+     *
+     * @see #validate(EvaluationDeclaration, boolean, boolean)
+     * @param declaration the declaration
+     * @param omitSources is true to omit validation of data sources
+     * @return the validation events in the order they were discovered
+     * @throws NullPointerException if the declaration is null
+     */
+    public static List<EvaluationStatusEvent> validate( EvaluationDeclaration declaration, boolean omitSources )
+    {
         Objects.requireNonNull( declaration );
 
         // Check that the datasets are valid
-        List<EvaluationStatusEvent> datasets = DeclarationValidator.validateDatasets( declaration );
+        List<EvaluationStatusEvent> datasets = DeclarationValidator.validateDatasets( declaration, omitSources );
         List<EvaluationStatusEvent> events = new ArrayList<>( datasets );
         // Check that the unit aliases are valid
         List<EvaluationStatusEvent> unitAliases = DeclarationValidator.unitAliasesAreValid( declaration );
@@ -320,7 +359,7 @@ public class DeclarationValidator
      * Performs post-ingest validation of the declaration once the data type information has been gleaned by reading
      * the sources. Performs default notification handling for any events encountered.
      *
-     * @see #validate(EvaluationDeclaration)
+     * @see #validate(EvaluationDeclaration, boolean)
      * @param declaration the declaration
      * @throws NullPointerException if the declaration is null
      */
@@ -400,13 +439,24 @@ public class DeclarationValidator
     /**
      * Validates the dataset declaration.
      * @param declaration the declaration
+     * @param omitSources is true to omit validation of data sources
      * @return the validation events encountered
      */
-    private static List<EvaluationStatusEvent> validateDatasets( EvaluationDeclaration declaration )
+    private static List<EvaluationStatusEvent> validateDatasets( EvaluationDeclaration declaration,
+                                                                 boolean omitSources )
     {
         // Required datasets are present
-        List<EvaluationStatusEvent> datasetsPresent = DeclarationValidator.requiredDatasetsArePresent( declaration );
-        List<EvaluationStatusEvent> events = new ArrayList<>( datasetsPresent );
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+        if ( !omitSources )
+        {
+            List<EvaluationStatusEvent> datasetsPresent =
+                    DeclarationValidator.requiredDatasetsArePresent( declaration );
+            events.addAll( datasetsPresent );
+
+            // Check that the sources are valid
+            List<EvaluationStatusEvent> sources = DeclarationValidator.sourcesAreValid( declaration );
+            events.addAll( sources );
+        }
 
         // Data types are consistent with other declaration
         List<EvaluationStatusEvent> typesConsistent = DeclarationValidator.typesAreConsistent( declaration );
@@ -423,9 +473,6 @@ public class DeclarationValidator
         // When obtaining data from web services, dates must be defined
         List<EvaluationStatusEvent> services = DeclarationValidator.datesPresentForWebServices( declaration );
         events.addAll( services );
-        // Check that the sources are valid
-        List<EvaluationStatusEvent> sources = DeclarationValidator.sourcesAreValid( declaration );
-        events.addAll( sources );
         // Check that the time scales are valid
         List<EvaluationStatusEvent> timeScales = DeclarationValidator.timeScalesAreValid( declaration );
         events.addAll( timeScales );

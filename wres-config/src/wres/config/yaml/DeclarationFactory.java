@@ -189,7 +189,7 @@ public class DeclarationFactory
      * schema. Optionally performs interpolation of missing declaration, followed by validation of the interpolated
      * declaration. Interpolation is performed with
      * {@link DeclarationInterpolator#interpolate(EvaluationDeclaration)} and validation is performed with
-     * {@link DeclarationValidator#validate(EvaluationDeclaration, boolean)}, both with notifications on.
+     * {@link DeclarationValidator#validate(EvaluationDeclaration, boolean, boolean)}, both with notifications on.
      *
      * @see #from(String)
      * @param yamlOrPath the YAML string or a path to a readable file that contains a YAML string
@@ -261,7 +261,7 @@ public class DeclarationFactory
         // Validate? Do this before interpolation
         if ( validate )
         {
-            DeclarationValidator.validate( declaration, true );
+            DeclarationValidator.validate( declaration, false, true );
         }
 
         // Interpolate?
@@ -281,7 +281,7 @@ public class DeclarationFactory
      * validation, see the {@link DeclarationValidator}.
      *
      * @see DeclarationInterpolator#interpolate(EvaluationDeclaration)
-     * @see DeclarationValidator#validate(EvaluationDeclaration, boolean)
+     * @see DeclarationValidator#validate(EvaluationDeclaration, boolean, boolean)
      * @see DeclarationValidator#validate(EvaluationDeclaration)
      * @param yaml the yaml string
      * @return an evaluation declaration

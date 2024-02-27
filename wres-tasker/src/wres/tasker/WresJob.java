@@ -2,9 +2,9 @@ package wres.tasker;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.Serial;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.security.spec.KeySpec;
 import java.text.DecimalFormat;
 import java.util.Arrays;
@@ -1209,6 +1209,7 @@ public class WresJob
 
     static final class ConnectivityException extends RuntimeException
     {
+        @Serial
         private static final long serialVersionUID = 4143746909778499341L;
 
         private ConnectivityException( String customMessage )
@@ -1227,16 +1228,6 @@ public class WresJob
                    + ":"
                    + port,
                    cause );
-        }
-    }
-
-    static final class NoWorkersException extends RuntimeException
-    {
-        private static final long serialVersionUID = 4143746909778499342L;
-
-        private NoWorkersException()
-        {
-            super( "The broker appears to have no workers connected to it." );
         }
     }
 }

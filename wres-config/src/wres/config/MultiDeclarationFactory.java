@@ -59,7 +59,7 @@ public class MultiDeclarationFactory
      * <p>Performs validation against the relevant schema in all cases. Optionally performs interpolation of missing
      * declaration, followed by validation of the interpolated declaration. Interpolation is performed with
      * {@link DeclarationInterpolator#interpolate(EvaluationDeclaration)} and validation is performed with
-     * {@link DeclarationValidator#validate(EvaluationDeclaration, boolean)}, both with notifications on.
+     * {@link DeclarationValidator#validate(EvaluationDeclaration, boolean, boolean)}, both with notifications on.
      *
      * @param declarationOrPath the string containing declaration or a path
      * @param fileSystem a file system to use when reading a path, optional
@@ -312,7 +312,7 @@ public class MultiDeclarationFactory
         // the old schema and business logic, now against the new schema and business logic
         if ( validate )
         {
-            DeclarationValidator.validate( migrated, true );
+            DeclarationValidator.validate( migrated, false, true );
         }
 
         // Interpolate any missing declaration for internal use
