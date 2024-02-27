@@ -545,26 +545,40 @@ abstract class GraphicsWriter
 
             ChronoUnit returnMe = ChronoUnit.HOURS;
 
-            if ( outputs.hasPng() && outputs.hasSvg()
-                 && outputs.getSvg().hasOptions()
-                 && outputs.getPng().hasOptions()
-                 && !outputs.getPng().getOptions().getLeadUnit().equals( outputs.getSvg().getOptions().getLeadUnit() ) )
+            if ( outputs.hasPng()
+                 && outputs.hasSvg()
+                 && outputs.getSvg()
+                           .hasOptions()
+                 && outputs.getPng()
+                           .hasOptions()
+                 && !outputs.getPng()
+                            .getOptions()
+                            .getLeadUnit()
+                            .equals( outputs.getSvg()
+                                            .getOptions()
+                                            .getLeadUnit() ) )
             {
-                throw new IllegalArgumentException(
-                        "Discovered more than one lead duration unit in the outputs message ("
-                        + outputs.getPng().getOptions().getLeadUnit()
-                        + ", "
-                        + outputs.getSvg().getOptions().getLeadUnit()
-                        + ")." );
+                throw new IllegalArgumentException( "Discovered more than one lead duration unit in the outputs "
+                                                    + "message ("
+                                                    + outputs.getPng().getOptions().getLeadUnit()
+                                                    + ", "
+                                                    + outputs.getSvg().getOptions().getLeadUnit()
+                                                    + ")." );
             }
 
             if ( outputs.hasPng() )
             {
-                returnMe = ChronoUnit.valueOf( outputs.getPng().getOptions().getLeadUnit().name() );
+                returnMe = ChronoUnit.valueOf( outputs.getPng()
+                                                      .getOptions()
+                                                      .getLeadUnit()
+                                                      .name() );
             }
             else if ( outputs.hasSvg() )
             {
-                returnMe = ChronoUnit.valueOf( outputs.getSvg().getOptions().getLeadUnit().name() );
+                returnMe = ChronoUnit.valueOf( outputs.getSvg()
+                                                      .getOptions()
+                                                      .getLeadUnit()
+                                                      .name() );
             }
 
             return returnMe;

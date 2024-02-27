@@ -220,6 +220,26 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testValidateDeclarationWithoutDataSourcesResultsInNoErrorsWhenOmittingSourceValidation()
+    {
+        Dataset dataset = DatasetBuilder.builder()
+                                        .type( DataType.OBSERVATIONS )
+                                        .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( dataset )
+                                                         .build();
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( dataset )
+                                                                        .right( dataset )
+                                                                        .baseline( baseline )
+                                                                        .build();
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration, true );
+
+        assertTrue( events.stream()
+                          .noneMatch( e -> e.getStatusLevel() == StatusLevel.ERROR ));
+    }
+
+    @Test
     void testConflictingTimeZoneForSourceResultsInWarningsAndError()
     {
         Source source = SourceBuilder.builder()

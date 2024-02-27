@@ -574,7 +574,8 @@ public final class TimeSeriesSlicer
         MonthDay endMonthDay = desiredTimeScale.getEndMonthDay();
 
         // At least one must be present. If only one is present, the period is guaranteed present
-        if ( Objects.isNull( startMonthDay ) && Objects.isNull( endMonthDay ) )
+        if ( Objects.isNull( startMonthDay )
+             && Objects.isNull( endMonthDay ) )
         {
             throw new IllegalArgumentException( "Cannot extract intervals from a desired time scale that has no "
                                                 + "bookends present." );
@@ -639,7 +640,8 @@ public final class TimeSeriesSlicer
             int endYear = year;
 
             // Does the interval span a year end?
-            if ( Objects.nonNull( startMonthDay ) && Objects.nonNull( endMonthDay )
+            if ( Objects.nonNull( startMonthDay )
+                 && Objects.nonNull( endMonthDay )
                  && startMonthDay.isAfter( endMonthDay ) )
             {
                 // Is the event month-day after the lower bookend of the interval? If yes, use the current year as the
@@ -987,7 +989,8 @@ public final class TimeSeriesSlicer
     {
         Objects.requireNonNull( timeSeries );
 
-        if ( timeSeries.getEvents().isEmpty() )
+        if ( timeSeries.getEvents()
+                       .isEmpty() )
         {
             return List.of( new TimeSeries.Builder<Double>().setMetadata( timeSeries.getMetadata() )
                                                             .build() );

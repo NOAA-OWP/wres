@@ -1186,20 +1186,28 @@ public class DeclarationInterpolator
 
     private static Dataset interpolateUris( Dataset dataset )
     {
-        List<Source> sources = dataset.sources();
-        List<Source> adjusted = new ArrayList<>();
-        for ( Source next : sources )
+        if ( Objects.nonNull( dataset )
+             && Objects.nonNull( dataset.sources() ) )
         {
-            URI adjustedUri = DeclarationInterpolator.interpolateUri( next.uri() );
-            Source nextAdjusted = SourceBuilder.builder( next )
-                                               .uri( adjustedUri )
-                                               .build();
-            adjusted.add( nextAdjusted );
+            List<Source> sources = dataset.sources();
+            List<Source> adjusted = new ArrayList<>();
+            for ( Source next : sources )
+            {
+                URI adjustedUri = DeclarationInterpolator.interpolateUri( next.uri() );
+                Source nextAdjusted = SourceBuilder.builder( next )
+                                                   .uri( adjustedUri )
+                                                   .build();
+                adjusted.add( nextAdjusted );
+            }
+
+            return DatasetBuilder.builder( dataset )
+                                 .sources( adjusted )
+                                 .build();
         }
 
-        return DatasetBuilder.builder( dataset )
-                             .sources( adjusted )
-                             .build();
+        LOGGER.debug( "No data sources to interpolate." );
+
+        return dataset;
     }
 
     /**
@@ -1250,21 +1258,27 @@ public class DeclarationInterpolator
     private static void interpolateTimeZoneOffsets( EvaluationDeclarationBuilder builder )
     {
         // Left dataset
-        ZoneOffset leftOffset = builder.left()
-                                       .timeZoneOffset();
-        if ( Objects.nonNull( leftOffset ) )
+        if ( Objects.nonNull( builder.left() ) )
         {
-            Dataset left = DeclarationInterpolator.copyTimeZoneToAllSources( leftOffset, builder.left() );
-            builder.left( left );
+            ZoneOffset leftOffset = builder.left()
+                                           .timeZoneOffset();
+            if ( Objects.nonNull( leftOffset ) )
+            {
+                Dataset left = DeclarationInterpolator.copyTimeZoneToAllSources( leftOffset, builder.left() );
+                builder.left( left );
+            }
         }
 
         // Right dataset
-        ZoneOffset rightOffset = builder.right()
-                                        .timeZoneOffset();
-        if ( Objects.nonNull( rightOffset ) )
+        if ( Objects.nonNull( builder.right() ) )
         {
-            Dataset right = DeclarationInterpolator.copyTimeZoneToAllSources( rightOffset, builder.right() );
-            builder.right( right );
+            ZoneOffset rightOffset = builder.right()
+                                            .timeZoneOffset();
+            if ( Objects.nonNull( rightOffset ) )
+            {
+                Dataset right = DeclarationInterpolator.copyTimeZoneToAllSources( rightOffset, builder.right() );
+                builder.right( right );
+            }
         }
 
         // Baseline dataset
@@ -1326,17 +1340,23 @@ public class DeclarationInterpolator
      */
     private static void interpolateFeatureAuthorities( EvaluationDeclarationBuilder builder )
     {
-        Set<FeatureAuthority> leftAuthorities = DeclarationUtilities.getFeatureAuthorities( builder.left() );
-        Dataset left = DeclarationInterpolator.setFeatureAuthorityIfConsistent( builder.left(),
-                                                                                leftAuthorities,
-                                                                                DatasetOrientation.LEFT );
-        builder.left( left );
+        if ( Objects.nonNull( builder.left() ) )
+        {
+            Set<FeatureAuthority> leftAuthorities = DeclarationUtilities.getFeatureAuthorities( builder.left() );
+            Dataset left = DeclarationInterpolator.setFeatureAuthorityIfConsistent( builder.left(),
+                                                                                    leftAuthorities,
+                                                                                    DatasetOrientation.LEFT );
+            builder.left( left );
+        }
 
-        Set<FeatureAuthority> rightAuthorities = DeclarationUtilities.getFeatureAuthorities( builder.right() );
-        Dataset right = DeclarationInterpolator.setFeatureAuthorityIfConsistent( builder.right(),
-                                                                                 rightAuthorities,
-                                                                                 DatasetOrientation.RIGHT );
-        builder.right( right );
+        if ( Objects.nonNull( builder.right() ) )
+        {
+            Set<FeatureAuthority> rightAuthorities = DeclarationUtilities.getFeatureAuthorities( builder.right() );
+            Dataset right = DeclarationInterpolator.setFeatureAuthorityIfConsistent( builder.right(),
+                                                                                     rightAuthorities,
+                                                                                     DatasetOrientation.RIGHT );
+            builder.right( right );
+        }
 
         if ( DeclarationUtilities.hasBaseline( builder ) )
         {
@@ -2242,13 +2262,16 @@ public class DeclarationInterpolator
     }
 
     /**
-     * Checks that each side of data has a matching, non-null feature authority.
+     * Checks that each side of data has a matching, non-null feature authority if the datasets are non-null.
      * @param builder the builder
      * @return whether there is a common feature authority
      */
     private static boolean hasMatchingFeatureAuthorities( EvaluationDeclarationBuilder builder )
     {
-        return Objects.nonNull( builder.left().featureAuthority() )
+        return Objects.nonNull( builder.left() )
+               && Objects.nonNull( builder.right() )
+               && Objects.nonNull( builder.left()
+                                          .featureAuthority() )
                && Objects.equals( builder.left()
                                          .featureAuthority(),
                                   builder.right()

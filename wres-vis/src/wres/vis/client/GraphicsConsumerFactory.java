@@ -63,9 +63,7 @@ class GraphicsConsumerFactory implements ConsumerFactory
         Function<Collection<Statistics>, Set<Path>> router
                 = builder.setEvaluationDescription( evaluation )
                          .addBoxplotConsumerPerPair( wres.config.yaml.components.Format.GRAPHIC,
-                                                     BoxplotGraphicsWriter.of(
-                                                             outputs,
-                                                             path ) )
+                                                     BoxplotGraphicsWriter.of( outputs, path ) )
                          .build();
 
 

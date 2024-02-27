@@ -628,7 +628,7 @@ public final class Functions
                     FileSystem fileSystem = FileSystems.getDefault();
                     rawDeclaration = MultiDeclarationFactory.getDeclarationString( pathOrDeclaration, fileSystem );
 
-                    // Unmarshal the declaration
+                    // Unmarshal and validate the declaration
                     MultiDeclarationFactory.from( rawDeclaration,
                                                   fileSystem,
                                                   true,
