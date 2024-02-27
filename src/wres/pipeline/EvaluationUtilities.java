@@ -549,7 +549,8 @@ class EvaluationUtilities
         Set<Format> formats = new HashSet<>();
 
         // Add external graphics if required
-        if ( Objects.nonNull( externalGraphics ) && "true".equalsIgnoreCase( externalGraphics ) )
+        if ( Objects.nonNull( externalGraphics )
+             && "true".equalsIgnoreCase( externalGraphics ) )
         {
             formats.add( Format.PNG );
             formats.add( Format.SVG );

@@ -2,6 +2,7 @@ package wres.config.yaml;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.MonthDay;
 import java.time.ZoneOffset;
@@ -84,9 +85,10 @@ class DeclarationValidatorTest
     private Dataset defaultDataset = null;
 
     @BeforeEach
-    void runBeforeEach()
+    void runBeforeEach() throws URISyntaxException
     {
         Source source = SourceBuilder.builder()
+                                     .uri( new URI( "http://foo" ) )
                                      .build();
 
         this.defaultDataset = DatasetBuilder.builder()
@@ -1647,7 +1649,7 @@ class DeclarationValidatorTest
         Instant maximum = Instant.parse( "2055-04-01T00:00:00Z" );
 
         Source webSource = SourceBuilder.builder()
-                                        .uri( URI.create( "https:foo.bar/baz" ) )
+                                        .uri( URI.create( "https://foo.bar/baz" ) )
                                         .sourceInterface( SourceInterface.WRDS_AHPS )
                                         .build();
         Dataset predicted = DatasetBuilder.builder()
@@ -1958,6 +1960,54 @@ class DeclarationValidatorTest
                                                        "please consider declaring these two cross-pairing "
                                                        + "options",
                                                        StatusLevel.WARN ) );
+    }
+
+    @Test
+    void testInvalidDataSourceUrisProduceErrors()
+    {
+        // Null sentinels for source URIs that could not be parsed
+        Source source = SourceBuilder.builder()
+                                     .uri( null )
+                                     .build();
+        Source anotherSource = SourceBuilder.builder()
+                                            .uri( null )
+                                            .build();
+        Source yetAnotherSource = SourceBuilder.builder()
+                                               .uri( null )
+                                               .build();
+        Dataset left = DatasetBuilder.builder()
+                                     .sources( List.of( source ) )
+                                     .build();
+        Dataset right = DatasetBuilder.builder()
+                                      .sources( List.of( anotherSource ) )
+                                      .build();
+        Dataset baselineInner = DatasetBuilder.builder()
+                                              .sources( List.of( yetAnotherSource ) )
+                                              .build();
+        BaselineDataset baseline = BaselineDatasetBuilder.builder()
+                                                         .dataset( baselineInner )
+                                                         .build();
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( left )
+                                                                        .right( right )
+                                                                        .baseline( baseline )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events, "at the following positions in "
+                                                                                + "the 'observed' data source were "
+                                                                                + "invalid",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "at the following positions in "
+                                                                                + "the 'predicted' data source were "
+                                                                                + "invalid",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "at the following positions in "
+                                                                                + "the 'baseline' data source were "
+                                                                                + "invalid",
+                                                                        StatusLevel.ERROR ) )
+        );
     }
 
     @Test
