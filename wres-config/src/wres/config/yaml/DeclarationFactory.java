@@ -137,7 +137,9 @@ public class DeclarationFactory
         {
             try
             {
-                return JsonFormat.printer().omittingInsignificantWhitespace().print( message );
+                return JsonFormat.printer()
+                                 .omittingInsignificantWhitespace()
+                                 .print( message );
             }
             catch ( InvalidProtocolBufferException e )
             {

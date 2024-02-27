@@ -39,10 +39,9 @@ public class UriDeserializer extends JsonDeserializer<URI>
      * platform-dependent disambiguation.
      * @param uriString the URI string
      * @return the adjusted URI
-     * @throws IOException if the URI could not be deserialized
      */
 
-    static URI deserializeUri( String uriString ) throws IOException
+    static URI deserializeUri( String uriString )
     {
         try
         {
@@ -99,7 +98,10 @@ public class UriDeserializer extends JsonDeserializer<URI>
         }
         catch ( URISyntaxException e )
         {
-            throw new IOException( "Failed to create a valid URI from the string: " + uriString );
+            LOGGER.debug( "The declaration contained an invalid URI.", e );
+
+            // Return a null sentinel, indicating that the URI failed validation
+            return null;
         }
     }
 }
