@@ -24,6 +24,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Date;
 import java.util.StringJoiner;
+
 import jakarta.ws.rs.core.Response;
 
 import org.apache.qpid.server.configuration.CommonProperties;
@@ -52,6 +53,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class WresJobTest
 {
@@ -82,7 +85,10 @@ public class WresJobTest
             "TLS_DHE_RSA_WITH_AES_256_CBC_SHA256"
     };
 
-    private static final String FAKE_DECLARATION = "<?xml version='1.0' encoding='UTF-8'?><project><inputs><left></left><right></right></inputs><pair></pair><metrics></metrics><outputs></outputs></project>";
+    private static final String FAKE_DECLARATION = """
+            observed: foo.csv
+            predicted: bar.csv
+            """;
 
     @BeforeClass
     public static void setup() throws IOException, NoSuchAlgorithmException,
@@ -126,7 +132,8 @@ public class WresJobTest
                                                  keyPair.getPublic() );
         JcaX509ExtensionUtils extensionUtils = new JcaX509ExtensionUtils();
         SubjectKeyIdentifier keyIdentifier = extensionUtils.createSubjectKeyIdentifier( keyPair.getPublic() );
-        AuthorityKeyIdentifier authorityKeyIdentifier = extensionUtils.createAuthorityKeyIdentifier( keyPair.getPublic() );
+        AuthorityKeyIdentifier authorityKeyIdentifier =
+                extensionUtils.createAuthorityKeyIdentifier( keyPair.getPublic() );
         certificateBuilder.addExtension( Extension.subjectKeyIdentifier,
                                          false,
                                          keyIdentifier );
@@ -139,7 +146,8 @@ public class WresJobTest
                                          basicConstraints );
         KeyUsage keyUsage = new KeyUsage( KeyUsage.keyCertSign | KeyUsage.digitalSignature );
         certificateBuilder.addExtension( Extension.keyUsage, false, keyUsage );
-        ExtendedKeyUsage extendedKeyUsage = new ExtendedKeyUsage( new KeyPurposeId[] { KeyPurposeId.id_kp_serverAuth } );
+        ExtendedKeyUsage extendedKeyUsage =
+                new ExtendedKeyUsage( new KeyPurposeId[] { KeyPurposeId.id_kp_serverAuth } );
         certificateBuilder.addExtension( Extension.extendedKeyUsage,
                                          false,
                                          extendedKeyUsage );
@@ -159,8 +167,11 @@ public class WresJobTest
         p12KeyStore.load( null, passphrase.toCharArray() );
 
         KeyStore.PrivateKeyEntry privateKeyEntry = new KeyStore.PrivateKeyEntry( keyPair.getPrivate(),
-                                                                                 new Certificate[] { wowACertificate } );
-        p12KeyStore.setEntry( "privateKeyAlias", privateKeyEntry, new KeyStore.PasswordProtection( passphrase.toCharArray() ) );
+                                                                                 new Certificate[] {
+                                                                                         wowACertificate } );
+        p12KeyStore.setEntry( "privateKeyAlias",
+                              privateKeyEntry,
+                              new KeyStore.PasswordProtection( passphrase.toCharArray() ) );
 
         Path p12Path = Paths.get( WresJobTest.tempDir.toString(), P12_FILE_NAME );
         File p12File = p12Path.toFile();
@@ -200,7 +211,7 @@ public class WresJobTest
         trustStore.load( null, trustStorePassphrase );
         trustStore.setCertificateEntry( "localhost_ca", wowACertificate );
         Path trustStorePath = Paths.get( WresJobTest.tempDir.toString(),
-                                        TRUST_STORE_FILE_NAME );
+                                         TRUST_STORE_FILE_NAME );
         File trustStoreFile = trustStorePath.toFile();
 
         try ( FileOutputStream trustOutputStream = new FileOutputStream( trustStoreFile ) )
@@ -237,9 +248,11 @@ public class WresJobTest
     {
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
         WresJob wresJob = new WresJob();
-        Response response = wresJob.postWresJob( "fake", "hank", null, "boogaflickle", false, false,
-                                                 Collections.emptyList() );
-        assertEquals( "Expected a 400 bad request.", 400, response.getStatus() );
+        try ( Response response = wresJob.postWresJob( "fake", "hank", null, "boogaflickle", false, false,
+                                                       Collections.emptyList() ) )
+        {
+            assertEquals( "Expected a 400 bad request.", 400, response.getStatus() );
+        }
     }
 
     @Test
@@ -247,8 +260,58 @@ public class WresJobTest
     {
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
         WresJob wresJob = new WresJob();
-        Response response = wresJob.postWresJob( "", null, null, null, false, false, Collections.emptyList() );
-        assertEquals( "Expected a 400 bad request.", 400, response.getStatus() );
+        try ( Response response = wresJob.postWresJob( "", null, null, null, false, false, Collections.emptyList() ) )
+        {
+            assertEquals( "Expected a 400 bad request.", 400, response.getStatus() );
+        }
+    }
+
+    @Test
+    public void testBadRequestDueToInvalidDeclaration()
+    {
+        System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
+        WresJob wresJob = new WresJob();
+        try ( Response response = wresJob.postWresJob( "foobar",
+                                                       null,
+                                                       null,
+                                                       null,
+                                                       false,
+                                                       false,
+                                                       Collections.emptyList() ) )
+        {
+            assertAll( () -> assertEquals( 400, response.getStatus() ),
+                       () -> assertTrue( response.getEntity()
+                                                 .toString()
+                                                 .contains( "declaration contained the following errors" ) ) );
+        }
+    }
+
+    @Test
+    public void testBadRequestDueToInvalidDeclarationAndInputsPosted()
+    {
+        System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
+        WresJob wresJob = new WresJob();
+        String declaration = """
+                observed: foo
+                predicted: bar
+                baz_property: qux
+                """;
+        try ( Response response = wresJob.postWresJob( declaration,
+                                                       null,
+                                                       null,
+                                                       null,
+                                                       true,
+                                                       false,
+                                                       Collections.emptyList() ) )
+        {
+            assertAll( () -> assertEquals( 400, response.getStatus() ),
+                       () -> assertTrue( response.getEntity()
+                                                 .toString()
+                                                 .contains( "declaration contained the following errors" ) ),
+                       () -> assertTrue( response.getEntity()
+                                                 .toString()
+                                                 .contains( "baz_property: is not defined in the schema" ) ) );
+        }
     }
 
     @Test
@@ -256,32 +319,35 @@ public class WresJobTest
     {
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
         WresJob wresJob = new WresJob();
-        Response response = wresJob.postWresJob( FAKE_DECLARATION, null, null, null, false, false, Collections.emptyList() );
-        assertEquals( "Expected a 500 Internal Server Error.", 500, response.getStatus() );
+        try ( Response response =
+                      wresJob.postWresJob( FAKE_DECLARATION, null, null, null, false, false, Collections.emptyList() ) )
+        {
+            assertEquals( "Expected a 500 Internal Server Error.", 500, response.getStatus() );
+        }
     }
 
+    /*    @Test
+        public void testMessage() throws Exception
+        {
+            String[] additionalArguments = new String[] { "host", "8000", "name" };
+            List<String> argsList = Arrays.asList ( additionalArguments );
 
-/*    @Test
-    public void testMessage() throws Exception
-    {
-        String[] additionalArguments = new String[] { "host", "8000", "name" };
-        List<String> argsList = Arrays.asList ( additionalArguments );
+            EmbeddedBroker embeddedBroker = new EmbeddedBroker();
+            embeddedBroker.start();
+            WresJob wresJob = new WresJob();
+            Response response = wresJob.postWresJob( FAKE_DECLARATION, null, null, null, false, Collections.emptyList() );
+            assertEquals( "Expected a 201 Created. Response: " + response.toString(), 201, response.getStatus() );
+            response = wresJob.postWresJob( "fake", null, "admintoken", "cleandatabase", false, Collections.emptyList() );
+            assertEquals( "Expected a 201 Created. Response: " + response.toString(), 201, response.getStatus() );
+            response = wresJob.postWresJob( "fake", null, "admintoken", "switchdatabase", false, Collections.emptyList() );
+            assertEquals( "Expected a 400 Created. Response: " + response.toString(), 400, response.getStatus() );
+            response = wresJob.postWresJob( "fake", null, "admintoken", "switchdatabase", false, argsList );
+            assertEquals( "Expected a 200 Created. Response: " + response.toString(), 200, response.getStatus() );
+            WresJob.shutdownNow();
+            embeddedBroker.shutdown();
+        }
+    */
 
-        EmbeddedBroker embeddedBroker = new EmbeddedBroker();
-        embeddedBroker.start();
-        WresJob wresJob = new WresJob();
-        Response response = wresJob.postWresJob( FAKE_DECLARATION, null, null, null, false, Collections.emptyList() );
-        assertEquals( "Expected a 201 Created. Response: " + response.toString(), 201, response.getStatus() );
-        response = wresJob.postWresJob( "fake", null, "admintoken", "cleandatabase", false, Collections.emptyList() );
-        assertEquals( "Expected a 201 Created. Response: " + response.toString(), 201, response.getStatus() );
-        response = wresJob.postWresJob( "fake", null, "admintoken", "switchdatabase", false, Collections.emptyList() );
-        assertEquals( "Expected a 400 Created. Response: " + response.toString(), 400, response.getStatus() );
-        response = wresJob.postWresJob( "fake", null, "admintoken", "switchdatabase", false, argsList );
-        assertEquals( "Expected a 200 Created. Response: " + response.toString(), 200, response.getStatus() );
-        WresJob.shutdownNow();
-        embeddedBroker.shutdown();
-    }
-*/
     @AfterClass
     public static void cleanUp() throws IOException
     {
