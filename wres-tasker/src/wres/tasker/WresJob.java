@@ -82,6 +82,11 @@ public class WresJob
             "wres.tasker.skipQueueLengthCheck";
     private static final int DEFAULT_REDIS_PORT = 6379;
     private static final RedissonClient REDISSON_CLIENT;
+    private static final String UNABLE_TO_VALIDATE_PROJECT_CONFIGURATION_DUE_TO_INTERNAL_ERROR =
+            "Unable to validate project configuration due to internal error.";
+    private static final String FULL_EXCEPTION_TRACE = "Full exception trace: ";
+    private static final String UNABLE_TO_WRITE_PROTOBUF_RESPONSE_BYTE_ARRAY_DUE_TO_I_O_EXCEPTION =
+            "Unable to write protobuf response byte array due to I/O exception.";
     private static String redisHost = null;
     private static int redisPort = DEFAULT_REDIS_PORT;
     //Admin authentication
@@ -281,25 +286,23 @@ public class WresJob
         // Test the ability to connect to the broker connections API.
         try
         {
-            int workerCount = BrokerManagerHelper.getBrokerWorkerConnectionCount();
+            BrokerManagerHelper.getBrokerWorkerConnectionCount();
         }
-        catch (IOException | RuntimeException e)
+        catch ( IOException | RuntimeException e )
         {
-            LOGGER.info( "Attempt to get worker count failed. Full exception trace: ", e );
-            throw new ConnectivityException("Unable to connect to broker for a worker "
-                                            + "count as a test. Check the broker logs. "
-                                            + "Exception message: "
-                                            + e.getMessage() + "."
-                                           );
+            throw new ConnectivityException( "Unable to connect to broker for a worker "
+                                             + "count as a test. Check the broker logs. "
+                                             + "Exception message: "
+                                             + e.getMessage() + "." );
         }
     }
-    
+
     /**
      * Reformat the declaration String, trimming it and making other changes as needed.
      * @param projectConfig The posted declaration String.
      * @return A reformatted version ready for use with the WRES.
-    */
-    private String reformatConfig(String projectConfig)
+     */
+    private String reformatConfig( String projectConfig )
     {
         return projectConfig.trim();
     }
@@ -308,7 +311,7 @@ public class WresJob
     @Produces( "text/plain; charset=utf-8" )
     public String getWresJob()
     {
-        // Test connectivity to other componetns 
+        // Test connectivity to other components
         try
         {
             checkComponentConnectivity();
@@ -317,7 +320,7 @@ public class WresJob
         {
             LOGGER.warn( "Unable to connect to either the broker or persister. Reporting 'Down'. "
                          + "Exception message: {}", ce.getMessage() );
-            LOGGER.debug( "Full exception trace: {}", ce );
+            LOGGER.debug( FULL_EXCEPTION_TRACE, ce );
             return "Down";
         }
 
@@ -336,14 +339,14 @@ public class WresJob
         {
             LOGGER.warn( "Unable to obtain a worker count from the broker manager. Reporting 'Down'. "
                          + " Exception message: {}", e.getMessage() );
-            LOGGER.debug( "Full exception trace: ", e );
+            LOGGER.debug( FULL_EXCEPTION_TRACE, e );
             return "Down";
         }
         catch ( RuntimeException re )
         {
             LOGGER.warn( "RuntimeException obtaining worker count from the broker manager. Reporting 'Down'. "
                          + " Exception message: {}", re.getMessage() );
-            LOGGER.debug( "Full exception trace: ", re );
+            LOGGER.debug( FULL_EXCEPTION_TRACE, re );
             return "Down";
         }
 
@@ -408,8 +411,8 @@ public class WresJob
     @Produces( "application/octet-stream" )
     public Response postWresValidate( @FormParam( "projectConfig" ) @DefaultValue( "" ) String projectConfig )
     {
-        projectConfig = reformatConfig(projectConfig);
-	
+        projectConfig = reformatConfig( projectConfig );
+
         // Obtain the evaluation status events.
         List<EvaluationStatusEvent> events;
         try
@@ -418,8 +421,8 @@ public class WresJob
         }
         catch ( IOException e1 )
         {
-            LOGGER.warn( "Unable to validate project configuration due to internal error.", e1 );
-            return WresJob.internalServerError( "Unable to validate project configuration due to internal error." );
+            LOGGER.warn( UNABLE_TO_VALIDATE_PROJECT_CONFIGURATION_DUE_TO_INTERNAL_ERROR, e1 );
+            return WresJob.internalServerError( UNABLE_TO_VALIDATE_PROJECT_CONFIGURATION_DUE_TO_INTERNAL_ERROR );
         }
         //Write the events to a delimited byte stream.
         ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
@@ -432,14 +435,13 @@ public class WresJob
         }
         catch ( IOException e2 )
         {
-            LOGGER.warn(
-                    "Unable to write protobuf response byte array due to I/O exception.",
-                    e2 );
-            return WresJob.internalServerError(
-                    "Unable to write protobuf response byte array due to I/O exception." );
+            LOGGER.warn( UNABLE_TO_WRITE_PROTOBUF_RESPONSE_BYTE_ARRAY_DUE_TO_I_O_EXCEPTION,
+                         e2 );
+            return WresJob.internalServerError( UNABLE_TO_WRITE_PROTOBUF_RESPONSE_BYTE_ARRAY_DUE_TO_I_O_EXCEPTION );
         }
         //Return an OK response with the byte array as the content.
-        return Response.ok( byteStream.toByteArray() ).build();
+        return Response.ok( byteStream.toByteArray() )
+                       .build();
     }
 
     /**
@@ -455,7 +457,7 @@ public class WresJob
     @Produces( "text/html; charset=utf-8" )
     public Response postWresValidateHtml( @FormParam( "projectConfig" ) @DefaultValue( "" ) String projectConfig )
     {
-        projectConfig = reformatConfig(projectConfig);
+        projectConfig = reformatConfig( projectConfig );
         try
         {
             // Obtain the evaluation status events.
@@ -510,7 +512,7 @@ public class WresJob
         catch ( IOException e1 )
         {
             LOGGER.warn( "Unable to validate project configuration due to internal I/O error.", e1 );
-            return WresJob.internalServerError( "Unable to validate project configuration due to internal error." );
+            return WresJob.internalServerError( UNABLE_TO_VALIDATE_PROJECT_CONFIGURATION_DUE_TO_INTERNAL_ERROR );
         }
     }
 
@@ -540,8 +542,8 @@ public class WresJob
                      verb,
                      postInput,
                      additionalArguments );
-        projectConfig = reformatConfig(projectConfig);
-	
+        projectConfig = reformatConfig( projectConfig );
+
         // Default priority is 0 for all tasks.
         int messagePriority = 0;
         // Default to execute per tradition and majority case.
@@ -640,13 +642,22 @@ public class WresJob
             {
                 LOGGER.warn( "Received a project declaration that appears to be "
                              + "one character or less." );
-                return WresJob.badRequest( "The project declaration is less " 
+                return WresJob.badRequest( "The project declaration is less "
                                            + "than or equal to one byte long, "
                                            + "which is not allowed. "
                                            + "Please double-check that you "
                                            + "set the form parameter "
                                            + "'projectConfig' correctly and "
                                            + "re-send." );
+            }
+            else
+            {
+                Response error = this.validateDeclaration( projectConfig, postInput );
+
+                if ( Objects.nonNull( error ) )
+                {
+                    return error;
+                }
             }
         }
 
@@ -716,7 +727,7 @@ public class WresJob
             usedDatabaseName = activeDatabaseName;
         }
         // Before registering a new job, see if there are already too many.
-        int queueLength = -1;
+        int queueLength;
         try
         {
             queueLength = this.getJobQueueLength();
@@ -880,7 +891,7 @@ public class WresJob
                             + statusUrl
                             + "</a>.</p>"
                             + "<p>The possible job states are: "
-                            + jobStates.toString()
+                            + jobStates
                             + ".</p>"
                             + "<p>For job evaluation results, GET <a href=\""
                             + outputUrl
@@ -910,12 +921,12 @@ public class WresJob
     }
 
     /**
-     * Afford the client the ability to remove all resources after the client is
+     * <p>Afford the client the ability to remove all resources after the client is
      * finished reading the resources it cares about.
      *
-     * It is important that the client not specify an arbitrary path, and that
+     * <p>It is important that the client not specify an arbitrary path, and that
      * the server here do the job of looking for the resources the *server* has
-     * associated with the job. Otherwise you could imagine a malicious client
+     * associated with the job. Otherwise, you could imagine a malicious client
      * deleting anything on the server machine that the server process has
      * access to. (The server process also should have limited privilege.)
      *
@@ -972,11 +983,11 @@ public class WresJob
 
     /**
      *
-     * @param message
+     * @param message the declaration message
      * @param priority The higher the value, the higher the priority.
      * @throws IOException when connectivity, queue declaration, or publication fails
      * @throws IllegalStateException when the job does not exist in shared state
-     * @throws TimeoutException
+     * @throws TimeoutException if the evaluation times out
      */
     static void sendDeclarationMessage( String jobId, byte[] message, int priority )
             throws IOException, TimeoutException
@@ -1113,8 +1124,8 @@ public class WresJob
     private static Response badRequest( String message )
     {
         return Response.status( Response.Status.BAD_REQUEST )
-                       .entity(
-                               "<!DOCTYPE html><html><head><title>Bad Request</title></head><body><h1>Bad Request</h1><p>"
+                       .entity( "<!DOCTYPE html><html><head><title>Bad Request</title></head><body><h1>Bad Request"
+                                + "</h1><p>"
                                + message
                                + P_BODY_HTML )
                        .build();
@@ -1123,8 +1134,8 @@ public class WresJob
     private static Response unauthorized( String message )
     {
         return Response.status( Response.Status.UNAUTHORIZED )
-                       .entity(
-                               "<!DOCTYPE html><html><head><title>Unauthorized</title></head><body><h1>Unauthorized</h1><p>"
+                       .entity( "<!DOCTYPE html><html><head><title>Unauthorized</title></head><body><h1>Unauthorized"
+                                + "</h1><p>"
                                + message
                                + P_BODY_HTML )
                        .build();
@@ -1230,6 +1241,70 @@ public class WresJob
                    cause );
         }
     }
+
+    /**
+     * Validates the supplied declaration string. Responds with a 400 BAD REQUEST if validation errors were encountered,
+     * otherwise a null response.
+     * response when no errors were encountered.
+     * @param declarationString the declaration string
+     * @param omitSources is true to omit the sources (i.e., when posting data)
+     * @return the response, which contains any validation errors encountered
+     */
+    private Response validateDeclaration( String declarationString, boolean omitSources )
+    {
+        // Obtain the evaluation status events.
+        try
+        {
+            List<EvaluationStatusEvent> events = DeclarationValidator.validate( declarationString, omitSources );
+
+            return this.getResponseFromStatusEvents( events );
+        }
+        catch ( IOException e1 )
+        {
+            LOGGER.warn( UNABLE_TO_VALIDATE_PROJECT_CONFIGURATION_DUE_TO_INTERNAL_ERROR, e1 );
+            return WresJob.internalServerError( UNABLE_TO_VALIDATE_PROJECT_CONFIGURATION_DUE_TO_INTERNAL_ERROR );
+        }
+    }
+
+    /**
+     * Creates a response from a collection of evaluation status events or null if no errors were encountered.
+     * @param events the events
+     * @return the response or null
+     */
+
+    private Response getResponseFromStatusEvents( List<EvaluationStatusEvent> events )
+    {
+        // Send a non-null response if errors were encountered
+        if ( events.stream()
+                   .noneMatch( e -> e.getStatusLevel() == EvaluationStatusEvent.StatusLevel.ERROR ) )
+        {
+            LOGGER.debug( "No errors were encountered when validating the declaration." );
+            return null;
+        }
+
+        // Write the events to a delimited byte stream.
+        try
+        {
+            ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+            for ( EvaluationStatusEvent event : events )
+            {
+                event.writeDelimitedTo( byteStream );
+            }
+
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append( "<br>The project declaration contained the following errors, which must be fixed:</br>" );
+            events.forEach( event -> stringBuilder.append( "<br>" )
+                                                  .append( "- " )
+                                                  .append( event.getEventMessage() )
+                                                  .append( "</br>" ) );
+
+            return WresJob.badRequest( stringBuilder.toString() );
+        }
+        catch ( IOException e2 )
+        {
+            LOGGER.warn( UNABLE_TO_WRITE_PROTOBUF_RESPONSE_BYTE_ARRAY_DUE_TO_I_O_EXCEPTION,
+                         e2 );
+            return WresJob.internalServerError( UNABLE_TO_WRITE_PROTOBUF_RESPONSE_BYTE_ARRAY_DUE_TO_I_O_EXCEPTION );
+        }
+    }
 }
-
-
