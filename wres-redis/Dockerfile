@@ -11,7 +11,14 @@ RUN echo "wres_persister_docker:x:498:1370800073::/home/wres_persister_docker:" 
 COPY redis.conf /etc/redis/redis.conf
 COPY docker-healthcheck /usr/local/bin/
 
+# The WRES-specific entry point script which executes redis-check-aof.
+COPY wres-docker-entrypoint.sh /
+
 HEALTHCHECK CMD ["docker-healthcheck"]
 
 USER wres_persister_docker
 
+# Indicate that the WRES script is to be used. Note that that script
+# will still be given the same arguments as the default script, that
+# being the Redis configuration file location.
+ENTRYPOINT [ "/wres-docker-entrypoint.sh" ]
