@@ -51,13 +51,13 @@ public class FunctionFactory
     private static final Map<MetricConstants, ToDoubleFunction<double[]>> STATISTICS =
             new EnumMap<>( MetricConstants.class );
 
-    /** Median. */
+    /** Median. Not thread-safe, so avoid stateful operations within this class.*/
     private static final Median MEDIAN = new Median();
 
-    /** Mean. */
+    /** Mean. Not thread-safe, so avoid stateful operations within this class.*/
     private static final Mean MEAN = new Mean();
 
-    /** Standard deviation. */
+    /** Standard deviation. Not thread-safe, so avoid stateful operations within this class. */
     private static final StandardDeviation STANDARD_DEVIATION = new StandardDeviation();
 
     /** Bin axis for a histogram. */
