@@ -15,10 +15,10 @@ import wres.events.subscribe.ConsumerFactory;
 import wres.eventsbroker.embedded.EmbeddedBroker;
 
 /**
- * A long-running graphics client that encapsulates one graphics subscriber, which consumes statistics and writes them 
- * to graphics.
+ * A long-running numerics client that encapsulates one numerics subscriber, which consumes statistics and writes them
+ * to numeric formats (csv, protobuff, etc).
  *
- * @author James Brown
+ * @author Evan Pagryzinski
  */
 
 class WritingClient
@@ -33,7 +33,7 @@ class WritingClient
 
     public static void main( String[] args )
     {
-        LOGGER.info( "Starting WRES messaging client for graphics format writing..." );
+        LOGGER.info( "Starting WRES messaging client for numerics format writing..." );
 
         // Create the server
         int exitCode = 0;
@@ -59,15 +59,15 @@ class WritingClient
         // A factory that creates consumers on demand
         ConsumerFactory consumerFactory = new WritingConsumerFactory( subscriberId );
 
-        MessagingClient graphics = MessagingClient.of( brokerConnections, consumerFactory );
+        MessagingClient numerics = MessagingClient.of( brokerConnections, consumerFactory );
 
         // Add a shutdown hook to respond gracefully to SIGINT signals
         Runtime.getRuntime()
                .addShutdownHook( new Thread( () -> {
 
                    // Close the resources
-                   LOGGER.info( "Stopping WRES messaging client for graphics format writing..." );
-                   graphics.stop();
+                   LOGGER.info( "Stopping WRES messaging client for numerics format writing..." );
+                   numerics.stop();
 
                    if ( Objects.nonNull( brokerToClose ) )
                    {
@@ -78,8 +78,8 @@ class WritingClient
                        }
                        catch ( IOException e )
                        {
-                           LOGGER.error( "Failed to close the embedded broker associated with graphics client {}.",
-                                         graphics );
+                           LOGGER.error( "Failed to close the embedded broker associated with numerics client {}.",
+                                         numerics );
 
                        }
                    }
@@ -88,29 +88,23 @@ class WritingClient
         try
         {
             // Start the subscriber
-            graphics.start();
+            numerics.start();
 
             // Await completion
-            graphics.await();
+            numerics.await();
         }
         catch ( InterruptedException e )
         {
-            LOGGER.error( "Interrupted while waiting for a WRES Graphics Client." );
+            LOGGER.error( "Interrupted while waiting for a WRES numerics Client." );
 
             exitCode = 1;
 
             Thread.currentThread()
                   .interrupt();
         }
-        catch ( Exception f )
-        {
-            LOGGER.error( "Encountered an internal error in a WRES Graphics Client, which will now shut down.", f );
-
-            exitCode = 2;
-        }
 
         // Failed subscriber?
-        if ( graphics.getSubscriberStatus()
+        if ( numerics.getSubscriberStatus()
                      .isFailed() )
         {
             exitCode = 3;

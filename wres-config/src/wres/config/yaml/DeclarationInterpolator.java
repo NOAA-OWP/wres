@@ -598,7 +598,7 @@ public class DeclarationInterpolator
             {
                 numericBuilder.setDecimalFormat( builder.decimalFormat()
                                                         .toPattern() );
-                numericBuilder.setDurationFormat( Outputs.DurationUnit.valueOf( builder.durationFormat().name() ) );
+                numericBuilder.setLeadUnit( Outputs.DurationUnit.valueOf( builder.durationFormat().name() ) );
             }
             csv2Builder.setOptions( numericBuilder );
             formatsBuilder.setCsv2( csv2Builder );
