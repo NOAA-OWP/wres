@@ -28,7 +28,7 @@ import wres.writing.protobuf.ProtobufWriter;
 
 /**
  * Implementation of a {@link ConsumerFactory} for statistics writing.
- * @author James Brown
+ * @author Evan Pagryzinski
  */
 
 class WritingConsumerFactory implements ConsumerFactory
@@ -56,17 +56,18 @@ class WritingConsumerFactory implements ConsumerFactory
         LOGGER.debug( "Creating a statistics consumer for these formats: {}.", formats );
 
         StatisticsToFormatsRouter.Builder builder = new StatisticsToFormatsRouter.Builder();
+        Outputs outputs = evaluation.getOutputs();
 
         // CSV2
-        if ( evaluation.getOutputs().hasCsv2() )
+        if ( outputs.hasCsv2() )
         {
-            ChronoUnit durationUnits = this.getDurationUnitsFromOutputs( evaluation.getOutputs() );
+            ChronoUnit durationUnits = this.getDurationUnitsFromOutputs( outputs );
             Path fullPath = path.resolve( CsvStatisticsWriter.DEFAULT_FILE_NAME );
             DoubleFunction<String> formatter = this.getDecimalFormatter( evaluation );
 
             CsvStatisticsWriter writer = CsvStatisticsWriter.of( evaluation,
                                                                  fullPath,
-                                                                 true,
+                                                                 false,
                                                                  durationUnits,
                                                                  formatter );
 
@@ -77,7 +78,7 @@ class WritingConsumerFactory implements ConsumerFactory
         }
 
         // Protobuf
-        if ( evaluation.getOutputs().hasProtobuf() )
+        if ( outputs.hasProtobuf() )
         {
             Path protobufPath = path.resolve( "evaluation.pb3" );
             Function<Statistics, Set<Path>> protoWriter = ProtobufWriter.of( protobufPath, evaluation );
@@ -104,10 +105,6 @@ class WritingConsumerFactory implements ConsumerFactory
 
         StatisticsToFormatsRouter.Builder builder = new StatisticsToFormatsRouter.Builder();
 
-        // Note that diagrams are always written by group, even if all the statistics could be written per pool because
-        // grouping is currently done per feature and not, for example, per pool within a feature (grouping over the
-        // various thresholds that are messaged separately). To allow for writing per pool, an additional layer of
-        // message grouping would be needed.
         return builder.setEvaluationDescription( evaluation )
                       .build();
     }
@@ -158,7 +155,7 @@ class WritingConsumerFactory implements ConsumerFactory
     }
 
     /**
-     * Returns a formatter for decimal values as strings, null if none is defined.
+     * Returns a formatter for decimal values as strings
      *
      * @param declaration the project declaration
      * @return a formatter
@@ -171,7 +168,7 @@ class WritingConsumerFactory implements ConsumerFactory
         java.text.Format formatter = new DecimalFormat( decimalFormat );
 
         return doubleValue -> {
-            if ( Objects.nonNull( formatter ) )
+            if ( !decimalFormat.isEmpty() )
             {
                 return formatter.format( doubleValue );
             }
@@ -184,16 +181,6 @@ class WritingConsumerFactory implements ConsumerFactory
     {
         Objects.requireNonNull( outputs );
 
-        if ( !( outputs.hasCsv2() && outputs.getCsv2().hasOptions() ) )
-        {
-            throw new IllegalArgumentException(
-                    "Discovered more than one lead duration unit in the outputs message ("
-                    + outputs.getPng().getOptions().getLeadUnit()
-                    + ", "
-                    + outputs.getSvg().getOptions().getLeadUnit()
-                    + ")." );
-        }
-
-        return ChronoUnit.valueOf( outputs.getCsv2().getOptions().getDurationFormat().name() );
+        return ChronoUnit.valueOf( outputs.getCsv2().getOptions().getLeadUnit().name() );
     }
 }

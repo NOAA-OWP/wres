@@ -556,7 +556,7 @@ class EvaluationUtilities
             formats.add( Format.SVG );
         }
 
-        // Add external graphics if required
+        // Add external numerics if required
         if ( Objects.nonNull( externalNumerics ) && "true".equalsIgnoreCase( externalNumerics ) )
         {
             formats.add( Format.PROTOBUF );

@@ -31,10 +31,6 @@ WORKDIR /opt/wres-writing-${version}
 COPY docker-entrypoint.sh /
 RUN chmod +x /docker-entrypoint.sh
 
-# Concert windows line ending to UNIX
-RUN dnf install -y dos2unix
-RUN dos2unix /docker-entrypoint.sh
-
 
 VOLUME /container_home
 

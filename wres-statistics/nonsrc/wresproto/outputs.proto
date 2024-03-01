@@ -10,6 +10,12 @@ option java_multiple_files = true;
 
 message Outputs
 {
+    /*A message that describes the formats to write for one evaluation. Most 
+    formats are special snowflakes. However, common format options are 
+    abstracted out, where possible. For example, the GraphicFormat contains 
+    options that are common to all graphic formats. Each format and associated
+    options can appear only once per evaluation.*/
+
     enum DurationUnit
     {
          // Display lead durations in these units.
@@ -19,12 +25,6 @@ message Outputs
          HOURS = 2;
          DAYS = 3;
     }
-
-    /*A message that describes the formats to write for one evaluation. Most 
-    formats are special snowflakes. However, common format options are 
-    abstracted out, where possible. For example, the GraphicFormat contains 
-    options that are common to all graphic formats. Each format and associated
-    options can appear only once per evaluation.*/
 
     message GraphicFormat
     {
@@ -99,7 +99,8 @@ message Outputs
         string decimal_format = 1;
         // A decimal format mask, such as 0.000000 or #.######.
 
-        DurationUnit duration_format = 2;
+        DurationUnit lead_unit = 2;
+        // The units of the lead durations.
     }
 
     message CsvFormat
