@@ -482,6 +482,74 @@ project(':wres-io')
 
 project(':wres-writing')
 {
+    // Check if the dependency modules version is later. If so, update this
+    // module to that later version.
+    // See #105526: there is an ordering issue whereby the correct
+    // project.version does not propagate to the application plugin tasks
+    // (distZip, distTar etc.) unless the project.version is determined and
+    // set before the application plugin is applied
+    def gitCommitOfDependencies = grgit.log(paths: ['wres-datamodel',
+                                                    'wres-eventsbroker',
+                                                    'wres-events'], maxCommits:1).find()
+
+    // Null check in case there is a new module with no history
+    if( gitCommitOfDependencies != null )
+    {
+        def gitCommitIdOfDependencies = gitCommitOfDependencies.id
+        def gitCommitDateOfDependencies = gitCommitOfDependencies.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+
+        def gitCommitOfThisModule = grgit.log( paths: [project.name, 'build.gradle', 'gradle'], maxCommits:1 ).find()
+        def gitCommitDateOfThisModule = gitCommitOfThisModule.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+
+        def versionOfDependencies = gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies[0..6]
+
+        if ( gitCommitDateOfDependencies.isAfter( gitCommitDateOfThisModule ) )
+        {
+            version = versionOfDependencies
+
+            println("Set wres-writing version: " + project.version )
+
+            if ( !grgit.status().isClean() )
+            {
+                version = version + '-dev'
+            }
+        }
+    }
+
+
+    apply plugin: 'application'
+
+    // Workaround windows paths that are too long by overriding the explicit setting of individual dependencies
+    startScripts {
+        classpath = files( '$APP_HOME/lib/*' )
+
+        // Note: see lengthy note in main application below
+        classpath += files( 'conf' )
+    }
+
+    mainClassName = 'wres.writing.client.WritingClient'
+    applicationDefaultJvmArgs = ['-Xms640m','-Xmx640m',
+                                 '-XX:+HeapDumpOnOutOfMemoryError',
+                                 '-XX:+CrashOnOutOfMemoryError',
+                                 '-Djava.util.logging.config.file=logging.properties',
+                                 '-Dorg.jboss.logging.provider=slf4j']
+
+    distributions
+            {
+                main
+                        {
+                            println( project.version )
+                            contents
+                                    {
+                                        from
+                                                {
+                                                    // Note: see lengthy note in main application below
+                                                    ['dist']
+                                                }
+                                    }
+                        }
+            }
+
     dependencies
     {
         implementation project(':wres-reading')
@@ -489,6 +557,8 @@ project(':wres-writing')
         implementation project(':wres-datamodel')
         implementation project(':wres-statistics')
         implementation project(':wres-config')
+        implementation project(':wres-events')
+        implementation project(':wres-eventsbroker')
 
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
