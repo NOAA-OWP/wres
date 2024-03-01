@@ -545,6 +545,7 @@ class EvaluationUtilities
     static Set<Format> getFormatsDeliveredByExternalSubscribers()
     {
         String externalGraphics = System.getProperty( "wres.externalGraphics" );
+        String externalNumerics = System.getProperty( "wres.externalNumerics" );
 
         Set<Format> formats = new HashSet<>();
 
@@ -553,6 +554,13 @@ class EvaluationUtilities
         {
             formats.add( Format.PNG );
             formats.add( Format.SVG );
+        }
+
+        // Add external graphics if required
+        if ( Objects.nonNull( externalNumerics ) && "true".equalsIgnoreCase( externalNumerics ) )
+        {
+            formats.add( Format.PROTOBUF );
+            formats.add( Format.CSV2 );
         }
 
         return Collections.unmodifiableSet( formats );

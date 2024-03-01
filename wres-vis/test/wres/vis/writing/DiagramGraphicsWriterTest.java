@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.GraphicFormat;
-import wres.statistics.generated.Outputs.GraphicFormat.DurationUnit;
+import wres.statistics.generated.Outputs.DurationUnit;
 import wres.statistics.generated.Outputs.SvgFormat;
 import wres.vis.TestDataGenerator;
 

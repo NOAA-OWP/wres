@@ -722,7 +722,10 @@ public class EvaluationService implements ServletContextListener
             {
                 String failureMessage = "I received something I could not parse. The top-level exception was";
                 LOGGER.info( failureMessage, e );
-                EVALUATION_STAGE.set( COMPLETED );
+                // Persist output into cache
+                evaluationMetadata = getCachedEntry( id );
+                evaluationMetadata.setStatus( COMPLETED );
+                persistInformation( id, evaluationMetadata );
                 return Response.status( Response.Status.BAD_REQUEST )
                                .entity( failureMessage + e.getMessage() )
                                .build();
@@ -731,7 +734,10 @@ public class EvaluationService implements ServletContextListener
             {
                 String failureMessage = "WRES experienced an internal issue. The top-level exception was";
                 LOGGER.info( failureMessage, iwe );
-                EVALUATION_STAGE.set( COMPLETED );
+                // Persist output into cache
+                evaluationMetadata = getCachedEntry( id );
+                evaluationMetadata.setStatus( COMPLETED );
+                persistInformation( id, evaluationMetadata );
                 return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                                .entity( failureMessage + iwe.getMessage() )
                                .build();

@@ -10,6 +10,16 @@ option java_multiple_files = true;
 
 message Outputs
 {
+    enum DurationUnit
+    {
+         // Display lead durations in these units.
+
+         SECONDS = 0;
+         MINUTES = 1;
+         HOURS = 2;
+         DAYS = 3;
+    }
+
     /*A message that describes the formats to write for one evaluation. Most 
     formats are special snowflakes. However, common format options are 
     abstracted out, where possible. For example, the GraphicFormat contains 
@@ -53,16 +63,6 @@ message Outputs
         int32 width = 3;
         // Graphic width in pixels.
 
-        enum DurationUnit
-        {
-             // Display lead durations in these units.
-
-             SECONDS = 0;
-             MINUTES = 1;
-             HOURS = 2;
-             DAYS = 3;
-        }
-
         DurationUnit lead_unit = 4;
         // The units of the lead durations.
 
@@ -98,6 +98,8 @@ message Outputs
 
         string decimal_format = 1;
         // A decimal format mask, such as 0.000000 or #.######.
+
+        DurationUnit duration_format = 2;
     }
 
     message CsvFormat

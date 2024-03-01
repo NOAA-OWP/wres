@@ -31,7 +31,7 @@ import wres.statistics.generated.Outputs.SvgFormat;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
-import wres.statistics.generated.Outputs.GraphicFormat.DurationUnit;
+import wres.statistics.generated.Outputs.DurationUnit;
 import wres.statistics.generated.Outputs.GraphicFormat.GraphicShape;
 import wres.statistics.generated.Pairs.Pair;
 import wres.statistics.generated.Pairs.TimeSeriesOfPairs;
