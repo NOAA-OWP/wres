@@ -20,7 +20,7 @@ import wres.statistics.generated.Outputs;
 @JsonDeserialize( using = FormatsDeserializer.class )
 public record Formats( Outputs outputs )
 {
-    /** Defaukt numeric format options. */
+    /** Default numeric format options. */
     public static Outputs.NumericFormat DEFAULT_NUMERIC_FORMAT = Outputs.NumericFormat.newBuilder()
                                                                                       .build();
 

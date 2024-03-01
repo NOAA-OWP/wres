@@ -686,7 +686,6 @@ public enum MetricConstants
     {
         return !( this.getMetricOutputGroup() == StatisticType.BOXPLOT_PER_PAIR
                   || this.getMetricOutputGroup() == StatisticType.BOXPLOT_PER_POOL
-                  || this == MetricConstants.QUANTILE_QUANTILE_DIAGRAM
                   || this == MetricConstants.ENSEMBLE_QUANTILE_QUANTILE_DIAGRAM );
     }
 

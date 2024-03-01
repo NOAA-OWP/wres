@@ -19,6 +19,7 @@ import wres.statistics.generated.DoubleScoreMetric;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
+import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Pool;
@@ -31,7 +32,7 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
 
 /**
  * Tests the {@link ProtobufWriter}.
- * 
+ *
  * @author James Brown
  */
 
@@ -69,28 +70,33 @@ public class ProtobufWriterTest
     {
         Statistics.Builder poolOne = Statistics.newBuilder();
 
-        poolOne.setPool( Pool.newBuilder()
-                             .setEventThreshold( Threshold.newBuilder()
-                                                          .setLeftThresholdValue( DoubleValue.of( 12345 ) )
-                                                          .setName( "Flooding" ) )
-                             .addGeometryTuples( GeometryTuple.newBuilder()
-                                                              .setLeft( Geometry.newBuilder()
-                                                                                .setName( "DRRC2" ) ) )
-                             .setTimeWindow( TimeWindow.newBuilder()
-                                                       .setEarliestLeadDuration( Duration.newBuilder()
-                                                                                         .setSeconds( 3600 ) )
-                                                       .setLatestLeadDuration( Duration.newBuilder()
-                                                                                       .setSeconds( 3600 ) ) )
-                             .setTimeScale( TimeScale.newBuilder()
-                                                     .setPeriod( Duration.newBuilder()
-                                                                         .setSeconds( 77 ) ) ) );
+        Pool.Builder poolOneProto =
+                Pool.newBuilder()
+                    .setEventThreshold( Threshold.newBuilder()
+                                                 .setLeftThresholdValue( DoubleValue.of( 12345 ) )
+                                                 .setName( "Flooding" ) )
+                    .setGeometryGroup( GeometryGroup.newBuilder()
+                                                    .addGeometryTuples( GeometryTuple.newBuilder()
+                                                                                     .setLeft(
+                                                                                             Geometry.newBuilder()
+                                                                                                     .setName( "DRRC2" ) ) ) )
+                    .setTimeWindow( TimeWindow.newBuilder()
+                                              .setEarliestLeadDuration( Duration.newBuilder()
+                                                                                .setSeconds( 3600 ) )
+                                              .setLatestLeadDuration( Duration.newBuilder()
+                                                                              .setSeconds( 3600 ) ) )
+                    .setTimeScale( TimeScale.newBuilder()
+                                            .setPeriod( Duration.newBuilder()
+                                                                .setSeconds( 77 ) ) );
+        poolOne.setPool( poolOneProto );
         DoubleScoreStatistic one =
                 DoubleScoreStatistic.newBuilder()
                                     .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_SQUARE_ERROR ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 1.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( MetricName.MAIN ) ) )
+                                                                                                                       .setName(
+                                                                                                                               MetricName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic two =
@@ -99,7 +105,8 @@ public class ProtobufWriterTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 2.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( MetricName.MAIN ) ) )
+                                                                                                                       .setName(
+                                                                                                                               MetricName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic three =
@@ -109,7 +116,8 @@ public class ProtobufWriterTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 3.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( MetricName.MAIN ) ) )
+                                                                                                                       .setName(
+                                                                                                                               MetricName.MAIN ) ) )
                                     .build();
 
         poolOne.addScores( one )
@@ -121,28 +129,33 @@ public class ProtobufWriterTest
 
         Statistics.Builder poolTwo = Statistics.newBuilder();
 
-        poolTwo.setPool( Pool.newBuilder()
-                             .setEventThreshold( Threshold.newBuilder()
-                                                          .setLeftThresholdValue( DoubleValue.of( 12345 ) )
-                                                          .setName( "Flooding" ) )
-                             .addGeometryTuples( GeometryTuple.newBuilder()
-                                                              .setLeft( Geometry.newBuilder()
-                                                                                .setName( "DRRC2" ) ) )
-                             .setTimeWindow( TimeWindow.newBuilder()
-                                                       .setEarliestLeadDuration( Duration.newBuilder()
-                                                                                         .setSeconds( 3600 ) )
-                                                       .setLatestLeadDuration( Duration.newBuilder()
-                                                                                       .setSeconds( 3600 ) ) )
-                             .setTimeScale( TimeScale.newBuilder()
-                                                     .setPeriod( Duration.newBuilder()
-                                                                         .setSeconds( 88 ) ) ) );
+        Pool.Builder poolTwoProto =
+                Pool.newBuilder()
+                    .setEventThreshold( Threshold.newBuilder()
+                                                 .setLeftThresholdValue( DoubleValue.of( 12345 ) )
+                                                 .setName( "Flooding" ) )
+                    .setGeometryGroup( GeometryGroup.newBuilder()
+                                                    .addGeometryTuples( GeometryTuple.newBuilder()
+                                                                                     .setLeft( Geometry.newBuilder()
+                                                                                                       .setName(
+                                                                                                               "DRRC2" ) ) ) )
+                    .setTimeWindow( TimeWindow.newBuilder()
+                                              .setEarliestLeadDuration( Duration.newBuilder()
+                                                                                .setSeconds( 3600 ) )
+                                              .setLatestLeadDuration( Duration.newBuilder()
+                                                                              .setSeconds( 3600 ) ) )
+                    .setTimeScale( TimeScale.newBuilder()
+                                            .setPeriod( Duration.newBuilder()
+                                                                .setSeconds( 88 ) ) );
+        poolTwo.setPool( poolTwoProto );
         DoubleScoreStatistic four =
                 DoubleScoreStatistic.newBuilder()
                                     .setMetric( DoubleScoreMetric.newBuilder().setName( MetricName.MEAN_SQUARE_ERROR ) )
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 1.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( MetricName.MAIN ) ) )
+                                                                                                                       .setName(
+                                                                                                                               MetricName.MAIN ) ) )
                                     .build();
 
         DoubleScoreStatistic five =
@@ -151,7 +164,8 @@ public class ProtobufWriterTest
                                     .addStatistics( DoubleScoreStatisticComponent.newBuilder()
                                                                                  .setValue( 2.0 )
                                                                                  .setMetric( DoubleScoreMetricComponent.newBuilder()
-                                                                                                                       .setName( MetricName.MAIN ) ) )
+                                                                                                                       .setName(
+                                                                                                                               MetricName.MAIN ) ) )
                                     .build();
 
         poolTwo.addScores( four )
