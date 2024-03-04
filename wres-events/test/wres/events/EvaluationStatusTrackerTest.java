@@ -5,14 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Executors;
-import java.util.function.Function;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -22,6 +20,7 @@ import wres.events.broker.BrokerConnectionFactory;
 import wres.events.broker.BrokerUtilities;
 import wres.events.subscribe.ConsumerFactory;
 import wres.events.subscribe.EvaluationSubscriber;
+import wres.events.subscribe.StatisticsConsumer;
 import wres.events.subscribe.SubscriberApprover;
 import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.statistics.generated.Consumer;
@@ -29,7 +28,6 @@ import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.CompletionStatus;
 import wres.statistics.generated.Outputs;
-import wres.statistics.generated.Statistics;
 import wres.statistics.generated.Outputs.NetcdfFormat;
 
 /**
@@ -74,17 +72,15 @@ class EvaluationStatusTrackerTest
         ConsumerFactory consumer = new ConsumerFactory()
         {
             @Override
-            public Function<Statistics, Set<Path>>
-                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> Set.of() );
             }
 
             @Override
-            public Function<Collection<Statistics>, Set<Path>>
-                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> Set.of() );
             }
 
             @Override
@@ -94,11 +90,6 @@ class EvaluationStatusTrackerTest
                                .setConsumerId( "aConsumer" )
                                .addFormats( Format.NETCDF )
                                .build();
-            }
-
-            @Override
-            public void close()
-            {
             }
         };
 
@@ -184,17 +175,15 @@ class EvaluationStatusTrackerTest
         ConsumerFactory consumer = new ConsumerFactory()
         {
             @Override
-            public Function<Statistics, Set<Path>>
-                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> Set.of() );
             }
 
             @Override
-            public Function<Collection<Statistics>, Set<Path>>
-                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> Set.of() );
             }
 
             @Override
@@ -204,11 +193,6 @@ class EvaluationStatusTrackerTest
                                .setConsumerId( "aConsumer" )
                                .addFormats( Format.NETCDF )
                                .build();
-            }
-
-            @Override
-            public void close()
-            {
             }
         };
 
@@ -299,17 +283,15 @@ class EvaluationStatusTrackerTest
         ConsumerFactory consumer = new ConsumerFactory()
         {
             @Override
-            public Function<Statistics, Set<Path>>
-                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> Set.of() );
             }
 
             @Override
-            public Function<Collection<Statistics>, Set<Path>>
-                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> Set.of() );
             }
 
             @Override
@@ -319,11 +301,6 @@ class EvaluationStatusTrackerTest
                                .setConsumerId( "aConsumer" )
                                .addFormats( Format.NETCDF )
                                .build();
-            }
-
-            @Override
-            public void close()
-            {
             }
         };
 

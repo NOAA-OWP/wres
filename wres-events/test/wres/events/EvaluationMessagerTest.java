@@ -28,6 +28,7 @@ import wres.events.broker.BrokerUtilities;
 import wres.events.subscribe.ConsumerException;
 import wres.events.subscribe.ConsumerFactory;
 import wres.events.subscribe.EvaluationSubscriber;
+import wres.events.subscribe.StatisticsConsumer;
 import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.statistics.generated.Consumer;
 import wres.statistics.generated.Consumer.Format;
@@ -174,28 +175,26 @@ class EvaluationMessagerTest
         ConsumerFactory consumer = new ConsumerFactory()
         {
             @Override
-            public Function<Statistics, Set<Path>>
-            getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> {
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> {
                     if ( path.toString().contains( "evaluationOne" ) )
                     {
-                        actualStatistics.add( statistics );
+                        actualStatistics.addAll( statistics );
                     }
                     else
                     {
-                        otherActualStatistics.add( statistics );
+                        otherActualStatistics.addAll( statistics );
                     }
 
                     return Set.of();
-                };
+                } );
             }
 
             @Override
-            public Function<Collection<Statistics>, Set<Path>>
-            getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> Set.of() );
             }
 
             @Override
@@ -206,39 +205,32 @@ class EvaluationMessagerTest
                                .addFormats( Format.PNG )
                                .build();
             }
-
-            @Override
-            public void close()
-            {
-            }
         };
 
         // Consumer factory implementation that simply adds the statistics to the above containers
         ConsumerFactory consumerTwo = new ConsumerFactory()
         {
             @Override
-            public Function<Statistics, Set<Path>>
-            getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> {
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> {
                     if ( path.toString().contains( "evaluationOne" ) )
                     {
-                        actualStatistics.add( statistics );
+                        actualStatistics.addAll( statistics );
                     }
                     else
                     {
-                        otherActualStatistics.add( statistics );
+                        otherActualStatistics.addAll( statistics );
                     }
 
                     return Set.of();
-                };
+                } );
             }
 
             @Override
-            public Function<Collection<Statistics>, Set<Path>>
-            getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> Set.of() );
             }
 
             @Override
@@ -248,11 +240,6 @@ class EvaluationMessagerTest
                                .setConsumerId( "anotherConsumer" )
                                .addFormats( Format.PNG )
                                .build();
-            }
-
-            @Override
-            public void close()
-            {
             }
         };
 
@@ -312,24 +299,21 @@ class EvaluationMessagerTest
         assertEquals( this.anotherStatistics, otherActualStatistics );
     }
 
-
     @Test
     void testPublishThrowsExceptionAfterStop() throws IOException
     {
         ConsumerFactory consumer = new ConsumerFactory()
         {
             @Override
-            public Function<Statistics, Set<Path>>
-            getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> Set.of() );
             }
 
             @Override
-            public Function<Collection<Statistics>, Set<Path>>
-            getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> Set.of() );
             }
 
             @Override
@@ -340,11 +324,6 @@ class EvaluationMessagerTest
                                .addFormats( Format.NETCDF )
                                .build();
             }
-
-            @Override
-            public void close()
-            {
-            }
         };
 
         // Subscriber is pub-sub, so technically not referenced inband, aka "ignored", but used out-of-band
@@ -354,7 +333,8 @@ class EvaluationMessagerTest
               EvaluationMessager evaluation =
                       EvaluationMessager.of( wres.statistics.generated.Evaluation.newBuilder()
                                                                                  .setOutputs( Outputs.newBuilder()
-                                                                                             .setNetcdf( NetcdfFormat.getDefaultInstance() ) )
+                                                                                                     .setNetcdf(
+                                                                                                             NetcdfFormat.getDefaultInstance() ) )
                                                                                  .build(),
                                              EvaluationMessagerTest.connections,
                                              A_CLIENT ) )
@@ -387,24 +367,22 @@ class EvaluationMessagerTest
         ConsumerFactory consumer = new ConsumerFactory()
         {
             @Override
-            public Function<Statistics, Set<Path>>
-            getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> {
-                    actualStatistics.add( statistics );
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> {
+                    actualStatistics.addAll( statistics );
                     return Set.of();
-                };
+                } );
             }
 
             @Override
-            public Function<Collection<Statistics>, Set<Path>>
-            getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statisticsMessages -> {
+                return StatisticsConsumer.getResourceFreeConsumer( statisticsMessages -> {
                     actualAggregatedStatistics.add( EvaluationMessagerTest.getStatisticsAggregator()
                                                                           .apply( statisticsMessages ) );
                     return Collections.emptySet();
-                };
+                } );
             }
 
             @Override
@@ -414,11 +392,6 @@ class EvaluationMessagerTest
                                .setConsumerId( "aConsumer" )
                                .addFormats( Format.PNG )
                                .build();
-            }
-
-            @Override
-            public void close()
-            {
             }
         };
 
@@ -502,17 +475,15 @@ class EvaluationMessagerTest
         ConsumerFactory consumer = new ConsumerFactory()
         {
             @Override
-            public Function<Statistics, Set<Path>>
-            getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> Set.of() );
             }
 
             @Override
-            public Function<Collection<Statistics>, Set<Path>>
-            getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> Set.of() );
             }
 
             @Override
@@ -522,11 +493,6 @@ class EvaluationMessagerTest
                                .setConsumerId( "aConsumer" )
                                .addFormats( Format.NETCDF )
                                .build();
-            }
-
-            @Override
-            public void close()
-            {
             }
         };
 
@@ -538,7 +504,8 @@ class EvaluationMessagerTest
             evaluation =
                     EvaluationMessager.of( wres.statistics.generated.Evaluation.newBuilder()
                                                                                .setOutputs( Outputs.newBuilder()
-                                                                                           .setNetcdf( NetcdfFormat.getDefaultInstance() ) )
+                                                                                                   .setNetcdf(
+                                                                                                           NetcdfFormat.getDefaultInstance() ) )
                                                                                .build(),
                                            EvaluationMessagerTest.connections,
                                            A_CLIENT );
@@ -577,19 +544,17 @@ class EvaluationMessagerTest
         ConsumerFactory consumer = new ConsumerFactory()
         {
             @Override
-            public Function<Statistics, Set<Path>>
-            getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> {
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> {
                     throw new ConsumerException( "This is an expected consumption failure that tests error recovery!" );
-                };
+                } );
             }
 
             @Override
-            public Function<Collection<Statistics>, Set<Path>>
-            getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> Set.of() );
             }
 
             @Override
@@ -599,11 +564,6 @@ class EvaluationMessagerTest
                                .setConsumerId( "aConsumer" )
                                .addFormats( Format.PNG )
                                .build();
-            }
-
-            @Override
-            public void close()
-            {
             }
         };
 
@@ -654,10 +614,9 @@ class EvaluationMessagerTest
         ConsumerFactory consumer = new ConsumerFactory()
         {
             @Override
-            public Function<Statistics, Set<Path>>
-            getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> {
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> {
                     if ( failureCount.getAndIncrement() < 1 )
                     {
                         throw new ConsumerException( "This is an expected consumption failure that tests error "
@@ -665,14 +624,13 @@ class EvaluationMessagerTest
                     }
 
                     return Collections.emptySet();
-                };
+                } );
             }
 
             @Override
-            public Function<Collection<Statistics>, Set<Path>>
-            getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> Set.of() );
             }
 
             @Override
@@ -682,11 +640,6 @@ class EvaluationMessagerTest
                                .setConsumerId( "aConsumer" )
                                .addFormats( Format.PNG )
                                .build();
-            }
-
-            @Override
-            public void close()
-            {
             }
         };
 
@@ -729,17 +682,15 @@ class EvaluationMessagerTest
         ConsumerFactory consumer = new ConsumerFactory()
         {
             @Override
-            public Function<Statistics, Set<Path>>
-            getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> Set.of() );
             }
 
             @Override
-            public Function<Collection<Statistics>, Set<Path>>
-            getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> Set.of() );
             }
 
             @Override
@@ -749,11 +700,6 @@ class EvaluationMessagerTest
                                .setConsumerId( "aConsumer" )
                                .addFormats( Format.PNG )
                                .build();
-            }
-
-            @Override
-            public void close()
-            {
             }
         };
 
