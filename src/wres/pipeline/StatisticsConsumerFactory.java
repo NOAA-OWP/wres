@@ -24,6 +24,7 @@ import wres.datamodel.statistics.StatisticsToFormatsRouter;
 import wres.datamodel.statistics.DoubleScoreStatisticOuter.DoubleScoreComponentOuter;
 import wres.datamodel.time.TimeSeriesSlicer;
 import wres.events.subscribe.ConsumerFactory;
+import wres.events.subscribe.StatisticsConsumer;
 import wres.io.writing.csv.statistics.CommaSeparatedBoxPlotWriter;
 import wres.io.writing.csv.statistics.CommaSeparatedDiagramWriter;
 import wres.io.writing.csv.statistics.CommaSeparatedDurationDiagramWriter;
@@ -67,16 +68,16 @@ class StatisticsConsumerFactory implements ConsumerFactory
     /** The netcdf writer. */
     private final List<NetcdfOutputWriter> netcdfWriters;
 
-    /** Resources to close on completion. */
-    private final List<Closeable> resources;
-
     @Override
-    public Function<Statistics, Set<Path>> getConsumer( Evaluation evaluation, Path path )
+    public StatisticsConsumer getConsumer( Evaluation evaluation, Path path )
     {
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( path );
 
         Outputs outputs = evaluation.getOutputs();
+
+        // Resources to close on completion.
+        List<Closeable> resources = new ArrayList<>();
 
         Collection<Format> formats = this.getConsumerDescription()
                                          .getFormatsList();
@@ -119,7 +120,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
             builder.addStatisticsConsumer( wres.config.yaml.components.Format.CSV2,
                                            writer );
 
-            this.resources.add( writer );
+            resources.add( writer );
         }
 
         // Protobuf
@@ -150,11 +151,24 @@ class StatisticsConsumerFactory implements ConsumerFactory
         Function<Collection<Statistics>, Set<Path>> router = builder.setEvaluationDescription( evaluation )
                                                                     .build();
 
-        return statistics -> router.apply( List.of( statistics ) );
+        return new StatisticsConsumer()
+        {
+            @Override
+            public void close()
+            {
+                StatisticsConsumerFactory.closeResources( resources );
+            }
+
+            @Override
+            public Set<Path> apply( Collection<Statistics> statistics )
+            {
+                return router.apply( statistics );
+            }
+        };
     }
 
     @Override
-    public Function<Collection<Statistics>, Set<Path>> getGroupedConsumer( Evaluation evaluation, Path path )
+    public StatisticsConsumer getGroupedConsumer( Evaluation evaluation, Path path )
     {
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( path );
@@ -174,7 +188,8 @@ class StatisticsConsumerFactory implements ConsumerFactory
             // Formatted doubles to write
             DoubleFunction<String> formatter = this.getDecimalFormatter( this.declaration );
             Function<DoubleScoreComponentOuter, String> doubleMapper =
-                    format -> formatter.apply( format.getStatistic().getValue() );
+                    format -> formatter.apply( format.getStatistic()
+                                                     .getValue() );
 
             builder.addDiagramConsumer( wres.config.yaml.components.Format.CSV,
                                         CommaSeparatedDiagramWriter.of( this.declaration,
@@ -218,8 +233,9 @@ class StatisticsConsumerFactory implements ConsumerFactory
         // grouping is currently done per feature and not, for example, per pool within a feature (grouping over the 
         // various thresholds that are messaged separately). To allow for writing per pool, an additional layer of 
         // message grouping would be needed.
-        return builder.setEvaluationDescription( evaluation )
-                      .build();
+        StatisticsToFormatsRouter router = builder.setEvaluationDescription( evaluation )
+                                                  .build();
+        return StatisticsConsumer.getResourceFreeConsumer( router );
     }
 
     @Override
@@ -228,13 +244,17 @@ class StatisticsConsumerFactory implements ConsumerFactory
         return this.consumerDescription;
     }
 
-    @Override
-    public void close()
+    /**
+     * Close resources on completion.
+     * @param resources the resources to close
+     */
+
+    private static void closeResources( List<Closeable> resources )
     {
-        LOGGER.debug( "Closing the consumer factory." );
+        LOGGER.debug( "Closing consumers." );
 
         // Best faith effort to close each one, logging errors
-        for ( Closeable closeMe : this.resources )
+        for ( Closeable closeMe : resources )
         {
             try
             {
@@ -295,7 +315,6 @@ class StatisticsConsumerFactory implements ConsumerFactory
                                            .build();
 
         this.declaration = declaration;
-        this.resources = new ArrayList<>();
         // Do not add the netcdf writers to the list of resources, only the resources created here. Better to destroy
         // resources where they are created.
         this.netcdfWriters = netcdfWriters;

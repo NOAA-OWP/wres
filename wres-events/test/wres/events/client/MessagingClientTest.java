@@ -2,12 +2,10 @@ package wres.events.client;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -19,6 +17,7 @@ import wres.events.EvaluationMessager;
 import wres.events.broker.BrokerConnectionFactory;
 import wres.events.broker.BrokerUtilities;
 import wres.events.subscribe.ConsumerFactory;
+import wres.events.subscribe.StatisticsConsumer;
 import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.statistics.generated.Consumer;
 import wres.statistics.generated.Evaluation;
@@ -61,17 +60,17 @@ class MessagingClientTest
         ConsumerFactory consumerFactory = new ConsumerFactory()
         {
             @Override
-            public Function<Statistics, Set<Path>> getConsumer( Evaluation evaluation, Path path )
+            public StatisticsConsumer getConsumer( Evaluation evaluation, Path path )
             {
                 actualIntegersWritten.add( 1 );
-                return a -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( a -> Set.of() );
             }
 
             @Override
-            public Function<Collection<Statistics>, Set<Path>> getGroupedConsumer( Evaluation evaluation, Path path )
+            public StatisticsConsumer getGroupedConsumer( Evaluation evaluation, Path path )
             {
                 actualIntegersWritten.add( 2 );
-                return a -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( a -> Set.of() );
             }
 
             @Override
@@ -81,12 +80,6 @@ class MessagingClientTest
                                .addFormats( Consumer.Format.PNG )
                                .setConsumerId( "bar" )
                                .build();
-            }
-
-            @Override
-            public void close()
-            {
-                // Do nothing
             }
         };
 

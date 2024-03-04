@@ -926,7 +926,7 @@ definitions:
 
   ValueFilter:
     title: A value filter.
-    description: "A filter to include only those paired values that fall 
+    description: "A filter to include only those pairs where both values fall
     between a minimum and a maximum."
     type: object
     additionalProperties: false

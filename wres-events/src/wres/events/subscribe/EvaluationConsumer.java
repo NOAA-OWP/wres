@@ -75,166 +75,92 @@ import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 @ThreadSafe
 class EvaluationConsumer
 {
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationConsumer.class );
+
+    /** Timeout period after an evaluation has started before the evaluation description message can be received. */
+    private static final long CONSUMER_TIMEOUT = 600_000;
+
+    /** Re-used string. */
     private static final String FAILED_TO_COMPLETE_A_CONSUMPTION_TASK_FOR_EVALUATION =
             " failed to complete a consumption task for evaluation ";
 
+    /** Re-used string. */
     private static final String CONSUMER_STRING = "Consumer ";
 
-    /**
-     * Logger. 
-     */
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( EvaluationConsumer.class );
-
-    /**
-     * Timeout period after an evaluation has started before the evaluation description message can be received. 
-     *
-     */
-
-    private static final long CONSUMER_TIMEOUT = 600_000;
-
-    /**
-     * EvaluationMessager identifier.
-     */
-
+    /** Evaluation identifier. */
     private final String evaluationId;
 
-    /**
-     * Description of this consumer.
-     */
-
+    /** Description of this consumer. */
     private final Consumer consumerDescription;
 
-    /**
-     * Actual number of messages consumed.
-     */
-
+    /** Actual number of messages consumed. */
     private final AtomicInteger consumed;
 
-    /**
-     * Expected number of messages.
-     */
-
+    /** Expected number of messages. */
     private final AtomicInteger expected;
 
-    /**
-     * Registered complete.
-     */
-
+    /** Registered complete. */
     private final AtomicBoolean isComplete;
 
-    /**
-     * To notify when consumption complete.
-     */
-
+    /** To notify when consumption complete. */
     private final MessagePublisher evaluationStatusPublisher;
 
-    /**
-     * Consumer creation lock.
-     */
-
+    /** Consumer creation lock. */
     private final Object consumerCreationLock = new Object();
 
-    /**
-     * Consumer of individual messages.
-     */
+    /** Consumer of individual messages. */
+    private StatisticsConsumer consumer;
 
-    private Function<Statistics, Set<Path>> consumer;
-
-    /**
-     * An elementary group consumer for message groups that provides the template for the {@link #groupConsumers}. 
-     */
-
+    /** An elementary group consumer for message groups that provides the template for the {@link #groupConsumers}. */
     private Function<Collection<Statistics>, Set<Path>> consumerForGroupedMessages;
 
-    /**
-     * The time at which progress was last recorded. Used to timeout an evaluation on lack of progress (a well-behaving
-     * publisher regularly publishes an {@link CompletionStatus#EVALUATION_ONGOING}).
-     */
-
+    /** The time at which progress was last recorded. Used to timeout an evaluation on lack of progress (a well-behaving
+     * publisher regularly publishes an {@link CompletionStatus#EVALUATION_ONGOING}). */
     private Instant timeSinceLastProgress;
 
-    /**
-     * A map of group consumers by group identifier.
-     */
-
+    /** A map of group consumers by group identifier. */
     @GuardedBy( "groupConsumersLock" )
     private final Map<String, OneGroupConsumer<Statistics>> groupConsumers;
 
-    /**
-     * A mutex lock for removing spent group consumers from the {@link #groupConsumers}.
-     */
-
+    /** A mutex lock for removing spent group consumers from the {@link #groupConsumers}. */
     private final ReentrantLock groupConsumersLock;
 
-    /**
-     * Is <code>true</code> when the consumers are ready to consume. Until then, cache the statistics.
-     */
-
+    /** Is <code>true</code> when the consumers are ready to consume. Until then, cache the statistics. */
     private final AtomicBoolean areConsumersReady;
 
-    /**
-     * Is <code>true</code> if the evaluation has been closed, otherwise <code>false</code>.
-     */
-
+    /** Is <code>true</code> if the evaluation has been closed, otherwise <code>false</code>. */
     private final AtomicBoolean isClosed;
 
-    /**
-     * Is <code>true</code> if the evaluation description has arrived, otherwise <code>false</code>.
-     */
-
+    /** Is <code>true</code> if the evaluation description has arrived, otherwise <code>false</code>. */
     private final AtomicBoolean hasEvaluationDescriptionArrived;
 
-    /**
-     * Thread pool to do writing work.
-     */
-
+    /** Thread pool to do writing work. */
     private final ExecutorService executorService;
 
-    /**
-     * The state of the consumer, which is one of {@link CompletionStatus#READY_TO_CONSUME}, 
+    /** The state of the consumer, which is one of {@link CompletionStatus#READY_TO_CONSUME},
      * {@link CompletionStatus#CONSUMPTION_ONGOING}, 
      * {@link CompletionStatus#CONSUMPTION_COMPLETE_REPORTED_SUCCESS} or 
      * {@link CompletionStatus#CONSUMPTION_COMPLETE_REPORTED_FAILURE}. It is wrapped in an {@link AtomicReference} for
-     * thread-safe mutation.
-     */
-
+     * thread-safe mutation. */
     private final AtomicReference<CompletionStatus> completionStatus;
 
-    /**
-     * Is <code>true</code> if the evaluation failure has been notified, otherwise <code>false</code>.
-     */
-
+    /** Is <code>true</code> if the evaluation failure has been notified, otherwise <code>false</code>. */
     private final AtomicBoolean isNotified;
 
-    /**
-     * A set of paths written.
-     */
-
+    /** A set of paths written. */
     private final Set<Path> pathsWritten;
 
-    /**
-     * The factory that supplies consumers for evaluations.
-     */
-
+    /** The factory that supplies consumers for evaluations. */
     private final ConsumerFactory consumerFactory;
 
-    /**
-     * To await the arrival of an evaluation description in order to create consumers and then consume statistics.
-     */
-
+    /** To await the arrival of an evaluation description in order to create consumers and then consume statistics. */
     private final TimedCountDownLatch consumersReady;
 
-    /**
-     * Subscriber status.
-     */
-
+    /** Subscriber status. */
     private final SubscriberStatus subscriberStatus;
 
-    /**
-     * Monitors the evaluation.
-     */
-
+    /** Monitors the evaluation. */
     private final EvaluationConsumptionEvent monitor;
 
     /**
@@ -676,7 +602,7 @@ class EvaluationConsumer
                                                  + " milliseconds." );
 
         // Add no-op consumers
-        this.consumer = statistics -> Set.of();
+        this.consumer = StatisticsConsumer.getResourceFreeConsumer( statistics -> Set.of() );
         this.consumerForGroupedMessages = statistics -> Set.of();
 
         this.markEvaluationFailedOnConsumption( timeOut );
@@ -802,10 +728,24 @@ class EvaluationConsumer
             }
             finally
             {
+                try
+                {
+                    this.consumer.close();
+                }
+                catch( IOException e )
+                {
+                    LOGGER.warn( "Unable to close consumer {} for evaluation {}.",
+                                 this.consumerDescription.getConsumerId(),
+                                 this.getEvaluationId() );
+                }
+
                 // Add monitoring attributes
-                this.getMonitor().setResources( this.getPathsWritten() );
-                this.getMonitor().complete(); // Copies incremented state to final state
-                this.getMonitor().commit();
+                this.getMonitor()
+                    .setResources( this.getPathsWritten() );
+                this.getMonitor()
+                    .complete(); // Copies incremented state to final state
+                this.getMonitor()
+                    .commit();
 
                 // Log the paths in debug mode before they are squashed
                 if ( LOGGER.isDebugEnabled() )
@@ -1033,7 +973,7 @@ class EvaluationConsumer
     /**
      * @return the incremental consumer.
      */
-    private Function<Statistics, Set<Path>> getConsumer()
+    private StatisticsConsumer getConsumer()
     {
         return this.consumer;
     }
@@ -1227,7 +1167,7 @@ class EvaluationConsumer
     {
         // Accept the incremental types
         this.execute( () -> this.addPathsWritten( this.getConsumer()
-                                                      .apply( statistics ) ) );
+                                                      .apply( List.of( statistics ) ) ) );
 
         // Accept the grouped types
         if ( Objects.nonNull( groupId ) )

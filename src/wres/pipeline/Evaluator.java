@@ -512,16 +512,17 @@ public class Evaluator
         // stop( Exception e ) on encountering an error that is not visible to it. See discussion in #90292.
         EvaluationMessager evaluationMessager = null;
 
+        ConsumerFactory consumerFactory = new StatisticsConsumerFactory( consumerId,
+                                                                         new HashSet<>( internalFormats ),
+                                                                         netcdfWriters,
+                                                                         declaration );
+
         try ( SharedWriters sharedWriters = EvaluationUtilities.getSharedWriters( declaration,
                                                                                   outputDirectory );
               // Create a subscriber for the format writers that are within-process. The subscriber is built for this
               // evaluation only, and should not serve other evaluations, else there is a risk that short-running
               // subscribers die without managing to serve the evaluations they promised to serve. This complexity
               // disappears when all subscribers are moved to separate, long-running, processes: #89868
-              ConsumerFactory consumerFactory = new StatisticsConsumerFactory( consumerId,
-                                                                               new HashSet<>( internalFormats ),
-                                                                               netcdfWriters,
-                                                                               declaration );
               EvaluationSubscriber formatsSubscriber = EvaluationSubscriber.of( consumerFactory,
                                                                                 executors.productExecutor(),
                                                                                 connections,
