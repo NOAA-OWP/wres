@@ -53,15 +53,14 @@ import wres.io.database.details.SourceDetails;
 import wres.io.database.Database;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
-import wres.io.ingesting.PreIngestException;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.database.caching.TimeScales;
 import wres.io.ingesting.TimeSeriesTracker;
-import wres.io.reading.DataSource;
-import wres.io.reading.TimeSeriesTuple;
+import wres.reading.DataSource;
+import wres.reading.TimeSeriesTuple;
 import wres.io.database.locking.DatabaseLockManager;
 import wres.system.SystemSettings;
-import wres.io.reading.netcdf.Netcdf;
+import wres.reading.netcdf.Netcdf;
 
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
@@ -315,7 +314,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
      * @param timeSeries the time-series to check
      * @param uri the source URI to help with error messaging
      * @return a time-series with at least one reference time
-     * @throws PreIngestException if the time-series is empty
+     * @throws IngestException if the time-series is empty
      */
 
     private <T> TimeSeries<T> checkForEmptySeriesAndAddReferenceTimeIfRequired( TimeSeries<T> timeSeries, URI uri )
@@ -329,7 +328,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         if ( timeSeries.getEvents()
                        .isEmpty() )
         {
-            throw new PreIngestException( "While ingesting source " + uri
+            throw new IngestException( "While ingesting source " + uri
                                           + ", discovered an empty time-series, which cannot be ingested. The empty "
                                           + "time-series is: "
                                           + timeSeries
@@ -776,7 +775,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         }
         catch ( IOException | SQLException e )
         {
-            throw new PreIngestException( "Could not check to see if gridded data is already present in the database.",
+            throw new IngestException( "Could not check to see if gridded data is already present in the database.",
                                           e );
         }
     }
@@ -1100,7 +1099,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         }
         catch ( SQLException se )
         {
-            throw new PreIngestException( "Failed to determine if source "
+            throw new IngestException( "Failed to determine if source "
                                           + source
                                           + " was already ingested.",
                                           se );
@@ -1194,7 +1193,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
             }
             catch ( SQLException se )
             {
-                throw new PreIngestException( "While determining if source '"
+                throw new IngestException( "While determining if source '"
                                               + uri
                                               + "' should be ingested, "
                                               + "failed to translate natural key '"
@@ -1315,13 +1314,13 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
 
         if ( rowCount == 0 )
         {
-            throw new PreIngestException( "At least one reference datetime is required until we refactor TSV to "
+            throw new IngestException( "At least one reference datetime is required until we refactor TSV to "
                                           + "permit zero." );
         }
 
         if ( rowCount != 1 )
         {
-            throw new PreIngestException( "Exactly one reference datetime is required until we allow callers to "
+            throw new IngestException( "Exactly one reference datetime is required until we allow callers to "
                                           + "declare which one to use at evaluation time." );
         }
 
@@ -1659,7 +1658,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         }
         catch ( NoSuchAlgorithmException nsae )
         {
-            throw new PreIngestException( "Couldn't use MD5 algorithm.",
+            throw new IngestException( "Couldn't use MD5 algorithm.",
                                           nsae );
         }
 
@@ -1670,7 +1669,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
 
         if ( hash.length < 16 )
         {
-            throw new PreIngestException( "The MD5 sum of " + timeSeries
+            throw new IngestException( "The MD5 sum of " + timeSeries
                                           + " was shorter than expected." );
         }
 

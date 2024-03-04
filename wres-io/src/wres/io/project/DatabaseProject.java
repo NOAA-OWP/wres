@@ -31,11 +31,11 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.Feature;
-import wres.io.NoDataException;
+import wres.io.BadProjectException;
 import wres.io.data.DataProvider;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.Features;
-import wres.io.reading.netcdf.grid.GriddedFeatures;
+import wres.reading.netcdf.grid.GriddedFeatures;
 import wres.io.database.caching.Variables;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
@@ -597,7 +597,7 @@ public class DatabaseProject implements Project
      * Performs operations that are needed for the project to run between ingest and evaluation.
      *
      * @throws DataAccessException if retrieval of data fails
-     * @throws NoDataException if zero features have intersecting data
+     * @throws BadProjectException if zero features have intersecting data
      */
 
     void prepareAndValidate()
@@ -620,10 +620,10 @@ public class DatabaseProject implements Project
         if ( this.features.isEmpty()
              && this.featureGroups.isEmpty() )
         {
-            throw new NoDataException( "Failed to identify any features with data on all required sides (left, right "
-                                       + "and, when declared, baseline) for the variables and other declaration "
-                                       + "supplied. Please check that the declaration is expected to produce some "
-                                       + "features with time-series data on both sides of the pairing." );
+            throw new BadProjectException( "Failed to identify any features with data on all required sides (left, right "
+                                           + "and, when declared, baseline) for the variables and other declaration "
+                                           + "supplied. Please check that the declaration is expected to produce some "
+                                           + "features with time-series data on both sides of the pairing." );
         }
 
         // Validate any ensemble conditions
@@ -763,7 +763,7 @@ public class DatabaseProject implements Project
     /**
      * Checks that the union of ensemble conditions will select some data, otherwise throws an exception.
      *
-     * @throws NoDataException if the conditions select no data
+     * @throws BadProjectException if the conditions select no data
      * @throws DataAccessException if one or more ensemble conditions could not be evaluated
      */
 
@@ -787,12 +787,12 @@ public class DatabaseProject implements Project
 
         if ( !failed.isEmpty() )
         {
-            throw new NoDataException( "Of the filters that were defined for ensemble names, "
-                                       + failed.size()
-                                       + " of those filters did not select any data. Fix the declared filters to "
-                                       + "ensure that each filter selects some data. The invalid filters are: "
-                                       + failed
-                                       + "." );
+            throw new BadProjectException( "Of the filters that were defined for ensemble names, "
+                                           + failed.size()
+                                           + " of those filters did not select any data. Fix the declared filters to "
+                                           + "ensure that each filter selects some data. The invalid filters are: "
+                                           + failed
+                                           + "." );
         }
     }
 
@@ -884,7 +884,7 @@ public class DatabaseProject implements Project
 
         if ( !valid )
         {
-            throw new NoDataException( message );
+            throw new BadProjectException( message );
         }
     }
 

@@ -3,7 +3,7 @@ package wres.io.ingesting;
 import java.util.List;
 
 import wres.config.yaml.components.DatasetOrientation;
-import wres.io.reading.DataSource;
+import wres.reading.DataSource;
 
 /**
  * High-level result for a single fragment of ingest, namely a time-series.

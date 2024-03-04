@@ -23,16 +23,15 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.time.TimeSeriesStore;
-import wres.io.NoDataException;
+import wres.io.BadProjectException;
 import wres.io.data.DataProvider;
 import wres.io.database.DatabaseOperations;
 import wres.io.database.caching.DatabaseCaches;
-import wres.io.reading.netcdf.grid.GriddedFeatures;
+import wres.reading.netcdf.grid.GriddedFeatures;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
-import wres.io.ingesting.PreIngestException;
 
 /**
  * Factory class for creating various implementations of a {@link Project}, such as an in-memory project and a project
@@ -74,7 +73,7 @@ public class Projects
                                                 declaration,
                                                 ingestResults );
         }
-        catch ( SQLException | IngestException | PreIngestException e )
+        catch ( SQLException | IngestException e )
         {
             throw new IngestException( "Failed to finalize ingest.", e );
         }
@@ -108,7 +107,6 @@ public class Projects
      * @return the ProjectDetails to use
      * @throws SQLException when ProjectDetails construction goes wrong
      * @throws IllegalArgumentException when an IngestResult does not have left/right/baseline information
-     * @throws PreIngestException if the hashes of the ingested sources cannot be determined
      * @throws IngestException if another wres instance failed to complete ingest on which this evaluation depends
      */
     private static Project getDatabaseProject( Database database,
@@ -129,17 +127,17 @@ public class Projects
 
         if ( leftCount < 1 || rightCount < 1 )
         {
-            throw new NoDataException( "When examining the ingested data, discovered insufficient data sources to "
-                                       + "proceed. At least one data source is required for the left side of the "
-                                       + "evaluation and one data source for the right side, but the left side had "
-                                       + leftCount
-                                       + " sources and the right side had "
-                                       + rightCount
-                                       + " sources. There were "
-                                       + baselineIds.length
-                                       + " baseline sources. Please check that all intended data sources were declared "
-                                       + "and that all declared data sources were ingested correctly. For example, "
-                                       + "were some data sources skipped because the format was unrecognized?" );
+            throw new BadProjectException( "When examining the ingested data, discovered insufficient data sources to "
+                                           + "proceed. At least one data source is required for the left side of the "
+                                           + "evaluation and one data source for the right side, but the left side had "
+                                           + leftCount
+                                           + " sources and the right side had "
+                                           + rightCount
+                                           + " sources. There were "
+                                           + baselineIds.length
+                                           + " baseline sources. Please check that all intended data sources were declared "
+                                           + "and that all declared data sources were ingested correctly. For example, "
+                                           + "were some data sources skipped because the format was unrecognized?" );
         }
 
         // Permit the List<IngestResult> to be garbage collected here, which
@@ -422,7 +420,7 @@ public class Projects
             }
             else
             {
-                throw new PreIngestException( "Unexpected null left hash value for id="
+                throw new IngestException( "Unexpected null left hash value for id="
                                               + id );
             }
         }
@@ -477,7 +475,7 @@ public class Projects
      * @param ids The ids to use for selection of hashes.
      * @param idsToHashes MUTATED by this method, results go into this Map.
      * @throws SQLException When something goes wrong related to database.
-     * @throws PreIngestException When a null value is found in result set.
+     * @throws IngestException When a null value is found in result set.
      */
 
     private static void selectIdsAndHashes( Database database,
@@ -521,7 +519,7 @@ public class Projects
                 {
                     boolean idNull = Objects.isNull( id );
                     boolean hashNull = Objects.isNull( hash );
-                    throw new PreIngestException( "Found a null value in db when expecting a value. idNull="
+                    throw new IngestException( "Found a null value in db when expecting a value. idNull="
                                                   + idNull
                                                   + " hashNull="
                                                   + hashNull );
@@ -662,7 +660,7 @@ public class Projects
         }
         catch ( NoSuchAlgorithmException nsae )
         {
-            throw new PreIngestException( "Couldn't use MD5 algorithm.",
+            throw new IngestException( "Couldn't use MD5 algorithm.",
                                           nsae );
         }
 

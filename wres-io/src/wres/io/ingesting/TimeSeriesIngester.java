@@ -3,8 +3,8 @@ package wres.io.ingesting;
 import java.util.List;
 import java.util.stream.Stream;
 
-import wres.io.reading.DataSource;
-import wres.io.reading.TimeSeriesTuple;
+import wres.reading.DataSource;
+import wres.reading.TimeSeriesTuple;
 
 /**
  * Ingests time-series data into a store, such as a database.

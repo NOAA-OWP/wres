@@ -11,7 +11,7 @@ import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Outputs.GraphicFormat;
 import wres.statistics.generated.Outputs.PngFormat;
 import wres.statistics.generated.Outputs.SvgFormat;
-import wres.statistics.generated.Outputs.GraphicFormat.DurationUnit;
+import wres.statistics.generated.Outputs.DurationUnit;
 import wres.vis.writing.GraphicsWriter.GraphicsHelper;
 
 /**
