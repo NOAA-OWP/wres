@@ -5,7 +5,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Objects;
 
-import wres.io.writing.SharedSampleDataWriters;
+import wres.writing.SharedSampleDataWriters;
 
 /**
  * A value object for shared writers.

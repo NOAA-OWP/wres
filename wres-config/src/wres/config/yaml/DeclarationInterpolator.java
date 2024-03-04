@@ -598,6 +598,7 @@ public class DeclarationInterpolator
             {
                 numericBuilder.setDecimalFormat( builder.decimalFormat()
                                                         .toPattern() );
+                numericBuilder.setLeadUnit( Outputs.DurationUnit.valueOf( builder.durationFormat().name() ) );
             }
             csv2Builder.setOptions( numericBuilder );
             formatsBuilder.setCsv2( csv2Builder );
@@ -826,7 +827,7 @@ public class DeclarationInterpolator
         // Duration format?
         if ( Objects.nonNull( builder.durationFormat() ) )
         {
-            newOptions.setLeadUnit( Outputs.GraphicFormat.DurationUnit.valueOf( builder.durationFormat().name() ) );
+            newOptions.setLeadUnit( Outputs.DurationUnit.valueOf( builder.durationFormat().name() ) );
         }
 
         return newOptions.build();

@@ -58,10 +58,10 @@ fi
 
 echo "Bringing up the service using images that have been pulled to this machine."
 echo "If any images cannot be found locally, this command will fail."
-echo Running ... docker run -e HOST_NAME=$(hostname) -d -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:$PWD" -v "$HOME/.docker/config.json:/root/.docker/config.json" -w "$PWD" --cap-drop ALL --cpus 2 --memory 512M docker/compose:1.29.2 --file $1 up --scale worker=2 --scale eventsbroker=1 --scale graphics=2
+echo Running ... docker run -e HOST_NAME=$(hostname) -d -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:$PWD" -v "$HOME/.docker/config.json:/root/.docker/config.json" -w "$PWD" --cap-drop ALL --cpus 2 --memory 512M docker/compose:1.29.2 --file $1 up --scale worker=2 --scale eventsbroker=1 --scale graphics=2 --scale writing=2
 echo ""
 echo "============== COMMAND RUNNING ========================"
-docker run -e HOST_NAME=$(hostname) -d -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:$PWD" -w "$PWD" --cap-drop ALL --cpus 2 --memory 512M docker/compose:1.29.2 --file $1 up --scale worker=3 --scale eventsbroker=1 --scale graphics=3
+docker run -e HOST_NAME=$(hostname) -d -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:$PWD" -w "$PWD" --cap-drop ALL --cpus 2 --memory 512M docker/compose:1.29.2 --file $1 up --scale worker=3 --scale eventsbroker=1 --scale graphics=3 --scale writing=3
 echo "======================================================="
 echo ""
 

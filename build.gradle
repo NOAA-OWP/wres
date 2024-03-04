@@ -371,19 +371,7 @@ project(':wres-io')
         implementation project(':wres-datamodel')
         implementation project(':wres-statistics')
         implementation project(':wres-config')
-        implementation project(':wres-http')
-
-        implementation 'org.slf4j:slf4j-api:2.0.12'
-        implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-
-        // JSON deserialization uses jackson directly. Specify recent version.
-        implementation 'com.fasterxml.jackson:jackson-bom:2.16.1'
-        implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
-        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.16.1'
-        implementation 'com.fasterxml.jackson.core:jackson-core:2.16.1'
-
-        // For Java 8 java.time support
-        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.1'
+        implementation project(':wres-reading')
 
         // Java Flight Recorder statistics for JDBC
         implementation 'com.github.marschall:jfr-jdbc:0.4.0'
@@ -402,8 +390,6 @@ project(':wres-io')
         // Include later dependency versions for the excluded dependencies above
         implementation 'com.google.guava:guava:32.1.3-jre'
 
-        implementation 'org.apache.commons:commons-compress:1.25.0'
-
         // to use native postgres copy, need this on compile, otherwise runtime
         implementation( 'org.postgresql:postgresql:42.7.1' )
         {
@@ -420,19 +406,8 @@ project(':wres-io')
         // wres.io.utilities uses javax.json.* imports
         implementation 'org.glassfish:javax.json:1.1.4'
 
-        // Easier MD5
-        implementation 'commons-codec:commons-codec:1.16.1'
-
         // Better-than-Java's HTTP client
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
-
-        // Update vulnerable kotlin-stdlib that okhttp/okio uses
-        implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.0'
-        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.0'
-        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0'
-
-        // To accurately detect mime types of files.
-        implementation 'org.apache.tika:tika-core:2.9.1'
 
         // To cache
         implementation( 'com.github.ben-manes.caffeine:caffeine:3.1.8' )
@@ -445,21 +420,12 @@ project(':wres-io')
         implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.19.0'
         implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.19.0', ext: 'pom'
 
-        // Fast-Infoset encoded XML
-        implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.1.1'
-
-        implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
-
         implementation 'org.liquibase:liquibase-core:4.24.0'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:5.0.0'
 
         compileOnly 'net.jcip:jcip-annotations:1.0'
-
-        // Builders
-        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.30'
-        annotationProcessor 'org.projectlombok:lombok:1.18.30'
 
         // Because org.postgresql:postgresql uses JUL logging, bridge at runtime
         runtimeOnly 'org.slf4j:jul-to-slf4j:2.1.0-alpha1'
@@ -472,9 +438,6 @@ project(':wres-io')
 
         // Mocking help
         testImplementation 'org.mockito:mockito-inline:5.2.0'
-
-        // Use mockserver as a mock server for mock API responses
-        testImplementation 'org.mock-server:mockserver-netty:5.15.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
@@ -509,11 +472,231 @@ project(':wres-io')
             resources
             {
                 // Flatten the contents of /dist/lib/conf so that the classpath
-                // path to the liquibase changesets is exactly 
+                // path to the liquibase changesets is exactly
                 // 'database/[changeset].xml'.
                 srcDirs += 'dist/lib/conf'
             }
         }
+    }
+}
+
+project(':wres-writing')
+{
+    // Check if the dependency modules version is later. If so, update this
+    // module to that later version.
+    // See #105526: there is an ordering issue whereby the correct
+    // project.version does not propagate to the application plugin tasks
+    // (distZip, distTar etc.) unless the project.version is determined and
+    // set before the application plugin is applied
+    def gitCommitOfDependencies = grgit.log(paths: ['wres-datamodel',
+                                                    'wres-eventsbroker',
+                                                    'wres-events'], maxCommits:1).find()
+
+    // Null check in case there is a new module with no history
+    if( gitCommitOfDependencies != null )
+    {
+        def gitCommitIdOfDependencies = gitCommitOfDependencies.id
+        def gitCommitDateOfDependencies = gitCommitOfDependencies.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+
+        def gitCommitOfThisModule = grgit.log( paths: [project.name, 'build.gradle', 'gradle'], maxCommits:1 ).find()
+        def gitCommitDateOfThisModule = gitCommitOfThisModule.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+
+        def versionOfDependencies = gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies[0..6]
+
+        if ( gitCommitDateOfDependencies.isAfter( gitCommitDateOfThisModule ) )
+        {
+            version = versionOfDependencies
+
+            println("Set wres-writing version: " + project.version )
+
+            if ( !grgit.status().isClean() )
+            {
+                version = version + '-dev'
+            }
+        }
+    }
+
+
+    apply plugin: 'application'
+
+    // Workaround windows paths that are too long by overriding the explicit setting of individual dependencies
+    startScripts {
+        classpath = files( '$APP_HOME/lib/*' )
+
+        // Note: see lengthy note in main application below
+        classpath += files( 'conf' )
+    }
+
+    mainClassName = 'wres.writing.client.WritingClient'
+    applicationDefaultJvmArgs = ['-Xms640m','-Xmx640m',
+                                 '-XX:+HeapDumpOnOutOfMemoryError',
+                                 '-XX:+CrashOnOutOfMemoryError',
+                                 '-Djava.util.logging.config.file=logging.properties',
+                                 '-Dorg.jboss.logging.provider=slf4j']
+
+    distributions
+            {
+                main
+                        {
+                            println( project.version )
+                            contents
+                                    {
+                                        from
+                                                {
+                                                    // Note: see lengthy note in main application below
+                                                    ['dist']
+                                                }
+                                    }
+                        }
+            }
+
+    dependencies
+    {
+        implementation project(':wres-reading')
+        implementation project(':wres-system')
+        implementation project(':wres-datamodel')
+        implementation project(':wres-statistics')
+        implementation project(':wres-config')
+        implementation project(':wres-events')
+        implementation project(':wres-eventsbroker')
+
+        implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
+
+        implementation( 'edu.ucar:cdm-core:5.4.2' )
+        {
+            // Because we use slf4j, not jcl:
+            exclude group: 'commons-logging', module: 'commons-logging'
+            // CVE-2021-33813
+            exclude group: 'org.jdom', module: 'jdom2'
+            // Not used at runtime, bloat
+            exclude group: 'org.checkerframework', module: 'checker-qual'
+            // Remove older guava version. TODO: remove when the CDM catches up
+            exclude group: 'com.google.guava', module: 'guava'
+        }
+        // Include later dependency versions for the excluded dependencies above
+        implementation 'com.google.guava:guava:32.1.3-jre'
+
+        // Better-than-Java's HTTP client
+        implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+
+        // Update vulnerable kotlin-stdlib that okhttp/okio uses
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.0'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.0'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0'
+
+        // To accurately detect mime types of files.
+        implementation 'org.apache.tika:tika-core:2.9.1'
+
+        // For geometries
+        implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.19.0'
+        implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.19.0', ext: 'pom'
+
+        compileOnly 'net.jcip:jcip-annotations:1.0'
+
+        // Mocking help
+        testImplementation 'org.mockito:mockito-inline:5.2.0'
+
+        // JUnit 5 API and runtime
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
+
+        // Backwards compatibility for JUnit 4 tests
+        testImplementation 'junit:junit:4.13.2'
+
+        // In-memory implementation of a java.nio.file abstract file system api
+        // to test writing of files without actually writing files on the host machine
+        testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.3.0'
+    }
+}
+
+project(':wres-reading')
+{
+    dependencies
+    {
+        implementation project(':wres-system')
+        implementation project(':wres-datamodel')
+        implementation project(':wres-statistics')
+        implementation project(':wres-config')
+        implementation project(':wres-http')
+
+        implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
+
+        // For Java 8 java.time support
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.1'
+
+        implementation( 'edu.ucar:cdm-core:5.4.2' )
+        {
+            // Because we use slf4j, not jcl:
+            exclude group: 'commons-logging', module: 'commons-logging'
+            // CVE-2021-33813
+            exclude group: 'org.jdom', module: 'jdom2'
+            // Not used at runtime, bloat
+            exclude group: 'org.checkerframework', module: 'checker-qual'
+            // Remove older guava version. TODO: remove when the CDM catches up
+            exclude group: 'com.google.guava', module: 'guava'
+        }
+        // Include later dependency versions for the excluded dependencies above
+        implementation 'com.google.guava:guava:32.1.3-jre'
+
+        implementation 'org.apache.commons:commons-compress:1.25.0'
+
+        // Better-than-Java's HTTP client
+        implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+
+        // To accurately detect mime types of files.
+        implementation 'org.apache.tika:tika-core:2.9.1'
+
+
+        // For geometries
+        implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.19.0'
+        implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.19.0', ext: 'pom'
+
+        // Fast-Infoset encoded XML
+        implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.1.1'
+
+        implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
+
+        implementation 'org.liquibase:liquibase-core:4.24.0'
+
+        // Use instead of the bridge between JUL and SLF4J. #60801-283
+        runtimeOnly 'com.mattbertolini:liquibase-slf4j:5.0.0'
+
+        compileOnly 'net.jcip:jcip-annotations:1.0'
+
+        // Builders
+        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.30'
+        annotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+        //JB @ 02/16/17
+        testImplementation 'com.google.guava:guava-testlib:32.1.3-jre'
+
+        // Mocking help
+        testImplementation 'org.mockito:mockito-inline:5.2.0'
+
+        // Use mockserver as a mock server for mock API responses
+        testImplementation 'org.mock-server:mockserver-netty:5.15.0'
+
+        // JUnit 5 API and runtime
+        testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
+        testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
+
+        // Backwards compatibility for JUnit 4 tests
+        testImplementation 'junit:junit:4.13.2'
+        testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.10.2'
+
+        // In-memory implementation of a java.nio.file abstract file system api
+        // to test writing of files without actually writing files on the host machine
+        testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.3.0'
+    }
+
+    test
+    {
+        useJUnitPlatform()
+
+        // Set the socket timeout for tests involving mockserver to 120s
+        systemProperties += [ "mockserver.maxSocketTimeout": 120000,
+                             "ucar.unidata.io.http.maxReadCacheSize": 200000,
+                             "ucar.unidata.io.http.httpBufferSize": 200000 ]
     }
 }
 
@@ -1603,7 +1786,7 @@ project( ':wres-external-services-tests' )
 
     dependencies
     {
-        runtimeOnly project( ':wres-io' )
+        runtimeOnly project( ':wres-reading' )
     }
 
     // Explicitly link the artifact creation for this project to the
@@ -1619,10 +1802,12 @@ project( ':wres-external-services-tests' )
     distZip.dependsOn project( ':wres-datamodel' ).tasks.jar
     distZip.dependsOn project( ':wres-statistics' ).tasks.jar
     distZip.dependsOn project( ':wres-system' ).tasks.jar
+    distTar.dependsOn project( ':wres-http' ).tasks.jar
     distTar.dependsOn project( ':wres-config' ).tasks.jar
     distTar.dependsOn project( ':wres-datamodel' ).tasks.jar
     distTar.dependsOn project( ':wres-statistics' ).tasks.jar
     distTar.dependsOn project( ':wres-system' ).tasks.jar
+    distTar.dependsOn project( ':wres-http' ).tasks.jar
 
     distributions
     {
@@ -1647,14 +1832,14 @@ project( ':wres-external-services-tests' )
                     include 'gradle/wrapper/*'
                 }
 
-                // Add the wres-io jar.
-                from( project( ':wres-io' ).jar )
+                // Add the wres-reading jar.
+                from( project( ':wres-reading' ).jar )
                 {
                     into( 'lib' )
                 }
 
-                // Add all the stuff on which wres-io jar depends.
-                from( project( ':wres-io').configurations.runtimeClasspath.files )
+                // Add all the stuff on which wres-reading jar depends.
+                from( project( ':wres-reading').configurations.runtimeClasspath.files )
                 {
                     into( 'lib' )
                 }
@@ -1805,6 +1990,8 @@ dependencies
     implementation project(':wres-system')
     implementation project(':wres-datamodel')
     implementation project(':wres-io')
+    implementation project(':wres-writing')
+    implementation project(':wres-reading')
     implementation project(':wres-http')
     implementation project(':wres-metrics')
     implementation project(':wres-config')
@@ -1994,6 +2181,16 @@ distributions
             }
 
             from( project(':wres-io').sourcesJar )
+            {
+                into 'src'
+            }
+
+            from( project(':wres-writing').sourcesJar )
+            {
+                into 'src'
+            }
+
+            from( project(':wres-reading').sourcesJar )
             {
                 into 'src'
             }

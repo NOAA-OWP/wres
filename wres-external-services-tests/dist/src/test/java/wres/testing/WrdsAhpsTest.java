@@ -19,9 +19,9 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import wres.io.ingesting.PreIngestException;
-import wres.io.reading.wrds.ahps.ForecastResponse;
-import wres.io.reading.ReaderUtilities;
+import wres.reading.PreReadException;
+import wres.reading.wrds.ahps.ForecastResponse;
+import wres.reading.ReaderUtilities;
 import wres.http.WebClient;
 import wres.http.WebClientUtils;
 
@@ -58,7 +58,7 @@ public class WrdsAhpsTest
                                                               sslContext.getRight() )
                                            .build();
         }
-        catch ( PreIngestException e )
+        catch ( PreReadException e )
         {
             throw new ExceptionInInitializerError( "Failed to acquire the TLS context for connecting to WRDS: "
                                                    + e.getMessage() );

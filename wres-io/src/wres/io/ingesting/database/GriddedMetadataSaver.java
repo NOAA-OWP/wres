@@ -30,14 +30,14 @@ import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.details.SourceCompletedDetails;
 import wres.io.database.details.SourceDetails;
 import wres.io.database.Database;
+import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
-import wres.io.ingesting.PreIngestException;
-import wres.io.reading.DataSource;
-import wres.io.reading.ReaderUtilities;
+import wres.reading.DataSource;
+import wres.reading.ReaderUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 import wres.system.SystemSettings;
-import wres.io.reading.netcdf.Netcdf;
+import wres.reading.netcdf.Netcdf;
 
 /**
  * Ingests times-series metadata for gridded sources to a database. Does not copy any time-series values. TODO: remove 
@@ -119,12 +119,12 @@ class GriddedMetadataSaver implements Callable<List<IngestResult>>
                                                  .stream()
                                                  .map( Variable::getFullName )
                                                  .toList();
-                throw new PreIngestException( "Could not find variable '"
-                                              + variable
-                                              + "' in gridded netCDF resource '"
-                                              + this.fileName
-                                              + "'. Available variables: "
-                                              + variableNames );
+                throw new IngestException( "Could not find variable '"
+                                           + variable
+                                           + "' in gridded netCDF resource '"
+                                           + this.fileName
+                                           + "'. Available variables: "
+                                           + variableNames );
             }
 
             String measurementUnit = ncVariable.getUnitsString();

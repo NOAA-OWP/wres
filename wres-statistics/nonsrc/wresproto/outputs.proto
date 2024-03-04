@@ -16,6 +16,16 @@ message Outputs
     options that are common to all graphic formats. Each format and associated
     options can appear only once per evaluation.*/
 
+    enum DurationUnit
+    {
+         // Display lead durations in these units.
+
+         SECONDS = 0;
+         MINUTES = 1;
+         HOURS = 2;
+         DAYS = 3;
+    }
+
     message GraphicFormat
     {
         // A raster or vector graphic with common format options.
@@ -53,16 +63,6 @@ message Outputs
         int32 width = 3;
         // Graphic width in pixels.
 
-        enum DurationUnit
-        {
-             // Display lead durations in these units.
-
-             SECONDS = 0;
-             MINUTES = 1;
-             HOURS = 2;
-             DAYS = 3;
-        }
-
         DurationUnit lead_unit = 4;
         // The units of the lead durations.
 
@@ -98,6 +98,9 @@ message Outputs
 
         string decimal_format = 1;
         // A decimal format mask, such as 0.000000 or #.######.
+
+        DurationUnit lead_unit = 2;
+        // The units of the lead durations.
     }
 
     message CsvFormat

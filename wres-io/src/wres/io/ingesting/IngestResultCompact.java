@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import static java.lang.Short.MAX_VALUE;
 
 import wres.config.yaml.components.DatasetOrientation;
-import wres.io.reading.DataSource;
+import wres.reading.DataSource;
 
 /**
  * A compact IngestResult exclusively for fully ingested data. If the data needs

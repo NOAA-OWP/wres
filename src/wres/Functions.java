@@ -43,14 +43,14 @@ import wres.events.broker.BrokerUtilities;
 import wres.eventsbroker.embedded.EmbeddedBroker;
 import wres.io.database.ConnectionSupplier;
 import wres.io.database.caching.DatabaseCaches;
-import wres.io.reading.netcdf.grid.GriddedFeatures;
+import wres.reading.netcdf.grid.GriddedFeatures;
 import wres.io.database.Database;
 import wres.io.database.DatabaseOperations;
-import wres.io.ingesting.PreIngestException;
+import wres.reading.PreReadException;
 import wres.io.ingesting.SourceLoader;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
-import wres.io.writing.netcdf.NetCDFCopier;
+import wres.writing.netcdf.NetCDFCopier;
 import wres.pipeline.Canceller;
 import wres.pipeline.Evaluator;
 import wres.pipeline.InternalWresException;
@@ -485,9 +485,9 @@ public final class Functions
                 }
                 catch ( IOException ioe )
                 {
-                    Exception e = new PreIngestException( "Could not read declaration from "
-                                                          + projectPath,
-                                                          ioe );
+                    Exception e = new PreReadException( "Could not read declaration from "
+                                                        + projectPath,
+                                                        ioe );
                     return ExecutionResult.failure( e, false );
                 }
 

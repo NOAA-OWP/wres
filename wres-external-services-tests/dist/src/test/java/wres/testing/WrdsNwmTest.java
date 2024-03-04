@@ -20,9 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import wres.io.ingesting.PreIngestException;
-import wres.io.reading.ReaderUtilities;
-import wres.io.reading.wrds.nwm.NwmRootDocument;
+import wres.reading.PreReadException;
+import wres.reading.ReaderUtilities;
+import wres.reading.wrds.nwm.NwmRootDocument;
 import wres.http.WebClient;
 import wres.http.WebClientUtils;
 
@@ -62,7 +62,7 @@ public class WrdsNwmTest
                                                               sslContext.getRight() )
                                            .build();
         }
-        catch ( PreIngestException e )
+        catch ( PreReadException e )
         {
             throw new ExceptionInInitializerError( "Failed to acquire the TLS context for connecting to WRDS: "
                                                    + e.getMessage() );
