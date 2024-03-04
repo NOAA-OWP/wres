@@ -1,10 +1,6 @@
 package wres.events.subscribe;
 
-import java.io.Closeable;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.Set;
-import java.util.function.Function;
 
 import wres.statistics.generated.Consumer;
 import wres.statistics.generated.Evaluation;
@@ -25,8 +21,8 @@ import wres.statistics.generated.Statistics;
  * 
  * <p>Each consumer consumes a collection of {@link Statistics} and returns a set of {@link Path} mutated. The consumer
  * may contain one or more underlying consumers that each consume the same statistics.
- * 
- * <p>Allows for {@link Closeable} resources to be assembled and closed on completion.
+ *
+ * <p>Callers are responsible for closing {@link StatisticsConsumer} created by this factory.
  * 
  * <p><b>Implementation notes:</b>
  * 
@@ -41,7 +37,7 @@ import wres.statistics.generated.Statistics;
  * @author James Brown
  */
 
-public interface ConsumerFactory extends Closeable
+public interface ConsumerFactory
 {
     /**
      * Creates a consumer for a given evaluation description. An ordinary consumer writes a statistics message as soon 
@@ -53,7 +49,7 @@ public interface ConsumerFactory extends Closeable
      * @throws ConsumerException if the consumer could not be created for any reason
      */
 
-    Function<Statistics, Set<Path>> getConsumer( Evaluation evaluation, Path path );
+    StatisticsConsumer getConsumer( Evaluation evaluation, Path path );
 
     /**
      * Creates a consumer of grouped statistics for a given evaluation description. A grouped consumer delays writing 
@@ -65,7 +61,7 @@ public interface ConsumerFactory extends Closeable
      * @throws ConsumerException if the consumer could not be created for any reason
      */
 
-    Function<Collection<Statistics>, Set<Path>> getGroupedConsumer( Evaluation evaluation, Path path );
+    StatisticsConsumer getGroupedConsumer( Evaluation evaluation, Path path );
     
     /**
      * Returns a basic description of the consumers that are created by this factory, including the formats they offer.

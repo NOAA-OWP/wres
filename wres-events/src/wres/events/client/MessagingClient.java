@@ -75,9 +75,6 @@ public class MessagingClient
     /** The subscriber. */
     private final EvaluationSubscriber subscriber;
 
-    /** The consumer factory. */
-    private final ConsumerFactory consumerFactory;
-
     /** Is {@code true} if the client has been closed, otherwise {@code false}. */
     private final AtomicBoolean isClosed;
 
@@ -154,19 +151,6 @@ public class MessagingClient
             LOGGER.info( "Stopping WRES messaging client {}...", this );
 
             this.timer.cancel();
-
-            if ( Objects.nonNull( this.consumerFactory ) )
-            {
-                try
-                {
-                    this.consumerFactory.close();
-                }
-                catch ( IOException e )
-                {
-                    LOGGER.error( "While closing messaging client {}, failed to close a statistics consumer factory.",
-                                  this );
-                }
-            }
 
             if ( Objects.nonNull( this.subscriber ) )
             {
@@ -396,12 +380,9 @@ public class MessagingClient
         this.worker = this.createWorker( clientId );
         this.isClosed = new AtomicBoolean();
 
-        // A factory that creates consumers on demand
-        this.consumerFactory = consumerFactory;
-
         try
         {
-            this.subscriber = EvaluationSubscriber.of( this.consumerFactory,
+            this.subscriber = EvaluationSubscriber.of( consumerFactory,
                                                        this.getWorker(),
                                                        broker,
                                                        false );
