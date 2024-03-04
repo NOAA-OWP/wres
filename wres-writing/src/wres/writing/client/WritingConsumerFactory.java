@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.statistics.StatisticsToFormatsRouter;
 import wres.events.subscribe.ConsumerFactory;
+import wres.events.subscribe.StatisticsConsumer;
 import wres.statistics.generated.Consumer;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.Evaluation;
@@ -39,18 +40,18 @@ class WritingConsumerFactory implements ConsumerFactory
     /** Consumer description. */
     private final Consumer consumerDescription;
 
-    /** Resources to close on completion. */
-    private final List<Closeable> resources;
-
 
     @Override
-    public Function<Statistics, Set<Path>> getConsumer( Evaluation evaluation, Path path )
+    public StatisticsConsumer getConsumer( Evaluation evaluation, Path path )
     {
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( path );
 
         Collection<Format> formats = this.getConsumerDescription()
                                          .getFormatsList();
+
+        // Resources to close on completion.
+        List<Closeable> resources = new ArrayList<>();
 
 
         LOGGER.debug( "Creating a statistics consumer for these formats: {}.", formats );
@@ -67,14 +68,14 @@ class WritingConsumerFactory implements ConsumerFactory
 
             CsvStatisticsWriter writer = CsvStatisticsWriter.of( evaluation,
                                                                  fullPath,
-                                                                 false,
+                                                                 true,
                                                                  durationUnits,
                                                                  formatter );
 
             builder.addStatisticsConsumer( wres.config.yaml.components.Format.CSV2,
                                            writer );
 
-            this.resources.add( writer );
+            resources.add( writer );
         }
 
         // Protobuf
@@ -89,24 +90,35 @@ class WritingConsumerFactory implements ConsumerFactory
         Function<Collection<Statistics>, Set<Path>> router = builder.setEvaluationDescription( evaluation )
                                                                     .build();
 
-        return statistics -> router.apply( List.of( statistics ) );
+        return new StatisticsConsumer()
+        {
+            @Override
+            public void close()
+            {
+                WritingConsumerFactory.closeResources( resources );
+            }
+
+            @Override
+            public Set<Path> apply( Collection<Statistics> statistics )
+            {
+                return router.apply( statistics );
+            }
+        };
     }
 
     @Override
-    public Function<Collection<Statistics>, Set<Path>> getGroupedConsumer( Evaluation evaluation, Path path )
+    public StatisticsConsumer getGroupedConsumer( Evaluation evaluation, Path path )
     {
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( path );
 
-        Collection<Format> formats = this.getConsumerDescription()
-                                         .getFormatsList();
-
-        LOGGER.debug( "Creating a grouped statistics consumer for these formats: {}.", formats );
+        LOGGER.debug( "NO OP" );
 
         StatisticsToFormatsRouter.Builder builder = new StatisticsToFormatsRouter.Builder();
 
-        return builder.setEvaluationDescription( evaluation )
-                      .build();
+        StatisticsToFormatsRouter router = builder.setEvaluationDescription( evaluation )
+                                                  .build();
+        return StatisticsConsumer.getResourceFreeConsumer( router );
     }
 
     @Override
@@ -115,13 +127,12 @@ class WritingConsumerFactory implements ConsumerFactory
         return this.consumerDescription;
     }
 
-    @Override
-    public void close()
+    private static void closeResources( List<Closeable> resources )
     {
         LOGGER.debug( "Closing the consumer factory." );
 
         // Best faith effort to close each one, logging errors
-        for ( Closeable closeMe : this.resources )
+        for ( Closeable closeMe : resources )
         {
             try
             {
@@ -150,8 +161,6 @@ class WritingConsumerFactory implements ConsumerFactory
                                            .addFormats( Format.PROTOBUF )
                                            .addFormats( Format.CSV2 )
                                            .build();
-
-        this.resources = new ArrayList<>();
     }
 
     /**
