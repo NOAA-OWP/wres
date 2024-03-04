@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
@@ -13,9 +12,9 @@ import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Executors;
-import java.util.function.Function;
 
 import jakarta.jms.JMSException;
+
 import javax.naming.NamingException;
 
 import org.junit.jupiter.api.AfterAll;
@@ -65,19 +64,17 @@ class EvaluationSubscriberTest
         ConsumerFactory consumer = new ConsumerFactory()
         {
             @Override
-            public Function<Statistics, Set<Path>>
-                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> {
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> {
                     throw new ConsumerException( "This is an expected subscriber failure that tests error recovery!" );
-                };
+                } );
             }
 
             @Override
-            public Function<Collection<Statistics>, Set<Path>>
-                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> Set.of() );
             }
 
             @Override
@@ -87,11 +84,6 @@ class EvaluationSubscriberTest
                                .setConsumerId( "aConsumer" )
                                .addFormats( Format.NETCDF )
                                .build();
-            }
-
-            @Override
-            public void close()
-            {
             }
         };
 
@@ -153,17 +145,15 @@ class EvaluationSubscriberTest
         ConsumerFactory consumer = new ConsumerFactory()
         {
             @Override
-            public Function<Statistics, Set<Path>>
-                    getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> Set.of() );
             }
 
             @Override
-            public Function<Collection<Statistics>, Set<Path>>
-                    getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
+            public StatisticsConsumer getGroupedConsumer( wres.statistics.generated.Evaluation evaluation, Path path )
             {
-                return statistics -> Set.of();
+                return StatisticsConsumer.getResourceFreeConsumer( statistics -> Set.of() );
             }
 
             @Override
@@ -173,11 +163,6 @@ class EvaluationSubscriberTest
                                .setConsumerId( "aConsumer" )
                                .addFormats( Format.NETCDF )
                                .build();
-            }
-
-            @Override
-            public void close()
-            {
             }
         };
 
@@ -253,5 +238,4 @@ class EvaluationSubscriberTest
             EvaluationSubscriberTest.broker.close();
         }
     }
-
 }
