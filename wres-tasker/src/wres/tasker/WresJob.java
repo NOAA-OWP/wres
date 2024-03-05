@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.Serial;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.text.DecimalFormat;
 import java.util.Arrays;
@@ -19,6 +20,7 @@ import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLContext;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
 
@@ -81,7 +83,7 @@ public class WresJob
     private static final String SKIP_QUEUE_LENGTH_CHECK_SYSTEM_PROPERTY_NAME =
             "wres.tasker.skipQueueLengthCheck";
     private static final int DEFAULT_REDIS_PORT = 6379;
-    private static final RedissonClient REDISSON_CLIENT;
+    private static RedissonClient REDISSON_CLIENT = null; //This cannot be final.
     private static final String UNABLE_TO_VALIDATE_PROJECT_CONFIGURATION_DUE_TO_INTERNAL_ERROR =
             "Unable to validate project configuration due to internal error.";
     private static final String FULL_EXCEPTION_TRACE = "Full exception trace: ";
@@ -89,6 +91,7 @@ public class WresJob
             "Unable to write protobuf response byte array due to I/O exception.";
     private static String redisHost = null;
     private static int redisPort = DEFAULT_REDIS_PORT;
+
     //Admin authentication
     private static final String ADMIN_TOKEN_SYSTEM_PROPERTY_NAME = "wres.adminToken";
     private static final byte[] salt = new byte[16];
@@ -107,133 +110,73 @@ public class WresJob
      */
     private static final int MAXIMUM_PROJECT_DECLARATION_LENGTH = 5_000_000;
 
-    //Database information
+    //Stores active database information.
     private static String activeDatabaseName = "";
     private static String activeDatabaseHost = "";
     private static String activeDatabasePort = "";
-
-    static
-    {
-        // If present, record the admin's token hashed.
-        String adminToken = System.getProperty( ADMIN_TOKEN_SYSTEM_PROPERTY_NAME );
-        if ( ( adminToken != null ) && ( !adminToken.isEmpty() ) )
-        {
-            try
-            {
-                //Create the salt
-                SecureRandom random = new SecureRandom();
-                random.nextBytes( WresJob.salt );
-                //Hash the token using the salt.
-                KeySpec spec = new PBEKeySpec( adminToken.toCharArray(), WresJob.salt, 65536, 128 );
-                SecretKeyFactory factory = SecretKeyFactory.getInstance( "PBKDF2WithHmacSHA1" );
-                WresJob.adminTokenHash = factory.generateSecret( spec ).getEncoded();
-                LOGGER.info( "Admin token read from system properties and hashed successfully." );
-            }
-            catch ( Exception e )
-            {
-                LOGGER.warn( "Unable to create a hash of the amdmin token. "
-                             + "Admin token will be left undefined and no admin token"
-                             + " required for any verb.",
-                             e );
-            }
-        }
-        // Determine the actual broker name, whether from -D or default
-        String brokerHost = BrokerHelper.getBrokerHost();
-        String brokerVhost = BrokerHelper.getBrokerVhost();
-        int brokerPort = BrokerHelper.getBrokerPort();
-        CONNECTION_FACTORY.setHost( brokerHost );
-        CONNECTION_FACTORY.setVirtualHost( brokerVhost );
-        CONNECTION_FACTORY.setPort( brokerPort );
-        CONNECTION_FACTORY.setSaslConfig( DefaultSaslConfig.EXTERNAL );
-        SSLContext sslContext =
-                BrokerHelper.getSSLContextWithClientCertificate( BrokerHelper.Role.TASKER );
-        CONNECTION_FACTORY.useSslProtocol( sslContext );
-        Config redissonConfig = new Config();
-        String specifiedRedisHost = System.getProperty( REDIS_HOST_SYSTEM_PROPERTY_NAME );
-        String specifiedRedisPortRaw = System.getProperty( REDIS_PORT_SYSTEM_PROPERTY_NAME );
-        if ( Objects.nonNull( specifiedRedisHost ) )
-        {
-            WresJob.redisHost = specifiedRedisHost;
-        }
-        if ( Objects.nonNull( specifiedRedisPortRaw ) )
-        {
-            WresJob.redisPort = Integer.parseInt( specifiedRedisPortRaw );
-        }
-        if ( Objects.nonNull( redisHost ) )
-        {
-            String redisAddress = "redis://" + redisHost + ":" + redisPort;
-            LOGGER.info( "Redis host specified: {}, using redis at {}",
-                         specifiedRedisHost,
-                         redisAddress );
-            redissonConfig.useSingleServer()
-                          .setAddress( redisAddress )
-                          // Triple the default timeout to 9 seconds:
-                          .setTimeout( 9000 )
-                          // Triple the retry attempts to 9:
-                          .setRetryAttempts( 9 )
-                          // Triple the retry interval to 4.5 seconds:
-                          .setRetryInterval( 4500 )
-                          // PING ten times more frequently than default:
-                          .setPingConnectionInterval( 3000 )
-                          // Set SO_KEEPALIVE for what it's worth:
-                          .setKeepAlive( true );
-            // The reasoning here is any server thread can cause access of an
-            // object in redis (e.g. output, stdout, etc), regardless of whether
-            // the job is currently active. So at least that number. Then there
-            // are internal threads writing to active jobs, which includes all
-            // jobs in the queue, and there are four objects per job. Do not
-            // forget to update docker memory limits to account for the stack
-            // space required per thread here.
-            redissonConfig.setNettyThreads( Tasker.MAX_SERVER_THREADS
-                                            + MAXIMUM_EVALUATION_COUNT * 7 );
-            REDISSON_CLIENT = Redisson.create( redissonConfig );
-        }
-        else
-        {
-            REDISSON_CLIENT = null;
-            LOGGER.info( "No redis host specified, using local JVM objects." );
-        }
-        //If the redis client was created, set it up for recovering/storing
-        //database information.  It might be possible to turn the below into
-        //three calls of a generic static method.
-        if ( REDISSON_CLIENT != null )
-        {
-            RBucket<String> bucket = REDISSON_CLIENT.getBucket( "databaseName" );
-            if ( bucket.get() != null && !bucket.get().isBlank() )
-            {
-                WresJob.activeDatabaseName = bucket.get();
-            }
-            else
-            {
-                bucket.set( activeDatabaseName );
-            }
-            RBucket<String> hostBucket = REDISSON_CLIENT.getBucket( "databaseHost" );
-            if ( hostBucket.get() != null && !hostBucket.get().isBlank() )
-            {
-                WresJob.activeDatabaseHost = hostBucket.get();
-            }
-            else
-            {
-                hostBucket.set( activeDatabaseHost );
-            }
-            RBucket<String> portBucket = REDISSON_CLIENT.getBucket( "databasePort" );
-            if ( portBucket.get() != null && !portBucket.get().isBlank() )
-            {
-                activeDatabasePort = portBucket.get();
-            }
-            else
-            {
-                portBucket.set( activeDatabasePort );
-            }
-        }
-    }
 
     /** Shared job result state, exposed below */
     private static final JobResults JOB_RESULTS = new JobResults( CONNECTION_FACTORY,
                                                                   REDISSON_CLIENT );
     private static Connection connection = null;
+
     /** Guards connection */
     private static final Object CONNECTION_LOCK = new Object();
+
+    /**
+     * Static initialization block.
+     */
+    static
+    {
+        //Initialize storage of the admin token for some functions.
+        //This method should not except out. If problems occur storing it,
+        //then the tasker runs without using an admin token.
+        intializeWresAdminToken();
+
+        //If the broker connection factory fails to initialize, log an error and 
+        //pass up the exception so that this static block fails out.
+        try
+        {
+            initializeBrokerConnectionFactory();
+        }
+        catch ( IllegalStateException ise )
+        {
+            LOGGER.error( "Failed to initialize the broker connection factory; message: " + ise.getMessage()
+                          + ". Aborting WresJob static block.",
+                          ise );
+            throw ise;
+        }
+
+        // This intializes the Redis/persister client. Note that, any attempt to fail
+        // out later in this static **MUST** call REDISSON_CLIENT.shutdown to ensure that
+        // the client closes out and the application exits appropriately.
+        try
+        {
+            initializeRedissonClient();
+        }
+        catch ( RuntimeException re )
+        {
+            LOGGER.error( "Failed to initialize persister/Redis. Aborting WresJob static block.", re );
+            throw re;
+        }
+
+        //If the redis client was created, set it up for recovering/storing
+        //database information.  It might be possible to turn the below into
+        //three calls of a generic static method.
+        try
+        {
+            initializeRedissonDatabaseBuckets();
+        }
+        catch ( RuntimeException re )
+        {
+            LOGGER.error( "Failed to initialize Redis database buckets. Aborting WresJob static block.", re );
+            if ( REDISSON_CLIENT != null )
+            {
+                REDISSON_CLIENT.shutdown();
+            }
+            throw re;
+        }
+    }
 
     /**
      * Check for connectivity to the broker and persister.
@@ -286,14 +229,16 @@ public class WresJob
         // Test the ability to connect to the broker connections API.
         try
         {
-            BrokerManagerHelper.getBrokerWorkerConnectionCount();
+            int workerCount = BrokerManagerHelper.getBrokerWorkerConnectionCount();
         }
         catch ( IOException | RuntimeException e )
         {
+            LOGGER.error( "Attempt to get worker count failed.", e );
             throw new ConnectivityException( "Unable to connect to broker for a worker "
                                              + "count as a test. Check the broker logs. "
                                              + "Exception message: "
-                                             + e.getMessage() + "." );
+                                             + e.getMessage()
+                                             + "." );
         }
     }
 
@@ -301,7 +246,7 @@ public class WresJob
      * Reformat the declaration String, trimming it and making other changes as needed.
      * @param projectConfig The posted declaration String.
      * @return A reformatted version ready for use with the WRES.
-     */
+    */
     private String reformatConfig( String projectConfig )
     {
         return projectConfig.trim();
@@ -311,7 +256,7 @@ public class WresJob
     @Produces( "text/plain; charset=utf-8" )
     public String getWresJob()
     {
-        // Test connectivity to other components
+        // Test connectivity to other components 
         try
         {
             checkComponentConnectivity();
@@ -319,7 +264,8 @@ public class WresJob
         catch ( ConnectivityException ce )
         {
             LOGGER.warn( "Unable to connect to either the broker or persister. Reporting 'Down'. "
-                         + "Exception message: {}", ce.getMessage() );
+                         + "Exception message: {}",
+                         ce.getMessage() );
             LOGGER.debug( FULL_EXCEPTION_TRACE, ce );
             return "Down";
         }
@@ -338,14 +284,16 @@ public class WresJob
         catch ( IOException e )
         {
             LOGGER.warn( "Unable to obtain a worker count from the broker manager. Reporting 'Down'. "
-                         + " Exception message: {}", e.getMessage() );
+                         + " Exception message: {}",
+                         e.getMessage() );
             LOGGER.debug( FULL_EXCEPTION_TRACE, e );
             return "Down";
         }
         catch ( RuntimeException re )
         {
             LOGGER.warn( "RuntimeException obtaining worker count from the broker manager. Reporting 'Down'. "
-                         + " Exception message: {}", re.getMessage() );
+                         + " Exception message: {}",
+                         re.getMessage() );
             LOGGER.debug( FULL_EXCEPTION_TRACE, re );
             return "Down";
         }
@@ -546,17 +494,16 @@ public class WresJob
 
         // Default priority is 0 for all tasks.
         int messagePriority = 0;
-        // Default to execute per tradition and majority case.
+
+        // Identify the verb and check that its valid. If no verb
+        // is specified, default to EXECUTE in the else clause.
         Verb actualVerb = null;
-        // Search through allowed values
         if ( verb != null && !verb.isBlank() )
         {
             for ( Verb allowedValue : Verb.values() )
             {
-                String allowed = allowedValue.name()
-                                             .toLowerCase();
                 if ( verb.toLowerCase()
-                         .equals( allowed ) )
+                         .equalsIgnoreCase( allowedValue.name() ) )
                 {
                     actualVerb = allowedValue;
                     break;
@@ -570,17 +517,25 @@ public class WresJob
         }
         else
         {
-            // Default to "execute"
             actualVerb = Verb.EXECUTE;
         }
-        // Check admin token if necessary.  If the admin token hash is blank, meaning no token was
-        // configured via system property, then the adminToken is not necessary for any command.
+
+        // Determine if an admin token is needed.
         Set<Verb> verbsNeedingAdminToken = Set.of( Verb.CLEANDATABASE,
                                                    Verb.CONNECTTODB,
                                                    Verb.REFRESHDATABASE,
                                                    Verb.SWITCHDATABASE,
                                                    Verb.MIGRATEDATABASE );
         boolean usingToken = verbsNeedingAdminToken.contains( actualVerb );
+
+        // Determine if declaration is expected.
+        Set<Verb> verbsNeedingDeclaration = Set.of( Verb.EXECUTE,
+                                                    Verb.INGEST,
+                                                    Verb.VALIDATE );
+        boolean usingDeclaration = verbsNeedingDeclaration.contains( actualVerb );
+
+        // Check admin token if necessary.  If the admin token hash is blank, meaning no token was
+        // configured via system property, then the adminToken is not necessary for any command.
         if ( ( adminTokenHash != null ) && ( usingToken ) )
         {
             messagePriority = 1; //Admin priority task.
@@ -604,9 +559,9 @@ public class WresJob
                 }
                 LOGGER.info( "For the verb, {}, the admin token matched expectations. Continuing.", actualVerb );
             }
-            catch ( Exception e )
+            catch ( NoSuchAlgorithmException | InvalidKeySpecException e )
             {
-                String message = "Error creating has of adminToken; this worked before "
+                String message = "Error creating hash of adminToken; this worked before "
                                  + "it should work now. Operation "
                                  + actualVerb
                                  + " not authorized."
@@ -615,11 +570,8 @@ public class WresJob
                 return WresJob.unauthorized( message );
             }
         }
-        // Check declaration if necessary.
-        Set<Verb> verbsNeedingDeclaration = Set.of( Verb.EXECUTE,
-                                                    Verb.INGEST,
-                                                    Verb.VALIDATE );
-        boolean usingDeclaration = verbsNeedingDeclaration.contains( actualVerb );
+
+        // Check the declaration if necessary.
         if ( usingDeclaration )
         {
             int lengthOfProjectDeclaration = projectConfig.length();
@@ -661,7 +613,7 @@ public class WresJob
             }
         }
 
-        //For switchdatabase, cleandatabase, and migratedatabase, I need to record the database info
+        //For switchdatabase, cleandatabase, and migratedatabase, I need to parse the database info
         //from the additional arguments.  Running clean or migrate database with no arguments
         //is fine, however.  Thus, only parse the arguments for a cleandatabase or migratedatabase if
         //some are given.
@@ -686,6 +638,7 @@ public class WresJob
             usedDatabasePort = additionalArguments.get( 1 );
             usedDatabaseName = additionalArguments.get( 2 );
         }
+
         // A switchdatabase is handled completely here.
         if ( actualVerb == Verb.SWITCHDATABASE )
         {
@@ -708,6 +661,7 @@ public class WresJob
                                     + "</h1></body></html>" )
                            .build();
         }
+
         // All other verbs are passed through to a job handled by a worker. Set up the
         // used database information based on the ACTIVE variables.  For a clean, the user
         // can override the used database information, optionally. Those were parsed
@@ -726,6 +680,7 @@ public class WresJob
         {
             usedDatabaseName = activeDatabaseName;
         }
+
         // Before registering a new job, see if there are already too many.
         int queueLength;
         try
@@ -743,6 +698,8 @@ public class WresJob
             LOGGER.warn( "Did not send job, returning 503.", tmeiqe );
             return WresJob.serviceUnavailable( "Too many evaluations are in the queue, try again in a moment." );
         }
+
+        // Register the new job, create the URL.
         String jobId = JOB_RESULTS.registerNewJob();
         String urlCreated = "/job/" + jobId;
         URI resourceCreated;
@@ -756,6 +713,8 @@ public class WresJob
             return WresJob.internalServerError();
         }
         Job.job jobMessage;
+
+        // Build the job message.
         // For commands EXECUTE, INGEST, VALIDATE...
         if ( usingDeclaration )
         {
@@ -788,6 +747,7 @@ public class WresJob
             }
             jobMessage = builder.build();
         }
+
         // If the caller wishes to post input data: parameter postInput=true
         if ( postInput )
         {
@@ -810,6 +770,8 @@ public class WresJob
                                     + A_P_BODY_HTML )
                            .build();
         }
+
+        // Send the declaration message. 
         try
         {
             sendDeclarationMessage( jobId, jobMessage.toByteArray(), messagePriority );
@@ -824,6 +786,7 @@ public class WresJob
             LOGGER.warn( "Did not send job, returning 503.", tmeiqe );
             return WresJob.serviceUnavailable( "Too many evaluations are in the queue, try again in a moment." );
         }
+
         // Push the database info into the underlying job metadata and mark it in queue.
         JOB_RESULTS.setDatabaseName( jobId, usedDatabaseName );
         JOB_RESULTS.setDatabaseHost( jobId, usedDatabaseHost );
@@ -1190,6 +1153,163 @@ public class WresJob
     }
 
     /**
+     * Initialize storage of the admin token by hashing it into memory. If hashing
+     * fails, then a warning is output indicating that no admin token is needed.
+     * That is not an error state, however.
+     */
+    private static void intializeWresAdminToken()
+    {
+        // If present, record the admin's token hashed.
+        String adminToken = System.getProperty( ADMIN_TOKEN_SYSTEM_PROPERTY_NAME );
+        if ( ( adminToken != null ) && ( !adminToken.isEmpty() ) )
+        {
+            try
+            {
+                //Create the salt
+                SecureRandom random = new SecureRandom();
+                random.nextBytes( WresJob.salt );
+                //Hash the token using the salt.
+                KeySpec spec = new PBEKeySpec( adminToken.toCharArray(), WresJob.salt, 65536, 128 );
+                SecretKeyFactory factory = SecretKeyFactory.getInstance( "PBKDF2WithHmacSHA1" );
+                WresJob.adminTokenHash = factory.generateSecret( spec ).getEncoded();
+                LOGGER.info( "Admin token read from system properties and hashed successfully." );
+            }
+            catch ( NoSuchAlgorithmException | InvalidKeySpecException e )
+            {
+                LOGGER.warn( "Unable to create a hash of the amdmin token. "
+                             + "Admin token will be left undefined and no admin token"
+                             + " required for any verb.",
+                             e );
+            }
+        }
+    }
+
+    /**
+     * Initialize the broker connection factory static variable.
+     * @throws IllegalStateException when a problem is encountered getting the SSL
+     * context. The caller must then decide how to respond to that failure.
+     */
+    private static void initializeBrokerConnectionFactory() throws IllegalStateException
+    {
+        // Determine the actual broker name, whether from -D or default.
+        // This initializes the broker connection factory.
+        String brokerHost = BrokerHelper.getBrokerHost();
+        String brokerVhost = BrokerHelper.getBrokerVhost();
+        int brokerPort = BrokerHelper.getBrokerPort();
+        CONNECTION_FACTORY.setHost( brokerHost );
+        CONNECTION_FACTORY.setVirtualHost( brokerVhost );
+        CONNECTION_FACTORY.setPort( brokerPort );
+        CONNECTION_FACTORY.setSaslConfig( DefaultSaslConfig.EXTERNAL );
+        SSLContext sslContext =
+                BrokerHelper.getSSLContextWithClientCertificate( BrokerHelper.Role.TASKER );
+        CONNECTION_FACTORY.useSslProtocol( sslContext );
+    }
+
+    /**
+     * Initialize the Redisson client to be used. If it can't be initialized, 
+     * then local JVM objects are used. However, if the parameters are specified,
+     * but the client fails to initialize, then an exception may be thrown. Be ready
+     * to catch any RuntimeException instances, since it may require clean up. 
+     * See where this is called, above.
+     */
+    private static void initializeRedissonClient()
+    {
+        Config redissonConfig = new Config();
+        String specifiedRedisHost = System.getProperty( REDIS_HOST_SYSTEM_PROPERTY_NAME );
+        String specifiedRedisPortRaw = System.getProperty( REDIS_PORT_SYSTEM_PROPERTY_NAME );
+        if ( Objects.nonNull( specifiedRedisHost ) )
+        {
+            WresJob.redisHost = specifiedRedisHost;
+        }
+        if ( Objects.nonNull( specifiedRedisPortRaw ) )
+        {
+            WresJob.redisPort = Integer.parseInt( specifiedRedisPortRaw );
+        }
+        if ( Objects.nonNull( redisHost ) )
+        {
+            String redisAddress = "redis://" + redisHost + ":" + redisPort;
+            LOGGER.info( "Redis host specified: {}, using redis at {}",
+                         specifiedRedisHost,
+                         redisAddress );
+            redissonConfig.useSingleServer()
+                          .setAddress( redisAddress )
+                          // Triple the default timeout to 9 seconds:
+                          .setTimeout( 9000 )
+                          // Triple the retry attempts to 9:
+                          .setRetryAttempts( 9 )
+                          // Triple the retry interval to 4.5 seconds:
+                          .setRetryInterval( 4500 )
+                          // PING ten times more frequently than default:
+                          .setPingConnectionInterval( 3000 )
+                          // Set SO_KEEPALIVE for what it's worth:
+                          .setKeepAlive( true );
+            // The reasoning here is any server thread can cause access of an
+            // object in redis (e.g. output, stdout, etc), regardless of whether
+            // the job is currently active. So at least that number. Then there
+            // are internal threads writing to active jobs, which includes all
+            // jobs in the queue, and there are four objects per job. Do not
+            // forget to update docker memory limits to account for the stack
+            // space required per thread here.
+            redissonConfig.setNettyThreads( Tasker.MAX_SERVER_THREADS
+                                            + MAXIMUM_EVALUATION_COUNT * 7 );
+
+            //This **MUST** be the last call in the portion of this initialization
+            //of the Redisson client. Once the create is called, any later attempt to 
+            //fail out during start up must "clean up" the client by calling 
+            //REDISSON_CLIENT.shutdown!!!
+            REDISSON_CLIENT = Redisson.create( redissonConfig );
+        }
+        else
+        {
+            REDISSON_CLIENT = null;
+            LOGGER.info( "No redis host specified, using local JVM objects." );
+        }
+    }
+
+    /**
+     * Initializes buckets that recover and store active database information.
+     * At start up, this will allow the tasker to identify the active database
+     * from when the tasker was previously shutdown.  An exception can be expected 
+     * if there are issues communicating with the Redisson client, but they will
+     * be RuntimeException instances. When called, be sure to catch those exceptions
+     * and clean up by shutting down the Redisson client.
+     */
+    private static void initializeRedissonDatabaseBuckets()
+    {
+        if ( REDISSON_CLIENT != null )
+        {
+            RBucket<String> bucket = REDISSON_CLIENT.getBucket( "databaseName" );
+            if ( bucket.get() != null && !bucket.get().isBlank() )
+            {
+                WresJob.activeDatabaseName = bucket.get();
+            }
+            else
+            {
+                bucket.set( activeDatabaseName );
+            }
+            RBucket<String> hostBucket = REDISSON_CLIENT.getBucket( "databaseHost" );
+            if ( hostBucket.get() != null && !hostBucket.get().isBlank() )
+            {
+                WresJob.activeDatabaseHost = hostBucket.get();
+            }
+            else
+            {
+                hostBucket.set( activeDatabaseHost );
+            }
+            RBucket<String> portBucket = REDISSON_CLIENT.getBucket( "databasePort" );
+            if ( portBucket.get() != null && !portBucket.get().isBlank() )
+            {
+                activeDatabasePort = portBucket.get();
+            }
+            else
+            {
+                portBucket.set( activeDatabasePort );
+            }
+        }
+    }
+
+
+    /**
      * Abruptly stops all listening for job results that this class listens for,
      * and closes open connections, and only warns on exceptions thrown on
      * connection close.
@@ -1290,7 +1410,7 @@ public class WresJob
             {
                 event.writeDelimitedTo( byteStream );
             }
-
+ 
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.append( "<br>The project declaration contained the following errors, which must be fixed:</br>" );
             events.forEach( event -> stringBuilder.append( "<br>" )
