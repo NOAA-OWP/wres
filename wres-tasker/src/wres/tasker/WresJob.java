@@ -115,14 +115,6 @@ public class WresJob
     private static String activeDatabaseHost = "";
     private static String activeDatabasePort = "";
 
-    /** Shared job result state, exposed below */
-    private static final JobResults JOB_RESULTS = new JobResults( CONNECTION_FACTORY,
-                                                                  REDISSON_CLIENT );
-    private static Connection connection = null;
-
-    /** Guards connection */
-    private static final Object CONNECTION_LOCK = new Object();
-
     /**
      * Static initialization block.
      */
@@ -177,6 +169,14 @@ public class WresJob
             throw re;
         }
     }
+
+    /** Shared job result state, exposed below */
+    private static final JobResults JOB_RESULTS = new JobResults( CONNECTION_FACTORY,
+                                                                  REDISSON_CLIENT );
+    private static Connection connection = null;
+
+    /** Guards connection */
+    private static final Object CONNECTION_LOCK = new Object();
 
     /**
      * Check for connectivity to the broker and persister.
@@ -492,6 +492,9 @@ public class WresJob
                      additionalArguments );
         projectConfig = reformatConfig( projectConfig );
 
+        // Useful in various places.
+        Response response;
+
         // Default priority is 0 for all tasks.
         int messagePriority = 0;
 
@@ -520,97 +523,24 @@ public class WresJob
             actualVerb = Verb.EXECUTE;
         }
 
-        // Determine if an admin token is needed.
-        Set<Verb> verbsNeedingAdminToken = Set.of( Verb.CLEANDATABASE,
-                                                   Verb.CONNECTTODB,
-                                                   Verb.REFRESHDATABASE,
-                                                   Verb.SWITCHDATABASE,
-                                                   Verb.MIGRATEDATABASE );
-        boolean usingToken = verbsNeedingAdminToken.contains( actualVerb );
-
-        // Determine if declaration is expected.
-        Set<Verb> verbsNeedingDeclaration = Set.of( Verb.EXECUTE,
-                                                    Verb.INGEST,
-                                                    Verb.VALIDATE );
-        boolean usingDeclaration = verbsNeedingDeclaration.contains( actualVerb );
-
         // Check admin token if necessary.  If the admin token hash is blank, meaning no token was
         // configured via system property, then the adminToken is not necessary for any command.
-        if ( ( adminTokenHash != null ) && ( usingToken ) )
+        if ( requiresAdminToken( actualVerb ) )
         {
             messagePriority = 1; //Admin priority task.
-            if ( adminToken == null || adminToken.isEmpty() )
+            response = authenticateAdminToken( actualVerb, adminToken );
+            if ( response != null )
             {
-                String message = "The verb " + actualVerb + " requires adminToken, which was not given or was blank.";
-                LOGGER.warn( message );
-                return WresJob.badRequest( message );
+                return response;
             }
-            try
-            {
-                KeySpec spec = new PBEKeySpec( adminToken.toCharArray(), salt, 65536, 128 );
-                SecretKeyFactory factory = SecretKeyFactory.getInstance( "PBKDF2WithHmacSHA1" );
-                byte[] hash = factory.generateSecret( spec ).getEncoded();
-                if ( !Arrays.equals( adminTokenHash, hash ) )
-                {
-                    String message = "The adminToken provided for the verb " + actualVerb
-                                     + " did not match that required.  The operation is not authorized.";
-                    LOGGER.warn( message );
-                    return WresJob.unauthorized( message );
-                }
-                LOGGER.info( "For the verb, {}, the admin token matched expectations. Continuing.", actualVerb );
-            }
-            catch ( NoSuchAlgorithmException | InvalidKeySpecException e )
-            {
-                String message = "Error creating hash of adminToken; this worked before "
-                                 + "it should work now. Operation "
-                                 + actualVerb
-                                 + " not authorized."
-                                 + " Contact user support.";
-                LOGGER.warn( message, e );
-                return WresJob.unauthorized( message );
-            }
+
         }
 
         // Check the declaration if necessary.
-        if ( usingDeclaration )
+        response = checkDeclaration( actualVerb, projectConfig, postInput );
+        if ( response != null )
         {
-            int lengthOfProjectDeclaration = projectConfig.length();
-            // Limit project config to avoid heap overflow in worker-shim
-            if ( lengthOfProjectDeclaration > MAXIMUM_PROJECT_DECLARATION_LENGTH )
-            {
-                String projectConfigFirstChars =
-                        projectConfig.substring( 0, 1000 );
-                LOGGER.warn( "Received a project declaration of length {} starting with {}",
-                             lengthOfProjectDeclaration,
-                             projectConfigFirstChars );
-                return WresJob.badRequest( "The project declaration has "
-                                           + lengthOfProjectDeclaration
-                                           + " characters, which is more than "
-                                           + MAXIMUM_PROJECT_DECLARATION_LENGTH
-                                           + ", please find a way to shrink the"
-                                           + " project declaration and re-send." );
-            }
-            else if ( projectConfig.getBytes().length <= 1 )
-            {
-                LOGGER.warn( "Received a project declaration that appears to be "
-                             + "one character or less." );
-                return WresJob.badRequest( "The project declaration is less "
-                                           + "than or equal to one byte long, "
-                                           + "which is not allowed. "
-                                           + "Please double-check that you "
-                                           + "set the form parameter "
-                                           + "'projectConfig' correctly and "
-                                           + "re-send." );
-            }
-            else
-            {
-                Response error = this.validateDeclaration( projectConfig, postInput );
-
-                if ( Objects.nonNull( error ) )
-                {
-                    return error;
-                }
-            }
+            return response;
         }
 
         //For switchdatabase, cleandatabase, and migratedatabase, I need to parse the database info
@@ -639,35 +569,15 @@ public class WresJob
             usedDatabaseName = additionalArguments.get( 2 );
         }
 
-        // A switchdatabase is handled completely here.
+        // A switchdatabase is handled entirely in the tasker. Process it here.
         if ( actualVerb == Verb.SWITCHDATABASE )
         {
-            setDatabaseHost( usedDatabaseHost );
-            setDatabasePort( usedDatabasePort );
-            setDatabaseName( usedDatabaseName );
-            LOGGER.info( "Database has been switched to host = '{}', port = '{}', name = '{}'.",
-                         activeDatabaseHost,
-                         activeDatabasePort,
-                         activeDatabaseName );
-            return Response.status( Response.Status.OK )
-                           .entity( "<!DOCTYPE html><html><head><title>Database switched.</title></head>"
-                                    + "<body><h1>New database has host '"
-                                    + activeDatabaseHost
-                                    + "', port '"
-                                    + activeDatabasePort
-                                    + "', and name '"
-                                    + activeDatabaseName
-                                    + "'. Empty strings or null imply default from .yml will be used."
-                                    + "</h1></body></html>" )
-                           .build();
+            return handleSwitchDatabase( usedDatabaseHost, usedDatabasePort, usedDatabaseName );
         }
 
-        // All other verbs are passed through to a job handled by a worker. Set up the
-        // used database information based on the ACTIVE variables.  For a clean, the user
-        // can override the used database information, optionally. Those were parsed
-        // above.  Thus, only set the used value if its either null or blank.
-        // The used value won't be null after this, but could still be empty. If empty,
-        // that means the default value configured in the .yml is being used.
+        // All other verbs are passed through to a job handled by a worker. Setup the 
+        // used database information to be the ACTIVE databse if its not provided by
+        // the user, or if this is a verb where its not parsed.
         if ( usedDatabaseHost == null || usedDatabaseHost.isBlank() )
         {
             usedDatabaseHost = activeDatabaseHost;
@@ -712,41 +622,30 @@ public class WresJob
             LOGGER.error( "Failed to create uri using {}", urlCreated, use );
             return WresJob.internalServerError();
         }
+
+        //Build the job message
         Job.job jobMessage;
+        Job.job.Builder builder = Job.job.newBuilder()
+                                         .setVerb( actualVerb )
+                                         .setDatabaseName( usedDatabaseName )
+                                         .setDatabaseHost( usedDatabaseHost )
+                                         .setDatabasePort( usedDatabasePort );
 
         // Build the job message.
-        // For commands EXECUTE, INGEST, VALIDATE...
-        if ( usingDeclaration )
+        // Add the declaration if its required by the verb.
+        if ( requiresDeclaration( actualVerb ) )
         {
-            jobMessage = Job.job.newBuilder()
-                                .setProjectConfig( projectConfig )
-                                .setVerb( actualVerb )
-                                .setDatabaseName( usedDatabaseName )
-                                .setDatabaseHost( usedDatabaseHost )
-                                .setDatabasePort( usedDatabasePort )
-                                .build();
+            builder.setProjectConfig( projectConfig );
         }
-        // All others, including CLEANDATABASE, CONNECTTODB, others?
-        else
+        // Add the additional arguments if its used by the verb.
+        else if ( actualVerb != Verb.CLEANDATABASE && actualVerb != Verb.MIGRATEDATABASE )
         {
-            // Skip the declaration entirely, it's not needed and was not
-            // validated.
-            Job.job.Builder builder = Job.job.newBuilder()
-                                             .setVerb( actualVerb )
-                                             .setDatabaseName( usedDatabaseName )
-                                             .setDatabaseHost( usedDatabaseHost )
-                                             .setDatabasePort( usedDatabasePort );
-            // Additional arguments are already handled when cleaning and migrating, per above.
-            // No additional arguments beyond database ones are allowed in that case.
-            if ( actualVerb != Verb.CLEANDATABASE && actualVerb != Verb.MIGRATEDATABASE )
+            for ( String arg : additionalArguments )
             {
-                for ( String arg : additionalArguments )
-                {
-                    builder.addAdditionalArguments( arg );
-                }
+                builder.addAdditionalArguments( arg );
             }
-            jobMessage = builder.build();
         }
+        jobMessage = builder.build();
 
         // If the caller wishes to post input data: parameter postInput=true
         if ( postInput )
@@ -793,6 +692,8 @@ public class WresJob
         JOB_RESULTS.setDatabasePort( jobId, usedDatabasePort );
         JOB_RESULTS.setKeepPostedInputData( jobId, keepInput );
         JOB_RESULTS.setInQueue( jobId );
+
+        // Log that the declaration message was sent and return a response.
         LOGGER.info( "For verb {}, the declaration message was sent with job id {}, priority {}, and "
                      + "database host='{}', port='{}', and name='{}'. There {} jobs preceding it in the queue.",
                      actualVerb,
@@ -1385,7 +1286,167 @@ public class WresJob
             return WresJob.internalServerError( UNABLE_TO_VALIDATE_PROJECT_CONFIGURATION_DUE_TO_INTERNAL_ERROR );
         }
     }
+    
+    /**
+     * 
+     * @param actualVerb The verb to check.
+     * @return True if the verb requires an admin token or the admin token
+     * hash at start was provided. False otherwise.
+     */
+    private boolean requiresAdminToken(Verb actualVerb)
+    {
+        // Determine if an admin token is needed.
+        Set<Verb> verbsNeedingAdminToken = Set.of( Verb.CLEANDATABASE,
+                                                   Verb.CONNECTTODB,
+                                                   Verb.REFRESHDATABASE,
+                                                   Verb.SWITCHDATABASE,
+                                                   Verb.MIGRATEDATABASE );
+        return adminTokenHash != null && verbsNeedingAdminToken.contains( actualVerb );
+    }
+    
+    /**
+     * Check the admin token against the hashed version provided at startup.
+     * @param actualVerb The verb being used. Admin token is only required for a subset,
+     * identified within this method. No check will be performed if the token at startup
+     * was not provided or could not be hashed.
+     * @param adminToken The token provided by the user.
+     * @return A Response with an error if authentication fails.
+     */
+    private Response authenticateAdminToken(Verb actualVerb, String adminToken)
+    {
+        // Check admin token if necessary.
+        if ( requiresAdminToken( actualVerb ) )
+        {
+            if ( adminToken == null || adminToken.isEmpty() )
+            {
+                String message = "The verb " + actualVerb + " requires adminToken, which was not given or was blank.";
+                LOGGER.warn( message );
+                return WresJob.badRequest( message );
+            }
+            try
+            {
+                KeySpec spec = new PBEKeySpec( adminToken.toCharArray(), salt, 65536, 128 );
+                SecretKeyFactory factory = SecretKeyFactory.getInstance( "PBKDF2WithHmacSHA1" );
+                byte[] hash = factory.generateSecret( spec ).getEncoded();
+                if ( !Arrays.equals( adminTokenHash, hash ) )
+                {
+                    String message = "The adminToken provided for the verb " + actualVerb
+                                     + " did not match that required.  The operation is not authorized.";
+                    LOGGER.warn( message );
+                    return WresJob.unauthorized( message );
+                }
+                LOGGER.info( "For the verb, {}, the admin token matched expectations. Continuing.", actualVerb );
+            }
+            catch ( NoSuchAlgorithmException | InvalidKeySpecException e )
+            {
+                String message = "Error creating hash of adminToken; this worked before "
+                                 + "it should work now. Operation "
+                                 + actualVerb
+                                 + " not authorized."
+                                 + " Contact user support.";
+                LOGGER.warn( message, e );
+                return WresJob.unauthorized( message );
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * 
+     * @param actualVerb The verb to check.
+     * @return True if the verb requires declaration; false otherwise.
+     */
+    private boolean requiresDeclaration(Verb actualVerb)
+    {
+        // Determine if declaration is expected.
+        Set<Verb> verbsNeedingDeclaration = Set.of( Verb.EXECUTE,
+                                                    Verb.INGEST,
+                                                    Verb.VALIDATE );
+        return verbsNeedingDeclaration.contains( actualVerb );
+    }
 
+    /**
+     * Checks for issues with the provided declaration/config. 
+     * @param actualVerb The user provided verb.
+     * @param projectConfig The declaration provided.
+     * @param postInput True if input is to be posted, false otherwise.
+     * @return A response capturing any problems discovered. If null is 
+     * returned, no problems were found.
+     */
+    private Response checkDeclaration(Verb actualVerb, String projectConfig, boolean postInput)
+    {
+        // If a declaration is necessary...
+        if ( requiresDeclaration( actualVerb ) )
+        {
+            int lengthOfProjectDeclaration = projectConfig.length();
+            // Limit project config to avoid heap overflow in worker-shim
+            if ( lengthOfProjectDeclaration > MAXIMUM_PROJECT_DECLARATION_LENGTH )
+            {
+                String projectConfigFirstChars =
+                        projectConfig.substring( 0, 1000 );
+                LOGGER.warn( "Received a project declaration of length {} starting with {}",
+                             lengthOfProjectDeclaration,
+                             projectConfigFirstChars );
+                return WresJob.badRequest( "The project declaration has "
+                                           + lengthOfProjectDeclaration
+                                           + " characters, which is more than "
+                                           + MAXIMUM_PROJECT_DECLARATION_LENGTH
+                                           + ", please find a way to shrink the"
+                                           + " project declaration and re-send." );
+            }
+            else if ( projectConfig.getBytes().length <= 1 )
+            {
+                LOGGER.warn( "Received a project declaration that appears to be "
+                             + "one character or less." );
+                return WresJob.badRequest( "The project declaration is less "
+                                           + "than or equal to one byte long, "
+                                           + "which is not allowed. "
+                                           + "Please double-check that you "
+                                           + "set the form parameter "
+                                           + "'projectConfig' correctly and "
+                                           + "re-send." );
+            }
+            else
+            {
+                Response error = this.validateDeclaration( projectConfig, postInput );
+
+                if ( Objects.nonNull( error ) )
+                {
+                    return error;
+                }
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * @param usedDatabaseHost The host to use, or empty to use default.
+     * @param usedDatabasePort The port to use, or empty to use default.
+     * @param usedDatabaseName The name ot use, or empty to use default.
+     * @return The response of the switch database.
+     */
+    private Response handleSwitchDatabase(String usedDatabaseHost, String usedDatabasePort, String usedDatabaseName)
+    {
+        setDatabaseHost( usedDatabaseHost );
+        setDatabasePort( usedDatabasePort );
+        setDatabaseName( usedDatabaseName );
+        LOGGER.info( "Database has been switched to host = '{}', port = '{}', name = '{}'.",
+                     activeDatabaseHost,
+                     activeDatabasePort,
+                     activeDatabaseName );
+        return Response.status( Response.Status.OK )
+                       .entity( "<!DOCTYPE html><html><head><title>Database switched.</title></head>"
+                                + "<body><h1>New database has host '"
+                                + activeDatabaseHost
+                                + "', port '"
+                                + activeDatabasePort
+                                + "', and name '"
+                                + activeDatabaseName
+                                + "'. Empty strings or null imply default from .yml will be used."
+                                + "</h1></body></html>" )
+                       .build();    
+    }
+    
     /**
      * Creates a response from a collection of evaluation status events or null if no errors were encountered.
      * @param events the events
@@ -1428,3 +1489,4 @@ public class WresJob
         }
     }
 }
+
