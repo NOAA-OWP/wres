@@ -8,6 +8,7 @@ import java.net.URISyntaxException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -22,7 +23,6 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-
 
 import com.rabbitmq.client.AMQP;
 import com.rabbitmq.client.Channel;
@@ -39,6 +39,9 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.Response;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.redisson.Redisson;
 import org.redisson.api.RBucket;
 import org.redisson.api.RLiveObjectService;
@@ -71,30 +74,35 @@ import static wres.messages.generated.Job.job.Verb;
 @Path( "/job" )
 public class WresJob
 {
+    private static final Logger LOGGER = LoggerFactory.getLogger( WresJob.class );
+
     private static final String A_P_BODY_HTML = "</a></p></body></html>";
     private static final String P_BODY_HTML = "</p></body></html>";
-    private static final Logger LOGGER = LoggerFactory.getLogger( WresJob.class );
     private static final String SEND_QUEUE_NAME = "wres.job";
-    // Using a member variable fails, make it same across instances.
+
+    //Broker connection factory.
     private static final ConnectionFactory CONNECTION_FACTORY = new ConnectionFactory();
+
+    //Redis constants and variables. Note that REDISSON_CLIENT is effectively
+    //a constant, but cannot be final due to a quirk of how its initialized in the 
+    //static block.
     private static final String REDIS_HOST_SYSTEM_PROPERTY_NAME = "wres.redisHost";
     private static final String REDIS_PORT_SYSTEM_PROPERTY_NAME = "wres.redisPort";
-    /** To disable the queue length check, e.g. for development or testing */
-    private static final String SKIP_QUEUE_LENGTH_CHECK_SYSTEM_PROPERTY_NAME =
-            "wres.tasker.skipQueueLengthCheck";
     private static final int DEFAULT_REDIS_PORT = 6379;
-    private static RedissonClient REDISSON_CLIENT = null; //This cannot be final.
+    private static RedissonClient REDISSON_CLIENT = null;
+    private static String redisHost = null;
+    private static int redisPort = DEFAULT_REDIS_PORT;
+
+    //Exception and error message texts.
     private static final String UNABLE_TO_VALIDATE_PROJECT_CONFIGURATION_DUE_TO_INTERNAL_ERROR =
             "Unable to validate project configuration due to internal error.";
     private static final String FULL_EXCEPTION_TRACE = "Full exception trace: ";
     private static final String UNABLE_TO_WRITE_PROTOBUF_RESPONSE_BYTE_ARRAY_DUE_TO_I_O_EXCEPTION =
             "Unable to write protobuf response byte array due to I/O exception.";
-    private static String redisHost = null;
-    private static int redisPort = DEFAULT_REDIS_PORT;
 
     //Admin authentication
     private static final String ADMIN_TOKEN_SYSTEM_PROPERTY_NAME = "wres.adminToken";
-    private static final byte[] salt = new byte[16];
+    private static final byte[] SALT = new byte[16];
     private static byte[] adminTokenHash = null; //Empty means password not specified.
 
     /**
@@ -110,14 +118,17 @@ public class WresJob
      */
     private static final int MAXIMUM_PROJECT_DECLARATION_LENGTH = 5_000_000;
 
+
+    /** Property that allows for turning off broker queue length checking. **/
+    private static final String SKIP_QUEUE_LENGTH_CHECK_SYSTEM_PROPERTY_NAME =
+            "wres.tasker.skipQueueLengthCheck";
+
     //Stores active database information.
     private static String activeDatabaseName = "";
     private static String activeDatabaseHost = "";
     private static String activeDatabasePort = "";
 
-    /**
-     * Static initialization block.
-     */
+
     static
     {
         //Initialize storage of the admin token for some functions.
@@ -170,12 +181,21 @@ public class WresJob
         }
     }
 
-    /** Shared job result state, exposed below */
+    /** 
+     * Shared job results, stores information about jobs maintained in the Redis persister. 
+     * This must be declared *after* the REDISSON_CLIENT is initialized in teh static block.
+     */
     private static final JobResults JOB_RESULTS = new JobResults( CONNECTION_FACTORY,
                                                                   REDISSON_CLIENT );
+
+    /**
+     * The broker connection, created once and reused other times.
+     */
     private static Connection connection = null;
 
-    /** Guards connection */
+    /** 
+     * Guards the broker connection.
+    */
     private static final Object CONNECTION_LOCK = new Object();
 
     /**
@@ -242,16 +262,6 @@ public class WresJob
         }
     }
 
-    /**
-     * Reformat the declaration String, trimming it and making other changes as needed.
-     * @param projectConfig The posted declaration String.
-     * @return A reformatted version ready for use with the WRES.
-    */
-    private String reformatConfig( String projectConfig )
-    {
-        return projectConfig.trim();
-    }
-
     @GET
     @Produces( "text/plain; charset=utf-8" )
     public String getWresJob()
@@ -307,7 +317,7 @@ public class WresJob
     public Response getEvaluationInQueue()
     {
         int inQueueCount = JOB_RESULTS.getJobStatusCount( JobMetadata.JobState.IN_QUEUE );
-        double queueUsePercentage = ( ( double ) inQueueCount / MAXIMUM_EVALUATION_COUNT ) * 100;
+        double queueUsePercentage = ( (double) inQueueCount / MAXIMUM_EVALUATION_COUNT ) * 100;
         String totalWorkers = System.getProperty( "wres.numberOfWorkers" );
         int totalWorkersNumber = 0;
         try
@@ -324,7 +334,7 @@ public class WresJob
         double workersUsePercentage = 0;
         if ( totalWorkersNumber != 0 )
         {
-            workersUsePercentage = ( ( double ) inProgressCount / totalWorkersNumber ) * 100;
+            workersUsePercentage = ( (double) inProgressCount / totalWorkersNumber ) * 100;
         }
         DecimalFormat df = new DecimalFormat( "0.00" );
 
@@ -490,126 +500,88 @@ public class WresJob
                      verb,
                      postInput,
                      additionalArguments );
+        
+        // Reformat the configuration. 
         projectConfig = reformatConfig( projectConfig );
 
-        // Useful in various places.
+        // We'll be referring to response in various places.
         Response response;
 
-        // Default priority is 0 for all tasks.
+        // Default priority is 0 for all tasks. Admin tasks will be given a 1 priority.
         int messagePriority = 0;
 
         // Identify the verb and check that its valid. If no verb
-        // is specified, default to EXECUTE in the else clause.
-        Verb actualVerb = null;
-        if ( verb != null && !verb.isBlank() )
+        // is specified, it will default to EXECUTE
+        Pair<Verb, Response> verbOrResponse = checkAndObtainActualVerb( verb );
+        if ( Objects.nonNull( verbOrResponse.getRight() ) )
         {
-            for ( Verb allowedValue : Verb.values() )
-            {
-                if ( verb.toLowerCase()
-                         .equalsIgnoreCase( allowedValue.name() ) )
-                {
-                    actualVerb = allowedValue;
-                    break;
-                }
-            }
-            if ( actualVerb == null )
-            {
-                return WresJob.badRequest( "Verb '" + verb
-                                           + "' not available." );
-            }
+            return verbOrResponse.getRight();
         }
-        else
-        {
-            actualVerb = Verb.EXECUTE;
-        }
+        Verb actualVerb = verbOrResponse.getLeft();
 
         // Check admin token if necessary.  If the admin token hash is blank, meaning no token was
         // configured via system property, then the adminToken is not necessary for any command.
+        // The requires method call must be done independently of the check, because of messagePriority.
         if ( requiresAdminToken( actualVerb ) )
         {
             messagePriority = 1; //Admin priority task.
-            response = authenticateAdminToken( actualVerb, adminToken );
-            if ( response != null )
+            response = checkAdminToken( actualVerb, adminToken );
+            if ( Objects.nonNull( response ) )
             {
                 return response;
             }
-
         }
 
         // Check the declaration if necessary.
         response = checkDeclaration( actualVerb, projectConfig, postInput );
-        if ( response != null )
+        if ( Objects.nonNull( response ) )
         {
             return response;
         }
 
         //For switchdatabase, cleandatabase, and migratedatabase, I need to parse the database info
-        //from the additional arguments.  Running clean or migrate database with no arguments
-        //is fine, however.  Thus, only parse the arguments for a cleandatabase or migratedatabase if
-        //some are given.
-        String usedDatabaseName = null;
-        String usedDatabaseHost = null;
-        String usedDatabasePort = null;
-        if ( actualVerb == Verb.SWITCHDATABASE
-             || ( actualVerb == Verb.CLEANDATABASE && !additionalArguments.isEmpty() )
-             || ( actualVerb == Verb.MIGRATEDATABASE && !additionalArguments.isEmpty() ) )
+        //from the additional arguments. This extracts that info if present, or records null.
+        //Regardless, if no problem occurs (i.e., the response is null), then just use list returned.
+        Pair<List<String>, Response> databaseInfoOrResponse =
+                checkAndObtainDatabaseSettings( actualVerb, additionalArguments );
+        if ( Objects.nonNull( databaseInfoOrResponse.getRight() ) )
         {
-            LOGGER.info( "Switch, clean, or migrate requested. Parsing additional arguments." );
-            if ( additionalArguments.size() != 3 )
-            {
-                String message = "Request with verb " + actualVerb
-                                 + " requires 3 additionalArguments, host, port, name, but "
-                                 + additionalArguments.size()
-                                 + " were provided.";
-                LOGGER.warn( message );
-                return WresJob.badRequest( message );
-            }
-            usedDatabaseHost = additionalArguments.get( 0 );
-            usedDatabasePort = additionalArguments.get( 1 );
-            usedDatabaseName = additionalArguments.get( 2 );
+            return databaseInfoOrResponse.getRight();
         }
+        String usedDatabaseHost = databaseInfoOrResponse.getLeft().get( 0 );
+        String usedDatabasePort = databaseInfoOrResponse.getLeft().get( 1 );
+        String usedDatabaseName = databaseInfoOrResponse.getLeft().get( 2 );
 
-        // A switchdatabase is handled entirely in the tasker. Process it here.
+        // A switchdatabase is handled at this point using the additional arguments settings.
         if ( actualVerb == Verb.SWITCHDATABASE )
         {
             return handleSwitchDatabase( usedDatabaseHost, usedDatabasePort, usedDatabaseName );
         }
 
-        // All other verbs are passed through to a job handled by a worker. Setup the 
-        // used database information to be the ACTIVE databse if its not provided by
-        // the user, or if this is a verb where its not parsed.
-        if ( usedDatabaseHost == null || usedDatabaseHost.isBlank() )
+        // For all other verbs, either use what as provided or the active database component
+        // if nothing is provided.
+        if ( StringUtils.isBlank( usedDatabaseHost ) )
         {
             usedDatabaseHost = activeDatabaseHost;
         }
-        if ( usedDatabasePort == null || usedDatabasePort.isBlank() )
+        if ( StringUtils.isBlank( usedDatabasePort ) )
         {
             usedDatabasePort = activeDatabasePort;
         }
-        if ( usedDatabaseName == null || usedDatabaseName.isBlank() )
+        if ( StringUtils.isBlank( usedDatabaseName ) )
         {
             usedDatabaseName = activeDatabaseName;
         }
 
         // Before registering a new job, see if there are already too many.
-        int queueLength;
-        try
+        Pair<Integer, Response> queueLengthOrResponse = checkAndObtainQueueLengthBeforePosting();
+        if ( Objects.nonNull( queueLengthOrResponse.getRight() ) )
         {
-            queueLength = this.getJobQueueLength();
-            this.validateQueueLength( queueLength );
+            return queueLengthOrResponse.getRight();
         }
-        catch ( IOException | TimeoutException e )
-        {
-            LOGGER.error( "Attempt to check queue length failed.", e );
-            return WresJob.internalServerError();
-        }
-        catch ( TooManyEvaluationsInQueueException tmeiqe )
-        {
-            LOGGER.warn( "Did not send job, returning 503.", tmeiqe );
-            return WresJob.serviceUnavailable( "Too many evaluations are in the queue, try again in a moment." );
-        }
+        int queueLength = queueLengthOrResponse.getLeft();
 
-        // Register the new job, create the URL.
+        // Register the new job and create the URL and URI.
         String jobId = JOB_RESULTS.registerNewJob();
         String urlCreated = "/job/" + jobId;
         URI resourceCreated;
@@ -619,71 +591,32 @@ public class WresJob
         }
         catch ( URISyntaxException use )
         {
+            //This should only happen if there is a coding error, above.
             LOGGER.error( "Failed to create uri using {}", urlCreated, use );
             return WresJob.internalServerError();
         }
 
-        //Build the job message
-        Job.job jobMessage;
-        Job.job.Builder builder = Job.job.newBuilder()
-                                         .setVerb( actualVerb )
-                                         .setDatabaseName( usedDatabaseName )
-                                         .setDatabaseHost( usedDatabaseHost )
-                                         .setDatabasePort( usedDatabasePort );
+        // Build the job message to be sent to the broker.
+        Job.job jobMessage = buildJobMessage( actualVerb,
+                                              usedDatabaseHost,
+                                              usedDatabasePort,
+                                              usedDatabaseName,
+                                              projectConfig,
+                                              additionalArguments );
 
-        // Build the job message.
-        // Add the declaration if its required by the verb.
-        if ( requiresDeclaration( actualVerb ) )
-        {
-            builder.setProjectConfig( projectConfig );
-        }
-        // Add the additional arguments if its used by the verb.
-        else if ( actualVerb != Verb.CLEANDATABASE && actualVerb != Verb.MIGRATEDATABASE )
-        {
-            for ( String arg : additionalArguments )
-            {
-                builder.addAdditionalArguments( arg );
-            }
-        }
-        jobMessage = builder.build();
-
-        // If the caller wishes to post input data: parameter postInput=true
+        // If the caller wishes to post input data, postInput=true, then call the
+        // handle method and return its response. 
         if ( postInput )
         {
-            // Pause before sending. Parse the declaration and add inputs before
-            // sending along. This request will result in 201 created response
-            // and the caller must send another request saying "I have finished
-            // posting input."
-            JOB_RESULTS.setJobMessage( jobId, jobMessage.toByteArray() );
-            JOB_RESULTS.setAwaitingPostInputData( jobId );
-            JOB_RESULTS.setKeepPostedInputData( jobId, keepInput );
-            return Response.created( resourceCreated )
-                           .entity( "<!DOCTYPE html><html><head><title>Evaluation job received.</title></head>"
-                                    + "<body><h1>Evaluation job "
-                                    + jobId
-                                    + " has been received, the next step is to post input data.</h1>"
-                                    + "<p>See <a href=\""
-                                    + urlCreated
-                                    + "\">"
-                                    + urlCreated
-                                    + A_P_BODY_HTML )
-                           .build();
+            return handlePostedInputJob( resourceCreated, urlCreated, jobId, keepInput, jobMessage );
         }
 
-        // Send the declaration message. 
-        try
+        // The rest of this method handles evaluations without posted inputs.
+        // Send the declaration message to the broker. 
+        response = sendDeclarationMessageOrGiveResponse( jobId, jobMessage, messagePriority );
+        if ( Objects.nonNull( response ))
         {
-            sendDeclarationMessage( jobId, jobMessage.toByteArray(), messagePriority );
-        }
-        catch ( IOException | TimeoutException e )
-        {
-            LOGGER.error( "Attempt to send message failed.", e );
-            return WresJob.internalServerError();
-        }
-        catch ( TooManyEvaluationsInQueueException tmeiqe )
-        {
-            LOGGER.warn( "Did not send job, returning 503.", tmeiqe );
-            return WresJob.serviceUnavailable( "Too many evaluations are in the queue, try again in a moment." );
+            return response;
         }
 
         // Push the database info into the underlying job metadata and mark it in queue.
@@ -871,11 +804,11 @@ public class WresJob
             String jobStatusExchange = JobResults.getJobStatusExchangeName();
             AMQP.BasicProperties properties =
                     new AMQP.BasicProperties.Builder()
-                            .replyTo( jobStatusExchange )
-                            .correlationId( jobId )
-                            .deliveryMode( 2 )
-                            .priority( priority )
-                            .build();
+                                                      .replyTo( jobStatusExchange )
+                                                      .correlationId( jobId )
+                                                      .deliveryMode( 2 )
+                                                      .priority( priority )
+                                                      .build();
             // Inform the JobResults class to start looking for correlationId.
             // Share a connection, but not a channel, aim for channel-per-thread.
             // I think something needs to be watching the queue or else messages
@@ -905,52 +838,6 @@ public class WresJob
         }
     }
 
-    /**
-     * Get the length of the job queue.
-     * @return The length of the job queue, or 0 when System Property
-     * wres.tasker.skipQueueLengthCheck is set to true.
-     * @throws IOException When communication with broker fails.
-     * @throws TimeoutException When connection to broker times out.
-     */
-    private int getJobQueueLength() throws IOException, TimeoutException
-    {
-        String skipCheck = System.getProperty( SKIP_QUEUE_LENGTH_CHECK_SYSTEM_PROPERTY_NAME );
-        if ( skipCheck != null && skipCheck.equalsIgnoreCase( "true" ) )
-        {
-            return 0;
-        }
-        Connection innerConnection = WresJob.getConnection();
-        try ( Channel channel = innerConnection.createChannel() )
-        {
-            Map<String, Object> queueArgs = new HashMap<>();
-            queueArgs.put( "x-max-priority", 2 );
-            AMQP.Queue.DeclareOk declareOk =
-                    channel.queueDeclare( SEND_QUEUE_NAME,
-                                          true,
-                                          false,
-                                          false,
-                                          queueArgs );
-            return declareOk.getMessageCount();
-        }
-    }
-
-    /**
-     * Check to see if there are too many actively worked jobs in the job queue.
-     * @param queueLength The length of the queue.
-     * @throws TooManyEvaluationsInQueueException When too many jobs queued.
-     */
-    private void validateQueueLength( int queueLength )
-    {
-        if ( queueLength > MAXIMUM_EVALUATION_COUNT )
-        {
-            throw new TooManyEvaluationsInQueueException( "Too many evaluations in the queue. "
-                                                          + queueLength
-                                                          + " found, will continue to reject evaluations until "
-                                                          + MAXIMUM_EVALUATION_COUNT
-                                                          + " or fewer are in the queue." );
-        }
-    }
-
     private static Response internalServerError()
     {
         return WresJob.internalServerError( "An issue occurred that is not your fault." );
@@ -960,9 +847,9 @@ public class WresJob
     {
         return Response.serverError()
                        .entity(
-                               "<!DOCTYPE html><html><head><title>Our mistake</title></head><body><h1>Internal Server Error</h1><p>"
-                               + message
-                               + P_BODY_HTML )
+                                "<!DOCTYPE html><html><head><title>Our mistake</title></head><body><h1>Internal Server Error</h1><p>"
+                                + message
+                                + P_BODY_HTML )
                        .build();
     }
 
@@ -970,9 +857,9 @@ public class WresJob
     {
         return Response.status( Response.Status.SERVICE_UNAVAILABLE )
                        .entity(
-                               "<!DOCTYPE html><html><head><title>Service temporarily unavailable</title></head><body><h1>Service Unavailable</h1><p>"
-                               + message
-                               + P_BODY_HTML )
+                                "<!DOCTYPE html><html><head><title>Service temporarily unavailable</title></head><body><h1>Service Unavailable</h1><p>"
+                                + message
+                                + P_BODY_HTML )
                        .build();
     }
 
@@ -990,8 +877,8 @@ public class WresJob
         return Response.status( Response.Status.BAD_REQUEST )
                        .entity( "<!DOCTYPE html><html><head><title>Bad Request</title></head><body><h1>Bad Request"
                                 + "</h1><p>"
-                               + message
-                               + P_BODY_HTML )
+                                + message
+                                + P_BODY_HTML )
                        .build();
     }
 
@@ -1000,8 +887,8 @@ public class WresJob
         return Response.status( Response.Status.UNAUTHORIZED )
                        .entity( "<!DOCTYPE html><html><head><title>Unauthorized</title></head><body><h1>Unauthorized"
                                 + "</h1><p>"
-                               + message
-                               + P_BODY_HTML )
+                                + message
+                                + P_BODY_HTML )
                        .build();
     }
 
@@ -1068,9 +955,9 @@ public class WresJob
             {
                 //Create the salt
                 SecureRandom random = new SecureRandom();
-                random.nextBytes( WresJob.salt );
+                random.nextBytes( WresJob.SALT );
                 //Hash the token using the salt.
-                KeySpec spec = new PBEKeySpec( adminToken.toCharArray(), WresJob.salt, 65536, 128 );
+                KeySpec spec = new PBEKeySpec( adminToken.toCharArray(), WresJob.SALT, 65536, 128 );
                 SecretKeyFactory factory = SecretKeyFactory.getInstance( "PBKDF2WithHmacSHA1" );
                 WresJob.adminTokenHash = factory.generateSecret( spec ).getEncoded();
                 LOGGER.info( "Admin token read from system properties and hashed successfully." );
@@ -1239,27 +1126,59 @@ public class WresJob
         }
     }
 
-    static final class ConnectivityException extends RuntimeException
+    /**
+     * Reformat the declaration String, trimming it and making other changes as needed.
+     * @param projectConfig The posted declaration String.
+     * @return A reformatted version ready for use with the WRES.
+    */
+    private String reformatConfig( String projectConfig )
     {
-        @Serial
-        private static final long serialVersionUID = 4143746909778499341L;
+        return projectConfig.trim();
+    }
 
-        private ConnectivityException( String customMessage )
+    /**
+     * Get the length of the job queue.
+     * @return The length of the job queue, or 0 when System Property
+     * wres.tasker.skipQueueLengthCheck is set to true.
+     * @throws IOException When communication with broker fails.
+     * @throws TimeoutException When connection to broker times out.
+     */
+    private int getJobQueueLength() throws IOException, TimeoutException
+    {
+        String skipCheck = System.getProperty( SKIP_QUEUE_LENGTH_CHECK_SYSTEM_PROPERTY_NAME );
+        if ( skipCheck != null && skipCheck.equalsIgnoreCase( "true" ) )
         {
-            super( customMessage );
+            return 0;
         }
-
-        private ConnectivityException( String serviceName,
-                                       String host,
-                                       int port,
-                                       Throwable cause )
+        Connection innerConnection = WresJob.getConnection();
+        try ( Channel channel = innerConnection.createChannel() )
         {
-            super( "Failed to connect to " + serviceName
-                   + " at "
-                   + host
-                   + ":"
-                   + port,
-                   cause );
+            Map<String, Object> queueArgs = new HashMap<>();
+            queueArgs.put( "x-max-priority", 2 );
+            AMQP.Queue.DeclareOk declareOk =
+                    channel.queueDeclare( SEND_QUEUE_NAME,
+                                          true,
+                                          false,
+                                          false,
+                                          queueArgs );
+            return declareOk.getMessageCount();
+        }
+    }
+
+    /**
+     * Check to see if there are too many actively worked jobs in the job queue.
+     * @param queueLength The length of the queue.
+     * @throws TooManyEvaluationsInQueueException When too many jobs queued.
+     */
+    private void validateQueueLength( int queueLength )
+    {
+        if ( queueLength > MAXIMUM_EVALUATION_COUNT )
+        {
+            throw new TooManyEvaluationsInQueueException( "Too many evaluations in the queue. "
+                                                          + queueLength
+                                                          + " found, will continue to reject evaluations until "
+                                                          + MAXIMUM_EVALUATION_COUNT
+                                                          + " or fewer are in the queue." );
         }
     }
 
@@ -1286,14 +1205,40 @@ public class WresJob
             return WresJob.internalServerError( UNABLE_TO_VALIDATE_PROJECT_CONFIGURATION_DUE_TO_INTERNAL_ERROR );
         }
     }
-    
+
+    /**
+     * @param verb The verb specified by the user.
+     * @return A Pair containing the verb to be used (left) or a Response (right). 
+     * If the response is not null, then the user specified verb is invalid; return
+     * the response to the user. Otherwise, use the verb identified in the pair as
+     * the left value. Note that if the user provided verb is blank, then the 
+     * default execute is used.
+     */
+    private Pair<Verb, Response> checkAndObtainActualVerb( String verb )
+    {
+        if ( !StringUtils.isBlank( verb )
+             && Arrays.stream( Verb.values() )
+                      .noneMatch( v -> verb.equalsIgnoreCase( v.name() ) ) )
+        {
+            return Pair.of( null,
+                            WresJob.badRequest( "Verb '" + verb
+                                                + "' not available." ) );
+        }
+        Verb actualVerb = Verb.EXECUTE;
+        if ( Objects.nonNull( verb ) )
+        {
+            actualVerb = Verb.valueOf( verb.toUpperCase() );
+        }
+        return Pair.of( actualVerb, null );
+    }
+
     /**
      * 
      * @param actualVerb The verb to check.
      * @return True if the verb requires an admin token or the admin token
      * hash at start was provided. False otherwise.
      */
-    private boolean requiresAdminToken(Verb actualVerb)
+    private boolean requiresAdminToken( Verb actualVerb )
     {
         // Determine if an admin token is needed.
         Set<Verb> verbsNeedingAdminToken = Set.of( Verb.CLEANDATABASE,
@@ -1303,7 +1248,7 @@ public class WresJob
                                                    Verb.MIGRATEDATABASE );
         return adminTokenHash != null && verbsNeedingAdminToken.contains( actualVerb );
     }
-    
+
     /**
      * Check the admin token against the hashed version provided at startup.
      * @param actualVerb The verb being used. Admin token is only required for a subset,
@@ -1312,7 +1257,7 @@ public class WresJob
      * @param adminToken The token provided by the user.
      * @return A Response with an error if authentication fails.
      */
-    private Response authenticateAdminToken(Verb actualVerb, String adminToken)
+    private Response checkAdminToken( Verb actualVerb, String adminToken )
     {
         // Check admin token if necessary.
         if ( requiresAdminToken( actualVerb ) )
@@ -1325,7 +1270,7 @@ public class WresJob
             }
             try
             {
-                KeySpec spec = new PBEKeySpec( adminToken.toCharArray(), salt, 65536, 128 );
+                KeySpec spec = new PBEKeySpec( adminToken.toCharArray(), SALT, 65536, 128 );
                 SecretKeyFactory factory = SecretKeyFactory.getInstance( "PBKDF2WithHmacSHA1" );
                 byte[] hash = factory.generateSecret( spec ).getEncoded();
                 if ( !Arrays.equals( adminTokenHash, hash ) )
@@ -1350,13 +1295,13 @@ public class WresJob
         }
         return null;
     }
-    
+
     /**
      * 
      * @param actualVerb The verb to check.
      * @return True if the verb requires declaration; false otherwise.
      */
-    private boolean requiresDeclaration(Verb actualVerb)
+    private boolean requiresDeclaration( Verb actualVerb )
     {
         // Determine if declaration is expected.
         Set<Verb> verbsNeedingDeclaration = Set.of( Verb.EXECUTE,
@@ -1373,7 +1318,7 @@ public class WresJob
      * @return A response capturing any problems discovered. If null is 
      * returned, no problems were found.
      */
-    private Response checkDeclaration(Verb actualVerb, String projectConfig, boolean postInput)
+    private Response checkDeclaration( Verb actualVerb, String projectConfig, boolean postInput )
     {
         // If a declaration is necessary...
         if ( requiresDeclaration( actualVerb ) )
@@ -1418,14 +1363,80 @@ public class WresJob
         }
         return null;
     }
-    
+
+    /**
+     * @return The queue length and a Response if a problem occurs. Return the Response
+     * (right) if its not null. If it is null, then use the queue length Integer (left)
+     * which is guaranteed to not be null. Note that the system property with name 
+     * SKIP_QUEUE_LENGTH_CHECK_SYSTEM_PROPERTY_NAME allows for this check to always 
+     * return null, ignoring the queue length.
+     */
+    private Pair<Integer, Response> checkAndObtainQueueLengthBeforePosting()
+    {
+        int queueLength;
+        try
+        {
+            queueLength = this.getJobQueueLength();
+            this.validateQueueLength( queueLength );
+            return Pair.of( Integer.valueOf( queueLength ), null );
+        }
+        catch ( IOException | TimeoutException e )
+        {
+            LOGGER.error( "Attempt to check queue length failed.", e );
+            return Pair.of( Integer.valueOf( -1 ), WresJob.internalServerError() );
+        }
+        catch ( TooManyEvaluationsInQueueException tmeiqe )
+        {
+            LOGGER.warn( "Did not send job, returning 503.", tmeiqe );
+            return Pair.of( Integer.valueOf( -1 ),
+                            WresJob.serviceUnavailable( "Too many evaluations are in the queue, try again in a moment." ) );
+        }
+    }
+
+    /**
+     * @param actualVerb The verb being used. Only switchdatabase, cleandatabase, and 
+     * migrateddatabase allow the user to specify database information in additional 
+     * arguments. 
+     * @param additionalArguments The additional arguments specified by the user in the
+     * request.
+     * @return Both a list of strings and a response. If the response (right) is null, 
+     * everything is good: use the list of strings appropriately. If its not null, then
+     * a problem occurred; return the response to the user. The list is guaranteed to
+     * to have three strings specifying the host, port, and database name, in that 
+     * order. Any string that is null indicates the corresponding active database
+     * component is used.
+     */
+    private Pair<List<String>, Response> checkAndObtainDatabaseSettings( Verb actualVerb,
+                                                                         List<String> additionalArguments )
+    {
+        if ( actualVerb == Verb.SWITCHDATABASE
+             || ( actualVerb == Verb.CLEANDATABASE && !additionalArguments.isEmpty() )
+             || ( actualVerb == Verb.MIGRATEDATABASE && !additionalArguments.isEmpty() ) )
+        {
+            LOGGER.info( "Switch, clean, or migrate requested. Parsing additional arguments." );
+            if ( additionalArguments.size() != 3 )
+            {
+                String message = "Request with verb " + actualVerb
+                                 + " requires 3 additionalArguments, host, port, name, but "
+                                 + additionalArguments.size()
+                                 + " were provided.";
+                LOGGER.warn( message );
+                return Pair.of( additionalArguments, WresJob.badRequest( message ) );
+            }
+            return Pair.of( additionalArguments, null );
+        }
+
+        //Additional arguments are ignored, so just return a list of three null strings.
+        return Pair.of( Arrays.asList( (String) null, (String) null, (String) null ), null );
+    }
+
     /**
      * @param usedDatabaseHost The host to use, or empty to use default.
      * @param usedDatabasePort The port to use, or empty to use default.
      * @param usedDatabaseName The name ot use, or empty to use default.
      * @return The response of the switch database.
      */
-    private Response handleSwitchDatabase(String usedDatabaseHost, String usedDatabasePort, String usedDatabaseName)
+    private Response handleSwitchDatabase( String usedDatabaseHost, String usedDatabasePort, String usedDatabaseName )
     {
         setDatabaseHost( usedDatabaseHost );
         setDatabasePort( usedDatabasePort );
@@ -1444,9 +1455,101 @@ public class WresJob
                                 + activeDatabaseName
                                 + "'. Empty strings or null imply default from .yml will be used."
                                 + "</h1></body></html>" )
-                       .build();    
+                       .build();
+    }
+
+    /**
+     * Handles a job that includes posted input, updating JOB_RESULTS appropriately and providing a
+     * Response that can be returned to the user.
+     * @param resourceCreated The URI of the evaluation job resource created.
+     * @param urlCreated Its URL.
+     * @param jobId The job id.
+     * @param keepInput A flag specified by the user indicating if input is to be kept.
+     * @param jobMessage The job message to sent to the broker.
+     * @return The response to return to the user.
+     */
+    private Response handlePostedInputJob( URI resourceCreated,
+                                           String urlCreated,
+                                           String jobId,
+                                           boolean keepInput,
+                                           Job.job jobMessage )
+    {
+        // Pause before sending. Parse the declaration and add inputs before
+        // sending along. This request will result in 201 created response
+        // and the caller must send another request saying "I have finished
+        // posting input."
+        JOB_RESULTS.setJobMessage( jobId, jobMessage.toByteArray() );
+        JOB_RESULTS.setAwaitingPostInputData( jobId );
+        JOB_RESULTS.setKeepPostedInputData( jobId, keepInput );
+        return Response.created( resourceCreated )
+                       .entity( "<!DOCTYPE html><html><head><title>Evaluation job received.</title></head>"
+                                + "<body><h1>Evaluation job "
+                                + jobId
+                                + " has been received, the next step is to post input data.</h1>"
+                                + "<p>See <a href=\""
+                                + urlCreated
+                                + "\">"
+                                + urlCreated
+                                + A_P_BODY_HTML )
+                       .build();
+    }
+
+    /**
+     * @param actualVerb The verb.
+     * @param usedDatabaseHost The database server handling the job.
+     * @param usedDatabasePort The port of the database server handling the job.
+     * @param usedDatabaseName The name of the database.
+     * @param projectConfig The declaration the user provided.
+     * @param additionalArguments Additional arguments, which will be added only if the 
+     * job is not a clean or migrated (additional arguments are handled elsewhere in those
+     * two cases).
+     * @return A Job ready to be sent to the broker.
+     */
+    private Job.job buildJobMessage( Verb actualVerb,
+                                     String usedDatabaseHost,
+                                     String usedDatabasePort,
+                                     String usedDatabaseName,
+                                     String projectConfig,
+                                     List<String> additionalArguments )
+    {
+        Job.job.Builder builder = Job.job.newBuilder()
+                                         .setVerb( actualVerb )
+                                         .setDatabaseName( usedDatabaseName )
+                                         .setDatabaseHost( usedDatabaseHost )
+                                         .setDatabasePort( usedDatabasePort );
+        if ( requiresDeclaration( actualVerb ) )
+        {
+            builder.setProjectConfig( projectConfig );
+        }
+        else if ( actualVerb != Verb.CLEANDATABASE && actualVerb != Verb.MIGRATEDATABASE )
+        {
+            builder.addAllAdditionalArguments( additionalArguments );
+        }
+        return builder.build();
     }
     
+    /**
+     * Calls sendJobMessage, but catches the exception and transforms them into a response.
+     * @param jobId The job id.
+     * @param jobMessage The message
+     * @param messagePriority Its priority.
+     * @return A Response if a problem was encountered which can be forwarded to the user, or null
+     * if everything was good.
+     */
+    private Response sendDeclarationMessageOrGiveResponse(String jobId, Job.job jobMessage, int messagePriority)
+    {
+        try
+        {
+            sendDeclarationMessage( jobId, jobMessage.toByteArray(), messagePriority );
+        }
+        catch ( IOException | TimeoutException e )
+        {
+            LOGGER.error( "Attempt to send message failed.", e );
+            return WresJob.internalServerError();
+        }
+        return null;
+    }
+
     /**
      * Creates a response from a collection of evaluation status events or null if no errors were encountered.
      * @param events the events
@@ -1471,7 +1574,7 @@ public class WresJob
             {
                 event.writeDelimitedTo( byteStream );
             }
- 
+
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.append( "<br>The project declaration contained the following errors, which must be fixed:</br>" );
             events.forEach( event -> stringBuilder.append( "<br>" )
@@ -1486,6 +1589,30 @@ public class WresJob
             LOGGER.warn( UNABLE_TO_WRITE_PROTOBUF_RESPONSE_BYTE_ARRAY_DUE_TO_I_O_EXCEPTION,
                          e2 );
             return WresJob.internalServerError( UNABLE_TO_WRITE_PROTOBUF_RESPONSE_BYTE_ARRAY_DUE_TO_I_O_EXCEPTION );
+        }
+    }
+
+    static final class ConnectivityException extends RuntimeException
+    {
+        @Serial
+        private static final long serialVersionUID = 4143746909778499341L;
+
+        private ConnectivityException( String customMessage )
+        {
+            super( customMessage );
+        }
+
+        private ConnectivityException( String serviceName,
+                                       String host,
+                                       int port,
+                                       Throwable cause )
+        {
+            super( "Failed to connect to " + serviceName
+                   + " at "
+                   + host
+                   + ":"
+                   + port,
+                   cause );
         }
     }
 }
