@@ -15,7 +15,7 @@ import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.Formats;
 import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
-import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.space.FeatureGroup;

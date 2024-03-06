@@ -3,11 +3,13 @@ package wres.pipeline.pooling;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +29,7 @@ import wres.config.yaml.components.TimeIntervalBuilder;
 import wres.config.yaml.components.TimePools;
 import wres.config.yaml.components.TimePoolsBuilder;
 import wres.config.yaml.components.VariableBuilder;
-import wres.datamodel.Ensemble;
+import wres.datamodel.types.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolRequest;
@@ -52,10 +54,13 @@ class PoolsGeneratorTest
     private static final String CFS = "CFS";
     private static final String STREAMFLOW = "STREAMFLOW";
 
+    /** The mocks. */
+    private AutoCloseable mocks;
+
     @BeforeEach
     void setup()
     {
-        MockitoAnnotations.openMocks( this );
+        this.mocks = MockitoAnnotations.openMocks( this );
     }
 
     /**
@@ -259,5 +264,12 @@ class PoolsGeneratorTest
         Assertions.assertEquals( 18, actual.size() );
     }
 
-
+    @AfterEach
+    void tearDown() throws Exception
+    {
+        if( Objects.nonNull( this.mocks ) )
+        {
+            this.mocks.close();
+        }
+    }
 }

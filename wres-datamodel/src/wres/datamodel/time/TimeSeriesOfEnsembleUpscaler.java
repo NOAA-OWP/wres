@@ -16,8 +16,8 @@ import java.util.stream.Collectors;
 
 import javax.measure.Unit;
 
-import wres.datamodel.Ensemble;
-import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.types.Ensemble;
+import wres.datamodel.types.Ensemble.Labels;
 import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.MissingValues;
 import wres.datamodel.units.Units;

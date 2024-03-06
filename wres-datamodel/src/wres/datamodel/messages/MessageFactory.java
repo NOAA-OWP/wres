@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Timestamp;
 
-import wres.datamodel.Ensemble;
+import wres.datamodel.types.Ensemble;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;

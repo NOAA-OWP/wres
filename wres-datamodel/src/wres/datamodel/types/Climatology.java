@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.types;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.Immutable;
 
+import wres.datamodel.MissingValues;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;

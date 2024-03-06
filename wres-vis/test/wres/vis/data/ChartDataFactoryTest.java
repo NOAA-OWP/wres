@@ -18,7 +18,7 @@ import org.junit.jupiter.api.Test;
 import wres.config.MetricConstants;
 import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
-import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.statistics.BoxplotStatisticOuter;

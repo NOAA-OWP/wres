@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.types;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.types.Ensemble.Labels;
 
 /**
  * Tests the {@link Ensemble}.

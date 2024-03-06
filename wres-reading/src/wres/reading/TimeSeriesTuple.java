@@ -2,7 +2,7 @@ package wres.reading;
 
 import java.util.Objects;
 
-import wres.datamodel.Ensemble;
+import wres.datamodel.types.Ensemble;
 import wres.datamodel.time.TimeSeries;
 
 /**

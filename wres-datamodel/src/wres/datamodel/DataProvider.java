@@ -1,7 +1,5 @@
-package wres.io.data;
+package wres.datamodel;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Duration;
@@ -10,19 +8,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.sql.ResultSet;
-
-import javax.json.Json;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObjectBuilder;
-import javax.json.JsonValue;
-
-import wres.datamodel.MissingValues;
-import wres.io.database.Database;
-import wres.io.database.DatabaseOperations;
-import wres.reading.csv.CsvDataProvider;
 
 /**
  * <p>Provides access to, and operations upon, tabular data.
@@ -41,7 +28,7 @@ public interface DataProvider extends AutoCloseable
 
     /**
      * Tells the data provider to move to the next row
-     * @return Whether or not there is another row to move to
+     * @return Whether there is another row to move to
      * @throws IllegalStateException Thrown if the data has been closed down
      * @throws IndexOutOfBoundsException Thrown if the provider attempts to
      * move beyond its own boundaries
@@ -50,26 +37,12 @@ public interface DataProvider extends AutoCloseable
 
     /**
      * Tells the data provider to move to the previous row
-     * @return Whether or not there was a row to move to
+     * @return Whether there was a row to move to
      * @throws IllegalStateException Thrown if the data has been closed down
      * @throws IndexOutOfBoundsException Thrown if the provider attempts to
      * move beyond its own boundaries
      */
     boolean back();
-
-    /**
-     * Moves to the last row in the data
-     * @throws IllegalStateException Thrown if the data has been closed down
-     */
-    void toEnd();
-
-    /**
-     * Moves to the first row in the data
-     * @throws IOException Thrown if an I/O error occurred while attempting to
-     * reset the source for that data being provided
-     * @throws IllegalStateException Thrown if the data has been closed down
-     */
-    void reset() throws IOException;
 
     /**
      * @param columnName The name of the column to look for
@@ -87,26 +60,20 @@ public interface DataProvider extends AutoCloseable
     List<String> getColumnNames();
 
     /**
-     * @return The row that the data provider is currently on
-     * @throws IllegalStateException Thrown if the data has been closed down
-     */
-    int getRowIndex();
-
-    /**
      * @param columnName The name of the column to look in
-     * @return Whether or not the value in the current row for the specified column is null
+     * @return Whether the value in the current row for the specified column is null
      * @throws IllegalStateException Thrown if the data has been closed down
      */
     boolean isNull( final String columnName );
 
     /**
      * @param columnName The name of the column to look for
-     * @return Whether or not the desired column is present
+     * @return Whether the desired column is present
      */
     boolean hasColumn( final String columnName );
 
     /**
-     * @return Whether or not the data provider contains data
+     * @return Whether the data provider contains data
      */
     boolean isEmpty();
 
@@ -256,14 +223,6 @@ public interface DataProvider extends AutoCloseable
     Integer[] getIntegerArray( final String columnName );
 
     /**
-     * @param columnName The name of the column containing the desired <code>String</code> array
-     * @return The <code>String</code> values contained within the desired column
-     * @throws IllegalStateException Thrown if the data has been closed down or the column name doesn't exist
-     * @throws IndexOutOfBoundsException Thrown if the data is empty
-     */
-    String[] getStringArray( final String columnName );
-
-    /**
      * @param columnName The name of the column containing a time
      *                   representation
      * @return A time object taken from the object in the given column.
@@ -347,112 +306,5 @@ public interface DataProvider extends AutoCloseable
         }
 
         return value.toString();
-    }
-
-    /**
-     * Copies the data within the provider from the current row through the last row into the schema and table
-     * <br>
-     * The position of the provider will be at the end of the dataset after function completion
-     * @param database The database to use
-     * TODO: implementations may not have/use a database, may want to not
-     *       require the database as a param but as a member of implementations.
-     * @param table Fully qualified table name to copy data into
-     * @throws wres.io.ingesting.IngestException When the copy fails.
-     */
-    default void copy( Database database, final String table )
-    {
-        List<String> columnNames = this.getColumnNames();
-        List<String[]> values = new ArrayList<>();
-        // TODO: Find the type of the data accurately instead of all false.
-        boolean[] charColumns = new boolean[columnNames.size()];
-
-        while ( this.next() )
-        {
-            String[] row = new String[columnNames.size()];
-
-            for ( int col = 0; col < columnNames.size(); col++ )
-            {
-                String representation = this.toString( columnNames.get( col ) );
-                row[col] = representation;
-            }
-
-            values.add( row );
-        }
-
-        // Until we can figure out how to get exceptions to propagate from
-        // submitting to the Database executor, run synchronously in caller's
-        // Thread.
-        DatabaseOperations.insertIntoDatabase( database,
-                                               table,
-                                               columnNames,
-                                               values,
-                                               charColumns );
-    }
-
-//    /**
-//     * Converts a CSV file to a DataProvider with the top line being the header
-//     * @param fileName The path to the csv file
-//     * @param delimiter The delimiter separating values
-//     * @return A DataProvider containing the provided CSV data
-//     * @throws IOException Thrown if the file could not be read
-//     */
-//    static DataProvider fromCsv( final URI fileName, final char delimiter ) throws IOException
-//    {
-//        return CsvDataProvider.from( fileName, delimiter );
-//    }
-//
-//    /**
-//     * Converts a CSV stream to a DataProvider with the top line being the header
-//     * @param inputStream The CSV stream
-//     * @param delimiter The delimiter separating values
-//     * @return A DataProvider containing the provided CSV data
-//     * @throws IOException Thrown if the file could not be read
-//     */
-//    static DataProvider fromCsv( final InputStream inputStream, final char delimiter ) throws IOException
-//    {
-//        return CsvDataProvider.from( inputStream, delimiter );
-//    }
-
-    /**
-     * Creates a JSON String representation of the DataProvider
-     * <br>
-     * <b>Warning:</b> The DataProvider will move to the end of the
-     * data as a result of JSON creation. Buffered implementations
-     * will not be able to return to the beginning of their data
-     * @return The DataProvider represented as a JSON String
-     */
-    default String toJsonString()
-    {
-        return this.toJson()
-                   .toString();
-    }
-
-    /**
-     * Creates a JSON representation of the DataProvider
-     * <br>
-     * <b>Warning:</b> The DataProvider will move to the end of the
-     * data as a result of JSON creation. Buffered implementations
-     * will not be able to return to the beginning of their data
-     * @return The DataProvider represented as JSON
-     */
-    default JsonValue toJson()
-    {
-        JsonArrayBuilder arrayBuilder = Json.createArrayBuilder();
-
-        do
-        {
-            JsonObjectBuilder row = Json.createObjectBuilder();
-
-            for ( String column : this.getColumnNames() )
-            {
-                row.add( column, this.getString( column ) );
-            }
-
-            arrayBuilder.add( row );
-
-        }
-        while ( this.next() );
-
-        return arrayBuilder.build();
     }
 }

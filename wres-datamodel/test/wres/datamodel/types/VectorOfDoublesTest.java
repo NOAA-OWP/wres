@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.types;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -7,6 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
+/**
+ * Tests the {@link VectorOfDoubles}.
+ */
 class VectorOfDoublesTest
 {
     public static final double DELTA = 0.00001;
@@ -24,8 +27,8 @@ class VectorOfDoublesTest
                     "Expect second vec to be more than first vec" );
         assertNotEquals( firstVec, secondVec, "Expect first vec to not equal second vec" );
         assertNotEquals( secondVec, firstVec, "Expect second vec to not equal first vec" );
-        assertTrue( firstVec.hashCode() != secondVec.hashCode(),
-                    "Expect first hashcode to be different from second" );
+        assertNotEquals( firstVec.hashCode(), secondVec.hashCode(),
+                         "Expect first hashcode to be different from second" );
     }
 
     @Test
@@ -41,8 +44,9 @@ class VectorOfDoublesTest
                     "Expect second pair to be more than first pair" );
         assertNotEquals( firstVec, secondVec, "Expect first vec to not equal second vec" );
         assertNotEquals( secondVec, firstVec, "Expect second vec to not equal first vec" );
-        assertTrue( firstVec.hashCode() != secondVec.hashCode(),
-                    "Expect first hashcode to be different from second" );
+        assertNotEquals( firstVec.hashCode(),
+                         secondVec.hashCode(),
+                         "Expect first hashcode to be different from second" );
     }
 
     @Test

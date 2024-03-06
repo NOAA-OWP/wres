@@ -31,7 +31,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.components.DatasetOrientation;
-import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.types.Climatology;
+import wres.datamodel.types.Ensemble;
+import wres.datamodel.types.Ensemble.Labels;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
@@ -46,6 +48,9 @@ import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.space.Feature;
 
 import wres.config.yaml.components.ThresholdType;
+import wres.datamodel.types.OneOrTwoDoubles;
+import wres.datamodel.types.Probability;
+import wres.datamodel.types.VectorOfDoubles;
 import wres.statistics.generated.Statistics;
 
 /**

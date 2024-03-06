@@ -29,7 +29,7 @@ import net.jcip.annotations.ThreadSafe;
 import wres.config.yaml.components.CrossPair;
 import wres.config.yaml.components.CrossPairScope;
 import wres.config.yaml.components.DatasetOrientation;
-import wres.datamodel.Climatology;
+import wres.datamodel.types.Climatology;
 import wres.datamodel.baselines.BaselineGenerator;
 import wres.datamodel.messages.EvaluationStatusMessage;
 import wres.datamodel.pools.Pool;

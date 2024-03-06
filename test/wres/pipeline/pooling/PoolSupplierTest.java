@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -16,6 +17,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -27,7 +29,7 @@ import wres.config.yaml.components.CrossPairMethod;
 import wres.config.yaml.components.CrossPairScope;
 import wres.config.yaml.components.GeneratedBaseline;
 import wres.config.yaml.components.GeneratedBaselineBuilder;
-import wres.datamodel.Climatology;
+import wres.datamodel.types.Climatology;
 import wres.datamodel.baselines.BaselineGenerator;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool;
@@ -214,10 +216,13 @@ class PoolSupplierTest
     /** A pairer. */
     private TimeSeriesPairer<Double, Double> pairer;
 
+    /** The mocks. */
+    private AutoCloseable mocks;
+
     @BeforeEach
     void runBeforeEachTest()
     {
-        MockitoAnnotations.openMocks( this );
+        this.mocks = MockitoAnnotations.openMocks( this );
         TimeScaleOuter existingTimeScale = TimeScaleOuter.of( Duration.ofHours( 3 ), TimeScaleFunction.MEAN );
 
         // Observations: 25510317T00_FAKE2_observations.xml
@@ -534,6 +539,15 @@ class PoolSupplierTest
 
         // Pairer
         this.pairer = TimeSeriesPairerByExactTime.of();
+    }
+
+    @AfterEach
+    void runAfterEachTest() throws Exception
+    {
+        if ( Objects.nonNull( this.mocks ) )
+        {
+            this.mocks.close();
+        }
     }
 
     /**

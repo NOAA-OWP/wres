@@ -5,9 +5,9 @@ import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.Ensemble;
+import wres.datamodel.types.Ensemble;
 import wres.datamodel.Slicer;
-import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.types.VectorOfDoubles;
 import wres.config.MetricConstants;
 import wres.metrics.MetricParameterException;
 import wres.statistics.generated.BoxplotMetric;

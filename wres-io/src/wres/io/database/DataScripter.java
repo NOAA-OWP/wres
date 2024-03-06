@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
 
-import wres.io.data.DataProvider;
+import wres.datamodel.DataProvider;
 
 import java.util.IllegalFormatException;
 

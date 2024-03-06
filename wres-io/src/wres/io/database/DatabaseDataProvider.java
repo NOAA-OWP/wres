@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MissingValues;
 import wres.datamodel.time.TimeSeriesSlicer;
-import wres.io.data.DataProvider;
+import wres.datamodel.DataProvider;
 
 /**
  * A {@link DataProvider} that provides buffered access to the results of a database call.
@@ -167,36 +167,6 @@ public class DatabaseDataProvider implements DataProvider
     }
 
     @Override
-    public void toEnd()
-    {
-        try
-        {
-            this.resultSet.last();
-        }
-        catch ( SQLException e )
-        {
-            throw new IllegalStateException( "The position in the data set may "
-                                             + "not be moved to the end.",
-                                             e );
-        }
-    }
-
-    @Override
-    public void reset()
-    {
-        try
-        {
-            this.resultSet.first();
-        }
-        catch ( SQLException e )
-        {
-            throw new IllegalStateException( "The position in the data set may not "
-                                             + "be moved back to its beginning.",
-                                             e );
-        }
-    }
-
-    @Override
     public int getColumnIndex( String columnName )
     {
         // Find the string, ignoring case
@@ -215,19 +185,6 @@ public class DatabaseDataProvider implements DataProvider
     public List<String> getColumnNames()
     {
         return this.columnNames;
-    }
-
-    @Override
-    public int getRowIndex()
-    {
-        try
-        {
-            return this.resultSet.getRow();
-        }
-        catch ( SQLException e )
-        {
-            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
-        }
     }
 
     @Override
@@ -625,60 +582,6 @@ public class DatabaseDataProvider implements DataProvider
                     LOGGER.warn( COULD_NOT_RELEASE_RESOURCES_FOR_COLUMN_IN,
                                  columnName,
                                  this.resultSet );
-                }
-            }
-        }
-
-        return rawResult;
-    }
-
-    @Override
-    public String[] getStringArray( String columnName )
-    {
-        Array outer = null;
-        String[] rawResult;
-
-        try
-        {
-            // Probe the inner type of array before casting
-            // See #56214-139-140
-            outer = this.resultSet.getArray( columnName );
-            Object inner = outer.getArray();
-
-            if ( inner instanceof String[] toTransform )
-            {
-                rawResult = toTransform;
-            }
-            else if ( inner instanceof Object[] toTransform )
-            {
-                rawResult = Arrays.copyOf( toTransform, toTransform.length, String[].class );
-            }
-            else
-            {
-                throw new ClassCastException( COULD_NOT_CAST_THE_INPUT_TYPE_OF
-                                              + inner.getClass()
-                                              + WITH_SQL_TYPE
-                                              + outer.getBaseTypeName()
-                                              + "' to a String[]." );
-            }
-        }
-        catch ( SQLException e )
-        {
-            throw new IllegalStateException( THE_DATA_IS_NOT_ACCESSIBLE, e );
-        }
-        finally
-        {
-            // Unfortunately, Closeable was not used in JDBC
-            if ( Objects.nonNull( outer ) )
-            {
-                try
-                {
-                    outer.free();
-                }
-                catch ( SQLException se )
-                {
-                    LOGGER.warn( COULD_NOT_RELEASE_RESOURCES_FOR_COLUMN_IN,
-                                 columnName, this.resultSet );
                 }
             }
         }

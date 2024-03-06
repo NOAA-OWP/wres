@@ -38,7 +38,7 @@ import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.ThresholdType;
-import wres.datamodel.Ensemble;
+import wres.datamodel.types.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.bootstrap.BlockSizeEstimator;
 import wres.datamodel.bootstrap.InsufficientDataForResamplingException;

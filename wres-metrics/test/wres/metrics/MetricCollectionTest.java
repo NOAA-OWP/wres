@@ -22,7 +22,7 @@ import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.Probability;
+import wres.datamodel.types.Probability;
 import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.Pool;

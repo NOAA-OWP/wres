@@ -28,9 +28,9 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import wres.datamodel.Climatology;
-import wres.datamodel.Ensemble;
-import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.types.Climatology;
+import wres.datamodel.types.Ensemble;
+import wres.datamodel.types.Ensemble.Labels;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.Slicer;
 import wres.datamodel.pools.PoolSlicer;

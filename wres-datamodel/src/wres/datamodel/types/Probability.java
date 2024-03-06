@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.types;
 
 import org.apache.commons.math3.util.Precision;
 

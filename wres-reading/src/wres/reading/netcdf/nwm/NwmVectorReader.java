@@ -29,7 +29,7 @@ import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.SourceInterface;
-import wres.datamodel.Ensemble;
+import wres.datamodel.types.Ensemble;
 import wres.datamodel.time.TimeSeries;
 import wres.reading.DataSource;
 import wres.reading.ReadException;
@@ -599,7 +599,7 @@ public class NwmVectorReader implements TimeSeriesReader
             LOGGER.debug( "Feature blocks: {}", featureBlocks );
         }
 
-        return Collections.unmodifiableList( featureBlocks );
+        return featureBlocks;
     }
 
     /**

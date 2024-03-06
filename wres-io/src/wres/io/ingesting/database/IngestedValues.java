@@ -1,5 +1,7 @@
 package wres.io.ingesting.database;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -10,8 +12,10 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.data.DataBuilder;
+import wres.datamodel.DefaultDataProvider;
+import wres.datamodel.DataProvider;
 import wres.io.database.Database;
+import wres.io.database.DatabaseOperations;
 import wres.io.ingesting.IngestException;
 import wres.system.SystemSettings;
 
@@ -29,7 +33,7 @@ public final class IngestedValues
 
     // Key = partition name, i.e. "partitions.forecastvalue_lead_0"
     // Value = List of values to save to the partition
-    private static final ConcurrentMap<String, DataBuilder> VALUES_TO_SAVE = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, DefaultDataProvider> VALUES_TO_SAVE = new ConcurrentHashMap<>();
 
     private static final ConcurrentMap<String, Pair<CountDownLatch, CountDownLatch>> VALUES_SAVED_LATCHES =
             new ConcurrentHashMap<>();
@@ -61,13 +65,13 @@ public final class IngestedValues
                                                                            Double value )
             throws IngestException
     {
-        DataBuilder freshDataBuilder = DataBuilder.with( IngestedValues.TIMESERIES_COLUMN_NAMES );
+        DefaultDataProvider freshDefaultDataProvider = DefaultDataProvider.with( IngestedValues.TIMESERIES_COLUMN_NAMES );
 
         // The data builder to add to, whether existing or fresh.
-        DataBuilder dataBuilderToUse;
+        DefaultDataProvider defaultDataProviderToUse;
 
         // The data builder removed from the collection, to be ingested.
-        DataBuilder removedDataBuilder = null;
+        DefaultDataProvider removedDefaultDataProvider = null;
 
         // After copy has completed, this class will count down wasSavedLatch
         // This acts as a signal to callers that their data was saved.
@@ -80,7 +84,7 @@ public final class IngestedValues
                                                                      wasSavedLatch );
 
         // The existing latches to be got from the collection when put fails.
-        Pair<CountDownLatch, CountDownLatch> latchesToUse = null;
+        Pair<CountDownLatch, CountDownLatch> latchesToUse;
 
         // When save is needed, removedLatches will be set.
         Pair<CountDownLatch, CountDownLatch> removedLatches = null;
@@ -94,17 +98,17 @@ public final class IngestedValues
         synchronized ( VALUES_TO_SAVE_LOCK )
         {
             // Add a list for the values if it isn't present
-            dataBuilderToUse = VALUES_TO_SAVE.putIfAbsent( TABLE_NAME,
-                                                           freshDataBuilder );
+            defaultDataProviderToUse = VALUES_TO_SAVE.putIfAbsent( TABLE_NAME,
+                                                                   freshDefaultDataProvider );
 
             // When putIfAbsent returns null, it means it successfully put.
-            if ( dataBuilderToUse == null )
+            if ( defaultDataProviderToUse == null )
             {
-                dataBuilderToUse = freshDataBuilder;
+                defaultDataProviderToUse = freshDefaultDataProvider;
             }
 
             // Add the values to the list for the partition
-            dataBuilderToUse.addRow( timeSeriesID, lead, value );
+            defaultDataProviderToUse.addRow( timeSeriesID, lead, value );
 
             // Add latches for the values if not present
             latchesToUse = VALUES_SAVED_LATCHES.putIfAbsent( TABLE_NAME,
@@ -116,7 +120,7 @@ public final class IngestedValues
                 latchesToUse = freshLatches;
             }
 
-            int rowCount = dataBuilderToUse.getRowCount();
+            int rowCount = defaultDataProviderToUse.getRowCount();
             int maximumCount = systemSettings.getMaximumCopies();
 
             // If the maximum number of values to copy has been reached, copy the
@@ -161,7 +165,7 @@ public final class IngestedValues
             if ( doSave )
             {
                 removedLatches = VALUES_SAVED_LATCHES.remove( TABLE_NAME );
-                removedDataBuilder = VALUES_TO_SAVE.remove( TABLE_NAME );
+                removedDefaultDataProvider = VALUES_TO_SAVE.remove( TABLE_NAME );
                 // It is understood that another Thread will put fresh values.
             }
         }
@@ -185,8 +189,8 @@ public final class IngestedValues
                 // it might be better to have Thread B complete the ingest and
                 // leave Thread C to do other things. Even better might be to
                 // let Thread A do the ingest since it is the one waiting.
-                removedDataBuilder.build()
-                                  .copy( database, TABLE_NAME );
+                DataProvider provider = removedDefaultDataProvider.build();
+                IngestedValues.copy( provider, database, TABLE_NAME );
             }
             catch ( IngestException ce )
             {
@@ -215,7 +219,6 @@ public final class IngestedValues
         }
     }
 
-
     /**
      * Call this when you are an ingester waiting to mark "completed" but no
      * other Thread has helped you out.
@@ -231,7 +234,7 @@ public final class IngestedValues
         LOGGER.trace( "Began flush for synchronizer {}...", synchronizer );
 
         // The data builder removed from the collection, to be ingested.
-        DataBuilder removedDataBuilder = null;
+        DefaultDataProvider removedDefaultDataProvider = null;
 
         // When save is needed, removedLatches will be set.
         Pair<CountDownLatch, CountDownLatch> removedLatches = null;
@@ -253,7 +256,7 @@ public final class IngestedValues
             if ( tableName != null )
             {
                 removedLatches = VALUES_SAVED_LATCHES.remove( tableName );
-                removedDataBuilder = VALUES_TO_SAVE.remove( tableName );
+                removedDefaultDataProvider = VALUES_TO_SAVE.remove( tableName );
             }
         }
 
@@ -269,7 +272,7 @@ public final class IngestedValues
         // these objects will not be visible to Threads that were waiting to
         // enter the above synchronized block.
         LOGGER.trace( "Attempting to flush values for partition {} with {}",
-                      tableName, removedDataBuilder );
+                      tableName, removedDefaultDataProvider );
 
         try
         {
@@ -280,8 +283,8 @@ public final class IngestedValues
             // it might be better to have Thread B complete the ingest and
             // leave Thread C to do other things. Even better might be to
             // let Thread A do the ingest since it is the one waiting.
-            removedDataBuilder.build()
-                              .copy( database, tableName );
+            DataProvider provider = removedDefaultDataProvider.build();
+            IngestedValues.copy( provider, database, tableName );
         }
         catch ( IngestException ce )
         {
@@ -307,4 +310,42 @@ public final class IngestedValues
 
         return true;
     }
+
+    /**
+     * Copies the data within the provider from the current row through the last row into the schema and table
+     * <br>
+     * The position of the provider will be at the end of the dataset after function completion
+     * @param database The database to use
+     * @param table Fully qualified table name to copy data into
+     * @throws IngestException When the copy fails.
+     */
+    private static void copy( DataProvider provider, Database database, final String table )
+    {
+        List<String> columnNames = provider.getColumnNames();
+        List<String[]> values = new ArrayList<>();
+        boolean[] charColumns = new boolean[columnNames.size()];
+
+        while ( provider.next() )
+        {
+            String[] row = new String[columnNames.size()];
+
+            for ( int col = 0; col < columnNames.size(); col++ )
+            {
+                String representation = provider.toString( columnNames.get( col ) );
+                row[col] = representation;
+            }
+
+            values.add( row );
+        }
+
+        // Until we can figure out how to get exceptions to propagate from
+        // submitting to the Database executor, run synchronously in caller's
+        // Thread.
+        DatabaseOperations.insertIntoDatabase( database,
+                                               table,
+                                               columnNames,
+                                               values,
+                                               charColumns );
+    }
+
 }

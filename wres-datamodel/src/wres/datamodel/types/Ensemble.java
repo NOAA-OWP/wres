@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.types;
 
 import java.util.Arrays;
 import java.util.Comparator;

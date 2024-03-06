@@ -1,4 +1,4 @@
-package wres.io.data;
+package wres.datamodel.types;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -21,6 +21,7 @@ import java.util.TreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.DataProvider;
 import wres.datamodel.MissingValues;
 import wres.datamodel.time.TimeSeriesSlicer;
 
@@ -84,7 +85,13 @@ public class TabularDataset implements DataProvider
         return dataSetProvider;
     }
 
-    static TabularDataset from( final Map<String, Integer> columnNames, final List<Object[]> rows )
+    /**
+     * Creates an instance from the inputs.
+     * @param columnNames the column names
+     * @param rows the rows
+     * @return the dataset
+     */
+    public static TabularDataset from( final Map<String, Integer> columnNames, final List<Object[]> rows )
     {
         TabularDataset provider = new TabularDataset();
         LOGGER.debug( "Created TabularDataset (2) with columnNames {}",
@@ -135,37 +142,6 @@ public class TabularDataset implements DataProvider
 
         this.currentRow--;
         return this.currentRow >= 0;
-    }
-
-    @Override
-    public void toEnd()
-    {
-        if ( this.isClosed() )
-        {
-            throw new IllegalStateException( "The position in the data set may "
-                                             + "not be moved to the end." );
-        }
-
-        this.currentRow = this.rows.size() - 1;
-    }
-
-    @Override
-    public void reset()
-    {
-        if ( this.isClosed() )
-        {
-            throw new IllegalStateException( "The position in the data set may not "
-                                             + "be moved back to its beginning." );
-        }
-
-        if ( this.rows.isEmpty() )
-        {
-            this.currentRow = -1;
-        }
-        else
-        {
-            this.currentRow = 0;
-        }
     }
 
     @Override
@@ -272,17 +248,6 @@ public class TabularDataset implements DataProvider
     }
 
     @Override
-    public int getRowIndex()
-    {
-        if ( this.isClosed() )
-        {
-            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
-        }
-
-        return this.currentRow;
-    }
-
-    @Override
     public Object getObject( String columnName )
     {
         if ( this.isClosed() )
@@ -370,11 +335,10 @@ public class TabularDataset implements DataProvider
         }
         catch ( NumberFormatException c )
         {
-            throw new ClassCastException(
-                    THE_TYPE + value.getClass() +
-                    WITH_THE_VALUE + value +
-                    IN_THE_COLUMN + columnName +
-                    "' cannot be casted as a byte." );
+            throw new ClassCastException( THE_TYPE + value.getClass() +
+                                          WITH_THE_VALUE + value +
+                                          IN_THE_COLUMN + columnName +
+                                          "' cannot be casted as a byte." );
         }
     }
 
@@ -409,11 +373,10 @@ public class TabularDataset implements DataProvider
         }
         catch ( NumberFormatException c )
         {
-            throw new ClassCastException(
-                    THE_TYPE + value.getClass().toString() +
-                    WITH_THE_VALUE + value +
-                    IN_THE_COLUMN + columnName +
-                    "' cannot be casted as an integer." );
+            throw new ClassCastException( THE_TYPE + value.getClass() +
+                                          WITH_THE_VALUE + value +
+                                          IN_THE_COLUMN + columnName +
+                                          "' cannot be casted as an integer." );
         }
     }
 
@@ -448,11 +411,10 @@ public class TabularDataset implements DataProvider
         }
         catch ( NumberFormatException c )
         {
-            throw new ClassCastException(
-                    THE_TYPE + value.getClass().toString() +
-                    WITH_THE_VALUE + value +
-                    IN_THE_COLUMN + columnName +
-                    "' cannot be casted as a short." );
+            throw new ClassCastException( THE_TYPE + value.getClass() +
+                                          WITH_THE_VALUE + value +
+                                          IN_THE_COLUMN + columnName +
+                                          "' cannot be casted as a short." );
         }
     }
 
@@ -487,11 +449,10 @@ public class TabularDataset implements DataProvider
         }
         catch ( NumberFormatException c )
         {
-            throw new ClassCastException(
-                    THE_TYPE + value.getClass().toString() +
-                    WITH_THE_VALUE + value +
-                    IN_THE_COLUMN + columnName +
-                    "' cannot be casted as a long." );
+            throw new ClassCastException( THE_TYPE + value.getClass() +
+                                          WITH_THE_VALUE + value +
+                                          IN_THE_COLUMN + columnName +
+                                          "' cannot be casted as a long." );
         }
     }
 
@@ -526,11 +487,10 @@ public class TabularDataset implements DataProvider
         }
         catch ( NumberFormatException c )
         {
-            throw new ClassCastException(
-                    THE_TYPE + value.getClass().toString() +
-                    WITH_THE_VALUE + value +
-                    IN_THE_COLUMN + columnName +
-                    "' cannot be casted as a float." );
+            throw new ClassCastException( THE_TYPE + value.getClass() +
+                                          WITH_THE_VALUE + value +
+                                          IN_THE_COLUMN + columnName +
+                                          "' cannot be casted as a float." );
         }
     }
 
@@ -565,11 +525,10 @@ public class TabularDataset implements DataProvider
         }
         catch ( NumberFormatException c )
         {
-            throw new ClassCastException(
-                    THE_TYPE + value.getClass().toString() +
-                    WITH_THE_VALUE + value +
-                    IN_THE_COLUMN + columnName +
-                    "' cannot be casted as a double." );
+            throw new ClassCastException( THE_TYPE + value.getClass() +
+                                          WITH_THE_VALUE + value +
+                                          IN_THE_COLUMN + columnName +
+                                          "' cannot be casted as a double." );
         }
     }
 
@@ -615,7 +574,7 @@ public class TabularDataset implements DataProvider
         }
 
         throw new ClassCastException( THE_TYPE +
-                                      array.getClass().toString() +
+                                      array.getClass() +
                                       IN_THE_COLUMN + columnName +
                                       "' cannot be casted as a double array." );
     }
@@ -662,34 +621,9 @@ public class TabularDataset implements DataProvider
         }
 
         throw new ClassCastException( THE_TYPE +
-                                      array.getClass().toString() +
+                                      array.getClass() +
                                       IN_THE_COLUMN + columnName +
                                       "' cannot be casted as a integer array." );
-    }
-
-    @Override
-    public String[] getStringArray( String columnName )
-    {
-        if ( this.isClosed() )
-        {
-            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
-        }
-
-        Object array = this.getObject( columnName );
-
-        if ( array == null )
-        {
-            return new String[0];
-        }
-        else if ( array instanceof String[] v )
-        {
-            return v;
-        }
-
-        throw new ClassCastException( THE_TYPE +
-                                      array.getClass().toString() +
-                                      IN_THE_COLUMN + columnName +
-                                      "' cannot be casted as a String array." );
     }
 
     @Override
@@ -739,11 +673,10 @@ public class TabularDataset implements DataProvider
         }
         catch ( NumberFormatException c )
         {
-            throw new ClassCastException(
-                    THE_TYPE + value.getClass().toString() +
-                    WITH_THE_VALUE + value +
-                    IN_THE_COLUMN + columnName +
-                    "' cannot be casted as a BigDecimal." );
+            throw new ClassCastException( THE_TYPE + value.getClass() +
+                                          WITH_THE_VALUE + value +
+                                          IN_THE_COLUMN + columnName +
+                                          "' cannot be casted as a BigDecimal." );
         }
     }
 

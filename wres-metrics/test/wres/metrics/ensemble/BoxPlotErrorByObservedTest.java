@@ -10,8 +10,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.datamodel.Ensemble;
-import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.types.Ensemble;
+import wres.datamodel.types.VectorOfDoubles;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;

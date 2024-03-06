@@ -7,7 +7,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import wres.io.data.DataProvider;
+import wres.datamodel.DataProvider;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
 

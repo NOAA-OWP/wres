@@ -3,7 +3,7 @@ package wres.io.database.details;
 import java.sql.SQLException;
 import java.util.Objects;
 
-import wres.io.data.DataProvider;
+import wres.datamodel.DataProvider;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
 

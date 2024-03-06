@@ -8,7 +8,7 @@ import com.google.protobuf.DoubleValue;
 import net.jcip.annotations.Immutable;
 
 import wres.config.yaml.components.ThresholdOrientation;
-import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageUtilities;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.config.yaml.components.ThresholdOperator;

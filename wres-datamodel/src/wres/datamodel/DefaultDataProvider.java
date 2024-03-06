@@ -1,15 +1,17 @@
-package wres.io.data;
+package wres.datamodel;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import wres.datamodel.types.TabularDataset;
+
 /**
- * Builder used to programmatically create data providers rather than retrieving the data from an outside source.
+ * Creates a default data provider from supplied data.
  */
 
-public class DataBuilder
+public class DefaultDataProvider
 {
     /**
      * The mapping between column names and their indexes
@@ -28,7 +30,7 @@ public class DataBuilder
      */
     private int currentRow;
 
-    private DataBuilder()
+    private DefaultDataProvider()
     {
         this.columnNames = new TreeMap<>();
 
@@ -41,9 +43,9 @@ public class DataBuilder
      * @param columnNames The names of each column in the data
      * @return A new builder
      */
-    public static DataBuilder with( String... columnNames )
+    public static DefaultDataProvider with( String... columnNames )
     {
-        DataBuilder builder = new DataBuilder();
+        DefaultDataProvider builder = new DefaultDataProvider();
 
         if ( columnNames.length == 0 )
         {
@@ -61,13 +63,11 @@ public class DataBuilder
 
     /**
      * Progress to the next row
-     * @return The modified builder
      */
-    public DataBuilder addRow()
+    public void addRow()
     {
         this.currentRow += 1;
         this.rows.add( new Object[columnNames.size()] );
-        return this;
     }
 
     /**
@@ -75,7 +75,7 @@ public class DataBuilder
      * @param data The data to insert into the new row
      * @return The updated builder
      */
-    public DataBuilder addRow( final Object... data )
+    public DefaultDataProvider addRow( final Object... data )
     {
         if ( data.length > this.columnNames.size() )
         {
@@ -102,7 +102,7 @@ public class DataBuilder
      * @param value The value to place in the column
      * @return The updated builder
      */
-    public DataBuilder set( final String columnName, final Object value )
+    public DefaultDataProvider set( final String columnName, final Object value )
     {
         if ( !this.columnNames.containsKey( columnName ) )
         {
@@ -142,12 +142,10 @@ public class DataBuilder
 
     /**
      * Resets the builder.
-     * @return the reset builder
      */
-    public DataBuilder reset()
+    public void reset()
     {
         this.currentRow = -1;
         this.rows.clear();
-        return this;
     }
 }

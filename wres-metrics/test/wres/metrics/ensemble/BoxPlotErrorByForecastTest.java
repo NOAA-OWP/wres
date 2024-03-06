@@ -11,11 +11,11 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.datamodel.Ensemble;
+import wres.datamodel.types.Ensemble;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.types.VectorOfDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricDimension;
 import wres.datamodel.statistics.BoxplotStatisticOuter;

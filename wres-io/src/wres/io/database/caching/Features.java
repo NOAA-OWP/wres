@@ -6,7 +6,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 
 import wres.datamodel.space.Feature;
-import wres.io.data.DataProvider;
+import wres.datamodel.DataProvider;
 import wres.io.database.details.FeatureDetails;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;

@@ -9,7 +9,7 @@ import org.junit.Test;
 
 import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
-import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.types.OneOrTwoDoubles;
 
 /**
  * Tests the {@link OneOrTwoThresholds}.

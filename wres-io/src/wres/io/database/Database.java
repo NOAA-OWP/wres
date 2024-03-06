@@ -17,9 +17,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.zaxxer.hikari.HikariDataSource;
 
-import wres.io.data.TabularDataset;
+import wres.datamodel.types.TabularDataset;
 import wres.io.retrieving.DataAccessException;
-import wres.io.data.DataProvider;
+import wres.datamodel.DataProvider;
 import wres.system.DatabaseSettings;
 import wres.system.DatabaseType;
 import wres.system.SettingsHelper;

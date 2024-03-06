@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.Immutable;
 
-import wres.datamodel.Climatology;
+import wres.datamodel.types.Climatology;
 
 /**
  * <p>An atomic collection of samples from which a statistic is computed using a metric. The samples may comprise paired 

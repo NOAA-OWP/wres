@@ -1,4 +1,4 @@
-package wres.datamodel;
+package wres.datamodel.types;
 
 import org.junit.jupiter.api.Test;
 
@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 
 /**
  * Tests the {@link Probability}.
@@ -53,7 +52,6 @@ final class ProbabilityTest
 
         // Nullity
         assertNotEquals( null, testInstance );
-        assertNotEquals( testInstance, null );
 
         // Check unequal cases
         Probability unequal = Probability.of( 0.33000001 );
