@@ -23,8 +23,8 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.time.TimeSeriesStore;
-import wres.io.BadProjectException;
-import wres.io.data.DataProvider;
+import wres.io.NoProjectDataException;
+import wres.datamodel.DataProvider;
 import wres.io.database.DatabaseOperations;
 import wres.io.database.caching.DatabaseCaches;
 import wres.reading.netcdf.grid.GriddedFeatures;
@@ -127,17 +127,17 @@ public class Projects
 
         if ( leftCount < 1 || rightCount < 1 )
         {
-            throw new BadProjectException( "When examining the ingested data, discovered insufficient data sources to "
-                                           + "proceed. At least one data source is required for the left side of the "
-                                           + "evaluation and one data source for the right side, but the left side had "
-                                           + leftCount
-                                           + " sources and the right side had "
-                                           + rightCount
-                                           + " sources. There were "
-                                           + baselineIds.length
-                                           + " baseline sources. Please check that all intended data sources were declared "
-                                           + "and that all declared data sources were ingested correctly. For example, "
-                                           + "were some data sources skipped because the format was unrecognized?" );
+            throw new NoProjectDataException( "When examining the ingested data, discovered insufficient data sources to "
+                                              + "proceed. At least one data source is required for the left side of the "
+                                              + "evaluation and one data source for the right side, but the left side had "
+                                              + leftCount
+                                              + " sources and the right side had "
+                                              + rightCount
+                                              + " sources. There were "
+                                              + baselineIds.length
+                                              + " baseline sources. Please check that all intended data sources were declared "
+                                              + "and that all declared data sources were ingested correctly. For example, "
+                                              + "were some data sources skipped because the format was unrecognized?" );
         }
 
         // Permit the List<IngestResult> to be garbage collected here, which

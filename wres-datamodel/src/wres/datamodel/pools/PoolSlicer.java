@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
-import wres.datamodel.Climatology;
+import wres.datamodel.types.Climatology;
 import wres.datamodel.Slicer;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;

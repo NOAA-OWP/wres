@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Cache;
 
-import wres.io.data.DataProvider;
+import wres.datamodel.DataProvider;
 import wres.io.database.details.SourceDetails;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;

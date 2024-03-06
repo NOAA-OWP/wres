@@ -21,7 +21,7 @@ import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.io.data.DataProvider;
+import wres.datamodel.DataProvider;
 import wres.io.database.caching.Features;
 import wres.io.database.caching.MeasurementUnits;
 import wres.io.database.DataScripter;

@@ -9,7 +9,7 @@ import java.util.List;
 import com.google.protobuf.Timestamp;
 
 import wres.config.yaml.components.ThresholdOperator;
-import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.MeasurementUnit;

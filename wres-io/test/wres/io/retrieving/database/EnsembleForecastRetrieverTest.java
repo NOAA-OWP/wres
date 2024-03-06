@@ -6,7 +6,6 @@ import static org.junit.Assert.assertTrue;
 
 import static wres.io.retrieving.database.RetrieverTestHelper.*;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -42,8 +41,8 @@ import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.Ensemble;
-import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.types.Ensemble;
+import wres.datamodel.types.Ensemble.Labels;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -112,7 +111,7 @@ public class EnsembleForecastRetrieverTest
     }
 
     @Before
-    public void setup() throws SQLException, LiquibaseException, IOException
+    public void setup() throws SQLException, LiquibaseException
     {
         this.mocks = MockitoAnnotations.openMocks( this );
 

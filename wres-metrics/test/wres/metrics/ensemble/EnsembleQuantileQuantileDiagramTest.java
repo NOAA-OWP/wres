@@ -10,8 +10,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.datamodel.Ensemble;
-import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.types.Ensemble;
+import wres.datamodel.types.Ensemble.Labels;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;

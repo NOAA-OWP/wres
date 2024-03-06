@@ -13,7 +13,7 @@
 //
 //import wres.config.generated.DataSourceConfig;
 //import wres.config.generated.DataSourceConfig.Source;
-//import wres.datamodel.Ensemble;
+//import wres.datamodel.types.Ensemble;
 //import wres.datamodel.MissingValues;
 //import wres.datamodel.scale.TimeScaleOuter;
 //import wres.datamodel.space.Feature;

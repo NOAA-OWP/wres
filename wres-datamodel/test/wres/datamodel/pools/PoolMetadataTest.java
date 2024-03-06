@@ -18,7 +18,7 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.ThresholdOrientation;
-import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.types.OneOrTwoDoubles;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;

@@ -27,7 +27,7 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.Slicer;
-import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.types.VectorOfDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricDimension;
 import wres.datamodel.statistics.DiagramStatisticOuter;
@@ -141,7 +141,6 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      *
      * @param outputDirectory the directory into which to write
      * @param declaration the project declaration
-     * @param destinationConfig the destination configuration    
      * @param output the diagram output
      * @param formatter optional formatter, can be null
      * @param durationUnits the time units for durations
@@ -166,7 +165,7 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                                                                                          .getPoolMetadata(),
                                                                                    durationUnits );
 
-            Set<Path> innerPathsWrittenTo = Collections.emptySet();
+            Set<Path> innerPathsWrittenTo;
 
             // Default, per time-window
             innerPathsWrittenTo =
@@ -192,7 +191,6 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      * @param headerRow the header row
      * @param formatter optional formatter, can be null
      * @param durationUnits the time units for durations
-     * @throws IOException if the output cannot be written
      * @return set of paths actually written to
      */
 
@@ -201,7 +199,6 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
                                                                      StringJoiner headerRow,
                                                                      Format formatter,
                                                                      ChronoUnit durationUnits )
-            throws IOException
     {
         Set<Path> pathsWrittenTo = new HashSet<>( 1 );
 
@@ -226,66 +223,6 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
 
             // Write the output
             String append = CommaSeparatedDiagramWriter.getPathQualifier( timeWindow, durationUnits, output );
-            Path outputPath = DataUtilities.getPathFromPoolMetadata( outputDirectory,
-                                                                     meta,
-                                                                     append,
-                                                                     metricName,
-                                                                     null );
-
-            Path finishedPath = CommaSeparatedStatisticsWriter.writeTabularOutputToFile( rows, outputPath );
-
-            // If writeTabularOutputToFile did not throw an exception, assume
-            // it succeeded in writing to the file, track outputs now (add must
-            // be called after the above call).
-            pathsWrittenTo.add( finishedPath );
-        }
-
-        return Collections.unmodifiableSet( pathsWrittenTo );
-    }
-
-
-    /**
-     * Writes one diagram for all time windows at each threshold in the input.
-     *
-     * @param outputDirectory the directory into which to write 
-     * @param output the diagram output
-     * @param headerRow the header row
-     * @param formatter optional formatter, can be null
-     * @param durationUnits the time units for durations
-     * @throws IOException if the output cannot be written
-     * @return set of paths actually written to
-     */
-
-    private static Set<Path> writeOneDiagramOutputTypePerThreshold( Path outputDirectory,
-                                                                    List<DiagramStatisticOuter> output,
-                                                                    StringJoiner headerRow,
-                                                                    Format formatter,
-                                                                    ChronoUnit durationUnits )
-            throws IOException
-    {
-        Set<Path> pathsWrittenTo = new HashSet<>( 1 );
-
-        // Loop across thresholds
-        SortedSet<OneOrTwoThresholds> thresholds =
-                Slicer.discover( output, meta -> meta.getPoolMetadata().getThresholds() );
-        for ( OneOrTwoThresholds threshold : thresholds )
-        {
-
-            List<DiagramStatisticOuter> next =
-                    Slicer.filter( output, data -> data.getPoolMetadata().getThresholds().equals( threshold ) );
-
-            MetricConstants metricName = next.get( 0 ).getMetricName();
-            PoolMetadata meta = next.get( 0 ).getPoolMetadata();
-
-            List<RowCompareByLeft> rows =
-                    CommaSeparatedDiagramWriter.getRowsForOneDiagram( next, formatter, durationUnits );
-
-            // Add the header row
-            rows.add( RowCompareByLeft.of( HEADER_INDEX,
-                                           CommaSeparatedDiagramWriter.getDiagramHeader( next, headerRow ) ) );
-
-            // Write the output
-            String append = CommaSeparatedDiagramWriter.getPathQualifier( threshold, output );
             Path outputPath = DataUtilities.getPathFromPoolMetadata( outputDirectory,
                                                                      meta,
                                                                      append,
@@ -564,19 +501,6 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
     }
 
     /**
-     * Generates a path qualifier based on the statistics provided.
-     * @param threshold the threshold
-     * @param statistics the statistics
-     * @return a path qualifier or null if non is required
-     */
-
-    private static String getPathQualifier( OneOrTwoThresholds threshold,
-                                            List<DiagramStatisticOuter> statistics )
-    {
-        return DataUtilities.toStringSafe( threshold ) + getEnsembleAverageQualifierString( statistics );
-    }
-
-    /**
      * Creates qualifier string for the ensemble average type where needed.
      * @param statistics the statistics to inspect
      * @return the qualifier string
@@ -613,7 +537,6 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
      * @param declaration the project configuration
      * @param outputDirectory the directory into which to write
      * @throws NullPointerException if either input is null 
-     * @throws ProjectConfigException if the project configuration is not valid for writing 
      */
 
     private CommaSeparatedDiagramWriter( EvaluationDeclaration declaration,
@@ -621,5 +544,4 @@ public class CommaSeparatedDiagramWriter extends CommaSeparatedStatisticsWriter
     {
         super( declaration, outputDirectory );
     }
-
 }

@@ -81,7 +81,7 @@ public class ZippedReader implements TimeSeriesReader
 
             // Set the inner source name for identification
             this.innerSourceName = decompressedStream.getMetaData()
-                                                     .getFilename();
+                                                     .getFileName();
 
             LOGGER.debug( "Discovered a source inside {} called {}.", dataSource.getUri(), this.innerSourceName );
 

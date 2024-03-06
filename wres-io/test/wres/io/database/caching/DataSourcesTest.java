@@ -26,8 +26,8 @@ import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.io.data.DataBuilder;
-import wres.io.data.DataProvider;
+import wres.datamodel.DefaultDataProvider;
+import wres.datamodel.DataProvider;
 import wres.io.database.ConnectionSupplier;
 import wres.io.database.details.SourceDetails;
 import wres.io.database.TestDatabase;
@@ -90,15 +90,15 @@ public class DataSourcesTest
     private DataSources initializeDataSources()
     {
         LOGGER.debug( "initializeDataSources started" );
-        DataProvider data = DataBuilder.with( "path",
-                                              "hash",
-                                              "is_point_data",
-                                              "source_id",
-                                              "variable_name",
-                                              "feature_id",
-                                              "measurementunit_id",
-                                              "timescale_id" )
-                                       .addRow( "/somewhere/somewhere/1.ext",
+        DataProvider data = DefaultDataProvider.with( "path",
+                                                      "hash",
+                                                      "is_point_data",
+                                                      "source_id",
+                                                      "variable_name",
+                                                      "feature_id",
+                                                      "measurementunit_id",
+                                                      "timescale_id" )
+                                               .addRow( "/somewhere/somewhere/1.ext",
                                                 "1234",
                                                 false,
                                                 1,
@@ -106,7 +106,7 @@ public class DataSourcesTest
                                                 1,
                                                 1,
                                                 1 )
-                                       .addRow( "/somewhere/somewhere/2.ext",
+                                               .addRow( "/somewhere/somewhere/2.ext",
                                                 "12345",
                                                 false,
                                                 2,
@@ -114,7 +114,7 @@ public class DataSourcesTest
                                                 2,
                                                 2,
                                                 2 )
-                                       .addRow( "/somewhere/somewhere/3.ext",
+                                               .addRow( "/somewhere/somewhere/3.ext",
                                                 "123456",
                                                 false,
                                                 3,
@@ -122,7 +122,7 @@ public class DataSourcesTest
                                                 3,
                                                 3,
                                                 3 )
-                                       .build();
+                                               .build();
         DataSources dataSources = new DataSources( this.wresDatabase, data );
         LOGGER.debug( "initializeDataSources ended" );
         return dataSources;

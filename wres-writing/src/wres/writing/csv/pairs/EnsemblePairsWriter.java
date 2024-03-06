@@ -15,7 +15,7 @@ import java.util.function.DoubleFunction;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.Ensemble;
+import wres.datamodel.types.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolSlicer;

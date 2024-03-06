@@ -19,7 +19,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -46,7 +45,7 @@ import ucar.nc2.NetcdfFile;
 import ucar.nc2.NetcdfFiles;
 import ucar.nc2.Variable;
 
-import wres.datamodel.Ensemble;
+import wres.datamodel.types.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.DoubleEvent;
@@ -86,6 +85,8 @@ class NwmTimeSeries implements Closeable
     private static final int CONCURRENT_READS = 6;
 
     private static final int POOL_OBJECT_LIFESPAN = 30000;
+    private static final String ATTRIBUTE_FOUND_FOR_VARIABLE = "' attribute found for variable '";
+    private static final String IN_NET_CDF_DATA = " in netCDF data.";
 
     private final NwmProfile profile;
 
@@ -776,18 +777,6 @@ class NwmTimeSeries implements Closeable
         return this.netcdfFiles;
     }
 
-    private String getNetcdfResourceNames()
-    {
-        StringJoiner joiner = new StringJoiner( ", ", "( ", " )" );
-        for ( NetcdfFile netcdfFile : this.getNetcdfFiles() )
-        {
-            String netcdfResourceName = netcdfFile.getLocation();
-            joiner.add( netcdfResourceName );
-        }
-
-        return joiner.toString();
-    }
-
     /**
      * Inspects the exception and, if the cause of the exception is a {@link FileNotFoundException}, adds it to the 
      * supplied set, otherwise throws an {@link ReadException} indicating that the resource could not be read.
@@ -870,9 +859,9 @@ class NwmTimeSeries implements Closeable
         }
 
         throw new IllegalStateException( "No '" + attributeName
-                                         + "' attribute found for variable '"
+                                         + ATTRIBUTE_FOUND_FOR_VARIABLE
                                          + ncVariable
-                                         + " in netCDF data." );
+                                         + IN_NET_CDF_DATA );
     }
 
     /**
@@ -894,9 +883,9 @@ class NwmTimeSeries implements Closeable
         }
 
         throw new IllegalStateException( "No '" + attributeName
-                                         + "' attribute found for variable '"
+                                         + ATTRIBUTE_FOUND_FOR_VARIABLE
                                          + ncVariable
-                                         + " in netCDF data." );
+                                         + IN_NET_CDF_DATA );
     }
 
 
@@ -934,9 +923,9 @@ class NwmTimeSeries implements Closeable
         }
 
         throw new IllegalArgumentException( "No '" + attributeName
-                                            + "' attribute found for variable '"
+                                            + ATTRIBUTE_FOUND_FOR_VARIABLE
                                             + ncVariable
-                                            + " in netCDF data." );
+                                            + IN_NET_CDF_DATA );
     }
 
     /**
@@ -974,9 +963,9 @@ class NwmTimeSeries implements Closeable
         }
 
         throw new IllegalArgumentException( "No '" + attributeName
-                                            + "' attribute found for variable '"
+                                            + ATTRIBUTE_FOUND_FOR_VARIABLE
                                             + ncVariable
-                                            + " in netCDF data." );
+                                            + IN_NET_CDF_DATA );
     }
 
 
@@ -1021,9 +1010,9 @@ class NwmTimeSeries implements Closeable
         }
 
         throw new IllegalArgumentException( "No '" + attributeName
-                                            + "' attribute found for variable '"
+                                            + ATTRIBUTE_FOUND_FOR_VARIABLE
                                             + ncVariable
-                                            + " in netCDF data." );
+                                            + IN_NET_CDF_DATA );
     }
 
     private static Instant readValidDatetime( NwmProfile profile,
@@ -1074,9 +1063,9 @@ class NwmTimeSeries implements Closeable
                                                      + "' and '"
                                                      + OFFSET_NAME
                                                      + "': '"
-                                                     + multiplierType.toString()
+                                                     + multiplierType
                                                      + "' and '"
-                                                     + offsetType.toString()
+                                                     + offsetType
                                                      + "' respectively. The CF "
                                                      + "conventions on packing "
                                                      + "disallow this." );
@@ -1114,12 +1103,12 @@ class NwmTimeSeries implements Closeable
 
 
     /**
-     * Actually read nc data from a variable, targeted to given indices.
+     * <p>ctually read nc data from a variable, targeted to given indices.
      *
-     * It is OK for indices to be unsorted, e.g. for minIndex to appear anywhere
+     * <p>It is OK for indices to be unsorted, e.g. for minIndex to appear anywhere
      * in indices and maxIndex to appear anywhere in indices.
      *
-     * No value in indices passed may be negative.
+     * <p>No value in indices passed may be negative.
      *
      * @param variable The variable to read data from.
      * @param indices The indices to read.
@@ -1184,7 +1173,6 @@ class NwmTimeSeries implements Closeable
         {
             throw new PreReadException(
                                           "Expected to read exactly " + countOfRawValuesToRead
-                                          + ""
                                           + " values from variable "
                                           + variableName
                                           + " instead got "
@@ -1670,9 +1658,9 @@ class NwmTimeSeries implements Closeable
         }
 
         /**
-         * Reads and validates the ensemble number from an NWM netCDF resource.
+         * <p>Reads and validates the ensemble number from an NWM netCDF resource.
          *
-         * Assumes that NWM netCDF resources only have one ensemble number in
+         * <p>Assumes that NWM netCDF resources only have one ensemble number in
          * the global attributes.
          *
          * @param profile The profile describing the netCDF dataset.

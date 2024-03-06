@@ -19,7 +19,7 @@ import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.reading.netcdf.grid.GridRequest;
 import wres.reading.netcdf.grid.GridReader;
-import wres.io.data.DataProvider;
+import wres.datamodel.DataProvider;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
 import wres.io.database.ScriptBuilder;

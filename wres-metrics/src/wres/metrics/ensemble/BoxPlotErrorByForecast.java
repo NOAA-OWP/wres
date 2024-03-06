@@ -7,9 +7,9 @@ import java.util.function.ToDoubleFunction;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.Ensemble;
+import wres.datamodel.types.Ensemble;
 import wres.datamodel.Slicer;
-import wres.datamodel.VectorOfDoubles;
+import wres.datamodel.types.VectorOfDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricDimension;
 import wres.metrics.FunctionFactory;

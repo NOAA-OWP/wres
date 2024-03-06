@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
-import wres.datamodel.OneOrTwoDoubles;
+import wres.datamodel.types.OneOrTwoDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.SampleDataGroup;
 import wres.config.MetricConstants.StatisticType;

@@ -15,13 +15,13 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.datamodel.Ensemble;
+import wres.datamodel.types.Ensemble;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
-import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.Probability;
+import wres.datamodel.types.OneOrTwoDoubles;
+import wres.datamodel.types.Probability;
 import wres.datamodel.Slicer;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricGroup;

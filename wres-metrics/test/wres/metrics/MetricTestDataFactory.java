@@ -19,9 +19,9 @@ import java.util.TreeSet;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.Climatology;
-import wres.datamodel.Ensemble;
-import wres.datamodel.Probability;
+import wres.datamodel.types.Climatology;
+import wres.datamodel.types.Ensemble;
+import wres.datamodel.types.Probability;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.pools.PoolMetadata;
@@ -300,87 +300,6 @@ public final class MetricTestDataFactory
     }
 
     /**
-     * Returns a moderately-sized (10k) test dataset of single-valued pairs, {5,10}, without a baseline.
-     *
-     * @return single-valued pairs
-     */
-
-    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsThree()
-    {
-        //Construct some single-valued pairs
-        List<Pair<Double, Double>> pairs = new ArrayList<>();
-        for ( int i = 0; i < 10000; i++ )
-        {
-            pairs.add( Pair.of( 5.0, 10.0 ) );
-        }
-
-        Evaluation evaluation = Evaluation.newBuilder()
-                                          .setRightVariableName( "SQIN" )
-                                          .setRightDataName( "HEFS" )
-                                          .setMeasurementUnit( "CMS" )
-                                          .build();
-
-        Pool pool = MessageFactory.getPool( Boilerplate.getFeatureGroup(),
-                                            null,
-                                            null,
-                                            null,
-                                            false );
-
-        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
-
-        wres.datamodel.pools.Pool.Builder<Pair<Double, Double>> builder = new wres.datamodel.pools.Pool.Builder<>();
-        return builder.addData( pairs )
-                      .setMetadata( meta )
-                      .build();
-    }
-
-    /**
-     * Returns a moderately-sized test dataset of single-valued pairs without a baseline. The data are partitioned by
-     * observed values of {1,2,3,4,5} with 100-pair chunks and corresponding predicted values of {6,7,8,9,10}. The data
-     * are returned with a nominal lead time of 1.
-     *
-     * @return single-valued pairs
-     */
-
-    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsFour()
-    {
-        //Construct some single-valued pairs
-        List<Pair<Double, Double>> pairs = new ArrayList<>();
-
-        for ( int i = 0; i < 5; i++ )
-        {
-            for ( int j = 0; j < 100; j++ )
-            {
-                pairs.add( Pair.of( i + 1.0, i + 6.0 ) );
-            }
-        }
-
-        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                         Instant.parse( SECOND_TIME ),
-                                                                         Duration.ofHours( 1 ) );
-        TimeWindowOuter window = TimeWindowOuter.of( inner );
-
-        Evaluation evaluation = Evaluation.newBuilder()
-                                          .setRightVariableName( "SQIN" )
-                                          .setRightDataName( "HEFS" )
-                                          .setMeasurementUnit( "CMS" )
-                                          .build();
-
-        Pool pool = MessageFactory.getPool( Boilerplate.getFeatureGroup(),
-                                            window,
-                                            null,
-                                            null,
-                                            false );
-
-        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
-
-        wres.datamodel.pools.Pool.Builder<Pair<Double, Double>> builder = new wres.datamodel.pools.Pool.Builder<>();
-        return builder.addData( pairs )
-                      .setMetadata( meta )
-                      .build();
-    }
-
-    /**
      * <p>Returns a small test dataset with predictions and corresponding observations from location "103.1" from
      * <a href="https://github.com/NVE/RunoffTestData">...</a>:
      *
@@ -407,7 +326,7 @@ public final class MetricTestDataFactory
         try ( BufferedReader in =
                 new BufferedReader( new InputStreamReader( new FileInputStream( file ), StandardCharsets.UTF_8 ) ) )
         {
-            String line = null;
+            String line;
             while ( Objects.nonNull( line = in.readLine() ) && !line.isEmpty() )
             {
                 double[] doubleValues =
@@ -438,113 +357,6 @@ public final class MetricTestDataFactory
         PoolMetadata meta = PoolMetadata.of( evaluation, pool );
 
         return wres.datamodel.pools.Pool.of( values, meta );
-    }
-
-    /**
-     * Returns a set of single-valued pairs with a single pair and no baseline. This is useful for checking exceptional
-     * behaviour due to an inadequate sample size.
-     *
-     * @return single-valued pairs
-     */
-
-    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsSix()
-    {
-        //Construct some single-valued pairs
-        List<Pair<Double, Double>> pairs = new ArrayList<>();
-
-        List<Event<Pair<Double, Double>>> values = new ArrayList<>();
-        pairs.add( Pair.of( 22.9, 22.8 ) );
-        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( FIRST_TIME ),
-                                                                         Instant.parse( SECOND_TIME ),
-                                                                         Duration.ofHours( 24 ) );
-        TimeWindowOuter window = TimeWindowOuter.of( inner );
-
-        FeatureGroup featureGroup = MetricTestDataFactory.getFeatureGroup( "A", false );
-
-        Evaluation evaluation = Evaluation.newBuilder()
-                                          .setRightVariableName( "MAP" )
-                                          .setMeasurementUnit( MM_DAY )
-                                          .build();
-
-        Pool pool = MessageFactory.getPool( featureGroup,
-                                            window,
-                                            null,
-                                            null,
-                                            false );
-
-        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
-
-        wres.datamodel.pools.Pool.Builder<Pair<Double, Double>> builder = new wres.datamodel.pools.Pool.Builder<>();
-        return builder.addData( pairs )
-                      .setMetadata( meta )
-                      .build();
-    }
-
-    /**
-     * Returns a set of single-valued pairs with a baseline, both empty.
-     *
-     * @return single-valued pairs
-     */
-
-    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsSeven()
-    {
-        //Construct some single-valued pairs
-        Evaluation evaluation = Evaluation.newBuilder()
-                                          .setRightVariableName( "SQIN" )
-                                          .setRightDataName( "HEFS" )
-                                          .setMeasurementUnit( "CMS" )
-                                          .build();
-
-        PoolMetadata main = PoolMetadata.of( evaluation, Pool.getDefaultInstance() );
-        Pool pool = Pool.newBuilder()
-                        .setIsBaselinePool( true )
-                        .build();
-
-        Evaluation evaluationTwo = Evaluation.newBuilder()
-                                             .setRightVariableName( "SQIN" )
-                                             .setRightDataName( "ESP" )
-                                             .setMeasurementUnit( "CMS" )
-                                             .build();
-
-        PoolMetadata base = PoolMetadata.of( evaluationTwo, pool );
-
-        wres.datamodel.pools.Pool.Builder<Pair<Double, Double>> builder = new wres.datamodel.pools.Pool.Builder<>();
-        return builder.addData( List.of() )
-                      .setMetadata( main )
-                      .addDataForBaseline( List.of() )
-                      .setMetadataForBaseline( base )
-                      .build();
-    }
-
-    /**
-     * Returns a set of single-valued pairs without a baseline and with some missing values.
-     *
-     * @return single-valued pairs
-     */
-
-    public static wres.datamodel.pools.Pool<Pair<Double, Double>> getSingleValuedPairsEight()
-    {
-        //Construct some single-valued pairs
-        List<Pair<Double, Double>> pairs = new ArrayList<>();
-
-        pairs.add( Pair.of( 22.9, 22.8 ) );
-        pairs.add( Pair.of( 75.2, 80.0 ) );
-        pairs.add( Pair.of( 63.2, 65.0 ) );
-        pairs.add( Pair.of( 29.0, 30.0 ) );
-        pairs.add( Pair.of( 5.0, 2.0 ) );
-        pairs.add( Pair.of( 2.1, 3.1 ) );
-        pairs.add( Pair.of( 35000.0, 37000.0 ) );
-        pairs.add( Pair.of( 8.0, 7.0 ) );
-        pairs.add( Pair.of( 12.0, 12.0 ) );
-        pairs.add( Pair.of( 93.0, 94.0 ) );
-        pairs.add( Pair.of( Double.NaN, 94.0 ) );
-        pairs.add( Pair.of( 93.0, Double.NaN ) );
-        pairs.add( Pair.of( Double.NaN, Double.NaN ) );
-
-        wres.datamodel.pools.Pool.Builder<Pair<Double, Double>> builder = new wres.datamodel.pools.Pool.Builder<>();
-        return builder.addData( pairs )
-                      .setMetadata( PoolMetadata.of() )
-                      .build();
     }
 
     /**
@@ -597,90 +409,6 @@ public final class MetricTestDataFactory
         }
 
         final PoolMetadata meta = Boilerplate.getPoolMetadata( false );
-        return wres.datamodel.pools.Pool.of( values, meta ); //Construct the pairs
-    }
-
-    /**
-     * Returns a set of multicategory pairs based on Table 4.2 in Joliffe and Stephenson (2012) Forecast Verification: A
-     * Practitioner's Guide in Atmospheric Science. 2nd Ed. Wiley, Chichester.
-     * 
-     * @return a set of dichotomous pairs
-     */
-
-    public static wres.datamodel.pools.Pool<Pair<boolean[], boolean[]>> getMulticategoryPairsOne()
-    {
-        //Construct the multicategory pairs
-        final List<Pair<boolean[], boolean[]>> values = new ArrayList<>();
-        //(1,1)
-        for ( int i = 0; i < 24; i++ )
-        {
-            values.add( Pair.of( new boolean[] { true, false, false },
-                                 new boolean[] { true, false, false } ) );
-        }
-        //(1,2)
-        for ( int i = 24; i < 87; i++ )
-        {
-            values.add( Pair.of( new boolean[] { false, true, false },
-                                 new boolean[] { true, false, false } ) );
-        }
-        //(1,3)
-        for ( int i = 87; i < 118; i++ )
-        {
-            values.add( Pair.of( new boolean[] { false, false, true },
-                                 new boolean[] { true, false, false } ) );
-        }
-        //(2,1)
-        for ( int i = 118; i < 181; i++ )
-        {
-            values.add( Pair.of( new boolean[] { true, false, false },
-                                 new boolean[] { false, true, false } ) );
-        }
-        //(2,2)
-        for ( int i = 181; i < 284; i++ )
-        {
-            values.add( Pair.of( new boolean[] { false, true, false },
-                                 new boolean[] { false, true, false } ) );
-        }
-        //(2,3)
-        for ( int i = 284; i < 426; i++ )
-        {
-            values.add( Pair.of( new boolean[] { false, false, true },
-                                 new boolean[] { false, true, false } ) );
-        }
-        //(3,1)
-        for ( int i = 426; i < 481; i++ )
-        {
-            values.add( Pair.of( new boolean[] { true, false, false },
-                                 new boolean[] { false, false, true } ) );
-        }
-        //(3,2)
-        for ( int i = 481; i < 591; i++ )
-        {
-            values.add( Pair.of( new boolean[] { false, true, false },
-                                 new boolean[] { false, false, true } ) );
-        }
-        //(3,3)
-        for ( int i = 591; i < 788; i++ )
-        {
-            values.add( Pair.of( new boolean[] { false, false, true },
-                                 new boolean[] { false, false, true } ) );
-        }
-
-        Evaluation evaluation = Evaluation.newBuilder()
-                                          .setRightVariableName( "SQIN" )
-                                          .setRightDataName( "HEFS" )
-                                          .setMeasurementUnit( MeasurementUnit.DIMENSIONLESS )
-                                          .build();
-
-        Pool pool = MessageFactory.getPool( MetricTestDataFactory.getFeatureGroup( DRRC2,
-                                                                                   false ),
-                                            null,
-                                            null,
-                                            null,
-                                            false );
-
-        PoolMetadata meta = PoolMetadata.of( evaluation, pool );
-
         return wres.datamodel.pools.Pool.of( values, meta ); //Construct the pairs
     }
 
@@ -1441,7 +1169,7 @@ public final class MetricTestDataFactory
         {
 
             Instant time = Instant.parse( "1981-12-01T00:00:00Z" );
-            String line = null;
+            String line;
             while ( Objects.nonNull( line = in.readLine() ) && !line.isEmpty() )
             {
                 double[] doubleValues =

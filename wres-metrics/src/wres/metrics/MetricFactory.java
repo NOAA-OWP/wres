@@ -9,9 +9,9 @@ import java.util.concurrent.ForkJoinPool;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.Ensemble;
+import wres.datamodel.types.Ensemble;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.Probability;
+import wres.datamodel.types.Probability;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.SampleDataGroup;
 import wres.datamodel.statistics.BoxplotStatisticOuter;

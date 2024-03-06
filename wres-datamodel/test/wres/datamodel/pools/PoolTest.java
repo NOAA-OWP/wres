@@ -12,7 +12,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import wres.datamodel.Climatology;
+import wres.datamodel.types.Climatology;
 import wres.datamodel.pools.Pool.Builder;
 import wres.datamodel.space.Feature;
 import wres.statistics.generated.Evaluation;

@@ -21,6 +21,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdOuter.Builder;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.datamodel.types.OneOrTwoDoubles;
 import wres.statistics.MessageFactory;
 
 /**

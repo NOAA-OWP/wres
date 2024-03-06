@@ -4,19 +4,13 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,25 +22,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.datamodel.MissingValues;
-import wres.datamodel.time.TimeSeriesSlicer;
 import wres.reading.ReaderUtilities;
 
 /**
- * A streaming tabular dataset that doesn't require an
- * active connection to a database. Mimics the behavior of
- * the <code>ResultSet</code> data structure used for
- * sql queries.
+ * A streaming tabular dataset that doesn't require an active connection to a database. Mimics the behavior of the
+ * <code>ResultSet</code> data structure used for sql queries.
  */
-public class CsvDataProvider
+class CsvDataProvider
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( CsvDataProvider.class );
-
     private static final String DEFAULT_COMMENT_STRING = "#";
     private static final String THE_DATA_SET_IS_INACCESSIBLE = "The data set is inaccessible.";
     private static final String IN_THE_FIELD = "' in the field '";
     private static final String THE_VALUE = "The value '";
-    private static final String TARGET = "(\\(|\\)|\\{|\\}|]][|\\])";
-
     private Map<String, Integer> columnNames;
     private int currentRow = -1;
     private boolean closed;
@@ -194,31 +182,6 @@ public class CsvDataProvider
         throw new UnsupportedOperationException( "The 'back' operation is not supported." );
     }
 
-    public void toEnd()
-    {
-        if ( this.isClosed() )
-        {
-            throw new IllegalStateException( "The position in the data set may "
-                                             + "not be moved to the end." );
-        }
-
-        while ( this.next() )
-        {
-            LOGGER.trace( "Moving to the end of the FileDataProvider for {}.", this.filePath );
-        }
-    }
-
-    public void reset() throws IOException
-    {
-        if ( this.isClosed() )
-        {
-            throw new IllegalStateException( "The position in the data set may not "
-                                             + "be moved back to its beginning." );
-        }
-
-        this.openFile();
-    }
-
     public boolean isNull( String columnName )
     {
         if ( this.isClosed() )
@@ -342,49 +305,17 @@ public class CsvDataProvider
 
         try
         {
-            // If the string representation of whatever object can be used as a int, use that
+            // If the string representation of whatever object can be used as an int, use that
             // This should work in cases where the value is "1" or an object whose "toString()" returns a number.
             return Integer.parseInt( value.toString() );
         }
         catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                    "The type value '" + value.toString()
-                    +
-                    IN_THE_FIELD
+                    "The type value '" + value
+                    + IN_THE_FIELD
                     + columnName
-                    +
-                    "' cannot be cast as an integer." );
-        }
-    }
-
-    public Short getShort( String columnName )
-    {
-        if ( this.isClosed() )
-        {
-            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
-        }
-
-        Object value = this.getObject( columnName );
-
-        if ( value == null )
-        {
-            return null;
-        }
-
-        try
-        {
-            // If the string representation of whatever object can be used as a short, use that
-            // This should work in cases where the value is "1" or an object whose "toString()" returns a number.
-            return Short.parseShort( value.toString() );
-        }
-        catch ( NumberFormatException c )
-        {
-            throw new ClassCastException( THE_VALUE + value
-                                          + IN_THE_FIELD
-                                          + columnName
-                                          +
-                                          "' cannot be cast as a short." );
+                    + "' cannot be cast as an integer." );
         }
     }
 
@@ -411,12 +342,10 @@ public class CsvDataProvider
         catch ( NumberFormatException c )
         {
             throw new ClassCastException(
-                    "The type value '" + value.toString()
-                    +
-                    IN_THE_FIELD
+                    "The type value '" + value
+                    + IN_THE_FIELD
                     + columnName
-                    +
-                    "' cannot be cast as a long." );
+                    + "' cannot be cast as a long." );
         }
     }
 
@@ -462,24 +391,6 @@ public class CsvDataProvider
         return instant.atOffset( ZoneOffset.UTC ).toLocalTime();
     }
 
-    public OffsetDateTime getOffsetDateTime( String columnName )
-    {
-        if ( this.isClosed() )
-        {
-            throw new IllegalStateException( THE_DATA_SET_IS_INACCESSIBLE );
-        }
-
-        // Since we know this isn't natively an offset date time, we try to
-        // convert it to a type that CAN be an offset date time.
-        Instant instant = this.getInstant( columnName );
-        return OffsetDateTime.ofInstant( instant, ZoneId.of( "UTC" ) );
-    }
-
-    public LocalDateTime getLocalDateTime( String columnName )
-    {
-        return this.getOffsetDateTime( columnName ).toLocalDateTime();
-    }
-
     public Instant getInstant( String columnName )
     {
         if ( this.isClosed() )
@@ -489,11 +400,6 @@ public class CsvDataProvider
 
         CharSequence value = ( CharSequence ) this.getObject( columnName );
         return Instant.parse( value );
-    }
-
-    public <V> V getValue( String columnName )
-    {
-        throw new IllegalStateException( "Types cannot be inferred from CSV data." );
     }
 
     public String getString( String columnName )

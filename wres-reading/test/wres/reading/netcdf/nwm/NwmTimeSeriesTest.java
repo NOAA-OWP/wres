@@ -18,7 +18,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
 import wres.config.yaml.components.SourceInterface;
-import wres.datamodel.Ensemble;
+import wres.datamodel.types.Ensemble;
 import wres.datamodel.time.TimeSeries;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 

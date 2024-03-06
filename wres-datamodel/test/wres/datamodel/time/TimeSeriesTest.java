@@ -16,7 +16,7 @@ import java.util.TreeSet;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.datamodel.Ensemble;
+import wres.datamodel.types.Ensemble;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries.Builder;

@@ -13,7 +13,7 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.time.DoubleEvent;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
-import wres.io.data.DataProvider;
+import wres.datamodel.DataProvider;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
 import wres.io.database.ScriptBuilder;

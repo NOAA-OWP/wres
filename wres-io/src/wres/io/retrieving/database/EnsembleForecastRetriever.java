@@ -10,11 +10,11 @@ import java.util.function.Function;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
-import wres.datamodel.Ensemble;
-import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.types.Ensemble;
+import wres.datamodel.types.Ensemble.Labels;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
-import wres.io.data.DataProvider;
+import wres.datamodel.DataProvider;
 import wres.io.database.caching.Ensembles;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;

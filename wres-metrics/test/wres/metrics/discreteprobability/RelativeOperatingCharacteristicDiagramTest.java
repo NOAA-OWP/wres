@@ -9,7 +9,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Test;
 
-import wres.datamodel.Probability;
+import wres.datamodel.types.Probability;
 import wres.config.MetricConstants;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;

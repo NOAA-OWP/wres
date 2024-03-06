@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
-import wres.datamodel.Climatology;
+import wres.datamodel.types.Climatology;
 import wres.datamodel.baselines.BaselineGenerator;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolException;

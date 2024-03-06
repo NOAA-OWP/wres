@@ -25,9 +25,9 @@ import org.junit.jupiter.api.Test;
 
 import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
-import wres.datamodel.Ensemble;
-import wres.datamodel.OneOrTwoDoubles;
-import wres.datamodel.Probability;
+import wres.datamodel.types.Ensemble;
+import wres.datamodel.types.OneOrTwoDoubles;
+import wres.datamodel.types.Probability;
 import wres.datamodel.Slicer;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.Pool.Builder;

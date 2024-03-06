@@ -21,9 +21,9 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.components.ThresholdType;
-import wres.datamodel.Ensemble;
+import wres.datamodel.types.Ensemble;
 import wres.datamodel.MissingValues;
-import wres.datamodel.Probability;
+import wres.datamodel.types.Probability;
 import wres.datamodel.Slicer;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;

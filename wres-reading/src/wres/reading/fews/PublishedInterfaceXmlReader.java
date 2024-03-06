@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.util.concurrent.AtomicDouble;
 import com.sun.xml.fastinfoset.stax.StAXDocumentParser; // NOSONAR
 
-import wres.datamodel.Ensemble;
+import wres.datamodel.types.Ensemble;
 import wres.datamodel.MissingValues;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
@@ -1095,24 +1095,19 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
      */
     private double getValueToSave( String value, double missingValue )
     {
-        if ( Objects.isNull( value ) || value.isBlank() )
+        if ( Objects.isNull( value )
+             || value.isBlank()
+             || value.equalsIgnoreCase( "null" ) )
         {
             return MissingValues.DOUBLE;
         }
 
         value = value.strip();
-        double val = MissingValues.DOUBLE;
+        double val = Double.parseDouble( value );
 
-        if ( Objects.nonNull( value )
-             && !value.isBlank()
-             && !value.equalsIgnoreCase( "null" ) )
+        if ( Precision.equals( val, missingValue, Precision.EPSILON ) )
         {
-            val = Double.parseDouble( value );
-
-            if ( Precision.equals( val, missingValue, Precision.EPSILON ) )
-            {
-                return MissingValues.DOUBLE;
-            }
+            return MissingValues.DOUBLE;
         }
 
         return val;

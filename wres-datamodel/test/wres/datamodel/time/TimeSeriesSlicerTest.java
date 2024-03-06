@@ -25,10 +25,10 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import wres.datamodel.Climatology;
-import wres.datamodel.Ensemble;
+import wres.datamodel.types.Climatology;
+import wres.datamodel.types.Ensemble;
 import wres.datamodel.Slicer;
-import wres.datamodel.Ensemble.Labels;
+import wres.datamodel.types.Ensemble.Labels;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.scale.TimeScaleOuter;

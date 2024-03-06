@@ -21,8 +21,8 @@ import java.util.TreeSet;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import wres.datamodel.Climatology;
-import wres.datamodel.Ensemble;
+import wres.datamodel.types.Climatology;
+import wres.datamodel.types.Ensemble;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.Pool.Builder;
