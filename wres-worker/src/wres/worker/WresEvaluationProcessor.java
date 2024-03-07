@@ -24,6 +24,7 @@ import com.rabbitmq.client.Envelope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.http.RetryPolicy;
 import wres.http.WebClient;
 import wres.http.WebClientUtils;
 import wres.messages.generated.Job;
@@ -50,13 +51,16 @@ class WresEvaluationProcessor implements Callable<Integer>
 
     private static final String START_EVAL_URI = "http://localhost:%d/evaluation/getEvaluation/%s";
 
-    private static final String OPEN_EVAL_URI = "http://localhost:%d/evaluation/startEvaluation?dbHost=%s&dbName=%s&dbPort=%s";
+    private static final String OPEN_EVAL_URI =
+            "http://localhost:%d/evaluation/startEvaluation?dbHost=%s&dbName=%s&dbPort=%s";
 
     private static final String CLOSE_EVAL_URI = "http://localhost:%d/evaluation/close";
 
-    private static final String CLEAN_DATABASE_URI = "http://localhost:%d/evaluation/cleanDatabase?dbHost=%s&dbName=%s&dbPort=%s";
+    private static final String CLEAN_DATABASE_URI =
+            "http://localhost:%d/evaluation/cleanDatabase?dbHost=%s&dbName=%s&dbPort=%s";
 
-    private static final String MIGRATE_DATABASE_URI = "http://localhost:%d/evaluation/migrateDatabase?dbHost=%s&dbName=%s&dbPort=%s";
+    private static final String MIGRATE_DATABASE_URI =
+            "http://localhost:%d/evaluation/migrateDatabase?dbHost=%s&dbName=%s&dbPort=%s";
 
     private static final List<Integer> RETRY_STATES = List.of( 503, 504 );
 
@@ -80,7 +84,9 @@ class WresEvaluationProcessor implements Callable<Integer>
     private final byte[] jobMessage;
 
     /** A web client to help with reading data from the web. */
-    private static final WebClient WEB_CLIENT = new WebClient( WebClientUtils.noTimeoutHttpClient() );
+    private static final WebClient WEB_CLIENT = new WebClient(
+            WebClientUtils.noTimeoutHttpClient(),
+            new RetryPolicy.Builder().maxRetryCount( 8 ).build() );
 
     /**
      * The envelope from the message that caused creation of this process,
@@ -231,7 +237,7 @@ class WresEvaluationProcessor implements Callable<Integer>
                                                 this.getPort(),
                                                 evaluationId );
 
-        // Send process aliveness messages, like a heartbeat.
+        // hearts beat the status of the job and returns when the job reports a completed status
         JobStatusMessenger statusMessenger =
                 new JobStatusMessenger( this.getConnection(),
                                         this.getExchangeName(),
@@ -240,8 +246,9 @@ class WresEvaluationProcessor implements Callable<Integer>
                                         evaluationId );
         executorService.submit( stdoutMessenger );
         executorService.submit( stderrMessenger );
-        executorService.submit( statusMessenger );
 
+        // Wait until a job is finished before attempting to get results
+        statusMessenger.run();
         try
         {
             // If for some reason a job kicked off does not return ANY response code, ther server is likely in a bad state
@@ -290,8 +297,10 @@ class WresEvaluationProcessor implements Callable<Integer>
         String databaseHost = job.getDatabaseHost();
         String databasePort = job.getDatabasePort();
 
-        URI prepareEval = URI.create( String.format( OPEN_EVAL_URI, this.getPort(), databaseHost, databaseName, databasePort ) );
-        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval, job.getProjectConfig() ) )
+        URI prepareEval =
+                URI.create( String.format( OPEN_EVAL_URI, this.getPort(), databaseHost, databaseName, databasePort ) );
+        try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval,
+                                                                                   job.getProjectConfig() ) )
         {
             if ( evaluationIdRequest.getStatusCode() == HttpURLConnection.HTTP_BAD_REQUEST )
             {
@@ -316,7 +325,7 @@ class WresEvaluationProcessor implements Callable<Integer>
     private int getEvaluationResult( String evaluationId )
     {
         URI startEvalURI = URI.create( String.format( START_EVAL_URI, this.getPort(), evaluationId ) );
-        String startMessage = String.format( "Starting evaluation: %s", startEvalURI );
+        String startMessage = String.format( "Getting evaluation: %s", startEvalURI );
         LOGGER.info( startMessage );
 
         try (
@@ -357,7 +366,8 @@ class WresEvaluationProcessor implements Callable<Integer>
         String databaseName = job.getDatabaseName();
         String databaseHost = job.getDatabaseHost();
         String databasePort = job.getDatabasePort();
-        URI prepareEval = URI.create( String.format( uriToCall, this.getPort(), databaseHost, databaseName, databasePort ) );
+        URI prepareEval =
+                URI.create( String.format( uriToCall, this.getPort(), databaseHost, databaseName, databasePort ) );
         try ( WebClient.ClientResponse evaluationIdRequest = WEB_CLIENT.postToWeb( prepareEval ) )
         {
             if ( evaluationIdRequest.getStatusCode() != HttpURLConnection.HTTP_OK )

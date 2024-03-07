@@ -53,6 +53,7 @@ public class WebClient
 
     private final OkHttpClient httpClient;
     private final boolean trackTimings;
+    private RetryPolicy retryPolicy;
     private final List<TimingInformation> timingInformation = new ArrayList<>( 1 );
     private String userAgent;
 
@@ -65,6 +66,7 @@ public class WebClient
         this.httpClient = WebClientUtils.defaultHttpClient();
         this.trackTimings = trackTimings;
         this.setUserAgent();
+        this.setDefaultRetryPolicy();
     }
 
     /**
@@ -77,6 +79,21 @@ public class WebClient
         this.httpClient = okHttpClient;
         this.trackTimings = trackTimings;
         this.setUserAgent();
+        this.setDefaultRetryPolicy();
+    }
+
+    /**
+     * Creates an instance.
+     * @param trackTimings whether to track the timings
+     * @param okHttpClient the client
+     * @param retryPolicy overrides the default retryPolicy of the WebClient
+     */
+    public WebClient( boolean trackTimings, OkHttpClient okHttpClient, RetryPolicy retryPolicy )
+    {
+        this.httpClient = okHttpClient;
+        this.trackTimings = trackTimings;
+        this.setUserAgent();
+        this.retryPolicy = retryPolicy;
     }
 
     /**
@@ -86,6 +103,16 @@ public class WebClient
     public WebClient( OkHttpClient okHttpClient )
     {
         this( false, okHttpClient );
+    }
+
+    /**
+     * Creates an instance.
+     * @param okHttpClient the client
+     * @param retryPolicy overrides the default retryPolicy of the WebClient
+     */
+    public WebClient( OkHttpClient okHttpClient, RetryPolicy retryPolicy )
+    {
+        this( false, okHttpClient, retryPolicy );
     }
 
     /**
@@ -167,7 +194,6 @@ public class WebClient
             boolean retry = true;
             long sleepMillis = 1000;
             int retryCount = 0;
-            Duration timeout = getMaxRetryDuration();
 
             Request request = new Request.Builder()
                     .url( uri.toURL() )
@@ -197,12 +223,20 @@ public class WebClient
                     Thread.sleep( sleepMillis );
                     httpResponse = tryRequest( request, retryCount );
                     Instant now = Instant.now();
-                    retry = start.plus( timeout )
-                                 .isAfter( now );
 
                     // Exponential backoff to be nice to the server.
                     sleepMillis *= 2;
                     retryCount++;
+                    retry = this.retryPolicy.shouldRetry( start, now, retryCount );
+                    if ( !retry )
+                    {
+                        LOGGER.info(
+                                "Ending retry attempts. Attempt number: {} Max Attempts: {} Current Time: {} Max Time: {}",
+                                retryCount,
+                                this.retryPolicy.getMaxRetryCount(),
+                                now,
+                                start.plus( this.retryPolicy.getMaxRetryTime() ) );
+                    }
                 }
                 else
                 {
@@ -405,6 +439,22 @@ public class WebClient
         return httpResponse;
     }
 
+    /**
+     * Makes a default retry policy as an arbitrary function of time based on paramaters in the WebClient
+     */
+    private void setDefaultRetryPolicy()
+    {
+        // Fairly arbitrary based on experience.
+        // Take all custom timeouts and multiply by 2 to allow 2 "failures" of each
+        Duration maxRetryTime = Duration.ofMillis( ( this.httpClient.callTimeoutMillis()
+                                                     + this.httpClient.connectTimeoutMillis() ) * 2L );
+
+        this.retryPolicy = new RetryPolicy.Builder()
+                .maxRetryTime( maxRetryTime )
+                .maxRetryCount( Integer.MAX_VALUE )
+                .build();
+    }
+
     private void setUserAgent()
     {
         final String VERSION_UNKNOWN = "unspecified";
@@ -429,20 +479,6 @@ public class WebClient
     private String getUserAgent()
     {
         return this.userAgent;
-    }
-
-
-    /**
-     * Method to calculate total retry time for custom retry logic
-     *
-     * @return A Duration we should retry for
-     */
-    private Duration getMaxRetryDuration()
-    {
-        // Fairly arbitrary based on experience.
-        // Take all custom timeouts and multiply by 2 to allow 2 "failures" of each
-        return Duration.ofMillis( ( this.httpClient.callTimeoutMillis()
-                                    + this.httpClient.connectTimeoutMillis() ) * 2L );
     }
 
     /**
