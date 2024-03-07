@@ -367,7 +367,7 @@ public class EvaluationService implements ServletContextListener
         // in edge cases. A while loop seems complex. Thanks to Ted Hopp
         // on StackOverflow question id 5827023.
         long projectId = RANDOM.nextLong() & Long.MAX_VALUE;
-        EVALUATION_STAGE.set( OPENED );
+        updateStatus( OPENED, projectId );
         EVALUATION_ID.set( projectId );
 
         // Sets up stream redirect to avoid missing log statements
@@ -379,10 +379,6 @@ public class EvaluationService implements ServletContextListener
         updateSystemSettingsIfNeeded( host, name, port );
 
         evaluationResponse = startEvaluation( projectDeclaration, projectId );
-
-        EvaluationMetadata evaluationMetadata = new EvaluationMetadata( String.valueOf( projectId ) );
-        evaluationMetadata.setStatus( OPENED );
-        persistInformation( projectId, evaluationMetadata );
 
         return Response.ok( Response.Status.CREATED )
                        .entity( projectId )
@@ -656,10 +652,7 @@ public class EvaluationService implements ServletContextListener
         ExecutorService executorService = Executors.newSingleThreadExecutor();
 
         return executorService.submit( () -> {
-            EVALUATION_STAGE.set( ONGOING );
-            EvaluationMetadata evaluationMetadata = getCachedEntry( id );
-            evaluationMetadata.setStatus( ONGOING );
-            persistInformation( id, evaluationMetadata );
+            updateStatus( ONGOING, id );
 
             LOGGER.info( "Kicking off evaluation on server with the internal ID of: {}", id );
             Set<java.nio.file.Path> outputPaths;
@@ -688,11 +681,7 @@ public class EvaluationService implements ServletContextListener
                 // get files written
                 outputPaths = result.getResources();
 
-                // Persist output into cache
-                evaluationMetadata = getCachedEntry( id );
-                evaluationMetadata.setStatus( COMPLETED );
-                evaluationMetadata.setOutputs( outputPaths );
-                persistInformation( id, evaluationMetadata );
+                updateStatus( COMPLETED, id );
 
                 // Check if evaluation was canceled or failed
                 if ( result.cancelled() )
@@ -700,7 +689,7 @@ public class EvaluationService implements ServletContextListener
                     String failureMessage = "The evaluation was canceled";
                     // Print the stack exception so it is stored in the stdOut of the job
                     LOGGER.info( failureMessage );
-                    EVALUATION_STAGE.set( COMPLETED );
+                    updateStatus( COMPLETED, id );
 
                     return Response.status( Response.Status.CONFLICT )
                                    .entity( failureMessage )
@@ -712,7 +701,7 @@ public class EvaluationService implements ServletContextListener
                     // Print the stack exception so it is stored in the stdOut of the job
                     LOGGER.info( failureMessage, result.getException() );
 
-                    EVALUATION_STAGE.set( COMPLETED );
+                    updateStatus( COMPLETED, id );
                     return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                                    .entity( failureMessage + result.getException() )
                                    .build();
@@ -722,10 +711,7 @@ public class EvaluationService implements ServletContextListener
             {
                 String failureMessage = "I received something I could not parse. The top-level exception was";
                 LOGGER.info( failureMessage, e );
-                // Persist output into cache
-                evaluationMetadata = getCachedEntry( id );
-                evaluationMetadata.setStatus( COMPLETED );
-                persistInformation( id, evaluationMetadata );
+                updateStatus( COMPLETED, id );
                 return Response.status( Response.Status.BAD_REQUEST )
                                .entity( failureMessage + e.getMessage() )
                                .build();
@@ -734,10 +720,7 @@ public class EvaluationService implements ServletContextListener
             {
                 String failureMessage = "WRES experienced an internal issue. The top-level exception was";
                 LOGGER.info( failureMessage, iwe );
-                // Persist output into cache
-                evaluationMetadata = getCachedEntry( id );
-                evaluationMetadata.setStatus( COMPLETED );
-                persistInformation( id, evaluationMetadata );
+                updateStatus( COMPLETED, id );
                 return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
                                .entity( failureMessage + iwe.getMessage() )
                                .build();
@@ -754,11 +737,19 @@ public class EvaluationService implements ServletContextListener
                 writer.close();
             };
 
-            EVALUATION_STAGE.set( COMPLETED );
+            updateStatus( COMPLETED, id );
 
             return Response.ok( streamingOutput )
                            .build();
         } );
+    }
+
+    private void updateStatus( EvaluationStatusOuterClass.EvaluationStatus evaluationStatus, Long id )
+    {
+        EvaluationMetadata evaluationMetadata = getCachedEntry( id );
+        evaluationMetadata.setStatus( evaluationStatus );
+        persistInformation( id, evaluationMetadata );
+        EVALUATION_STAGE.set( evaluationStatus );
     }
 
     /**

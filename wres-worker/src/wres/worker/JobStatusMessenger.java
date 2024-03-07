@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -19,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import static wres.messages.generated.JobStatus.job_status.Report.*;
 import static wres.messages.generated.EvaluationStatusOuterClass.EvaluationStatus.*;
 
+import wres.http.RetryPolicy;
 import wres.http.WebClient;
 import wres.http.WebClientUtils;
 import wres.messages.generated.JobStatus;
@@ -39,7 +41,7 @@ import wres.messages.generated.JobStatus;
  * them, or store them.
  */
 
-public class JobStatusMessenger implements Runnable
+public class JobStatusMessenger
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( JobStatusMessenger.class );
     private static final String TOPIC = "STATUS";
@@ -48,7 +50,11 @@ public class JobStatusMessenger implements Runnable
     private static final String STATUS_URI = "http://localhost:%d/evaluation/status/%s";
 
     /** A web client to help with reading data from the web. */
-    private static final WebClient WEB_CLIENT = new WebClient();
+    private static final WebClient WEB_CLIENT = new WebClient( WebClientUtils.defaultHttpClient(),
+                                                               new RetryPolicy.Builder()
+                                                                       .maxRetryTime( Duration.ofSeconds( 30 ) )
+                                                                       .maxRetryCount( Integer.MAX_VALUE )
+                                                                       .build() );
 
     private final Connection connection;
     private final String exchangeName;
@@ -108,7 +114,9 @@ public class JobStatusMessenger implements Runnable
         return this.evaluationId;
     }
 
-    @Override
+    /**
+     * Repeatedly gets and sends messages for a job status until a finish state is reached
+     */
     public void run()
     {
         String exchangeType = "topic";
@@ -153,7 +161,8 @@ public class JobStatusMessenger implements Runnable
     {
         String url = String.format( STATUS_URI, this.getPort(), this.getEvaluationId() );
         try (
-                WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( URI.create( url ), WebClientUtils.getDefaultRetryStates() )
+                WebClient.ClientResponse fromWeb = WEB_CLIENT.getFromWeb( URI.create( url ),
+                                                                          WebClientUtils.getDefaultRetryStates() )
         )
         {
             return new BufferedReader( new InputStreamReader( fromWeb.getResponse() ) ).lines()
