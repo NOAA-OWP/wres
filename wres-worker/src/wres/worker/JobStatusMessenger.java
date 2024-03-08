@@ -52,7 +52,7 @@ public class JobStatusMessenger
     /** A web client to help with reading data from the web. */
     private static final WebClient WEB_CLIENT = new WebClient( WebClientUtils.defaultHttpClient(),
                                                                new RetryPolicy.Builder()
-                                                                       .maxRetryTime( Duration.ofSeconds( 30 ) )
+                                                                       .maxRetryTime( Duration.ofMinutes( 15 ) )
                                                                        .maxRetryCount( Integer.MAX_VALUE )
                                                                        .build() );
 
