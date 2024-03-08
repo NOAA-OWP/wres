@@ -236,7 +236,7 @@ class DeclarationValidatorTest
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration, true );
 
         assertTrue( events.stream()
-                          .noneMatch( e -> e.getStatusLevel() == StatusLevel.ERROR ));
+                          .noneMatch( e -> e.getStatusLevel() == StatusLevel.ERROR ) );
     }
 
     @Test
@@ -2272,6 +2272,34 @@ class DeclarationValidatorTest
         assertTrue( DeclarationValidatorTest.contains( events,
                                                        "does not contain an 'observed'",
                                                        StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testValidateXmlDeclarationProducesWarning() throws IOException
+    {
+        // #121176
+        String evaluation = """
+                <project name="RFC_AHPS_Flow">
+                  <inputs>
+                    <left label="USGS NWIS Streamflow Observations">
+                      <type>observations</type>
+                      <source interface="usgs_nwis">https://nwis.waterservices.usgs.gov/nwis/iv</source>
+                      <variable>00060</variable>
+                    </left>
+                    <right label="RFC_AHPS_Flow">
+                      <type>single valued forecasts</type>
+                      <source interface="wrds_ahps">http://WRDS/api/rfc_forecast/v2.0/forecast/streamflow</source>
+                      <variable>QR</variable>
+                    </right>
+                  </inputs>
+                </project>
+                  """;
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "XML declaration language has been deprecated",
+                                                       StatusLevel.WARN ) );
     }
 
     /**
