@@ -1,5 +1,8 @@
 package wres.config.yaml;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -24,6 +27,11 @@ import java.util.stream.Collectors;
 
 import com.google.protobuf.Timestamp;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tika.config.TikaConfig;
+import org.apache.tika.detect.Detector;
+import org.apache.tika.exception.TikaException;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.mime.MediaType;
 import org.locationtech.jts.io.ParseException;
 import org.locationtech.jts.io.WKTReader;
 import org.slf4j.Logger;
@@ -1069,6 +1077,59 @@ public class DeclarationUtilities
 
         // Remove the features in all contexts
         return DeclarationUtilities.removeFeaturesWithoutThresholds( declaration, retain );
+    }
+
+    /**
+     * Determines whether the declaration string is an old-style declaration string.
+     * @param mediaType the media type associated with the declaration string
+     * @param declarationString the declaration string
+     * @return whether the string is an old-style declaration string
+     * @throws NullPointerException if either input is null
+     */
+
+    public static boolean isOldDeclarationString( MediaType mediaType, String declarationString )
+    {
+        Objects.requireNonNull( mediaType );
+        Objects.requireNonNull( declarationString );
+
+        String withoutWhiteSpace = declarationString.trim();
+
+        // Permissive check because a string without <?xml version="1.0" encoding="UTF-8"?> will still parse correctly,
+        // even though the content type will not be detected correctly. The first check deals with that scenario and
+        // the second check deals with a correctly detected content type.
+        return withoutWhiteSpace.startsWith( "<project" )
+               || ( "application".equals( mediaType.getType() )
+                    && "xml".equals( mediaType.getSubtype() ) )
+               || withoutWhiteSpace.startsWith( "<?xml" ); // When tika fails
+    }
+
+    /**
+     * Inspects the string for MIME type.
+     * @param declarationString the declaration
+     * @return the media type
+     * @throws IOException if the content could not be parsed for detection
+     */
+
+    public static MediaType getMediaType( String declarationString ) throws IOException
+    {
+        String withoutWhitespace = declarationString.trim();
+        try ( InputStream inputStream = new ByteArrayInputStream( withoutWhitespace.getBytes() ) )
+        {
+            Metadata metadata = new Metadata();
+            TikaConfig tikaConfig = new TikaConfig();
+            Detector detector = tikaConfig.getDetector();
+            MediaType detectedMediaType = detector.detect( inputStream, metadata );
+
+            LOGGER.debug( "The detected MIME type of the declaration string was {} and the subtype was {}.",
+                          detectedMediaType.getType(),
+                          detectedMediaType.getSubtype() );
+
+            return detectedMediaType;
+        }
+        catch ( TikaException e )
+        {
+            throw new IOException( "Failed to detect the MIME type of the declaration string: " + declarationString );
+        }
     }
 
     /**
