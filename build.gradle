@@ -638,7 +638,7 @@ project(':wres-reading')
         // Include later dependency versions for the excluded dependencies above
         implementation 'com.google.guava:guava:32.1.3-jre'
 
-        implementation 'org.apache.commons:commons-compress:1.25.0'
+        implementation 'org.apache.commons:commons-compress:1.26.0'
 
         // Better-than-Java's HTTP client
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
