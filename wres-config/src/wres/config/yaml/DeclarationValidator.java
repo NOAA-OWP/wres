@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.ValidationMessage;
+import org.apache.tika.mime.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -146,6 +147,26 @@ public class DeclarationValidator
                          "---",
                          System.lineSeparator(),
                          yaml.trim() );
+        }
+
+        // Is this old-style XML declaration? If so, return a warning as this cannot be validated upfront.
+        MediaType detectedMediaType = DeclarationUtilities.getMediaType( yaml );
+
+        if ( DeclarationUtilities.isOldDeclarationString( detectedMediaType, yaml ) )
+        {
+            EvaluationStatusEvent warning =
+                    EvaluationStatusEvent.newBuilder()
+                                         .setStatusLevel( StatusLevel.WARN )
+                                         .setEventMessage( ( "Encountered an XML declaration string. The XML "
+                                                             + "declaration language has been deprecated for removal "
+                                                             + "and support for this language may end without notice. "
+                                                             + "Furthermore, XML declaration cannot be validated until "
+                                                             + "evaluation time. To formally validate a declaration"
+                                                             + "before executing it, please provide a YAML declaration "
+                                                             + "string." ) )
+                                         .build();
+
+            return List.of( warning );
         }
 
         // Get the declaration node
