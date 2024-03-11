@@ -163,6 +163,7 @@ public class WebServer
         }
         finally
         {
+            LOGGER.info( "DESTROYING SERVER" );
             jettyServer.destroy();
         }
     }
