@@ -8,6 +8,7 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -89,6 +90,14 @@ public class WebServer
 
     public static void main( String[] args ) throws Exception
     {
+        // Log any uncaught exceptions
+        Thread.UncaughtExceptionHandler handler = ( a, b ) -> {
+            String message = "Encountered an uncaught exception in thread " + a + ".";
+            LOGGER.error( message, b );
+        };
+
+        Thread.setDefaultUncaughtExceptionHandler( handler );
+
         ServletContextHandler context = new ServletContextHandler( ServletContextHandler.NO_SESSIONS );
         context.setContextPath( "/" );
         ServletHolder dynamicHolder = context.addServlet( ServletContainer.class, "/*" );
@@ -120,6 +129,10 @@ public class WebServer
         QueuedThreadPool threadPool = new QueuedThreadPool( MAX_SERVER_THREADS );
 
         Server jettyServer = new Server( threadPool );
+
+        ErrorHandler errorHandler = new ErrorHandler();
+        errorHandler.setShowStacks( true );
+        jettyServer.setErrorHandler( errorHandler );
 
         jettyServer.setHandler( resourceHandler );
 
