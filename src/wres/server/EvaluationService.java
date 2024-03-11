@@ -791,6 +791,14 @@ public class EvaluationService implements ServletContextListener
                                            ChunkedOutput<String> output,
                                            WhichStream whichStream )
     {
+        // Log any uncaught exceptions
+        Thread.UncaughtExceptionHandler handler = ( a, b ) -> {
+            String message = "Encountered an uncaught exception in thread " + a + ".";
+            LOGGER.error( message, b );
+        };
+
+        Thread.setDefaultUncaughtExceptionHandler( handler );
+
         new Thread( () -> {
             try ( redirectStream; output )
             {
@@ -838,17 +846,16 @@ public class EvaluationService implements ServletContextListener
         if ( offset == skip && !message.isEmpty() )
         {
             // Persist the log in cache
-            //TODO: Re-enable after confirming caching not causing servers to fail
-//            EvaluationMetadata evaluationMetadata = getCachedEntry( EVALUATION_ID.get() );
-//            if ( whichStream.equals( WhichStream.STDOUT ) )
-//            {
-//                evaluationMetadata.setStdout( redirectStream.toString( StandardCharsets.UTF_8 ) );
-//            }
-//            else
-//            {
-//                evaluationMetadata.setStderr( redirectStream.toString( StandardCharsets.UTF_8 ) );
-//            }
-//            persistInformation( EVALUATION_ID.get(), evaluationMetadata );
+            EvaluationMetadata evaluationMetadata = getCachedEntry( EVALUATION_ID.get() );
+            if ( whichStream.equals( WhichStream.STDOUT ) )
+            {
+                evaluationMetadata.setStdout( redirectStream.toString( StandardCharsets.UTF_8 ) );
+            }
+            else
+            {
+                evaluationMetadata.setStderr( redirectStream.toString( StandardCharsets.UTF_8 ) );
+            }
+            persistInformation( EVALUATION_ID.get(), evaluationMetadata );
 
             offset += message.length();
             output.write( message );
@@ -863,7 +870,7 @@ public class EvaluationService implements ServletContextListener
     {
         LOGGER.info( "Closing Evaluation" );
         // Project closed gracefully, stop the timeout thread
-        if (Objects.nonNull( timeoutThread ) )
+        if ( Objects.nonNull( timeoutThread ) )
         {
             timeoutThread.interrupt();
         }
