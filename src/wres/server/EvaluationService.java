@@ -838,16 +838,17 @@ public class EvaluationService implements ServletContextListener
         if ( offset == skip && !message.isEmpty() )
         {
             // Persist the log in cache
-            EvaluationMetadata evaluationMetadata = getCachedEntry( EVALUATION_ID.get() );
-            if ( whichStream.equals( WhichStream.STDOUT ) )
-            {
-                evaluationMetadata.setStdout( redirectStream.toString( StandardCharsets.UTF_8 ) );
-            }
-            else
-            {
-                evaluationMetadata.setStderr( redirectStream.toString( StandardCharsets.UTF_8 ) );
-            }
-            persistInformation( EVALUATION_ID.get(), evaluationMetadata );
+            //TODO: Re-enable after confirming caching not causing servers to fail
+//            EvaluationMetadata evaluationMetadata = getCachedEntry( EVALUATION_ID.get() );
+//            if ( whichStream.equals( WhichStream.STDOUT ) )
+//            {
+//                evaluationMetadata.setStdout( redirectStream.toString( StandardCharsets.UTF_8 ) );
+//            }
+//            else
+//            {
+//                evaluationMetadata.setStderr( redirectStream.toString( StandardCharsets.UTF_8 ) );
+//            }
+//            persistInformation( EVALUATION_ID.get(), evaluationMetadata );
 
             offset += message.length();
             output.write( message );
@@ -1039,6 +1040,10 @@ public class EvaluationService implements ServletContextListener
     @Override
     public void contextDestroyed( ServletContextEvent event )
     {
+        // Reset Standard Streams
+        System.setOut( new PrintStream( new FileOutputStream( FileDescriptor.out ) ) );
+        System.setErr( new PrintStream( new FileOutputStream( FileDescriptor.err ) ) );
+        LOGGER.info( "CONTEXT HAS BEEN DESTROYED" );
         // Shuts down cache instance (Not server)
         if ( Objects.nonNull( redissonClient ) )
         {
