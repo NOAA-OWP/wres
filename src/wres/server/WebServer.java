@@ -90,14 +90,6 @@ public class WebServer
 
     public static void main( String[] args ) throws Exception
     {
-        // Log any uncaught exceptions
-        Thread.UncaughtExceptionHandler handler = ( a, b ) -> {
-            String message = "Encountered an uncaught exception in thread " + a + ".";
-            LOGGER.error( message, b );
-        };
-
-        Thread.setDefaultUncaughtExceptionHandler( handler );
-
         ServletContextHandler context = new ServletContextHandler( ServletContextHandler.NO_SESSIONS );
         context.setContextPath( "/" );
         ServletHolder dynamicHolder = context.addServlet( ServletContainer.class, "/*" );

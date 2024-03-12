@@ -92,6 +92,7 @@ public class EvaluationService implements ServletContextListener
     private static final String REDIS_HOST_SYSTEM_PROPERTY_NAME = "wres.redisHost";
     private static final String REDIS_PORT_SYSTEM_PROPERTY_NAME = "wres.redisPort";
     private static final String REDIS_TIMEOUT_IN_HOURS_SYSTEM_PROPERTY_NAME = "wres.redisTimeoutInHours";
+    private static final String ENABLE_SERVER_CACHE_SYSTEM_PROPERTY_NAME = "wres.enableServerCache";
 
     /** A shared map of job metadata by ID */
     private static final RMapCache<String, EvaluationMetadata> EVALUATION_METADATA_MAP;
@@ -139,54 +140,72 @@ public class EvaluationService implements ServletContextListener
 
     private static int redisEntryTimeoutInHours = 12;
 
+    private static boolean serverCacheEnabled = true;
+
     static
     {
-        Config redissonConfig = new Config();
-        String specifiedRedisHost = System.getProperty( REDIS_HOST_SYSTEM_PROPERTY_NAME );
-        String specifiedRedisPortRaw = System.getProperty( REDIS_PORT_SYSTEM_PROPERTY_NAME );
-        String timeout = System.getProperty( REDIS_TIMEOUT_IN_HOURS_SYSTEM_PROPERTY_NAME );
-        if ( Objects.nonNull( timeout ) )
+        String enableServerCache = System.getProperty( ENABLE_SERVER_CACHE_SYSTEM_PROPERTY_NAME );
+        if ( Objects.nonNull( enableServerCache ) )
         {
-            EvaluationService.redisEntryTimeoutInHours = Integer.parseInt( timeout );
+            EvaluationService.serverCacheEnabled = Boolean.getBoolean( enableServerCache );
+            LOGGER.info( "Server cache is enabled: {}", EvaluationService.serverCacheEnabled );
         }
-        if ( Objects.nonNull( specifiedRedisHost ) )
-        {
-            EvaluationService.redisHost = specifiedRedisHost;
-        }
-        if ( Objects.nonNull( specifiedRedisPortRaw ) )
-        {
-            EvaluationService.redisPort = Integer.parseInt( specifiedRedisPortRaw );
-        }
-        if ( Objects.nonNull( redisHost ) )
-        {
-            String redisAddress = "redis://" + redisHost + ":" + redisPort;
-            LOGGER.info( "Redis host specified: {}, using redis at {}",
-                         specifiedRedisHost,
-                         redisAddress );
-            redissonConfig.useSingleServer()
-                          .setAddress( redisAddress )
-                          // Triple the default timeout to 9 seconds:
-                          .setTimeout( 9000 )
-                          // Triple the retry attempts to 9:
-                          .setRetryAttempts( 9 )
-                          // Triple the retry interval to 4.5 seconds:
-                          .setRetryInterval( 4500 )
-                          // PING ten times more frequently than default:
-                          .setPingConnectionInterval( 3000 )
-                          // Set SO_KEEPALIVE for what it's worth:
-                          .setKeepAlive( true );
 
-            redissonClient = Redisson.create( redissonConfig );
-            EVALUATION_METADATA_MAP = redissonClient.getMapCache( "evalMetadataById" );
-            EVALUATION_METADATA_MAP.setMaxSize( 50 );
-            CAFFEINE_CACHE = null;
+        if ( serverCacheEnabled )
+        {
+            Config redissonConfig = new Config();
+            String specifiedRedisHost = System.getProperty( REDIS_HOST_SYSTEM_PROPERTY_NAME );
+            String specifiedRedisPortRaw = System.getProperty( REDIS_PORT_SYSTEM_PROPERTY_NAME );
+            String timeout = System.getProperty( REDIS_TIMEOUT_IN_HOURS_SYSTEM_PROPERTY_NAME );
+            if ( Objects.nonNull( timeout ) )
+            {
+                EvaluationService.redisEntryTimeoutInHours = Integer.parseInt( timeout );
+            }
+            if ( Objects.nonNull( specifiedRedisHost ) )
+            {
+                EvaluationService.redisHost = specifiedRedisHost;
+            }
+            if ( Objects.nonNull( specifiedRedisPortRaw ) )
+            {
+                EvaluationService.redisPort = Integer.parseInt( specifiedRedisPortRaw );
+            }
+            if ( Objects.nonNull( redisHost ) )
+            {
+                String redisAddress = "redis://" + redisHost + ":" + redisPort;
+                LOGGER.info( "Redis host specified: {}, using redis at {}",
+                             specifiedRedisHost,
+                             redisAddress );
+                redissonConfig.useSingleServer()
+                              .setAddress( redisAddress )
+                              // Triple the default timeout to 9 seconds:
+                              .setTimeout( 9000 )
+                              // Triple the retry attempts to 9:
+                              .setRetryAttempts( 9 )
+                              // Triple the retry interval to 4.5 seconds:
+                              .setRetryInterval( 4500 )
+                              // PING ten times more frequently than default:
+                              .setPingConnectionInterval( 3000 )
+                              // Set SO_KEEPALIVE for what it's worth:
+                              .setKeepAlive( true );
+
+                redissonClient = Redisson.create( redissonConfig );
+                EVALUATION_METADATA_MAP = redissonClient.getMapCache( "evalMetadataById" );
+                EVALUATION_METADATA_MAP.setMaxSize( 50 );
+                CAFFEINE_CACHE = null;
+            }
+            else
+            {
+                CAFFEINE_CACHE = Caffeine.newBuilder()
+                                         .maximumSize( 100 ).build();
+                EVALUATION_METADATA_MAP = null;
+                LOGGER.info( "No redis host specified, using local Caffeine cache." );
+            }
         }
         else
         {
-            CAFFEINE_CACHE = Caffeine.newBuilder()
-                                     .maximumSize( 100 ).build();
+            // Cache has been turned off manually, don't create either of these
+            CAFFEINE_CACHE = null;
             EVALUATION_METADATA_MAP = null;
-            LOGGER.info( "No redis host specified, using local Caffeine cache." );
         }
     }
 
@@ -591,6 +610,12 @@ public class EvaluationService implements ServletContextListener
     public Response getProjectResource( @PathParam( "id" ) Long id,
                                         @PathParam( "resourceName" ) String resourceName )
     {
+        if ( !EvaluationService.serverCacheEnabled )
+        {
+            return Response.status( Response.Status.INTERNAL_SERVER_ERROR )
+                           .entity( "This method relies on cache, and the cache has been turned off " )
+                           .build();
+        }
         Set<java.nio.file.Path> paths = getCachedEntry( id ).getOutputs();
         String type = MediaType.TEXT_PLAIN_TYPE.getType();
 
@@ -681,7 +706,13 @@ public class EvaluationService implements ServletContextListener
                 // get files written
                 outputPaths = result.getResources();
 
-                updateStatus( COMPLETED, id );
+                // Persist outputs into cache
+                if ( EvaluationService.serverCacheEnabled )
+                {
+                    EvaluationMetadata evaluationMetadata = getCachedEntry( id );
+                    evaluationMetadata.setOutputs( outputPaths );
+                    persistInformation( id, evaluationMetadata );
+                }
 
                 // Check if evaluation was canceled or failed
                 if ( result.cancelled() )
@@ -746,9 +777,12 @@ public class EvaluationService implements ServletContextListener
 
     private void updateStatus( EvaluationStatusOuterClass.EvaluationStatus evaluationStatus, Long id )
     {
-        EvaluationMetadata evaluationMetadata = getCachedEntry( id );
-        evaluationMetadata.setStatus( evaluationStatus );
-        persistInformation( id, evaluationMetadata );
+        if ( EvaluationService.serverCacheEnabled )
+        {
+            EvaluationMetadata evaluationMetadata = getCachedEntry( id );
+            evaluationMetadata.setStatus( evaluationStatus );
+            persistInformation( id, evaluationMetadata );
+        }
         EVALUATION_STAGE.set( evaluationStatus );
     }
 
@@ -791,14 +825,6 @@ public class EvaluationService implements ServletContextListener
                                            ChunkedOutput<String> output,
                                            WhichStream whichStream )
     {
-        // Log any uncaught exceptions
-        Thread.UncaughtExceptionHandler handler = ( a, b ) -> {
-            String message = "Encountered an uncaught exception in thread " + a + ".";
-            LOGGER.error( message, b );
-        };
-
-        Thread.setDefaultUncaughtExceptionHandler( handler );
-
         new Thread( () -> {
             try ( redirectStream; output )
             {
@@ -806,12 +832,13 @@ public class EvaluationService implements ServletContextListener
 
                 while ( !EVALUATION_STAGE.get().equals( CLOSED ) && !EVALUATION_STAGE.get().equals( AWAITING ) )
                 {
-                    offset = writeOutput( redirectStream, output, offset, whichStream );
+                    offset = writeOutput( redirectStream, output, offset );
                 }
 
                 // After the evaluation is closed, send any more information missed in the last loop
                 // This helps avoid logs being cut off if alot of information is sent at the end of an evaluation
-                writeOutput( redirectStream, output, offset, whichStream );
+                writeOutput( redirectStream, output, offset );
+                storeLogsInCache( redirectStream, whichStream );
             }
             catch ( IOException e )
             {
@@ -825,14 +852,12 @@ public class EvaluationService implements ServletContextListener
      * @param redirectStream the stream we are taking information from
      * @param output the place we are writting the output
      * @param offset How much of the redirectStream to skip
-     * @param whichStream if this is the stdout or stderr out stream
      * @return the new offset
      * @throws IOException IOexception when writting to the output
      */
     private int writeOutput( ByteArrayOutputStream redirectStream,
                              ChunkedOutput<String> output,
-                             int offset,
-                             WhichStream whichStream )
+                             int offset )
             throws IOException
     {
         // Write the cache message to the ChunkedOutput being sent to the shim
@@ -845,6 +870,22 @@ public class EvaluationService implements ServletContextListener
         // If we skipped successfully and the resulting string isn't empty send SSE
         if ( offset == skip && !message.isEmpty() )
         {
+            offset += message.length();
+            output.write( message );
+        }
+        return offset;
+    }
+
+    /**
+     * Stores all the stdOut or stdErr logs in the cache
+     * @param redirectStream the stream we are taking information from
+     * @param whichStream if this is the stdout or stderr out stream
+     */
+    private void storeLogsInCache( ByteArrayOutputStream redirectStream,
+                                   WhichStream whichStream )
+    {
+        if ( EvaluationService.serverCacheEnabled )
+        {
             // Persist the log in cache
             EvaluationMetadata evaluationMetadata = getCachedEntry( EVALUATION_ID.get() );
             if ( whichStream.equals( WhichStream.STDOUT ) )
@@ -856,11 +897,7 @@ public class EvaluationService implements ServletContextListener
                 evaluationMetadata.setStderr( redirectStream.toString( StandardCharsets.UTF_8 ) );
             }
             persistInformation( EVALUATION_ID.get(), evaluationMetadata );
-
-            offset += message.length();
-            output.write( message );
         }
-        return offset;
     }
 
     /**
@@ -975,17 +1012,20 @@ public class EvaluationService implements ServletContextListener
      */
     private static void persistInformation( long id, EvaluationMetadata evaluationMetadata )
     {
-        if ( Objects.isNull( EVALUATION_METADATA_MAP ) )
+        if ( EvaluationService.serverCacheEnabled )
         {
-            CAFFEINE_CACHE.put( id, evaluationMetadata );
-        }
-        // RedissonClient is present, use that
-        else
-        {
-            EVALUATION_METADATA_MAP.fastPut( String.valueOf( id ),
-                                             evaluationMetadata,
-                                             EvaluationService.redisEntryTimeoutInHours,
-                                             TimeUnit.HOURS );
+            if ( Objects.isNull( EVALUATION_METADATA_MAP ) )
+            {
+                CAFFEINE_CACHE.put( id, evaluationMetadata );
+            }
+            // RedissonClient is present, use that
+            else
+            {
+                EVALUATION_METADATA_MAP.fastPut( String.valueOf( id ),
+                                                 evaluationMetadata,
+                                                 EvaluationService.redisEntryTimeoutInHours,
+                                                 TimeUnit.HOURS );
+            }
         }
     }
 
@@ -996,6 +1036,11 @@ public class EvaluationService implements ServletContextListener
      */
     private static EvaluationMetadata getCachedEntry( long id )
     {
+        // If cache is not enabled, don't try getting the EvaluationMetadata
+        if ( !EvaluationService.serverCacheEnabled )
+        {
+            return new EvaluationMetadata( String.valueOf( id ) );
+        }
         EvaluationMetadata cachedEntry;
         if ( Objects.isNull( EVALUATION_METADATA_MAP ) )
         {

@@ -86,7 +86,7 @@ class WresEvaluationProcessor implements Callable<Integer>
     /** A web client to help with reading data from the web. */
     private static final WebClient WEB_CLIENT = new WebClient(
             WebClientUtils.noTimeoutHttpClient(),
-            new RetryPolicy.Builder().maxRetryCount( 13 ).build() );
+            new RetryPolicy.Builder().maxRetryCount( 8 ).build() );
 
     /**
      * The envelope from the message that caused creation of this process,
