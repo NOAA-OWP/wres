@@ -729,6 +729,8 @@ public class DeclarationUtilities
                                      .map( GeometryTuple::getBaseline )
                                      .map( Geometry::getName )
                                      .collect( Collectors.toSet() );
+            default -> throw new IllegalArgumentException( "Unrecognized dataset orientation in this context: "
+                                                           + orientation );
         };
     }
 
@@ -755,6 +757,8 @@ public class DeclarationUtilities
             case BASELINE -> evaluation.baseline()
                                        .dataset()
                                        .featureAuthority();
+            default -> throw new IllegalArgumentException( "Unrecognized dataset orientation in this context: "
+                                                           + orientation );
         };
     }
 

@@ -287,6 +287,7 @@ public class TimeSeriesStore
             case LEFT -> leftSingleValuedSeries;
             case RIGHT -> rightSingleValuedSeries;
             case BASELINE -> baselineSingleValuedSeries;
+            case COVARIATE -> List.of();
         };
     }
 
@@ -310,6 +311,7 @@ public class TimeSeriesStore
             case LEFT -> leftEnsembleSeries;
             case RIGHT -> rightEnsembleSeries;
             case BASELINE -> baselineEnsembleSeries;
+            case COVARIATE -> List.of();
         };
     }
 

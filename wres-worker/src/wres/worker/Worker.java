@@ -46,9 +46,7 @@ public class Worker
      */
     private static final int META_FAILURE_CODE = 600;
     private static volatile boolean killed = false;
-
     private static final String SERVER_READY_FOR_WORK_CHECK_URI = "http://localhost:%d/evaluation/readyForWork";
-
     private static final int DEFAULT_PORT = 8010;
 
     /** A web client to help with reading data from the web. */

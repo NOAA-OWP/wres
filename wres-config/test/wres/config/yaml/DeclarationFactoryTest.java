@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import wres.config.MetricConstants;
 import wres.config.yaml.components.AnalysisTimes;
 import wres.config.yaml.components.BaselineDataset;
+import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.CrossPair;
 import wres.config.yaml.components.CrossPairMethod;
 import wres.config.yaml.components.CrossPairScope;
@@ -2133,6 +2134,64 @@ class DeclarationFactoryTest
                                                                          .build();
             assertEquals( expected, actual );
         }
+    }
+
+    @Test
+    void testDeserializeWithCovariates() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  sources: another_file.csv
+                covariates:
+                  - sources: precipitation.tgz
+                    variable: precipitation
+                    minimum: 0.25
+                  - sources: temperature.tgz
+                    variable: temperature
+                    maximum: 0.0
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        URI covariateOneUri = URI.create( "precipitation.tgz" );
+        Source covariateOneSource = SourceBuilder.builder()
+                                                 .uri( covariateOneUri )
+                                                 .build();
+
+        List<Source> covariateOneSources = List.of( covariateOneSource );
+
+        Dataset covariateOneDataset = DatasetBuilder.builder()
+                                                    .sources( covariateOneSources )
+                                                    .variable( new Variable( "precipitation", null ) )
+                                                    .build();
+
+        CovariateDataset covariateOne = new CovariateDataset( covariateOneDataset, 0.25, null );
+
+        URI covariateTwoUri = URI.create( "temperature.tgz" );
+        Source covariateTwoSource = SourceBuilder.builder()
+                                                 .uri( covariateTwoUri )
+                                                 .build();
+
+        List<Source> covariateTwoSources = List.of( covariateTwoSource );
+
+        Dataset covariateTwoDataset = DatasetBuilder.builder()
+                                                    .sources( covariateTwoSources )
+                                                    .variable( new Variable( "temperature", null ) )
+                                                    .build();
+
+        CovariateDataset covariateTwo = new CovariateDataset( covariateTwoDataset, null, 0.0 );
+
+        List<CovariateDataset> covariateDatasets = List.of( covariateOne, covariateTwo );
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .covariates( covariateDatasets )
+                                                                     .build();
+
+        assertEquals( expected, actual );
     }
 
     @Test

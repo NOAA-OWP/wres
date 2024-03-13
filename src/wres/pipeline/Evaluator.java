@@ -34,6 +34,7 @@ import wres.ExecutionResult;
 import wres.config.MultiDeclarationFactory;
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.DeclarationValidator;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureGroups;
@@ -652,6 +653,10 @@ public class Evaluator
 
             LOGGER.debug( "Finished ingest of time-series data." );
 
+            // Validate the declaration in relation to the interpolated data types and other analyzed information
+            LOGGER.debug( "Performing post-ingest validation of the declaration" );
+            DeclarationValidator.validatePostDataIngest( declarationWithFeatures );
+
             // Set the project hash for identification
             projectHash = project.getHash();
 
@@ -712,7 +717,7 @@ public class Evaluator
                                                    adjustedFeatureGroups,
                                                    metricsAndThresholds );
 
-            // Create the evaluation description with any analyzed units and variable names that happen post-ingest
+            // Create the evaluation description with any analyzed units and variable names,  post-ingest
             // This is akin to a post-ingest interpolation/augmentation of the declared project. Earlier stages of
             // interpolation include interpolation of missing declaration and service calls to interpolate features and
             // thresholds. This is the latest step in that process of combining the declaration and data

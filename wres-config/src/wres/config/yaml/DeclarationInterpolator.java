@@ -2366,6 +2366,8 @@ public class DeclarationInterpolator
             case BASELINE -> GeometryTuple.newBuilder()
                                           .setBaseline( feature )
                                           .build();
+            default -> throw new IllegalArgumentException( "Unrecognized dataset orientation in this context: "
+                                                           + orientation );
         };
     }
 

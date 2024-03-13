@@ -32,7 +32,6 @@ import wres.config.MetricConstants;
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationInterpolator;
 import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.DeclarationValidator;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
@@ -280,9 +279,6 @@ class EvaluationUtilities
                                                                dataTypes.get( DatasetOrientation.RIGHT ),
                                                                dataTypes.get( DatasetOrientation.BASELINE ),
                                                                true );
-
-            // Validate the declaration in relation to the interpolated data types only
-            DeclarationValidator.validateTypes( declaration );
         }
 
         return declaration;

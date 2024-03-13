@@ -20,7 +20,7 @@ import wres.config.yaml.serializers.TrueSerializer;
  */
 @RecordBuilder
 @JsonDeserialize( using = BaselineDatasetDeserializer.class )
-// Dataset first, everything else afterwards in order of declaration
+// Dataset first, everything else afterward in order of declaration
 @JsonPropertyOrder({ "dataset"})
 public record BaselineDataset( @JsonUnwrapped   // Use unwrap annotation to serialize everything on the same level
                                Dataset dataset,
