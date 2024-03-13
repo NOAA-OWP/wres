@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -40,6 +41,7 @@ import wres.statistics.generated.SummaryStatistic;
  * @param left the left or observed data sources, required
  * @param right the right or predicted data sources, required
  * @param baseline the baseline data sources
+ * @param covariates the covariate datasets
  * @param features the features, optional
  * @param featureGroups the feature groups
  * @param featureService the feature service
@@ -79,6 +81,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonProperty( "observed" ) Dataset left,
                                      @JsonProperty( "predicted" ) Dataset right,
                                      @JsonProperty( "baseline" ) BaselineDataset baseline,
+                                     @JsonProperty( "covariates") List<CovariateDataset> covariates,
                                      @JsonProperty( "features" ) Features features,
                                      @JsonProperty( "feature_groups" ) FeatureGroups featureGroups,
                                      @JsonProperty( "feature_service" ) FeatureService featureService,
@@ -140,6 +143,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
      * @param left the left or observed data sources, required
      * @param right the right or predicted data sources, required
      * @param baseline the baseline data sources
+     * @param covariates the covariate datasets
      * @param features the features, optional
      * @param featureGroups the feature groups
      * @param featureService the feature service
@@ -234,6 +238,15 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
         if ( Objects.isNull( minimumSampleSize ) )
         {
             minimumSampleSize = 0;
+        }
+
+        if( Objects.isNull( covariates ) )
+        {
+            covariates = List.of();
+        }
+        else
+        {
+            covariates = Collections.unmodifiableList( covariates );
         }
     }
 

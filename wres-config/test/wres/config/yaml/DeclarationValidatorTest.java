@@ -25,6 +25,8 @@ import wres.config.MetricConstants;
 import wres.config.yaml.components.AnalysisTimes;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
+import wres.config.yaml.components.CovariateDataset;
+import wres.config.yaml.components.CovariateDatasetBuilder;
 import wres.config.yaml.components.CrossPair;
 import wres.config.yaml.components.CrossPairMethod;
 import wres.config.yaml.components.CrossPairScope;
@@ -65,6 +67,7 @@ import wres.config.yaml.components.TimePools;
 import wres.config.yaml.components.TimeScaleBuilder;
 import wres.config.yaml.components.TimeScaleLenience;
 import wres.config.yaml.components.UnitAlias;
+import wres.config.yaml.components.Variable;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent.StatusLevel;
 import wres.statistics.generated.Geometry;
@@ -129,39 +132,76 @@ class DeclarationValidatorTest
         BaselineDataset baseline = BaselineDatasetBuilder.builder()
                                                          .dataset( dataset )
                                                          .build();
+        List<CovariateDataset> covariates = List.of( new CovariateDataset( dataset, null, null ) );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( dataset )
                                                                         .right( dataset )
                                                                         .baseline( baseline )
+                                                                        .covariates( covariates )
                                                                         .build();
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
-        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events, "for the 'observed' data "
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events, "for the 'observed' dataset "
                                                                                 + "with an interface shorthand of usgs "
                                                                                 + "nwis, which requires the 'variable'",
                                                                         StatusLevel.ERROR ) ),
-                   () -> assertTrue( DeclarationValidatorTest.contains( events, "for the 'observed' data "
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "for the 'observed' dataset "
                                                                                 + "with an interface shorthand of wrds "
                                                                                 + "nwm, which requires the 'variable'",
                                                                         StatusLevel.ERROR ) ),
-                   () -> assertTrue( DeclarationValidatorTest.contains( events, "for the 'predicted' data "
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "for the 'predicted' dataset "
                                                                                 + "with an interface shorthand of usgs "
                                                                                 + "nwis, which requires the 'variable'",
                                                                         StatusLevel.ERROR ) ),
-                   () -> assertTrue( DeclarationValidatorTest.contains( events, "for the 'predicted' data "
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "for the 'predicted' dataset "
                                                                                 + "with an interface shorthand of wrds "
                                                                                 + "nwm, which requires the 'variable'",
                                                                         StatusLevel.ERROR ) ),
-                   () -> assertTrue( DeclarationValidatorTest.contains( events, "for the 'baseline' data "
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "for the 'baseline' dataset "
                                                                                 + "with an interface shorthand of usgs "
                                                                                 + "nwis, which requires the 'variable'",
                                                                         StatusLevel.ERROR ) ),
-                   () -> assertTrue( DeclarationValidatorTest.contains( events, "for the 'baseline' data "
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "for the 'baseline' dataset "
+                                                                                + "with an interface shorthand of wrds "
+                                                                                + "nwm, which requires the 'variable'",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "for a 'covariate' dataset "
+                                                                                + "with an interface shorthand of usgs "
+                                                                                + "nwis, which requires the 'variable'",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "for a 'covariate' dataset "
                                                                                 + "with an interface shorthand of wrds "
                                                                                 + "nwm, which requires the 'variable'",
                                                                         StatusLevel.ERROR ) )
 
         );
+    }
+
+    @Test
+    void testNonUniqueVariableNamesForCovariatesResultsInError()
+    {
+        Variable one = new Variable( "foo", null );
+        Variable two = new Variable( "foo", null );
+
+        Dataset dataOne = DatasetBuilder.builder( this.defaultDataset )
+                                        .variable( one )
+                                        .build();
+        CovariateDataset covariateOne = new CovariateDataset( dataOne, null, null );
+        Dataset dataTwo = DatasetBuilder.builder( this.defaultDataset )
+                                        .variable( two )
+                                        .build();
+        CovariateDataset covariateTwo = new CovariateDataset( dataTwo, null, null );
+
+        List<CovariateDataset> covariates = List.of( covariateOne, covariateTwo );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .covariates( covariates )
+                                                                        .build();
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, "The duplicate names were: [foo].",
+                                                       StatusLevel.ERROR ) );
     }
 
     @Test
@@ -191,10 +231,15 @@ class DeclarationValidatorTest
         BaselineDataset baseline = BaselineDatasetBuilder.builder()
                                                          .dataset( baselineInner )
                                                          .build();
+
+        CovariateDataset covariate = new CovariateDataset( left, null, null );
+        List<CovariateDataset> covariates = List.of( covariate );
+
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( left )
                                                                         .right( right )
                                                                         .baseline( baseline )
+                                                                        .covariates( covariates )
                                                                         .build();
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
@@ -215,6 +260,11 @@ class DeclarationValidatorTest
                                                                                 + "forecasts' and use web services, "
                                                                                 + "but the 'reference_dates' were "
                                                                                 + "incomplete",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "'covariate' data sources that "
+                                                                                + "have a data type of 'observations' "
+                                                                                + "and use web services, but the "
+                                                                                + "'valid_dates' were incomplete",
                                                                         StatusLevel.ERROR ) )
         );
     }
@@ -260,9 +310,22 @@ class DeclarationValidatorTest
                                       .sources( List.of( anotherSource ) )
                                       .type( DataType.ENSEMBLE_FORECASTS )
                                       .build();
+
+        Dataset covariate = DatasetBuilder.builder()
+                                          .sources( List.of( source ) )
+                                          .type( DataType.OBSERVATIONS )
+                                          // Error
+                                          .timeZoneOffset( ZoneOffset.ofHours( -7 ) )
+                                          .build();
+
+        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null );
+
+        List<CovariateDataset> covariates = List.of( covariateDataset );
+
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( left )
                                                                         .right( right )
+                                                                        .covariates( covariates )
                                                                         .build();
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
@@ -276,6 +339,10 @@ class DeclarationValidatorTest
                                                                                 + "a time zone was declared",
                                                                         StatusLevel.WARN ) ),
                    () -> assertTrue( DeclarationValidatorTest.contains( events, "for the 'observed' dataset, "
+                                                                                + "which is inconsistent with some of "
+                                                                                + "the",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "for a 'covariate' dataset, "
                                                                                 + "which is inconsistent with some of "
                                                                                 + "the",
                                                                         StatusLevel.ERROR ) )
@@ -507,6 +574,23 @@ class DeclarationValidatorTest
                                       .timeScale( timeScaleSource )
                                       .build();
 
+        TimeScale covariateTimeScale = TimeScale.newBuilder()
+                                                .setPeriod( Duration.newBuilder()
+                                                                    .setSeconds( 100 )
+                                                                    .build() )
+                                                .setFunction( TimeScale.TimeScaleFunction.MAXIMUM )
+                                                .build();
+
+        wres.config.yaml.components.TimeScale timeScaleCovariate =
+                new wres.config.yaml.components.TimeScale( covariateTimeScale );
+
+        Dataset covariate = DatasetBuilder.builder()
+                                          .timeScale( timeScaleCovariate )
+                                          .build();
+
+        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null );
+        List<CovariateDataset> covariates = List.of( covariateDataset );
+
         TimeScale timeScaleInner = TimeScale.newBuilder()
                                             .setPeriod( Duration.newBuilder()
                                                                 .setSeconds( 10 )
@@ -519,6 +603,7 @@ class DeclarationValidatorTest
                 = EvaluationDeclarationBuilder.builder()
                                               .left( left )
                                               .right( right )
+                                              .covariates( covariates )
                                               .timeScale( timeScale )
                                               .build();
 
@@ -530,6 +615,10 @@ class DeclarationValidatorTest
                                                                                 + "evaluation 'time_scale'",
                                                                         StatusLevel.ERROR ) ),
                    () -> assertTrue( DeclarationValidatorTest.contains( events, "is not exactly divisible",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "requires a total, but the "
+                                                                                + "time scale associated with a "
+                                                                                + "'covariate'",
                                                                         StatusLevel.ERROR ) )
         );
     }
@@ -809,6 +898,50 @@ class DeclarationValidatorTest
         assertTrue( DeclarationValidatorTest.contains( events, "but different feature authorities were "
                                                                + "detected for each side of data and no feature "
                                                                + "service was declared",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testCovariatesWithInconsistentFeatureAuthoritiesProducesError()
+    {
+        Dataset left = DatasetBuilder.builder()
+                                     .featureAuthority( FeatureAuthority.USGS_SITE_CODE )
+                                     .build();
+        Dataset right = DatasetBuilder.builder()
+                                      .featureAuthority( FeatureAuthority.NWS_LID )
+                                      .build();
+
+        Dataset covariate = DatasetBuilder.builder()
+                                          .featureAuthority( FeatureAuthority.NWM_FEATURE_ID )
+                                          .build();
+
+        Set<GeometryTuple> geometries = Set.of( GeometryTuple.newBuilder()
+                                                             .setLeft( Geometry.newBuilder()
+                                                                               .setName( "foo" ) )
+                                                             .build(),
+                                                GeometryTuple.newBuilder()
+                                                             .setRight( Geometry.newBuilder()
+                                                                                .setName( "bar" ) )
+                                                             .build() );
+
+        Features features = new Features( geometries );
+
+        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null );
+        List<CovariateDataset> covariates = List.of( covariateDataset );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( left )
+                                                                        .right( right )
+                                                                        .covariates( covariates )
+                                                                        .features( features )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "The unrecognized feature authorities "
+                                                       + "associated with 'covariate' datasets were: "
+                                                       + "[nwm feature id]",
                                                        StatusLevel.ERROR ) );
     }
 
@@ -1989,28 +2122,21 @@ class DeclarationValidatorTest
         Source source = SourceBuilder.builder()
                                      .uri( null )
                                      .build();
-        Source anotherSource = SourceBuilder.builder()
-                                            .uri( null )
-                                            .build();
-        Source yetAnotherSource = SourceBuilder.builder()
-                                               .uri( null )
-                                               .build();
-        Dataset left = DatasetBuilder.builder()
-                                     .sources( List.of( source ) )
-                                     .build();
-        Dataset right = DatasetBuilder.builder()
-                                      .sources( List.of( anotherSource ) )
-                                      .build();
-        Dataset baselineInner = DatasetBuilder.builder()
-                                              .sources( List.of( yetAnotherSource ) )
-                                              .build();
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( source ) )
+                                        .build();
         BaselineDataset baseline = BaselineDatasetBuilder.builder()
-                                                         .dataset( baselineInner )
+                                                         .dataset( dataset )
                                                          .build();
+
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( dataset )
+                                                            .build();
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
-                                                                        .left( left )
-                                                                        .right( right )
+                                                                        .left( dataset )
+                                                                        .right( dataset )
                                                                         .baseline( baseline )
+                                                                        .covariates( List.of( covariate ) )
                                                                         .build();
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
@@ -2025,6 +2151,10 @@ class DeclarationValidatorTest
                                                                         StatusLevel.ERROR ) ),
                    () -> assertTrue( DeclarationValidatorTest.contains( events, "at the following positions in "
                                                                                 + "the 'baseline' data source were "
+                                                                                + "invalid",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "at the following positions in "
+                                                                                + "a 'covariate' data source were "
                                                                                 + "invalid",
                                                                         StatusLevel.ERROR ) )
         );

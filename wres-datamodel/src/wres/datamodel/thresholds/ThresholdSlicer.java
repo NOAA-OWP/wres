@@ -238,18 +238,18 @@ public class ThresholdSlicer
                 Set<ThresholdOuter> matchingThresholds =
                         nextThresholds.stream()
                                       .filter( next -> comparator.compare( next, nextThreshold ) == 0 )
-                                              .collect( Collectors.toCollection( TreeSet::new ) );
+                                      .collect( Collectors.toCollection( TreeSet::new ) );
 
                 int count = 0;
-                for( ThresholdOuter nextDuplicate : matchingThresholds )
+                for ( ThresholdOuter nextDuplicate : matchingThresholds )
                 {
-                    if( count >= nextMaps.size() )
+                    if ( count >= nextMaps.size() )
                     {
-                        Map<T,ThresholdOuter> nextMap = new HashMap<>();
+                        Map<T, ThresholdOuter> nextMap = new HashMap<>();
                         nextMaps.add( nextMap );
                     }
 
-                    Map<T,ThresholdOuter> nextMap = nextMaps.get( count );
+                    Map<T, ThresholdOuter> nextMap = nextMaps.get( count );
                     nextMap.put( nextKey, nextDuplicate );
                     count++;
                 }
@@ -670,11 +670,13 @@ public class ThresholdSlicer
 
         BiFunction<Geometry, DatasetOrientation, List<GeometryTuple>> mapper = ( g, d ) ->
                 switch ( d )
-                        {
-                            case LEFT -> leftGeometries.getOrDefault( g.getName(), Collections.emptyList() );
-                            case RIGHT -> rightGeometries.getOrDefault( g.getName(), Collections.emptyList() );
-                            case BASELINE -> baselineGeometries.getOrDefault( g.getName(), Collections.emptyList() );
-                        };
+                {
+                    case LEFT -> leftGeometries.getOrDefault( g.getName(), Collections.emptyList() );
+                    case RIGHT -> rightGeometries.getOrDefault( g.getName(), Collections.emptyList() );
+                    case BASELINE -> baselineGeometries.getOrDefault( g.getName(), Collections.emptyList() );
+                    default -> throw new IllegalStateException( "Unrecognized dataset orientation in this "
+                                                                + "context: " + d );
+                };
 
         // Increment the thresholds
         for ( wres.config.yaml.components.Threshold nextThreshold : thresholds )

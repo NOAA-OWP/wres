@@ -16,6 +16,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
 import java.util.TreeSet;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -29,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.MetricConstants;
 import wres.config.yaml.components.AnalysisTimes;
 import wres.config.yaml.components.BaselineDataset;
+import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.CrossPairMethod;
 import wres.config.yaml.components.CrossPairScope;
 import wres.config.yaml.components.DataType;
@@ -98,13 +100,15 @@ public class DeclarationValidator
     /** Re-used string. */
     private static final String BASELINE = "baseline";
     /** Re-used string. */
+    private static final String COVARIATE = "covariate";
+    /** Re-used string. */
     private static final String VALID_DATES = "'valid_dates'";
     /** Re-used string. */
     private static final String REFERENCE_DATES = "'reference_dates'";
     /** Re-used string. */
     private static final String AGAIN = "again.";
     /** Re-used string. */
-    private static final String THE_TIME_SCALE_ASSOCIATED_WITH_THE = "The time scale associated with the ";
+    private static final String THE_TIME_SCALE_ASSOCIATED_WITH = "The time scale associated with ";
     /** Re-used string. */
     private static final String THE_EVALUATION_DECLARED = "The evaluation declared ";
     /** Re-used string. */
@@ -161,7 +165,7 @@ public class DeclarationValidator
                                                              + "declaration language has been deprecated for removal "
                                                              + "and support for this language may end without notice. "
                                                              + "Furthermore, XML declaration cannot be validated until "
-                                                             + "evaluation time. To formally validate a declaration"
+                                                             + "evaluation time. To formally validate a declaration "
                                                              + "before executing it, please provide a YAML declaration "
                                                              + "string." ) )
                                          .build();
@@ -377,21 +381,26 @@ public class DeclarationValidator
     }
 
     /**
-     * Performs post-ingest validation of the declaration once the data type information has been gleaned by reading
-     * the sources. Performs default notification handling for any events encountered.
+     * Validates the declaration for any information that has been clarified by reading and ingesting data sources, such
+     * as the data types and variables to evaluate. Performs default notification handling for any events encountered.
      *
      * @see #validate(EvaluationDeclaration, boolean)
      * @param declaration the declaration
      * @throws NullPointerException if the declaration is null
      */
-    public static void validateTypes( EvaluationDeclaration declaration )
+    public static void validatePostDataIngest( EvaluationDeclaration declaration )
     {
         // Data types are defined for all datasets
         List<EvaluationStatusEvent> typesDefined = DeclarationValidator.typesAreDefined( declaration );
         List<EvaluationStatusEvent> events = new ArrayList<>( typesDefined );
+
         // Data types are consistent with other declaration
         List<EvaluationStatusEvent> typesConsistent = DeclarationValidator.typesAreConsistent( declaration );
         events.addAll( typesConsistent );
+        // Covariates must have unique variable names
+        List<EvaluationStatusEvent> covariateVariables
+                = DeclarationValidator.covariateVariableNamesAreUnique( declaration );
+        events.addAll( covariateVariables );
         // Ensembles cannot be present on both left and right sides
         List<EvaluationStatusEvent> ensembles = DeclarationValidator.ensembleOnOneSideOnly( declaration );
         events.addAll( ensembles );
@@ -491,6 +500,10 @@ public class DeclarationValidator
         // Variable must be declared in some circumstances
         List<EvaluationStatusEvent> variables = DeclarationValidator.variablesDeclaredIfRequired( declaration );
         events.addAll( variables );
+        // Covariates must have unique variable names
+        List<EvaluationStatusEvent> covariateVariables
+                = DeclarationValidator.covariateVariableNamesAreUnique( declaration );
+        events.addAll( covariateVariables );
         // When obtaining data from web services, dates must be defined
         List<EvaluationStatusEvent> services = DeclarationValidator.datesPresentForWebServices( declaration );
         events.addAll( services );
@@ -929,85 +942,141 @@ public class DeclarationValidator
      */
     private static List<EvaluationStatusEvent> variablesDeclaredIfRequired( EvaluationDeclaration declaration )
     {
+        // Check for source interfaces that require a variable
+        List<EvaluationStatusEvent> observed =
+                DeclarationValidator.variablesDeclaredIfRequired( declaration.left(),
+                                                                  DatasetOrientation.LEFT );
+
+        List<EvaluationStatusEvent> events = new ArrayList<>( observed );
+
+        List<EvaluationStatusEvent> predicted =
+                DeclarationValidator.variablesDeclaredIfRequired( declaration.right(),
+                                                                  DatasetOrientation.RIGHT );
+
+        events.addAll( predicted );
+
+        if ( DeclarationUtilities.hasBaseline( declaration ) )
+        {
+            List<EvaluationStatusEvent> baseline =
+                    DeclarationValidator.variablesDeclaredIfRequired( declaration.baseline()
+                                                                                 .dataset(),
+                                                                      DatasetOrientation.BASELINE );
+
+            events.addAll( baseline );
+        }
+
+        for ( CovariateDataset covariate : declaration.covariates() )
+        {
+            List<EvaluationStatusEvent> covariateEvents =
+                    DeclarationValidator.variablesDeclaredIfRequired( covariate.dataset(),
+                                                                      DatasetOrientation.COVARIATE );
+
+            events.addAll( covariateEvents );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that all variables are declared when required.
+     * @param dataset the dataset
+     * @param orientation the dataset orientation
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> variablesDeclaredIfRequired( Dataset dataset,
+                                                                            DatasetOrientation orientation )
+    {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
         // Check for source interfaces that require a variable
         EvaluationStatusEvent.Builder eventBuilder = EvaluationStatusEvent.newBuilder()
                                                                           .setStatusLevel( StatusLevel.ERROR );
 
-        String messageStart = "Discovered a data source for the '";
-        String messageMiddle = "' data with an interface shorthand of ";
+        String article = "the";
+        if ( orientation == DatasetOrientation.COVARIATE )
+        {
+            article = "a";
+        }
+
+        String messageStart = "Discovered a data source for "
+                              + article
+                              + " '"
+                              + orientation.toString()
+                                           .toLowerCase()
+                              + "' dataset with an interface shorthand of ";
         String messageEnd = ", which requires the 'variable' to be declared. Please declare the 'variable' and try "
                             + AGAIN;
 
-        // Check the observed data
-        if ( DeclarationValidator.variableIsNotDeclared( declaration, DatasetOrientation.LEFT ) )
+        // Check the dataset
+        if ( DeclarationValidator.variableIsNotDeclared( dataset ) )
         {
-            if ( DeclarationValidator.hasSourceInterface( declaration.left()
-                                                                     .sources(), SourceInterface.USGS_NWIS ) )
+            if ( DeclarationValidator.hasSourceInterface( dataset.sources(), SourceInterface.USGS_NWIS ) )
             {
-                String message = messageStart + OBSERVED + messageMiddle + SourceInterface.USGS_NWIS + messageEnd;
+                String message = messageStart + SourceInterface.USGS_NWIS + messageEnd;
                 EvaluationStatusEvent event = eventBuilder.setEventMessage( message )
                                                           .build();
                 events.add( event );
             }
 
-            if ( DeclarationValidator.hasSourceInterface( declaration.left()
-                                                                     .sources(), SourceInterface.WRDS_NWM ) )
+            if ( DeclarationValidator.hasSourceInterface( dataset.sources(), SourceInterface.WRDS_NWM ) )
             {
-                String message = messageStart + OBSERVED + messageMiddle + SourceInterface.WRDS_NWM + messageEnd;
+                String message = messageStart + SourceInterface.WRDS_NWM + messageEnd;
                 EvaluationStatusEvent event = eventBuilder.setEventMessage( message )
                                                           .build();
                 events.add( event );
             }
         }
 
-        // Check the predicted data
-        if ( DeclarationValidator.variableIsNotDeclared( declaration, DatasetOrientation.RIGHT ) )
-        {
-            if ( DeclarationValidator.hasSourceInterface( declaration.right()
-                                                                     .sources(), SourceInterface.USGS_NWIS ) )
-            {
-                String message = messageStart + PREDICTED + messageMiddle + SourceInterface.USGS_NWIS + messageEnd;
-                EvaluationStatusEvent event = eventBuilder.setEventMessage( message )
-                                                          .build();
-                events.add( event );
-            }
+        return Collections.unmodifiableList( events );
+    }
 
-            if ( DeclarationValidator.hasSourceInterface( declaration.right()
-                                                                     .sources(), SourceInterface.WRDS_NWM ) )
-            {
-                String message = messageStart + PREDICTED + messageMiddle + SourceInterface.WRDS_NWM + messageEnd;
-                EvaluationStatusEvent event = eventBuilder.setEventMessage( message )
-                                                          .build();
-                events.add( event );
-            }
+    /**
+     * Checks that any covariates have unique variable names.
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> covariateVariableNamesAreUnique( EvaluationDeclaration declaration )
+    {
+        if ( declaration.covariates()
+                        .isEmpty() )
+        {
+            LOGGER.debug( "Not checking for unique variable names of the covariates because no covariates were "
+                          + "declared." );
+
+            return List.of();
         }
 
-        // Check the baseline data
-        if ( DeclarationValidator.variableIsNotDeclared( declaration, DatasetOrientation.BASELINE ) )
-        {
-            if ( DeclarationValidator.hasSourceInterface( declaration.baseline()
-                                                                     .dataset()
-                                                                     .sources(),
-                                                          SourceInterface.USGS_NWIS ) )
-            {
-                String message = messageStart + BASELINE + messageMiddle + SourceInterface.USGS_NWIS + messageEnd;
-                EvaluationStatusEvent event = eventBuilder.setEventMessage( message )
-                                                          .build();
-                events.add( event );
-            }
+        // Determine the duplicate names, i.e., those that occur more than once
+        Set<String> duplicates = declaration.covariates()
+                                            .stream()
+                                            .filter( c -> Objects.nonNull( c.dataset()
+                                                                            .variable() ) )
+                                            .map( c -> c.dataset()
+                                                        .variable()
+                                                        .name() )
+                                            .collect( Collectors.groupingBy( Function.identity(),
+                                                                             Collectors.counting() ) )
+                                            .entrySet()
+                                            .stream()
+                                            .filter( e -> e.getValue() > 1 )
+                                            .map( Map.Entry::getKey )
+                                            .collect( Collectors.toSet() );
 
-            if ( DeclarationValidator.hasSourceInterface( declaration.baseline()
-                                                                     .dataset()
-                                                                     .sources(),
-                                                          SourceInterface.WRDS_NWM ) )
-            {
-                String message = messageStart + BASELINE + messageMiddle + SourceInterface.WRDS_NWM + messageEnd;
-                EvaluationStatusEvent event = eventBuilder.setEventMessage( message )
-                                                          .build();
-                events.add( event );
-            }
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        if ( !duplicates.isEmpty() )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "Discovered duplicate variable names among the "
+                                                             + "covariates, which is not allowed. Each covariate must "
+                                                             + "have a unique variable name. The duplicate names "
+                                                             + "were: "
+                                                             + duplicates
+                                                             + "." )
+                                           .build();
+            events.add( event );
         }
 
         return Collections.unmodifiableList( events );
@@ -1020,45 +1089,62 @@ public class DeclarationValidator
      */
     private static List<EvaluationStatusEvent> datesPresentForWebServices( EvaluationDeclaration declaration )
     {
-        List<EvaluationStatusEvent> events = new ArrayList<>();
-
         // Some web services declared for left sources?
-        if ( DeclarationValidator.hasWebSources( declaration, DatasetOrientation.LEFT ) )
-        {
-            DataType type = declaration.left()
-                                       .type();
-
-            List<EvaluationStatusEvent> leftEvents =
-                    DeclarationValidator.datesPresentForWebServices( declaration,
-                                                                     type,
-                                                                     DatasetOrientation.LEFT );
-            events.addAll( leftEvents );
-        }
+        List<EvaluationStatusEvent> events =
+                new ArrayList<>( DeclarationValidator.datesPresentForWebServices( declaration,
+                                                                                  declaration.left(),
+                                                                                  DatasetOrientation.LEFT ) );
 
         // Some web services declared for right sources?
-        if ( DeclarationValidator.hasWebSources( declaration, DatasetOrientation.RIGHT ) )
+        List<EvaluationStatusEvent> rightEvents =
+                DeclarationValidator.datesPresentForWebServices( declaration,
+                                                                 declaration.right(),
+                                                                 DatasetOrientation.RIGHT );
+        events.addAll( rightEvents );
+
+        if ( DeclarationUtilities.hasBaseline( declaration ) )
         {
-            DataType type = declaration.right()
-                                       .type();
-
-            List<EvaluationStatusEvent> rightEvents =
-                    DeclarationValidator.datesPresentForWebServices( declaration,
-                                                                     type,
-                                                                     DatasetOrientation.RIGHT );
-            events.addAll( rightEvents );
-        }
-
-        if ( DeclarationValidator.hasWebSources( declaration, DatasetOrientation.BASELINE ) )
-        {
-            DataType type = declaration.baseline()
-                                       .dataset()
-                                       .type();
-
             List<EvaluationStatusEvent> baselineEvents =
                     DeclarationValidator.datesPresentForWebServices( declaration,
-                                                                     type,
+                                                                     declaration.baseline()
+                                                                                .dataset(),
                                                                      DatasetOrientation.BASELINE );
             events.addAll( baselineEvents );
+        }
+
+        for ( CovariateDataset covariate : declaration.covariates() )
+        {
+            List<EvaluationStatusEvent> covariateEvents =
+                    DeclarationValidator.datesPresentForWebServices( declaration,
+                                                                     covariate.dataset(),
+                                                                     DatasetOrientation.COVARIATE );
+            events.addAll( covariateEvents );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that dates are available to constrain requests to web services.
+     * @param declaration the declaration
+     * @param dataset the dataset
+     * @param orientation the orientation
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> datesPresentForWebServices( EvaluationDeclaration declaration,
+                                                                           Dataset dataset,
+                                                                           DatasetOrientation orientation )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Some web services declared?
+        if ( DeclarationValidator.hasWebSources( dataset ) )
+        {
+            List<EvaluationStatusEvent> sourceEvents =
+                    DeclarationValidator.datesPresentForWebServices( declaration,
+                                                                     dataset.type(),
+                                                                     orientation );
+            events.addAll( sourceEvents );
         }
 
         return Collections.unmodifiableList( events );
@@ -1107,6 +1193,17 @@ public class DeclarationValidator
             events.addAll( baselineEvents );
         }
 
+        for ( CovariateDataset nextCovariate : declaration.covariates() )
+        {
+            List<EvaluationStatusEvent> covariateEvents =
+                    DeclarationValidator.sourcesAreValid( nextCovariate.dataset()
+                                                                       .sources(),
+                                                          nextCovariate.dataset()
+                                                                       .type(),
+                                                          COVARIATE );
+            events.addAll( covariateEvents );
+        }
+
         return Collections.unmodifiableList( events );
     }
 
@@ -1117,66 +1214,42 @@ public class DeclarationValidator
      */
     private static List<EvaluationStatusEvent> timeScalesAreValid( EvaluationDeclaration declaration )
     {
-        List<EvaluationStatusEvent> events = new ArrayList<>();
-
         // Left dataset
-        if ( Objects.nonNull( declaration.left() )
-             && Objects.nonNull( declaration.left()
-                                            .timeScale() ) )
-        {
-            TimeScale timeScale = declaration.left()
-                                             .timeScale();
-            String orientation = "'" + OBSERVED + "'";
-            List<EvaluationStatusEvent> next = DeclarationValidator.timeScaleIsValid( timeScale, orientation );
-            events.addAll( next );
-
-            // Source timescale must be consistent with desired/evaluation timescale
-            List<EvaluationStatusEvent> scaleEvents =
-                    DeclarationValidator.datasetTimeScaleConsistentWithEvaluationTimeScale( timeScale,
-                                                                                            declaration.timeScale(),
-                                                                                            orientation );
-            events.addAll( scaleEvents );
-        }
+        List<EvaluationStatusEvent> events =
+                new ArrayList<>( DeclarationValidator.datasetTimeScaleConsistentWithEvaluationTimeScale( declaration.left(),
+                                                                                                         DatasetOrientation.LEFT,
+                                                                                                         declaration.timeScale() ) );
 
         // Right dataset
-        if ( Objects.nonNull( declaration.right() )
-             && Objects.nonNull( declaration.right()
-                                            .timeScale() ) )
-        {
-            TimeScale timeScale = declaration.right()
-                                             .timeScale();
-            String orientation = "'" + PREDICTED + "'";
-            List<EvaluationStatusEvent> next = DeclarationValidator.timeScaleIsValid( timeScale, orientation );
-            events.addAll( next );
+        List<EvaluationStatusEvent> rightEvents =
+                DeclarationValidator.datasetTimeScaleConsistentWithEvaluationTimeScale( declaration.right(),
+                                                                                        DatasetOrientation.RIGHT,
+                                                                                        declaration.timeScale() );
 
-            // Source timescale must be consistent with desired/evaluation timescale
-            List<EvaluationStatusEvent> scaleEvents =
-                    DeclarationValidator.datasetTimeScaleConsistentWithEvaluationTimeScale( timeScale,
-                                                                                            declaration.timeScale(),
-                                                                                            orientation );
-            events.addAll( scaleEvents );
-        }
+        events.addAll( rightEvents );
 
         // Baseline sources, if needed
-        if ( DeclarationUtilities.hasBaseline( declaration )
-             && Objects.nonNull( declaration.baseline()
-                                            .dataset()
-                                            .timeScale() ) )
+        if ( DeclarationUtilities.hasBaseline( declaration ) )
         {
-            TimeScale timeScale = declaration.baseline()
-                                             .dataset()
-                                             .timeScale();
-            String orientation = "'" + BASELINE + "'";
-            List<EvaluationStatusEvent> next = DeclarationValidator.timeScaleIsValid( timeScale,
-                                                                                      orientation );
-            events.addAll( next );
-
             // Source timescale must be consistent with desired/evaluation timescale
-            List<EvaluationStatusEvent> scaleEvents =
-                    DeclarationValidator.datasetTimeScaleConsistentWithEvaluationTimeScale( timeScale,
-                                                                                            declaration.timeScale(),
-                                                                                            orientation );
-            events.addAll( scaleEvents );
+            List<EvaluationStatusEvent> baselineEvents =
+                    DeclarationValidator.datasetTimeScaleConsistentWithEvaluationTimeScale( declaration.baseline()
+                                                                                                       .dataset(),
+                                                                                            DatasetOrientation.BASELINE,
+                                                                                            declaration.timeScale() );
+
+            events.addAll( baselineEvents );
+        }
+
+        // Covariates
+        for ( CovariateDataset covariate : declaration.covariates() )
+        {
+            List<EvaluationStatusEvent> covariateEvents =
+                    DeclarationValidator.datasetTimeScaleConsistentWithEvaluationTimeScale( covariate.dataset(),
+                                                                                            DatasetOrientation.COVARIATE,
+                                                                                            declaration.timeScale() );
+
+            events.addAll( covariateEvents );
         }
 
         // There are extra constraints on the evaluation timescale, so check those
@@ -1206,6 +1279,39 @@ public class DeclarationValidator
     }
 
     /**
+     * Checks that any declared time-scaled associated with the dataset is consistent with the evaluation timescale.
+     * @param dataset the dataset
+     * @param orientation the dataset orientation
+     * @param evaluationTimeScale the evaluation timescale
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> datasetTimeScaleConsistentWithEvaluationTimeScale( Dataset dataset,
+                                                                                                  DatasetOrientation orientation,
+                                                                                                  TimeScale evaluationTimeScale )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        if ( Objects.nonNull( dataset )
+             && Objects.nonNull( dataset.timeScale() ) )
+        {
+            TimeScale timeScale = dataset.timeScale();
+            List<EvaluationStatusEvent> next = DeclarationValidator.timeScaleIsValid( timeScale,
+                                                                                      orientation,
+                                                                                      false );
+            events.addAll( next );
+
+            // Source timescale must be consistent with desired/evaluation timescale
+            List<EvaluationStatusEvent> scaleEvents =
+                    DeclarationValidator.datasetTimeScaleConsistentWithEvaluationTimeScale( timeScale,
+                                                                                            evaluationTimeScale,
+                                                                                            orientation );
+            events.addAll( scaleEvents );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
      * Checks that the time zone offsets are mutually consistent.
      * @param declaration the declaration
      * @return the validation events encountered
@@ -1229,6 +1335,14 @@ public class DeclarationValidator
                                                                                .dataset(),
                                                                     DatasetOrientation.BASELINE );
             events.addAll( baselineEvents );
+        }
+
+        for ( CovariateDataset covariate : declaration.covariates() )
+        {
+            List<EvaluationStatusEvent> covariateEvents
+                    = DeclarationValidator.timeZoneOffsetsAreValid( covariate.dataset(),
+                                                                    DatasetOrientation.COVARIATE );
+            events.addAll( covariateEvents );
         }
 
         return Collections.unmodifiableList( events );
@@ -1280,19 +1394,29 @@ public class DeclarationValidator
             return Collections.emptyList();
         }
 
+        String article = "the";
+        if ( orientation == DatasetOrientation.COVARIATE )
+        {
+            article = "a";
+        }
+
         EvaluationStatusEvent event
                 = EvaluationStatusEvent.newBuilder()
                                        .setStatusLevel( StatusLevel.ERROR )
                                        .setEventMessage( "Discovered a 'time_zone_offset' of "
                                                          + universalOffset
-                                                         + " for the '"
+                                                         + " for "
+                                                         + article
+                                                         + " '"
                                                          + orientation
                                                          + "' dataset, which is inconsistent with some of the "
                                                          + "'time_zone_offset' declared for the individual sources it "
                                                          + "contains: "
                                                          + offsets
                                                          + ". Please address this conflict by removing the "
-                                                         + "'time_zone-offset' for the '"
+                                                         + "'time_zone-offset' for "
+                                                         + article
+                                                         + " '"
                                                          + orientation
                                                          + "' dataset or its individual "
                                                          + "sources or ensuring they match." )
@@ -1665,6 +1789,10 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> featureService =
                 DeclarationValidator.checkFeatureServicePresentIfRequired( declaration );
         events.addAll( featureService );
+        // Feature authorities for any covariates are consistent with one of the prescribed data orientations
+        List<EvaluationStatusEvent> covariateFeatureAuthorities =
+                DeclarationValidator.checkCovariateFeatureAuthorities( declaration );
+        events.addAll( covariateFeatureAuthorities );
         // Check that any featureful thresholds correlate with declared features
         List<EvaluationStatusEvent> thresholds =
                 DeclarationValidator.validateFeaturefulThresholds( declaration );
@@ -1696,6 +1824,7 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> categoricalMetrics =
                 DeclarationValidator.checkEventThresholdsForCategoricalMetrics( declaration );
         events.addAll( categoricalMetrics );
+
         // Check that low-level parameters do not disagree with top-level ones
         List<EvaluationStatusEvent> parameters =
                 DeclarationValidator.checkMetricParametersAreConsistent( declaration );
@@ -2686,19 +2815,21 @@ public class DeclarationValidator
                          + "or 'feature_service') and try again.";
 
             // Web services require features
-            if ( DeclarationValidator.hasWebSources( declaration, DatasetOrientation.LEFT ) )
+            if ( DeclarationValidator.hasWebSources( declaration.left() ) )
             {
                 eventBuilder.setEventMessage( start + OBSERVED + middle + end );
                 EvaluationStatusEvent event = eventBuilder.build();
                 events.add( event );
             }
-            if ( DeclarationValidator.hasWebSources( declaration, DatasetOrientation.RIGHT ) )
+            if ( DeclarationValidator.hasWebSources( declaration.right() ) )
             {
                 eventBuilder.setEventMessage( start + PREDICTED + middle + end );
                 EvaluationStatusEvent event = eventBuilder.build();
                 events.add( event );
             }
-            if ( DeclarationValidator.hasWebSources( declaration, DatasetOrientation.BASELINE ) )
+            if ( DeclarationUtilities.hasBaseline( declaration )
+                 && DeclarationValidator.hasWebSources( declaration.baseline()
+                                                                   .dataset() ) )
             {
                 eventBuilder.setEventMessage( start + BASELINE + middle + end );
                 EvaluationStatusEvent event = eventBuilder.build();
@@ -2857,7 +2988,7 @@ public class DeclarationValidator
         {
             baselineAuthorities = DeclarationUtilities.getFeatureAuthorities( evaluation.baseline()
                                                                                         .dataset() );
-            baselineStatement = "The feature authorities detected for the 'baseline' data were '"
+            baselineStatement = " The feature authorities detected for the 'baseline' data were '"
                                 + baselineAuthorities
                                 + "'.";
         }
@@ -2866,7 +2997,7 @@ public class DeclarationValidator
              && ( !DeclarationUtilities.hasBaseline( evaluation ) || Objects.equals( leftAuthorities,
                                                                                      baselineAuthorities ) ) )
         {
-            LOGGER.debug( "Discovered the same feature authorities for all sides of data." );
+            LOGGER.debug( "Discovered the same feature authorities for all datasets." );
             return Collections.emptyList();
         }
 
@@ -2896,6 +3027,75 @@ public class DeclarationValidator
                                        .build();
 
         return List.of( event );
+    }
+
+    /**
+     * Checks for the consistency of the covariate feature authorities.
+     * @param evaluation the evaluation declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> checkCovariateFeatureAuthorities( EvaluationDeclaration evaluation )
+    {
+        // When defined, covariate authorities must all be consistent with one of the prescribed data orientations
+        if ( evaluation.covariates()
+                       .isEmpty() )
+        {
+            LOGGER.debug( "Not checking the feature authorities of the covariate datasets because none were declared." );
+            return List.of();
+        }
+
+        Set<FeatureAuthority> featureAuthorities = new HashSet<>();
+
+        if ( Objects.nonNull( evaluation.left() ) )
+        {
+            Set<FeatureAuthority> left = DeclarationUtilities.getFeatureAuthorities( evaluation.left() );
+            featureAuthorities.addAll( left );
+        }
+
+        if ( Objects.nonNull( evaluation.right() ) )
+        {
+            Set<FeatureAuthority> right = DeclarationUtilities.getFeatureAuthorities( evaluation.right() );
+            featureAuthorities.addAll( right );
+        }
+
+        if ( DeclarationUtilities.hasBaseline( evaluation ) )
+        {
+            Set<FeatureAuthority> baseline = DeclarationUtilities.getFeatureAuthorities( evaluation.baseline()
+                                                                                                   .dataset() );
+            featureAuthorities.addAll( baseline );
+        }
+
+        // Check the covariates
+        Set<FeatureAuthority> missing = evaluation.covariates()
+                                                  .stream()
+                                                  .flatMap( d -> DeclarationUtilities.getFeatureAuthorities( d.dataset() )
+                                                                                     .stream() )
+                                                  .collect( Collectors.toCollection( TreeSet::new ) );
+        missing.removeAll( featureAuthorities );
+
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+        if ( !missing.isEmpty() )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "Discovered one or more covariates whose feature "
+                                                             + "authorities were declared explicitly, but did not "
+                                                             + "match a feature authority associated with any other "
+                                                             + "dataset ('observed', 'predicted' or, where applicable, "
+                                                             + "'baseline'). Each 'covariate' dataset must have the "
+                                                             + "same feature authority as one of these other datasets. "
+                                                             + "Please fix the declaration or use a 'covariate' "
+                                                             + "dataset that has the same feature authority as an "
+                                                             + "existing dataset. The unrecognized feature authorities "
+                                                             + "associated with 'covariate' datasets were: "
+                                                             + missing
+                                                             + "." )
+                                           .build();
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
     }
 
     /**
@@ -3286,7 +3486,8 @@ public class DeclarationValidator
         {
             // Basic elements are valid
             List<EvaluationStatusEvent> evaluationEvents = DeclarationValidator.timeScaleIsValid( timeScale,
-                                                                                                  "evaluation" );
+                                                                                                  null,
+                                                                                                  true );
             events.addAll( evaluationEvents );
 
             wres.statistics.generated.TimeScale timeScaleInner = timeScale.timeScale();
@@ -3318,7 +3519,7 @@ public class DeclarationValidator
      */
     private static List<EvaluationStatusEvent> datasetTimeScaleConsistentWithEvaluationTimeScale( TimeScale sourceScale,
                                                                                                   TimeScale evaluationScale,
-                                                                                                  String orientation )
+                                                                                                  DatasetOrientation orientation )
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
@@ -3333,6 +3534,8 @@ public class DeclarationValidator
         wres.statistics.generated.TimeScale sourceScaleInner = sourceScale.timeScale();
         wres.statistics.generated.TimeScale evaluationScaleInner = evaluationScale.timeScale();
 
+        String orientationString = DeclarationValidator.getTimeScaleOrientationString( orientation, false );
+
         // If the desired scale is a sum, the existing scale must be instantaneous or the function must be a sum or mean
         if ( evaluationScale.timeScale()
                             .getFunction() == TimeScaleFunction.TOTAL
@@ -3344,8 +3547,8 @@ public class DeclarationValidator
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.ERROR )
                                            .setEventMessage( "The evaluation 'time_scale' requires a total, but the "
-                                                             + "time scale associated with the "
-                                                             + orientation
+                                                             + "time scale associated with "
+                                                             + orientationString
                                                              + " dataset does not have a supported time scale "
                                                              + "function from  which to compute this total. Please "
                                                              + "change the evaluation 'time_scale' and try again." )
@@ -3373,8 +3576,8 @@ public class DeclarationValidator
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
                                                .setStatusLevel( StatusLevel.ERROR )
-                                               .setEventMessage( THE_TIME_SCALE_ASSOCIATED_WITH_THE
-                                                                 + orientation
+                                               .setEventMessage( THE_TIME_SCALE_ASSOCIATED_WITH
+                                                                 + orientationString
                                                                  + " dataset is smaller than the evaluation "
                                                                  + "'time_scale', which is not allowed. Please "
                                                                  + "increase the evaluation 'time_scale' and try "
@@ -3389,8 +3592,8 @@ public class DeclarationValidator
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
                                                .setStatusLevel( StatusLevel.ERROR )
-                                               .setEventMessage( THE_TIME_SCALE_ASSOCIATED_WITH_THE
-                                                                 + orientation
+                                               .setEventMessage( THE_TIME_SCALE_ASSOCIATED_WITH
+                                                                 + orientationString
                                                                  + " dataset is not exactly divisible by the "
                                                                  + "evaluation 'time_scale', which is not allowed. "
                                                                  + "Please change the evaluation 'time_scale' to an "
@@ -3427,10 +3630,12 @@ public class DeclarationValidator
      * Checks that the timescale is valid.
      * @param timeScale the timescale
      * @param orientation the orientation of the timescale to provide context in any error message
+     * @param isEvaluationTimeScale whether the timescale is the evaluation timescale and not a dataset timescale
      * @return the validation events encountered
      */
     private static List<EvaluationStatusEvent> timeScaleIsValid( TimeScale timeScale,
-                                                                 String orientation )
+                                                                 DatasetOrientation orientation,
+                                                                 boolean isEvaluationTimeScale )
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
@@ -3444,14 +3649,17 @@ public class DeclarationValidator
         LOGGER.debug( "Discovered a timescale to validate for {}: {}.", orientation, timeScale );
         wres.statistics.generated.TimeScale timeScaleInner = timeScale.timeScale();
 
+        String orientationString = DeclarationValidator.getTimeScaleOrientationString( orientation,
+                                                                                       isEvaluationTimeScale );
+
         // Function must be present
         if ( timeScaleInner.getFunction() == wres.statistics.generated.TimeScale.TimeScaleFunction.UNKNOWN )
         {
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.ERROR )
-                                           .setEventMessage( THE_TIME_SCALE_ASSOCIATED_WITH_THE
-                                                             + orientation
+                                           .setEventMessage( THE_TIME_SCALE_ASSOCIATED_WITH
+                                                             + orientationString
                                                              + " does not have a valid time scale function, which is "
                                                              + "required. Please add the time scale function." )
                                            .build();
@@ -3466,8 +3674,8 @@ public class DeclarationValidator
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.ERROR )
-                                           .setEventMessage( THE_TIME_SCALE_ASSOCIATED_WITH_THE
-                                                             + orientation
+                                           .setEventMessage( THE_TIME_SCALE_ASSOCIATED_WITH
+                                                             + orientationString
                                                              + " does not have a valid time period. Either declare "
                                                              + "the 'period' and 'unit' or declare a fully-"
                                                              + "specified time scale season or declare the upper or "
@@ -3484,8 +3692,8 @@ public class DeclarationValidator
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.ERROR )
-                                           .setEventMessage( THE_TIME_SCALE_ASSOCIATED_WITH_THE
-                                                             + orientation
+                                           .setEventMessage( THE_TIME_SCALE_ASSOCIATED_WITH
+                                                             + orientationString
                                                              + " is not properly declared. When including either "
                                                              + "a 'minimum_day' or a 'minimum_month', both must be "
                                                              + "present." )
@@ -3498,8 +3706,8 @@ public class DeclarationValidator
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.ERROR )
-                                           .setEventMessage( THE_TIME_SCALE_ASSOCIATED_WITH_THE
-                                                             + orientation
+                                           .setEventMessage( THE_TIME_SCALE_ASSOCIATED_WITH
+                                                             + orientationString
                                                              + " is not properly declared. When including either "
                                                              + "a 'maximum_day' or a 'maximum_month', both must be "
                                                              + "present." )
@@ -3516,8 +3724,8 @@ public class DeclarationValidator
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.ERROR )
-                                           .setEventMessage( THE_TIME_SCALE_ASSOCIATED_WITH_THE
-                                                             + orientation
+                                           .setEventMessage( THE_TIME_SCALE_ASSOCIATED_WITH
+                                                             + orientationString
                                                              + " is not properly declared. The time scale 'period' "
                                                              + "must be declared explicitly or a time scale season "
                                                              + "fully defined, else a valid combination of the two." )
@@ -3533,8 +3741,8 @@ public class DeclarationValidator
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.ERROR )
-                                           .setEventMessage( THE_TIME_SCALE_ASSOCIATED_WITH_THE
-                                                             + orientation
+                                           .setEventMessage( THE_TIME_SCALE_ASSOCIATED_WITH
+                                                             + orientationString
                                                              + " is not properly declared. The 'period' cannot be "
                                                              + "declared alongside a fully defined season. Please "
                                                              + "remove the 'period' and 'unit' or remove the time "
@@ -3544,6 +3752,34 @@ public class DeclarationValidator
         }
 
         return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Returns a qualifying string for the timescale orientation.
+     * @param orientation the dataset orientation
+     * @param isEvaluationTimeScale whether the timescale is an evaluation timescale
+     * @return the timescale orientation string
+     */
+    private static String getTimeScaleOrientationString( DatasetOrientation orientation,
+                                                         boolean isEvaluationTimeScale )
+    {
+        String orientationString;
+        if ( isEvaluationTimeScale )
+        {
+            orientationString = "'evaluation'";
+        }
+        else
+        {
+            orientationString = "'" + orientation + "'";
+        }
+
+        String article = "the ";
+        if ( orientation == DatasetOrientation.COVARIATE )
+        {
+            article = "a ";
+        }
+
+        return article + orientationString;
     }
 
     /**
@@ -3664,13 +3900,21 @@ public class DeclarationValidator
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
+        String article = "the";
+        if ( orientation.equals( COVARIATE ) )
+        {
+            article = "a";
+        }
+
         // No sources? Not allowed.
         if ( Objects.isNull( sources ) || sources.isEmpty() )
         {
             EvaluationStatusEvent event =
                     EvaluationStatusEvent.newBuilder()
                                          .setStatusLevel( StatusLevel.ERROR )
-                                         .setEventMessage( "No data sources were declared for the '"
+                                         .setEventMessage( "No data sources were declared for "
+                                                           + article
+                                                           + " '"
                                                            + orientation
                                                            + "' dataset, which is not allowed. Please declare at least "
                                                            + "one data source for the '"
@@ -3719,7 +3963,9 @@ public class DeclarationValidator
                 EvaluationStatusEvent event =
                         EvaluationStatusEvent.newBuilder()
                                              .setStatusLevel( StatusLevel.ERROR )
-                                             .setEventMessage( "The URIs ('uri') at the following positions in the '"
+                                             .setEventMessage( "The URIs ('uri') at the following positions in "
+                                                               + article
+                                                               + " '"
                                                                + orientation
                                                                + "' data source were invalid: "
                                                                + invalid
@@ -3881,69 +4127,26 @@ public class DeclarationValidator
     }
 
     /**
-     * @param declaration the declaration
-     * @return whether web sources are declared for the dataset with the prescribed orientation
+     * @param dataset the dataset
+     * @return whether web sources are declared for the dataset
      */
-    private static boolean hasWebSources( EvaluationDeclaration declaration,
-                                          DatasetOrientation orientation )
+    private static boolean hasWebSources( Dataset dataset )
     {
-        if ( orientation == DatasetOrientation.LEFT )
-        {
-            return Objects.nonNull( declaration.left() )
-                   && DeclarationValidator.hasSourceInterface( declaration.left()
-                                                                          .sources(),
-                                                               SourceInterface.USGS_NWIS,
-                                                               SourceInterface.WRDS_AHPS,
-                                                               SourceInterface.WRDS_NWM );
-        }
-        else if ( orientation == DatasetOrientation.RIGHT )
-        {
-            return Objects.nonNull( declaration.right() )
-                   && DeclarationValidator.hasSourceInterface( declaration.right()
-                                                                          .sources(),
-                                                               SourceInterface.USGS_NWIS,
-                                                               SourceInterface.WRDS_AHPS,
-                                                               SourceInterface.WRDS_NWM );
-        }
-        else if ( DeclarationUtilities.hasBaseline( declaration )
-                  && orientation == DatasetOrientation.BASELINE )
-        {
-            return DeclarationValidator.hasSourceInterface( declaration.baseline()
-                                                                       .dataset()
-                                                                       .sources(),
-                                                            SourceInterface.USGS_NWIS,
-                                                            SourceInterface.WRDS_AHPS,
-                                                            SourceInterface.WRDS_NWM );
-        }
-
-        return false;
+        return Objects.nonNull( dataset )
+               && DeclarationValidator.hasSourceInterface( dataset.sources(),
+                                                           SourceInterface.USGS_NWIS,
+                                                           SourceInterface.WRDS_AHPS,
+                                                           SourceInterface.WRDS_NWM );
     }
 
     /**
-     * @param declaration the declaration
+     * @param dataset the dataset
      * @return whether the variable is defined for the dataset with the prescribed orientation
      */
-    private static boolean variableIsNotDeclared( EvaluationDeclaration declaration, DatasetOrientation orientation )
+    private static boolean variableIsNotDeclared( Dataset dataset )
     {
-        if ( orientation == DatasetOrientation.LEFT )
-        {
-            return Objects.nonNull( declaration.left() )
-                   && Objects.isNull( declaration.left()
-                                                 .variable() );
-        }
-        else if ( orientation == DatasetOrientation.RIGHT )
-        {
-            return Objects.nonNull( declaration.right() )
-                   && Objects.isNull( declaration.right()
-                                                 .variable() );
-        }
-        else
-        {
-            return DeclarationUtilities.hasBaseline( declaration )
-                   && Objects.isNull( declaration.baseline()
-                                                 .dataset()
-                                                 .variable() );
-        }
+        return Objects.nonNull( dataset )
+               && Objects.isNull( dataset.variable() );
     }
 
     /**

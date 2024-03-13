@@ -51,11 +51,12 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
  */
 public class DatabaseProject implements Project
 {
-    private static final String SELECT_1 = "SELECT 1";
-    private static final String PROJECT_ID = "project_id";
-
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseProject.class );
+    private static final String UNRECOGNIZED_DATASET_ORIENTATION_IN_THIS_CONTEXT =
+            "Unrecognized dataset orientation in this context: ";
+    private static final String SELECT_1 = "SELECT 1";
+    private static final String PROJECT_ID = "project_id";
 
     /** Protects access and generation of the feature collection. */
     private final Object featureLock = new Object();
@@ -364,6 +365,7 @@ public class DatabaseProject implements Project
             case BASELINE -> this.getDeclaration()
                                  .baseline()
                                  .dataset();
+            case COVARIATE -> null;
         };
     }
 
@@ -377,6 +379,7 @@ public class DatabaseProject implements Project
             case LEFT -> this.getLeftVariableName();
             case RIGHT -> this.getRightVariableName();
             case BASELINE -> this.getBaselineVariableName();
+            case COVARIATE -> null;
         };
     }
 
@@ -444,6 +447,8 @@ public class DatabaseProject implements Project
             case LEFT -> this.leftUsesGriddedData;
             case RIGHT -> this.rightUsesGriddedData;
             case BASELINE -> this.baselineUsesGriddedData;
+            default -> throw new IllegalStateException( UNRECOGNIZED_DATASET_ORIENTATION_IN_THIS_CONTEXT
+                                                        + orientation );
         };
 
         if ( usesGriddedData == null )
@@ -476,6 +481,8 @@ public class DatabaseProject implements Project
                 case LEFT -> this.leftUsesGriddedData = usesGriddedData;
                 case RIGHT -> this.rightUsesGriddedData = usesGriddedData;
                 case BASELINE -> this.baselineUsesGriddedData = usesGriddedData;
+                default -> throw new IllegalStateException( UNRECOGNIZED_DATASET_ORIENTATION_IN_THIS_CONTEXT
+                                                            + orientation );
             }
         }
 
@@ -1387,6 +1394,8 @@ public class DatabaseProject implements Project
             case LEFT -> this.getDeclaredLeftVariableName();
             case RIGHT -> this.getDeclaredRightVariableName();
             case BASELINE -> this.getDeclaredBaselineVariableName();
+            default -> throw new IllegalStateException( UNRECOGNIZED_DATASET_ORIENTATION_IN_THIS_CONTEXT
+                                                        + orientation );
         };
     }
 

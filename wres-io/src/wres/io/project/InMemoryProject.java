@@ -57,6 +57,10 @@ public class InMemoryProject implements Project
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( InMemoryProject.class );
 
+    /** Reused string. */
+    private static final String UNRECOGNIZED_DATASET_ORIENTATION_IN_THIS_CONTEXT =
+            "Unrecognized dataset orientation in this context: ";
+
     /** Project declaration. */
     private final EvaluationDeclaration declaration;
 
@@ -120,10 +124,11 @@ public class InMemoryProject implements Project
 
         if ( this.features.isEmpty() && this.featureGroups.isEmpty() )
         {
-            throw new NoProjectDataException( "Failed to identify any features with data on all required sides (left, right "
-                                              + "and, when declared, baseline) for the variables and other declaration "
-                                              + "supplied. Please check that the declaration is expected to produce some "
-                                              + "features with time-series data on both sides of the pairing." );
+            throw new NoProjectDataException(
+                    "Failed to identify any features with data on all required sides (left, right "
+                    + "and, when declared, baseline) for the variables and other declaration "
+                    + "supplied. Please check that the declaration is expected to produce some "
+                    + "features with time-series data on both sides of the pairing." );
         }
     }
 
@@ -329,6 +334,8 @@ public class InMemoryProject implements Project
             case BASELINE -> this.getDeclaration()
                                  .baseline()
                                  .dataset();
+            default -> throw new IllegalStateException( UNRECOGNIZED_DATASET_ORIENTATION_IN_THIS_CONTEXT
+                                                        + orientation );
         };
     }
 
@@ -342,6 +349,8 @@ public class InMemoryProject implements Project
             case LEFT -> this.getLeftVariableName();
             case RIGHT -> this.getRightVariableName();
             case BASELINE -> this.getBaselineVariableName();
+            default -> throw new IllegalStateException( UNRECOGNIZED_DATASET_ORIENTATION_IN_THIS_CONTEXT
+                                                        + orientation );
         };
     }
 
@@ -411,6 +420,8 @@ public class InMemoryProject implements Project
             case LEFT -> this.leftUsesGriddedData;
             case RIGHT -> this.rightUsesGriddedData;
             case BASELINE -> this.baselineUsesGriddedData;
+            default -> throw new IllegalStateException( UNRECOGNIZED_DATASET_ORIENTATION_IN_THIS_CONTEXT
+                                                        + orientation );
         };
     }
 

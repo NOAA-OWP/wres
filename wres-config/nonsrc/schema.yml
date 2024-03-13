@@ -72,6 +72,12 @@ definitions:
             maxLength: 2083
           # To support data direct
           - type: "null"
+      covariates:
+        type: array
+        items:
+          "$ref": "#/definitions/Covariate"
+        minItems: 1
+        uniqueItems: true
       features:
         type: array
         items:
@@ -237,8 +243,14 @@ definitions:
   # The observed or predicted datasets
   ObservedOrPredicted:
     title: Observed or predicted dataset.
+    "$ref": "#/definitions/BasicDataset"
+    # Close this schema to unevaluated properties
+    unevaluatedProperties: false
+
+  # An "open" schema that represents the common aspects of all datasets
+  # See: https://github.com/orgs/json-schema-org/discussions/375
+  BasicDataset:
     type: object
-    additionalProperties: false
     properties:
       sources:
         anyOf:
@@ -268,7 +280,7 @@ definitions:
           - "$ref": "#/definitions/EnsembleFilter"
           - type: array
             items:
-              oneOf:
+               oneOf:
                 - type: integer
                 - type: string
                   minLength: 1
@@ -292,66 +304,13 @@ definitions:
             maxLength: 6
           - type: integer
 
-  # Should be possible to re-use ObservedOrPredicted by adding a persistence
-  # property within an allOf block, but this does not work in practice while
-  # retaining additionalProperties: false to prevent unknown declaration, so
-  # go ahead and allow the repetition/overlap with ObservedOrPredicted. Also
-  # does not work when using unevaluatedProperties instead of
-  # additionalProperties.
-  
-  # The baseline-ish datasets
+  # The baseline-ish datasets  
   Baseline:
-    title: Baseline dataset
-    type: object
-    additionalProperties: false
+    title: Observed or predicted dataset.
+    "$ref": "#/definitions/BasicDataset"
+    # Close this schema to unevaluated properties 
+    unevaluatedProperties: false
     properties:
-      sources:
-        anyOf:
-          - "$ref": "#/definitions/Source"
-          # No minimum array size because data posting allows for zero declared
-          # sources.
-          - type: array
-            items:
-              "$ref": "#/definitions/Source"
-          - type: string
-            minLength: 1
-            maxLength: 2083
-          # To support data direct
-          - type: "null"
-      feature_authority:
-        "$ref": "#/definitions/FeatureAuthorityEnum"
-      variable:
-        anyOf:
-          - "$ref": "#/definitions/Variable"
-          - type: string
-      label:
-        type: string
-        minLength: 1
-        maxLength: 2083
-      ensemble_filter:
-        anyOf:
-          - "$ref": "#/definitions/EnsembleFilter"
-          - type: array
-            items:
-              oneOf:
-                - type: integer
-                - type: string
-                  minLength: 1
-                  maxLength: 72
-            minItems: 1
-      time_shift:
-        "$ref": "#/definitions/TimeShift"
-      time_scale:
-        "$ref": "#/definitions/TimeScale"
-      # Workaround because the networknt validator sometimes sees these strings
-      # as integers, but both are interpreted properly post-validation. This
-      # property is also defined per source.
-      time_zone_offset:
-        anyOf:
-          - type: string
-            minLength: 1
-            maxLength: 6
-          - type: integer
       method:
         anyOf:
           - "$ref": "#/definitions/GeneratedBaselineEnum"
@@ -366,8 +325,6 @@ definitions:
         of observed and predicted values, not for the pairs of observed and 
         baseline values."
         type: boolean
-      type:
-        "$ref": "#/definitions/DataTypeEnum"
 
   Persistence:
     title: A persistence baseline
@@ -415,6 +372,21 @@ definitions:
         "$ref": "#/definitions/EnsembleAverageEnum"
     required:
       - name
+
+  Covariate:
+    title: An evaluation covariate.
+    description: "A covariate is cross-paired with the main variates (observed, 
+    predicted and baseline) and used to filter these variates."
+    "$ref": "#/definitions/BasicDataset"
+    # Close this schema to unevaluated properties 
+    unevaluatedProperties: false
+    properties:
+      # The minimum value of the covariate
+      minimum:
+        type: number
+      # The minimum value of the covariate
+      maximum:
+        type: number
 
   Source:
     title: A data source.
@@ -1061,7 +1033,6 @@ definitions:
         uniqueItems: true
       # Single number
       - type: number
-    required:
 
   ElaboratedThresholds:
     title: Thresholds with parameters.
