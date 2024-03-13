@@ -40,3 +40,4 @@ decimal_format: '#0.00'
 output_formats:
   - csv
   - pairs
+  - csv2

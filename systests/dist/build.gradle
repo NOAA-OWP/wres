@@ -193,11 +193,144 @@ task( stopGraphicsClient, group: 'test' )
     }
 }
 
+// This task unzips a writing client artifact, after the main artifact has been unzipped
+task( unzipWritingArtifactToTest, dependsOn: unzipArtifactToTest, type: Copy, group: 'test' )
+        {
+            description = 'Unzips the wres writing zip artifact to be tested.'
+            def artifactName = "wres-writing-${writingVersionToTest}.zip"
+            def zipFile = file( "${wresWritingZipDirectory}/" + artifactName )
+
+            def outputDir = file( "${buildDir}" )
+
+            println( "wresWritingZipDirectory: " + wresWritingZipDirectory )
+            println( "writingZipFile: " + zipFile )
+            println( "outputDir: " + outputDir )
+
+            // Print the SHA-256 of the graphics artifact if it exists
+            if( zipFile.exists() )
+            {
+                byte[] binaryContent = zipFile.bytes
+                MessageDigest digest = MessageDigest.getInstance( "SHA-256" );
+                byte[] hashbytes = digest.digest( binaryContent )
+                String shaHex = bytesToHex( hashbytes );
+                println( "Writing artifact "+ artifactName + " has a SHA-256 of: " + shaHex )
+            }
+
+            from zipTree(zipFile)
+            into outputDir
+        }
+
+// To compile the test java code, we need the graphics artifact
+compileTestJava.dependsOn( unzipWritingArtifactToTest )
+
+// The writing process to destroy on completion of the test task
+Process writingProcess = null;
+
+// This task starts a writing client
+task( startWritingClient, dependsOn: unzipWritingArtifactToTest, group: 'test' )
+        {
+            def fS = System.getProperty( "file.separator" )
+            def writingBin = "${buildDir}" + fS + "wres-writing-${writingVersionToTest}" + fS + "bin" + fS + "wres-writing"
+
+            if( isWindows() )
+            {
+                writingBin = writingBin + ".bat"
+            }
+
+            doLast
+                    {
+                        // Declare the runtime environment for the writing process as using the target JDK
+                        Provider<JavaLauncher> launcherProvider = javaToolchains.launcherFor
+                                {
+                                    languageVersion = JavaLanguageVersion.of( TARGET_JDK )
+                                }
+
+                        JavaLauncher executable = launcherProvider.get()
+                        def javaPathString = executable.getMetadata()
+                                .getInstallationPath()
+                                .toString()
+
+                        println( "Setting JAVA_HOME on the writing client process to: " + javaPathString )
+
+                        // Pass on any java options
+                        def testJvmPropertiesWritingRaw = project.properties['testJvmSystemPropertiesWriting']
+
+                        ProcessBuilder pb = new ProcessBuilder( writingBin )
+                        pb.environment()
+                                .put( "JAVA_OPTS", testJvmPropertiesWritingRaw )
+                        pb.environment()
+                                .put( "JAVA_HOME", javaPathString )
+
+                        println( "Starting writing client ${writingVersionToTest} with JAVA_OPTS=${testJvmPropertiesWritingRaw}" )
+                        println( "Writing client start script: " + writingBin )
+
+                        // Redirect output to a log file
+                        File logFile = new File( project.buildDir, "wres-writing-${writingVersionToTest}.log" )
+
+                        println( "Writing a log for the test task writing to " + logFile )
+
+                        writingProcess = pb.redirectErrorStream( true )
+                                .redirectInput( ProcessBuilder.Redirect.INHERIT )
+                                .redirectOutput( ProcessBuilder.Redirect.to( logFile ) )
+                                .start();
+
+                        // Cannot proceed without a writing client
+                        if( ! writingProcess.isAlive() )
+                        {
+                            throw new GradleException( "Unable to instantiate a writing client for the test task." )
+                        }
+
+                        // Do not wait for the graphics client to end
+                        println( "Writing client has started." )
+                    }
+        }
+
+// This task stops a writing client
+task( stopWritingClient, group: 'test' )
+        {
+            doLast
+                    {
+                        if( writingProcess != null )
+                        {
+                            println( "Stopping writing client ${writingVersionToTest}." )
+
+                            // Destroy the children and then the parent
+                            for( nextChild in writingProcess.children() )
+                            {
+                                nextChild.destroy()
+                            }
+
+                            writingProcess.destroy()
+                            writingProcess.waitFor( 5, TimeUnit.SECONDS )
+
+                            // Still alive? Mdk
+                            if( writingProcess.isAlive() )
+                            {
+                                for( nextChild in writingProcess.children() )
+                                {
+                                    nextChild.destroyForcibly()
+                                }
+
+                                writingProcess.destroyForcibly()
+                            }
+
+                            println( "Writing client has stopped." )
+                        }
+                    }
+        }
+
+
 // Start the graphics client before all tests
 test.dependsOn( startGraphicsClient )
 
 // Stop the graphics client after all tests
 test.finalizedBy( stopGraphicsClient )
+
+// Start the graphics client before all tests
+test.dependsOn( startWritingClient )
+
+// Stop the graphics client after all tests
+test.finalizedBy( stopWritingClient )
 
 // Windows OS?
 boolean isWindows()
