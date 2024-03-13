@@ -16,7 +16,7 @@ volumes:
             device: "${NFS_HOME_DIR_DEVICE}"
 services:
     persister:
-        image: "${DOCKER_REGISTRY}/wres/wres-redis:20240215-c896862"
+        image: "${DOCKER_REGISTRY}/wres/wres-redis:20240308-d9b2f92"
         restart: always
         volumes:
           # For the job data
@@ -31,7 +31,7 @@ services:
         healthcheck:
             start_period: 15m
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20240223-531369e"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20240312-5531876"
         restart: always
         depends_on:
             eventsbroker:
@@ -65,7 +65,7 @@ services:
          # administrator to run the migration(s) during or after deployment.
          # Write heap dumps to the root of the volume above.
          # Override the broker address and port in the binding URL of the event.properties.
-         - INNER_JAVA_OPTS=-Xmx8192m -Xms8192m -Dwres.maxPoolSize=13 -Dlogback.configurationFile=/opt/inner_logback.xml -Dwres.startBroker=false -Dwres.redisHost=persister -Dwres.redisTimeoutInHours=12 -Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dwres.externalGraphics=true -Dwres.featureBatchSize=1 -Dwres.useDatabase=true -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/evaluations -Dwres.databaseHost=${WRES_DB_FQDN} -Dwres.certificateFileToTrust=${WRES_DB_CA_FILE} -Dwres.wrdsCertificateFileToTrust=${WRDS_CA_FILE} -Dwres.databaseName=wres8 -Dwres.username=wres_user8 -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/wres -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/wres/java_pid%p.hprof /mnt/wres_share/heap_dumps/wres/java_pid%p_$$CON_HOSTNAME.hprof; chmod 775 /mnt/wres_share/heap_dumps/wres/java_pid%p_$$CON_HOSTNAME.hprof' -XX:StartFlightRecording=settings=wres_jfr,maxsize=1280m,dumponexit=true,filename=/mnt/wres_share/heap_dumps/wres/$$CON_HOSTNAME -XX:FlightRecorderOptions=repository=/mnt/wres_share/heap_dumps/wres/$$CON_HOSTNAME/ -XX:+CrashOnOutOfMemoryError
+         - INNER_JAVA_OPTS=-Xmx8192m -Xms8192m -Dwres.maxPoolSize=13 -Dlogback.configurationFile=/opt/inner_logback.xml -Dwres.startBroker=false -Dwres.redisHost=persister -Dwres.redisTimeoutInHours=12 -Dwres.enableServerCache=false -Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dwres.externalGraphics=true -Dwres.externalWriting=false -Dwres.featureBatchSize=1 -Dwres.useDatabase=true -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/evaluations -Dwres.databaseHost=${WRES_DB_FQDN} -Dwres.certificateFileToTrust=${WRES_DB_CA_FILE} -Dwres.wrdsCertificateFileToTrust=${WRDS_CA_FILE} -Dwres.databaseName=wres8 -Dwres.username=wres_user8 -Dwres.attemptToMigrate=false -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/wres -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/wres/java_pid%p.hprof /mnt/wres_share/heap_dumps/wres/java_pid%p_$$CON_HOSTNAME.hprof; chmod 775 /mnt/wres_share/heap_dumps/wres/java_pid%p_$$CON_HOSTNAME.hprof' -XX:StartFlightRecording=settings=wres_jfr,maxsize=1280m,dumponexit=true,filename=/mnt/wres_share/heap_dumps/wres/$$CON_HOSTNAME -XX:FlightRecorderOptions=repository=/mnt/wres_share/heap_dumps/wres/$$CON_HOSTNAME/ -XX:+CrashOnOutOfMemoryError
          - LANG=C.UTF-8
         # Shim JVM should have 64m max heap, core JVM should have 2560m max heap
         mem_limit: 9216m
@@ -81,7 +81,7 @@ services:
          - 5673
         ports:
          - 15673:15673
-        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20240215-c896862"
+        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20240308-d9b2f92"
         restart: always
         volumes:
          # For heap-dump files
@@ -103,7 +103,7 @@ services:
         depends_on:
             eventsbroker:
                 condition: service_started
-        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20240223-531369e"
+        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20240308-d9b2f92"
         restart: always
         volumes:
          # To write graphics outputs
