@@ -189,7 +189,8 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
     {
         Objects.requireNonNull( pool, "Expected a non-null pool as input to the metric processor." );
 
-        Objects.requireNonNull( pool.getMetadata().getTimeWindow(),
+        Objects.requireNonNull( pool.getMetadata()
+                                    .getTimeWindow(),
                                 "Expected a non-null time window in the pool metadata." );
 
         LOGGER.debug( "Computing single-valued statistics for pool: {}.", pool.getMetadata() );
