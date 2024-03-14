@@ -872,12 +872,40 @@ public class StationaryBootstrapResampler<T>
 
         if ( LOGGER.isDebugEnabled() )
         {
+            long mainValueCount = this.pool.get()
+                                           .stream()
+                                           .mapToLong( n -> n.getEvents()
+                                                             .size() )
+                                           .sum();
+            long originalMainValueCount = pool.get()
+                                              .stream()
+                                              .mapToLong( n -> n.getEvents()
+                                                                .size() )
+                                              .sum();
+            long baselineValueCount = 0;
+            long originalBaselineValueCount = 0;
             int baselineCount = 0;
+            int originalBaselineCount = 0;
             if ( this.pool.hasBaseline() )
             {
                 baselineCount = this.pool.getBaselineData()
                                          .get()
                                          .size();
+                originalBaselineCount = pool.getBaselineData()
+                                            .get()
+                                            .size();
+                baselineValueCount = this.pool.getBaselineData()
+                                              .get()
+                                              .stream()
+                                              .mapToLong( n -> n.getEvents()
+                                                                .size() )
+                                              .sum();
+                originalBaselineValueCount = pool.getBaselineData()
+                                                 .get()
+                                                 .stream()
+                                                 .mapToLong( n -> n.getEvents()
+                                                                   .size() )
+                                                 .sum();
             }
 
             Map<Duration, Double> qProbs = this.q.entrySet()
@@ -889,15 +917,31 @@ public class StationaryBootstrapResampler<T>
             LOGGER.debug( "Created a stationary bootstrap resampler with a mean block size of {} timesteps, a modal "
                           + "timestep of {}, a probability of {} for randomly sampling consecutive timesteps within "
                           + "the same time-series, probabilities of {} for randomly sampling consecutive time-series "
-                          + "depending on the gap/duration between them, and a pool with {} main time-series and {} "
-                          + "baseline time-series.",
+                          + "depending on the gap/duration between them, and a pool with {} main time-series "
+                          + "containing {} events in total and {} baseline time-series containing {} events in total. "
+                          + "Resampling across geospatial features and across main and baseline datasets assumes "
+                          + "perfect statistical dependence between corresponding time-series across features and "
+                          + "datasets. For this reason, cross pairing is performed, which retains only those time-"
+                          + "series events that appear across all geospatial features and datasets. Before "
+                          + "cross-pairing, the pool was composed of {} main time-series containing {} events in total "
+                          + "and {} baseline time-series containing {} events in total. To ensure the nominal "
+                          + "statistics are comparable to the resampled statistics (when cross-pairing removes "
+                          + "events), consider declaring 'cross_pair: fuzzy' to ensure consistent treatment of the "
+                          + "nominal and resampled datasets.",
                           meanBlockSizeInTimesteps,
                           timestep,
                           pProb,
                           qProbs,
                           this.pool.get()
                                    .size(),
-                          baselineCount );
+                          mainValueCount,
+                          baselineCount,
+                          baselineValueCount,
+                          pool.get()
+                              .size(),
+                          originalMainValueCount,
+                          originalBaselineCount,
+                          originalBaselineValueCount );
         }
     }
 

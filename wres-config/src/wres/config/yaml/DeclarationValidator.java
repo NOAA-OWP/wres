@@ -2128,14 +2128,14 @@ public class DeclarationValidator
                                                              + "option and contains a 'baseline' dataset, but does "
                                                              + "not request cross-pairing of the 'predicted' and "
                                                              + "'baseline' datasets ('cross_pair: fuzzy'). This is "
-                                                             + "allowed, but can lead to the nominal value of any "
-                                                             + "skill metrics falling outside of the prescribed "
-                                                             + "confidence intervals because cross-pairing is "
-                                                             + "always performed for the resampled data. More "
-                                                             + "generally, skill calculations can be misleading "
-                                                             + "unless the 'predicted' and 'baseline' pairs are "
-                                                             + "coincident in time, which is enforced by "
-                                                             + "cross-pairing." )
+                                                             + "allowed, but can lead to the nominal value of a "
+                                                             + "statistic falling outside of its prescribed confidence "
+                                                             + "interval because cross-pairing is always performed for "
+                                                             + "the resampled data. More generally, comparisons "
+                                                             + "between the 'predicted' and 'baseline' datasets (e.g., "
+                                                             + "in terms of skill) can be misleading unless both "
+                                                             + "datasets contain common event times, which is "
+                                                             + "enforced by cross-pairing." )
                                            .build();
             events.add( crossPair );
         }

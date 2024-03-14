@@ -529,17 +529,19 @@ public class PoolFactory
 
             if ( method == GeneratedBaselines.PERSISTENCE )
             {
+                // Use the left-ish upscaler because the source data is left-ish: #127653
                 baselineGenerator = this.getPersistenceBaseline( declaredGenerator,
                                                                  retrieverFactory,
-                                                                 rightUpscaler,
+                                                                 leftUpscaler,
                                                                  Double::isFinite );
             }
             else if ( method == GeneratedBaselines.CLIMATOLOGY )
             {
+                // Use the left-ish upscaler because the source data is left-ish: #127653
                 ToDoubleFunction<Ensemble> mapper = Slicer.getEnsembleAverageFunction( declaredGenerator.average() );
                 baselineGenerator = this.getClimatologyBaseline( declaredGenerator,
                                                                  retrieverFactory,
-                                                                 rightUpscaler,
+                                                                 leftUpscaler,
                                                                  mapper );
             }
             else
