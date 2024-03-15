@@ -62,11 +62,13 @@ redis_version=$( echo "$all_versions" | grep "^wres-redis version" | cut -d' ' -
 wres_worker_shim_version=$( echo "$all_versions" | grep "^wres-worker version" | cut -d' ' -f3 )
 eventsbroker_version=$( echo "$all_versions" | grep "^wres-eventsbroker version" | cut -d' ' -f3 )
 graphics_version=$( echo "$all_versions" | grep "^wres-vis version" | cut -d' ' -f3 )
+writing_version=$( echo "$all_versions" | grep "^wres-writing version" | cut -d' ' -f3 )
 
 # These will be the zip ids, as distinct from the previously-found image ids.
 wres_core_version=$overall_version
 wres_tasker_version=$tasker_version
 wres_vis_version=$graphics_version
+wres_writing_version=$writing_version
 
 
 # Sometimes auto-detection of versions does not work, because if no code changed
@@ -108,6 +110,11 @@ then
     wres_vis_version=$8
 fi
 
+if [[ "$9" != "" && "$9" != "auto" ]]
+then
+    wres_writing_version=$9
+fi
+
 echo ""
 echo "VERSIONS USED BASED ON DEFAULTS WITH ARGUMENT OVERRIDES:"
 echo ""
@@ -121,6 +128,7 @@ echo "Redis docker image version is $redis_version"
 echo "WRES events broker docker image version is $eventsbroker_version"
 echo "WRES vis binary zip version is $wres_vis_version"
 echo "WRES graphics docker image version is $graphics_version"
+echo "WRES writing docker image version is $wres_writing_version"
 
 
 #=============================================================
@@ -133,17 +141,20 @@ wres_core_file=wres-${wres_core_version}.zip
 worker_shim_file=wres-worker-${wres_worker_shim_version}.zip
 tasker_file=wres-tasker-${wres_tasker_version}.zip
 vis_file=wres-vis-${wres_vis_version}.zip
+writing_file=wres-writing-${wres_writing_version}.zip
 
 jenkins_workspace=$JOB_URL/$jenkins_build/artifact
 core_url=$jenkins_workspace/build/distributions/$wres_core_file
 worker_url=$jenkins_workspace/wres-worker/build/distributions/$worker_shim_file
 tasker_url=$jenkins_workspace/wres-tasker/build/distributions/$tasker_file
 vis_url=$jenkins_workspace/wres-vis/build/distributions/$vis_file
+writing_url=$jenkins_workspace/wres-writing/build/distributions/$writing_file
 
 # Ensure the distribution zip files are present for successful docker build
 if [[ ! -f ./build/distributions/$wres_core_file || \
          ! -f ./wres-worker/build/distributions/$worker_shim_file || \
          ! -f ./wres-tasker/build/distributions/$tasker_file || \
+         ! -f ./wres-writing/build/distributions/$writing_file || \
          ! -f ./wres-vis/build/distributions/$vis_file  ]]
 then
     echo ""
@@ -171,6 +182,11 @@ then
     then
         echo "    $vis_url  -  wres-vis/build/distributions"
     fi
+
+    if [[ ! -f ./wres-writing/build/distributions/$writing_file ]]
+    then
+        echo "    $writing_url  -  wres-writing/build/distributions"
+    fi
     echo ""
     echo "You can use the following curl commands, with user name and token specified in ~/jenkins_token, to obtain the files:"
     echo ""
@@ -193,6 +209,11 @@ then
     if [[ ! -f ./wres-vis/build/distributions/$vis_file ]]
     then
         echo "     curl --config ~/jenkins_token -o ./wres-vis/build/distributions/$vis_file $vis_url"
+    fi
+
+    if [[ ! -f ./wres-writing/build/distributions/$writing_file ]]
+    then
+        echo "     curl --config ~/jenkins_token -o ./wres-writing/build/distributions/$writing_file $writing_url"
     fi
     echo ""
     echo "You can also use the '-u user:token' option instead of '--config ~/jenkins_token', e.g. '-u <user.name>:<Jenkins API token>'."
@@ -257,6 +278,14 @@ graphics_image_id=$( docker build --build-arg version=$wres_vis_version --quiet 
 popd
 
 echo "Built wres/wres-graphics:$graphics_version -- $graphics_image_id"
+
+# Build and tag the writing image
+echo "Building writing image..."
+pushd wres-writing
+writing_image_id=$( docker build --build-arg version=$wres_writing_version --quiet --tag wres/wres-writing:$writing_version . )
+popd
+
+echo "Built wres/wres-writing:$writing_version -- $writing_image_id"
 
 echo "Displaying most recent 20 docker images"
 docker image ls | head -n 21
@@ -357,6 +386,17 @@ then
             docker tag wres/wres-graphics:$graphics_version $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
             docker push $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
         fi
+
+        writing_image_dev_status=$( echo ${writing_version} | grep "dev" )
+
+        if [[ "$writing_image_dev_status" != "" ]]
+        then
+            echo "Refusing to tag and push writing docker image version ${writing_version} because its Dockerfile has not been committed to the repository yet."
+        else
+            echo "Tagging and pushing wres/wres-writing:$writing_version as $DOCKER_REGISTRY/wres/wres-writing/$writing_version..."
+            docker tag wres/wres-writing:$writing_version $DOCKER_REGISTRY/wres/wres-writing:$writing_version
+            docker push $DOCKER_REGISTRY/wres/wres-writing:$writing_version
+        fi
     fi
     
 else
@@ -392,6 +432,7 @@ sed -i "s/REDIS_IMAGE/${redis_version}/" compose-entry.yml
 sed -i "s/WORKER_IMAGE/${overall_version}/" compose-entry.yml # By design... The tag for the worker image is the "overall_version".
 sed -i "s/EVENTS_IMAGE/${eventsbroker_version}/" compose-entry.yml
 sed -i "s/GRAPHICS_IMAGE/${graphics_version}/" compose-entry.yml
+sed -i "s/WRITING_IMAGE/${writing_version}/" compose-entry.yml
 sed -i "s/OVERALL_IMAGE/${overall_version}/" compose-entry.yml
 
 cp compose-workers.template.yml compose-workers.yml
@@ -401,6 +442,7 @@ sed -i "s/REDIS_IMAGE/${redis_version}/" compose-workers.yml
 sed -i "s/WORKER_IMAGE/${overall_version}/" compose-workers.yml # By design... The tag for the worker image is the "overall_version".
 sed -i "s/EVENTS_IMAGE/${eventsbroker_version}/" compose-workers.yml
 sed -i "s/GRAPHICS_IMAGE/${graphics_version}/" compose-workers.yml
+sed -i "s/WRITING_IMAGE/${writing_version}/" compose-workers.yml
 sed -i "s/OVERALL_IMAGE/${overall_version}/" compose-workers.yml
 
 echo ""
