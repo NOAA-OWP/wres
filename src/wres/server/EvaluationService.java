@@ -140,7 +140,7 @@ public class EvaluationService implements ServletContextListener
 
     private static int redisEntryTimeoutInHours = 12;
 
-    private static boolean serverCacheEnabled = true;
+    private static boolean serverCacheEnabled = false;
 
     static
     {
