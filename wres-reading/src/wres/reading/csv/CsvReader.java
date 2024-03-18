@@ -430,7 +430,8 @@ public class CsvReader implements TimeSeriesReader
         if ( data.hasColumn( REFERENCE_DATETIME_COLUMN ) )
         {
             Instant referenceDatetime = data.getInstant( REFERENCE_DATETIME_COLUMN );
-            referenceTimes.put( ReferenceTimeType.UNKNOWN, referenceDatetime );
+            // Assume T0 type. Must be some forecast type as observations do not have reference times in this format
+            referenceTimes.put( ReferenceTimeType.T0, referenceDatetime );
         }
 
         return TimeSeriesMetadata.of( referenceTimes,
@@ -505,8 +506,8 @@ public class CsvReader implements TimeSeriesReader
         // Only validate if the variable name is declared: #95012
         else if ( Objects.isNull( dataSource.getVariable() )
                   || !CsvDataProvider.getString( VARIABLE_NAME )
-                                  .equalsIgnoreCase( dataSource.getVariable()
-                                                               .name() ) )
+                                     .equalsIgnoreCase( dataSource.getVariable()
+                                                                  .name() ) )
         {
             String foundVariable = CsvDataProvider.getString( VARIABLE_NAME );
             unconfiguredVariableNames.add( foundVariable );

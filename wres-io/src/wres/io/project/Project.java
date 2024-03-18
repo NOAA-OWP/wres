@@ -5,7 +5,6 @@ import java.time.MonthDay;
 import java.util.Set;
 import java.util.SortedSet;
 
-import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -15,7 +14,13 @@ import wres.io.retrieving.DataAccessException;
 import wres.datamodel.time.TimeWindowOuter;
 
 /**
- * Provides an interface to the project declaration in combination with the ingested time-series data.
+ * Provides an interface to the project declaration in combination with the ingested time-series data. In this context,
+ * the declaration may not elaborate everything needed to execute an evaluation (e.g., geographic features may be
+ * clarified from ingested sources) and, in general, when common information is supplied in the declaration and
+ * ingested sources (e.g., data types), the ingested sources are canonical. Except for the methods in this class that
+ * explicitly return declaration, the information returned should be considered representative of the ingested sources
+ * and, therefore, canonical. For example, {@link #getFeatures()} will return the canonical features (e.g., including
+ * coordinate information supplied by ingested sources).
  * 
  * @author James Brown
  */
@@ -56,8 +61,8 @@ public interface Project
     TimeScaleOuter getDesiredTimeScale();
 
     /**
-     * Returns the set of {@link FeatureTuple} declared in all contexts, whether as singletons or part of multi-feature
-     * groups.
+     * Returns the set of {@link FeatureTuple} that appear in all contexts, whether as singletons or part of multi-
+     * feature groups.
      * @return a set of all feature tuples involved in the project
      * @throws DataAccessException if the features cannot be retrieved
      * @throws IllegalStateException if the features have not been set
@@ -84,15 +89,6 @@ public interface Project
 
     /**
      * @param orientation the side of data for which the variable is required
-     * @return the declared dataset for the specified orientation
-     * @throws NullPointerException if the orientation is null
-     * @throws IllegalArgumentException if the orientation is unrecognized
-     */
-
-    Dataset getDeclaredDataset( DatasetOrientation orientation );
-
-    /**
-     * @param orientation the side of data for which the variable is required
      * @return the name of the variable for the specified side of data
      * @throws NullPointerException if the orientation is null
      * @throws IllegalArgumentException if the orientation is unrecognized
@@ -108,6 +104,22 @@ public interface Project
      */
 
     SortedSet<String> getEnsembleLabels( DatasetOrientation orientation );
+
+    /**
+     * @param orientation the orientation of the data source
+     * @return true if the data source uses gridded data, false otherwise
+     */
+
+    boolean usesGriddedData( DatasetOrientation orientation );
+
+    /**
+     * @param orientation the side of data
+     * @return whether there is lenient upscaling enforced for the specified side of data
+     * @throws NullPointerException if the orientation is null
+     * @throws IllegalArgumentException if the orientation is unrecognized
+     */
+
+    boolean isUpscalingLenient( DatasetOrientation orientation );
 
     /**
      * @return the earliest analysis duration, defaults to {@link TimeWindowOuter#DURATION_MIN}.
@@ -145,22 +157,6 @@ public interface Project
      */
 
     long getId();
-
-    /**
-     * @param orientation the orientation of the data source
-     * @return true if the data source uses gridded data, false otherwise
-     */
-
-    boolean usesGriddedData( DatasetOrientation orientation );
-
-    /**
-     * @param orientation the side of data
-     * @return whether there is lenient upscaling enforced for the specified side of data
-     * @throws NullPointerException if the orientation is null
-     * @throws IllegalArgumentException if the orientation is unrecognized
-     */
-
-    boolean isUpscalingLenient( DatasetOrientation orientation );
 
     /**
      * @return whether there is a baseline

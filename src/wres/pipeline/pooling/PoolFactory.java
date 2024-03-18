@@ -44,6 +44,7 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.GeneratedBaseline;
 import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.Season;
+import wres.config.yaml.components.Source;
 import wres.config.yaml.components.Values;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.Ensemble.Labels;
@@ -573,11 +574,19 @@ public class PoolFactory
         Predicate<Double> missingFilter = MissingValues::isNotMissingValue;
 
         // Get the time shifts
-        Dataset left = project.getDeclaredDataset( DatasetOrientation.LEFT );
+        Dataset left = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
+                                                                DatasetOrientation.LEFT );
         Duration leftTimeShift = this.getTimeShift( left );
-        Dataset right = project.getDeclaredDataset( DatasetOrientation.RIGHT );
+        Dataset right = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
+                                                                 DatasetOrientation.RIGHT );
         Duration rightTimeShift = this.getTimeShift( right );
-        Dataset baseline = project.getDeclaredDataset( DatasetOrientation.BASELINE );
+        Dataset baseline = null;
+        if ( project.hasBaseline() )
+        {
+            baseline = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
+                                                                DatasetOrientation.BASELINE );
+        }
+
         Duration baselineTimeShift = this.getTimeShift( baseline );
 
         Duration pairFrequency = this.getPairFrequency( declaration );
@@ -697,7 +706,7 @@ public class PoolFactory
         boolean cacheSorted = Objects.nonNull( declaration.sampleUncertainty() );
 
         // Right transformer
-        Dataset right = project.getDeclaredDataset( DatasetOrientation.RIGHT );
+        Dataset right = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(), DatasetOrientation.RIGHT );
         UnaryOperator<Event<Ensemble>> rightValueTransformer = this.getValueTransformer( leftValueTransformer,
                                                                                          right,
                                                                                          cacheSorted );
@@ -713,7 +722,13 @@ public class PoolFactory
                 t -> rightValueAndUnitTransformer.apply( rightValidTimeSeasonTransformer.apply( t ) );
 
         // Baseline transformer
-        Dataset baseline = project.getDeclaredDataset( DatasetOrientation.BASELINE );
+        Dataset baseline = null;
+        if ( project.hasBaseline() )
+        {
+            baseline = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
+                                                                DatasetOrientation.BASELINE );
+        }
+
         UnaryOperator<Event<Ensemble>> baselineValueTransformer = this.getValueTransformer( leftValueTransformer,
                                                                                             baseline,
                                                                                             cacheSorted );
@@ -735,7 +750,7 @@ public class PoolFactory
                                                                      && ensemble.size() > 0;
 
         // Get the time shifts
-        Dataset left = project.getDeclaredDataset( DatasetOrientation.LEFT );
+        Dataset left = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(), DatasetOrientation.LEFT );
         Duration leftTimeShift = this.getTimeShift( left );
         Duration rightTimeShift = this.getTimeShift( right );
         Duration baselineTimeShift = this.getTimeShift( baseline );
@@ -846,7 +861,7 @@ public class PoolFactory
         boolean cacheSorted = Objects.nonNull( declaration.sampleUncertainty() );
 
         // Right transformer
-        Dataset right = project.getDeclaredDataset( DatasetOrientation.RIGHT );
+        Dataset right = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(), DatasetOrientation.RIGHT );
         UnaryOperator<Event<Ensemble>> rightValueTransformer = this.getValueTransformer( leftValueTransformer,
                                                                                          right,
                                                                                          cacheSorted );
@@ -854,7 +869,13 @@ public class PoolFactory
                 this.getValueTransformer( rightValueTransformer );
 
         // Baseline transformer
-        Dataset baseline = project.getDeclaredDataset( DatasetOrientation.BASELINE );
+        Dataset baseline = null;
+        if ( project.hasBaseline() )
+        {
+            baseline = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
+                                                                DatasetOrientation.BASELINE );
+        }
+
         UnaryOperator<Event<Ensemble>> baselineValueTransformer = this.getValueTransformer( leftValueTransformer,
                                                                                             baseline,
                                                                                             cacheSorted );
@@ -872,7 +893,7 @@ public class PoolFactory
                                                                      && ensemble.size() > 0;
 
         // Get the time shifts
-        Dataset left = project.getDeclaredDataset( DatasetOrientation.LEFT );
+        Dataset left = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(), DatasetOrientation.LEFT );
         Duration leftTimeShift = this.getTimeShift( left );
         Duration rightTimeShift = this.getTimeShift( right );
         Duration baselineTimeShift = this.getTimeShift( baseline );
@@ -1764,8 +1785,8 @@ public class PoolFactory
 
     private void validateRequestedPoolsAgainstDeclaration( Project project, boolean ensemble )
     {
-        Dataset right = project.getDeclaredDataset( DatasetOrientation.RIGHT );
-        Dataset baseline = project.getDeclaredDataset( DatasetOrientation.BASELINE );
+        Dataset right = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(), DatasetOrientation.RIGHT );
+
         DataType rightType = right.type();
 
         // Right
@@ -1785,8 +1806,10 @@ public class PoolFactory
         }
 
         // Baseline?
-        if ( Objects.nonNull( baseline ) )
+        if ( project.hasBaseline() )
         {
+            Dataset baseline = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
+                                                                        DatasetOrientation.BASELINE );
             DataType baselineType = baseline.type();
 
             if ( ensemble
@@ -2332,9 +2355,16 @@ public class PoolFactory
         // A common assumption throughout WRES is that sources can be de-duplicated on the basis of declaration and that
         // any runtime differences, based on when reading/ingest calls an external source for a snapshot, should be 
         // ignored - in other words, the first snapshot wins, because this allows for de-duplication
-        Dataset left = project.getDeclaredDataset( DatasetOrientation.LEFT );
-        Dataset baseline = project.getDeclaredDataset( DatasetOrientation.BASELINE );
-        return Objects.equals( left.sources(), baseline.sources() );
+        Dataset left = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
+                                                                DatasetOrientation.LEFT );
+        List<Source> baselineSources = null;
+        if ( this.project.hasBaseline() )
+        {
+            baselineSources = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
+                                                                       DatasetOrientation.BASELINE )
+                                                  .sources();
+        }
+        return Objects.equals( left.sources(), baselineSources );
     }
 
     /**

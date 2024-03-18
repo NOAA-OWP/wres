@@ -16,7 +16,6 @@ import org.mockito.Mockito;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
-import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.LeadTimeInterval;
@@ -162,10 +161,6 @@ class PoolFactoryTest
                .thenReturn( Set.of( groupOne, groupTwo ) );
         Mockito.when( project.getDeclaration() )
                .thenReturn( declaration );
-        Mockito.when( project.getDeclaredDataset( DatasetOrientation.LEFT ) )
-               .thenReturn( left );
-        Mockito.when( project.getDeclaredDataset( DatasetOrientation.RIGHT ) )
-               .thenReturn( right );
         Mockito.when( project.getMeasurementUnit() )
                .thenReturn( CFS );
 

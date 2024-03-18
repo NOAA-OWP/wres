@@ -9,6 +9,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
@@ -28,7 +29,7 @@ import wres.io.retrieving.RetrieverFactory;
 /**
  * <p>A factory class that creates retrievers for the single-valued left and ensemble right datasets associated with one 
  * evaluation.
- * 
+ *
  * @author James Brown
  */
 
@@ -169,7 +170,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
     /**
      * Returns <code>true</code> if the project associated with this retriever factory has a baseline, otherwise
      * <code>false</code>.
-     * 
+     *
      * @return true if the project has a baseline, otherwise false
      */
 
@@ -216,7 +217,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
 
     /**
      * Returns a builder for a right-ish retriever.
-     * 
+     *
      * @param dataType the retrieved data type
      * @return the retriever
      * @throws IllegalArgumentException if the data type is unrecognized in this context
@@ -260,7 +261,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param project the project
      * @param database the database,
      * @param caches the caches
@@ -279,8 +280,18 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
         this.database = database;
         this.caches = caches;
 
-        this.rightDataset = project.getDeclaredDataset( DatasetOrientation.RIGHT );
-        this.baselineDataset = project.getDeclaredDataset( DatasetOrientation.BASELINE );
+        this.rightDataset = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
+                                                                     DatasetOrientation.RIGHT );
+
+        if( project.hasBaseline() )
+        {
+            this.baselineDataset = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
+                                                                            DatasetOrientation.BASELINE );
+        }
+        else
+        {
+            this.baselineDataset = null;
+        }
 
         // Obtain any seasonal constraints
         this.seasonStart = project.getStartOfSeason();

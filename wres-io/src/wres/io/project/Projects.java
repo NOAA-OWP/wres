@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.function.ToIntFunction;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -116,9 +117,12 @@ public class Projects
                                                List<IngestResult> ingestResults )
             throws SQLException
     {
-        long[] leftIds = Projects.getLeftIds( ingestResults );
-        long[] rightIds = Projects.getRightIds( ingestResults );
-        long[] baselineIds = Projects.getBaselineIds( ingestResults );
+        long[] leftIds = Projects.getIds( ingestResults, IngestResult::getLeftCount );
+        long[] rightIds = Projects.getIds( ingestResults, IngestResult::getRightCount );
+        long[] baselineIds = Projects.getIds( ingestResults, IngestResult::getBaselineCount );
+        long[] covariateIds = Projects.getIds( ingestResults, IngestResult::getCovariateCount );
+
+        IngestIds ingestIds = new IngestIds( leftIds, rightIds, baselineIds, covariateIds );
 
         // Check assumption that at least one left and one right source have
         // been created.
@@ -127,17 +131,18 @@ public class Projects
 
         if ( leftCount < 1 || rightCount < 1 )
         {
-            throw new NoProjectDataException( "When examining the ingested data, discovered insufficient data sources to "
-                                              + "proceed. At least one data source is required for the left side of the "
-                                              + "evaluation and one data source for the right side, but the left side had "
-                                              + leftCount
-                                              + " sources and the right side had "
-                                              + rightCount
-                                              + " sources. There were "
-                                              + baselineIds.length
-                                              + " baseline sources. Please check that all intended data sources were declared "
-                                              + "and that all declared data sources were ingested correctly. For example, "
-                                              + "were some data sources skipped because the format was unrecognized?" );
+            throw new NoProjectDataException(
+                    "When examining the ingested data, discovered insufficient data sources to "
+                    + "proceed. At least one data source is required for the left side of the "
+                    + "evaluation and one data source for the right side, but the left side had "
+                    + leftCount
+                    + " sources and the right side had "
+                    + rightCount
+                    + " sources. There were "
+                    + baselineIds.length
+                    + " baseline sources. Please check that all intended data sources were declared "
+                    + "and that all declared data sources were ingested correctly. For example, "
+                    + "were some data sources skipped because the format was unrecognized?" );
         }
 
         // Permit the List<IngestResult> to be garbage collected here, which
@@ -146,9 +151,7 @@ public class Projects
                                                                       caches,
                                                                       griddedFeatures,
                                                                       declaration,
-                                                                      leftIds,
-                                                                      rightIds,
-                                                                      baselineIds );
+                                                                      ingestIds );
 
 
         // Validate the saved project
@@ -164,9 +167,7 @@ public class Projects
      * @param caches the database caches
      * @param griddedFeatures the gridded features cache
      * @param declaration the declaration that produced the ingest results
-     * @param leftIds the left-sided data identifiers
-     * @param rightIds the right-sided data identifiers
-     * @param baselineIds the baseline-sided data identifiers
+     * @param ingestIds the ingest identifiers
      * @return the project
      * @throws SQLException if the project could not be ingested
      */
@@ -174,9 +175,7 @@ public class Projects
                                                               DatabaseCaches caches,
                                                               GriddedFeatures griddedFeatures,
                                                               EvaluationDeclaration declaration,
-                                                              long[] leftIds,
-                                                              long[] rightIds,
-                                                              long[] baselineIds )
+                                                              IngestIds ingestIds )
             throws SQLException
     {
         // We don't yet know how many unique timeseries there are. For example,
@@ -186,20 +185,20 @@ public class Projects
         // maximum, though.
         Set<Long> uniqueSourcesUsed = new HashSet<>();
 
-        for ( long leftId : leftIds )
-        {
-            uniqueSourcesUsed.add( leftId );
-        }
+        long[] leftIds = ingestIds.leftIds();
+        long[] rightIds = ingestIds.rightIds();
+        long[] baselineIds = ingestIds.baselineIds();
+        long[] covariateIds = ingestIds.covariateIds();
 
-        for ( long rightId : rightIds )
-        {
-            uniqueSourcesUsed.add( rightId );
-        }
-
-        for ( long baselineId : baselineIds )
-        {
-            uniqueSourcesUsed.add( baselineId );
-        }
+        // Assemble the IDs
+        Arrays.stream( leftIds )
+              .forEach( uniqueSourcesUsed::add );
+        Arrays.stream( rightIds )
+              .forEach( uniqueSourcesUsed::add );
+        Arrays.stream( baselineIds )
+              .forEach( uniqueSourcesUsed::add );
+        Arrays.stream( covariateIds )
+              .forEach( uniqueSourcesUsed::add );
 
         int countOfUniqueHashes = uniqueSourcesUsed.size();
         final int MAX_PARAMETER_COUNT = 999;
@@ -227,23 +226,22 @@ public class Projects
         String[] leftHashes = Projects.getHashes( leftIds, idsToHashes );
         String[] rightHashes = Projects.getHashes( rightIds, idsToHashes );
         String[] baselineHashes = Projects.getHashes( baselineIds, idsToHashes );
+        String[] covariateHashes = Projects.getHashes( covariateIds, idsToHashes );
+
+        IngestHashes hashes = new IngestHashes( leftHashes, rightHashes, baselineHashes, covariateHashes );
 
         Pair<DatabaseProject, Boolean> detailsResult =
                 Projects.getProject( database,
                                      caches,
                                      griddedFeatures,
                                      declaration,
-                                     leftHashes,
-                                     rightHashes,
-                                     baselineHashes );
+                                     hashes );
         DatabaseProject details = detailsResult.getLeft();
 
         return Projects.getDatabaseProjectStepThree( database,
                                                      details,
                                                      detailsResult.getRight(),
-                                                     leftIds,
-                                                     rightIds,
-                                                     baselineIds );
+                                                     ingestIds );
     }
 
     /**
@@ -252,18 +250,14 @@ public class Projects
      * @param database the database
      * @param project the database project
      * @param inserted whether the project caused an insert
-     * @param leftIds the left-sided data identifiers
-     * @param rightIds the right-sided data identifiers
-     * @param baselineIds the baseline-sided data identifiers
+     * @param ingestIds the ingest identifiers
      * @return the project
      * @throws SQLException if the project could not be ingested
      */
     private static DatabaseProject getDatabaseProjectStepThree( Database database,
                                                                 DatabaseProject project,
                                                                 boolean inserted,
-                                                                long[] leftIds,
-                                                                long[] rightIds,
-                                                                long[] baselineIds )
+                                                                IngestIds ingestIds )
             throws SQLException
     {
         long detailsId = project.getId();
@@ -279,7 +273,7 @@ public class Projects
             String tableName = "wres.ProjectSource";
             List<String> columnNames = List.of( "project_id", "source_id", "member" );
 
-            List<String[]> values = Projects.getSourceRowsFromIds( leftIds, rightIds, baselineIds, projectId );
+            List<String[]> values = Projects.getSourceRowsFromIds( ingestIds, projectId );
 
             // The first two columns are numbers, last one is char.
             boolean[] charColumns = { false, false, true };
@@ -354,22 +348,16 @@ public class Projects
 
     /**
      * Converts source IDs into source rows for insertion.
-     * @param leftIds the left IDs
-     * @param rightIds the right IDs
-     * @param baselineIds the baseline IDs
+     * @param ingestIds the ingest ids
      * @param projectId the project ID
      * @return the source rows to insert
      */
-    private static List<String[]> getSourceRowsFromIds( long[] leftIds,
-                                                        long[] rightIds,
-                                                        long[] baselineIds,
+    private static List<String[]> getSourceRowsFromIds( IngestIds ingestIds,
                                                         String projectId )
     {
-        List<String[]> values = new ArrayList<>( leftIds.length
-                                                 + rightIds.length
-                                                 + baselineIds.length );
+        List<String[]> values = new ArrayList<>();
 
-        for ( long sourceID : leftIds )
+        for ( long sourceID : ingestIds.leftIds() )
         {
             String[] row = new String[3];
             row[0] = projectId;
@@ -378,7 +366,7 @@ public class Projects
             values.add( row );
         }
 
-        for ( long sourceID : rightIds )
+        for ( long sourceID : ingestIds.rightIds() )
         {
             String[] row = new String[3];
             row[0] = projectId;
@@ -387,12 +375,21 @@ public class Projects
             values.add( row );
         }
 
-        for ( long sourceID : baselineIds )
+        for ( long sourceID : ingestIds.baselineIds() )
         {
             String[] row = new String[3];
             row[0] = projectId;
             row[1] = Long.toString( sourceID );
             row[2] = "baseline";
+            values.add( row );
+        }
+
+        for ( long sourceID : ingestIds.covariateIds() )
+        {
+            String[] row = new String[3];
+            row[0] = projectId;
+            row[1] = Long.toString( sourceID );
+            row[2] = "covariate";
             values.add( row );
         }
 
@@ -421,7 +418,7 @@ public class Projects
             else
             {
                 throw new IngestException( "Unexpected null left hash value for id="
-                                              + id );
+                                           + id );
             }
         }
 
@@ -434,28 +431,21 @@ public class Projects
      * @param caches the database ORM
      * @param griddedFeatures the gridded features, if any
      * @param declaration the project declaration
-     * @param leftHashes the left hashes
-     * @param rightHashes the right hashes
-     * @param baselineHashes the baseline hashes
+     * @param hashes the ingest hashes
      * @return the project declaration and whether this project inserted into the database
      */
     private static Pair<DatabaseProject, Boolean> getProject( Database database,
                                                               DatabaseCaches caches,
                                                               GriddedFeatures griddedFeatures,
                                                               EvaluationDeclaration declaration,
-                                                              String[] leftHashes,
-                                                              String[] rightHashes,
-                                                              String[] baselineHashes )
+                                                              IngestHashes hashes )
     {
         Objects.requireNonNull( database );
         Objects.requireNonNull( caches );
         Objects.requireNonNull( declaration );
-        Objects.requireNonNull( leftHashes );
-        Objects.requireNonNull( rightHashes );
-        Objects.requireNonNull( baselineHashes );
-        String identity = Projects.getTopHashOfSources( leftHashes,
-                                                        rightHashes,
-                                                        baselineHashes );
+        Objects.requireNonNull( hashes );
+
+        String identity = Projects.getTopHashOfSources( hashes );
 
         DatabaseProject details = new DatabaseProject( database,
                                                        caches,
@@ -520,96 +510,24 @@ public class Projects
                     boolean idNull = Objects.isNull( id );
                     boolean hashNull = Objects.isNull( hash );
                     throw new IngestException( "Found a null value in db when expecting a value. idNull="
-                                                  + idNull
-                                                  + " hashNull="
-                                                  + hashNull );
+                                               + idNull
+                                               + " hashNull="
+                                               + hashNull );
                 }
             }
         }
     }
 
     /**
-     * <p>Get the list of left surrogate keys from given ingest results.
-     *
-     * <p>Intended to save heap by doing one dataset at a time, using primitive[]
+     * <p>Get the list of surrogate keys from given ingest results.
      *
      * @param ingestResults The ingest results.
-     * @return The ids for the left dataset
-     */
-
-    private static long[] getLeftIds( List<IngestResult> ingestResults )
-    {
-        // How big to make the array? We don't want to guess because then we
-        // would need to resize, which requires more heap again. Better to get
-        // it correct at the outset.
-        int sizeNeeded = 0;
-
-        for ( IngestResult ingestResult : ingestResults )
-        {
-            sizeNeeded += ingestResult.getLeftCount();
-        }
-
-        long[] leftIds = new long[sizeNeeded];
-        int i = 0;
-
-        for ( IngestResult ingestResult : ingestResults )
-        {
-            for ( short j = 0; j < ingestResult.getLeftCount(); j++ )
-            {
-                leftIds[i] = ingestResult.getSurrogateKey();
-                i++;
-            }
-        }
-
-        return leftIds;
-    }
-
-    /**
-     * <p>Get the list of right surrogate keys from given ingest results.
-     *
-     * <p>Intended to save heap by doing one dataset at a time, using primitive[]
-     *
-     * @param ingestResults The ingest results.
-     * @return The ids for the right dataset
-     */
-
-    private static long[] getRightIds( List<IngestResult> ingestResults )
-    {
-        // How big to make the array? We don't want to guess because then we
-        // would need to resize, which requires more heap again. Better to get
-        // it correct at the outset.
-        int sizeNeeded = 0;
-
-        for ( IngestResult ingestResult : ingestResults )
-        {
-            sizeNeeded += ingestResult.getRightCount();
-        }
-
-        long[] rightIds = new long[sizeNeeded];
-        int i = 0;
-
-        for ( IngestResult ingestResult : ingestResults )
-        {
-            for ( short j = 0; j < ingestResult.getRightCount(); j++ )
-            {
-                rightIds[i] = ingestResult.getSurrogateKey();
-                i++;
-            }
-        }
-
-        return rightIds;
-    }
-
-    /**
-     * <p>Get the list of baseline surrogate keys from given ingest results.
-     *
-     * <p>Intended to save heap by doing one dataset at a time, using primitive[]
-     *
-     * @param ingestResults The ingest results.
+     * @param count a function that returns the count of ingest results
      * @return The ids for the baseline dataset
      */
 
-    private static long[] getBaselineIds( List<IngestResult> ingestResults )
+    private static long[] getIds( List<IngestResult> ingestResults,
+                                  ToIntFunction<IngestResult> count )
     {
         // How big to make the array? We don't want to guess because then we
         // would need to resize, which requires more heap again. Better to get
@@ -618,39 +536,32 @@ public class Projects
 
         for ( IngestResult ingestResult : ingestResults )
         {
-            sizeNeeded += ingestResult.getBaselineCount();
+            sizeNeeded += count.applyAsInt( ingestResult );
         }
 
-        long[] baselineIds = new long[sizeNeeded];
+        long[] ids = new long[sizeNeeded];
         int i = 0;
 
         for ( IngestResult ingestResult : ingestResults )
         {
-            for ( short j = 0; j < ingestResult.getBaselineCount(); j++ )
+            for ( short j = 0; j < count.applyAsInt( ingestResult ); j++ )
             {
-                baselineIds[i] = ingestResult.getSurrogateKey();
+                ids[i] = ingestResult.getSurrogateKey();
                 i++;
             }
         }
 
-        return baselineIds;
+        return ids;
     }
 
     /**
      * <p>Creates a hash for the indicated project configuration based on its
      * data ingested.
      *
-     * @param leftHashes A collection of the hashes for the left sided
-     *                           source data
-     * @param rightHashes A collection of the hashes for the right sided
-     *                            source data
-     * @param baselineHashes A collection of hashes representing the baseline
-     *                               source data
-     * @return A unique hash code for the project's circumstances
+     * @param hashes the ingest hashes
+     * @return a unique hash code for the project's circumstances
      */
-    private static String getTopHashOfSources( final String[] leftHashes,
-                                               final String[] rightHashes,
-                                               final String[] baselineHashes )
+    private static String getTopHashOfSources( IngestHashes hashes )
     {
         MessageDigest md5Digest;
 
@@ -661,36 +572,47 @@ public class Projects
         catch ( NoSuchAlgorithmException nsae )
         {
             throw new IngestException( "Couldn't use MD5 algorithm.",
-                                          nsae );
+                                       nsae );
         }
 
         // Sort for deterministic hash result for same list of ingested
-        Arrays.sort( leftHashes );
-
-        for ( String leftHash : leftHashes )
-        {
-            DigestUtils.updateDigest( md5Digest, leftHash );
-        }
-
-        // Sort for deterministic hash result for same list of ingested
-        Arrays.sort( rightHashes );
-
-        for ( String rightHash : rightHashes )
-        {
-            DigestUtils.updateDigest( md5Digest, rightHash );
-        }
-
-        // Sort for deterministic hash result for same list of ingested
-        Arrays.sort( baselineHashes );
-
-        for ( String baselineHash : baselineHashes )
-        {
-            DigestUtils.updateDigest( md5Digest, baselineHash );
-        }
+        Arrays.stream( hashes.leftHashes() )
+              .sorted()
+              .forEach( n -> DigestUtils.updateDigest( md5Digest, n ) );
+        Arrays.stream( hashes.rightHashes() )
+              .sorted()
+              .forEach( n -> DigestUtils.updateDigest( md5Digest, n ) );
+        Arrays.stream( hashes.baselineHashes() )
+              .sorted()
+              .forEach( n -> DigestUtils.updateDigest( md5Digest, n ) );
+        Arrays.stream( hashes.covariateHashes() )
+              .sorted()
+              .forEach( n -> DigestUtils.updateDigest( md5Digest, n ) );
 
         byte[] digestAsHex = md5Digest.digest();
         return Hex.encodeHexString( digestAsHex );
     }
+
+    /**
+     * Record of ingest identifiers.
+     * @param leftIds the left identifiers
+     * @param rightIds the right identifiers
+     * @param baselineIds the baseline identifiers
+     * @param covariateIds the covariate identifiers
+     */
+    private record IngestIds( long[] leftIds, long[] rightIds, long[] baselineIds, long[] covariateIds ) {} // NOSONAR
+
+    /**
+     * Record of ingest hashes.
+     * @param leftHashes the left hashes
+     * @param rightHashes the right hashes
+     * @param baselineHashes the baseline hashes
+     * @param covariateHashes the covariate hashes
+     */
+    private record IngestHashes( String[] leftHashes, // NOSONAR
+                                 String[] rightHashes,
+                                 String[] baselineHashes,
+                                 String[] covariateHashes ) {}
 
     /**
      * Do not construct.

@@ -306,7 +306,11 @@ public class DeclarationUtilities
                || ( DeclarationUtilities.hasBaseline( evaluation )
                     && Objects.isNull( evaluation.baseline()
                                                  .dataset()
-                                                 .type() ) );
+                                                 .type() ) )
+               || evaluation.covariates()
+                            .stream()
+                            .anyMatch( c -> Objects.isNull( c.dataset()
+                                                             .type() ) );
     }
 
     /**
@@ -1133,6 +1137,46 @@ public class DeclarationUtilities
         catch ( TikaException e )
         {
             throw new IOException( "Failed to detect the MIME type of the declaration string: " + declarationString );
+        }
+    }
+
+    /**
+     * Returns the declared dataset for a given orientation. Cannot be applied to {@link DatasetOrientation#COVARIATE},
+     * which may contain up to N datasets.
+     * @param declaration the declaration
+     * @param orientation the orientation
+     * @return the dataset
+     * @throws NullPointerException if any input is null
+     * @throws IllegalArgumentException if the requested orientation cannot be delivered
+     */
+
+    public static Dataset getDeclaredDataset( EvaluationDeclaration declaration, DatasetOrientation orientation )
+    {
+        Objects.requireNonNull( declaration );
+        Objects.requireNonNull( orientation );
+
+        switch ( orientation )
+        {
+            case LEFT ->
+            {
+                return declaration.left();
+            }
+            case RIGHT ->
+            {
+                return declaration.right();
+            }
+            case BASELINE ->
+            {
+                if ( !hasBaseline( declaration ) )
+                {
+                    throw new IllegalArgumentException( "The declaration does not contain a 'baseline' dataset: "
+                                                        + orientation );
+                }
+                return declaration.baseline()
+                                  .dataset();
+            }
+            default -> throw new IllegalArgumentException( "Unexpected dataset orientation in this context: "
+                                                           + orientation );
         }
     }
 

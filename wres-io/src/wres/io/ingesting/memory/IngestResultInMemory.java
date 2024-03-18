@@ -20,7 +20,7 @@ public class IngestResultInMemory implements IngestResult
 
     /**
      * Creates an instance.
-     * 
+     *
      * @param dataSource the data source
      */
     public IngestResultInMemory( DataSource dataSource )
@@ -70,6 +70,12 @@ public class IngestResultInMemory implements IngestResult
     public short getBaselineCount()
     {
         return this.innerResult.getBaselineCount();
+    }
+
+    @Override
+    public short getCovariateCount()
+    {
+        return this.innerResult.getCovariateCount();
     }
 
     @Override

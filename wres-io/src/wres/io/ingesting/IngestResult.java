@@ -54,6 +54,12 @@ public interface IngestResult
     short getBaselineCount();
 
     /**
+     * How many times the timeseries is included in the covariate dataset.
+     * @return Count of covariate dataset associations.
+     */
+    short getCovariateCount();
+
+    /**
      * Creates a singleton list from the inputs.
      * @param dataSource the data source information
      * @param surrogateKey The surrogate key of the source data.

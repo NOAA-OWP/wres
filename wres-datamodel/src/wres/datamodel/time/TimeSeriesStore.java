@@ -37,6 +37,9 @@ public class TimeSeriesStore
     /** Baseline-ish time-series of {@link Double}. **/
     private final List<TimeSeries<Double>> baselineSingleValuedSeries;
 
+    /** Covariate time-series of {@link Double}. **/
+    private final List<TimeSeries<Double>> covariateSingleValuedSeries;
+
     /** Left-ish time-series of {@link Ensemble}. **/
     private final List<TimeSeries<Ensemble>> leftEnsembleSeries;
 
@@ -64,6 +67,7 @@ public class TimeSeriesStore
         return TimeSeriesStore.getSingleValuedStore( this.leftSingleValuedSeries,
                                                      this.rightSingleValuedSeries,
                                                      this.baselineSingleValuedSeries,
+                                                     this.covariateSingleValuedSeries,
                                                      orientation )
                               .stream()
                               .filter( next -> features.contains( next.getMetadata().getFeature() ) );
@@ -84,6 +88,7 @@ public class TimeSeriesStore
         return TimeSeriesStore.getSingleValuedStore( this.leftSingleValuedSeries,
                                                      this.rightSingleValuedSeries,
                                                      this.baselineSingleValuedSeries,
+                                                     this.covariateSingleValuedSeries,
                                                      orientation )
                               .stream();
     }
@@ -95,9 +100,10 @@ public class TimeSeriesStore
 
     public Stream<TimeSeries<Double>> getSingleValuedSeries()
     {
-        return Stream.concat( Stream.concat( this.leftSingleValuedSeries.stream(),
-                                             this.rightSingleValuedSeries.stream() ),
-                              this.baselineSingleValuedSeries.stream() );
+        return Stream.concat( Stream.concat( Stream.concat( this.leftSingleValuedSeries.stream(),
+                                                            this.rightSingleValuedSeries.stream() ),
+                                             this.baselineSingleValuedSeries.stream() ),
+                              this.covariateSingleValuedSeries.stream() );
     }
 
     /**
@@ -121,6 +127,7 @@ public class TimeSeriesStore
         return TimeSeriesStore.getSingleValuedStore( this.leftSingleValuedSeries,
                                                      this.rightSingleValuedSeries,
                                                      this.baselineSingleValuedSeries,
+                                                     this.covariateSingleValuedSeries,
                                                      orientation )
                               .stream()
                               .filter( next -> features.contains( next.getMetadata()
@@ -202,6 +209,9 @@ public class TimeSeriesStore
         /** Baseline-ish time-series of {@link Double}. **/
         private final Queue<TimeSeries<Double>> baselineSingleValuedSeries = new ConcurrentLinkedQueue<>();
 
+        /** Covariate time-series of {@link Double}. **/
+        private final Queue<TimeSeries<Double>> covariateSingleValuedSeries = new ConcurrentLinkedQueue<>();
+
         /** Left-ish time-series of {@link Ensemble}. **/
         private final Queue<TimeSeries<Ensemble>> leftEnsembleSeries = new ConcurrentLinkedQueue<>();
 
@@ -228,6 +238,7 @@ public class TimeSeriesStore
             TimeSeriesStore.getSingleValuedStore( this.leftSingleValuedSeries,
                                                   this.rightSingleValuedSeries,
                                                   this.baselineSingleValuedSeries,
+                                                  this.covariateSingleValuedSeries,
                                                   context )
                            .add( series );
 
@@ -272,6 +283,7 @@ public class TimeSeriesStore
      * @param leftSingleValuedSeries the store of left single-valued series
      * @param rightSingleValuedSeries the store of right single-valued series
      * @param baselineSingleValuedSeries the store of baseline single-valued series
+     * @param covariateSingleValuedSeries the store of covariate single-valued series
      * @param orientation the orientation
      * @return a single-valued store with the prescribed context
      * @throws IllegalArgumentException if the context is unrecognized
@@ -280,6 +292,7 @@ public class TimeSeriesStore
     private static Collection<TimeSeries<Double>> getSingleValuedStore( Collection<TimeSeries<Double>> leftSingleValuedSeries,
                                                                         Collection<TimeSeries<Double>> rightSingleValuedSeries,
                                                                         Collection<TimeSeries<Double>> baselineSingleValuedSeries,
+                                                                        Collection<TimeSeries<Double>> covariateSingleValuedSeries,
                                                                         DatasetOrientation orientation )
     {
         return switch ( orientation )
@@ -287,7 +300,7 @@ public class TimeSeriesStore
             case LEFT -> leftSingleValuedSeries;
             case RIGHT -> rightSingleValuedSeries;
             case BASELINE -> baselineSingleValuedSeries;
-            case COVARIATE -> List.of();
+            case COVARIATE -> covariateSingleValuedSeries;
         };
     }
 
@@ -311,7 +324,9 @@ public class TimeSeriesStore
             case LEFT -> leftEnsembleSeries;
             case RIGHT -> rightEnsembleSeries;
             case BASELINE -> baselineEnsembleSeries;
-            case COVARIATE -> List.of();
+            default -> throw new IllegalArgumentException( "Unrecognized dataset orientation in this context: "
+                                                           + context +
+                                                           "." );
         };
     }
 
@@ -331,22 +346,24 @@ public class TimeSeriesStore
         this.leftEnsembleSeries = List.copyOf( builder.leftEnsembleSeries );
         this.rightEnsembleSeries = List.copyOf( builder.rightEnsembleSeries );
         this.baselineEnsembleSeries = List.copyOf( builder.baselineEnsembleSeries );
+        this.covariateSingleValuedSeries = List.copyOf( builder.covariateSingleValuedSeries );
 
         if ( LOGGER.isInfoEnabled() )
         {
             int size = this.leftSingleValuedSeries.size()
                        + this.rightSingleValuedSeries.size()
                        + this.baselineSingleValuedSeries.size()
+                       + this.covariateSingleValuedSeries.size()
                        + this.leftEnsembleSeries.size()
                        + this.rightEnsembleSeries.size()
                        + this.baselineEnsembleSeries.size();
 
             LOGGER.info( "Created an in-memory time-series store that contains {} time-series. The {} time-series "
                          + "include {} single-valued time-series with an {} orientation, {} single-valued time-series "
-                         + "with a {} orientation, {} single-valued time-series with a {} orientation, {} ensemble "
-                         + "time-series with an {} orientation, {} ensemble time-series with a {} orientation and {} "
-                         + "ensemble time-series with a {} orientation. The total number of time-series events within "
-                         + "the store is: {}.",
+                         + "with a {} orientation, {} single-valued time-series with a {} orientation, {} single-"
+                         + "valued time-series with a {} orientation, {} ensemble time-series with an {} orientation, "
+                         + "{} ensemble time-series with a {} orientation and {} ensemble time-series with a {} "
+                         + "orientation. The total number of time-series events within the store is: {}.",
                          size,
                          size,
                          this.leftSingleValuedSeries.size(),
@@ -355,6 +372,8 @@ public class TimeSeriesStore
                          DatasetOrientation.RIGHT,
                          this.baselineSingleValuedSeries.size(),
                          DatasetOrientation.BASELINE,
+                         this.covariateSingleValuedSeries.size(),
+                         DatasetOrientation.COVARIATE,
                          this.leftEnsembleSeries.size(),
                          DatasetOrientation.LEFT,
                          this.rightEnsembleSeries.size(),
@@ -382,6 +401,10 @@ public class TimeSeriesStore
                                                 .mapToLong( e -> e.getEvents()
                                                                   .size() )
                                                 .sum()
+               + this.covariateSingleValuedSeries.stream()
+                                                 .mapToLong( e -> e.getEvents()
+                                                                   .size() )
+                                                 .sum()
                + this.leftEnsembleSeries.stream()
                                         .mapToLong( e -> e.getEvents()
                                                           .size() )

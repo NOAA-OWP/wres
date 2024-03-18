@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.components.DataType;
-import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.time.TimeSeries;
 import wres.reading.DataSource;
 import wres.reading.TimeSeriesTuple;
@@ -29,7 +28,7 @@ public class TimeSeriesTracker implements UnaryOperator<TimeSeriesTuple>
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesTracker.class );
 
     /** The time-series data types, one per dataset. */
-    private final Map<DatasetOrientation, DataType> dataTypes;
+    private final Map<DataSource, DataType> dataTypes;
 
     /**
      * Creates an instance.
@@ -55,11 +54,10 @@ public class TimeSeriesTracker implements UnaryOperator<TimeSeriesTuple>
 
         if ( Objects.nonNull( dataSource ) )
         {
-            DatasetOrientation orientation = dataSource.getDatasetOrientation();
             DataType dataType = this.getDataType( timeSeriesTuple );
-            if( Objects.nonNull( orientation ) && Objects.nonNull( dataType ) )
+            if ( Objects.nonNull( dataType ) )
             {
-                this.dataTypes.putIfAbsent( orientation, dataType );
+                this.dataTypes.putIfAbsent( dataSource, dataType );
             }
         }
         else if ( LOGGER.isDebugEnabled() )
@@ -88,7 +86,8 @@ public class TimeSeriesTracker implements UnaryOperator<TimeSeriesTuple>
         {
             TimeSeries<Double> timeSeries = timeSeriesTuple.getSingleValuedTimeSeries();
             Map<ReferenceTime.ReferenceTimeType, Instant> referenceTimes = timeSeries.getReferenceTimes();
-            if ( referenceTimes.containsKey( ReferenceTime.ReferenceTimeType.T0 ) )
+            if ( referenceTimes.containsKey( ReferenceTime.ReferenceTimeType.T0 )
+                 || referenceTimes.containsKey( ReferenceTime.ReferenceTimeType.ISSUED_TIME ) )
             {
                 return DataType.SINGLE_VALUED_FORECASTS;
             }
@@ -98,17 +97,17 @@ public class TimeSeriesTracker implements UnaryOperator<TimeSeriesTuple>
             }
         }
 
-        // Unknown, could be any of several types
-        return null;
+        // An observation-like data type: the precise type is not important
+        return DataType.OBSERVATIONS;
     }
 
     /**
      * @return a snapshot of the data types of the time-series tracked so far
      */
 
-    public Map<DatasetOrientation, DataType> getDataTypes()
+    public Map<DataSource, DataType> getDataTypes()
     {
-        return Collections.unmodifiableMap( dataTypes );
+        return Collections.unmodifiableMap( this.dataTypes );
     }
 
     /**

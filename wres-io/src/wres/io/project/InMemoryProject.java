@@ -315,31 +315,6 @@ public class InMemoryProject implements Project
     }
 
     @Override
-    public Dataset getDeclaredDataset( DatasetOrientation orientation )
-    {
-        Objects.requireNonNull( orientation );
-
-        if ( orientation == DatasetOrientation.BASELINE && !this.hasBaseline() )
-        {
-            LOGGER.debug( "Requested a baseline dataset, but not baseline dataset was defined." );
-            return null;
-        }
-
-        return switch ( orientation )
-        {
-            case LEFT -> this.getDeclaration()
-                             .left();
-            case RIGHT -> this.getDeclaration()
-                              .right();
-            case BASELINE -> this.getDeclaration()
-                                 .baseline()
-                                 .dataset();
-            default -> throw new IllegalStateException( UNRECOGNIZED_DATASET_ORIENTATION_IN_THIS_CONTEXT
-                                                        + orientation );
-        };
-    }
-
-    @Override
     public String getVariableName( DatasetOrientation orientation )
     {
         Objects.requireNonNull( orientation );
@@ -384,8 +359,7 @@ public class InMemoryProject implements Project
 
         SortedSet<String> unmodifiable = Collections.unmodifiableSortedSet( labels );
 
-        return ProjectUtilities.filter( unmodifiable, this.getDeclaredDataset( orientation )
-                                                          .ensembleFilter() );
+        return ProjectUtilities.filter( unmodifiable, this.getDeclaration(), orientation );
     }
 
     @Override

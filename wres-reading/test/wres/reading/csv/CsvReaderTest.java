@@ -408,7 +408,7 @@ class CsvReaderTest
                                                              .toList();
 
                 TimeSeriesMetadata expectedMetadataOne =
-                        TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN, T1985_06_01T12_00_00Z ),
+                        TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, T1985_06_01T12_00_00Z ),
                                                null,
                                                QINE,
                                                Feature.of( wres.statistics.MessageFactory.getGeometry( DRRC2 ) ),
@@ -421,7 +421,7 @@ class CsvReaderTest
                                                         .build();
 
                 TimeSeriesMetadata expectedMetadataTwo =
-                        TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN, T1985_06_02T12_00_00Z ),
+                        TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, T1985_06_02T12_00_00Z ),
                                                null,
                                                QINE,
                                                Feature.of( wres.statistics.MessageFactory.getGeometry( DRRC2 ) ),
@@ -434,7 +434,7 @@ class CsvReaderTest
                                                         .build();
 
                 TimeSeriesMetadata expectedMetadataThree =
-                        TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN, T1985_06_01T12_00_00Z ),
+                        TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0, T1985_06_01T12_00_00Z ),
                                                null,
                                                QINE,
                                                Feature.of( MessageFactory.getGeometry( DRRC3 ) ),

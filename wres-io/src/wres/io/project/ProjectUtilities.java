@@ -483,11 +483,68 @@ class ProjectUtilities
     /**
      * Filters from the input any ensemble member labels that are declared to be filtered.
      * @param labels the ensemble labels to filter
-     * @param ensembleFilter the ensemble filter, possibly null
+     * @param declaration the declaration
+     * @param orientation the dataset orientation
      * @return the filtered members
      */
 
-    static SortedSet<String> filter( SortedSet<String> labels, EnsembleFilter ensembleFilter )
+    static SortedSet<String> filter( SortedSet<String> labels,
+                                     EvaluationDeclaration declaration,
+                                     DatasetOrientation orientation )
+    {
+        switch ( orientation )
+        {
+            case LEFT ->
+            {
+                return ProjectUtilities.filter( labels, declaration.left()
+                                                                   .ensembleFilter() );
+            }
+            case RIGHT ->
+            {
+                return ProjectUtilities.filter( labels, declaration.right()
+                                                                   .ensembleFilter() );
+            }
+            case BASELINE ->
+            {
+                if ( !DeclarationUtilities.hasBaseline( declaration ) )
+                {
+                    throw new IllegalArgumentException( "The project does not contain a 'baseline' dataset." );
+                }
+
+                return ProjectUtilities.filter( labels, declaration.baseline()
+                                                                   .dataset()
+                                                                   .ensembleFilter() );
+            }
+            default ->
+            {
+                return labels;
+            }
+        }
+    }
+
+    /**
+     * @param max the maximum value, inclusive
+     * @return a series of integer labels between 1 and the maximum value, inclusive
+     */
+
+    static SortedSet<String> getSeries( int max )
+    {
+        SortedSet<String> labels = IntStream.range( 1, max + 1 )
+                                            .boxed()
+                                            .map( Object::toString )
+                                            .collect( Collectors.toCollection( TreeSet::new ) );
+        return Collections.unmodifiableSortedSet( labels );
+    }
+
+    /**
+     * Filters from the input any ensemble member labels that are declared to be filtered.
+     * @param labels the ensemble labels to filter
+     * @param ensembleFilter the ensemble filter, possibkly null
+     * @return the filtered members
+     */
+
+    private static SortedSet<String> filter( SortedSet<String> labels,
+                                             EnsembleFilter ensembleFilter )
     {
         Objects.requireNonNull( labels );
 
@@ -507,20 +564,6 @@ class ProjectUtilities
         }
 
         return Collections.unmodifiableSortedSet( labelsToFilter );
-    }
-
-    /**
-     * @param max the maximum value, inclusive
-     * @return a series of integer labels between 1 and the maximum value, inclusive
-     */
-
-    static SortedSet<String> getSeries( int max )
-    {
-        SortedSet<String> labels = IntStream.range( 1, max + 1 )
-                                            .boxed()
-                                            .map( Object::toString )
-                                            .collect( Collectors.toCollection( TreeSet::new ) );
-        return Collections.unmodifiableSortedSet( labels );
     }
 
     /**

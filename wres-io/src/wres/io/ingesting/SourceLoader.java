@@ -34,6 +34,7 @@ import ucar.nc2.NetcdfFiles;
 
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
@@ -466,6 +467,15 @@ public class SourceLoader
                                                      DatasetOrientation.BASELINE );
         }
 
+        // Prepare the covariate datasets
+        for ( CovariateDataset covariate : declaration.covariates() )
+        {
+            SourceLoader.mutateSourcesToLoadAndLink( sources,
+                                                     declaration,
+                                                     covariate.dataset(),
+                                                     DatasetOrientation.COVARIATE );
+        }
+
         // Create a simple entry (DataSource) for each complex entry
         Set<DataSource> returnMe = new HashSet<>();
 
@@ -710,9 +720,9 @@ public class SourceLoader
         catch ( IOException e )
         {
             throw new IngestException( "Failed to walk the directory tree '"
-                                          + sourcePath
-                                          + "':",
-                                          e );
+                                       + sourcePath
+                                       + "':",
+                                       e );
         }
 
         SourceLoader.logUnmatchedSources( unmatchedByPattern, pattern, dataSource.getDatasetOrientation() );
@@ -722,10 +732,10 @@ public class SourceLoader
         if ( returnMe.isEmpty() )
         {
             throw new IngestException( "Could not find any valid source files within the directory '"
-                                          + dataSource.getUri()
-                                          + "'. The following pattern filter was used (null if no filter): \""
-                                          + pattern
-                                          + "\"." );
+                                       + dataSource.getUri()
+                                       + "'. The following pattern filter was used (null if no filter): \""
+                                       + pattern
+                                       + "\"." );
         }
 
         return Collections.unmodifiableSet( returnMe );

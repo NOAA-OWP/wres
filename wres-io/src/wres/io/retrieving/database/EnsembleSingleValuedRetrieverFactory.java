@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
@@ -298,8 +299,18 @@ public class EnsembleSingleValuedRetrieverFactory implements RetrieverFactory<Do
         this.database = database;
         this.caches = caches;
 
-        this.rightDataset = project.getDeclaredDataset( DatasetOrientation.RIGHT );
-        this.baselineDataset = project.getDeclaredDataset( DatasetOrientation.BASELINE );
+        this.rightDataset = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
+                                                                     DatasetOrientation.RIGHT );
+
+        if( project.hasBaseline() )
+        {
+            this.baselineDataset = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
+                                                                            DatasetOrientation.BASELINE );
+        }
+        else
+        {
+            this.baselineDataset = null;
+        }
 
         // Right data must be ensemble and baseline must be single-valued
         if ( this.rightDataset.type() != DataType.ENSEMBLE_FORECASTS )

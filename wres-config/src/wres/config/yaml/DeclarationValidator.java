@@ -395,7 +395,7 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> events = new ArrayList<>( typesDefined );
 
         // Data types are consistent with other declaration
-        List<EvaluationStatusEvent> typesConsistent = DeclarationValidator.typesAreConsistent( declaration );
+        List<EvaluationStatusEvent> typesConsistent = DeclarationValidator.typesAreValid( declaration );
         events.addAll( typesConsistent );
         // Covariates must have unique variable names
         List<EvaluationStatusEvent> covariateVariables
@@ -488,9 +488,10 @@ public class DeclarationValidator
             events.addAll( sources );
         }
 
-        // Data types are consistent with other declaration
-        List<EvaluationStatusEvent> typesConsistent = DeclarationValidator.typesAreConsistent( declaration );
-        events.addAll( typesConsistent );
+        // Data types are valid
+        List<EvaluationStatusEvent> typesValid = DeclarationValidator.typesAreValid( declaration );
+        events.addAll( typesValid );
+
         // Ensembles cannot be present on both left and right sides
         List<EvaluationStatusEvent> ensembles = DeclarationValidator.ensembleOnOneSideOnly( declaration );
         events.addAll( ensembles );
@@ -598,6 +599,24 @@ public class DeclarationValidator
                                                       .build();
             events.add( event );
         }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the data types are valid.
+     * @param declaration the declaration
+     * @return any status events encountered
+     */
+    private static List<EvaluationStatusEvent> typesAreValid( EvaluationDeclaration declaration )
+    {
+        // Data types are consistent with other declaration
+        List<EvaluationStatusEvent> typesConsistent = DeclarationValidator.typesAreConsistent( declaration );
+        List<EvaluationStatusEvent> events = new ArrayList<>( typesConsistent );
+
+        // Data types for covariates are not forecast-like
+        List<EvaluationStatusEvent> covariateTypes = DeclarationValidator.covariateTypesAreValid( declaration );
+        events.addAll( covariateTypes );
 
         return Collections.unmodifiableList( events );
     }
@@ -719,6 +738,38 @@ public class DeclarationValidator
                                                                         .dataset()
                                                                         .type()
                                                            + "'. Please change the data 'type' and try again." )
+                                         .build();
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the data types are valid for covariates.
+     * @param declaration the declaration
+     * @return any status events encountered
+     */
+    private static List<EvaluationStatusEvent> covariateTypesAreValid( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        Set<DataType> covariateTypes = declaration.covariates()
+                                                  .stream()
+                                                  .map( c -> c.dataset().type() )
+                                                  .collect( Collectors.toSet() );
+
+        // Different observation-like types are allowed
+
+        if ( covariateTypes.contains( DataType.ENSEMBLE_FORECASTS )
+             || covariateTypes.contains( DataType.SINGLE_VALUED_FORECASTS ) )
+        {
+            EvaluationStatusEvent event =
+                    EvaluationStatusEvent.newBuilder()
+                                         .setStatusLevel( StatusLevel.ERROR )
+                                         .setEventMessage( "Discovered a forecast data 'type' for one or more "
+                                                           + "'covariate' datasets, which is not allowed. The "
+                                                           + "'covariate' datasets must all be observation-like." )
                                          .build();
             events.add( event );
         }

@@ -617,7 +617,8 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
             {
                 leftRetrievers = this.getLeftRetrievers( this.getPoolRequests(),
                                                          this.getProject()
-                                                             .getDeclaredDataset( DatasetOrientation.LEFT )
+                                                             .getDeclaration()
+                                                             .left()
                                                              .type() );
             }
 
