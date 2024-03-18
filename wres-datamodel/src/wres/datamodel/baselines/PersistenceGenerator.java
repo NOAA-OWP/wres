@@ -983,7 +983,7 @@ public class PersistenceGenerator<T> implements BaselineGenerator<T>
         if ( this.order < 0 )
         {
             throw new BaselineGeneratorException( "The order of persistence must be equal to or greater than zero: "
-                                                  + order );
+                                                  + this.order );
         }
 
         // Retrieve the time-series on construction
@@ -1012,7 +1012,8 @@ public class PersistenceGenerator<T> implements BaselineGenerator<T>
 
         // Perform the consolidation all at once rather than for each pair of time-series. See #111801
         Map<Feature, List<TimeSeries<T>>> grouped = source.stream()
-                                                          .filter( next -> next.getEvents().size() >= order )
+                                                          .filter( next -> next.getEvents()
+                                                                               .size() >= this.order )
                                                           .collect( Collectors.groupingBy( next -> next.getMetadata()
                                                                                                        .getFeature(),
                                                                                            Collectors.mapping( Function.identity(),
@@ -1034,10 +1035,10 @@ public class PersistenceGenerator<T> implements BaselineGenerator<T>
         {
             throw new BaselineGeneratorException( "Could not create a persistence source from the time-series "
                                                   + "supplier: at least one time-series that contains "
-                                                  + order
+                                                  + this.order
                                                   + " event values is "
                                                   + "required to generate a persistence time-series of order "
-                                                  + order
+                                                  + this.order
                                                   + " but the supplier contained no time-series that match this "
                                                   + "requirement. " );
         }

@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -28,6 +29,7 @@ import wres.config.yaml.components.AnalysisTimes;
 import wres.config.yaml.components.AnalysisTimesBuilder;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
+import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
@@ -146,7 +148,10 @@ class DeclarationInterpolatorTest
                          .setBaseline( Geometry.newBuilder()
                                                .setName( FEATURE_NAME_THREE ) )
                          .build();
-
+    /** An observed data source. */
+    private Source observedSource;
+    /** An observed data source. */
+    private Source predictedSource;
     /** An observed dataset for re-use. */
     private Dataset observedDataset;
     /** A predicted dataset for re-use. */
@@ -156,10 +161,10 @@ class DeclarationInterpolatorTest
     /** Re-used feature string. */
     private static final String DOLC2 = "DOLC2";
     /** All data threshold. */
-    private static final wres.config.yaml.components.Threshold ALL_DATA_THRESHOLD =
+    private static final wres.config.yaml.components.Threshold
+            ALL_DATA_THRESHOLD =
             new wres.config.yaml.components.Threshold( Threshold.newBuilder()
-                                                                .setLeftThresholdValue(
-                                                                        DoubleValue.of( Double.NEGATIVE_INFINITY ) )
+                                                                .setLeftThresholdValue( DoubleValue.of( Double.NEGATIVE_INFINITY ) )
                                                                 .setOperator( Threshold.ThresholdOperator.GREATER )
                                                                 .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
                                                                 .build(),
@@ -174,14 +179,14 @@ class DeclarationInterpolatorTest
     void runBeforeEach()
     {
         URI observedUri = URI.create( "some_file.csv" );
-        Source observedSource = SourceBuilder.builder()
-                                             .uri( observedUri )
-                                             .build();
+        this.observedSource = SourceBuilder.builder()
+                                           .uri( observedUri )
+                                           .build();
 
         URI predictedUri = URI.create( "another_file.csv" );
-        Source predictedSource = SourceBuilder.builder()
-                                              .uri( predictedUri )
-                                              .build();
+        this.predictedSource = SourceBuilder.builder()
+                                            .uri( predictedUri )
+                                            .build();
 
         List<Source> observedSources = List.of( observedSource );
         this.observedDataset = DatasetBuilder.builder()
@@ -1093,18 +1098,24 @@ class DeclarationInterpolatorTest
         BaselineDataset baseline = BaselineDatasetBuilder.builder()
                                                          .dataset( this.predictedDataset )
                                                          .build();
+
+        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null );
+        List<CovariateDataset> covariates = List.of( covariate );
         EvaluationDeclaration evaluation =
                 EvaluationDeclarationBuilder.builder()
                                             .left( this.observedDataset )
                                             .right( this.predictedDataset )
                                             .baseline( baseline )
+                                            .covariates( covariates )
                                             .build();
 
-        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( evaluation,
-                                                                            DataType.OBSERVATIONS,
-                                                                            DataType.ENSEMBLE_FORECASTS,
-                                                                            DataType.ENSEMBLE_FORECASTS,
-                                                                            true );
+        EvaluationDeclaration actual =
+                DeclarationInterpolator.interpolate( evaluation,
+                                                     Map.of( this.observedSource, DataType.OBSERVATIONS ),
+                                                     Map.of( this.predictedSource, DataType.ENSEMBLE_FORECASTS ),
+                                                     Map.of( this.predictedSource, DataType.ENSEMBLE_FORECASTS ),
+                                                     Map.of( this.observedSource, DataType.OBSERVATIONS ),
+                                                     true );
         DataType actualLeft = actual.left()
                                     .type();
         DataType actualRight = actual.right()
@@ -1112,10 +1123,15 @@ class DeclarationInterpolatorTest
         DataType actualBaseline = actual.baseline()
                                         .dataset()
                                         .type();
+        DataType actualCovariate = actual.covariates()
+                                         .get( 0 )
+                                         .dataset()
+                                         .type();
 
         assertAll( () -> assertEquals( DataType.OBSERVATIONS, actualLeft ),
                    () -> assertEquals( DataType.ENSEMBLE_FORECASTS, actualRight ),
-                   () -> assertEquals( DataType.ENSEMBLE_FORECASTS, actualBaseline ) );
+                   () -> assertEquals( DataType.ENSEMBLE_FORECASTS, actualBaseline ),
+                   () -> assertEquals( DataType.OBSERVATIONS, actualCovariate ) );
     }
 
     @Test
@@ -1133,9 +1149,12 @@ class DeclarationInterpolatorTest
                                             .build();
 
         EvaluationDeclaration actual = DeclarationInterpolator.interpolate( evaluation,
-                                                                            DataType.OBSERVATIONS,
-                                                                            DataType.ENSEMBLE_FORECASTS,
-                                                                            null,
+                                                                            Map.of( this.observedSource,
+                                                                                    DataType.OBSERVATIONS ),
+                                                                            Map.of( this.predictedSource,
+                                                                                    DataType.ENSEMBLE_FORECASTS ),
+                                                                            Map.of(),
+                                                                            Map.of(),
                                                                             true );
         DataType actualLeft = actual.left()
                                     .type();
@@ -1161,11 +1180,17 @@ class DeclarationInterpolatorTest
                                             .analysisTimes( analysisTimes )
                                             .build();
 
+        Map<Source, DataType> observedTypes = Map.of( this.observedSource,
+                                                      DataType.OBSERVATIONS );
+        Map<Source, DataType> predctedTypes = Map.of( this.predictedSource,
+                                                      DataType.ENSEMBLE_FORECASTS );
+        Map<Source, DataType> emptyMap = Map.of();
         DeclarationException expected =
                 assertThrows( DeclarationException.class, () -> DeclarationInterpolator.interpolate( evaluation,
-                                                                                                     DataType.OBSERVATIONS,
-                                                                                                     DataType.ENSEMBLE_FORECASTS,
-                                                                                                     null,
+                                                                                                     observedTypes,
+                                                                                                     predctedTypes,
+                                                                                                     emptyMap,
+                                                                                                     emptyMap,
                                                                                                      true ) );
 
         assertTrue( expected.getMessage()
@@ -1191,9 +1216,12 @@ class DeclarationInterpolatorTest
                                             .build();
 
         EvaluationDeclaration actual = DeclarationInterpolator.interpolate( evaluation,
-                                                                            DataType.OBSERVATIONS,
-                                                                            DataType.ENSEMBLE_FORECASTS,
-                                                                            null,
+                                                                            Map.of( this.observedSource,
+                                                                                    DataType.OBSERVATIONS ),
+                                                                            Map.of( this.predictedSource,
+                                                                                    DataType.ENSEMBLE_FORECASTS ),
+                                                                            Map.of(),
+                                                                            Map.of(),
                                                                             true );
         DataType actualLeft = actual.left()
                                     .type();
@@ -1353,7 +1381,12 @@ class DeclarationInterpolatorTest
             throws IOException
     {
         EvaluationDeclaration actual = DeclarationFactory.from( declaration );
-        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( actual, null, null, null, false );
+        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( actual,
+                                                                                  Map.of(),
+                                                                                  Map.of(),
+                                                                                  Map.of(),
+                                                                                  Map.of(),
+                                                                                  false );
         DataType actualType = interpolated.right()
                                           .type();
         assertEquals( DataType.SINGLE_VALUED_FORECASTS, actualType );
@@ -1396,7 +1429,11 @@ class DeclarationInterpolatorTest
     void testDeserializeAndInterpolatePredictedDatasetAsEnsembleForecast( String declaration ) throws IOException
     {
         EvaluationDeclaration actual = DeclarationFactory.from( declaration );
-        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( actual, null, null, null, false );
+        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( actual,
+                                                                                  Map.of(),
+                                                                                  Map.of(),
+                                                                                  Map.of(),
+                                                                                  Map.of(), false );
         DataType actualType = interpolated.right()
                                           .type();
         assertEquals( DataType.ENSEMBLE_FORECASTS, actualType );
@@ -1417,7 +1454,12 @@ class DeclarationInterpolatorTest
                   """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
-        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( actual, null, null, null, false );
+        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( actual,
+                                                                                  Map.of(),
+                                                                                  Map.of(),
+                                                                                  Map.of(),
+                                                                                  Map.of(),
+                                                                                  false );
         DataType actualType = interpolated.left()
                                           .type();
         assertEquals( DataType.ANALYSES, actualType );

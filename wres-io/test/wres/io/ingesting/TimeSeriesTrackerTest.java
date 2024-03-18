@@ -3,6 +3,7 @@ package wres.io.ingesting;
 import java.time.Instant;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -86,7 +87,12 @@ class TimeSeriesTrackerTest
                           DatasetOrientation.RIGHT, DataType.ENSEMBLE_FORECASTS,
                           DatasetOrientation.BASELINE, DataType.SINGLE_VALUED_FORECASTS );
 
-        Map<DatasetOrientation, DataType> actual = tracker.getDataTypes();
+        Map<DatasetOrientation, DataType> actual = tracker.getDataTypes()
+                                                          .entrySet()
+                                                          .stream()
+                                                          .collect( Collectors.toMap( e -> e.getKey()
+                                                                                            .getDatasetOrientation(),
+                                                                                      Map.Entry::getValue ) );
 
         assertEquals( expected, actual );
     }

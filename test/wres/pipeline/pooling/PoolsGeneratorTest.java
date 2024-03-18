@@ -125,10 +125,6 @@ class PoolsGeneratorTest
                .thenReturn( STREAMFLOW );
         Mockito.when( project.getVariableName( DatasetOrientation.BASELINE ) )
                .thenReturn( null );
-        Mockito.when( project.getDeclaredDataset( DatasetOrientation.LEFT ) )
-               .thenReturn( left );
-        Mockito.when( project.getDeclaredDataset( DatasetOrientation.RIGHT ) )
-               .thenReturn( right );
         Mockito.when( project.hasBaseline() )
                .thenReturn( false );
         Mockito.when( project.hasProbabilityThresholds() )
@@ -227,10 +223,6 @@ class PoolsGeneratorTest
                .thenReturn( STREAMFLOW );
         Mockito.when( project.getVariableName( DatasetOrientation.BASELINE ) )
                .thenReturn( null );
-        Mockito.when( project.getDeclaredDataset( DatasetOrientation.LEFT ) )
-               .thenReturn( left );
-        Mockito.when( project.getDeclaredDataset( DatasetOrientation.RIGHT ) )
-               .thenReturn( right );
         Mockito.when( project.hasBaseline() )
                .thenReturn( false );
         Mockito.when( project.hasProbabilityThresholds() )

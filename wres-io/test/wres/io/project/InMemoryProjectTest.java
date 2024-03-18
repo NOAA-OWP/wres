@@ -76,15 +76,6 @@ class InMemoryProjectTest
     /** Declaration to use. */
     private EvaluationDeclaration declaration;
 
-    /** Left-ish dataset. */
-    private Dataset leftDataset;
-
-    /** Right-ish dataset. */
-    private Dataset rightDataset;
-
-    /** Baseline-ish dataset. */
-    private Dataset baselineDataset;
-
     @BeforeEach
     void runBeforeEachTest()
     {
@@ -146,32 +137,35 @@ class InMemoryProjectTest
         Source fakeLeftSource = SourceBuilder.builder()
                                              .uri( fakeLeftUri )
                                              .build();
-        this.leftDataset = DatasetBuilder.builder()
-                                         .sources( List.of( fakeLeftSource ) )
-                                         .variable( VariableBuilder.builder()
-                                                                   .name( "bat" )
-                                                                   .build() )
-                                         .build();
+
+        Dataset leftDataset = DatasetBuilder.builder()
+                                            .sources( List.of( fakeLeftSource ) )
+                                            .variable( VariableBuilder.builder()
+                                                                      .name( "bat" )
+                                                                      .build() )
+                                            .build();
         URI fakeRightUri = URI.create( "https://bar.baz" );
         Source fakeRightSource = SourceBuilder.builder()
                                               .uri( fakeRightUri )
                                               .build();
-        this.rightDataset = DatasetBuilder.builder()
-                                          .sources( List.of( fakeRightSource ) )
-                                          .variable( VariableBuilder.builder()
-                                                                    .name( "bat" )
-                                                                    .build() )
-                                          .build();
-        URI fakeBaselineUri = URI.create( "https://baz.qux" );
-        Source fakeBaselineSource = SourceBuilder.builder()
-                                                 .uri( fakeBaselineUri )
-                                                 .build();
-        this.baselineDataset = DatasetBuilder.builder()
-                                             .sources( List.of( fakeBaselineSource ) )
+
+        Dataset rightDataset = DatasetBuilder.builder()
+                                             .sources( List.of( fakeRightSource ) )
                                              .variable( VariableBuilder.builder()
                                                                        .name( "bat" )
                                                                        .build() )
                                              .build();
+        URI fakeBaselineUri = URI.create( "https://baz.qux" );
+        Source fakeBaselineSource = SourceBuilder.builder()
+                                                 .uri( fakeBaselineUri )
+                                                 .build();
+
+        Dataset baselineDataset = DatasetBuilder.builder()
+                                                .sources( List.of( fakeBaselineSource ) )
+                                                .variable( VariableBuilder.builder()
+                                                                          .name( "bat" )
+                                                                          .build() )
+                                                .build();
         GeneratedBaseline persistence = GeneratedBaselineBuilder.builder()
                                                                 .method( GeneratedBaselines.PERSISTENCE )
                                                                 .build();
@@ -228,8 +222,8 @@ class InMemoryProjectTest
 
         this.declaration = EvaluationDeclarationBuilder.builder()
                                                        .unit( "moon" )
-                                                       .left( this.leftDataset )
-                                                       .right( this.rightDataset )
+                                                       .left( leftDataset )
+                                                       .right( rightDataset )
                                                        .baseline( baseline )
                                                        .leadTimes( leadTimes )
                                                        .validDates( validDates )
@@ -288,17 +282,6 @@ class InMemoryProjectTest
                                                    .build();
         Set<FeatureTuple> expected = Set.of( FeatureTuple.of( expectedInner ) );
         assertEquals( expected, this.testProject.getFeatures() );
-    }
-
-    @Test
-    void testGetDeclaredDataset()
-    {
-        assertAll( () -> assertEquals( this.leftDataset,
-                                       this.testProject.getDeclaredDataset( DatasetOrientation.LEFT ) ),
-                   () -> assertEquals( this.rightDataset,
-                                       this.testProject.getDeclaredDataset( DatasetOrientation.RIGHT ) ),
-                   () -> assertEquals( this.baselineDataset,
-                                       this.testProject.getDeclaredDataset( DatasetOrientation.BASELINE ) ) );
     }
 
     @Test

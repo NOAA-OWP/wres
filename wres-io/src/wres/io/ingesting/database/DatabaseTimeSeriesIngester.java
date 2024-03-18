@@ -957,7 +957,8 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                         "Interrupted while waiting for another task to ingest data for source "
                         + source
                         + ".";
-                Thread.currentThread().interrupt();
+                Thread.currentThread()
+                      .interrupt();
                 // Additionally throw exception to ensure we don't accidentally mark
                 // this source as completed a few lines down.
                 throw new IngestException( message, ie );

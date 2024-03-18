@@ -24,6 +24,8 @@ import org.slf4j.LoggerFactory;
 import wres.config.MetricConstants;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
+import wres.config.yaml.components.CovariateDataset;
+import wres.config.yaml.components.CovariateDatasetBuilder;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
@@ -113,7 +115,7 @@ public class DeclarationInterpolator
     /** Re-used string. */
     private static final String INTENDED_TYPE_EXPLICITLY = "intended 'type' explicitly.";
     /** Re-used string. */
-    private static final String FOR_THE_OBSERVED_DATASET_WAS = "for the 'observed' dataset was '";
+    private static final String DATASET_WAS = "' dataset was ";
     /** Re-used string. */
     private static final String FOR_THE_PREDICTED_DATASET_WAS = "for the 'predicted' dataset was '";
     /** Re-used string. */
@@ -138,7 +140,7 @@ public class DeclarationInterpolator
      * includes all missing declaration that is invariant to the ingested data. For example, the data types are not
      * included because they are informed by ingest.
      *
-     * @see #interpolate(EvaluationDeclaration, DataType, DataType, DataType, boolean)
+     * @see #interpolate(EvaluationDeclaration, Map, Map, Map, Map, boolean)
      * @param declaration the raw declaration to interpolate
      * @return the interpolated declaration
      */
@@ -180,28 +182,35 @@ public class DeclarationInterpolator
      * declaration that depends on the data types.
      *
      * @param declaration the raw declaration to interpolate
-     * @param leftType the left type inferred from ingest
-     * @param rightType the right type inferred from ingest
-     * @param baselineType the baseline type inferred from ingest
+     * @param leftSources the left data types per source, inferred from ingest
+     * @param rightSources the right data types per source, inferred from ingest
+     * @param baselineSources the baseline data types per source, inferred from ingest
+     * @param covariateSources the covariate data types per source, inferred from ingest
      * @param notify whether to notify any warnings encountered or assumptions made during interpolation
      * @return the interpolated declaration
-     * @throws NullPointerException if the declaration is null
+     * @throws NullPointerException if any input is null
      */
     public static EvaluationDeclaration interpolate( EvaluationDeclaration declaration,
-                                                     DataType leftType,
-                                                     DataType rightType,
-                                                     DataType baselineType,
+                                                     Map<Source, DataType> leftSources,
+                                                     Map<Source, DataType> rightSources,
+                                                     Map<Source, DataType> baselineSources,
+                                                     Map<Source, DataType> covariateSources,
                                                      boolean notify )
     {
         Objects.requireNonNull( declaration );
+        Objects.requireNonNull( leftSources );
+        Objects.requireNonNull( rightSources );
+        Objects.requireNonNull( baselineSources );
+        Objects.requireNonNull( covariateSources );
 
         EvaluationDeclarationBuilder adjustedDeclarationBuilder = EvaluationDeclarationBuilder.builder( declaration );
 
         // Disambiguate the "type" of data when it is not declared
         List<EvaluationStatusEvent> events = DeclarationInterpolator.interpolateDataTypes( adjustedDeclarationBuilder,
-                                                                                           leftType,
-                                                                                           rightType,
-                                                                                           baselineType );
+                                                                                           leftSources,
+                                                                                           rightSources,
+                                                                                           baselineSources,
+                                                                                           covariateSources );
         // Interpolate evaluation metrics when required
         DeclarationInterpolator.interpolateMetrics( adjustedDeclarationBuilder );
         // Interpolate thresholds for individual metrics, adding an "all data" threshold as needed
@@ -1111,28 +1120,123 @@ public class DeclarationInterpolator
      * check that a consistent interpolation is possible.
      *
      * @param builder the declaration builder to adjust
-     * @param leftType the left type inferred from ingest
-     * @param rightType the right type inferred from ingest
-     * @param baselineType the baseline type inferred from ingest
+     * @param leftSources the left data types per source, inferred from ingest
+     * @param rightSources the right data types per source, inferred from ingest
+     * @param baselineSources the baseline data types per source, inferred from ingest
+     * @param covariateSources the covariate data types per source, inferred from ingest
      * @return any interpolation events encountered
      */
     private static List<EvaluationStatusEvent> interpolateDataTypes( EvaluationDeclarationBuilder builder,
-                                                                     DataType leftType,
-                                                                     DataType rightType,
-                                                                     DataType baselineType )
+                                                                     Map<Source, DataType> leftSources,
+                                                                     Map<Source, DataType> rightSources,
+                                                                     Map<Source, DataType> baselineSources,
+                                                                     Map<Source, DataType> covariateSources )
     {
+        // Cannot have more than one type per dataset, including for the possibly N covariate datasets so  validate
+        // before interpolating
+        Set<DataType> leftTypes = new HashSet<>( leftSources.values() );
+        Set<DataType> rightTypes = new HashSet<>( rightSources.values() );
+        Set<DataType> baselineTypes = new HashSet<>( baselineSources.values() );
+        Set<DataType> covariateTypes = new HashSet<>( covariateSources.values() );
+        List<EvaluationStatusEvent> events =
+                new ArrayList<>( DeclarationInterpolator.validateDataTypes( leftTypes,
+                                                                            DatasetOrientation.LEFT ) );
+        List<EvaluationStatusEvent> rightEvents = DeclarationInterpolator.validateDataTypes( rightTypes,
+                                                                                             DatasetOrientation.RIGHT );
+        events.addAll( rightEvents );
+        List<EvaluationStatusEvent> baselineEvents =
+                DeclarationInterpolator.validateDataTypes( baselineTypes,
+                                                           DatasetOrientation.BASELINE );
+        events.addAll( baselineEvents );
+        List<EvaluationStatusEvent> covariateEvents =
+                DeclarationInterpolator.validateDataTypes( covariateTypes,
+                                                           DatasetOrientation.COVARIATE );
+        events.addAll( covariateEvents );
+
+        if ( !events.isEmpty() )
+        {
+            LOGGER.debug( "Could not interpolate the data type because errors were encountered when validating "
+                          + "ingested types." );
+            return Collections.unmodifiableList( events );
+        }
+
         // Resolve the left or observed data type, if required
-        List<EvaluationStatusEvent> leftTypes = DeclarationInterpolator.interpolateObservedDataType( builder,
-                                                                                                     leftType );
-        List<EvaluationStatusEvent> events = new ArrayList<>( leftTypes );
+        List<EvaluationStatusEvent> leftTypeEvents =
+                DeclarationInterpolator.interpolateObservedDataType( builder,
+                                                                     leftTypes.stream()
+                                                                              .findAny()
+                                                                              .orElse( null ) );
+        events.addAll( leftTypeEvents );
         // Resolve the predicted data type, if required
-        List<EvaluationStatusEvent> rightTypes = DeclarationInterpolator.interpolatePredictedDataType( builder,
-                                                                                                       rightType );
-        events.addAll( rightTypes );
+        List<EvaluationStatusEvent> rightTypeEvents =
+                DeclarationInterpolator.interpolatePredictedDataType( builder,
+                                                                      rightTypes.stream()
+                                                                                .findAny()
+                                                                                .orElse( null ) );
+        events.addAll( rightTypeEvents );
         // Baseline data type has the same as the predicted data type, by default
-        List<EvaluationStatusEvent> baseTypes = DeclarationInterpolator.interpolateBaselineDataType( builder,
-                                                                                                     baselineType );
-        events.addAll( baseTypes );
+        List<EvaluationStatusEvent> baseTypeEvents =
+                DeclarationInterpolator.interpolateBaselineDataType( builder,
+                                                                     baselineTypes.stream()
+                                                                                  .findAny()
+                                                                                  .orElse( null ) );
+        events.addAll( baseTypeEvents );
+        // Data type for covariates
+        List<EvaluationStatusEvent> covariateTypeEvents =
+                DeclarationInterpolator.interpolateCovariatesDataType( builder,
+                                                                       covariateTypes.stream()
+                                                                                     .findAny()
+                                                                                     .orElse( null ) );
+        events.addAll( covariateTypeEvents );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks for no more than one data type for the prescribed orientation and returns an error otherwise.
+     * @param types the types
+     * @param orientation the dataset orientation
+     * @return any errors encountered
+     */
+    private static List<EvaluationStatusEvent> validateDataTypes( Set<DataType> types, DatasetOrientation orientation )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        String dataset = "dataset";
+        if ( orientation == DatasetOrientation.COVARIATE )
+        {
+            dataset = "datasets";
+        }
+
+        // Forecast types count individually
+        long count = types.stream()
+                          .filter( DataType::isForecastType )
+                          .count();
+
+        // Add one for all observation-like types
+        if ( types.stream()
+                  .anyMatch( t -> !t.isForecastType() ) )
+        {
+            count += 1;
+        }
+
+        if ( count > 1 )
+        {
+            EvaluationStatusEvent error =
+                    EvaluationStatusEvent.newBuilder()
+                                         .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
+                                         .setEventMessage( "Following data ingest, discovered more than one data "
+                                                           + "'type' for the '"
+                                                           + orientation
+                                                           + "' "
+                                                           + dataset
+                                                           + ", which is not allowed. The ingested data types "
+                                                           + "were: "
+                                                           + types
+                                                           + ". Please remove any mixed data types and try again." )
+                                         .build();
+            events.add( error );
+        }
 
         return Collections.unmodifiableList( events );
     }
@@ -1642,7 +1746,7 @@ public class DeclarationInterpolator
                                                                             DataType dataType )
     {
         Dataset observed = builder.left();
-
+        DatasetBuilder datasetBuilder = DatasetBuilder.builder( observed );
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
         // Interpolate the left or observed data type when undeclared
@@ -1650,35 +1754,148 @@ public class DeclarationInterpolator
         {
             List<EvaluationStatusEvent> undeclared =
                     DeclarationInterpolator.interpolateObservedDataTypeWhenUndeclared( builder,
-                                                                                       dataType );
+                                                                                       datasetBuilder,
+                                                                                       dataType,
+                                                                                       DatasetOrientation.LEFT );
             events.addAll( undeclared );
         }
         // Interpolate the left or observed data type when explicitly declared
         else
         {
             List<EvaluationStatusEvent> declared =
-                    DeclarationInterpolator.interpolateObservedDataTypeWhenDeclared( builder,
-                                                                                     dataType );
+                    DeclarationInterpolator.interpolateObservedDataTypeWhenDeclared( datasetBuilder,
+                                                                                     dataType,
+                                                                                     DatasetOrientation.LEFT );
             events.addAll( declared );
+        }
+
+        // Set the adjusted dataset
+        builder.left( datasetBuilder.build() );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Interpolates the data type for each covariate dataset.
+     * @param builder the builder
+     * @param dataType the data type inferred from ingest
+     * @return any interpolation events encountered
+     */
+    private static List<EvaluationStatusEvent> interpolateCovariatesDataType( EvaluationDeclarationBuilder builder,
+                                                                              DataType dataType )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        List<CovariateDataset> adjustedCovariates = new ArrayList<>();
+        for ( CovariateDataset covariateDataset : builder.covariates() )
+        {
+            Dataset covariate = covariateDataset.dataset();
+            DatasetBuilder datasetBuilder = DatasetBuilder.builder( covariate );
+
+            // Interpolate the type when undeclared
+            if ( Objects.isNull( covariate.type() ) )
+            {
+                List<EvaluationStatusEvent> undeclared =
+                        DeclarationInterpolator.interpolateObservedDataTypeWhenUndeclared( builder,
+                                                                                           datasetBuilder,
+                                                                                           dataType,
+                                                                                           DatasetOrientation.COVARIATE );
+                events.addAll( undeclared );
+            }
+            // Interpolate the type when explicitly declared
+            else
+            {
+                List<EvaluationStatusEvent> declared =
+                        DeclarationInterpolator.interpolateObservedDataTypeWhenDeclared( datasetBuilder,
+                                                                                         dataType,
+                                                                                         DatasetOrientation.COVARIATE );
+                events.addAll( declared );
+            }
+
+            CovariateDatasetBuilder covariateBuilder = CovariateDatasetBuilder.builder( covariateDataset )
+                                                                              .dataset( datasetBuilder.build() );
+            adjustedCovariates.add( covariateBuilder.build() );
+        }
+
+        // Set the adjusted covariates
+        builder.covariates( adjustedCovariates );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Interpolates the data type for observation-like datasets when there is explicit declaration of the data type. By
+     * default, uses the declared type, but also checks against the data type inferred from ingest.
+     * @param datasetBuilder the dataset builder
+     * @param dataType the data type inferred from ingest
+     * @param orientation the dataset orientation
+     * @return any interpolation events encountered
+     */
+    private static List<EvaluationStatusEvent> interpolateObservedDataTypeWhenDeclared( DatasetBuilder datasetBuilder,
+                                                                                        DataType dataType,
+                                                                                        DatasetOrientation orientation )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        if ( Objects.nonNull( dataType )
+             && dataType != datasetBuilder.type() )
+        {
+            String article = "the";
+            if ( orientation == DatasetOrientation.COVARIATE )
+            {
+                article = "a";
+            }
+
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
+                                           .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
+                                                             + "for "
+                                                             + article
+                                                             + "'"
+                                                             + orientation
+                                                             + DATASET_WAS
+                                                             + dataType
+                                                             + BUT_THE_DATA_TYPE_WAS_EXPLICITLY_DECLARED_AS
+                                                             + datasetBuilder.type()
+                                                             + THE_EVALUATION_WILL_PROCEED_WITH_THE_EXPLICITLY
+                                                             + DECLARED_TYPE_OF
+                                                             + dataType
+                                                             + IF_THIS_IS_INCORRECT_PLEASE_FIX_THE_DECLARED
+                                                             + TYPE )
+                                           .build();
+            events.add( event );
         }
 
         return Collections.unmodifiableList( events );
     }
 
     /**
-     * Interpolates the observed data type when there is no explicit declaration for an observed data type.
-     * @param builder the builder
+     * Interpolates the data type for observation-like datasets when there is no explicit declaration of the data type.
+     * @param builder the evaluation builder
+     * @param datasetBuilder the dataset builder
      * @param dataType the data type inferred from ingest
+     * @param orientation the dataset orientation
      * @return any interpolation events encountered
      */
     private static List<EvaluationStatusEvent> interpolateObservedDataTypeWhenUndeclared( EvaluationDeclarationBuilder builder,
-                                                                                          DataType dataType )
+                                                                                          DatasetBuilder datasetBuilder,
+                                                                                          DataType dataType,
+                                                                                          DatasetOrientation orientation )
     {
-        Dataset observed = builder.left();
-
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
-        String defaultStartMessage = "Discovered that the 'observed' dataset has no declared data 'type'.";
+        String article = "the";
+        if ( orientation == DatasetOrientation.COVARIATE )
+        {
+            article = "a";
+        }
+
+        String defaultStartMessage = "Discovered that "
+                                     + article
+                                     + "'"
+                                     + orientation
+                                     + "' dataset has no declared data 'type'.";
         String defaultEndMessage = "If this is incorrect, please declare the 'type' explicitly.";
 
         DataType calculatedDataType;
@@ -1733,7 +1950,11 @@ public class DeclarationInterpolator
                         = EvaluationStatusEvent.newBuilder()
                                                .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
                                                .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
-                                                                 + FOR_THE_OBSERVED_DATASET_WAS
+                                                                 + "for "
+                                                                 + article
+                                                                 + "'"
+                                                                 + orientation
+                                                                 + DATASET_WAS
                                                                  + dataType
                                                                  + BUT_THE_DATA_TYPE_INFERRED_FROM_THE
                                                                  + DECLARATION_WAS
@@ -1755,7 +1976,11 @@ public class DeclarationInterpolator
                         = EvaluationStatusEvent.newBuilder()
                                                .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
                                                .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
-                                                                 + FOR_THE_OBSERVED_DATASET_WAS
+                                                                 + "for "
+                                                                 + article
+                                                                 + "'"
+                                                                 + orientation
+                                                                 + DATASET_WAS
                                                                  + dataType
                                                                  + BUT_THE_DATA_TYPE_INFERRED_FROM_THE
                                                                  + DECLARATION_WAS
@@ -1771,47 +1996,8 @@ public class DeclarationInterpolator
             }
         }
 
-        Dataset newLeft = DatasetBuilder.builder( observed )
-                                        .type( typeToUse )
-                                        .build();
-        builder.left( newLeft );
-
-        return Collections.unmodifiableList( events );
-    }
-
-    /**
-     * Interpolates the observed data type when there is explicit declaration for an observed data type. By default,
-     * uses the declared type, but also checks against the data type inferred from ingest.
-     * @param builder the builder
-     * @param dataType the data type inferred from ingest
-     * @return any interpolation events encountered
-     */
-    private static List<EvaluationStatusEvent> interpolateObservedDataTypeWhenDeclared( EvaluationDeclarationBuilder builder,
-                                                                                        DataType dataType )
-    {
-        Dataset observed = builder.left();
-
-        List<EvaluationStatusEvent> events = new ArrayList<>();
-
-        if ( Objects.nonNull( dataType )
-             && dataType != observed.type() )
-        {
-            EvaluationStatusEvent event
-                    = EvaluationStatusEvent.newBuilder()
-                                           .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
-                                           .setEventMessage( THE_DATA_TYPE_INFERRED_FROM_THE_TIME_SERIES_DATA
-                                                             + FOR_THE_OBSERVED_DATASET_WAS
-                                                             + dataType
-                                                             + BUT_THE_DATA_TYPE_WAS_EXPLICITLY_DECLARED_AS
-                                                             + observed.type()
-                                                             + THE_EVALUATION_WILL_PROCEED_WITH_THE_EXPLICITLY
-                                                             + DECLARED_TYPE_OF
-                                                             + dataType
-                                                             + IF_THIS_IS_INCORRECT_PLEASE_FIX_THE_DECLARED
-                                                             + TYPE )
-                                           .build();
-            events.add( event );
-        }
+        // Adjust the type
+        datasetBuilder.type( typeToUse );
 
         return Collections.unmodifiableList( events );
     }
@@ -1893,7 +2079,8 @@ public class DeclarationInterpolator
                            .stream()
                            .anyMatch( next -> Objects.nonNull( next.sourceInterface() )
                                               && next.sourceInterface()
-                                                     .getDataTypes().size() > 1 ) )
+                                                     .getDataTypes()
+                                                     .size() > 1 ) )
         {
             reasonMessage = "Could not infer the 'predicted' data type because sources were declared with "
                             + "interfaces that support multiple data types.";

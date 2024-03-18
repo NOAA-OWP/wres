@@ -20,6 +20,10 @@ public class IngestResultNeedingRetry implements IngestResult
     private static final String TOO_MANY_RE_USES_OF = "Too many re-uses of ";
     private final DatasetOrientation orientation;
     private final DataSource dataSource;
+    private final short leftCount;
+    private final short rightCount;
+    private final short baselineCount;
+    private final short covariateCount;
     private final long surrogateKey;
 
     /**
@@ -44,9 +48,45 @@ public class IngestResultNeedingRetry implements IngestResult
                                                 + surrogateKey );
         }
 
+        short leftCountInner = 0;
+        short rightCountInner = 0;
+        short baselineCountInner = 0;
+        short covariateCountInner = 0;
+
+        DatasetOrientation innerOrientation = dataSource.getDatasetOrientation();
+
+        switch ( innerOrientation )
+        {
+            case LEFT -> leftCountInner++;
+            case RIGHT -> rightCountInner++;
+            case BASELINE -> baselineCountInner++;
+            case COVARIATE -> covariateCountInner++;
+        }
+
+        for ( DatasetOrientation linkedOrientation : dataSource.getLinks() )
+        {
+            switch ( linkedOrientation )
+            {
+                case LEFT -> leftCountInner++;
+                case RIGHT -> rightCountInner++;
+                case BASELINE -> baselineCountInner++;
+                case COVARIATE -> covariateCountInner++;
+            }
+        }
+
+        // Validate the counts
+        this.validateCount( dataSource, DatasetOrientation.LEFT, leftCountInner );
+        this.validateCount( dataSource, DatasetOrientation.RIGHT, rightCountInner );
+        this.validateCount( dataSource, DatasetOrientation.BASELINE, baselineCountInner );
+        this.validateCount( dataSource, DatasetOrientation.COVARIATE, covariateCountInner );
+
         this.orientation = dataSource.getDatasetOrientation();
         this.surrogateKey = surrogateKey;
         this.dataSource = dataSource;
+        this.leftCount = leftCountInner;
+        this.rightCount = rightCountInner;
+        this.baselineCount = baselineCountInner;
+        this.covariateCount = covariateCountInner;
     }
 
     @Override
@@ -76,94 +116,25 @@ public class IngestResultNeedingRetry implements IngestResult
     @Override
     public short getLeftCount()
     {
-        short leftCount = 0;
-
-        if ( this.getDatasetOrientation()
-                 .equals( DatasetOrientation.LEFT ) )
-        {
-            leftCount++;
-        }
-
-        for ( DatasetOrientation lrb : this.getDataSource()
-                                           .getLinks() )
-        {
-            if ( lrb.equals( DatasetOrientation.LEFT ) )
-            {
-                if ( leftCount == MAX_VALUE )
-                {
-                    throw new IllegalStateException( TOO_MANY_RE_USES_OF
-                                                     + this.getDataSource()
-                                                     + " in left, more than "
-                                                     + MAX_VALUE );
-                }
-
-                leftCount++;
-            }
-        }
-
-        return leftCount;
+        return this.leftCount;
     }
 
     @Override
     public short getRightCount()
     {
-        short rightCount = 0;
-
-        if ( this.getDatasetOrientation()
-                 .equals( DatasetOrientation.RIGHT ) )
-        {
-            rightCount++;
-        }
-
-        for ( DatasetOrientation lrb : this.getDataSource()
-                                           .getLinks() )
-        {
-            if ( lrb.equals( DatasetOrientation.RIGHT ) )
-            {
-                if ( rightCount == MAX_VALUE )
-                {
-                    throw new IllegalStateException( TOO_MANY_RE_USES_OF
-                                                     + this.getDataSource()
-                                                     + " in right, more than "
-                                                     + MAX_VALUE );
-                }
-
-                rightCount++;
-            }
-        }
-
-        return rightCount;
+        return this.rightCount;
     }
 
     @Override
     public short getBaselineCount()
     {
-        short baselineCount = 0;
+        return this.baselineCount;
+    }
 
-        if ( this.getDatasetOrientation()
-                 .equals( DatasetOrientation.BASELINE ) )
-        {
-            baselineCount++;
-        }
-
-        for ( DatasetOrientation lrb : this.getDataSource()
-                                           .getLinks() )
-        {
-            if ( lrb.equals( DatasetOrientation.BASELINE ) )
-            {
-                if ( baselineCount == MAX_VALUE )
-                {
-                    throw new IllegalStateException( TOO_MANY_RE_USES_OF
-                                                     + this.getDataSource()
-                                                     + " in baseline, more than "
-                                                     + MAX_VALUE );
-                }
-
-                baselineCount++;
-            }
-        }
-
-        return baselineCount;
+    @Override
+    public short getCovariateCount()
+    {
+        return this.covariateCount;
     }
 
     @Override
@@ -172,6 +143,29 @@ public class IngestResultNeedingRetry implements IngestResult
         return new ToStringBuilder( this ).append( "orientation", this.getDatasetOrientation() )
                                           .append( "dataSource", this.getDataSource() )
                                           .append( "surrogateKey", this.getSurrogateKey() )
+                                          .append( "leftCount", this.leftCount )
+                                          .append( "rightCount", this.rightCount )
+                                          .append( "baselineCount", this.baselineCount )
+                                          .append( "covariateCount", this.covariateCount )
                                           .toString();
+    }
+
+    /**
+     * Validates the number of re-uses of a datasource.
+     * @param source the data source
+     * @param orientation the orientation
+     * @param count the count of re-uses
+     */
+    private void validateCount( DataSource source, DatasetOrientation orientation, long count )
+    {
+        if ( count == MAX_VALUE )
+        {
+            throw new IllegalArgumentException( TOO_MANY_RE_USES_OF
+                                                + source
+                                                + " in "
+                                                + orientation
+                                                + ", more than "
+                                                + MAX_VALUE );
+        }
     }
 }

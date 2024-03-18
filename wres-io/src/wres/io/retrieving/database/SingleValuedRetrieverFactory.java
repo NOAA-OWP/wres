@@ -370,9 +370,20 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
         this.database = database;
         this.caches = caches;
 
-        this.leftDataset = project.getDeclaredDataset( DatasetOrientation.LEFT );
-        this.rightDataset = project.getDeclaredDataset( DatasetOrientation.RIGHT );
-        this.baselineDataset = project.getDeclaredDataset( DatasetOrientation.BASELINE );
+        this.leftDataset = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
+                                                                    DatasetOrientation.LEFT );
+        this.rightDataset = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
+                                                                     DatasetOrientation.RIGHT );
+
+        if( project.hasBaseline() )
+        {
+            this.baselineDataset = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
+                                                                            DatasetOrientation.BASELINE );
+        }
+        else
+        {
+            this.baselineDataset = null;
+        }
 
         // Obtain any seasonal constraints
         this.seasonStart = project.getStartOfSeason();

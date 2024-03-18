@@ -24,6 +24,7 @@ class IngestResultCompact implements IngestResult
     private final short leftCount;
     private final short rightCount;
     private final short baselineCount;
+    private final short covariateCount;
     private final boolean foundAlready;
 
     IngestResultCompact( DataSource dataSource,
@@ -46,69 +47,43 @@ class IngestResultCompact implements IngestResult
         }
 
         this.surrogateKey = surrogateKey;
-        DatasetOrientation lrb = dataSource.getDatasetOrientation();
+        DatasetOrientation orientation = dataSource.getDatasetOrientation();
 
         short leftCountInner = 0;
         short rightCountInner = 0;
         short baselineCountInner = 0;
+        short covariateCountInner = 0;
 
-        if ( lrb == DatasetOrientation.LEFT )
+        switch ( orientation )
         {
-            leftCountInner++;
-        }
-        else if ( lrb == DatasetOrientation.RIGHT )
-        {
-            rightCountInner++;
-        }
-        else if ( lrb == DatasetOrientation.BASELINE )
-        {
-            baselineCountInner++;
+            case LEFT -> leftCountInner++;
+            case RIGHT -> rightCountInner++;
+            case BASELINE -> baselineCountInner++;
+            case COVARIATE -> covariateCountInner++;
         }
 
-        for ( DatasetOrientation lrbn : dataSource.getLinks() )
+        for ( DatasetOrientation linkedOrientation : dataSource.getLinks() )
         {
-            if ( lrbn.equals( DatasetOrientation.LEFT ) )
+            switch ( linkedOrientation )
             {
-                if ( leftCountInner == MAX_VALUE )
-                {
-                    throw new IllegalArgumentException( TOO_MANY_RE_USES_OF
-                                                        + dataSource
-                                                        + " in left, more than "
-                                                        + MAX_VALUE );
-                }
-
-                leftCountInner++;
-            }
-            else if ( lrbn.equals( DatasetOrientation.RIGHT ) )
-            {
-                if ( rightCountInner == MAX_VALUE )
-                {
-                    throw new IllegalArgumentException( TOO_MANY_RE_USES_OF
-                                                        + dataSource
-                                                        + " in right, more than "
-                                                        + MAX_VALUE );
-                }
-
-                rightCountInner++;
-            }
-            else if ( lrbn.equals( DatasetOrientation.BASELINE ) )
-            {
-                if ( baselineCountInner == MAX_VALUE )
-                {
-                    throw new IllegalArgumentException( TOO_MANY_RE_USES_OF
-                                                        + dataSource
-                                                        + " in baseline, more than "
-                                                        + MAX_VALUE );
-                }
-
-                baselineCountInner++;
+                case LEFT -> leftCountInner++;
+                case RIGHT -> rightCountInner++;
+                case BASELINE -> baselineCountInner++;
+                case COVARIATE -> covariateCountInner++;
             }
         }
+
+        // Validate the counts
+        this.validateCount( dataSource, DatasetOrientation.LEFT, leftCountInner );
+        this.validateCount( dataSource, DatasetOrientation.RIGHT, rightCountInner );
+        this.validateCount( dataSource, DatasetOrientation.BASELINE, baselineCountInner );
+        this.validateCount( dataSource, DatasetOrientation.COVARIATE, covariateCountInner );
 
         this.foundAlready = foundAlready;
         this.leftCount = leftCountInner;
         this.rightCount = rightCountInner;
         this.baselineCount = baselineCountInner;
+        this.covariateCount = covariateCountInner;
     }
 
     /**
@@ -160,13 +135,39 @@ class IngestResultCompact implements IngestResult
     }
 
     @Override
+    public short getCovariateCount()
+    {
+        return this.covariateCount;
+    }
+
+    @Override
     public String toString()
     {
-        return new ToStringBuilder( this ).append( "surrogateKey", surrogateKey )
-                                          .append( "leftCount", leftCount )
-                                          .append( "rightCount", rightCount )
-                                          .append( "baselineCount", baselineCount )
-                                          .append( "foundAlready", foundAlready )
+        return new ToStringBuilder( this ).append( "surrogateKey", this.surrogateKey )
+                                          .append( "leftCount", this.leftCount )
+                                          .append( "rightCount", this.rightCount )
+                                          .append( "baselineCount", this.baselineCount )
+                                          .append( "covariateCount", this.covariateCount )
+                                          .append( "foundAlready", this.foundAlready )
                                           .toString();
+    }
+
+    /**
+     * Validates the number of re-uses of a datasource.
+     * @param source the data source
+     * @param orientation the orientation
+     * @param count the count of re-uses
+     */
+    private void validateCount( DataSource source, DatasetOrientation orientation, long count )
+    {
+        if ( count == MAX_VALUE )
+        {
+            throw new IllegalArgumentException( TOO_MANY_RE_USES_OF
+                                                + source
+                                                + " in "
+                                                + orientation
+                                                + ", more than "
+                                                + MAX_VALUE );
+        }
     }
 }

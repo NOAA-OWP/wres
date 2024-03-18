@@ -205,6 +205,31 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testForecastDataTypeForCovariatesResultsInError()
+    {
+        Dataset dataOne = DatasetBuilder.builder( this.defaultDataset )
+                                        .type( DataType.OBSERVATIONS )
+                                        .build();
+        CovariateDataset covariateOne = new CovariateDataset( dataOne, null, null );
+        Dataset dataTwo = DatasetBuilder.builder( this.defaultDataset )
+                                        .type( DataType.SINGLE_VALUED_FORECASTS )
+                                        .build();
+        CovariateDataset covariateTwo = new CovariateDataset( dataTwo, null, null );
+
+        List<CovariateDataset> covariates = List.of( covariateOne, covariateTwo );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .covariates( covariates )
+                                                                        .build();
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, "Discovered a forecast data 'type' for one or "
+                                                               + "more 'covariate' datasets",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
     void testDatesAreDeclaredForWebServiceSourcesResultsInErrors()
     {
         Source source = SourceBuilder.builder()

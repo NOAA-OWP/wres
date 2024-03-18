@@ -10,6 +10,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
@@ -30,7 +31,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 /**
  * <p>A factory class that creates retrievers for the single-valued left and ensemble right datasets associated with one 
  * evaluation. Backed by an in-memory {@link TimeSeriesStore}.
- * 
+ *
  * @author James Brown
  */
 
@@ -70,9 +71,14 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
         Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( DatasetOrientation.LEFT, null, features );
 
         // Wrap in a caching retriever
-        return CachingRetriever.of( () -> allSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
-                                                                                                            DatasetOrientation.LEFT,
-                                                                                                            this.project.getDeclaredDataset( DatasetOrientation.LEFT ) ) ) );
+        Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
+                                                                DatasetOrientation.LEFT );
+        Supplier<Stream<TimeSeries<Double>>> supplier =
+                () -> allSeries.map( timeSeries ->
+                                             RetrieverUtilities.augmentTimeScale( timeSeries,
+                                                                                  DatasetOrientation.LEFT,
+                                                                                  data ) );
+        return CachingRetriever.of( supplier );
     }
 
     @Override
@@ -101,7 +107,8 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
         TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustByTimeScalePeriod( TimeWindowOuter.of( inner ),
                                                                                    this.project.getDesiredTimeScale() );
 
-        Dataset data = this.project.getDeclaredDataset( DatasetOrientation.LEFT );
+        Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
+                                                                DatasetOrientation.LEFT );
         adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
                                                                              data.type(),
                                                                              this.project.getEarliestAnalysisDuration(),
@@ -124,7 +131,8 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
         TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustByTimeScalePeriod( timeWindow,
                                                                                    this.project.getDesiredTimeScale() );
 
-        Dataset data = this.project.getDeclaredDataset( DatasetOrientation.RIGHT );
+        Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
+                                                                DatasetOrientation.RIGHT );
         adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
                                                                              data.type(),
                                                                              this.project.getEarliestAnalysisDuration(),
@@ -133,9 +141,13 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
         Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( DatasetOrientation.RIGHT,
                                                                    adjustedWindow,
                                                                    features );
-        return () -> allSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
-                                                                                       DatasetOrientation.RIGHT,
-                                                                                       this.project.getDeclaredDataset( DatasetOrientation.RIGHT ) ) );
+
+        Supplier<Stream<TimeSeries<Double>>> supplier =
+                () -> allSeries.map( timeSeries ->
+                                             RetrieverUtilities.augmentTimeScale( timeSeries,
+                                                                                  DatasetOrientation.RIGHT,
+                                                                                  data ) );
+        return CachingRetriever.of( supplier );
     }
 
     @Override
@@ -153,7 +165,8 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
         TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustByTimeScalePeriod( timeWindow,
                                                                                    this.project.getDesiredTimeScale() );
 
-        Dataset data = this.project.getDeclaredDataset( DatasetOrientation.BASELINE );
+        Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
+                                                                DatasetOrientation.BASELINE );
         adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
                                                                              data.type(),
                                                                              this.project.getEarliestAnalysisDuration(),
@@ -162,9 +175,12 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
         Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( DatasetOrientation.BASELINE,
                                                                    adjustedWindow,
                                                                    features );
-        return () -> allSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
-                                                                                       DatasetOrientation.BASELINE,
-                                                                                       this.project.getDeclaredDataset( DatasetOrientation.BASELINE ) ) );
+        Supplier<Stream<TimeSeries<Double>>> supplier =
+                () -> allSeries.map( timeSeries ->
+                                             RetrieverUtilities.augmentTimeScale( timeSeries,
+                                                                                  DatasetOrientation.BASELINE,
+                                                                                  data ) );
+        return CachingRetriever.of( supplier );
     }
 
     /**
@@ -192,8 +208,8 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
         }
 
         // Analysis shape of evaluation?
-        if ( this.project.getDeclaredDataset( orientation )
-                         .type() == DataType.ANALYSES )
+        if ( DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(), orientation )
+                                 .type() == DataType.ANALYSES )
         {
             allSeries = RetrieverUtilities.createAnalysisTimeSeries( allSeries,
                                                                      this.project.getEarliestAnalysisDuration(),
@@ -235,7 +251,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
 
     /**
      * Hidden constructor.
-     * 
+     *
      * @param project the project
      * @param timeSeriesStore the store of time-series
      * @throws NullPointerException if any input is null
