@@ -147,11 +147,11 @@ public class EvaluationService implements ServletContextListener
         String enableServerCache = System.getProperty( ENABLE_SERVER_CACHE_SYSTEM_PROPERTY_NAME );
         if ( Objects.nonNull( enableServerCache ) )
         {
-            EvaluationService.serverCacheEnabled = Boolean.getBoolean( enableServerCache );
+            EvaluationService.serverCacheEnabled = Boolean.parseBoolean( enableServerCache );
             LOGGER.info( "Server cache is enabled: {}", EvaluationService.serverCacheEnabled );
         }
 
-        if ( serverCacheEnabled )
+        if ( EvaluationService.serverCacheEnabled )
         {
             Config redissonConfig = new Config();
             String specifiedRedisHost = System.getProperty( REDIS_HOST_SYSTEM_PROPERTY_NAME );
@@ -832,11 +832,14 @@ public class EvaluationService implements ServletContextListener
 
                 while ( !EVALUATION_STAGE.get().equals( CLOSED ) && !EVALUATION_STAGE.get().equals( AWAITING ) )
                 {
-                    offset = writeOutput( redirectStream, output, offset );
+                    if ( redirectStream.size() > offset )
+                    {
+                        offset = writeOutput( redirectStream, output, offset );
+                    }
                 }
 
                 // After the evaluation is closed, send any more information missed in the last loop
-                // This helps avoid logs being cut off if alot of information is sent at the end of an evaluation
+                // This helps avoid logs being cut off if a lot of information is sent at the end of an evaluation
                 writeOutput( redirectStream, output, offset );
                 storeLogsInCache( redirectStream, whichStream );
             }
@@ -864,12 +867,12 @@ public class EvaluationService implements ServletContextListener
         ByteArrayInputStream byteArrayInputStream =
                 new ByteArrayInputStream( redirectStream.toByteArray() );
         // Skip the content in the message already sent
-        long skip = byteArrayInputStream.skip( offset );
-        String message = new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 );
+        byteArrayInputStream.skip( offset );
 
-        // If we skipped successfully and the resulting string isn't empty send SSE
-        if ( offset == skip && !message.isEmpty() )
+        // If there are bytes present after we skip, write it to the ChunkedOutput
+        if ( byteArrayInputStream.available() > 0 )
         {
+            String message = new String( byteArrayInputStream.readAllBytes(), StandardCharsets.UTF_8 );
             offset += message.length();
             output.write( message );
         }
