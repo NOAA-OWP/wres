@@ -1,12 +1,14 @@
 package wres.io.ingesting;
 
 import java.util.List;
+import java.util.Set;
 
+import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.reading.DataSource;
 
 /**
- * High-level result for a single fragment of ingest, namely a time-series.
+ * High-level result for a single fragment of ingest, which corresponds to a single time-series.
  */
 
 public interface IngestResult
@@ -18,15 +20,18 @@ public interface IngestResult
 
     /**
      * @return The DataSource to use when retrying ingest.
-     * @throws UnsupportedOperationException when requiresRetry() is false.
      */
     DataSource getDataSource();
 
     /**
-     * @return Whether Left or Right or Baseline when retrying ingest.
-     * @throws UnsupportedOperationException when requiresRetry() is false.
+     * @return the orientations in which this time-series appears.
      */
-    DatasetOrientation getDatasetOrientation();
+    Set<DatasetOrientation> getDatasetOrientations();
+
+    /**
+     * @return The type of data in the time-series or null when undefined
+     */
+    DataType getDataType();
 
     /**
      * Whether this data requires another try at ingest.
@@ -62,6 +67,7 @@ public interface IngestResult
     /**
      * Creates a singleton list from the inputs.
      * @param dataSource the data source information
+     * @param dataType the optional data type
      * @param surrogateKey The surrogate key of the source data.
      * @param foundAlready true if found in the backing store, false otherwise
      * @param requiresRetry true if this requires retry, false otherwise
@@ -69,11 +75,13 @@ public interface IngestResult
      */
 
     static List<IngestResult> singleItemListFrom( DataSource dataSource,
+                                                  DataType dataType,
                                                   long surrogateKey,
                                                   boolean foundAlready,
                                                   boolean requiresRetry )
     {
         IngestResult ingestResult = IngestResult.from( dataSource,
+                                                       dataType,
                                                        surrogateKey,
                                                        foundAlready,
                                                        requiresRetry );
@@ -83,12 +91,14 @@ public interface IngestResult
     /**
      * Get an IngestResult using the configuration elements, for convenience
      * @param dataSource the data source information
+     * @param dataType the optional data type
      * @param surrogateKey The surrogate key of the source data.
      * @param foundAlready true if found in the backing store, false otherwise
      * @param requiresRetry true if this requires retry, false otherwise
      * @return the IngestResult
      */
     private static IngestResult from( DataSource dataSource,
+                                      DataType dataType,
                                       long surrogateKey,
                                       boolean foundAlready,
                                       boolean requiresRetry )
@@ -101,11 +111,13 @@ public interface IngestResult
         if ( requiresRetry )
         {
             return new IngestResultNeedingRetry( dataSource,
+                                                 dataType,
                                                  surrogateKey );
         }
         else
         {
             return new IngestResultCompact( dataSource,
+                                            dataType,
                                             surrogateKey,
                                             foundAlready );
         }

@@ -31,7 +31,7 @@ public class Variables
      * Retrieves the names of all variables associated with a given side of data.
      * @param projectID The id of the project we're interested in
      * @param projectMember The data source member for the data (generally 'right')
-     * @return A list of all of the names of variables in forecasts that may be evaluated for the project
+     * @return A list of all names of variables that may be evaluated for the project
      * @throws SQLException Thrown if an error was encountered while communicating with the database
      */
     public List<String> getAvailableVariables( final long projectID,
@@ -67,12 +67,11 @@ public class Variables
     }
 
     /**
-     * Checks to see if there are any forecasted values for a named variable
-     * tied to the project
+     * Checks to see if there are any values for a named variable tied to the project
      * @param projectID The ID of the project to check
      * @param projectMember The evaluation member of the project ("left", "right", or "baseline")
      * @param variableName The variable
-     * @return Whether or not there is any forecast data for the variable within the project
+     * @return Whether there is any forecast data for the variable within the project
      * @throws SQLException Thrown if a database operation fails
      * @throws NullPointerException If any nullable input is null
      */

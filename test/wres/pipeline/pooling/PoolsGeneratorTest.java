@@ -19,7 +19,6 @@ import org.mockito.MockitoAnnotations;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
-import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.LeadTimeInterval;
@@ -119,11 +118,11 @@ class PoolsGeneratorTest
                .thenReturn( declaration );
         Mockito.when( project.getId() )
                .thenReturn( 12345L );
-        Mockito.when( project.getVariableName( DatasetOrientation.LEFT ) )
+        Mockito.when( project.getLeftVariableName() )
                .thenReturn( "DISCHARGE" );
-        Mockito.when( project.getVariableName( DatasetOrientation.RIGHT ) )
+        Mockito.when( project.getRightVariableName() )
                .thenReturn( STREAMFLOW );
-        Mockito.when( project.getVariableName( DatasetOrientation.BASELINE ) )
+        Mockito.when( project.getBaselineVariableName() )
                .thenReturn( null );
         Mockito.when( project.hasBaseline() )
                .thenReturn( false );
@@ -217,11 +216,11 @@ class PoolsGeneratorTest
                .thenReturn( declaration );
         Mockito.when( project.getId() )
                .thenReturn( 12345L );
-        Mockito.when( project.getVariableName( DatasetOrientation.LEFT ) )
+        Mockito.when( project.getLeftVariableName() )
                .thenReturn( "DISCHARGE" );
-        Mockito.when( project.getVariableName( DatasetOrientation.RIGHT ) )
+        Mockito.when( project.getRightVariableName() )
                .thenReturn( STREAMFLOW );
-        Mockito.when( project.getVariableName( DatasetOrientation.BASELINE ) )
+        Mockito.when( project.getBaselineVariableName() )
                .thenReturn( null );
         Mockito.when( project.hasBaseline() )
                .thenReturn( false );
@@ -259,7 +258,7 @@ class PoolsGeneratorTest
     @AfterEach
     void tearDown() throws Exception
     {
-        if( Objects.nonNull( this.mocks ) )
+        if ( Objects.nonNull( this.mocks ) )
         {
             this.mocks.close();
         }

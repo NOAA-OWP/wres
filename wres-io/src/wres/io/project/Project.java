@@ -14,14 +14,10 @@ import wres.io.retrieving.DataAccessException;
 import wres.datamodel.time.TimeWindowOuter;
 
 /**
- * Provides an interface to the project declaration in combination with the ingested time-series data. In this context,
- * the declaration may not elaborate everything needed to execute an evaluation (e.g., geographic features may be
- * clarified from ingested sources) and, in general, when common information is supplied in the declaration and
- * ingested sources (e.g., data types), the ingested sources are canonical. Except for the methods in this class that
- * explicitly return declaration, the information returned should be considered representative of the ingested sources
- * and, therefore, canonical. For example, {@link #getFeatures()} will return the canonical features (e.g., including
- * coordinate information supplied by ingested sources).
- * 
+ * Provides an interface between the project declaration and the ingested time-series data, augmenting and validating
+ * the declaration in the context of the ingested data. Specifically, {@link #getDeclaration()} provides an interface
+ * to the augmented declaration.
+ *
  * @author James Brown
  */
 
@@ -43,17 +39,17 @@ public interface Project
 
     /**
      * Returns the desired timescale. In order of availability, this is:
-     * 
+     *
      * <ol>
      * <li>The desired time scale provided on construction;</li>
      * <li>The Least Common Scale (LCS) computed from the input data; or</li>
      * <li>The LCS computed from the <code>existingTimeScale</code> provided in the input declaration.</li>
      * </ol>
-     * 
+     *
      * The LCS is the smallest common multiple of the time scales associated with every ingested dataset for a given 
      * project, variable and feature. The LCS is computed from all sides of a pairing (left, right and baseline) 
      * collectively. 
-     * 
+     *
      * @return the desired timescale or null if unknown
      * @throws DataAccessException if the existing time scales could not be obtained
      */
@@ -88,13 +84,28 @@ public interface Project
     Set<FeatureGroup> getFeatureGroupsForWhichStatisticsShouldNotBePublished();
 
     /**
-     * @param orientation the side of data for which the variable is required
-     * @return the name of the variable for the specified side of data
+     * @return the name of the left variable
      * @throws NullPointerException if the orientation is null
      * @throws IllegalArgumentException if the orientation is unrecognized
      */
 
-    String getVariableName( DatasetOrientation orientation );
+    String getLeftVariableName();
+
+    /**
+     * @return the name of the right variable
+     * @throws NullPointerException if the orientation is null
+     * @throws IllegalArgumentException if the orientation is unrecognized
+     */
+
+    String getRightVariableName();
+
+    /**
+     * @return the name of the baseline variable
+     * @throws NullPointerException if the orientation is null
+     * @throws IllegalArgumentException if the orientation is unrecognized
+     */
+
+    String getBaselineVariableName();
 
     /**
      * @param orientation the side of data for which the ensemble labels are required
@@ -175,12 +186,4 @@ public interface Project
      */
 
     boolean hasProbabilityThresholds();
-
-    /**
-     * Saves the project.
-     * @return true if this call resulted in the project being saved, false otherwise
-     * @throws DataAccessException if the save fails for any reason
-     */
-
-    boolean save();
 }

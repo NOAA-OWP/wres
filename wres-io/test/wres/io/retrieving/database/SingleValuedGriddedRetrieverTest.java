@@ -1,9 +1,8 @@
 package wres.io.retrieving.database;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static wres.statistics.generated.ReferenceTime.ReferenceTimeType.T0;
 import static wres.io.retrieving.database.RetrieverTestHelper.*;
 
@@ -11,7 +10,6 @@ import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.text.MessageFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -23,14 +21,16 @@ import com.zaxxer.hikari.HikariDataSource;
 import liquibase.database.Database;
 import liquibase.exception.LiquibaseException;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.datamodel.space.Feature;
@@ -41,10 +41,13 @@ import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.Features;
 import wres.io.database.caching.MeasurementUnits;
 import wres.io.database.details.SourceDetails;
-import wres.io.database.DataScripter;
 import wres.io.database.TestDatabase;
+import wres.io.ingesting.IngestResult;
+import wres.io.ingesting.IngestResultNeedingRetry;
 import wres.io.project.DatabaseProject;
 import wres.io.project.Project;
+import wres.reading.DataSource;
+import wres.reading.netcdf.grid.GriddedFeatures;
 import wres.statistics.MessageFactory;
 import wres.statistics.generated.TimeWindow;
 import wres.system.DatabaseSettings;
@@ -56,7 +59,7 @@ import wres.system.SystemSettings;
  * @author James Brown
  */
 
-public class SingleValuedGriddedRetrieverTest
+class SingleValuedGriddedRetrieverTest
 {
     @Mock
     private SystemSettings mockSystemSettings;
@@ -65,11 +68,13 @@ public class SingleValuedGriddedRetrieverTest
     private wres.io.database.Database wresDatabase;
     private TestDatabase testDatabase;
     private MeasurementUnits measurementUnitsCache;
-    @Mock private ConnectionSupplier mockConnectionSupplier;
+    @Mock
+    private ConnectionSupplier mockConnectionSupplier;
     @Mock
     private DatabaseCaches mockCaches;
     private HikariDataSource dataSource;
     private Connection rawConnection;
+    private Long projectId;
 
     /** A feature for testing. */
     private static final Feature FEATURE = Feature.of( wres.statistics.MessageFactory.getGeometry( "POINT( 1 2 )",
@@ -89,14 +94,14 @@ public class SingleValuedGriddedRetrieverTest
     /** Mocks to close. */
     private AutoCloseable mocks;
 
-    @BeforeClass
+    @BeforeAll
     public static void oneTimeSetup()
     {
         // Set the JVM timezone for use by H2. Needs to happen before anything else
         TimeZone.setDefault( TimeZone.getTimeZone( "UTC" ) );
     }
 
-    @Before
+    @BeforeEach
     public void setup() throws SQLException, LiquibaseException
     {
         this.mocks = MockitoAnnotations.openMocks( this );
@@ -139,7 +144,7 @@ public class SingleValuedGriddedRetrieverTest
     }
 
     @Test
-    public void testGetFormsRequestForThreeOfFiveSources() throws Exception
+    void testGetFormsRequestForThreeOfFiveSources() throws Exception
     {
         // Set the time window filter, aka pool boundaries to select a subset of sources
 
@@ -165,19 +170,17 @@ public class SingleValuedGriddedRetrieverTest
 
         // Build the retriever
         SingleValuedGriddedRetriever retriever =
-                ( SingleValuedGriddedRetriever ) new SingleValuedGriddedRetriever.Builder().setIsForecast( true )
-                                                                                           .setFeatures( Set.of( FEATURE ) )
-                                                                                           .setProjectId( PROJECT_ID )
-                                                                                           .setDatasetOrientation(
-                                                                                                   SingleValuedGriddedRetrieverTest.ORIENTATION )
-                                                                                           .setTimeWindow( timeWindow )
-                                                                                           .setDatabase( this.wresDatabase )
-                                                                                           .setMeasurementUnitsCache(
-                                                                                                   this.measurementUnitsCache )
-                                                                                           .setFeaturesCache( this.mockCaches.getFeaturesCache() )
-                                                                                           .setVariableName(
-                                                                                                   SingleValuedGriddedRetrieverTest.VARIABLE_NAME )
-                                                                                           .build();
+                ( SingleValuedGriddedRetriever ) new SingleValuedGriddedRetriever.Builder()
+                        .setIsForecast( true )
+                        .setFeatures( Set.of( FEATURE ) )
+                        .setProjectId( this.projectId )
+                        .setDatasetOrientation( SingleValuedGriddedRetrieverTest.ORIENTATION )
+                        .setTimeWindow( timeWindow )
+                        .setDatabase( this.wresDatabase )
+                        .setMeasurementUnitsCache( this.measurementUnitsCache )
+                        .setFeaturesCache( this.mockCaches.getFeaturesCache() )
+                        .setVariableName( SingleValuedGriddedRetrieverTest.VARIABLE_NAME )
+                        .build();
 
         List<String> actualPaths = retriever.getPaths();
 
@@ -190,8 +193,8 @@ public class SingleValuedGriddedRetrieverTest
         assertEquals( expectedPaths, actualPaths );
     }
 
-    @After
-    public void tearDown() throws Exception
+    @AfterEach
+    void tearDown() throws Exception
     {
         this.dropTheTablesAndSchema();
         this.rawConnection.close();
@@ -213,13 +216,7 @@ public class SingleValuedGriddedRetrieverTest
         Database liquibaseDatabase =
                 this.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
 
-        this.testDatabase.createMeasurementUnitTable( liquibaseDatabase );
-        this.testDatabase.createTimeScaleTable( liquibaseDatabase );
-        this.testDatabase.createFeatureTable( liquibaseDatabase );
-        this.testDatabase.createTimeSeriesReferenceTimeTable( liquibaseDatabase );
-        this.testDatabase.createSourceTable( liquibaseDatabase );
-        this.testDatabase.createProjectTable( liquibaseDatabase );
-        this.testDatabase.createProjectSourceTable( liquibaseDatabase );
+        this.testDatabase.createAllTables( liquibaseDatabase );
     }
 
     /**
@@ -244,39 +241,20 @@ public class SingleValuedGriddedRetrieverTest
         long measurementUnitId = this.measurementUnitsCache.getOrCreateMeasurementUnitId( UNITS );
         long featureId = this.mockCaches.getFeaturesCache()
                                         .getOrCreateFeatureId( FEATURE );
-        // Add a project 
-        Project project =
-                new DatabaseProject( this.wresDatabase,
-                                     this.mockCaches,
-                                     null,
-                                     EvaluationDeclarationBuilder.builder()
-                                                                 .label( "test_gridded_project" )
-                                                                 .build(),
-                                     PROJECT_HASH );
-        boolean saved = project.save();
-
-        assertTrue( saved );
-
-        assertEquals( PROJECT_HASH, project.getHash() );
 
         // Add a source for each of five forecast lead durations and output times
         // Also, add a project source for each one
         Instant sequenceOrigin = Instant.parse( "2017-06-16T11:13:00Z" );
-        String projectSourceInsert =
-                "INSERT INTO wres.ProjectSource (project_id, source_id, member) VALUES ("
-                + project.getId()
-                + ",{0},''"
-                + SingleValuedGriddedRetrieverTest.ORIENTATION.name()
-                                                              .toLowerCase()
-                + "'')";
-
+        List<IngestResult> ingestResults = new ArrayList<>();
         for ( int i = 0; i < 5; i++ )
         {
             int nextLeadMinutes = ( i + 1 ) * 60;
-            Instant nextTime = sequenceOrigin.plus( Duration.ofHours( 3 ).multipliedBy( ( i + 1 ) ) );
+            Instant nextTime = sequenceOrigin.plus( Duration.ofHours( 3 )
+                                                            .multipliedBy( ( i + 1 ) ) );
 
             SourceDetails sourceDetails = new SourceDetails( "abc12" + ( i + 3 ) );
-            sourceDetails.setSourcePath( URI.create( "/this/is/just/a/test/source_" + ( i + 1 ) + ".nc" ) );
+            URI uri = URI.create( "/this/is/just/a/test/source_" + ( i + 1 ) + ".nc" );
+            sourceDetails.setSourcePath( uri );
             sourceDetails.setLead( nextLeadMinutes );
             sourceDetails.setIsPointData( false );
             sourceDetails.setVariableName( VARIABLE_NAME );
@@ -288,6 +266,19 @@ public class SingleValuedGriddedRetrieverTest
 
             Long sourceId = sourceDetails.getId();
             assertNotNull( sourceId );
+
+            DataSource source = DataSource.of( DataSource.DataDisposition.NETCDF_GRIDDED,
+                                               null,
+                                               DatasetBuilder.builder()
+                                                             .build(),
+                                               List.of(),
+                                               uri,
+                                               SingleValuedGriddedRetrieverTest.ORIENTATION );
+            IngestResult ingestResult = new IngestResultNeedingRetry( source,
+                                                                      DataType.SINGLE_VALUED_FORECASTS,
+                                                                      sourceId );
+
+            ingestResults.add( ingestResult );
 
             // Insert the reference datetime
             String[] row = new String[3];
@@ -310,15 +301,43 @@ public class SingleValuedGriddedRetrieverTest
                                                    columns,
                                                    rows,
                                                    quotedColumns );
-
-            // Add a project source
-            String insert = MessageFormat.format( projectSourceInsert, sourceId );
-
-            DataScripter script = new DataScripter( this.wresDatabase, insert );
-            int rowCount = script.execute();
-
-            assertEquals( 1, rowCount );
         }
+
+        // Add a fake left source, which is needed for validation
+        DataSource leftSource = DataSource.of( DataSource.DataDisposition.NETCDF_GRIDDED,
+                                           null,
+                                           DatasetBuilder.builder()
+                                                         .build(),
+                                           List.of(),
+                                           URI.create( "http://foo" ),
+                                           DatasetOrientation.LEFT );
+        IngestResult leftResult = new IngestResultNeedingRetry( leftSource,
+                                                                DataType.OBSERVATIONS,
+                                                                ingestResults.get( 0 )
+                                                                             .getSurrogateKey() );
+        ingestResults.add( leftResult );
+
+        // Add a project
+        GriddedFeatures griddedFeatures = Mockito.mock( GriddedFeatures.class );
+        Mockito.when( griddedFeatures.get() )
+               .thenReturn( Set.of( FEATURE ) );
+
+        Project project =
+                new DatabaseProject( this.wresDatabase,
+                                     this.mockCaches,
+                                     griddedFeatures,
+                                     EvaluationDeclarationBuilder.builder()
+                                                                 .left( DatasetBuilder.builder()
+                                                                                      .build() )
+                                                                 .right( DatasetBuilder.builder()
+                                                                                       .build() )
+                                                                 .label( "test_gridded_project" )
+                                                                 .build(),
+                                     ingestResults );
+
+        assertEquals( PROJECT_HASH, project.getHash() );
+
+        this.projectId = project.getId();
     }
 
 }

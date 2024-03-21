@@ -1,7 +1,6 @@
 package wres.io.retrieving.database;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static wres.statistics.generated.ReferenceTime.ReferenceTimeType.T0;
 import static wres.io.retrieving.database.RetrieverTestHelper.*;
 
@@ -51,6 +50,7 @@ import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.io.TestData;
 import wres.io.database.ConnectionSupplier;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.TestDatabase;
@@ -416,9 +416,11 @@ public class EnsembleRetrieverFactoryTest
                .thenReturn( PROJECT_ID );
         Mockito.when( project.getFeatures() )
                .thenReturn( allFeatures );
-        Mockito.when( project.getVariableName( Mockito.any() ) )
+        Mockito.when( project.getLeftVariableName() )
                .thenReturn( VARIABLE_NAME );
-        Mockito.when( project.getVariableName( Mockito.any() ) )
+        Mockito.when( project.getRightVariableName() )
+               .thenReturn( VARIABLE_NAME );
+        Mockito.when( project.getBaselineVariableName() )
                .thenReturn( VARIABLE_NAME );
         Mockito.when( project.hasBaseline() )
                .thenReturn( true );
@@ -438,11 +440,11 @@ public class EnsembleRetrieverFactoryTest
 
     private void addTimeSeriesToDatabase() throws SQLException
     {
-        DataSource leftData = RetrieverTestData.generateDataSource( DatasetOrientation.LEFT,
-                                                                    DataType.OBSERVATIONS );
-        DataSource rightData = RetrieverTestData.generateDataSource( DatasetOrientation.RIGHT,
-                                                                     DataType.ENSEMBLE_FORECASTS );
-        DataSource baselineData = RetrieverTestData.generateBaselineDataSource( DataType.ENSEMBLE_FORECASTS );
+        DataSource leftData = TestData.generateDataSource( DatasetOrientation.LEFT,
+                                                           DataType.OBSERVATIONS );
+        DataSource rightData = TestData.generateDataSource( DatasetOrientation.RIGHT,
+                                                            DataType.ENSEMBLE_FORECASTS );
+        DataSource baselineData = TestData.generateBaselineDataSource( DataType.ENSEMBLE_FORECASTS );
         LOGGER.debug( "leftData: {}", leftData );
         LOGGER.debug( "rightData: {}", rightData );
         LOGGER.debug( "baselineData: {}", baselineData );
@@ -479,7 +481,7 @@ public class EnsembleRetrieverFactoryTest
                                             .features( new wres.config.yaml.components.Features( features ) )
                                             .build();
 
-        TimeSeries<Ensemble> timeSeriesOne = RetrieverTestData.generateTimeSeriesEnsembleOne();
+        TimeSeries<Ensemble> timeSeriesOne = TestData.generateTimeSeriesEnsembleOne();
         DatabaseTimeSeriesIngester ingesterOne =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
@@ -505,7 +507,7 @@ public class EnsembleRetrieverFactoryTest
                 Stream.of( TimeSeriesTuple.ofEnsemble( timeSeriesOne, baselineData ) );
         IngestResult ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, baselineData )
                                                   .get( 0 );
-        TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
+        TimeSeries<Double> timeSeriesTwo = TestData.generateTimeSeriesDoubleWithNoReferenceTimes();
 
         DatabaseTimeSeriesIngester ingesterThree =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
@@ -541,12 +543,11 @@ public class EnsembleRetrieverFactoryTest
         LOGGER.info( "ingestResultOne: {}", ingestResultOne );
         LOGGER.info( "ingestResultTwo: {}", ingestResultTwo );
         LOGGER.info( "ingestResultThree: {}", ingestResultThree );
-        Project project = Projects.getProject( this.wresDatabase,
-                                               declaration,
-                                               this.caches,
-                                               null,
-                                               results );
-        assertTrue( project.save() );
+        Projects.getProject( this.wresDatabase,
+                             declaration,
+                             this.caches,
+                             null,
+                             results );
     }
 
 }

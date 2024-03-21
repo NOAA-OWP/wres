@@ -162,6 +162,8 @@ public class DataSource
     {
         Objects.requireNonNull( disposition );
         Objects.requireNonNull( uri );
+        Objects.requireNonNull( context );
+        Objects.requireNonNull( links );
         return new DataSource( disposition,
                                source,
                                context,
@@ -187,10 +189,6 @@ public class DataSource
                         URI uri,
                         DatasetOrientation orientation )
     {
-        Objects.requireNonNull( disposition );
-        Objects.requireNonNull( context );
-        Objects.requireNonNull( links );
-
         this.disposition = disposition;
         this.source = source;
         this.context = context;

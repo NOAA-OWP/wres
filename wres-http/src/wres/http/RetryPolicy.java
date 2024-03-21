@@ -82,7 +82,9 @@ public class RetryPolicy
         return shouldRetry;
     }
 
-
+    /**
+     * Builds an instance.
+     */
     public static class Builder
     {
         private Duration maxRetryTime = Duration.ZERO;

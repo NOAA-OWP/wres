@@ -48,7 +48,7 @@ import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 
 /**
- * Provides helpers related to the project declaration in combination with the ingested time-series data.
+ * An implementation of the {@link Project} for an evaluation performed using a database.
  * @author James Brown
  */
 
@@ -56,10 +56,6 @@ public class InMemoryProject implements Project
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( InMemoryProject.class );
-
-    /** Reused string. */
-    private static final String UNRECOGNIZED_DATASET_ORIENTATION_IN_THIS_CONTEXT =
-            "Unrecognized dataset orientation in this context: ";
 
     /** Project declaration. */
     private final EvaluationDeclaration declaration;
@@ -91,6 +87,9 @@ public class InMemoryProject implements Project
     /** Whether the baseline data is gridded. */
     private boolean baselineUsesGriddedData = false;
 
+    /** Whether the covariates use gridded data (all covariates must be the same). */
+    private boolean covariatesUseGriddedData = false;
+
     /** The left-ish variable to evaluate. */
     private String leftVariable;
 
@@ -114,21 +113,28 @@ public class InMemoryProject implements Project
                             List<IngestResult> ingestResults )
     {
         Objects.requireNonNull( declaration );
+
         this.timeSeriesStore = timeSeriesStore;
-        this.declaration = declaration;
+
+        // Interpolate and validate the declaration before setting it
+        EvaluationDeclaration innerDeclaration = ProjectUtilities.interpolate( declaration, ingestResults );
+        ProjectUtilities.validate( innerDeclaration );
+        this.declaration = innerDeclaration;
+
         this.setUsesGriddedData( ingestResults );
         this.hash = this.getHash( timeSeriesStore );
         this.setFeaturesAndFeatureGroups();
         this.validateEnsembleConditions();
         this.setVariablesToEvaluate();
 
-        if ( this.features.isEmpty() && this.featureGroups.isEmpty() )
+        if ( this.features.isEmpty()
+             && this.featureGroups.isEmpty() )
         {
-            throw new NoProjectDataException(
-                    "Failed to identify any features with data on all required sides (left, right "
-                    + "and, when declared, baseline) for the variables and other declaration "
-                    + "supplied. Please check that the declaration is expected to produce some "
-                    + "features with time-series data on both sides of the pairing." );
+            throw new NoProjectDataException( "Failed to identify any features with data on all required sides (left, "
+                                              + "right and, when declared, baseline) for the variables and other "
+                                              + "declaration supplied. Please check that the declaration is expected "
+                                              + "to produce some features with time-series data on both sides of the "
+                                              + "pairing." );
         }
     }
 
@@ -315,18 +321,36 @@ public class InMemoryProject implements Project
     }
 
     @Override
-    public String getVariableName( DatasetOrientation orientation )
+    public String getLeftVariableName()
     {
-        Objects.requireNonNull( orientation );
-
-        return switch ( orientation )
+        if ( Objects.isNull( this.leftVariable ) )
         {
-            case LEFT -> this.getLeftVariableName();
-            case RIGHT -> this.getRightVariableName();
-            case BASELINE -> this.getBaselineVariableName();
-            default -> throw new IllegalStateException( UNRECOGNIZED_DATASET_ORIENTATION_IN_THIS_CONTEXT
-                                                        + orientation );
-        };
+            return this.getDeclaredLeftVariableName();
+        }
+
+        return this.leftVariable;
+    }
+
+    @Override
+    public String getRightVariableName()
+    {
+        if ( Objects.isNull( this.rightVariable ) )
+        {
+            return this.getDeclaredRightVariableName();
+        }
+
+        return this.rightVariable;
+    }
+
+    @Override
+    public String getBaselineVariableName()
+    {
+        if ( Objects.isNull( this.baselineVariable ) )
+        {
+            return this.getDeclaredBaselineVariableName();
+        }
+
+        return this.baselineVariable;
     }
 
     @Override
@@ -394,8 +418,7 @@ public class InMemoryProject implements Project
             case LEFT -> this.leftUsesGriddedData;
             case RIGHT -> this.rightUsesGriddedData;
             case BASELINE -> this.baselineUsesGriddedData;
-            default -> throw new IllegalStateException( UNRECOGNIZED_DATASET_ORIENTATION_IN_THIS_CONTEXT
-                                                        + orientation );
+            case COVARIATE -> this.covariatesUseGriddedData;
         };
     }
 
@@ -406,29 +429,16 @@ public class InMemoryProject implements Project
 
     private void setUsesGriddedData( List<IngestResult> ingestResults )
     {
-        this.leftUsesGriddedData = ingestResults.stream()
-                                                .map( IngestResult::getDataSource )
-                                                .filter( next -> next.getDatasetOrientation()
-                                                                 == DatasetOrientation.LEFT )
-                                                .anyMatch( next -> next.getDisposition()
-                                                                   == DataDisposition.NETCDF_GRIDDED );
-        this.rightUsesGriddedData = ingestResults.stream()
-                                                 .map( IngestResult::getDataSource )
-                                                 .filter( next -> next.getDatasetOrientation()
-                                                                  == DatasetOrientation.RIGHT )
-                                                 .anyMatch( next -> next.getDisposition()
-                                                                    == DataDisposition.NETCDF_GRIDDED );
-        this.baselineUsesGriddedData = ingestResults.stream()
-                                                    .map( IngestResult::getDataSource )
-                                                    .filter( next -> next.getDatasetOrientation()
-                                                                     == DatasetOrientation.BASELINE )
-                                                    .anyMatch( next -> next.getDisposition()
-                                                                       == DataDisposition.NETCDF_GRIDDED );
+        this.leftUsesGriddedData = this.getUsesGriddedData( ingestResults, DatasetOrientation.LEFT );
+        this.rightUsesGriddedData = this.getUsesGriddedData( ingestResults, DatasetOrientation.RIGHT );
+        this.baselineUsesGriddedData = this.getUsesGriddedData( ingestResults, DatasetOrientation.BASELINE );
+        this.covariatesUseGriddedData = this.getUsesGriddedData( ingestResults, DatasetOrientation.COVARIATE );
 
-        LOGGER.debug( "Set the status of gridded data to left={}, right={}, baseline={}.",
+        LOGGER.debug( "Set the status of gridded data to left={}, right={}, baseline={}, covariates={}.",
                       this.leftUsesGriddedData,
                       this.rightUsesGriddedData,
-                      this.baselineUsesGriddedData );
+                      this.baselineUsesGriddedData,
+                      this.covariatesUseGriddedData );
     }
 
     @Override
@@ -469,12 +479,6 @@ public class InMemoryProject implements Project
                                                         .timeScale(),
                                                     this.getDeclaration()
                                                         .rescaleLenience() );
-    }
-
-    @Override
-    public boolean save()
-    {
-        return true;
     }
 
     @Override
@@ -548,85 +552,27 @@ public class InMemoryProject implements Project
     private void setVariablesToEvaluate()
     {
         // The set of possibilities to validate
-        Set<String> leftNames = new HashSet<>();
-        Set<String> rightNames = new HashSet<>();
-        Set<String> baselineNames = new HashSet<>();
-
-        boolean leftAuto = false;
-        boolean rightAuto = false;
-        boolean baselineAuto = false;
-
-        // Left declared?
-        String leftName = this.getVariableName( DatasetOrientation.LEFT );
-        if ( Objects.nonNull( leftName ) )
-        {
-            leftNames.add( leftName );
-        }
-        // No, look at data
-        else
-        {
-            Set<String> names = this.getVariableNameByInspectingData( DatasetOrientation.LEFT );
-            leftNames.addAll( names );
-            leftAuto = true;
-        }
-
-        // Right declared?
-        String rightName = this.getVariableName( DatasetOrientation.RIGHT );
-        if ( Objects.nonNull( rightName ) )
-        {
-            rightNames.add( rightName );
-        }
-        // No, look at data
-        else
-        {
-            Set<String> names = this.getVariableNameByInspectingData( DatasetOrientation.RIGHT );
-            rightNames.addAll( names );
-            rightAuto = true;
-        }
-
-        // Baseline declared?
-        if ( this.hasBaseline() )
-        {
-            String baselineName = this.getVariableName( DatasetOrientation.BASELINE );
-            if ( Objects.nonNull( baselineName ) )
-            {
-                baselineNames.add( baselineName );
-            }
-            // No, look at data
-            else
-            {
-                Set<String> names = this.getVariableNameByInspectingData( DatasetOrientation.BASELINE );
-                baselineNames.addAll( names );
-                baselineAuto = true;
-            }
-        }
+        Set<String> leftNames = this.getVariableNameByInspectingData( DatasetOrientation.LEFT );
+        Set<String> rightNames = this.getVariableNameByInspectingData( DatasetOrientation.RIGHT );
+        Set<String> baselineNames = this.getVariableNameByInspectingData( DatasetOrientation.BASELINE );
+        Set<String> covariateNames = this.getVariableNameByInspectingData( DatasetOrientation.COVARIATE );
 
         LOGGER.debug( "While looking for variable names to evaluate, discovered {} on the LEFT side, {} on the RIGHT "
-                      + "side and {} on the BASELINE side. LEFT autodetected: {}, RIGHT autodetected: {}, BASELINE "
-                      + "auto-detected: {}.",
+                      + "side, {} on the BASELINE side and {} on the COVARIATE side.",
                       leftNames,
                       rightNames,
                       baselineNames,
-                      leftAuto,
-                      rightAuto,
-                      baselineAuto );
+                      covariateNames );
 
         VariableNames variableNames = ProjectUtilities.getVariableNames( this.getDeclaration(),
-                                                                         Collections.unmodifiableSet( leftNames ),
-                                                                         Collections.unmodifiableSet( rightNames ),
-                                                                         Collections.unmodifiableSet( baselineNames ) );
+                                                                         leftNames,
+                                                                         rightNames,
+                                                                         baselineNames,
+                                                                         covariateNames );
 
         this.leftVariable = variableNames.leftVariableName();
         this.rightVariable = variableNames.rightVariableName();
         this.baselineVariable = variableNames.baselineVariableName();
-
-        ProjectUtilities.validateVariableNames( this.getDeclaredLeftVariableName(),
-                                                this.getDeclaredRightVariableName(),
-                                                this.getDeclaredBaselineVariableName(),
-                                                this.getLeftVariableName(),
-                                                this.getRightVariableName(),
-                                                this.getBaselineVariableName(),
-                                                this.hasBaseline() );
     }
 
     /**
@@ -653,10 +599,21 @@ public class InMemoryProject implements Project
 
     private Set<String> getVariableNameByInspectingData( DatasetOrientation orientation )
     {
-        Stream<TimeSeries<?>> series = Stream.concat( this.timeSeriesStore.getSingleValuedSeries( orientation ),
-                                                      this.timeSeriesStore.getEnsembleSeries( orientation ) );
-
-        return series.map( next -> next.getMetadata().getVariableName() ).collect( Collectors.toSet() );
+        if ( orientation == DatasetOrientation.COVARIATE )
+        {
+            Stream<TimeSeries<Double>> series = this.timeSeriesStore.getSingleValuedSeries( orientation );
+            return series.map( next -> next.getMetadata()
+                                           .getVariableName() )
+                         .collect( Collectors.toSet() );
+        }
+        else
+        {
+            Stream<TimeSeries<?>> series = Stream.concat( this.timeSeriesStore.getSingleValuedSeries( orientation ),
+                                                          this.timeSeriesStore.getEnsembleSeries( orientation ) );
+            return series.map( next -> next.getMetadata()
+                                           .getVariableName() )
+                         .collect( Collectors.toSet() );
+        }
     }
 
     /**
@@ -1012,47 +969,6 @@ public class InMemoryProject implements Project
     }
 
     /**
-     * @see #getDeclaredLeftVariableName()
-     * @return The name of the left variable or null if determined from the data and the data has yet to be inspected
-     */
-    private String getLeftVariableName()
-    {
-        if ( Objects.isNull( this.leftVariable ) )
-        {
-            return this.getDeclaredLeftVariableName();
-        }
-
-        return this.leftVariable;
-    }
-
-    /**
-     * @return The name of the right variable or null if determined from the data and the data has yet to be inspected
-     */
-    private String getRightVariableName()
-    {
-        if ( Objects.isNull( this.rightVariable ) )
-        {
-            return this.getDeclaredRightVariableName();
-        }
-
-        return this.rightVariable;
-    }
-
-    /**
-     * @return The name of the baseline variable or null if determined from the data and the data has yet to be 
-     *            inspected
-     */
-    private String getBaselineVariableName()
-    {
-        if ( Objects.isNull( this.baselineVariable ) )
-        {
-            return this.getDeclaredBaselineVariableName();
-        }
-
-        return this.baselineVariable;
-    }
-
-    /**
      * @see #getLeftVariableName()
      * @return The declared left variable name or null if undeclared
      */
@@ -1113,5 +1029,30 @@ public class InMemoryProject implements Project
         return this.getDeclaration()
                    .baseline();
     }
-}
 
+    /**
+     * Determines whether the ingest results for the prescribed orientation use gridded data.
+     * @param ingestResults the ingest results
+     * @param orientation the orientation
+     * @return whether the ingest results use gridded data
+     * @throws IllegalStateException if there is a mixture of gridded and non-gridded datasets
+     */
+    private boolean getUsesGriddedData( List<IngestResult> ingestResults, DatasetOrientation orientation )
+    {
+        Set<Boolean> usesGridded = ingestResults.stream()
+                                                .map( IngestResult::getDataSource )
+                                                .filter( next -> next.getDatasetOrientation()
+                                                                 == orientation )
+                                                .map( next -> next.getDisposition()
+                                                              == DataDisposition.NETCDF_GRIDDED )
+                                                .collect( Collectors.toSet() );
+
+        if ( usesGridded.size() > 1 )
+        {
+            throw new IllegalStateException( "Discovered multiple covariates of which some are gridded and others are "
+                                             + "not, which is not supported." );
+        }
+
+        return usesGridded.contains( Boolean.TRUE );
+    }
+}

@@ -194,6 +194,7 @@ class GriddedMetadataSaver implements Callable<List<IngestResult>>
             }
 
             return IngestResult.singleItemListFrom( this.dataSource,
+                                                    null,
                                                     griddedSource.getId(),
                                                     !griddedSource.performedInsert(),
                                                     !complete );

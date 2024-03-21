@@ -5,8 +5,12 @@ import java.util.Objects;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
+import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
+import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeSeriesStore;
+import wres.datamodel.types.Ensemble;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.ingesting.TimeSeriesTracker;
@@ -50,6 +54,7 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
         try ( timeSeriesTuple )
         {
             List<TimeSeriesTuple> listedTuples = timeSeriesTuple.toList();
+            DataType dataType = null;
             for ( TimeSeriesTuple nextTuple : listedTuples )
             {
                 // Track the time-series
@@ -64,7 +69,9 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
                 // Single-valued time-series?
                 if ( nextTuple.hasSingleValuedTimeSeries() )
                 {
-                    this.timeSeriesStoreBuilder.addSingleValuedSeries( nextTuple.getSingleValuedTimeSeries(),
+                    TimeSeries<Double> timeSeries = nextTuple.getSingleValuedTimeSeries();
+                    dataType = TimeSeriesSlicer.getDataType( timeSeries );
+                    this.timeSeriesStoreBuilder.addSingleValuedSeries( timeSeries,
                                                                        innerOrientation );
 
                     // Add in all other contexts too
@@ -79,7 +86,9 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
                 // Ensemble time-series?
                 if ( nextTuple.hasEnsembleTimeSeries() )
                 {
-                    this.timeSeriesStoreBuilder.addEnsembleSeries( nextTuple.getEnsembleTimeSeries(),
+                    TimeSeries<Ensemble> timeSeries = nextTuple.getEnsembleTimeSeries();
+                    dataType = TimeSeriesSlicer.getDataType( timeSeries );
+                    this.timeSeriesStoreBuilder.addEnsembleSeries( timeSeries,
                                                                    innerOrientation );
 
                     // Add in all other contexts too
@@ -93,7 +102,7 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
             }
 
             // Arbitrary surrogate key, since this is an in-memory ingest
-            return List.of( new IngestResultInMemory( outerSource ) );
+            return List.of( new IngestResultInMemory( outerSource, dataType ) );
         }
     }
 
@@ -118,7 +127,7 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
         this.timeSeriesStoreBuilder = timeSeriesStoreBuilder;
 
         // Set the tracker or an identity operator
-        if( Objects.isNull( timeSeriesTracker ) )
+        if ( Objects.isNull( timeSeriesTracker ) )
         {
             this.timeSeriesTracker = in -> in;
         }

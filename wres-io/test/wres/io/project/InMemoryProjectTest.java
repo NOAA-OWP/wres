@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import wres.config.yaml.components.AnalysisTimes;
@@ -72,9 +73,6 @@ class InMemoryProjectTest
 
     /** Instance to test. */
     private Project testProject;
-
-    /** Declaration to use. */
-    private EvaluationDeclaration declaration;
 
     @BeforeEach
     void runBeforeEachTest()
@@ -220,31 +218,32 @@ class InMemoryProjectTest
                                         .threshold( probThreshold )
                                         .build() );
 
-        this.declaration = EvaluationDeclarationBuilder.builder()
-                                                       .unit( "moon" )
-                                                       .left( leftDataset )
-                                                       .right( rightDataset )
-                                                       .baseline( baseline )
-                                                       .leadTimes( leadTimes )
-                                                       .validDates( validDates )
-                                                       .referenceDatePools( referenceTimePools )
-                                                       .features( features )
-                                                       .probabilityThresholds( thresholds )
-                                                       .rescaleLenience( TimeScaleLenience.RIGHT )
-                                                       .analysisTimes( analysisTimes )
-                                                       .timeScale( TimeScaleBuilder.builder()
-                                                                                   .timeScale( timeScale )
-                                                                                   .build() )
-                                                       .season( season )
-                                                       .build();
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .unit( "moon" )
+                                                                        .left( leftDataset )
+                                                                        .right( rightDataset )
+                                                                        .baseline( baseline )
+                                                                        .leadTimes( leadTimes )
+                                                                        .validDates( validDates )
+                                                                        .referenceDatePools( referenceTimePools )
+                                                                        .features( features )
+                                                                        .probabilityThresholds( thresholds )
+                                                                        .rescaleLenience( TimeScaleLenience.RIGHT )
+                                                                        .analysisTimes( analysisTimes )
+                                                                        .timeScale( TimeScaleBuilder.builder()
+                                                                                                    .timeScale(
+                                                                                                            timeScale )
+                                                                                                    .build() )
+                                                                        .season( season )
+                                                                        .build();
 
-        this.testProject = new InMemoryProject( this.declaration, store, List.of() );
+        this.testProject = new InMemoryProject( declaration, store, List.of() );
     }
 
     @Test
     void testGetDeclaration()
     {
-        assertEquals( this.declaration, this.testProject.getDeclaration() );
+        assertNotNull( this.testProject.getDeclaration() );
     }
 
     @Test
@@ -296,11 +295,11 @@ class InMemoryProjectTest
     void testGetVariableName()
     {
         assertAll( () -> assertEquals( "bat",
-                                       this.testProject.getVariableName( DatasetOrientation.LEFT ) ),
+                                       this.testProject.getLeftVariableName() ),
                    () -> assertEquals( "bat",
-                                       this.testProject.getVariableName( DatasetOrientation.RIGHT ) ),
+                                       this.testProject.getRightVariableName() ),
                    () -> assertEquals( "bat",
-                                       this.testProject.getVariableName( DatasetOrientation.BASELINE ) ) );
+                                       this.testProject.getBaselineVariableName() ) );
     }
 
     @Test
@@ -351,12 +350,6 @@ class InMemoryProjectTest
     void testHasProbabilityThresholds()
     {
         assertTrue( this.testProject.hasProbabilityThresholds() );
-    }
-
-    @Test
-    void testSave()
-    {
-        assertTrue( this.testProject.save() );
     }
 
     @Test

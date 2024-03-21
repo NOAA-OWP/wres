@@ -1,6 +1,9 @@
 package wres.io.ingesting;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.slf4j.Logger;
@@ -8,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.lang.Short.MAX_VALUE;
 
+import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.reading.DataSource;
 
@@ -18,20 +22,23 @@ public class IngestResultNeedingRetry implements IngestResult
 {
     private static final Logger LOGGER = LoggerFactory.getLogger( IngestResultNeedingRetry.class );
     private static final String TOO_MANY_RE_USES_OF = "Too many re-uses of ";
-    private final DatasetOrientation orientation;
+    private final Set<DatasetOrientation> orientations;
     private final DataSource dataSource;
     private final short leftCount;
     private final short rightCount;
     private final short baselineCount;
     private final short covariateCount;
     private final long surrogateKey;
+    private final DataType dataType;
 
     /**
      * Creates an instance.
      * @param dataSource the data source
+     * @param dataType the optional data type
      * @param surrogateKey the surrogate key
      */
     public IngestResultNeedingRetry( DataSource dataSource,
+                                     DataType dataType,
                                      long surrogateKey )
     {
         Objects.requireNonNull( dataSource, "Ingester must include datasource information." );
@@ -53,9 +60,11 @@ public class IngestResultNeedingRetry implements IngestResult
         short baselineCountInner = 0;
         short covariateCountInner = 0;
 
-        DatasetOrientation innerOrientation = dataSource.getDatasetOrientation();
+        Set<DatasetOrientation> innerOrientations = new HashSet<>();
+        DatasetOrientation orientation = dataSource.getDatasetOrientation();
+        innerOrientations.add( orientation );
 
-        switch ( innerOrientation )
+        switch ( orientation )
         {
             case LEFT -> leftCountInner++;
             case RIGHT -> rightCountInner++;
@@ -72,6 +81,7 @@ public class IngestResultNeedingRetry implements IngestResult
                 case BASELINE -> baselineCountInner++;
                 case COVARIATE -> covariateCountInner++;
             }
+            innerOrientations.add( linkedOrientation );
         }
 
         // Validate the counts
@@ -80,13 +90,14 @@ public class IngestResultNeedingRetry implements IngestResult
         this.validateCount( dataSource, DatasetOrientation.BASELINE, baselineCountInner );
         this.validateCount( dataSource, DatasetOrientation.COVARIATE, covariateCountInner );
 
-        this.orientation = dataSource.getDatasetOrientation();
+        this.orientations = Collections.unmodifiableSet( innerOrientations );
         this.surrogateKey = surrogateKey;
         this.dataSource = dataSource;
         this.leftCount = leftCountInner;
         this.rightCount = rightCountInner;
         this.baselineCount = baselineCountInner;
         this.covariateCount = covariateCountInner;
+        this.dataType = dataType;
     }
 
     @Override
@@ -96,9 +107,15 @@ public class IngestResultNeedingRetry implements IngestResult
     }
 
     @Override
-    public DatasetOrientation getDatasetOrientation()
+    public DataType getDataType()
     {
-        return this.orientation;
+        return this.dataType;
+    }
+
+    @Override
+    public Set<DatasetOrientation> getDatasetOrientations()
+    {
+        return this.orientations;
     }
 
     @Override
@@ -140,7 +157,7 @@ public class IngestResultNeedingRetry implements IngestResult
     @Override
     public String toString()
     {
-        return new ToStringBuilder( this ).append( "orientation", this.getDatasetOrientation() )
+        return new ToStringBuilder( this ).append( "orientations", this.getDatasetOrientations() )
                                           .append( "dataSource", this.getDataSource() )
                                           .append( "surrogateKey", this.getSurrogateKey() )
                                           .append( "leftCount", this.leftCount )

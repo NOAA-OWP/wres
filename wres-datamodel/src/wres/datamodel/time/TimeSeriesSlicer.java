@@ -28,6 +28,7 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
+import wres.config.yaml.components.DataType;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.Ensemble.Labels;
@@ -36,6 +37,7 @@ import wres.datamodel.Slicer;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.statistics.MessageFactory;
+import wres.statistics.generated.ReferenceTime;
 import wres.statistics.generated.TimeWindow;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
@@ -1365,6 +1367,45 @@ public final class TimeSeriesSlicer
         }
 
         return newTimeScale;
+    }
+
+    /**
+     * Returns the time-series data type, defaulting to {@link wres.config.yaml.components.DataType#OBSERVATIONS}.
+     *
+     * @param timeSeries the time-series
+     * @return the time-series data type
+     * @param <T> the type of time-series data
+     * @throws NullPointerException if the input is null
+     */
+
+    public static <T> DataType getDataType( TimeSeries<T> timeSeries )
+    {
+        Objects.requireNonNull( timeSeries );
+
+        if ( !timeSeries.getEvents()
+                        .isEmpty() )
+        {
+            if ( timeSeries.getEvents()
+                           .first()
+                           .getValue() instanceof Ensemble )
+            {
+                return DataType.ENSEMBLE_FORECASTS;
+            }
+
+            Map<ReferenceTime.ReferenceTimeType, Instant> referenceTimes = timeSeries.getReferenceTimes();
+            if ( referenceTimes.containsKey( ReferenceTime.ReferenceTimeType.T0 )
+                 || referenceTimes.containsKey( ReferenceTime.ReferenceTimeType.ISSUED_TIME ) )
+            {
+                return DataType.SINGLE_VALUED_FORECASTS;
+            }
+            else if ( referenceTimes.containsKey( ReferenceTime.ReferenceTimeType.ANALYSIS_START_TIME ) )
+            {
+                return DataType.ANALYSES;
+            }
+        }
+
+        // An observation-like data type: the precise type is not important
+        return DataType.OBSERVATIONS;
     }
 
     /**

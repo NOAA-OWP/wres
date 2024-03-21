@@ -120,7 +120,7 @@ public class EnsembleSingleValuedRetrieverFactory implements RetrieverFactory<Do
                                                       .setMeasurementUnitsCache( this.getMeasurementUnitsCache() )
                                                       .setProjectId( this.project.getId() )
                                                       .setFeatures( features )
-                                                      .setVariableName( this.project.getVariableName( DatasetOrientation.RIGHT ) )
+                                                      .setVariableName( this.project.getRightVariableName() )
                                                       .setDatasetOrientation( DatasetOrientation.RIGHT )
                                                       .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale(
                                                               rightDataset ) )
@@ -156,9 +156,9 @@ public class EnsembleSingleValuedRetrieverFactory implements RetrieverFactory<Do
                            .setMeasurementUnitsCache( this.getMeasurementUnitsCache() )
                            .setProjectId( this.project.getId() )
                            .setFeatures( features )
-                           .setVariableName( this.project.getVariableName( DatasetOrientation.BASELINE ) )
+                           .setVariableName( this.project.getBaselineVariableName() )
                            .setDatasetOrientation( DatasetOrientation.BASELINE )
-                           .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( baselineDataset ) )
+                           .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( this.baselineDataset ) )
                            .setDesiredTimeScale( this.desiredTimeScale )
                            .setSeasonStart( this.seasonStart )
                            .setSeasonEnd( this.seasonEnd )
@@ -302,7 +302,7 @@ public class EnsembleSingleValuedRetrieverFactory implements RetrieverFactory<Do
         this.rightDataset = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
                                                                      DatasetOrientation.RIGHT );
 
-        if( project.hasBaseline() )
+        if ( project.hasBaseline() )
         {
             this.baselineDataset = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
                                                                             DatasetOrientation.BASELINE );

@@ -1,12 +1,10 @@
 package wres.io.retrieving.database;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import static wres.statistics.generated.ReferenceTime.ReferenceTimeType.*;
 import static wres.io.retrieving.database.RetrieverTestHelper.*;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -46,12 +44,13 @@ import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
+import wres.io.TestData;
 import wres.io.database.ConnectionSupplier;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.TestDatabase;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
-import wres.io.project.Project;
+
 import wres.io.project.Projects;
 import wres.reading.DataSource;
 import wres.reading.TimeSeriesTuple;
@@ -107,7 +106,7 @@ public class AnalysisRetrieverTest
     }
 
     @Before
-    public void setup() throws SQLException, LiquibaseException, IOException
+    public void setup() throws SQLException, LiquibaseException
     {
         this.mocks = MockitoAnnotations.openMocks( this );
 
@@ -493,10 +492,10 @@ public class AnalysisRetrieverTest
 
     private void addThreeAnalysisTimeSeriesToTheDatabase() throws SQLException
     {
-        DataSource leftData = RetrieverTestData.generateDataSource( DatasetOrientation.LEFT,
-                                                                    DataType.OBSERVATIONS );
-        DataSource rightData = RetrieverTestData.generateDataSource( DatasetOrientation.RIGHT,
-                                                                     DataType.ANALYSES );
+        DataSource leftData = TestData.generateDataSource( DatasetOrientation.LEFT,
+                                                           DataType.OBSERVATIONS );
+        DataSource rightData = TestData.generateDataSource( DatasetOrientation.RIGHT,
+                                                            DataType.ANALYSES );
         LOGGER.debug( "leftData: {}", leftData );
         LOGGER.debug( "rightData: {}", rightData );
 
@@ -525,7 +524,7 @@ public class AnalysisRetrieverTest
                                             .features( new wres.config.yaml.components.Features( features ) )
                                             .build();
 
-        TimeSeries<Double> timeSeriesOne = RetrieverTestData.generateTimeSeriesDoubleOne( ANALYSIS_START_TIME );
+        TimeSeries<Double> timeSeriesOne = TestData.generateTimeSeriesDoubleOne( ANALYSIS_START_TIME );
         DatabaseTimeSeriesIngester ingesterOne =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
@@ -539,7 +538,7 @@ public class AnalysisRetrieverTest
         IngestResult ingestResultOne = ingesterOne.ingest( tupleStreamOne, rightData )
                                                   .get( 0 );
 
-        TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleTwo();
+        TimeSeries<Double> timeSeriesTwo = TestData.generateTimeSeriesDoubleTwo();
         DatabaseTimeSeriesIngester ingesterTwo =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
@@ -552,7 +551,7 @@ public class AnalysisRetrieverTest
         IngestResult ingestResultTwo = ingesterTwo.ingest( tupleStreamTwo, rightData )
                                                   .get( 0 );
 
-        TimeSeries<Double> timeSeriesThree = RetrieverTestData.generateTimeSeriesDoubleThree();
+        TimeSeries<Double> timeSeriesThree = TestData.generateTimeSeriesDoubleThree();
         DatabaseTimeSeriesIngester ingesterThree =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
@@ -566,7 +565,7 @@ public class AnalysisRetrieverTest
         IngestResult ingestResultThree = ingesterThree.ingest( tupleStreamThree, rightData )
                                                       .get( 0 );
 
-        TimeSeries<Double> timeSeriesFour = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
+        TimeSeries<Double> timeSeriesFour = TestData.generateTimeSeriesDoubleWithNoReferenceTimes();
 
         DatabaseTimeSeriesIngester ingesterFour =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
@@ -603,12 +602,11 @@ public class AnalysisRetrieverTest
         LOGGER.info( "ingestResultOne: {}", ingestResultOne );
         LOGGER.info( "ingestResultTwo: {}", ingestResultTwo );
         LOGGER.info( "ingestResultThree: {}", ingestResultThree );
-        Project project = Projects.getProject( this.wresDatabase,
-                                               declaration,
-                                               this.caches,
-                                               null,
-                                               results );
-        assertTrue( project.save() );
+        Projects.getProject( this.wresDatabase,
+                             declaration,
+                             this.caches,
+                             null,
+                             results );
     }
 
 }
