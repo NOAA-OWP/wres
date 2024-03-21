@@ -1,9 +1,11 @@
 package wres.io.ingesting.memory;
 
 import java.util.Objects;
+import java.util.Set;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
+import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.IngestResultNeedingRetry;
@@ -22,12 +24,13 @@ public class IngestResultInMemory implements IngestResult
      * Creates an instance.
      *
      * @param dataSource the data source
+     * @param dataType the optional data type
      */
-    public IngestResultInMemory( DataSource dataSource )
+    public IngestResultInMemory( DataSource dataSource, DataType dataType )
     {
         Objects.requireNonNull( dataSource, "Ingester must include datasource information." );
 
-        this.innerResult = new IngestResultNeedingRetry( dataSource, 1 );
+        this.innerResult = new IngestResultNeedingRetry( dataSource, dataType, 1 );
     }
 
     @Override
@@ -37,9 +40,15 @@ public class IngestResultInMemory implements IngestResult
     }
 
     @Override
-    public DatasetOrientation getDatasetOrientation()
+    public DataType getDataType()
     {
-        return this.innerResult.getDatasetOrientation();
+        return this.innerResult.getDataType();
+    }
+
+    @Override
+    public Set<DatasetOrientation> getDatasetOrientations()
+    {
+        return this.innerResult.getDatasetOrientations();
     }
 
     @Override
@@ -81,7 +90,7 @@ public class IngestResultInMemory implements IngestResult
     @Override
     public String toString()
     {
-        return new ToStringBuilder( this ).append( "leftOrRightOrBaseline", this.getDatasetOrientation() )
+        return new ToStringBuilder( this ).append( "orientations", this.getDatasetOrientations() )
                                           .append( "dataSource", this.getDataSource() )
                                           .toString();
     }

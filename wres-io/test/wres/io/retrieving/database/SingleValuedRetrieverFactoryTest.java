@@ -1,8 +1,6 @@
 package wres.io.retrieving.database;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import static wres.statistics.generated.ReferenceTime.ReferenceTimeType.T0;
 import static wres.io.retrieving.database.RetrieverTestHelper.*;
 
@@ -50,6 +48,7 @@ import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.io.TestData;
 import wres.io.database.ConnectionSupplier;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.TestDatabase;
@@ -391,7 +390,11 @@ public class SingleValuedRetrieverFactoryTest
                .thenReturn( PROJECT_ID );
         Mockito.when( project.getFeatures() )
                .thenReturn( allFeatures );
-        Mockito.when( project.getVariableName( Mockito.any( DatasetOrientation.class ) ) )
+        Mockito.when( project.getLeftVariableName() )
+               .thenReturn( VARIABLE_NAME );
+        Mockito.when( project.getRightVariableName() )
+               .thenReturn( VARIABLE_NAME );
+        Mockito.when( project.getBaselineVariableName() )
                .thenReturn( VARIABLE_NAME );
         Mockito.when( project.hasBaseline() )
                .thenReturn( true );
@@ -411,11 +414,11 @@ public class SingleValuedRetrieverFactoryTest
 
     private void addTwoForecastTimeSeriesEachWithFiveEventsToTheDatabase() throws SQLException
     {
-        DataSource leftData = RetrieverTestData.generateDataSource( DatasetOrientation.LEFT,
-                                                                    DataType.OBSERVATIONS );
-        DataSource rightData = RetrieverTestData.generateDataSource( DatasetOrientation.RIGHT,
-                                                                     DataType.SINGLE_VALUED_FORECASTS );
-        DataSource baselineData = RetrieverTestData.generateBaselineDataSource( DataType.SINGLE_VALUED_FORECASTS );
+        DataSource leftData = TestData.generateDataSource( DatasetOrientation.LEFT,
+                                                           DataType.OBSERVATIONS );
+        DataSource rightData = TestData.generateDataSource( DatasetOrientation.RIGHT,
+                                                            DataType.SINGLE_VALUED_FORECASTS );
+        DataSource baselineData = TestData.generateBaselineDataSource( DataType.SINGLE_VALUED_FORECASTS );
         LOGGER.debug( "leftData: {}", leftData );
         LOGGER.debug( "rightData: {}", rightData );
         LOGGER.debug( "baselineData: {}", rightData );
@@ -453,7 +456,7 @@ public class SingleValuedRetrieverFactoryTest
         LOGGER.debug( "rightData: {}", rightData );
         LOGGER.debug( "baselineData: {}", baselineData );
 
-        TimeSeries<Double> timeSeriesOne = RetrieverTestData.generateTimeSeriesDoubleOne( T0 );
+        TimeSeries<Double> timeSeriesOne = TestData.generateTimeSeriesDoubleOne( T0 );
         DatabaseTimeSeriesIngester ingesterOne =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
@@ -473,7 +476,7 @@ public class SingleValuedRetrieverFactoryTest
         IngestResult ingestResultOneBaseline = ingesterOne.ingest( tupleStreamOneBaseline, baselineData )
                                                           .get( 0 );
 
-        TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleFour();
+        TimeSeries<Double> timeSeriesTwo = TestData.generateTimeSeriesDoubleFour();
 
         DatabaseTimeSeriesIngester ingesterTwo =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
@@ -493,7 +496,7 @@ public class SingleValuedRetrieverFactoryTest
         IngestResult ingestResultTwoBaseline = ingesterTwo.ingest( tupleStreamTwoBaseline, baselineData )
                                                           .get( 0 );
 
-        TimeSeries<Double> timeSeriesThree = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
+        TimeSeries<Double> timeSeriesThree = TestData.generateTimeSeriesDoubleWithNoReferenceTimes();
 
         DatabaseTimeSeriesIngester ingesterThree =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
@@ -533,11 +536,10 @@ public class SingleValuedRetrieverFactoryTest
         LOGGER.debug( "ingestResultOne: {}", ingestResultOne );
         LOGGER.debug( "ingestResultTwo: {}", ingestResultTwo );
         LOGGER.debug( "ingestResultThree: {}", ingestResultThree );
-        Project project = Projects.getProject( this.wresDatabase,
-                                               declaration,
-                                               this.caches,
-                                               null,
-                                               results );
-        assertTrue( project.save() );
+        Projects.getProject( this.wresDatabase,
+                             declaration,
+                             this.caches,
+                             null,
+                             results );
     }
 }

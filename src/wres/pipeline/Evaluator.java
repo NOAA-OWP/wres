@@ -34,7 +34,6 @@ import wres.ExecutionResult;
 import wres.config.MultiDeclarationFactory;
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationUtilities;
-import wres.config.yaml.DeclarationValidator;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureGroups;
@@ -600,10 +599,6 @@ public class Evaluator
                                                                       griddedFeaturesBuilder,
                                                                       executors.readingExecutor() );
 
-                declarationWithFeatures =
-                        EvaluationUtilities.interpolateMissingDataTypes( declarationWithFeatures,
-                                                                         timeSeriesTracker.getDataTypes() );
-
                 // Create the gridded features cache if needed
                 GriddedFeatures griddedFeatures = null;
                 if ( Objects.nonNull( griddedFeaturesBuilder ) )
@@ -635,13 +630,9 @@ public class Evaluator
                                                                       griddedFeaturesBuilder,
                                                                       executors.readingExecutor() );
 
-                // Interpolate any missing elements of the declaration that depend on the data types
-                declarationWithFeatures =
-                        EvaluationUtilities.interpolateMissingDataTypes( declarationWithFeatures,
-                                                                         timeSeriesTracker.getDataTypes() );
-
                 // The immutable collection of in-memory time-series
                 TimeSeriesStore timeSeriesStore = timeSeriesStoreBuilder.build();
+
                 // Set the store
                 evaluationDetails = EvaluationDetailsBuilder.builder( evaluationDetails )
                                                             .timeSeriesStore( timeSeriesStore )
@@ -651,11 +642,10 @@ public class Evaluator
                                                ingestResults );
             }
 
-            LOGGER.debug( "Finished ingest of time-series data." );
+            // Assign the declaration augmented by the ingested data
+            declarationWithFeatures = project.getDeclaration();
 
-            // Validate the declaration in relation to the interpolated data types and other analyzed information
-            LOGGER.debug( "Performing post-ingest validation of the declaration" );
-            DeclarationValidator.validatePostDataIngest( declarationWithFeatures );
+            LOGGER.debug( "Finished ingest of time-series data." );
 
             // Set the project hash for identification
             projectHash = project.getHash();

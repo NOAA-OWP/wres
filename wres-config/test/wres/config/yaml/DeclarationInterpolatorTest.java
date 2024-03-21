@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -148,10 +147,6 @@ class DeclarationInterpolatorTest
                          .setBaseline( Geometry.newBuilder()
                                                .setName( FEATURE_NAME_THREE ) )
                          .build();
-    /** An observed data source. */
-    private Source observedSource;
-    /** An observed data source. */
-    private Source predictedSource;
     /** An observed dataset for re-use. */
     private Dataset observedDataset;
     /** A predicted dataset for re-use. */
@@ -179,14 +174,14 @@ class DeclarationInterpolatorTest
     void runBeforeEach()
     {
         URI observedUri = URI.create( "some_file.csv" );
-        this.observedSource = SourceBuilder.builder()
-                                           .uri( observedUri )
-                                           .build();
+        Source observedSource = SourceBuilder.builder()
+                                             .uri( observedUri )
+                                             .build();
 
         URI predictedUri = URI.create( "another_file.csv" );
-        this.predictedSource = SourceBuilder.builder()
-                                            .uri( predictedUri )
-                                            .build();
+        Source predictedSource = SourceBuilder.builder()
+                                              .uri( predictedUri )
+                                              .build();
 
         List<Source> observedSources = List.of( observedSource );
         this.observedDataset = DatasetBuilder.builder()
@@ -1111,10 +1106,10 @@ class DeclarationInterpolatorTest
 
         EvaluationDeclaration actual =
                 DeclarationInterpolator.interpolate( evaluation,
-                                                     Map.of( this.observedSource, DataType.OBSERVATIONS ),
-                                                     Map.of( this.predictedSource, DataType.ENSEMBLE_FORECASTS ),
-                                                     Map.of( this.predictedSource, DataType.ENSEMBLE_FORECASTS ),
-                                                     Map.of( this.observedSource, DataType.OBSERVATIONS ),
+                                                     DataType.OBSERVATIONS,
+                                                     DataType.ENSEMBLE_FORECASTS,
+                                                     DataType.ENSEMBLE_FORECASTS,
+                                                     DataType.OBSERVATIONS,
                                                      true );
         DataType actualLeft = actual.left()
                                     .type();
@@ -1149,12 +1144,10 @@ class DeclarationInterpolatorTest
                                             .build();
 
         EvaluationDeclaration actual = DeclarationInterpolator.interpolate( evaluation,
-                                                                            Map.of( this.observedSource,
-                                                                                    DataType.OBSERVATIONS ),
-                                                                            Map.of( this.predictedSource,
-                                                                                    DataType.ENSEMBLE_FORECASTS ),
-                                                                            Map.of(),
-                                                                            Map.of(),
+                                                                            DataType.OBSERVATIONS,
+                                                                            DataType.ENSEMBLE_FORECASTS,
+                                                                            null,
+                                                                            null,
                                                                             true );
         DataType actualLeft = actual.left()
                                     .type();
@@ -1180,17 +1173,12 @@ class DeclarationInterpolatorTest
                                             .analysisTimes( analysisTimes )
                                             .build();
 
-        Map<Source, DataType> observedTypes = Map.of( this.observedSource,
-                                                      DataType.OBSERVATIONS );
-        Map<Source, DataType> predctedTypes = Map.of( this.predictedSource,
-                                                      DataType.ENSEMBLE_FORECASTS );
-        Map<Source, DataType> emptyMap = Map.of();
         DeclarationException expected =
                 assertThrows( DeclarationException.class, () -> DeclarationInterpolator.interpolate( evaluation,
-                                                                                                     observedTypes,
-                                                                                                     predctedTypes,
-                                                                                                     emptyMap,
-                                                                                                     emptyMap,
+                                                                                                     DataType.OBSERVATIONS,
+                                                                                                     DataType.ENSEMBLE_FORECASTS,
+                                                                                                     null,
+                                                                                                     null,
                                                                                                      true ) );
 
         assertTrue( expected.getMessage()
@@ -1216,12 +1204,10 @@ class DeclarationInterpolatorTest
                                             .build();
 
         EvaluationDeclaration actual = DeclarationInterpolator.interpolate( evaluation,
-                                                                            Map.of( this.observedSource,
-                                                                                    DataType.OBSERVATIONS ),
-                                                                            Map.of( this.predictedSource,
-                                                                                    DataType.ENSEMBLE_FORECASTS ),
-                                                                            Map.of(),
-                                                                            Map.of(),
+                                                                            DataType.OBSERVATIONS,
+                                                                            DataType.ENSEMBLE_FORECASTS,
+                                                                            null,
+                                                                            null,
                                                                             true );
         DataType actualLeft = actual.left()
                                     .type();
@@ -1382,10 +1368,10 @@ class DeclarationInterpolatorTest
     {
         EvaluationDeclaration actual = DeclarationFactory.from( declaration );
         EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( actual,
-                                                                                  Map.of(),
-                                                                                  Map.of(),
-                                                                                  Map.of(),
-                                                                                  Map.of(),
+                                                                                  null,
+                                                                                  null,
+                                                                                  null,
+                                                                                  null,
                                                                                   false );
         DataType actualType = interpolated.right()
                                           .type();
@@ -1430,10 +1416,11 @@ class DeclarationInterpolatorTest
     {
         EvaluationDeclaration actual = DeclarationFactory.from( declaration );
         EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( actual,
-                                                                                  Map.of(),
-                                                                                  Map.of(),
-                                                                                  Map.of(),
-                                                                                  Map.of(), false );
+                                                                                  null,
+                                                                                  null,
+                                                                                  null,
+                                                                                  null,
+                                                                                  false );
         DataType actualType = interpolated.right()
                                           .type();
         assertEquals( DataType.ENSEMBLE_FORECASTS, actualType );
@@ -1455,10 +1442,10 @@ class DeclarationInterpolatorTest
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
         EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( actual,
-                                                                                  Map.of(),
-                                                                                  Map.of(),
-                                                                                  Map.of(),
-                                                                                  Map.of(),
+                                                                                  null,
+                                                                                  null,
+                                                                                  null,
+                                                                                  null,
                                                                                   false );
         DataType actualType = interpolated.left()
                                           .type();

@@ -168,21 +168,35 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
         LOGGER.debug( "Creating a {} retriever for project '{}', features '{}' and time window {}.",
                       orientation,
-                      this.getProject().getId(),
+                      this.getProject()
+                          .getId(),
                       features,
                       timeWindow );
         TimeSeriesRetriever.Builder<Double> builder;
 
         boolean isConfiguredAsForecast = DeclarationUtilities.isForecast( dataset );
-        String variableName = this.getProject()
-                                  .getVariableName( orientation );
+        String variableName =
+                switch ( orientation )
+                {
+                    case LEFT -> this.getProject()
+                                     .getLeftVariableName();
+                    case RIGHT -> this.getProject()
+                                      .getRightVariableName();
+                    case BASELINE -> this.getProject()
+                                         .getBaselineVariableName();
+                    default -> throw new IllegalArgumentException( "Unrecognized dataset orientation in this context: "
+                                                                   + orientation
+                                                                   + "." );
+                };
+
         TimeScaleOuter declaredExistingTimeScale =
                 this.getDeclaredExistingTimeScale( dataset );
 
         try
         {
             // Gridded data?
-            if ( this.getProject().usesGriddedData( orientation ) )
+            if ( this.getProject()
+                     .usesGriddedData( orientation ) )
             {
                 builder = this.getGriddedRetrieverBuilder( dataset.type() )
                               .setIsForecast( isConfiguredAsForecast )
@@ -375,7 +389,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
         this.rightDataset = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
                                                                      DatasetOrientation.RIGHT );
 
-        if( project.hasBaseline() )
+        if ( project.hasBaseline() )
         {
             this.baselineDataset = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
                                                                             DatasetOrientation.BASELINE );

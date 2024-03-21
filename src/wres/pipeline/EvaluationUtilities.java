@@ -30,13 +30,11 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.MetricConstants;
 import wres.config.yaml.DeclarationException;
-import wres.config.yaml.DeclarationInterpolator;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.GeneratedBaselines;
-import wres.config.yaml.components.Source;
 import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.MissingValues;
@@ -55,7 +53,6 @@ import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.events.EvaluationEventUtilities;
 import wres.events.EvaluationMessager;
-import wres.reading.DataSource;
 import wres.reading.netcdf.grid.GriddedFeatures;
 import wres.io.retrieving.database.EnsembleSingleValuedRetrieverFactory;
 import wres.io.retrieving.memory.EnsembleSingleValuedRetrieverFactoryInMemory;
@@ -259,47 +256,6 @@ class EvaluationUtilities
                            .collect( Collectors.toSet() );
 
         return EvaluationUtilities.getSummaryStatisticsForFeatures( declaration, dimensions, poolCount );
-    }
-
-    /**
-     * Interpolates any missing data types and validates the interpolated declaration for internal consistency.
-     * @param declaration the declaration with missing data types
-     * @param dataTypes the data types detected through ingest
-     * @return the interpolated declaration
-     * @throws DeclarationException if the declaration is inconsistent with the inferred types
-     */
-
-    static EvaluationDeclaration interpolateMissingDataTypes( EvaluationDeclaration declaration,
-                                                              Map<DataSource, DataType> dataTypes )
-    {
-        // Interpolate any missing elements of the declaration that depend on the data types
-        if ( DeclarationUtilities.hasMissingDataTypes( declaration ) )
-        {
-            // Map the types to sources by orientation
-            Map<Source, DataType> leftSources =
-                    EvaluationUtilities.getDataTypesPerDataSource( dataTypes,
-                                                                   DatasetOrientation.LEFT );
-            Map<Source, DataType> rightSources =
-                    EvaluationUtilities.getDataTypesPerDataSource( dataTypes,
-                                                                   DatasetOrientation.RIGHT );
-            Map<Source, DataType> baselineSources =
-                    EvaluationUtilities.getDataTypesPerDataSource( dataTypes,
-                                                                   DatasetOrientation.BASELINE );
-            Map<Source, DataType> covariateSources =
-                    EvaluationUtilities.getDataTypesPerDataSource( dataTypes,
-                                                                   DatasetOrientation.COVARIATE );
-
-            // If the ingested types differ from any existing types of there are conflicting types for a single
-            // orientation, this will throw an exception
-            declaration = DeclarationInterpolator.interpolate( declaration,
-                                                               leftSources,
-                                                               rightSources,
-                                                               baselineSources,
-                                                               covariateSources,
-                                                               true );
-        }
-
-        return declaration;
     }
 
     /**
@@ -654,18 +610,18 @@ class EvaluationUtilities
         if ( evaluation.getLeftVariableName()
                        .isBlank() )
         {
-            builder.setLeftVariableName( project.getVariableName( DatasetOrientation.LEFT ) );
+            builder.setLeftVariableName( project.getLeftVariableName() );
         }
         if ( evaluation.getRightVariableName()
                        .isBlank() )
         {
-            builder.setRightVariableName( project.getVariableName( DatasetOrientation.RIGHT ) );
+            builder.setRightVariableName( project.getRightVariableName() );
         }
         if ( project.hasBaseline()
              && evaluation.getBaselineVariableName()
                           .isBlank() )
         {
-            builder.setBaselineVariableName( project.getVariableName( DatasetOrientation.BASELINE ) );
+            builder.setBaselineVariableName( project.getBaselineVariableName() );
         }
 
         return builder.build();
@@ -2240,29 +2196,6 @@ class EvaluationUtilities
                       filters.size() );
 
         return Collections.unmodifiableList( filters );
-    }
-
-    /**
-     * Generates a mapping of data sources to types for the prescribed orientation.
-     * @param dataTypes the data types by data source
-     * @param orientation the orientation for which the types are required
-     * @return the data sources by type for the prescribed orientation
-     */
-    private static Map<Source, DataType> getDataTypesPerDataSource( Map<DataSource, DataType> dataTypes,
-                                                                    DatasetOrientation orientation )
-    {
-        return dataTypes.entrySet()
-                        .stream()
-                        .filter( d -> d.getKey()
-                                       .getDatasetOrientation()
-                                      == orientation
-                                      || d.getKey()
-                                          .getLinks()
-                                          .contains( orientation ) )
-                        .collect( Collectors.toUnmodifiableMap( e -> e.getKey()
-                                                                      .getSource(),
-                                                                Map.Entry::getValue,
-                                                                ( a, b ) -> a ) );
     }
 
     /**

@@ -1,8 +1,10 @@
 package wres.io.project;
 
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
@@ -18,7 +20,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationException;
+import wres.config.yaml.DeclarationInterpolator;
 import wres.config.yaml.DeclarationUtilities;
+import wres.config.yaml.DeclarationValidator;
+import wres.config.yaml.components.CovariateDataset;
+import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EvaluationDeclaration;
@@ -29,6 +35,7 @@ import wres.config.yaml.components.TimeScaleLenience;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
+import wres.io.ingesting.IngestResult;
 import wres.io.retrieving.DataAccessException;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.GeometryGroup;
@@ -67,10 +74,14 @@ class ProjectUtilities
      * @param leftVariableName the left variable name
      * @param rightVariableName the right variable name
      * @param baselineVariableName the baseline variable name
+     * @param covariateVariableNames the covariate variable names
      * @author James Brown
      */
 
-    record VariableNames( String leftVariableName, String rightVariableName, String baselineVariableName ) {}
+    record VariableNames( String leftVariableName,
+                          String rightVariableName,
+                          String baselineVariableName,
+                          Set<String> covariateVariableNames ) {}
 
     /**
      * Small value class to hold feature group information.
@@ -143,23 +154,26 @@ class ProjectUtilities
     /**
      * Validates the variable names and emits a warning if assumptions have been made by the software.
      *
-     * @param declaredLeftVariableName the declared left variable name
-     * @param declaredRightVariableName the declared right variable name
-     * @param declaredBaselineVariableName the declared baseline variable name
-     * @param leftVariableName the left variable name
-     * @param rightVariableName the right variable name
-     * @param baselineVariableName the baseline variable name
-     * @param hasBaseline is true if the project has a baseline, false otherwise
+     * @param declaration the declaration
+     * @param variableNames the variable names
      */
 
-    static void validateVariableNames( String declaredLeftVariableName,
-                                       String declaredRightVariableName,
-                                       String declaredBaselineVariableName,
-                                       String leftVariableName,
-                                       String rightVariableName,
-                                       String baselineVariableName,
-                                       boolean hasBaseline )
+    private static void validateAutoDetectedVariableNames( EvaluationDeclaration declaration,
+                                                           VariableNames variableNames )
     {
+        String declaredLeftVariableName = DeclarationUtilities.getVariableName( declaration.left() );
+        String declaredRightVariableName = DeclarationUtilities.getVariableName( declaration.right() );
+        String declaredBaselineVariableName = null;
+        String leftVariableName = variableNames.leftVariableName();
+        String rightVariableName = variableNames.rightVariableName();
+        String baselineVariableName = variableNames.baselineVariableName();
+
+        if ( DeclarationUtilities.hasBaseline( declaration ) )
+        {
+            declaredBaselineVariableName = DeclarationUtilities.getVariableName( declaration.baseline()
+                                                                                            .dataset() );
+        }
+
         // Warn if the names were not declared and are different
         if ( ( Objects.isNull( declaredLeftVariableName )
                || Objects.isNull( declaredRightVariableName ) )
@@ -174,8 +188,9 @@ class ProjectUtilities
                          rightVariableName );
         }
 
-        if ( hasBaseline && ( Objects.isNull( declaredLeftVariableName )
-                              || Objects.isNull( declaredBaselineVariableName ) )
+        if ( DeclarationUtilities.hasBaseline( declaration )
+             && ( Objects.isNull( declaredLeftVariableName )
+                  || Objects.isNull( declaredBaselineVariableName ) )
              && !Objects.equals( leftVariableName, baselineVariableName )
              && LOGGER.isWarnEnabled() )
         {
@@ -189,22 +204,154 @@ class ProjectUtilities
     }
 
     /**
-     * Attempts to set the variable names from a set of left, right and baseline names.
+     * Checks that the declared and ingested variable names are consistent hen both are available.
+     *
+     * @param declaration the declaration
+     * @param left the possible names for left variables, according to ingest and where available
+     * @param right the possible names for right variables, according to ingest and where available
+     * @param baseline the possible names for baseline variables, according to ingest and where available
+     * @param covariates the possible names for covariate variables, according to ingest and where available
+     * @throws DeclarationException if the declared and ingested variable names are inconsistent
+     */
+
+    private static void validateDeclaredAndIngestedVariablesAgree( EvaluationDeclaration declaration,
+                                                                   Set<String> left,
+                                                                   Set<String> right,
+                                                                   Set<String> baseline,
+                                                                   Set<String> covariates )
+    {
+        String declaredLeftVariableName = DeclarationUtilities.getVariableName( declaration.left() );
+        String declaredRightVariableName = DeclarationUtilities.getVariableName( declaration.right() );
+        String declaredBaselineVariableName = null;
+
+        if ( DeclarationUtilities.hasBaseline( declaration ) )
+        {
+            declaredBaselineVariableName = DeclarationUtilities.getVariableName( declaration.baseline()
+                                                                                            .dataset() );
+        }
+
+        // Where a name has been declared and the ingested names are available, the declared name must be among them
+        String leftError = "";
+        String rightError = "";
+        String baselineError = "";
+        StringBuilder covariateError = new StringBuilder();
+
+        String start = "    - ";
+        if ( Objects.nonNull( declaredLeftVariableName )
+             && !left.isEmpty()
+             && !left.contains( declaredLeftVariableName ) )
+        {
+            leftError += System.lineSeparator() + start;
+            leftError += ProjectUtilities.getVariableErrorMessage( declaredLeftVariableName,
+                                                                   left,
+                                                                   DatasetOrientation.LEFT );
+        }
+        if ( Objects.nonNull( declaredRightVariableName )
+             && !right.isEmpty()
+             && !right.contains( declaredRightVariableName ) )
+        {
+            rightError += System.lineSeparator() + start;
+            rightError += ProjectUtilities.getVariableErrorMessage( declaredRightVariableName,
+                                                                    right,
+                                                                    DatasetOrientation.RIGHT );
+        }
+        if ( Objects.nonNull( declaredBaselineVariableName )
+             && !baseline.isEmpty()
+             && !baseline.contains( declaredBaselineVariableName ) )
+        {
+            baselineError += System.lineSeparator() + start;
+            baselineError += ProjectUtilities.getVariableErrorMessage( declaredRightVariableName,
+                                                                       baseline,
+                                                                       DatasetOrientation.BASELINE );
+        }
+
+        // Iterate through the covariates
+        for ( CovariateDataset covariate : declaration.covariates() )
+        {
+            if ( Objects.nonNull( covariate.dataset()
+                                           .variable() )
+                 && Objects.nonNull( covariate.dataset()
+                                              .variable()
+                                              .name() )
+                 && !covariates.contains( covariate.dataset()
+                                                   .variable()
+                                                   .name() ) )
+            {
+                covariateError.append( System.lineSeparator() )
+                              .append( start );
+                covariateError.append( ProjectUtilities.getVariableErrorMessage( covariate.dataset()
+                                                                                          .variable()
+                                                                                          .name(),
+                                                                                 covariates,
+                                                                                 DatasetOrientation.COVARIATE ) );
+            }
+        }
+
+        if ( !leftError.isBlank()
+             || !rightError.isBlank()
+             || !baselineError.isBlank()
+             || !covariateError.toString()
+                               .isBlank() )
+        {
+            throw new DeclarationException( "The declared variable names are inconsistent with the ingested data "
+                                            + "sources in one or more contexts: "
+                                            + leftError
+                                            + rightError
+                                            + baselineError
+                                            + covariateError );
+        }
+    }
+
+    /**
+     * Generates an error message when a declared variable is not among the ingested options.
+     * @param variableName the variable name
+     * @param nameOptions the name options
+     * @param orientation the dataset orientation
+     * @return the error message
+     */
+    private static String getVariableErrorMessage( String variableName,
+                                                   Set<String> nameOptions,
+                                                   DatasetOrientation orientation )
+    {
+        String article = "the";
+        if ( orientation == DatasetOrientation.COVARIATE )
+        {
+            article = "a";
+        }
+
+        return "The declared 'name' of the 'variable' for "
+               + article
+               + " '"
+               + orientation
+               + "' dataset was '"
+               + variableName
+               + "', but this could not be found among the variable names of the ingested data sources, which "
+               + "were: "
+               + nameOptions
+               + ".";
+    }
+
+    /**
+     * Attempts to get the variable names from a set of left, right and baseline names.
      * @param left the possible left variable names
      * @param right the possible right variable names
      * @param baseline the possible baseline variable names
-     * @throws DeclarationException is the variable names could not be determined
+     * @param covariates the covariate variable names
+     * @return the variable names
+     * @throws DeclarationException is the variable names could not be determined or are otherwise invalid
      */
 
     static VariableNames getVariableNames( EvaluationDeclaration declaration,
                                            Set<String> left,
                                            Set<String> right,
-                                           Set<String> baseline )
+                                           Set<String> baseline,
+                                           Set<String> covariates )
     {
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( left );
         Objects.requireNonNull( right );
         Objects.requireNonNull( baseline );
+        Objects.requireNonNull( covariates );
 
         // Could not determine variable name
         if ( left.isEmpty() )
@@ -229,7 +376,8 @@ class ProjectUtilities
                                             + DATA_SOURCES_TO_DISAMBIGUATE );
         }
 
-        if ( DeclarationUtilities.hasBaseline( declaration ) && baseline.isEmpty() )
+        if ( DeclarationUtilities.hasBaseline( declaration )
+             && baseline.isEmpty() )
         {
             throw new DeclarationException( WHILE_ATTEMPTING_TO_DETECT_THE + DatasetOrientation.BASELINE
                                             + VARIABLE
@@ -241,8 +389,48 @@ class ProjectUtilities
 
         }
 
+        if ( !declaration.covariates()
+                         .isEmpty()
+             && covariates.isEmpty() )
+        {
+            throw new DeclarationException( WHILE_ATTEMPTING_TO_DETECT_THE
+                                            + "name(s) of the "
+                                            + DatasetOrientation.COVARIATE
+                                            + " variables from the data, failed to identify any "
+                                            + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
+                                            + "name for each "
+                                            + DatasetOrientation.COVARIATE
+                                            + "dataset to disambiguate." );
+
+        }
+
+        // Different number of covariate names than datasets
+        if ( declaration.covariates()
+                        .size() != covariates.size() )
+        {
+            throw new DeclarationException( WHILE_ATTEMPTING_TO_DETECT_THE
+                                            + "name(s) of the "
+                                            + DatasetOrientation.COVARIATE
+                                            + " variables from the data, discovered a different number of names than "
+                                            + "datasets, which is not allowed. Please declare each "
+                                            + DatasetOrientation.COVARIATE
+                                            + " variable name explicitly to disambiguate. The number of "
+                                            + DatasetOrientation.COVARIATE
+                                            + " datasets is: "
+                                            + declaration.covariates()
+                                                         .size()
+                                            + ". The possible variable names are: "
+                                            + covariates
+                                            + "." );
+        }
+
+        VariableNames variableNames;
+
         // One variable name for all? Allow. 
-        if ( left.size() == 1 && right.size() == 1 && ( baseline.isEmpty() || baseline.size() == 1 ) )
+        if ( left.size() == 1
+             && right.size() == 1
+             && ( baseline.isEmpty()
+                  || baseline.size() == 1 ) )
         {
             String leftVariableName = left.iterator()
                                           .next();
@@ -257,23 +445,35 @@ class ProjectUtilities
                                                .next();
             }
 
-            LOGGER.debug( "Discovered one variable name for all data sources. The variable name is {}.",
-                          leftVariableName );
+            LOGGER.debug( "Discovered one variable name for each data source." );
 
-            return new VariableNames( leftVariableName, rightVariableName, baselineVariableName );
+            variableNames = new VariableNames( leftVariableName, rightVariableName, baselineVariableName, covariates );
         }
         // More than one for some, need to intersect
         else
         {
-            return ProjectUtilities.getVariableNamesFromIntersection( left,
-                                                                      right,
-                                                                      baseline,
-                                                                      declaration );
+            variableNames = ProjectUtilities.getVariableNamesFromIntersection( left,
+                                                                               right,
+                                                                               baseline,
+                                                                               covariates,
+                                                                               declaration );
         }
+
+        // Further validate the names
+        ProjectUtilities.validateAutoDetectedVariableNames( declaration,
+                                                            variableNames );
+
+        ProjectUtilities.validateDeclaredAndIngestedVariablesAgree( declaration,
+                                                                    left,
+                                                                    right,
+                                                                    baseline,
+                                                                    covariates );
+
+        return variableNames;
     }
 
     /**
-     * Tests whether there is a desired time scale present that supports lenient upscaling for the specified side of 
+     * Tests whether there is a desired timescale present that supports lenient upscaling for the specified side of
      * data.
      * @param orientation the orientation of the data, required
      * @param desiredTimeScale the desired timescale, optional
@@ -537,6 +737,102 @@ class ProjectUtilities
     }
 
     /**
+     * Interpolates missing declaration post-ingest.
+     * @param declaration the declaration
+     * @param ingestResults the ingest results
+     * @return the augmented declaration
+     */
+    static EvaluationDeclaration interpolate( EvaluationDeclaration declaration,
+                                              List<IngestResult> ingestResults )
+    {
+        Objects.requireNonNull( declaration );
+        Objects.requireNonNull( ingestResults );
+
+        // Organize the data types by dataset orientation, including linked types
+        Map<DatasetOrientation, Set<DataType>> dataTypes = new EnumMap<>( DatasetOrientation.class );
+        for ( IngestResult result : ingestResults )
+        {
+            Set<DatasetOrientation> orientations = result.getDatasetOrientations();
+            for ( DatasetOrientation next : orientations )
+            {
+                DataType type = result.getDataType();
+                if ( Objects.nonNull( type ) )
+                {
+                    if ( dataTypes.containsKey( next ) )
+                    {
+                        dataTypes.get( next )
+                                 .add( type );
+                    }
+                    else
+                    {
+                        Set<DataType> types = new HashSet<>();
+                        types.add( type );
+                        dataTypes.put( next, types );
+                    }
+                }
+            }
+        }
+
+        Map<DatasetOrientation, Set<DataType>> filtered =
+                dataTypes.entrySet()
+                         .stream()
+                         .filter( e -> e.getValue()
+                                        .size() > 1 )
+                         .collect( Collectors.toMap( Map.Entry::getKey,
+                                                     Map.Entry::getValue ) );
+
+        if ( !filtered.isEmpty() )
+        {
+            throw new DeclarationException( "Following data ingest, discovered more than one data 'type' in "
+                                            + filtered.size()
+                                            + " datasets, which is not allowed. The following datasets had "
+                                            + "mixed data types: "
+                                            + filtered
+                                            + ". Please remove any mixed data types for each dataset and try "
+                                            + "again." );
+        }
+
+        Map<DatasetOrientation, DataType> singletons =
+                dataTypes.entrySet()
+                         .stream()
+                         .filter( e -> !e.getValue()
+                                         .isEmpty() )
+                         .collect( Collectors.toMap( Map.Entry::getKey, e -> e.getValue()
+                                                                              .iterator()
+                                                                              .next() ) );
+
+        DataType leftType = singletons.get( DatasetOrientation.LEFT );
+        DataType rightType = singletons.get( DatasetOrientation.RIGHT );
+        DataType baselineType = singletons.get( DatasetOrientation.BASELINE );
+        DataType covariateType = singletons.get( DatasetOrientation.COVARIATE );
+
+        // If the ingested types differ from any existing types of there are conflicting types for a single
+        // orientation, this will throw an exception
+        declaration = DeclarationInterpolator.interpolate( declaration,
+                                                           leftType,
+                                                           rightType,
+                                                           baselineType,
+                                                           covariateType,
+                                                           true );
+
+        return declaration;
+    }
+
+    /**
+     * Validates the declaration, post-ingest.
+     * @param declaration the declaration
+     * @throws DeclarationException if the declaration and ingest are inconsistent
+     */
+    static void validate( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration );
+
+        // Validate the declaration in relation to the interpolated data types and other analyzed information
+        LOGGER.debug( "Performing post-ingest validation of the declaration" );
+        DeclarationValidator.validatePostDataIngest( declaration );
+    }
+
+    /**
      * Filters from the input any ensemble member labels that are declared to be filtered.
      * @param labels the ensemble labels to filter
      * @param ensembleFilter the ensemble filter, possibkly null
@@ -669,6 +965,7 @@ class ProjectUtilities
      * @param left the possible left variable names
      * @param right the possible right variable names
      * @param baseline the possible baseline variable names
+     * @param covariates the covariate variable names
      * @param declaration the declaration
      * @throws DeclarationException if a unique name could not be discovered
      */
@@ -676,14 +973,16 @@ class ProjectUtilities
     private static VariableNames getVariableNamesFromIntersection( Set<String> left,
                                                                    Set<String> right,
                                                                    Set<String> baseline,
+                                                                   Set<String> covariates,
                                                                    EvaluationDeclaration declaration )
     {
         LOGGER.debug( "Discovered several variable names for the data sources. Will attempt to intersect them and "
-                      + "discover one. The LEFT variable names are {}, the RIGHT variable names are {} and the "
-                      + "BASELINE variable names are {}.",
+                      + "discover one. The LEFT variable names are {}, the RIGHT variable names are {}, the "
+                      + "BASELINE variable names are {} and the COVARIATE variable names are {}.",
                       left,
                       right,
-                      baseline );
+                      baseline,
+                      covariates );
 
         Set<String> intersection = new HashSet<>( left );
         intersection.retainAll( right );
@@ -707,7 +1006,7 @@ class ProjectUtilities
             LOGGER.debug( "After intersecting the variable names, discovered one variable name to evaluate, {}.",
                           leftVariableName );
 
-            return new VariableNames( leftVariableName, leftVariableName, baselineVariableName );
+            return new VariableNames( leftVariableName, leftVariableName, baselineVariableName, covariates );
         }
         else
         {
@@ -823,7 +1122,7 @@ class ProjectUtilities
             throw new DeclarationException( "Discovered "
                                             + declaredGroups.geometryGroups()
                                                             .size()
-                                            + " feature group in the project declaration, but could not "
+                                            + " feature group(s) in the project declaration, but could not "
                                             + "find any features with time-series data to correlate with "
                                             + "the declared features in these groups. If the feature "
                                             + "names are missing for some sides of data, it may help to "

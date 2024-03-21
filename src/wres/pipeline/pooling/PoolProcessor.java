@@ -986,6 +986,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             for ( StatisticsProcessor<Pool<TimeSeries<Pair<L, R>>>> processor : processors )
             {
                 StatisticsStore nextStatistics = this.getStatistics( processor, pool );
+
                 returnMe.add( nextStatistics );
 
                 // Estimate the trace count where required
@@ -1083,6 +1084,11 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             Objects.requireNonNull( this.samplingUncertaintyMetricProcessors );
             Objects.requireNonNull( this.samplingUncertaintyExecutor );
             Objects.requireNonNull( this.blockSize );
+        }
+
+        if( this.metricProcessors.isEmpty() )
+        {
+            throw new PoolCreationException( "Cannot create a pool without one or more metric processors." );
         }
 
         // Set the message group identifier

@@ -572,6 +572,7 @@ public class ThresholdSlicer
      *
      * @param evaluation the evaluation declaration
      * @return one {@link MetricsAndThresholds} for each atomic group of metrics
+     * @throws IllegalStateException if there are no features or metrics
      */
 
     public static Set<MetricsAndThresholds> getMetricsAndThresholdsForProcessing( EvaluationDeclaration evaluation )

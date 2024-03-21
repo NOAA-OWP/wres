@@ -2345,8 +2345,8 @@ public class PoolFactory
             return false;
         }
 
-        if ( !Objects.equals( localProject.getVariableName( DatasetOrientation.LEFT ),
-                              localProject.getVariableName( DatasetOrientation.BASELINE ) ) )
+        if ( !Objects.equals( localProject.getLeftVariableName(),
+                              localProject.getBaselineVariableName() ) )
         {
             return false;
         }

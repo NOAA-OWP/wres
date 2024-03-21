@@ -1,19 +1,28 @@
 package wres.io.project;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.MonthDay;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.StringJoiner;
 import java.util.TreeSet;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.slf4j.Logger;
@@ -33,10 +42,12 @@ import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.Feature;
 import wres.io.NoProjectDataException;
 import wres.datamodel.DataProvider;
+import wres.io.database.DatabaseOperations;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.Features;
+import wres.io.ingesting.IngestException;
+import wres.io.ingesting.IngestResult;
 import wres.reading.netcdf.grid.GriddedFeatures;
-import wres.io.database.caching.Variables;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
 import wres.io.project.ProjectUtilities.VariableNames;
@@ -47,20 +58,17 @@ import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 
 /**
- * Provides helpers related to the project declaration in combination with the ingested time-series data.
+ * An implementation of the {@link Project} for an evaluation performed using a database.
  */
 public class DatabaseProject implements Project
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseProject.class );
-    private static final String UNRECOGNIZED_DATASET_ORIENTATION_IN_THIS_CONTEXT =
-            "Unrecognized dataset orientation in this context: ";
     private static final String SELECT_1 = "SELECT 1";
     private static final String PROJECT_ID = "project_id";
 
     /** Protects access and generation of the feature collection. */
     private final Object featureLock = new Object();
-
     private final EvaluationDeclaration declaration;
     private final Database database;
     private final DatabaseCaches caches;
@@ -92,6 +100,7 @@ public class DatabaseProject implements Project
     private Boolean leftUsesGriddedData = null;
     private Boolean rightUsesGriddedData = null;
     private Boolean baselineUsesGriddedData = null;
+    private Boolean covariatesUseGriddedData = null;
 
     /** The left-ish variable to evaluate. */
     private String leftVariable;
@@ -111,27 +120,38 @@ public class DatabaseProject implements Project
      * @param caches the database ORMs/caches
      * @param griddedFeatures the gridded features cache, if required
      * @param declaration the project declaration
-     * @param hash the hash of the project data
+     * @param ingestResults the ingest results
+     * @throws SQLException if the project could not be created
      */
 
     public DatabaseProject( Database database,
                             DatabaseCaches caches,
                             GriddedFeatures griddedFeatures,
                             EvaluationDeclaration declaration,
-                            String hash )
+                            List<IngestResult> ingestResults ) throws SQLException
     {
         Objects.requireNonNull( database );
         Objects.requireNonNull( declaration );
-        Objects.requireNonNull( hash );
+        Objects.requireNonNull( ingestResults );
 
         this.database = database;
-        this.declaration = declaration;
-        this.hash = hash;
+        IngestIds ingestIds = DatabaseProject.getIngestIds( ingestResults );
+
+        this.hash = DatabaseProject.getTopHashOfIngestedSources( ingestIds, this.database );
         this.caches = caches;
         this.griddedFeatures = griddedFeatures;
 
         // Read only from now on, post ingest
         this.caches.setReadOnly();
+
+        // Interpolate and validate the declaration before setting it
+        EvaluationDeclaration innerDeclaration = ProjectUtilities.interpolate( declaration, ingestResults );
+        ProjectUtilities.validate( innerDeclaration );
+        this.declaration = innerDeclaration;
+
+        // Finally, save the project in the database and for final preparation/validation
+        this.save( ingestIds );
+        this.prepareAndValidate();
     }
 
     @Override
@@ -346,20 +366,6 @@ public class DatabaseProject implements Project
     }
 
     @Override
-    public String getVariableName( DatasetOrientation orientation )
-    {
-        Objects.requireNonNull( orientation );
-
-        return switch ( orientation )
-        {
-            case LEFT -> this.getLeftVariableName();
-            case RIGHT -> this.getRightVariableName();
-            case BASELINE -> this.getBaselineVariableName();
-            case COVARIATE -> null;
-        };
-    }
-
-    @Override
     public SortedSet<String> getEnsembleLabels( DatasetOrientation orientation )
     {
         Objects.requireNonNull( orientation );
@@ -423,15 +429,14 @@ public class DatabaseProject implements Project
             case LEFT -> this.leftUsesGriddedData;
             case RIGHT -> this.rightUsesGriddedData;
             case BASELINE -> this.baselineUsesGriddedData;
-            default -> throw new IllegalStateException( UNRECOGNIZED_DATASET_ORIENTATION_IN_THIS_CONTEXT
-                                                        + orientation );
+            case COVARIATE -> this.covariatesUseGriddedData;
         };
 
         if ( usesGriddedData == null )
         {
             Database db = this.getDatabase();
             DataScripter script = new DataScripter( db );
-            script.addLine( SELECT_1 );
+            script.addLine( "SELECT DISTINCT S.is_point_data" );
             script.addLine( "FROM wres.ProjectSource PS" );
             script.addLine( "INNER JOIN wres.Source S" );
             script.addTab().addLine( "ON PS.source_id = S.source_id" );
@@ -440,13 +445,21 @@ public class DatabaseProject implements Project
             script.addTab().addLine( "AND PS.member = ?" );
             script.addArgument( orientation.name()
                                            .toLowerCase() );
-            script.addTab().addLine( "AND S.is_point_data = FALSE" );
-            script.setMaxRows( 1 );
+            script.setMaxRows( 2 );
 
             try ( DataProvider provider = script.getData() )
             {
-                // If there is a row, then gridded data is used.
-                usesGriddedData = provider.next();
+                provider.next();
+                usesGriddedData = !provider.getBoolean( "is_point_data" );
+
+                // If there are multiple rows, that is disallowed
+                if ( provider.next() )
+                {
+                    throw new IllegalStateException( "Discovered multiple datasets with a "
+                                                     + orientation
+                                                     + " orientation of which some were gridded and "
+                                                     + "others not, which is not supported. " );
+                }
             }
             catch ( SQLException e )
             {
@@ -457,8 +470,7 @@ public class DatabaseProject implements Project
                 case LEFT -> this.leftUsesGriddedData = usesGriddedData;
                 case RIGHT -> this.rightUsesGriddedData = usesGriddedData;
                 case BASELINE -> this.baselineUsesGriddedData = usesGriddedData;
-                default -> throw new IllegalStateException( UNRECOGNIZED_DATASET_ORIENTATION_IN_THIS_CONTEXT
-                                                            + orientation );
+                case COVARIATE -> this.covariatesUseGriddedData = usesGriddedData;
             }
         }
 
@@ -496,62 +508,36 @@ public class DatabaseProject implements Project
     }
 
     @Override
-    public boolean save()
+    public String getLeftVariableName()
     {
-        // Not already saved?
-        if ( !this.performedInsert )
+        if ( Objects.isNull( this.leftVariable ) )
         {
-            LOGGER.trace( "Attempting to save project." );
-
-            DataScripter saveScript = this.getInsertSelectStatement();
-
-            try
-            {
-                this.performedInsert = saveScript.execute() > 0;
-            }
-            catch ( SQLException e )
-            {
-                throw new DataAccessException( "While attempting to save the project.", e );
-            }
-
-            if ( this.performedInsert )
-            {
-                this.projectId = saveScript.getInsertedIds()
-                                           .get( 0 );
-            }
-            else
-            {
-                Database db = this.getDatabase();
-                DataScripter scriptWithId = new DataScripter( db );
-                scriptWithId.setHighPriority( true );
-                scriptWithId.setUseTransaction( false );
-                scriptWithId.addLine( "SELECT project_id" );
-                scriptWithId.addLine( "FROM wres.Project P" );
-                scriptWithId.addLine( "WHERE P.hash = ?" );
-                scriptWithId.addArgument( this.getHash() );
-                scriptWithId.setMaxRows( 1 );
-
-                try ( DataProvider data = scriptWithId.getData() )
-                {
-                    this.projectId = data.getLong( PROJECT_ID );
-                }
-                catch ( SQLException e )
-                {
-                    throw new DataAccessException( "While attempting to save the project.", e );
-                }
-            }
+            return this.getDeclaredLeftVariableName();
         }
 
-        if ( LOGGER.isTraceEnabled() )
+        return this.leftVariable;
+    }
+
+    @Override
+    public String getRightVariableName()
+    {
+        if ( Objects.isNull( this.rightVariable ) )
         {
-            LOGGER.trace( "Did I create Project ID {}? {}",
-                          this.getId(),
-                          this.performedInsert );
+            return this.getDeclaredRightVariableName();
         }
 
-        LOGGER.info( "The identity of the database project is '{}'.", this.getProjectId() );
+        return this.rightVariable;
+    }
 
-        return this.performedInsert;
+    @Override
+    public String getBaselineVariableName()
+    {
+        if ( Objects.isNull( this.baselineVariable ) )
+        {
+            return this.getDeclaredBaselineVariableName();
+        }
+
+        return this.baselineVariable;
     }
 
     @Override
@@ -574,48 +560,6 @@ public class DatabaseProject implements Project
     public int hashCode()
     {
         return Objects.hash( this.getHash() );
-    }
-
-    /**
-     * Performs operations that are needed for the project to run between ingest and evaluation.
-     *
-     * @throws DataAccessException if retrieval of data fails
-     * @throws NoProjectDataException if zero features have intersecting data
-     */
-
-    void prepareAndValidate()
-    {
-        LOGGER.info( "Validating the project and loading preliminary metadata..." );
-
-        LOGGER.trace( "prepareForExecution() entered" );
-
-        // Validates that the required variables are present
-        this.validateVariables();
-
-        // Check for features that potentially have intersecting values.
-        // The query in getIntersectingFeatures checks that there is some
-        // data for each feature on each side, but does not guarantee pairs.
-        synchronized ( this.featureLock )
-        {
-            this.setFeaturesAndFeatureGroups();
-        }
-
-        if ( this.features.isEmpty()
-             && this.featureGroups.isEmpty() )
-        {
-            throw new NoProjectDataException( "Failed to identify any features with data on all required sides (left, "
-                                              + "right and, when declared, baseline) for the variables and other "
-                                              + "declaration supplied. Please check that the declaration is expected to "
-                                              + "produce some features with time-series data on both sides of the pairing." );
-        }
-
-        // Validate any ensemble conditions
-        this.validateEnsembleConditions();
-
-        // Determine and set the variables to evaluate
-        this.setVariablesToEvaluate();
-
-        LOGGER.info( "Project validation and metadata loading is complete." );
     }
 
     /**
@@ -658,7 +602,7 @@ public class DatabaseProject implements Project
             if ( !singletonFeatures.isEmpty() || declaredGroups.isEmpty() )
             {
                 DataScripter script =
-                        ProjectScriptGenerator.createIntersectingFeaturesScript( database,
+                        ProjectScriptGenerator.createIntersectingFeaturesScript( this.getDatabase(),
                                                                                  this.getId(),
                                                                                  singletonFeatures,
                                                                                  this.hasBaseline(),
@@ -744,6 +688,524 @@ public class DatabaseProject implements Project
     }
 
     /**
+     * Generates ingest identifiers from the ingest results.
+     * @param ingestResults the ingest results
+     * @return the ingest identifiers
+     */
+    private static IngestIds getIngestIds( List<IngestResult> ingestResults )
+    {
+        long[] leftIds = DatabaseProject.getIds( ingestResults, IngestResult::getLeftCount );
+        long[] rightIds = DatabaseProject.getIds( ingestResults, IngestResult::getRightCount );
+        long[] baselineIds = DatabaseProject.getIds( ingestResults, IngestResult::getBaselineCount );
+        long[] covariateIds = DatabaseProject.getIds( ingestResults, IngestResult::getCovariateCount );
+
+        IngestIds ingestIds = new IngestIds( leftIds, rightIds, baselineIds, covariateIds );
+
+        // Check assumption that at least one left and one right source have
+        // been created.
+        int leftCount = leftIds.length;
+        int rightCount = rightIds.length;
+
+        if ( leftCount < 1 || rightCount < 1 )
+        {
+            throw new NoProjectDataException( "When examining the ingested data, discovered insufficient data sources "
+                                              + "to proceed. At least one data source is required for the left side of "
+                                              + "the evaluation and one data source for the right side, but the left "
+                                              + "side had "
+                                              + leftCount
+                                              + " sources and the right side had "
+                                              + rightCount
+                                              + " sources. There were "
+                                              + baselineIds.length
+                                              + " baseline sources. Please check that all intended data sources were "
+                                              + "declared and that all declared data sources were ingested correctly. "
+                                              + "For example, were some data sources skipped because the format was "
+                                              + "unrecognized?" );
+        }
+
+        return ingestIds;
+    }
+
+    /**
+     * <p>Get the list of surrogate keys from given ingest results.
+     *
+     * @param ingestResults The ingest results.
+     * @param count a function that returns the count of ingest results
+     * @return The ids for the baseline dataset
+     */
+
+    private static long[] getIds( List<IngestResult> ingestResults,
+                                  ToIntFunction<IngestResult> count )
+    {
+        // How big to make the array? We don't want to guess because then we
+        // would need to resize, which requires more heap again. Better to get
+        // it correct at the outset.
+        int sizeNeeded = 0;
+
+        for ( IngestResult ingestResult : ingestResults )
+        {
+            sizeNeeded += count.applyAsInt( ingestResult );
+        }
+
+        long[] ids = new long[sizeNeeded];
+        int i = 0;
+
+        for ( IngestResult ingestResult : ingestResults )
+        {
+            for ( short j = 0; j < count.applyAsInt( ingestResult ); j++ )
+            {
+                ids[i] = ingestResult.getSurrogateKey();
+                i++;
+            }
+        }
+
+        return ids;
+    }
+
+    /**
+     * Saves the project in the database
+     * @param ingestIds the ingest identifiers
+     * @throws SQLException if the save fails
+     */
+    private void save( IngestIds ingestIds ) throws SQLException
+    {
+        // Not already saved?
+        if ( !this.performedInsert )
+        {
+            LOGGER.trace( "Attempting to save project." );
+
+            DataScripter saveScript = this.getInsertSelectStatement();
+
+            try
+            {
+                this.performedInsert = saveScript.execute() > 0;
+            }
+            catch ( SQLException e )
+            {
+                throw new DataAccessException( "While attempting to save the project.", e );
+            }
+
+            if ( this.performedInsert )
+            {
+                this.projectId = saveScript.getInsertedIds()
+                                           .get( 0 );
+            }
+            else
+            {
+                Database db = this.getDatabase();
+                DataScripter scriptWithId = new DataScripter( db );
+                scriptWithId.setHighPriority( true );
+                scriptWithId.setUseTransaction( false );
+                scriptWithId.addLine( "SELECT project_id" );
+                scriptWithId.addLine( "FROM wres.Project P" );
+                scriptWithId.addLine( "WHERE P.hash = ?" );
+                scriptWithId.addArgument( this.getHash() );
+                scriptWithId.setMaxRows( 1 );
+
+                try ( DataProvider data = scriptWithId.getData() )
+                {
+                    this.projectId = data.getLong( PROJECT_ID );
+                }
+                catch ( SQLException e )
+                {
+                    throw new DataAccessException( "While attempting to save the project.", e );
+                }
+            }
+        }
+
+        if ( LOGGER.isTraceEnabled() )
+        {
+            LOGGER.trace( "Did I create Project ID {}? {}",
+                          this.getId(),
+                          this.performedInsert );
+        }
+
+        LOGGER.debug( "Did the Project created by this Thread insert into the database first? {}",
+                      this.performedInsert );
+
+        // Insert the wres.ProjectSource rows connecting ingest results to this project
+        DatabaseProject.insertProjectSources( this.getDatabase(), this, this.performedInsert, ingestIds );
+
+        LOGGER.info( "The identity of the database project is '{}'.", this.getProjectId() );
+    }
+
+    /**
+     * Continue ingest.
+     *
+     * @param database the database
+     * @param project the database project
+     * @param inserted whether the project caused an insert
+     * @param ingestIds the ingest identifiers
+     * @throws SQLException if the project could not be ingested
+     */
+    private static void insertProjectSources( Database database,
+                                              DatabaseProject project,
+                                              boolean inserted,
+                                              IngestIds ingestIds )
+            throws SQLException
+    {
+        long detailsId = project.getId();
+        if ( Boolean.TRUE.equals( inserted ) )
+        {
+            String projectId = Long.toString( detailsId );
+            LOGGER.debug( "Found that this Thread is responsible for "
+                          + "wres.ProjectSource rows for project {}",
+                          detailsId );
+
+            // If we just created the Project, we are responsible for relating
+            // project to source. Otherwise, we trust it is present.
+            String tableName = "wres.ProjectSource";
+            List<String> columnNames = List.of( PROJECT_ID, "source_id", "member" );
+
+            List<String[]> values = DatabaseProject.getSourceRowsFromIds( ingestIds, projectId );
+
+            // The first two columns are numbers, last one is char.
+            boolean[] charColumns = { false, false, true };
+            DatabaseOperations.insertIntoDatabase( database, tableName, columnNames, values, charColumns );
+        }
+        else
+        {
+            LOGGER.debug( "Found that this Thread is NOT responsible for "
+                          + "wres.ProjectSource rows for project {}",
+                          detailsId );
+            DataScripter scripter = new DataScripter( database );
+            scripter.addLine( "SELECT COUNT( source_id ) AS count" );
+            scripter.addLine( "FROM wres.ProjectSource" );
+            scripter.addLine( "WHERE project_id = ?" );
+            scripter.addArgument( detailsId );
+
+            // Need to wait here until the data is available. How long to wait?
+            // Start with 30ish seconds, error out after that. We might actually
+            // wait longer than 30 seconds.
+            long startMillis = System.currentTimeMillis();
+            long endMillis = startMillis + Duration.ofSeconds( 30 )
+                                                   .toMillis();
+            long currentMillis = startMillis;
+            long sleepMillis = Duration.ofSeconds( 1 )
+                                       .toMillis();
+            boolean projectSourceRowsFound = false;
+
+            while ( currentMillis < endMillis )
+            {
+                try ( DataProvider dataProvider = scripter.getData() )
+                {
+                    long count = dataProvider.getLong( "count" );
+
+                    if ( count > 1 )
+                    {
+                        // We assume that the projectsource rows are made
+                        // in a single transaction here. We further assume that
+                        // each project will have at least a left and right
+                        // member, therefore 2 or more rows (greater than 1).
+                        LOGGER.debug( "wres.ProjectSource rows present for {}",
+                                      detailsId );
+                        projectSourceRowsFound = true;
+                        break;
+                    }
+                    else
+                    {
+                        LOGGER.debug( "wres.ProjectSource rows missing for {}",
+                                      detailsId );
+                        Thread.sleep( sleepMillis );
+                    }
+                }
+                catch ( InterruptedException ie )
+                {
+                    LOGGER.warn( "Interrupted while waiting for wres.ProjectSource rows.", ie );
+                    Thread.currentThread().interrupt();
+                    // No need to rethrow, the evaluation will fail.
+                }
+
+                currentMillis = System.currentTimeMillis();
+            }
+
+            if ( !projectSourceRowsFound )
+            {
+                throw new IngestException( "Another WRES instance failed to "
+                                           + "complete ingest that this "
+                                           + "evaluation depends on." );
+            }
+        }
+    }
+
+    /**
+     * Returns the top hash of the project sources from the ingest identifiers.
+     * @param ingestIds the ingest identifiers
+     * @param database the database
+     * @return the top hash of project sources
+     * @throws SQLException if the top hash could not be determined
+     */
+    private static String getTopHashOfIngestedSources( IngestIds ingestIds,
+                                                       Database database ) throws SQLException
+    {
+        // Permit the List<IngestResult> to be garbage collected here, which
+        // should leave space on heap for creating collections in the following.
+
+        // We don't yet know how many unique timeseries there are. For example,
+        // a baseline forecast could be the same as a right forecast. So we
+        // can't as easily drop to primitive arrays because we would want to
+        // know how to size them up front. The countOfIngestResults is a
+        // maximum, though.
+        Set<Long> uniqueSourcesUsed = new HashSet<>();
+
+        // Assemble the IDs
+        Arrays.stream( ingestIds.leftIds() )
+              .forEach( uniqueSourcesUsed::add );
+        Arrays.stream( ingestIds.rightIds() )
+              .forEach( uniqueSourcesUsed::add );
+        Arrays.stream( ingestIds.baselineIds() )
+              .forEach( uniqueSourcesUsed::add );
+        Arrays.stream( ingestIds.covariateIds() )
+              .forEach( uniqueSourcesUsed::add );
+
+        int countOfUniqueHashes = uniqueSourcesUsed.size();
+        final int MAX_PARAMETER_COUNT = 999;
+        Map<Long, String> idsToHashes = new HashMap<>( countOfUniqueHashes );
+        Set<Long> batchOfIds = new HashSet<>( MAX_PARAMETER_COUNT );
+
+        for ( Long rawId : uniqueSourcesUsed )
+        {
+            // If appending this id is <= max, add it.
+            if ( batchOfIds.size() + 1 > MAX_PARAMETER_COUNT )
+            {
+                LOGGER.debug( "Query would exceed {} params, running it now and building a new one.",
+                              MAX_PARAMETER_COUNT );
+                DatabaseProject.selectIdsAndHashes( database, batchOfIds, idsToHashes );
+                batchOfIds.clear();
+            }
+
+            batchOfIds.add( rawId );
+        }
+
+        // The last query with the remainder of ids.
+        DatabaseProject.selectIdsAndHashes( database, batchOfIds, idsToHashes );
+
+        // "select hash from wres.Source S inner join ( select ... ) I on S.source_id = I.source_id"
+        String[] leftHashes = DatabaseProject.getHashes( ingestIds.leftIds(), idsToHashes );
+        String[] rightHashes = DatabaseProject.getHashes( ingestIds.rightIds(), idsToHashes );
+        String[] baselineHashes = DatabaseProject.getHashes( ingestIds.baselineIds(), idsToHashes );
+        String[] covariateHashes = DatabaseProject.getHashes( ingestIds.covariateIds(), idsToHashes );
+
+        IngestHashes hashes = new IngestHashes( leftHashes, rightHashes, baselineHashes, covariateHashes );
+
+        return DatabaseProject.getTopHashOfSources( hashes );
+    }
+
+    /**
+     * <p>Creates a hash for the indicated project configuration based on its
+     * data ingested.
+     *
+     * @param hashes the ingest hashes
+     * @return a unique hash code for the project's circumstances
+     */
+    private static String getTopHashOfSources( IngestHashes hashes )
+    {
+        MessageDigest md5Digest;
+
+        try
+        {
+            md5Digest = MessageDigest.getInstance( "MD5" );
+        }
+        catch ( NoSuchAlgorithmException nsae )
+        {
+            throw new IngestException( "Couldn't use MD5 algorithm.",
+                                       nsae );
+        }
+
+        // Sort for deterministic hash result for same list of ingested
+        Arrays.stream( hashes.leftHashes() )
+              .sorted()
+              .forEach( n -> DigestUtils.updateDigest( md5Digest, n ) );
+        Arrays.stream( hashes.rightHashes() )
+              .sorted()
+              .forEach( n -> DigestUtils.updateDigest( md5Digest, n ) );
+        Arrays.stream( hashes.baselineHashes() )
+              .sorted()
+              .forEach( n -> DigestUtils.updateDigest( md5Digest, n ) );
+        Arrays.stream( hashes.covariateHashes() )
+              .sorted()
+              .forEach( n -> DigestUtils.updateDigest( md5Digest, n ) );
+
+        byte[] digestAsHex = md5Digest.digest();
+        return Hex.encodeHexString( digestAsHex );
+    }
+
+    /**
+     * Converts the supplied IDs to source hashes using the translation map.
+     * @param ids the ids to hash
+     * @param idsToHashes the map of IDs to hashes
+     * @return the hashes
+     */
+    private static String[] getHashes( long[] ids, Map<Long, String> idsToHashes )
+    {
+        String[] hashes = new String[ids.length];
+
+        for ( int i = 0; i < ids.length; i++ )
+        {
+            long id = ids[i];
+            String hash = idsToHashes.get( id );
+
+            if ( Objects.nonNull( hash ) )
+            {
+                hashes[i] = hash;
+            }
+            else
+            {
+                throw new IngestException( "Unexpected null left hash value for id="
+                                           + id );
+            }
+        }
+
+        return hashes;
+    }
+
+    /**
+     * Select source ids and hashes and put them into the given Map.
+     * @param database The database to use.
+     * @param ids The ids to use for selection of hashes.
+     * @param idsToHashes MUTATED by this method, results go into this Map.
+     * @throws SQLException When something goes wrong related to database.
+     * @throws IngestException When a null value is found in result set.
+     */
+
+    private static void selectIdsAndHashes( Database database,
+                                            Set<Long> ids,
+                                            Map<Long, String> idsToHashes )
+            throws SQLException
+    {
+        String queryStart = "SELECT source_id, hash "
+                            + "FROM wres.Source "
+                            + "WHERE source_id in ";
+        StringJoiner idJoiner = new StringJoiner( ",", "(", ")" );
+
+        for ( int i = 0; i < ids.size(); i++ )
+        {
+            idJoiner.add( "?" );
+        }
+
+        String query = queryStart + idJoiner;
+        DataScripter script = new DataScripter( database, query );
+
+        for ( Long id : ids )
+        {
+            script.addArgument( id );
+        }
+
+        script.setMaxRows( ids.size() );
+
+        try ( DataProvider dataProvider = script.getData() )
+        {
+            while ( dataProvider.next() )
+            {
+                Long id = dataProvider.getLong( "source_id" );
+                String hash = dataProvider.getString( "hash" );
+
+                if ( Objects.nonNull( id )
+                     && Objects.nonNull( hash ) )
+                {
+                    idsToHashes.put( id, hash );
+                }
+                else
+                {
+                    boolean idNull = Objects.isNull( id );
+                    boolean hashNull = Objects.isNull( hash );
+                    throw new IngestException( "Found a null value in db when expecting a value. idNull="
+                                               + idNull
+                                               + " hashNull="
+                                               + hashNull );
+                }
+            }
+        }
+    }
+
+    /**
+     * Converts source IDs into source rows for insertion.
+     * @param ingestIds the ingest ids
+     * @param projectId the project ID
+     * @return the source rows to insert
+     */
+    private static List<String[]> getSourceRowsFromIds( IngestIds ingestIds,
+                                                        String projectId )
+    {
+        List<String[]> values = new ArrayList<>();
+
+        for ( long sourceID : ingestIds.leftIds() )
+        {
+            String[] row = new String[3];
+            row[0] = projectId;
+            row[1] = Long.toString( sourceID );
+            row[2] = "left";
+            values.add( row );
+        }
+
+        for ( long sourceID : ingestIds.rightIds() )
+        {
+            String[] row = new String[3];
+            row[0] = projectId;
+            row[1] = Long.toString( sourceID );
+            row[2] = "right";
+            values.add( row );
+        }
+
+        for ( long sourceID : ingestIds.baselineIds() )
+        {
+            String[] row = new String[3];
+            row[0] = projectId;
+            row[1] = Long.toString( sourceID );
+            row[2] = "baseline";
+            values.add( row );
+        }
+
+        for ( long sourceID : ingestIds.covariateIds() )
+        {
+            String[] row = new String[3];
+            row[0] = projectId;
+            row[1] = Long.toString( sourceID );
+            row[2] = "covariate";
+            values.add( row );
+        }
+
+        return Collections.unmodifiableList( values );
+    }
+
+    /**
+     * Performs operations that are needed for the project to run between ingest and evaluation.
+     *
+     * @throws DataAccessException if retrieval of data fails
+     * @throws NoProjectDataException if zero features have intersecting data
+     */
+
+    private void prepareAndValidate()
+    {
+        LOGGER.info( "Validating the project and loading preliminary metadata..." );
+
+        // Check for features that potentially have intersecting values.
+        // The query in getIntersectingFeatures checks that there is some
+        // data for each feature on each side, but does not guarantee pairs.
+        synchronized ( this.featureLock )
+        {
+            this.setFeaturesAndFeatureGroups();
+        }
+
+        if ( this.features.isEmpty()
+             && this.featureGroups.isEmpty() )
+        {
+            throw new NoProjectDataException( "Failed to identify any features with data on all required sides (left, "
+                                              + "right and, when declared, baseline) for the variables and other "
+                                              + "declaration supplied. Please check that the declaration is expected to "
+                                              + "produce some features with time-series data on both sides of the pairing." );
+        }
+
+        // Validate any ensemble conditions
+        this.validateEnsembleConditions();
+
+        // Determine and set the variables to evaluate
+        this.setVariablesToEvaluate();
+
+        LOGGER.info( "Project validation and metadata loading is complete." );
+    }
+
+    /**
      * Checks that the union of ensemble conditions will select some data, otherwise throws an exception.
      *
      * @throws NoProjectDataException if the conditions select no data
@@ -780,143 +1242,6 @@ public class DatabaseProject implements Project
     }
 
     /**
-     * Validates the variables.
-     */
-
-    private void validateVariables()
-    {
-        boolean isVector;
-        Variables variables = this.getCaches()
-                                  .getVariablesCache();
-
-        boolean leftTimeSeriesValid = true;
-        boolean rightTimeSeriesValid = true;
-        boolean baselineTimeSeriesValid = true;
-
-        try
-        {
-            isVector = !( this.usesGriddedData( DatasetOrientation.LEFT ) ||
-                          this.usesGriddedData( DatasetOrientation.RIGHT ) );
-
-            // Validate the variable declaration against the data, when the declaration is present
-            if ( isVector )
-            {
-                String name = this.getDeclaredVariableName( DatasetOrientation.LEFT );
-                leftTimeSeriesValid = Objects.isNull( name )
-                                      || variables.isValid( this.getId(),
-                                                            DatasetOrientation.LEFT.name()
-                                                                                   .toLowerCase(),
-                                                            name );
-            }
-
-            if ( isVector )
-            {
-                String name = this.getDeclaredVariableName( DatasetOrientation.RIGHT );
-                rightTimeSeriesValid = Objects.isNull( name )
-                                       || variables.isValid( this.getId(),
-                                                             DatasetOrientation.RIGHT.name()
-                                                                                     .toLowerCase(),
-                                                             name );
-            }
-
-            if ( isVector && this.hasBaseline() )
-            {
-                String name = this.getDeclaredVariableName( DatasetOrientation.BASELINE );
-                baselineTimeSeriesValid = Objects.isNull( name )
-                                          || variables.isValid( this.getId(),
-                                                                DatasetOrientation.BASELINE.name()
-                                                                                           .toLowerCase(),
-                                                                name );
-            }
-        }
-        catch ( SQLException | DataAccessException e )
-        {
-            throw new DataAccessException( "Could not determine whether the variables are valid.", e );
-        }
-
-
-        // If we're performing gridded evaluation, we can't check if our
-        // variables are valid via normal means, so just return
-        if ( !isVector )
-        {
-            LOGGER.info( "Preliminary metadata loading is complete." );
-            return;
-        }
-
-        // Get the details of the invalid variables
-        boolean valid = true;
-        String message = "";
-        if ( !leftTimeSeriesValid )
-        {
-            valid = false;
-            message += System.lineSeparator();
-            message += this.getInvalidVariablesMessage( variables, DatasetOrientation.LEFT );
-        }
-        if ( !rightTimeSeriesValid )
-        {
-            valid = false;
-            message += System.lineSeparator();
-            message += this.getInvalidVariablesMessage( variables, DatasetOrientation.RIGHT );
-        }
-        if ( !baselineTimeSeriesValid )
-        {
-            valid = false;
-            message += System.lineSeparator();
-            message += this.getInvalidVariablesMessage( variables, DatasetOrientation.BASELINE );
-        }
-
-        if ( !valid )
-        {
-            throw new NoProjectDataException( message );
-        }
-    }
-
-    /**
-     * Get the message about invalid variables.
-     * @param variables the variables cache
-     * @param orientation the orientation
-     * @return the message
-     */
-
-    private String getInvalidVariablesMessage( Variables variables, DatasetOrientation orientation )
-    {
-        try
-        {
-            List<String> availableVariables = variables.getAvailableVariables( this.getId(),
-                                                                               orientation.name()
-                                                                                          .toLowerCase() );
-            StringBuilder message = new StringBuilder();
-            message.append( "    - There is no '" )
-                   .append( this.getVariableName( orientation ) )
-                   .append( "' data available for the " )
-                   .append( orientation )
-                   .append( " evaluation dataset." );
-
-            if ( !availableVariables.isEmpty() )
-            {
-                message.append( " Available variable(s): " )
-                       .append( availableVariables );
-            }
-            else
-            {
-                message.append( " There are no other available variables for use." );
-            }
-
-            return message.toString();
-        }
-        catch ( SQLException e )
-        {
-            throw new DataAccessException( "'"
-                                           + this.getVariableName( orientation )
-                                           + "' is not a valid "
-                                           + orientation
-                                           + "variable for evaluation. Possible alternatives could "
-                                           + "not be found.",
-                                           e );
-        }
-    }
-
-    /**
      * Sets the variables to evaluate. Begins by looking at the declaration. If it cannot find a declared variable for 
      * any particular left/right/baseline context, it looks at the data instead. If there is more than one possible 
      * name and it does not exactly match the name identified for the other side of the pairing, then an exception is 
@@ -929,96 +1254,27 @@ public class DatabaseProject implements Project
     private void setVariablesToEvaluate()
     {
         // The set of possibilities to validate
-        Set<String> leftNames = new HashSet<>();
-        Set<String> rightNames = new HashSet<>();
-        Set<String> baselineNames = new HashSet<>();
-
-        boolean leftAuto = false;
-        boolean rightAuto = false;
-        boolean baselineAuto = false;
-
-        // Left declared?
-        if ( Objects.nonNull( this.getLeft()
-                                  .variable() ) )
-        {
-            String name = this.getLeft()
-                              .variable()
-                              .name();
-            leftNames.add( name );
-        }
-        // No, look at data
-        else
-        {
-            Set<String> names = this.getVariableNameByInspectingData( DatasetOrientation.LEFT );
-            leftNames.addAll( names );
-            leftAuto = true;
-        }
-
-        // Right declared?
-        if ( Objects.nonNull( this.getRight()
-                                  .variable() ) )
-        {
-            String name = this.getRight()
-                              .variable()
-                              .name();
-            rightNames.add( name );
-        }
-        // No, look at data
-        else
-        {
-            Set<String> names = this.getVariableNameByInspectingData( DatasetOrientation.RIGHT );
-            rightNames.addAll( names );
-            rightAuto = true;
-        }
-
-        // Baseline declared?
-        if ( this.hasBaseline() )
-        {
-            if ( Objects.nonNull( this.getBaseline()
-                                      .dataset()
-                                      .variable() ) )
-            {
-                String name = this.getBaseline()
-                                  .dataset()
-                                  .variable()
-                                  .name();
-                baselineNames.add( name );
-            }
-            // No, look at data
-            else
-            {
-                Set<String> names = this.getVariableNameByInspectingData( DatasetOrientation.BASELINE );
-                baselineNames.addAll( names );
-                baselineAuto = true;
-            }
-        }
+        Set<String> leftNames = this.getVariableNameByInspectingData( DatasetOrientation.LEFT );
+        Set<String> rightNames = this.getVariableNameByInspectingData( DatasetOrientation.RIGHT );
+        Set<String> baselineNames = this.getVariableNameByInspectingData( DatasetOrientation.BASELINE );
+        Set<String> covariateNames = this.getVariableNameByInspectingData( DatasetOrientation.COVARIATE );
 
         LOGGER.debug( "While looking for variable names to evaluate, discovered {} on the LEFT side, {} on the RIGHT "
-                      + "side and {} on the BASELINE side. LEFT autodetected: {}, RIGHT autodetected: {}, BASELINE "
-                      + "auto-detected: {}.",
+                      + "side, {} on the BASELINE side and {} on the COVARIATE side.",
                       leftNames,
                       rightNames,
                       baselineNames,
-                      leftAuto,
-                      rightAuto,
-                      baselineAuto );
+                      covariateNames );
 
         VariableNames variableNames = ProjectUtilities.getVariableNames( this.getDeclaration(),
-                                                                         Collections.unmodifiableSet( leftNames ),
-                                                                         Collections.unmodifiableSet( rightNames ),
-                                                                         Collections.unmodifiableSet( baselineNames ) );
+                                                                         leftNames,
+                                                                         rightNames,
+                                                                         baselineNames,
+                                                                         covariateNames );
 
         this.leftVariable = variableNames.leftVariableName();
         this.rightVariable = variableNames.rightVariableName();
         this.baselineVariable = variableNames.baselineVariableName();
-
-        ProjectUtilities.validateVariableNames( this.getDeclaredLeftVariableName(),
-                                                this.getDeclaredRightVariableName(),
-                                                this.getDeclaredBaselineVariableName(),
-                                                this.getLeftVariableName(),
-                                                this.getRightVariableName(),
-                                                this.getBaselineVariableName(),
-                                                this.hasBaseline() );
     }
 
     /**
@@ -1031,6 +1287,13 @@ public class DatabaseProject implements Project
 
     private Set<String> getVariableNameByInspectingData( DatasetOrientation orientation )
     {
+        if ( orientation == DatasetOrientation.BASELINE
+             && !this.hasBaseline() )
+        {
+            LOGGER.debug( "No variable names to inspect for the {} orientation.", DatasetOrientation.BASELINE );
+            return Set.of();
+        }
+
         DataScripter script = ProjectScriptGenerator.createVariablesScript( this.getDatabase(),
                                                                             this.getId(),
                                                                             orientation );
@@ -1055,8 +1318,9 @@ public class DatabaseProject implements Project
         }
         catch ( SQLException e )
         {
-            throw new DataAccessException(
-                    "While attempting to determine the variable name for " + orientation + " data.", e );
+            throw new DataAccessException( "While attempting to determine the variable name for "
+                                           + orientation
+                                           + " data.", e );
         }
 
         return Collections.unmodifiableSet( names );
@@ -1214,25 +1478,21 @@ public class DatabaseProject implements Project
             while ( dataProvider.next() )
             {
                 int leftId = dataProvider.getInt( "left_id" );
-                Feature leftKey =
-                        fCache.getFeatureKey( leftId );
+                Feature leftKey = fCache.getFeatureKey( leftId );
                 int rightId = dataProvider.getInt( "right_id" );
-                Feature rightKey =
-                        fCache.getFeatureKey( rightId );
+                Feature rightKey = fCache.getFeatureKey( rightId );
                 Feature baselineKey = null;
 
                 // Baseline column will only be there when baseline exists.
                 if ( hasBaseline() )
                 {
-                    int baselineId =
-                            dataProvider.getInt( "baseline_id" );
+                    int baselineId = dataProvider.getInt( "baseline_id" );
 
                     // JDBC getInt returns 0 when not found. All primary key
                     // columns should start at 1.
                     if ( baselineId > 0 )
                     {
-                        baselineKey =
-                                fCache.getFeatureKey( baselineId );
+                        baselineKey = fCache.getFeatureKey( baselineId );
                     }
                 }
 
@@ -1311,68 +1571,9 @@ public class DatabaseProject implements Project
     private GriddedFeatures getGriddedFeatures()
     {
         Objects.requireNonNull( this.griddedFeatures,
-                                "Cannot query gridded feature availablity without a gridded features cache." );
+                                "Cannot query gridded feature availability without a gridded features cache." );
 
         return this.griddedFeatures;
-    }
-
-    /**
-     * @see #getDeclaredLeftVariableName()
-     * @return the name of the left variable or null if determined from the data and the data has yet to be inspected
-     */
-    private String getLeftVariableName()
-    {
-        if ( Objects.isNull( this.leftVariable ) )
-        {
-            return this.getDeclaredLeftVariableName();
-        }
-
-        return this.leftVariable;
-    }
-
-    /**
-     * @return the name of the right variable or null if determined from the data and the data has yet to be inspected
-     */
-    private String getRightVariableName()
-    {
-        if ( Objects.isNull( this.rightVariable ) )
-        {
-            return this.getDeclaredRightVariableName();
-        }
-
-        return this.rightVariable;
-    }
-
-    /**
-     * @return the name of the baseline variable or null if determined from the data and the data has yet to be 
-     *            inspected
-     */
-    private String getBaselineVariableName()
-    {
-        if ( Objects.isNull( this.baselineVariable ) )
-        {
-            return this.getDeclaredBaselineVariableName();
-        }
-
-        return this.baselineVariable;
-    }
-
-    /**
-     * @param orientation the orientation
-     * @return the declared variable name
-     */
-    private String getDeclaredVariableName( DatasetOrientation orientation )
-    {
-        Objects.requireNonNull( orientation );
-
-        return switch ( orientation )
-        {
-            case LEFT -> this.getDeclaredLeftVariableName();
-            case RIGHT -> this.getDeclaredRightVariableName();
-            case BASELINE -> this.getDeclaredBaselineVariableName();
-            default -> throw new IllegalStateException( UNRECOGNIZED_DATASET_ORIENTATION_IN_THIS_CONTEXT
-                                                        + orientation );
-        };
     }
 
     /**
@@ -1436,5 +1637,26 @@ public class DatabaseProject implements Project
         return this.getDeclaration()
                    .baseline();
     }
+
+    /**
+     * Record of ingest identifiers.
+     * @param leftIds the left identifiers
+     * @param rightIds the right identifiers
+     * @param baselineIds the baseline identifiers
+     * @param covariateIds the covariate identifiers
+     */
+    private record IngestIds( long[] leftIds, long[] rightIds, long[] baselineIds, long[] covariateIds ) {} // NOSONAR
+
+    /**
+     * Record of ingest hashes.
+     * @param leftHashes the left hashes
+     * @param rightHashes the right hashes
+     * @param baselineHashes the baseline hashes
+     * @param covariateHashes the covariate hashes
+     */
+    private record IngestHashes( String[] leftHashes, // NOSONAR
+                                 String[] rightHashes,
+                                 String[] baselineHashes,
+                                 String[] covariateHashes ) {}
 }
 

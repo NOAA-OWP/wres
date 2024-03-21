@@ -1268,6 +1268,7 @@ public class DeclarationUtilities
     static Map<ThresholdType, Set<Threshold>> groupThresholdsByType( Set<Threshold> thresholds )
     {
         return thresholds.stream()
+                         .filter( t -> Objects.nonNull( t.type() ) )
                          .collect( Collectors.groupingBy( Threshold::type,
                                                           Collectors.mapping( Function.identity(),
                                                                               Collectors.toCollection(

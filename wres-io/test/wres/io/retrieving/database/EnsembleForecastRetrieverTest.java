@@ -2,7 +2,6 @@ package wres.io.retrieving.database;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
 
 import static wres.io.retrieving.database.RetrieverTestHelper.*;
 
@@ -46,12 +45,12 @@ import wres.datamodel.types.Ensemble.Labels;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
+import wres.io.TestData;
 import wres.io.database.ConnectionSupplier;
 import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.TestDatabase;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
-import wres.io.project.Project;
 import wres.io.project.Projects;
 import wres.reading.DataSource;
 import wres.reading.TimeSeriesTuple;
@@ -322,10 +321,10 @@ public class EnsembleForecastRetrieverTest
 
     private void addOneForecastTimeSeriesWithFiveEventsAndThreeMembersToTheDatabase() throws SQLException
     {
-        DataSource leftData = RetrieverTestData.generateDataSource( DatasetOrientation.LEFT,
-                                                                    DataType.OBSERVATIONS );
-        DataSource rightData = RetrieverTestData.generateDataSource( DatasetOrientation.RIGHT,
-                                                                     DataType.ENSEMBLE_FORECASTS );
+        DataSource leftData = TestData.generateDataSource( DatasetOrientation.LEFT,
+                                                           DataType.OBSERVATIONS );
+        DataSource rightData = TestData.generateDataSource( DatasetOrientation.RIGHT,
+                                                            DataType.ENSEMBLE_FORECASTS );
         LOGGER.debug( "leftData: {}", leftData );
         LOGGER.debug( "rightData: {}", rightData );
 
@@ -354,7 +353,7 @@ public class EnsembleForecastRetrieverTest
                                             .features( new wres.config.yaml.components.Features( features ) )
                                             .build();
 
-        TimeSeries<Ensemble> timeSeriesOne = RetrieverTestData.generateTimeSeriesEnsembleOne();
+        TimeSeries<Ensemble> timeSeriesOne = TestData.generateTimeSeriesEnsembleOne();
         DatabaseTimeSeriesIngester ingesterOne =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
@@ -369,7 +368,7 @@ public class EnsembleForecastRetrieverTest
         IngestResult ingestResultOne = ingesterOne.ingest( tupleStreamOne, rightData )
                                                   .get( 0 );
 
-        TimeSeries<Double> timeSeriesTwo = RetrieverTestData.generateTimeSeriesDoubleWithNoReferenceTimes();
+        TimeSeries<Double> timeSeriesTwo = TestData.generateTimeSeriesDoubleWithNoReferenceTimes();
         DatabaseTimeSeriesIngester ingesterTwo =
                 new DatabaseTimeSeriesIngester.Builder().setSystemSettings( this.mockSystemSettings )
                                                         .setDatabase( this.wresDatabase )
@@ -403,12 +402,11 @@ public class EnsembleForecastRetrieverTest
 
         LOGGER.info( "ingestResultOne: {}", ingestResultOne );
         LOGGER.info( "ingestResultTwo: {}", ingestResultTwo );
-        Project project = Projects.getProject( this.wresDatabase,
-                                               declaration,
-                                               this.caches,
-                                               null,
-                                               results );
-        assertTrue( project.save() );
+        Projects.getProject( this.wresDatabase,
+                             declaration,
+                             this.caches,
+                             null,
+                             results );
     }
 
 }
