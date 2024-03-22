@@ -2186,6 +2186,33 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testTwoCovariatesWithoutVariableNamesProducesError()
+    {
+        Source source = SourceBuilder.builder()
+                                     .sourceInterface( SourceInterface.USGS_NWIS )
+                                     .build();
+        Source anotherSource = SourceBuilder.builder()
+                                            .sourceInterface( SourceInterface.WRDS_NWM )
+                                            .build();
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( source, anotherSource ) )
+                                        .type( DataType.OBSERVATIONS )
+                                        .build();
+        CovariateDataset covariate = new CovariateDataset( dataset, null, null );
+        List<CovariateDataset> covariates = List.of( covariate, covariate );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .covariates( covariates )
+                                                                        .build();
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, "When declaring two or more 'covariates', the "
+                                                               + "'name' of each 'variable' must be declared "
+                                                               + "explicitly",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
     void testInconsistentGraphicsOrientationAndPoolingDeclarationProducesError() throws IOException  // NOSONAR
     {
         // #57969-86

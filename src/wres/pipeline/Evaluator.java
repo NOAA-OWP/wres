@@ -612,6 +612,9 @@ public class Evaluator
                                                caches,
                                                griddedFeatures,
                                                ingestResults );
+
+                // Caches are read only from now on, post ingest
+                caches.setReadOnly();
             }
             // In-memory evaluation
             else
@@ -642,7 +645,7 @@ public class Evaluator
                                                ingestResults );
             }
 
-            // Assign the declaration augmented by the ingested data
+            // Re-assign the declaration augmented by the ingested data
             declarationWithFeatures = project.getDeclaration();
 
             LOGGER.debug( "Finished ingest of time-series data." );

@@ -1025,6 +1025,30 @@ public class DeclarationValidator
             events.addAll( covariateEvents );
         }
 
+        // Variable names are additionally required for every covariate when there are two or more as this helps to
+        // disambiguate the time-series to which the covariate conditions apply, post-ingest
+        if ( declaration.covariates()
+                        .size() > 1
+             && declaration.covariates()
+                           .stream()
+                           .anyMatch( c -> Objects.isNull( c.dataset()
+                                                            .variable() )
+                                           || Objects.isNull( c.dataset()
+                                                               .variable()
+                                                               .name() ) ) )
+        {
+            EvaluationStatusEvent error =
+                    EvaluationStatusEvent.newBuilder()
+                                         .setStatusLevel( StatusLevel.ERROR )
+                                         .setEventMessage( "When declaring two or more 'covariates', the 'name' of each "
+                                                           + "'variable' must be declared explicitly, but one or more "
+                                                           + "of the 'covariates' had no declared 'variable' and "
+                                                           + "'name'. Please clarify the 'name' of the 'variable' for "
+                                                           + "each covariate and try again." )
+                                         .build();
+            events.add( error );
+        }
+
         return Collections.unmodifiableList( events );
     }
 

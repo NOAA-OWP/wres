@@ -158,8 +158,8 @@ class ProjectUtilities
      * @param variableNames the variable names
      */
 
-    private static void validateAutoDetectedVariableNames( EvaluationDeclaration declaration,
-                                                           VariableNames variableNames )
+    private static void checkAutoDetectedVariableNames( EvaluationDeclaration declaration,
+                                                        VariableNames variableNames )
     {
         String declaredLeftVariableName = DeclarationUtilities.getVariableName( declaration.left() );
         String declaredRightVariableName = DeclarationUtilities.getVariableName( declaration.right() );
@@ -214,11 +214,11 @@ class ProjectUtilities
      * @throws DeclarationException if the declared and ingested variable names are inconsistent
      */
 
-    private static void validateDeclaredAndIngestedVariablesAgree( EvaluationDeclaration declaration,
-                                                                   Set<String> left,
-                                                                   Set<String> right,
-                                                                   Set<String> baseline,
-                                                                   Set<String> covariates )
+    private static void checkDeclaredAndIngestedVariablesAgree( EvaluationDeclaration declaration,
+                                                                Set<String> left,
+                                                                Set<String> right,
+                                                                Set<String> baseline,
+                                                                Set<String> covariates )
     {
         String declaredLeftVariableName = DeclarationUtilities.getVariableName( declaration.left() );
         String declaredRightVariableName = DeclarationUtilities.getVariableName( declaration.right() );
@@ -389,41 +389,10 @@ class ProjectUtilities
 
         }
 
-        if ( !declaration.covariates()
-                         .isEmpty()
-             && covariates.isEmpty() )
-        {
-            throw new DeclarationException( WHILE_ATTEMPTING_TO_DETECT_THE
-                                            + "name(s) of the "
-                                            + DatasetOrientation.COVARIATE
-                                            + " variables from the data, failed to identify any "
-                                            + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
-                                            + "name for each "
-                                            + DatasetOrientation.COVARIATE
-                                            + "dataset to disambiguate." );
+        // Check that covariate names are present when required
+        ProjectUtilities.covariateVariableNamesArePresentWhenRequired( declaration, covariates );
 
-        }
-
-        // Different number of covariate names than datasets
-        if ( declaration.covariates()
-                        .size() != covariates.size() )
-        {
-            throw new DeclarationException( WHILE_ATTEMPTING_TO_DETECT_THE
-                                            + "name(s) of the "
-                                            + DatasetOrientation.COVARIATE
-                                            + " variables from the data, discovered a different number of names than "
-                                            + "datasets, which is not allowed. Please declare each "
-                                            + DatasetOrientation.COVARIATE
-                                            + " variable name explicitly to disambiguate. The number of "
-                                            + DatasetOrientation.COVARIATE
-                                            + " datasets is: "
-                                            + declaration.covariates()
-                                                         .size()
-                                            + ". The possible variable names are: "
-                                            + covariates
-                                            + "." );
-        }
-
+        // Further determine the variable names based on ingested sources
         VariableNames variableNames;
 
         // One variable name for all? Allow. 
@@ -459,15 +428,15 @@ class ProjectUtilities
                                                                                declaration );
         }
 
-        // Further validate the names
-        ProjectUtilities.validateAutoDetectedVariableNames( declaration,
-                                                            variableNames );
+        // Perform additional validation checks
+        ProjectUtilities.checkAutoDetectedVariableNames( declaration,
+                                                         variableNames );
 
-        ProjectUtilities.validateDeclaredAndIngestedVariablesAgree( declaration,
-                                                                    left,
-                                                                    right,
-                                                                    baseline,
-                                                                    covariates );
+        ProjectUtilities.checkDeclaredAndIngestedVariablesAgree( declaration,
+                                                                 left,
+                                                                 right,
+                                                                 baseline,
+                                                                 covariates );
 
         return variableNames;
     }
@@ -860,6 +829,69 @@ class ProjectUtilities
         }
 
         return Collections.unmodifiableSortedSet( labelsToFilter );
+    }
+
+    /**
+     * Validates the covariate variable names as they relate to the ingested data.
+     * @param declaration the declaration
+     * @param covariates the covariates
+     * @throws DeclarationException if the declaration is invalid
+     */
+    private static void covariateVariableNamesArePresentWhenRequired( EvaluationDeclaration declaration,
+                                                                      Set<String> covariates )
+    {
+        if ( !declaration.covariates()
+                         .isEmpty()
+             && covariates.isEmpty() )
+        {
+            throw new DeclarationException( WHILE_ATTEMPTING_TO_DETECT_THE
+                                            + "name(s) of the "
+                                            + DatasetOrientation.COVARIATE
+                                            + " variables from the data, failed to identify any "
+                                            + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
+                                            + "name for each "
+                                            + DatasetOrientation.COVARIATE
+                                            + "dataset to disambiguate." );
+
+        }
+
+        // Multiple cpvariates declared, but some variable names not declared. This should be validated at declaration
+        // time also, but is reinforced here
+        if ( declaration.covariates()
+                        .size() > 1
+             && declaration.covariates()
+                           .stream()
+                           .anyMatch( c -> Objects.isNull( c.dataset()
+                                                            .variable() )
+                                           || Objects.isNull( c.dataset()
+                                                               .variable()
+                                                               .name() ) ) )
+        {
+            throw new DeclarationException( "When declaring two or more 'covariates', the 'name' of each 'variable' "
+                                            + "must be declared explicitly, but one or more of the 'covariates' had no "
+                                            + "declared 'variable' and 'name'. Please clarify the 'name' of the "
+                                            + "'variable' for each covariate and try again." );
+        }
+
+        // Different number of covariate names than datasets
+        if ( declaration.covariates()
+                        .size() != covariates.size() )
+        {
+            throw new DeclarationException( WHILE_ATTEMPTING_TO_DETECT_THE
+                                            + "name(s) of the "
+                                            + DatasetOrientation.COVARIATE
+                                            + " variables from the data, discovered a different number of names than "
+                                            + "datasets, which is not allowed. Please declare each "
+                                            + DatasetOrientation.COVARIATE
+                                            + " variable name explicitly to disambiguate. The number of "
+                                            + DatasetOrientation.COVARIATE
+                                            + " datasets is: "
+                                            + declaration.covariates()
+                                                         .size()
+                                            + ". The possible variable names are: "
+                                            + covariates
+                                            + "." );
+        }
     }
 
     /**
