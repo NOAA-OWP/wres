@@ -21,6 +21,7 @@ import java.util.TreeSet;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
+import net.jcip.annotations.Immutable;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -60,59 +61,52 @@ import wres.statistics.generated.TimeScale.TimeScaleFunction;
 /**
  * An implementation of the {@link Project} for an evaluation performed using a database.
  */
+@Immutable
 public class DatabaseProject implements Project
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseProject.class );
     private static final String SELECT_1 = "SELECT 1";
     private static final String PROJECT_ID = "project_id";
-
-    /** Protects access and generation of the feature collection. */
-    private final Object featureLock = new Object();
     private final EvaluationDeclaration declaration;
     private final Database database;
-    private final DatabaseCaches caches;
-    private final GriddedFeatures griddedFeatures;
 
     /** The overall hash for the data sources used in the project. */
     private final String hash;
 
-    private long projectId;
+    private final long projectId;
 
     /** The measurement unit, which is the declared unit, if available, else the most commonly occurring unit among the
      * project sources, with a preference for the mostly commonly occurring right-sided source unit. See 
      * {@link ProjectScriptGenerator#createUnitScript(Database, long)}}. */
 
-    private String measurementUnit = null;
+    private final String measurementUnit;
 
     /** The set of all features pertaining to the project. */
-    private Set<FeatureTuple> features;
+    private final Set<FeatureTuple> features;
 
     /** The feature groups related to the project. */
-    private Set<FeatureGroup> featureGroups;
+    private final Set<FeatureGroup> featureGroups;
 
     /** The singleton feature groups for which statistics should not be published, if any. */
-    private Set<FeatureGroup> doNotPublish;
-
-    /** Indicates whether this project was inserted on upon this execution of the project. */
-    private boolean performedInsert;
-
-    private Boolean leftUsesGriddedData = null;
-    private Boolean rightUsesGriddedData = null;
-    private Boolean baselineUsesGriddedData = null;
-    private Boolean covariatesUseGriddedData = null;
+    private final Set<FeatureGroup> doNotPublish;
 
     /** The left-ish variable to evaluate. */
-    private String leftVariable;
+    private final String leftVariable;
 
     /** The right-ish variable to evaluate. */
-    private String rightVariable;
+    private final String rightVariable;
 
     /** The baseline-ish variable to evaluate. */
-    private String baselineVariable;
+    private final String baselineVariable;
 
     /** The desired timescale. */
-    private TimeScaleOuter desiredTimeScale;
+    private final TimeScaleOuter desiredTimeScale;
+
+    private final boolean leftUsesGriddedData;
+    private final boolean rightUsesGriddedData;
+    private final boolean baselineUsesGriddedData;
+    private final boolean covariatesUseGriddedData;
 
     /**
      * Creates an instance.
@@ -138,20 +132,49 @@ public class DatabaseProject implements Project
         IngestIds ingestIds = DatabaseProject.getIngestIds( ingestResults );
 
         this.hash = DatabaseProject.getTopHashOfIngestedSources( ingestIds, this.database );
-        this.caches = caches;
-        this.griddedFeatures = griddedFeatures;
-
-        // Read only from now on, post ingest
-        this.caches.setReadOnly();
 
         // Interpolate and validate the declaration before setting it
         EvaluationDeclaration innerDeclaration = ProjectUtilities.interpolate( declaration, ingestResults );
         ProjectUtilities.validate( innerDeclaration );
         this.declaration = innerDeclaration;
 
-        // Finally, save the project in the database and for final preparation/validation
-        this.save( ingestIds );
-        this.prepareAndValidate();
+        // Finally, save the project in the database and prepare the remainder of the internal state
+        this.projectId = this.save( ingestIds );
+
+        LOGGER.info( "Validating the project and loading preliminary metadata..." );
+
+        // Set the gridded data usage status.
+        this.leftUsesGriddedData = this.getUsesGriddedData( DatasetOrientation.LEFT );
+        this.rightUsesGriddedData = this.getUsesGriddedData( DatasetOrientation.RIGHT );
+        this.baselineUsesGriddedData = this.getUsesGriddedData( DatasetOrientation.BASELINE );
+        this.covariatesUseGriddedData = this.getUsesGriddedData( DatasetOrientation.COVARIATE );
+
+        FeatureSets featureSets = this.getFeaturesAndFeatureGroups( this.projectId,
+                                                                    innerDeclaration,
+                                                                    caches,
+                                                                    this.leftUsesGriddedData
+                                                                    || this.rightUsesGriddedData,
+                                                                    griddedFeatures );
+        this.features = featureSets.features();
+        this.featureGroups = featureSets.featureGroups();
+        this.doNotPublish = featureSets.doNotPublish();
+
+        // Validate any ensemble conditions
+        this.validateEnsembleConditions();
+
+        // Determine and set the variables to evaluate
+        VariableNames variableNames = this.getVariablesToEvaluate( innerDeclaration );
+        this.leftVariable = variableNames.leftVariableName();
+        this.rightVariable = variableNames.rightVariableName();
+        this.baselineVariable = variableNames.baselineVariableName();
+
+        // Set the desired timescale
+        this.desiredTimeScale = this.getDesiredTimeScale( innerDeclaration, this.projectId );
+
+        // Set the measurement unit
+        this.measurementUnit = this.getMeasurementUnitFromDatabase( innerDeclaration, this.projectId );
+
+        LOGGER.info( "Project validation and metadata loading is complete." );
     }
 
     @Override
@@ -169,52 +192,6 @@ public class DatabaseProject implements Project
     @Override
     public String getMeasurementUnit()
     {
-        // Declared unit available?
-        String declaredUnit = this.getDeclaration()
-                                  .unit();
-        if ( Objects.isNull( this.measurementUnit ) && Objects.nonNull( declaredUnit ) && !declaredUnit.isBlank() )
-        {
-            this.measurementUnit = declaredUnit;
-
-            LOGGER.debug( "Determined the measurement unit from the project declaration as {}.",
-                          this.measurementUnit );
-        }
-
-        // Still not available? Then analyze the unit.
-        if ( Objects.isNull( this.measurementUnit ) )
-        {
-            DataScripter scripter = ProjectScriptGenerator.createUnitScript( this.getDatabase(), this.getId() );
-
-            try ( Connection connection = this.getDatabase()
-                                              .getConnection();
-                  DataProvider dataProvider = scripter.buffer( connection ) )
-            {
-                if ( dataProvider.next() )
-                {
-                    this.measurementUnit = dataProvider.getString( "unit_name" );
-
-                    String member = dataProvider.getString( "member" );
-
-                    if ( LOGGER.isDebugEnabled() )
-                    {
-                        LOGGER.debug( "Determined the measurement unit by analyzing the project sources. The analyzed "
-                                      + "measurement unit is {} and corresponds to the most commonly occurring unit "
-                                      + "among time-series from {} sources. The script used to discover the "
-                                      + "measurement unit for the project with identifier {} was: {}{}",
-                                      this.measurementUnit,
-                                      member,
-                                      this.getId(),
-                                      System.lineSeparator(),
-                                      scripter );
-                    }
-                }
-            }
-            catch ( SQLException e )
-            {
-                throw new DataAccessException( "While attempting to acquire a measurement unit.", e );
-            }
-        }
-
         return this.measurementUnit;
     }
 
@@ -238,87 +215,6 @@ public class DatabaseProject implements Project
     @Override
     public TimeScaleOuter getDesiredTimeScale()
     {
-        if ( Objects.nonNull( this.desiredTimeScale ) )
-        {
-            LOGGER.trace( "Discovered a desired time scale of {}.",
-                          this.desiredTimeScale );
-
-            return this.desiredTimeScale;
-        }
-
-        // Use the declared timescale
-        TimeScale declaredScale = this.getDeclaration()
-                                      .timeScale();
-        if ( Objects.nonNull( declaredScale ) )
-        {
-            this.desiredTimeScale = TimeScaleOuter.of( declaredScale.timeScale() );
-
-            LOGGER.trace( "Discovered that the desired time scale was declared explicitly as {}.",
-                          this.desiredTimeScale );
-
-            return this.desiredTimeScale;
-        }
-
-        // Find the Least Common Scale
-        Set<TimeScaleOuter> existingTimeScales = new HashSet<>();
-        DataScripter script = ProjectScriptGenerator.createTimeScalesScript( this.getDatabase(),
-                                                                             this.getProjectId() );
-
-        try ( Connection connection = this.getDatabase()
-                                          .getConnection();
-              DataProvider dataProvider = script.buffer( connection ) )
-        {
-            while ( dataProvider.next() )
-            {
-                long durationMillis = dataProvider.getLong( "duration_ms" );
-                String functionName = dataProvider.getString( "function_name" );
-
-                Duration duration = Duration.ofMillis( durationMillis );
-                TimeScaleFunction function = TimeScaleFunction.valueOf( functionName );
-                TimeScaleOuter scale = TimeScaleOuter.of( duration, function );
-                existingTimeScales.add( scale );
-            }
-        }
-        catch ( SQLException e )
-        {
-            throw new DataAccessException( "Unable to obtain the existing time scales of ingested time-series.", e );
-        }
-
-        // Look for the LCS among the ingested sources
-        if ( !existingTimeScales.isEmpty() )
-        {
-            TimeScaleOuter leastCommonScale = TimeScaleOuter.getLeastCommonTimeScale( existingTimeScales );
-
-            this.desiredTimeScale = leastCommonScale;
-
-            LOGGER.trace( "Discovered that the desired time scale was not supplied on construction of the project. "
-                          + "Instead, determined the desired time scale from the Least Common Scale of the ingested "
-                          + "inputs, which was {}.",
-                          leastCommonScale );
-
-            return this.desiredTimeScale;
-        }
-
-        // Look for the LCS among the declared inputs
-        Set<TimeScaleOuter> declaredExistingTimeScales = DeclarationUtilities.getSourceTimeScales( declaration )
-                                                                             .stream()
-                                                                             .map( TimeScaleOuter::of )
-                                                                             .collect( Collectors.toUnmodifiableSet() );
-
-        if ( !declaredExistingTimeScales.isEmpty() )
-        {
-            TimeScaleOuter leastCommonScale = TimeScaleOuter.getLeastCommonTimeScale( declaredExistingTimeScales );
-
-            this.desiredTimeScale = leastCommonScale;
-
-            LOGGER.trace( "Discovered that the desired time scale was not supplied on construction of the project."
-                          + " Instead, determined the desired time scale from the Least Common Scale of the "
-                          + "declared inputs, which  was {}.",
-                          leastCommonScale );
-
-            return this.desiredTimeScale;
-        }
-
         return this.desiredTimeScale;
     }
 
@@ -340,7 +236,7 @@ public class DatabaseProject implements Project
             throw new IllegalStateException( "The features have not been set." );
         }
 
-        return Collections.unmodifiableSet( this.features );
+        return this.features;
     }
 
     @Override
@@ -351,7 +247,7 @@ public class DatabaseProject implements Project
             throw new IllegalStateException( "The feature groups have not been set." );
         }
 
-        return Collections.unmodifiableSet( this.featureGroups );
+        return this.featureGroups;
     }
 
     @Override
@@ -371,7 +267,7 @@ public class DatabaseProject implements Project
         Objects.requireNonNull( orientation );
 
         DataScripter script = ProjectScriptGenerator.createEnsembleLabelScript( this.getDatabase(),
-                                                                                this.getProjectId(),
+                                                                                this.getId(),
                                                                                 orientation );
         try ( DataProvider provider = script.getData() )
         {
@@ -422,59 +318,13 @@ public class DatabaseProject implements Project
     @Override
     public boolean usesGriddedData( DatasetOrientation orientation )
     {
-        Boolean usesGriddedData;
-
-        usesGriddedData = switch ( orientation )
+        return switch ( orientation )
         {
             case LEFT -> this.leftUsesGriddedData;
             case RIGHT -> this.rightUsesGriddedData;
             case BASELINE -> this.baselineUsesGriddedData;
             case COVARIATE -> this.covariatesUseGriddedData;
         };
-
-        if ( usesGriddedData == null )
-        {
-            Database db = this.getDatabase();
-            DataScripter script = new DataScripter( db );
-            script.addLine( "SELECT DISTINCT S.is_point_data" );
-            script.addLine( "FROM wres.ProjectSource PS" );
-            script.addLine( "INNER JOIN wres.Source S" );
-            script.addTab().addLine( "ON PS.source_id = S.source_id" );
-            script.addLine( "WHERE PS.project_id = ?" );
-            script.addArgument( this.getId() );
-            script.addTab().addLine( "AND PS.member = ?" );
-            script.addArgument( orientation.name()
-                                           .toLowerCase() );
-            script.setMaxRows( 2 );
-
-            try ( DataProvider provider = script.getData() )
-            {
-                provider.next();
-                usesGriddedData = !provider.getBoolean( "is_point_data" );
-
-                // If there are multiple rows, that is disallowed
-                if ( provider.next() )
-                {
-                    throw new IllegalStateException( "Discovered multiple datasets with a "
-                                                     + orientation
-                                                     + " orientation of which some were gridded and "
-                                                     + "others not, which is not supported. " );
-                }
-            }
-            catch ( SQLException e )
-            {
-                throw new DataAccessException( "While attempting to determine whether gridded data were ingested.", e );
-            }
-            switch ( orientation )
-            {
-                case LEFT -> this.leftUsesGriddedData = usesGriddedData;
-                case RIGHT -> this.rightUsesGriddedData = usesGriddedData;
-                case BASELINE -> this.baselineUsesGriddedData = usesGriddedData;
-                case COVARIATE -> this.covariatesUseGriddedData = usesGriddedData;
-            }
-        }
-
-        return usesGriddedData;
     }
 
     @Override
@@ -563,29 +413,38 @@ public class DatabaseProject implements Project
     }
 
     /**
-     * Sets the features and feature groups.
+     * Gets the features and feature groups.
+     * @param projectId the project identifier
+     * @param declaration the project declaration
+     * @param caches the database caches
+     * @param gridded whether the evaluation uses gridded data
+     * @param griddedFeatures the gridded features cache
      * @throws DataAccessException if the features and/or feature groups could not be set
      */
 
-    private void setFeaturesAndFeatureGroups()
+    private FeatureSets getFeaturesAndFeatureGroups( long projectId,
+                                                     EvaluationDeclaration declaration,
+                                                     DatabaseCaches caches,
+                                                     boolean gridded,
+                                                     GriddedFeatures griddedFeatures )
     {
-        LOGGER.debug( "Setting the features and feature groups for project {}.", this.getId() );
+        LOGGER.debug( "Setting the features and feature groups for project {}.", projectId );
 
         Set<FeatureTuple> singletons = new HashSet<>(); // Singleton feature tuples
         Set<FeatureTuple> grouped = new HashSet<>(); // Multi-tuple groups
+        boolean hasBaseline = DeclarationUtilities.hasBaseline( declaration );
 
         // Gridded features? #74266
         // Yes
-        if ( this.usesGriddedData( DatasetOrientation.RIGHT ) )
+        if ( gridded )
         {
-            Set<FeatureTuple> griddedTuples = this.getGriddedFeatureTuples();
+            Set<FeatureTuple> griddedTuples = this.getGriddedFeatureTuples( griddedFeatures, hasBaseline );
             singletons.addAll( griddedTuples );
         }
         // No
         else
         {
-            Features fCache = this.getCaches()
-                                  .getFeaturesCache();
+            Features fCache = caches.getFeaturesCache();
 
             // At this point, features should already have been correlated by
             // the declaration or by a location service. In the latter case, the
@@ -594,18 +453,19 @@ public class DatabaseProject implements Project
 
 
             // Deal with the special case of singletons first
-            Set<GeometryTuple> singletonFeatures = this.getDeclaredFeatures();
+            Set<GeometryTuple> singletonFeatures = this.getDeclaredFeatures( declaration );
 
             // If there are no declared singletons, allow features to be discovered, but only if there are no declared
             // multi-feature groups.
-            Set<GeometryGroup> declaredGroups = this.getDeclaredFeatureGroups();
+            Set<GeometryGroup> declaredGroups = this.getDeclaredFeatureGroups( declaration );
+
             if ( !singletonFeatures.isEmpty() || declaredGroups.isEmpty() )
             {
                 DataScripter script =
                         ProjectScriptGenerator.createIntersectingFeaturesScript( this.getDatabase(),
-                                                                                 this.getId(),
+                                                                                 projectId,
                                                                                  singletonFeatures,
-                                                                                 this.hasBaseline(),
+                                                                                 hasBaseline,
                                                                                  false );
 
                 LOGGER.debug( "getIntersectingFeatures will run for singleton features: {}", script );
@@ -626,10 +486,10 @@ public class DatabaseProject implements Project
             if ( !groupedFeatures.isEmpty() )
             {
                 DataScripter scriptForGroups =
-                        ProjectScriptGenerator.createIntersectingFeaturesScript( database,
-                                                                                 this.getId(),
+                        ProjectScriptGenerator.createIntersectingFeaturesScript( this.getDatabase(),
+                                                                                 projectId,
                                                                                  groupedFeatures,
-                                                                                 this.hasBaseline(),
+                                                                                 hasBaseline,
                                                                                  true );
 
                 LOGGER.debug( "getIntersectingFeatures will run for grouped features: {}", scriptForGroups );
@@ -642,49 +502,53 @@ public class DatabaseProject implements Project
 
         // Filter the singleton features against any spatial mask, unless there is gridded data, which is masked upfront
         // Do this before forming the groups, which include singleton groups
-        if ( !this.usesGriddedData( DatasetOrientation.RIGHT ) )
+        if ( !gridded )
         {
-            singletons = ProjectUtilities.filterFeatures( singletons, this.getDeclaration()
-                                                                          .spatialMask() );
+            singletons = ProjectUtilities.filterFeatures( singletons, declaration.spatialMask() );
         }
 
         // Combine the singletons and feature groups into groups that contain one or more tuples
         ProjectUtilities.FeatureGroupsPlus
                 groups = ProjectUtilities.getFeatureGroups( Collections.unmodifiableSet( singletons ),
                                                             Collections.unmodifiableSet( grouped ),
-                                                            this.getDeclaration(),
-                                                            this.getId() );
+                                                            declaration,
+                                                            projectId );
 
         Set<FeatureGroup> finalGroups = groups.featureGroups();
 
         // Filter the multi-group features against any spatial mask, unless there is gridded data, which is masked
         // upfront
-        if ( !this.usesGriddedData( DatasetOrientation.RIGHT ) )
+        if ( !gridded )
         {
-            finalGroups = ProjectUtilities.filterFeatureGroups( finalGroups, this.getDeclaration()
-                                                                                 .spatialMask() );
+            finalGroups = ProjectUtilities.filterFeatureGroups( finalGroups, declaration.spatialMask() );
         }
 
-        // Immutable on construction
-        this.featureGroups = finalGroups;
-        this.doNotPublish = groups.doNotPublish();
-
         LOGGER.debug( "Finished setting the feature groups for project {}. Discovered {} feature groups: {}.",
-                      this.getId(),
-                      this.featureGroups.size(),
-                      this.featureGroups );
+                      projectId,
+                      finalGroups.size(),
+                      finalGroups );
 
         // Features are the union of the singletons and grouped features
-        this.featureGroups.stream()
-                          .flatMap( next -> next.getFeatures()
-                                                .stream() )
-                          .forEach( singletons::add );
-        this.features = Collections.unmodifiableSet( singletons );
+        finalGroups.stream()
+                   .flatMap( next -> next.getFeatures()
+                                         .stream() )
+                   .forEach( singletons::add );
 
         LOGGER.debug( "Finished setting the features for project {}. Discovered {} features: {}.",
-                      this.getId(),
-                      this.features.size(),
-                      this.features );
+                      projectId,
+                      singletons.size(),
+                      singletons );
+
+        if ( singletons.isEmpty()
+             && finalGroups.isEmpty() )
+        {
+            throw new NoProjectDataException( "Failed to identify any features with data on all required sides (left, "
+                                              + "right and, when declared, baseline) for the variables and other "
+                                              + "declaration supplied. Please check that the declaration is expected to "
+                                              + "produce some features with time-series data on both sides of the pairing." );
+        }
+
+        return new FeatureSets( Collections.unmodifiableSet( singletons ), finalGroups, groups.doNotPublish() );
     }
 
     /**
@@ -765,99 +629,100 @@ public class DatabaseProject implements Project
     /**
      * Saves the project in the database
      * @param ingestIds the ingest identifiers
+     * @return the project identifier
      * @throws SQLException if the save fails
      */
-    private void save( IngestIds ingestIds ) throws SQLException
+    private long save( IngestIds ingestIds ) throws SQLException
     {
-        // Not already saved?
-        if ( !this.performedInsert )
+        long innerProjectId;
+        boolean performedInsert;
+
+        LOGGER.trace( "Attempting to save project." );
+
+        DataScripter saveScript = this.getInsertSelectStatement();
+
+        try
         {
-            LOGGER.trace( "Attempting to save project." );
+            performedInsert = saveScript.execute() > 0;
+        }
+        catch ( SQLException e )
+        {
+            throw new DataAccessException( "While attempting to save the project.", e );
+        }
 
-            DataScripter saveScript = this.getInsertSelectStatement();
+        if ( performedInsert )
+        {
+            innerProjectId = saveScript.getInsertedIds()
+                                       .get( 0 );
+        }
+        else
+        {
+            Database db = this.getDatabase();
+            DataScripter scriptWithId = new DataScripter( db );
+            scriptWithId.setHighPriority( true );
+            scriptWithId.setUseTransaction( false );
+            scriptWithId.addLine( "SELECT project_id" );
+            scriptWithId.addLine( "FROM wres.Project P" );
+            scriptWithId.addLine( "WHERE P.hash = ?" );
+            scriptWithId.addArgument( this.getHash() );
+            scriptWithId.setMaxRows( 1 );
 
-            try
+            try ( DataProvider data = scriptWithId.getData() )
             {
-                this.performedInsert = saveScript.execute() > 0;
+                innerProjectId = data.getLong( PROJECT_ID );
             }
             catch ( SQLException e )
             {
                 throw new DataAccessException( "While attempting to save the project.", e );
-            }
-
-            if ( this.performedInsert )
-            {
-                this.projectId = saveScript.getInsertedIds()
-                                           .get( 0 );
-            }
-            else
-            {
-                Database db = this.getDatabase();
-                DataScripter scriptWithId = new DataScripter( db );
-                scriptWithId.setHighPriority( true );
-                scriptWithId.setUseTransaction( false );
-                scriptWithId.addLine( "SELECT project_id" );
-                scriptWithId.addLine( "FROM wres.Project P" );
-                scriptWithId.addLine( "WHERE P.hash = ?" );
-                scriptWithId.addArgument( this.getHash() );
-                scriptWithId.setMaxRows( 1 );
-
-                try ( DataProvider data = scriptWithId.getData() )
-                {
-                    this.projectId = data.getLong( PROJECT_ID );
-                }
-                catch ( SQLException e )
-                {
-                    throw new DataAccessException( "While attempting to save the project.", e );
-                }
             }
         }
 
         if ( LOGGER.isTraceEnabled() )
         {
             LOGGER.trace( "Did I create Project ID {}? {}",
-                          this.getId(),
-                          this.performedInsert );
+                          innerProjectId,
+                          performedInsert );
         }
 
         LOGGER.debug( "Did the Project created by this Thread insert into the database first? {}",
-                      this.performedInsert );
+                      performedInsert );
 
         // Insert the wres.ProjectSource rows connecting ingest results to this project
-        DatabaseProject.insertProjectSources( this.getDatabase(), this, this.performedInsert, ingestIds );
+        DatabaseProject.insertProjectSources( this.getDatabase(), innerProjectId, performedInsert, ingestIds );
 
-        LOGGER.info( "The identity of the database project is '{}'.", this.getProjectId() );
+        LOGGER.info( "The identity of the database project is '{}'.", innerProjectId );
+
+        return innerProjectId;
     }
 
     /**
      * Continue ingest.
      *
      * @param database the database
-     * @param project the database project
+     * @param projectId the database project identifier
      * @param inserted whether the project caused an insert
      * @param ingestIds the ingest identifiers
      * @throws SQLException if the project could not be ingested
      */
     private static void insertProjectSources( Database database,
-                                              DatabaseProject project,
+                                              long projectId,
                                               boolean inserted,
                                               IngestIds ingestIds )
             throws SQLException
     {
-        long detailsId = project.getId();
         if ( Boolean.TRUE.equals( inserted ) )
         {
-            String projectId = Long.toString( detailsId );
+            String projectIdString = Long.toString( projectId );
             LOGGER.debug( "Found that this Thread is responsible for "
                           + "wres.ProjectSource rows for project {}",
-                          detailsId );
+                          projectId );
 
             // If we just created the Project, we are responsible for relating
             // project to source. Otherwise, we trust it is present.
             String tableName = "wres.ProjectSource";
             List<String> columnNames = List.of( PROJECT_ID, "source_id", "member" );
 
-            List<String[]> values = DatabaseProject.getSourceRowsFromIds( ingestIds, projectId );
+            List<String[]> values = DatabaseProject.getSourceRowsFromIds( ingestIds, projectIdString );
 
             // The first two columns are numbers, last one is char.
             boolean[] charColumns = { false, false, true };
@@ -867,12 +732,12 @@ public class DatabaseProject implements Project
         {
             LOGGER.debug( "Found that this Thread is NOT responsible for "
                           + "wres.ProjectSource rows for project {}",
-                          detailsId );
+                          projectId );
             DataScripter scripter = new DataScripter( database );
             scripter.addLine( "SELECT COUNT( source_id ) AS count" );
             scripter.addLine( "FROM wres.ProjectSource" );
             scripter.addLine( "WHERE project_id = ?" );
-            scripter.addArgument( detailsId );
+            scripter.addArgument( projectId );
 
             // Need to wait here until the data is available. How long to wait?
             // Start with 30ish seconds, error out after that. We might actually
@@ -898,14 +763,14 @@ public class DatabaseProject implements Project
                         // each project will have at least a left and right
                         // member, therefore 2 or more rows (greater than 1).
                         LOGGER.debug( "wres.ProjectSource rows present for {}",
-                                      detailsId );
+                                      projectId );
                         projectSourceRowsFound = true;
                         break;
                     }
                     else
                     {
                         LOGGER.debug( "wres.ProjectSource rows missing for {}",
-                                      detailsId );
+                                      projectId );
                         Thread.sleep( sleepMillis );
                     }
                 }
@@ -1169,43 +1034,6 @@ public class DatabaseProject implements Project
     }
 
     /**
-     * Performs operations that are needed for the project to run between ingest and evaluation.
-     *
-     * @throws DataAccessException if retrieval of data fails
-     * @throws NoProjectDataException if zero features have intersecting data
-     */
-
-    private void prepareAndValidate()
-    {
-        LOGGER.info( "Validating the project and loading preliminary metadata..." );
-
-        // Check for features that potentially have intersecting values.
-        // The query in getIntersectingFeatures checks that there is some
-        // data for each feature on each side, but does not guarantee pairs.
-        synchronized ( this.featureLock )
-        {
-            this.setFeaturesAndFeatureGroups();
-        }
-
-        if ( this.features.isEmpty()
-             && this.featureGroups.isEmpty() )
-        {
-            throw new NoProjectDataException( "Failed to identify any features with data on all required sides (left, "
-                                              + "right and, when declared, baseline) for the variables and other "
-                                              + "declaration supplied. Please check that the declaration is expected to "
-                                              + "produce some features with time-series data on both sides of the pairing." );
-        }
-
-        // Validate any ensemble conditions
-        this.validateEnsembleConditions();
-
-        // Determine and set the variables to evaluate
-        this.setVariablesToEvaluate();
-
-        LOGGER.info( "Project validation and metadata loading is complete." );
-    }
-
-    /**
      * Checks that the union of ensemble conditions will select some data, otherwise throws an exception.
      *
      * @throws NoProjectDataException if the conditions select no data
@@ -1244,14 +1072,14 @@ public class DatabaseProject implements Project
     /**
      * Sets the variables to evaluate. Begins by looking at the declaration. If it cannot find a declared variable for 
      * any particular left/right/baseline context, it looks at the data instead. If there is more than one possible 
-     * name and it does not exactly match the name identified for the other side of the pairing, then an exception is 
-     * thrown because declaration is require to disambiguate. Otherwise, it chooses the single variable name and warns 
-     * about the assumption made when using the data to disambiguate.
+     * name and that name does not exactly match the name identified for the other side of the pairing, then an
+     * exception is thrown because declaration is required to disambiguate. Otherwise, it chooses the single variable
+     * name and warns about the assumption made when using the data to disambiguate.
      *
      * @throws DataAccessException if the variable information could not be determined from the data
      */
 
-    private void setVariablesToEvaluate()
+    private VariableNames getVariablesToEvaluate( EvaluationDeclaration declaration )
     {
         // The set of possibilities to validate
         Set<String> leftNames = this.getVariableNameByInspectingData( DatasetOrientation.LEFT );
@@ -1266,15 +1094,11 @@ public class DatabaseProject implements Project
                       baselineNames,
                       covariateNames );
 
-        VariableNames variableNames = ProjectUtilities.getVariableNames( this.getDeclaration(),
-                                                                         leftNames,
-                                                                         rightNames,
-                                                                         baselineNames,
-                                                                         covariateNames );
-
-        this.leftVariable = variableNames.leftVariableName();
-        this.rightVariable = variableNames.rightVariableName();
-        this.baselineVariable = variableNames.baselineVariableName();
+        return ProjectUtilities.getVariableNames( declaration,
+                                                  leftNames,
+                                                  rightNames,
+                                                  baselineNames,
+                                                  covariateNames );
     }
 
     /**
@@ -1324,15 +1148,6 @@ public class DatabaseProject implements Project
         }
 
         return Collections.unmodifiableSet( names );
-    }
-
-    /**
-     * @return the project identifier
-     */
-
-    private long getProjectId()
-    {
-        return this.projectId;
     }
 
     /**
@@ -1395,56 +1210,58 @@ public class DatabaseProject implements Project
     }
 
     /**
+     * @param declaration the declaration
      * @return the declared features
      */
-    private Set<GeometryTuple> getDeclaredFeatures()
+    private Set<GeometryTuple> getDeclaredFeatures( EvaluationDeclaration declaration )
     {
-        if ( Objects.isNull( this.getDeclaration()
-                                 .features() ) )
+        if ( Objects.isNull( declaration.features() ) )
         {
             return Set.of();
         }
 
-        return this.getDeclaration()
-                   .features()
-                   .geometries();
+        return declaration.features()
+                          .geometries();
     }
 
     /**
+     * @param declaration the declaration
      * @return the declared feature groups
      */
-    private Set<GeometryGroup> getDeclaredFeatureGroups()
+    private Set<GeometryGroup> getDeclaredFeatureGroups( EvaluationDeclaration declaration )
     {
-        if ( Objects.isNull( this.getDeclaration()
-                                 .featureGroups() ) )
+        if ( Objects.isNull( declaration.featureGroups() ) )
         {
             return Set.of();
         }
 
-        return this.getDeclaration()
-                   .featureGroups()
-                   .geometryGroups();
+        return declaration.featureGroups()
+                          .geometryGroups();
     }
 
     /**
      * Builds a set of gridded feature tuples. Assumes that all dimensions have the same tuple (i.e., cannot currently
      * pair grids with different features. Feature groupings are also not supported.
      *
+     * @param griddedFeatures the gridded features cache
      * @return a set of gridded feature tuples
      */
 
-    private Set<FeatureTuple> getGriddedFeatureTuples()
+    private Set<FeatureTuple> getGriddedFeatureTuples( GriddedFeatures griddedFeatures,
+                                                       boolean hasBaseline )
     {
+        Objects.requireNonNull( griddedFeatures,
+                                "Cannot query gridded feature availability without a gridded features cache." );
+
         LOGGER.debug( "Getting details of intersecting features for gridded data." );
-        Set<Feature> innerGriddedFeatures = this.getGriddedFeatures()
-                                                .get();
+        Set<Feature> innerGriddedFeatures = griddedFeatures.get();
         Set<FeatureTuple> featureTuples = new HashSet<>();
 
         for ( Feature nextFeature : innerGriddedFeatures )
         {
             Geometry geometry = MessageFactory.parse( nextFeature );
             GeometryTuple geoTuple;
-            if ( this.hasBaseline() )
+            if ( hasBaseline )
             {
                 geoTuple = wres.statistics.MessageFactory.getGeometryTuple( geometry, geometry, geometry );
             }
@@ -1557,26 +1374,6 @@ public class DatabaseProject implements Project
     }
 
     /**
-     * @return the caches
-     */
-    private DatabaseCaches getCaches()
-    {
-        return this.caches;
-    }
-
-    /**
-     * @return the gridded features cache
-     *
-     */
-    private GriddedFeatures getGriddedFeatures()
-    {
-        Objects.requireNonNull( this.griddedFeatures,
-                                "Cannot query gridded feature availability without a gridded features cache." );
-
-        return this.griddedFeatures;
-    }
-
-    /**
      * @see #getLeftVariableName()
      * @return The declared left variable name or null if undeclared
      */
@@ -1639,6 +1436,213 @@ public class DatabaseProject implements Project
     }
 
     /**
+     * @param declaration the project declaration
+     * @param projectId the project identifier
+     * @return the measurement unit, which is either the declared unit or the analyzed unit, but possibly null
+     * @throws DataAccessException if the measurement unit could not be determined
+     * @throws IllegalArgumentException if the project identity is required and undefined
+     */
+
+    private String getMeasurementUnitFromDatabase( EvaluationDeclaration declaration, long projectId )
+    {
+        String measurementUnitInner = null;
+
+        String declaredUnit = declaration.unit();
+
+        // Declared unit available?
+        if ( Objects.nonNull( declaredUnit )
+             && !declaredUnit.isBlank() )
+        {
+            measurementUnitInner = declaredUnit;
+
+            LOGGER.debug( "Determined the measurement unit from the project declaration as {}.",
+                          measurementUnitInner );
+        }
+
+        // Still not available? Then analyze the unit.
+        if ( Objects.isNull( measurementUnitInner ) )
+        {
+            DataScripter scripter = ProjectScriptGenerator.createUnitScript( this.getDatabase(), projectId );
+
+            try ( Connection connection = this.getDatabase()
+                                              .getConnection();
+                  DataProvider dataProvider = scripter.buffer( connection ) )
+            {
+                if ( dataProvider.next() )
+                {
+                    measurementUnitInner = dataProvider.getString( "unit_name" );
+
+                    String member = dataProvider.getString( "member" );
+
+                    if ( LOGGER.isDebugEnabled() )
+                    {
+                        LOGGER.debug( "Determined the measurement unit by analyzing the project sources. The analyzed "
+                                      + "measurement unit is {} and corresponds to the most commonly occurring unit "
+                                      + "among time-series from {} sources. The script used to discover the "
+                                      + "measurement unit for the project with identifier {} was: {}{}",
+                                      measurementUnitInner,
+                                      member,
+                                      projectId,
+                                      System.lineSeparator(),
+                                      scripter );
+                    }
+                }
+            }
+            catch ( SQLException e )
+            {
+                throw new DataAccessException( "While attempting to acquire a measurement unit.", e );
+            }
+        }
+
+        return measurementUnitInner;
+    }
+
+    /**
+     * Returns the desired timescale. In order of availability, this is:
+     *
+     * <ol>
+     * <li>The desired time scale provided on construction;</li>
+     * <li>The Least Common Scale (LCS) computed from the input data; or</li>
+     * <li>The LCS computed from the <code>existingTimeScale</code> provided in the input declaration.</li>
+     * </ol>
+     *
+     * The LCS is the smallest common multiple of the time scales associated with every ingested dataset for a given
+     * project, variable and feature. The LCS is computed from all sides of a pairing (left, right and baseline)
+     * collectively.
+     *
+     * @return the desired timescale or null if unknown
+     * @param declaration the project declaration
+     * @param projectId the project identifier
+     * @throws DataAccessException if the existing time scales could not be obtained from the database
+     */
+
+    private TimeScaleOuter getDesiredTimeScale( EvaluationDeclaration declaration,
+                                                long projectId )
+    {
+        TimeScaleOuter desiredTimeScaleInner;
+
+        // Use the declared timescale
+        TimeScale declaredScale = declaration.timeScale();
+        if ( Objects.nonNull( declaredScale ) )
+        {
+            desiredTimeScaleInner = TimeScaleOuter.of( declaredScale.timeScale() );
+
+            LOGGER.trace( "Discovered that the desired time scale was declared explicitly as {}.",
+                          desiredTimeScaleInner );
+
+            return desiredTimeScaleInner;
+        }
+
+        // Find the Least Common Scale
+        Set<TimeScaleOuter> existingTimeScales = new HashSet<>();
+        DataScripter script = ProjectScriptGenerator.createTimeScalesScript( this.getDatabase(),
+                                                                             projectId );
+
+        try ( Connection connection = this.getDatabase()
+                                          .getConnection();
+              DataProvider dataProvider = script.buffer( connection ) )
+        {
+            while ( dataProvider.next() )
+            {
+                long durationMillis = dataProvider.getLong( "duration_ms" );
+                String functionName = dataProvider.getString( "function_name" );
+
+                Duration duration = Duration.ofMillis( durationMillis );
+                TimeScaleFunction function = TimeScaleFunction.valueOf( functionName );
+                TimeScaleOuter scale = TimeScaleOuter.of( duration, function );
+                existingTimeScales.add( scale );
+            }
+        }
+        catch ( SQLException e )
+        {
+            throw new DataAccessException( "Unable to obtain the existing time scales of ingested time-series.", e );
+        }
+
+        // Look for the LCS among the ingested sources
+        if ( !existingTimeScales.isEmpty() )
+        {
+            TimeScaleOuter leastCommonScale = TimeScaleOuter.getLeastCommonTimeScale( existingTimeScales );
+
+            desiredTimeScaleInner = leastCommonScale;
+
+            LOGGER.trace( "Discovered that the desired time scale was not supplied on construction of the project. "
+                          + "Instead, determined the desired time scale from the Least Common Scale of the ingested "
+                          + "inputs, which was {}.",
+                          leastCommonScale );
+
+            return desiredTimeScaleInner;
+        }
+
+        // Look for the LCS among the declared inputs
+        Set<TimeScaleOuter> declaredExistingTimeScales = DeclarationUtilities.getSourceTimeScales( declaration )
+                                                                             .stream()
+                                                                             .map( TimeScaleOuter::of )
+                                                                             .collect( Collectors.toUnmodifiableSet() );
+
+        if ( !declaredExistingTimeScales.isEmpty() )
+        {
+            TimeScaleOuter leastCommonScale = TimeScaleOuter.getLeastCommonTimeScale( declaredExistingTimeScales );
+
+            desiredTimeScaleInner = leastCommonScale;
+
+            LOGGER.trace( "Discovered that the desired time scale was not supplied on construction of the project."
+                          + " Instead, determined the desired time scale from the Least Common Scale of the "
+                          + "declared inputs, which  was {}.",
+                          leastCommonScale );
+
+            return desiredTimeScaleInner;
+        }
+
+        LOGGER.debug( "The desired timescale is missing from project {}.", projectId );
+        return null;
+    }
+
+    /**
+     * @param orientation the dataset orientation
+     * @return whether the evaluation uses gridded data
+     */
+    private boolean getUsesGriddedData( DatasetOrientation orientation )
+    {
+        boolean usesGriddedData = false;
+
+        Database db = this.getDatabase();
+        DataScripter script = new DataScripter( db );
+        script.addLine( "SELECT DISTINCT S.is_point_data" );
+        script.addLine( "FROM wres.ProjectSource PS" );
+        script.addLine( "INNER JOIN wres.Source S" );
+        script.addTab().addLine( "ON PS.source_id = S.source_id" );
+        script.addLine( "WHERE PS.project_id = ?" );
+        script.addArgument( this.getId() );
+        script.addTab().addLine( "AND PS.member = ?" );
+        script.addArgument( orientation.name()
+                                       .toLowerCase() );
+        script.setMaxRows( 2 );
+
+        try ( DataProvider provider = script.getData() )
+        {
+            if ( provider.next() )
+            {
+                usesGriddedData = !provider.getBoolean( "is_point_data" );
+
+                // If there are multiple rows, that is disallowed
+                if ( provider.next() )
+                {
+                    throw new IllegalStateException( "Discovered multiple datasets with a "
+                                                     + orientation
+                                                     + " orientation of which some were gridded and "
+                                                     + "others not, which is not supported. " );
+                }
+            }
+        }
+        catch ( SQLException e )
+        {
+            throw new DataAccessException( "While attempting to determine whether gridded data were ingested.", e );
+        }
+
+        return usesGriddedData;
+    }
+
+    /**
      * Record of ingest identifiers.
      * @param leftIds the left identifiers
      * @param rightIds the right identifiers
@@ -1658,5 +1662,14 @@ public class DatabaseProject implements Project
                                  String[] rightHashes,
                                  String[] baselineHashes,
                                  String[] covariateHashes ) {}
-}
 
+    /**
+     * Small collection of geographic faetures to use in different contexts.
+     * @param features the singleton features
+     * @param featureGroups the feature groups
+     * @param doNotPublish the feature groups whose raw statistics should not be published
+     */
+    private record FeatureSets( Set<FeatureTuple> features,
+                                Set<FeatureGroup> featureGroups,
+                                Set<FeatureGroup> doNotPublish ) {}
+}

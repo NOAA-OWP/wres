@@ -99,7 +99,7 @@ public class InMemoryProject implements Project
     /** The baseline-ish variable to evaluate. */
     private String baselineVariable;
 
-    /** The desired time scale. */
+    /** The desired timescale. */
     private TimeScaleOuter desiredTimeScale;
 
     /**
