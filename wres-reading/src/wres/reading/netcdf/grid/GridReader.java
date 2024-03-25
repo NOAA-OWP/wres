@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -204,7 +205,7 @@ public class GridReader
             {
                 // Sorted set that checks for times only, not values
                 // In other words, a duplicate is a coincident measurement by time, not value
-                SortedSet<Event<T>> container = new TreeSet<>( ( e1, e2 ) -> e1.getTime().compareTo( e2.getTime() ) );
+                SortedSet<Event<T>> container = new TreeSet<>( Comparator.comparing( Event::getTime ) );
 
                 //Add the first value
                 container.add( nextEvent );
@@ -238,12 +239,13 @@ public class GridReader
         // until no duplicates are left
         if ( !duplicates.isEmpty() )
         {
-            returnMe.addAll( GridReader.getTimeSeriesFromListOfEvents( duplicates,
-                                                                       timeScale,
-                                                                       isForecast,
-                                                                       variableName,
-                                                                       feature,
-                                                                       unit ) );
+            List<TimeSeries<T>> nextSeries = GridReader.getTimeSeriesFromListOfEvents( duplicates,
+                                                                                       timeScale,
+                                                                                       isForecast,
+                                                                                       variableName,
+                                                                                       feature,
+                                                                                       unit );
+            returnMe.addAll( nextSeries );
         }
 
         return Collections.unmodifiableList( returnMe );

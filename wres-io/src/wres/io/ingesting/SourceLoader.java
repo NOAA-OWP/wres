@@ -368,11 +368,13 @@ public class SourceLoader
 
         TimeSeriesIngester ingester = this.getTimeSeriesIngester();
 
-        // As of 20220824, grids are not read at "read" time unless there is an in-memory evaluation. See #51232.
+        // As of 20220824, grids are not read at "read" time unless there is an in-memory evaluation. Instead, they are
+        // read at "retrieval" time using an appropriate implementation of a TimeSeriesRetriever. See #51232.
         // Until this special snowflake is addressed via #51232, there is no missing value mapping for declared missing
         // values beyond any mapping that is performed by the reader using inband missing value identifiers: #88859
-        if ( source.isGridded() && this.getSystemSettings()
-                                       .isUseDatabase() )
+        if ( source.isGridded()
+             && this.getSystemSettings()
+                    .isUseDatabase() )
         {
             // Empty stream, which will trigger source ingest only, not time-series reading/ingest
             Stream<TimeSeriesTuple> emptyStream = Stream.of();

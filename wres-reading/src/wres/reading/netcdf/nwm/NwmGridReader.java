@@ -19,6 +19,7 @@ import ucar.nc2.NetcdfFiles;
 
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
@@ -182,12 +183,24 @@ public class NwmGridReader implements TimeSeriesReader
         TimeWindow timeWindowInner = DeclarationUtilities.getOneBigTimeWindow( this.getDeclaration() );
         TimeWindowOuter timeWindow = TimeWindowOuter.of( timeWindowInner );
 
+        // The gridded reader requires a hint about the data type, specifically whether it is a forecast type. This is
+        // unlike most other readers where the type can be inferred directly from the structure of the time-series data,
+        // but all gridded datasets have a reference time regardless of type. When the type is explicitly declared, use
+        // that, i.e., inspect the dataset for the type declaration. However, the other declaration can be useful too.
+        // This is a bit hairy, but a user can avoid this by explicitly declaring the type.
+        // For the route where grids are read at "retrieval time", a similar inspection occurs, informed by the
+        // declaration. See #51232 also, which aims to promote this reader pathway in all contexts.
+        boolean isForecast = DeclarationUtilities.isForecast( dataset )
+                || ( ( dataSource.getDatasetOrientation() == DatasetOrientation.RIGHT
+                             || dataSource.getDatasetOrientation() == DatasetOrientation.BASELINE )
+                && DeclarationUtilities.hasForecastDeclaration( this.getDeclaration() ) );
+
         GridRequest request = new GridRequest( List.of( pathString ),
                                                featureKeys,
                                                dataSource.getVariable()
                                                          .name(),
                                                timeWindow,
-                                               DeclarationUtilities.isForecast( dataset ),
+                                               isForecast,
                                                timeScale );
 
         // Acquire the time-series

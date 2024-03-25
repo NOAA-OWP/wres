@@ -316,6 +316,53 @@ public class DeclarationInterpolator
     }
 
     /**
+     * <p>Interpolates the type of time-series data to evaluate when required. There are three distinct sources of
+     * information about the data type of each dataset:
+     * <ol>
+     *     <li>1. The explicitly declared 'type', which may be missing;</li>
+     *     <li>2. The type inferred from the other declaration present; and</li>
+     *     <li>3. The type inferred by inspecting each time-series dataset, which is supplied for each dataset.</li>
+     * </ol>
+     * <p>When attempting to interpolate the data type, errors or warnings are emitted depending on any conflicts
+     * between these different sources of information. However, errors and warnings are only uncovered for conflicts
+     * between (1) and (3) and, separately, between (2) and (3) and not between (1) and (2) because the purpose of this
+     * class is not to validate the declaration for internal consistency (see {@link DeclarationValidator}), rather to
+     * check that a consistent interpolation is possible.
+     *
+     * @param builder the declaration builder to adjust
+     * @param leftType the left data type, inferred from ingest
+     * @param rightType the left data type, inferred from ingest
+     * @param baselineType the left data type, inferred from ingest
+     * @param covariatesType the left data type, inferred from ingest
+     * @return any interpolation events encountered
+     */
+    public static List<EvaluationStatusEvent> interpolateDataTypes( EvaluationDeclarationBuilder builder,
+                                                                    DataType leftType,
+                                                                    DataType rightType,
+                                                                    DataType baselineType,
+                                                                    DataType covariatesType )
+    {
+        // Resolve the left or observed data type, if required
+        List<EvaluationStatusEvent> leftTypeEvents =
+                DeclarationInterpolator.interpolateObservedDataType( builder, leftType );
+        List<EvaluationStatusEvent> events = new ArrayList<>( leftTypeEvents );
+        // Resolve the predicted data type, if required
+        List<EvaluationStatusEvent> rightTypeEvents =
+                DeclarationInterpolator.interpolatePredictedDataType( builder, rightType );
+        events.addAll( rightTypeEvents );
+        // Baseline data type has the same as the predicted data type, by default
+        List<EvaluationStatusEvent> baseTypeEvents =
+                DeclarationInterpolator.interpolateBaselineDataType( builder, baselineType );
+        events.addAll( baseTypeEvents );
+        // Data type for covariates
+        List<EvaluationStatusEvent> covariateTypeEvents =
+                DeclarationInterpolator.interpolateCovariatesDataType( builder, covariatesType );
+        events.addAll( covariateTypeEvents );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
      * Associates the specified thresholds with the appropriate metrics and adds an "all data" threshold to each
      * continuous metric.
      *
@@ -1099,53 +1146,6 @@ public class DeclarationInterpolator
         }
 
         return Collections.unmodifiableSet( adjustedThresholds );
-    }
-
-    /**
-     * <p>Interpolates the type of time-series data to evaluate when required. There are three distinct sources of
-     * information about the data type of each dataset:
-     * <ol>
-     *     <li>1. The explicitly declared 'type', which may be missing;</li>
-     *     <li>2. The type inferred from the other declaration present; and</li>
-     *     <li>3. The type inferred by inspecting each time-series dataset, which is supplied for each dataset.</li>
-     * </ol>
-     * <p>When attempting to interpolate the data type, errors or warnings are emitted depending on any conflicts
-     * between these different sources of information. However, errors and warnings are only uncovered for conflicts
-     * between (1) and (3) and, separately, between (2) and (3) and not between (1) and (2) because the purpose of this
-     * class is not to validate the declaration for internal consistency (see {@link DeclarationValidator}), rather to
-     * check that a consistent interpolation is possible.
-     *
-     * @param builder the declaration builder to adjust
-     * @param leftType the left data type, inferred from ingest
-     * @param rightType the left data type, inferred from ingest
-     * @param baselineType the left data type, inferred from ingest
-     * @param covariatesType the left data type, inferred from ingest
-     * @return any interpolation events encountered
-     */
-    private static List<EvaluationStatusEvent> interpolateDataTypes( EvaluationDeclarationBuilder builder,
-                                                                     DataType leftType,
-                                                                     DataType rightType,
-                                                                     DataType baselineType,
-                                                                     DataType covariatesType )
-    {
-        // Resolve the left or observed data type, if required
-        List<EvaluationStatusEvent> leftTypeEvents =
-                DeclarationInterpolator.interpolateObservedDataType( builder, leftType );
-        List<EvaluationStatusEvent> events = new ArrayList<>( leftTypeEvents );
-        // Resolve the predicted data type, if required
-        List<EvaluationStatusEvent> rightTypeEvents =
-                DeclarationInterpolator.interpolatePredictedDataType( builder, rightType );
-        events.addAll( rightTypeEvents );
-        // Baseline data type has the same as the predicted data type, by default
-        List<EvaluationStatusEvent> baseTypeEvents =
-                DeclarationInterpolator.interpolateBaselineDataType( builder, baselineType );
-        events.addAll( baseTypeEvents );
-        // Data type for covariates
-        List<EvaluationStatusEvent> covariateTypeEvents =
-                DeclarationInterpolator.interpolateCovariatesDataType( builder, covariatesType );
-        events.addAll( covariateTypeEvents );
-
-        return Collections.unmodifiableList( events );
     }
 
     /**

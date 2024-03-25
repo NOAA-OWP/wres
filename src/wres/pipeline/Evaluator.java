@@ -59,7 +59,6 @@ import wres.io.database.locking.DatabaseLockManagerNoop;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.SourceLoader;
 import wres.io.ingesting.TimeSeriesIngester;
-import wres.io.ingesting.TimeSeriesTracker;
 import wres.io.ingesting.database.DatabaseTimeSeriesIngester;
 import wres.io.ingesting.memory.InMemoryTimeSeriesIngester;
 import wres.io.project.Project;
@@ -560,6 +559,7 @@ public class Evaluator
             // Look up any needed feature correlations and thresholds, generate a new declaration. These are needed for
             // reading and ingest, as well as subsequent steps, so perform this upfront: #116208
             EvaluationDeclaration declarationWithFeatures = ReaderUtilities.readAndFillFeatures( declaration );
+
             // Update the small bag-o-state
             evaluationDetails = EvaluationDetailsBuilder.builder( evaluationDetails )
                                                         .declaration( declarationWithFeatures )
@@ -571,9 +571,6 @@ public class Evaluator
             LOGGER.debug( "Beginning ingest of time-series data..." );
 
             Project project;
-
-            // Track the time-series through ingest
-            TimeSeriesTracker timeSeriesTracker = TimeSeriesTracker.of();
 
             // Is the evaluation in a database? If so, use implementations that support a database
             if ( systemSettings.isUseDatabase() )
@@ -589,7 +586,6 @@ public class Evaluator
                                                                 .setDatabase( databaseServices.database() )
                                                                 .setCaches( caches )
                                                                 .setIngestExecutor( executors.ingestExecutor() )
-                                                                .setTimeSeriesTracker( timeSeriesTracker )
                                                                 .setLockManager( databaseServices.databaseLockManager() )
                                                                 .build();
 
@@ -623,8 +619,7 @@ public class Evaluator
                 TimeSeriesStore.Builder timeSeriesStoreBuilder = new TimeSeriesStore.Builder();
 
                 // Ingester that ingests into the in-memory store
-                TimeSeriesIngester timeSeriesIngester = InMemoryTimeSeriesIngester.of( timeSeriesStoreBuilder,
-                                                                                       timeSeriesTracker );
+                TimeSeriesIngester timeSeriesIngester = InMemoryTimeSeriesIngester.of( timeSeriesStoreBuilder );
 
                 // Load the sources using the ingester and create the ingest results to share
                 List<IngestResult> ingestResults = SourceLoader.load( timeSeriesIngester,

@@ -133,13 +133,8 @@ public class DatabaseProject implements Project
 
         this.hash = DatabaseProject.getTopHashOfIngestedSources( ingestIds, this.database );
 
-        // Interpolate and validate the declaration before setting it
-        EvaluationDeclaration innerDeclaration = ProjectUtilities.interpolate( declaration, ingestResults );
-        ProjectUtilities.validate( innerDeclaration );
-        this.declaration = innerDeclaration;
-
         // Finally, save the project in the database and prepare the remainder of the internal state
-        this.projectId = this.save( ingestIds );
+        this.projectId = this.save( ingestIds, this.hash, declaration.label() );
 
         LOGGER.info( "Validating the project and loading preliminary metadata..." );
 
@@ -150,7 +145,7 @@ public class DatabaseProject implements Project
         this.covariatesUseGriddedData = this.getUsesGriddedData( DatasetOrientation.COVARIATE );
 
         FeatureSets featureSets = this.getFeaturesAndFeatureGroups( this.projectId,
-                                                                    innerDeclaration,
+                                                                    declaration,
                                                                     caches,
                                                                     this.leftUsesGriddedData
                                                                     || this.rightUsesGriddedData,
@@ -160,19 +155,24 @@ public class DatabaseProject implements Project
         this.doNotPublish = featureSets.doNotPublish();
 
         // Validate any ensemble conditions
-        this.validateEnsembleConditions();
+        this.validateEnsembleConditions( declaration, this.projectId );
 
         // Determine and set the variables to evaluate
-        VariableNames variableNames = this.getVariablesToEvaluate( innerDeclaration );
+        VariableNames variableNames = this.getVariablesToEvaluate( declaration, this.projectId );
         this.leftVariable = variableNames.leftVariableName();
         this.rightVariable = variableNames.rightVariableName();
         this.baselineVariable = variableNames.baselineVariableName();
 
         // Set the desired timescale
-        this.desiredTimeScale = this.getDesiredTimeScale( innerDeclaration, this.projectId );
+        this.desiredTimeScale = this.getDesiredTimeScale( declaration, this.projectId );
 
         // Set the measurement unit
-        this.measurementUnit = this.getMeasurementUnitFromDatabase( innerDeclaration, this.projectId );
+        this.measurementUnit = this.getMeasurementUnitFromDatabase( declaration, this.projectId );
+
+        // Interpolate and validate the declaration before setting it
+        EvaluationDeclaration innerDeclaration = ProjectUtilities.interpolate( declaration, ingestResults );
+        ProjectUtilities.validate( innerDeclaration );
+        this.declaration = innerDeclaration;
 
         LOGGER.info( "Project validation and metadata loading is complete." );
     }
@@ -469,7 +469,7 @@ public class DatabaseProject implements Project
                                                                                  false );
 
                 LOGGER.debug( "getIntersectingFeatures will run for singleton features: {}", script );
-                Set<FeatureTuple> innerSingletons = this.readFeaturesFromScript( script, fCache );
+                Set<FeatureTuple> innerSingletons = this.readFeaturesFromScript( script, fCache, hasBaseline );
 
                 singletons.addAll( innerSingletons );
                 LOGGER.debug( "getIntersectingFeatures completed for singleton features, which identified "
@@ -493,7 +493,7 @@ public class DatabaseProject implements Project
                                                                                  true );
 
                 LOGGER.debug( "getIntersectingFeatures will run for grouped features: {}", scriptForGroups );
-                Set<FeatureTuple> innerGroups = this.readFeaturesFromScript( scriptForGroups, fCache );
+                Set<FeatureTuple> innerGroups = this.readFeaturesFromScript( scriptForGroups, fCache, hasBaseline );
                 grouped.addAll( innerGroups );
                 LOGGER.debug( "getIntersectingFeatures completed for grouped features, which identified {} features",
                               innerGroups.size() );
@@ -629,17 +629,21 @@ public class DatabaseProject implements Project
     /**
      * Saves the project in the database
      * @param ingestIds the ingest identifiers
+     * @param hash the project hash
+     * @param projectName the project name
      * @return the project identifier
      * @throws SQLException if the save fails
      */
-    private long save( IngestIds ingestIds ) throws SQLException
+    private long save( IngestIds ingestIds,
+                       String hash,
+                       String projectName ) throws SQLException
     {
         long innerProjectId;
         boolean performedInsert;
 
         LOGGER.trace( "Attempting to save project." );
 
-        DataScripter saveScript = this.getInsertSelectStatement();
+        DataScripter saveScript = this.getInsertSelectStatement( hash, projectName );
 
         try
         {
@@ -1036,25 +1040,30 @@ public class DatabaseProject implements Project
     /**
      * Checks that the union of ensemble conditions will select some data, otherwise throws an exception.
      *
+     * @param declaration the project declaration
+     * @param projectId the project identifier
      * @throws NoProjectDataException if the conditions select no data
      * @throws DataAccessException if one or more ensemble conditions could not be evaluated
      */
 
-    private void validateEnsembleConditions()
+    private void validateEnsembleConditions( EvaluationDeclaration declaration,
+                                             long projectId )
     {
         // Show all errors at once rather than drip-feeding
-        Dataset left = this.getLeft();
-        List<String> failedLeft = this.getInvalidEnsembleConditions( DatasetOrientation.LEFT, left );
+        Dataset left = declaration.left();
+        List<String> failedLeft = this.getInvalidEnsembleConditions( DatasetOrientation.LEFT, left, projectId );
         List<String> failed = new ArrayList<>( failedLeft );
-        Dataset right = this.getRight();
-        List<String> failedRight = this.getInvalidEnsembleConditions( DatasetOrientation.RIGHT, right );
+        Dataset right = declaration.right();
+        List<String> failedRight = this.getInvalidEnsembleConditions( DatasetOrientation.RIGHT, right, projectId );
         failed.addAll( failedRight );
 
-        if ( this.hasBaseline() )
+        if ( DeclarationUtilities.hasBaseline( declaration ) )
         {
-            Dataset baseline = this.getBaseline()
-                                   .dataset();
-            List<String> failedBaseline = this.getInvalidEnsembleConditions( DatasetOrientation.BASELINE, baseline );
+            Dataset baseline = declaration.baseline()
+                                          .dataset();
+            List<String> failedBaseline = this.getInvalidEnsembleConditions( DatasetOrientation.BASELINE,
+                                                                             baseline,
+                                                                             projectId );
             failed.addAll( failedBaseline );
         }
 
@@ -1076,16 +1085,26 @@ public class DatabaseProject implements Project
      * exception is thrown because declaration is required to disambiguate. Otherwise, it chooses the single variable
      * name and warns about the assumption made when using the data to disambiguate.
      *
+     * @param declaration the project declaration
+     * @param projectId the project identifier
      * @throws DataAccessException if the variable information could not be determined from the data
      */
 
-    private VariableNames getVariablesToEvaluate( EvaluationDeclaration declaration )
+    private VariableNames getVariablesToEvaluate( EvaluationDeclaration declaration,
+                                                  long projectId )
     {
         // The set of possibilities to validate
-        Set<String> leftNames = this.getVariableNameByInspectingData( DatasetOrientation.LEFT );
-        Set<String> rightNames = this.getVariableNameByInspectingData( DatasetOrientation.RIGHT );
-        Set<String> baselineNames = this.getVariableNameByInspectingData( DatasetOrientation.BASELINE );
-        Set<String> covariateNames = this.getVariableNameByInspectingData( DatasetOrientation.COVARIATE );
+        boolean hasBaseline = DeclarationUtilities.hasBaseline( declaration );
+        Set<String> leftNames = this.getVariableNameByInspectingData( DatasetOrientation.LEFT, projectId, hasBaseline );
+        Set<String> rightNames = this.getVariableNameByInspectingData( DatasetOrientation.RIGHT,
+                                                                       projectId,
+                                                                       hasBaseline );
+        Set<String> baselineNames = this.getVariableNameByInspectingData( DatasetOrientation.BASELINE,
+                                                                          projectId,
+                                                                          hasBaseline );
+        Set<String> covariateNames = this.getVariableNameByInspectingData( DatasetOrientation.COVARIATE,
+                                                                           projectId,
+                                                                           hasBaseline );
 
         LOGGER.debug( "While looking for variable names to evaluate, discovered {} on the LEFT side, {} on the RIGHT "
                       + "side, {} on the BASELINE side and {} on the COVARIATE side.",
@@ -1105,21 +1124,25 @@ public class DatabaseProject implements Project
      * Determines the possible variable names by inspecting the data.
      *
      * @param orientation the context
+     * @param projectId the project identifier
+     * @param hasBaseline whether the evaluation contains a baseline dataset
      * @return the possible variable names
      * @throws DataAccessException if the variable information could not be determined from the data
      */
 
-    private Set<String> getVariableNameByInspectingData( DatasetOrientation orientation )
+    private Set<String> getVariableNameByInspectingData( DatasetOrientation orientation,
+                                                         long projectId,
+                                                         boolean hasBaseline )
     {
         if ( orientation == DatasetOrientation.BASELINE
-             && !this.hasBaseline() )
+             && !hasBaseline )
         {
             LOGGER.debug( "No variable names to inspect for the {} orientation.", DatasetOrientation.BASELINE );
             return Set.of();
         }
 
         DataScripter script = ProjectScriptGenerator.createVariablesScript( this.getDatabase(),
-                                                                            this.getId(),
+                                                                            projectId,
                                                                             orientation );
 
         if ( LOGGER.isDebugEnabled() )
@@ -1155,12 +1178,14 @@ public class DatabaseProject implements Project
      *
      * @param orientation the orientation of the source
      * @param dataset the source configuration whose ensemble conditions should be validated
+     * @param projectId the project identifier
      * @return a string representation of the invalid conditions 
      * @throws DataAccessException if one or more ensemble conditions could not be evaluated
      */
 
     private List<String> getInvalidEnsembleConditions( DatasetOrientation orientation,
-                                                       Dataset dataset )
+                                                       Dataset dataset,
+                                                       long projectId )
     {
         List<String> failed = new ArrayList<>();
 
@@ -1171,12 +1196,13 @@ public class DatabaseProject implements Project
             {
                 DataScripter script = ProjectScriptGenerator.getIsValidEnsembleCondition( this.getDatabase(),
                                                                                           name,
-                                                                                          this.getId(),
+                                                                                          projectId,
                                                                                           filter.exclude() );
 
                 LOGGER.debug( "getIsValidEnsembleCondition will run: {}", script );
 
-                try ( Connection connection = database.getConnection();
+                try ( Connection connection = this.getDatabase()
+                                                  .getConnection();
                       DataProvider dataProvider = script.buffer( connection ) )
                 {
                     while ( dataProvider.next() )
@@ -1281,15 +1307,17 @@ public class DatabaseProject implements Project
      * Reads a set of feature tuples from a feature selection script.
      * @param script the script to read
      * @param fCache the features cache
+     * @param hasBaseline whether the evaluation has a baseline dataset
      * @return the feature tuples
      * @throws DataAccessException if the features could not be read
      */
 
-    private Set<FeatureTuple> readFeaturesFromScript( DataScripter script, Features fCache )
+    private Set<FeatureTuple> readFeaturesFromScript( DataScripter script, Features fCache, boolean hasBaseline )
     {
         Set<FeatureTuple> featureTuples = new HashSet<>();
 
-        try ( Connection connection = this.database.getConnection();
+        try ( Connection connection = this.getDatabase()
+                                          .getConnection();
               DataProvider dataProvider = script.buffer( connection ) )
         {
             while ( dataProvider.next() )
@@ -1301,7 +1329,7 @@ public class DatabaseProject implements Project
                 Feature baselineKey = null;
 
                 // Baseline column will only be there when baseline exists.
-                if ( hasBaseline() )
+                if ( hasBaseline )
                 {
                     int baselineId = dataProvider.getInt( "baseline_id" );
 
@@ -1327,7 +1355,14 @@ public class DatabaseProject implements Project
         return Collections.unmodifiableSet( featureTuples );
     }
 
-    private DataScripter getInsertSelectStatement()
+    /**
+     * Generates an insert select statementfrom the input.
+     * @param hash the project hash
+     * @param projectName the project name
+     * @return a data scripter
+     */
+    private DataScripter getInsertSelectStatement( String hash,
+                                                   String projectName )
     {
         Database db = this.getDatabase();
         DataScripter script = new DataScripter( db );
@@ -1341,8 +1376,8 @@ public class DatabaseProject implements Project
         script.addLine( "INSERT INTO wres.Project ( hash, project_name )" );
         script.addTab().addLine( "SELECT ?, ?" );
 
-        script.addArgument( this.getHash() );
-        script.addArgument( this.getProjectName() );
+        script.addArgument( hash );
+        script.addArgument( projectName );
 
         script.addTab().addLine( "WHERE NOT EXISTS" );
         script.addTab().addLine( "(" );
@@ -1350,7 +1385,7 @@ public class DatabaseProject implements Project
         script.addTab( 2 ).addLine( "FROM wres.Project P" );
         script.addTab( 2 ).addLine( "WHERE P.hash = ?" );
 
-        script.addArgument( this.getHash() );
+        script.addArgument( hash );
 
         script.addTab().addLine( ")" );
         return script;
