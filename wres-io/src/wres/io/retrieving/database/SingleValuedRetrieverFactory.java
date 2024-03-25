@@ -175,6 +175,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
         TimeSeriesRetriever.Builder<Double> builder;
 
         boolean isConfiguredAsForecast = DeclarationUtilities.isForecast( dataset );
+
         String variableName =
                 switch ( orientation )
                 {
@@ -189,8 +190,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
                                                                    + "." );
                 };
 
-        TimeScaleOuter declaredExistingTimeScale =
-                this.getDeclaredExistingTimeScale( dataset );
+        TimeScaleOuter declaredExistingTimeScale = this.getDeclaredExistingTimeScale( dataset );
 
         try
         {

@@ -672,8 +672,8 @@ public class DeclarationValidator
                                                                  + ", but some of the declaration is designed for these "
                                                                  + "data types: "
                                                                  + forecastDeclaration
-                                                                 + ". Please remove this ensemble declaration or "
-                                                                 + "correct the data types." )
+                                                                 + ". Please remove this declaration or correct the "
+                                                                 + "data types." )
                                                .build();
                 events.add( event );
             }

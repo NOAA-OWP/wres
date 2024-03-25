@@ -25,7 +25,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import org.apache.commons.codec.binary.Hex;
@@ -56,7 +55,6 @@ import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
 import wres.io.ingesting.TimeSeriesIngester;
 import wres.io.database.caching.TimeScales;
-import wres.io.ingesting.TimeSeriesTracker;
 import wres.reading.DataSource;
 import wres.reading.TimeSeriesTuple;
 import wres.io.database.locking.DatabaseLockManager;
@@ -116,9 +114,6 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
     /** A thread pool to process ingests. */
     private final ExecutorService executor;
 
-    /** A time-series tracker. */
-    private final UnaryOperator<TimeSeriesTuple> timeSeriesTracker;
-
     /**
      * Builds an instance incrementally.
      */
@@ -129,7 +124,6 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         private Database database;
         private DatabaseCaches caches;
         private DatabaseLockManager lockManager;
-        private TimeSeriesTracker timeSeriesTracker;
         private ExecutorService executor;
 
         /**
@@ -183,16 +177,6 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         }
 
         /**
-         * @param timeSeriesTracker the time-series tracker
-         * @return the builder
-         */
-        public Builder setTimeSeriesTracker( TimeSeriesTracker timeSeriesTracker )
-        {
-            this.timeSeriesTracker = timeSeriesTracker;
-            return this;
-        }
-
-        /**
          * @return a time-series ingester instance
          */
         public DatabaseTimeSeriesIngester build()
@@ -202,8 +186,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
     }
 
     @Override
-    public List<IngestResult> ingest( Stream<TimeSeriesTuple> timeSeriesTuple,
-                                      DataSource outerSource )
+    public List<IngestResult> ingest( Stream<TimeSeriesTuple> timeSeriesTuple, DataSource outerSource )
     {
         Objects.requireNonNull( timeSeriesTuple );
         Objects.requireNonNull( outerSource );
@@ -237,10 +220,6 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
             while ( tupleIterator.hasNext() )
             {
                 TimeSeriesTuple nextTuple = tupleIterator.next();
-
-                // Track the time-series
-                nextTuple = this.getTimeSeriesTracker()
-                                .apply( nextTuple );
 
                 DataSource innerSource = nextTuple.getDataSource();
 
@@ -1764,15 +1743,6 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
     }
 
     /**
-     * @return the time-series tracker
-     */
-
-    private UnaryOperator<TimeSeriesTuple> getTimeSeriesTracker()
-    {
-        return this.timeSeriesTracker;
-    }
-
-    /**
      * Creates an instance.
      * @param builder the builder
      */
@@ -1784,17 +1754,6 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         this.caches = builder.caches;
         this.lockManager = builder.lockManager;
         this.executor = builder.executor;
-
-        // Set the tracker or an identity operator if null
-        TimeSeriesTracker innerTracker = builder.timeSeriesTracker;
-        if ( Objects.nonNull( innerTracker ) )
-        {
-            this.timeSeriesTracker = innerTracker;
-        }
-        else
-        {
-            this.timeSeriesTracker = in -> in;
-        }
 
         Objects.requireNonNull( this.systemSettings );
         Objects.requireNonNull( this.database );

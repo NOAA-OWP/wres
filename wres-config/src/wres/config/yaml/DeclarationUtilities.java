@@ -473,7 +473,8 @@ public class DeclarationUtilities
     {
         Objects.requireNonNull( dataset );
 
-        return Objects.nonNull( dataset.type() ) && dataset.type() == DataType.ENSEMBLE_FORECASTS
+        return Objects.nonNull( dataset.type() )
+               && dataset.type() == DataType.ENSEMBLE_FORECASTS
                || dataset.type() == DataType.SINGLE_VALUED_FORECASTS;
     }
 
@@ -1178,6 +1179,20 @@ public class DeclarationUtilities
             default -> throw new IllegalArgumentException( "Unexpected dataset orientation in this context: "
                                                            + orientation );
         }
+    }
+
+    /**
+     * Inspects the declaration for forecast-like options,
+     * @param declaration the declaration
+     * @return whether forecast-like options were discovered
+     * @throws NullPointerException if the declaration is null
+     */
+    public static boolean hasForecastDeclaration( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration );
+        return !DeclarationUtilities.getForecastDeclaration( declaration )
+                                    .isEmpty() || !DeclarationUtilities.getEnsembleDeclaration( declaration )
+                                                                       .isEmpty();
     }
 
     /**
