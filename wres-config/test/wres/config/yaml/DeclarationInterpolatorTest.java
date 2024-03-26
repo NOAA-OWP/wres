@@ -51,6 +51,7 @@ import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.ThresholdSourceBuilder;
 import wres.config.yaml.components.ThresholdType;
+import wres.config.yaml.components.VariableBuilder;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -58,6 +59,7 @@ import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.Threshold;
+import wres.statistics.generated.TimeScale;
 
 /**
  * Tests the {@link DeclarationFactory}.
@@ -1104,13 +1106,20 @@ class DeclarationInterpolatorTest
                                             .covariates( covariates )
                                             .build();
 
-        EvaluationDeclaration actual =
-                DeclarationInterpolator.interpolate( evaluation,
-                                                     DataType.OBSERVATIONS,
-                                                     DataType.ENSEMBLE_FORECASTS,
-                                                     DataType.ENSEMBLE_FORECASTS,
-                                                     DataType.OBSERVATIONS,
-                                                     true );
+        DataTypes types = new DataTypes( DataType.OBSERVATIONS,
+                                         DataType.ENSEMBLE_FORECASTS,
+                                         DataType.ENSEMBLE_FORECASTS,
+                                         DataType.OBSERVATIONS );
+        VariableNames variableNames = new VariableNames( null,
+                                                         null,
+                                                         null,
+                                                         null );
+        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( evaluation,
+                                                                            types,
+                                                                            variableNames,
+                                                                            "foo",
+                                                                            TimeScale.getDefaultInstance(),
+                                                                            true );
         DataType actualLeft = actual.left()
                                     .type();
         DataType actualRight = actual.right()
@@ -1143,11 +1152,20 @@ class DeclarationInterpolatorTest
                                                                                .build() )
                                             .build();
 
+        DataTypes dataTypes = new DataTypes( DataType.OBSERVATIONS,
+                                             DataType.ENSEMBLE_FORECASTS,
+                                             null,
+                                             null );
+        VariableNames variableNames = new VariableNames( null,
+                                                         null,
+                                                         null,
+                                                         null );
+
         EvaluationDeclaration actual = DeclarationInterpolator.interpolate( evaluation,
-                                                                            DataType.OBSERVATIONS,
-                                                                            DataType.ENSEMBLE_FORECASTS,
-                                                                            null,
-                                                                            null,
+                                                                            dataTypes,
+                                                                            variableNames,
+                                                                            "foo",
+                                                                            TimeScale.getDefaultInstance(),
                                                                             true );
         DataType actualLeft = actual.left()
                                     .type();
@@ -1173,13 +1191,24 @@ class DeclarationInterpolatorTest
                                             .analysisTimes( analysisTimes )
                                             .build();
 
+        DataTypes dataTypes = new DataTypes( DataType.OBSERVATIONS,
+                                             DataType.ENSEMBLE_FORECASTS,
+                                             null,
+                                             null );
+        VariableNames variableNames = new VariableNames( null,
+                                                         null,
+                                                         null,
+                                                         null );
+
+        TimeScale timeScale = TimeScale.getDefaultInstance();
         DeclarationException expected =
-                assertThrows( DeclarationException.class, () -> DeclarationInterpolator.interpolate( evaluation,
-                                                                                                     DataType.OBSERVATIONS,
-                                                                                                     DataType.ENSEMBLE_FORECASTS,
-                                                                                                     null,
-                                                                                                     null,
-                                                                                                     true ) );
+                assertThrows( DeclarationException.class,
+                              () -> DeclarationInterpolator.interpolate( evaluation,
+                                                                         dataTypes,
+                                                                         variableNames,
+                                                                         "foo",
+                                                                         timeScale,
+                                                                         true ) );
 
         assertTrue( expected.getMessage()
                             .contains( "but the data type inferred from the declaration was 'analyses', "
@@ -1203,11 +1232,20 @@ class DeclarationInterpolatorTest
                                             .right( right )
                                             .build();
 
+        DataTypes dataTypes = new DataTypes( DataType.OBSERVATIONS,
+                                             DataType.ENSEMBLE_FORECASTS,
+                                             null,
+                                             null );
+        VariableNames variableNames = new VariableNames( null,
+                                                         null,
+                                                         null,
+                                                         null );
+
         EvaluationDeclaration actual = DeclarationInterpolator.interpolate( evaluation,
-                                                                            DataType.OBSERVATIONS,
-                                                                            DataType.ENSEMBLE_FORECASTS,
-                                                                            null,
-                                                                            null,
+                                                                            dataTypes,
+                                                                            variableNames,
+                                                                            "foo",
+                                                                            TimeScale.getDefaultInstance(),
                                                                             true );
         DataType actualLeft = actual.left()
                                     .type();
@@ -1270,6 +1308,257 @@ class DeclarationInterpolatorTest
         assertAll( () -> assertEquals( Set.of( expectedFirst ), actualOne ),
                    () -> assertEquals( Set.of( expectedSecond ), actualTwo ) );
 
+    }
+
+    @Test
+    void testInterpolateVariableNames()
+    {
+        BaselineDataset baseline = new BaselineDataset( this.observedDataset, null, null );
+        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null );
+        List<CovariateDataset> covariates = List.of( covariate );
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .baseline( baseline )
+                                            .covariates( covariates )
+                                            .build();
+        VariableNames variableNames = new VariableNames( "foo",
+                                                         "bar",
+                                                         "baz",
+                                                         Set.of( "qux" ) );
+        DataTypes dataTypes = new DataTypes( null, null, null, null );
+
+        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( declaration,
+                                                                            dataTypes,
+                                                                            variableNames,
+                                                                            "foo",
+                                                                            TimeScale.getDefaultInstance(),
+                                                                            false );
+
+        assertAll( () -> assertEquals( "foo", actual.left()
+                                                    .variable()
+                                                    .name() ),
+                   () -> assertEquals( "bar", actual.right()
+                                                    .variable()
+                                                    .name() ),
+                   () -> assertEquals( "baz", actual.baseline()
+                                                    .dataset()
+                                                    .variable()
+                                                    .name() ),
+                   () -> assertEquals( "qux", actual.covariates()
+                                                    .get( 0 )
+                                                    .dataset()
+                                                    .variable()
+                                                    .name() ) );
+    }
+
+    @Test
+    void testInterpolateVariableNamesForTooManyDeclaredCovariatesProducesError()
+    {
+        BaselineDataset baseline = new BaselineDataset( this.observedDataset, null, null );
+        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null );
+        List<CovariateDataset> covariates = List.of( covariate, covariate );
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .baseline( baseline )
+                                            .covariates( covariates )
+                                            .build();
+        VariableNames variableNames = new VariableNames( "foo",
+                                                         "bar",
+                                                         "baz",
+                                                         Set.of( "qux" ) );
+        DataTypes dataTypes = new DataTypes( null, null, null, null );
+
+        TimeScale timeScale = TimeScale.getDefaultInstance();
+        DeclarationException actualException =
+                assertThrows( DeclarationException.class,
+                              () -> DeclarationInterpolator.interpolate( declaration,
+                                                                         dataTypes,
+                                                                         variableNames,
+                                                                         "foo",
+                                                                         timeScale,
+                                                                         false ) );
+        assertTrue( actualException.getMessage()
+                                   .contains( "one or more of the 'covariates' had no declared 'variable' and 'name'" ) );
+
+    }
+
+    @Test
+    void testInterpolateVariableNamesForTooManyIngestedCovariatesProducesError()
+    {
+        BaselineDataset baseline = new BaselineDataset( this.observedDataset, null, null );
+        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null );
+        List<CovariateDataset> covariates = List.of( covariate );
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .baseline( baseline )
+                                            .covariates( covariates )
+                                            .build();
+        VariableNames variableNames = new VariableNames( "foo",
+                                                         "bar",
+                                                         "baz",
+                                                         Set.of( "qux", "quux" ) );
+        DataTypes dataTypes = new DataTypes( null, null, null, null );
+
+        TimeScale timeScale = TimeScale.getDefaultInstance();
+        DeclarationException actualException =
+                assertThrows( DeclarationException.class,
+                              () -> DeclarationInterpolator.interpolate( declaration,
+                                                                         dataTypes,
+                                                                         variableNames,
+                                                                         "foo",
+                                                                         timeScale,
+                                                                         false ) );
+        assertTrue( actualException.getMessage()
+                                   .contains( "Discovered a 'covariate' dataset that contains more than one variable" ) );
+
+    }
+
+    @Test
+    void testInterpolateInconsistentVariableNamesProducesError()
+    {
+        Dataset left = DatasetBuilder.builder( this.observedDataset )
+                                     .variable( VariableBuilder.builder()
+                                                               .name( "foo" )
+                                                               .build() )
+                                     .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( left )
+                                            .right( this.predictedDataset )
+                                            .build();
+        VariableNames variableNames = new VariableNames( "bar",
+                                                         null,
+                                                         null,
+                                                         null );
+        DataTypes dataTypes = new DataTypes( null, null, null, null );
+
+        TimeScale timeScale = TimeScale.getDefaultInstance();
+        DeclarationException actualException =
+                assertThrows( DeclarationException.class,
+                              () -> DeclarationInterpolator.interpolate( declaration,
+                                                                         dataTypes,
+                                                                         variableNames,
+                                                                         "foo",
+                                                                         timeScale,
+                                                                         false ) );
+        assertTrue( actualException.getMessage()
+                                   .contains( "When attempting to set the variable name for the 'observed' dataset, "
+                                              + "found a declared variable name" ) );
+
+    }
+
+    @Test
+    void testInterpolateMeasurementUnit()
+    {
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .build();
+
+        VariableNames variableNames = new VariableNames( null,
+                                                         null,
+                                                         null,
+                                                         null );
+        DataTypes dataTypes = new DataTypes( null, null, null, null );
+        TimeScale timeScale = TimeScale.getDefaultInstance();
+
+        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( declaration,
+                                                                            dataTypes,
+                                                                            variableNames,
+                                                                            "foo",
+                                                                            timeScale,
+                                                                            false );
+        assertEquals( "foo", actual.unit() );
+    }
+
+    @Test
+    void testInterpolateInconsistentMeasurementUnitProducesError()
+    {
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .unit( "bar" )
+                                                                        .build();
+
+        VariableNames variableNames = new VariableNames( null,
+                                                         null,
+                                                         null,
+                                                         null );
+        DataTypes dataTypes = new DataTypes( null, null, null, null );
+        TimeScale timeScale = TimeScale.getDefaultInstance();
+
+        DeclarationException actualException =
+                assertThrows( DeclarationException.class,
+                              () -> DeclarationInterpolator.interpolate( declaration,
+                                                                         dataTypes,
+                                                                         variableNames,
+                                                                         "foo",
+                                                                         timeScale,
+                                                                         false ) );
+        assertTrue( actualException.getMessage()
+                                   .contains( "The declared measurement unit of 'bar' is inconsistent" ) );
+    }
+
+    @Test
+    void testInterpolateTimeScale()
+    {
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .build();
+
+        VariableNames variableNames = new VariableNames( null,
+                                                         null,
+                                                         null,
+                                                         null );
+        DataTypes dataTypes = new DataTypes( null, null, null, null );
+        TimeScale timeScale = TimeScale.newBuilder()
+                                       .setPeriod( com.google.protobuf.Duration.newBuilder().setSeconds( 64 ) )
+                                       .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                       .build();
+
+        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( declaration,
+                                                                            dataTypes,
+                                                                            variableNames,
+                                                                            "foo",
+                                                                            timeScale,
+                                                                            false );
+        assertEquals( timeScale, actual.timeScale()
+                                       .timeScale() );
+    }
+
+    @Test
+    void testInterpolateInconsistentTimeScaleProducesError()
+    {
+        TimeScale existingTimeScale = TimeScale.newBuilder()
+                                               .setPeriod( com.google.protobuf.Duration.newBuilder().setSeconds( 63 ) )
+                                               .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                               .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .timeScale( new wres.config.yaml.components.TimeScale( existingTimeScale ) )
+                                            .build();
+
+        VariableNames variableNames = new VariableNames( null,
+                                                         null,
+                                                         null,
+                                                         null );
+        DataTypes dataTypes = new DataTypes( null, null, null, null );
+        TimeScale timeScale = TimeScale.newBuilder()
+                                       .setPeriod( com.google.protobuf.Duration.newBuilder().setSeconds( 64 ) )
+                                       .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                       .build();
+
+        DeclarationException actualException =
+                assertThrows( DeclarationException.class,
+                              () -> DeclarationInterpolator.interpolate( declaration,
+                                                                         dataTypes,
+                                                                         variableNames,
+                                                                         "foo",
+                                                                         timeScale,
+                                                                         false ) );
+        assertTrue( actualException.getMessage()
+                                   .contains( "The declared evaluation timescale" ) );
     }
 
     // The testDeserializeAndInterpolate* tests are integration tests of deserialization plus interpolation
@@ -1366,12 +1655,20 @@ class DeclarationInterpolatorTest
     void testDeserializeAndInterpolatePredictedDatasetAsSingleValuedForecastWhenNoEnsembleDeclaration( String declaration )
             throws IOException
     {
+        DataTypes dataTypes = new DataTypes( null,
+                                             null,
+                                             null,
+                                             null );
+        VariableNames variableNames = new VariableNames( null,
+                                                         null,
+                                                         null,
+                                                         null );
         EvaluationDeclaration actual = DeclarationFactory.from( declaration );
         EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( actual,
-                                                                                  null,
-                                                                                  null,
-                                                                                  null,
-                                                                                  null,
+                                                                                  dataTypes,
+                                                                                  variableNames,
+                                                                                  "foo",
+                                                                                  TimeScale.getDefaultInstance(),
                                                                                   false );
         DataType actualType = interpolated.right()
                                           .type();
@@ -1414,12 +1711,20 @@ class DeclarationInterpolatorTest
     } )
     void testDeserializeAndInterpolatePredictedDatasetAsEnsembleForecast( String declaration ) throws IOException
     {
+        DataTypes dataTypes = new DataTypes( null,
+                                             null,
+                                             null,
+                                             null );
+        VariableNames variableNames = new VariableNames( null,
+                                                         null,
+                                                         null,
+                                                         null );
         EvaluationDeclaration actual = DeclarationFactory.from( declaration );
         EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( actual,
-                                                                                  null,
-                                                                                  null,
-                                                                                  null,
-                                                                                  null,
+                                                                                  dataTypes,
+                                                                                  variableNames,
+                                                                                  "foo",
+                                                                                  TimeScale.getDefaultInstance(),
                                                                                   false );
         DataType actualType = interpolated.right()
                                           .type();
@@ -1440,12 +1745,22 @@ class DeclarationInterpolatorTest
                   unit: hours
                   """;
 
+        DataTypes dataTypes = new DataTypes( null,
+                                             null,
+                                             null,
+                                             null );
+        VariableNames variableNames = new VariableNames( null,
+                                                         null,
+                                                         null,
+                                                         null );
+
+
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
         EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( actual,
-                                                                                  null,
-                                                                                  null,
-                                                                                  null,
-                                                                                  null,
+                                                                                  dataTypes,
+                                                                                  variableNames,
+                                                                                  "foo",
+                                                                                  TimeScale.getDefaultInstance(),
                                                                                   false );
         DataType actualType = interpolated.left()
                                           .type();
@@ -1535,13 +1850,13 @@ class DeclarationInterpolatorTest
         assertAll( () -> assertTrue( actualInterpolated.thresholds()
                                                        .stream()
                                                        .filter( next -> next
-                                                                        != DeclarationInterpolator.ALL_DATA_THRESHOLD )
+                                                                        != DeclarationUtilities.ALL_DATA_THRESHOLD )
                                                        .allMatch( next -> "foo".equals( next.threshold()
                                                                                             .getThresholdValueUnits() ) ) ),
                    () -> assertTrue( actualInterpolated.thresholdSets()
                                                        .stream()
                                                        .filter( next -> next
-                                                                        != DeclarationInterpolator.ALL_DATA_THRESHOLD )
+                                                                        != DeclarationUtilities.ALL_DATA_THRESHOLD )
                                                        .allMatch( next -> "foo".equals( next.threshold()
                                                                                             .getThresholdValueUnits() ) ) ),
                    () -> assertTrue( actualInterpolated.metrics()
@@ -1549,7 +1864,7 @@ class DeclarationInterpolatorTest
                                                        .map( Metric::parameters )
                                                        .flatMap( next -> next.thresholds().stream() )
                                                        .filter( next -> next
-                                                                        != DeclarationInterpolator.ALL_DATA_THRESHOLD )
+                                                                        != DeclarationUtilities.ALL_DATA_THRESHOLD )
                                                        .allMatch( next -> "foo".equals( next.threshold()
                                                                                             .getThresholdValueUnits() ) ) )
         );

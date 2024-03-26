@@ -19,10 +19,12 @@ import org.locationtech.jts.io.WKTReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.DataTypes;
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationInterpolator;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.DeclarationValidator;
+import wres.config.yaml.VariableNames;
 import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
@@ -33,6 +35,7 @@ import wres.config.yaml.components.SpatialMask;
 import wres.config.yaml.components.TimeScale;
 import wres.config.yaml.components.TimeScaleLenience;
 import wres.datamodel.messages.MessageFactory;
+import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.io.ingesting.IngestResult;
@@ -68,20 +71,6 @@ class ProjectUtilities
     private static final String VARIABLE = " variable ";
 
     private static final String WHILE_ATTEMPTING_TO_DETECT_THE = "While attempting to detect the ";
-
-    /**
-     * Small value class to hold variable names.
-     * @param leftVariableName the left variable name
-     * @param rightVariableName the right variable name
-     * @param baselineVariableName the baseline variable name
-     * @param covariateVariableNames the covariate variable names
-     * @author James Brown
-     */
-
-    record VariableNames( String leftVariableName,
-                          String rightVariableName,
-                          String baselineVariableName,
-                          Set<String> covariateVariableNames ) {}
 
     /**
      * Small value class to hold feature group information.
@@ -416,7 +405,10 @@ class ProjectUtilities
 
             LOGGER.debug( "Discovered one variable name for each data source." );
 
-            variableNames = new VariableNames( leftVariableName, rightVariableName, baselineVariableName, covariates );
+            variableNames = new VariableNames( leftVariableName,
+                                               rightVariableName,
+                                               baselineVariableName,
+                                               covariates );
         }
         // More than one for some, need to intersect
         else
@@ -707,15 +699,25 @@ class ProjectUtilities
 
     /**
      * Interpolates missing declaration post-ingest.
+     *
      * @param declaration the declaration
      * @param ingestResults the ingest results
+     * @param variableNames the analyzed variable names
+     * @param measurementUnit the analyzed measurement unit
+     * @param timeScale the analyzed evaluation timescale, possibly null
      * @return the augmented declaration
+     * @throws NullPointerException if any required input is null
      */
     static EvaluationDeclaration interpolate( EvaluationDeclaration declaration,
-                                              List<IngestResult> ingestResults )
+                                              List<IngestResult> ingestResults,
+                                              VariableNames variableNames,
+                                              String measurementUnit,
+                                              TimeScaleOuter timeScale )
     {
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( ingestResults );
+        Objects.requireNonNull( variableNames );
+        Objects.requireNonNull( measurementUnit );
 
         // Organize the data types by dataset orientation, including linked types
         Map<DatasetOrientation, Set<DataType>> dataTypes = new EnumMap<>( DatasetOrientation.class );
@@ -775,13 +777,24 @@ class ProjectUtilities
         DataType baselineType = singletons.get( DatasetOrientation.BASELINE );
         DataType covariateType = singletons.get( DatasetOrientation.COVARIATE );
 
+        DataTypes types = new DataTypes( leftType,
+                                         rightType,
+                                         baselineType,
+                                         covariateType );
+
+        wres.statistics.generated.TimeScale innerTimeScale = null;
+        if( Objects.nonNull( timeScale ) )
+        {
+            innerTimeScale = timeScale.getTimeScale();
+        }
+
         // If the ingested types differ from any existing types of there are conflicting types for a single
         // orientation, this will throw an exception
         declaration = DeclarationInterpolator.interpolate( declaration,
-                                                           leftType,
-                                                           rightType,
-                                                           baselineType,
-                                                           covariateType,
+                                                           types,
+                                                           variableNames,
+                                                           measurementUnit,
+                                                           innerTimeScale,
                                                            true );
 
         return declaration;
@@ -1038,7 +1051,10 @@ class ProjectUtilities
             LOGGER.debug( "After intersecting the variable names, discovered one variable name to evaluate, {}.",
                           leftVariableName );
 
-            return new VariableNames( leftVariableName, leftVariableName, baselineVariableName, covariates );
+            return new VariableNames( leftVariableName,
+                                      leftVariableName,
+                                      baselineVariableName,
+                                      covariates );
         }
         else
         {

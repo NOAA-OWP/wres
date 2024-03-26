@@ -14,10 +14,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import com.google.protobuf.DoubleValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,6 +48,7 @@ import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.ThresholdSourceBuilder;
 import wres.config.yaml.components.ThresholdType;
+import wres.config.yaml.components.VariableBuilder;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.Geometry;
@@ -57,6 +58,7 @@ import wres.statistics.generated.MetricName;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.SummaryStatistic;
+import wres.statistics.generated.TimeScale;
 
 /**
  * <p>Interpolates missing declaration from the other declaration present. The interpolation of missing declaration may
@@ -74,17 +76,6 @@ import wres.statistics.generated.SummaryStatistic;
  */
 public class DeclarationInterpolator
 {
-    /** All data threshold. */
-    public static final Threshold ALL_DATA_THRESHOLD =
-            new Threshold( wres.statistics.generated.Threshold.newBuilder()
-                                                              .setLeftThresholdValue( DoubleValue.of( Double.NEGATIVE_INFINITY ) )
-                                                              .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
-                                                              .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT_AND_RIGHT )
-                                                              .build(),
-                           wres.config.yaml.components.ThresholdType.VALUE,
-                           null,
-                           null );
-
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( DeclarationInterpolator.class );
     /** Re-used string. */
@@ -140,7 +131,7 @@ public class DeclarationInterpolator
      * includes all missing declaration that is invariant to the ingested data. For example, the data types are not
      * included because they are informed by ingest.
      *
-     * @see #interpolate(EvaluationDeclaration, DataType, DataType, DataType, DataType, boolean)  
+     * @see #interpolate(EvaluationDeclaration, DataTypes, VariableNames, String, TimeScale, boolean)
      * @param declaration the raw declaration to interpolate
      * @return the interpolated declaration
      */
@@ -178,35 +169,57 @@ public class DeclarationInterpolator
     }
 
     /**
-     * Performs post-ingest interpolation of declaration. This includes interpolation of the data types and all
-     * declaration that depends on the data types.
+     * Performs post-ingest interpolation of declaration, which is aided by information read from the time-series data.
+     * This includes interpolation of the data types and all declaration that depends on the data types, as well as the
+     * variable names, measurement unit and evaluation timescale.
      *
+     * @see #interpolate(EvaluationDeclaration)
      * @param declaration the raw declaration to interpolate
-     * @param leftType the left data type, inferred from ingest
-     * @param rightType the left data type, inferred from ingest
-     * @param baselineType the left data type, inferred from ingest
-     * @param covariatesType the left data type, inferred from ingest
+     * @param dataTypes types the analyzed data types
+     * @param variableNames the analyzed variable names
+     * @param measurementUnit the analyzed measurement unit
+     * @param timeScale the analyzed timescale, possibly null
      * @param notify whether to notify any warnings encountered or assumptions made during interpolation
      * @return the interpolated declaration
-     * @throws NullPointerException if any input is null
+     * @throws NullPointerException if any required input is null
+     * @throws DeclarationException if the existing declaration is inconsistent with the post-ingest information
      */
     public static EvaluationDeclaration interpolate( EvaluationDeclaration declaration,
-                                                     DataType leftType,
-                                                     DataType rightType,
-                                                     DataType baselineType,
-                                                     DataType covariatesType,
+                                                     DataTypes dataTypes,
+                                                     VariableNames variableNames,
+                                                     String measurementUnit,
+                                                     TimeScale timeScale,
                                                      boolean notify )
     {
         Objects.requireNonNull( declaration );
+        Objects.requireNonNull( dataTypes );
+        Objects.requireNonNull( variableNames );
+        Objects.requireNonNull( measurementUnit );
 
         EvaluationDeclarationBuilder adjustedDeclarationBuilder = EvaluationDeclarationBuilder.builder( declaration );
 
         // Disambiguate the "type" of data when it is not declared
-        List<EvaluationStatusEvent> events = DeclarationInterpolator.interpolateDataTypes( adjustedDeclarationBuilder,
-                                                                                           leftType,
-                                                                                           rightType,
-                                                                                           baselineType,
-                                                                                           covariatesType );
+        List<EvaluationStatusEvent> events =
+                new ArrayList<>( DeclarationInterpolator.interpolateDataTypes( adjustedDeclarationBuilder,
+                                                                               dataTypes ) );
+        // Interpolate the variable names
+        List<EvaluationStatusEvent> variableEvents =
+                DeclarationInterpolator.interpolateVariableNames( adjustedDeclarationBuilder,
+                                                                  variableNames );
+        events.addAll( variableEvents );
+
+        // Interpolate the measurement unit
+        List<EvaluationStatusEvent> unitEvents =
+                DeclarationInterpolator.interpolateMeasurementUnit( adjustedDeclarationBuilder,
+                                                                    measurementUnit );
+        events.addAll( unitEvents );
+
+        // Interpolate the timescale
+        List<EvaluationStatusEvent> scaleEvents =
+                DeclarationInterpolator.interpolateTimeScale( adjustedDeclarationBuilder,
+                                                              timeScale );
+        events.addAll( scaleEvents );
+
         // Interpolate evaluation metrics when required
         DeclarationInterpolator.interpolateMetrics( adjustedDeclarationBuilder );
         // Interpolate thresholds for individual metrics, adding an "all data" threshold as needed
@@ -215,7 +228,8 @@ public class DeclarationInterpolator
         DeclarationInterpolator.interpolateMetricParameters( adjustedDeclarationBuilder );
 
         // Notify any warnings? Push to log for now, but see #61930 (logging isn't for users)
-        if ( notify && LOGGER.isWarnEnabled() )
+        if ( notify
+             && LOGGER.isWarnEnabled() )
         {
             List<EvaluationStatus.EvaluationStatusEvent> warnEvents =
                     events.stream()
@@ -330,33 +344,38 @@ public class DeclarationInterpolator
      * check that a consistent interpolation is possible.
      *
      * @param builder the declaration builder to adjust
-     * @param leftType the left data type, inferred from ingest
-     * @param rightType the left data type, inferred from ingest
-     * @param baselineType the left data type, inferred from ingest
-     * @param covariatesType the left data type, inferred from ingest
+     * @param dataTypes the data types
      * @return any interpolation events encountered
      */
     public static List<EvaluationStatusEvent> interpolateDataTypes( EvaluationDeclarationBuilder builder,
-                                                                    DataType leftType,
-                                                                    DataType rightType,
-                                                                    DataType baselineType,
-                                                                    DataType covariatesType )
+                                                                    DataTypes dataTypes )
     {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
         // Resolve the left or observed data type, if required
-        List<EvaluationStatusEvent> leftTypeEvents =
-                DeclarationInterpolator.interpolateObservedDataType( builder, leftType );
-        List<EvaluationStatusEvent> events = new ArrayList<>( leftTypeEvents );
+        if ( Objects.nonNull( builder.left() ) )
+        {
+            List<EvaluationStatusEvent> leftTypeEvents =
+                    DeclarationInterpolator.interpolateObservedDataType( builder, dataTypes.leftType() );
+            events.addAll( leftTypeEvents );
+        }
+
         // Resolve the predicted data type, if required
-        List<EvaluationStatusEvent> rightTypeEvents =
-                DeclarationInterpolator.interpolatePredictedDataType( builder, rightType );
-        events.addAll( rightTypeEvents );
+        if ( Objects.nonNull( builder.right() ) )
+        {
+            List<EvaluationStatusEvent> rightTypeEvents =
+                    DeclarationInterpolator.interpolatePredictedDataType( builder, dataTypes.rightType() );
+            events.addAll( rightTypeEvents );
+        }
+
         // Baseline data type has the same as the predicted data type, by default
         List<EvaluationStatusEvent> baseTypeEvents =
-                DeclarationInterpolator.interpolateBaselineDataType( builder, baselineType );
+                DeclarationInterpolator.interpolateBaselineDataType( builder, dataTypes.baselineType() );
         events.addAll( baseTypeEvents );
+
         // Data type for covariates
         List<EvaluationStatusEvent> covariateTypeEvents =
-                DeclarationInterpolator.interpolateCovariatesDataType( builder, covariatesType );
+                DeclarationInterpolator.interpolateCovariatesDataType( builder, dataTypes.covariatesType() );
         events.addAll( covariateTypeEvents );
 
         return Collections.unmodifiableList( events );
@@ -566,8 +585,13 @@ public class DeclarationInterpolator
      */
     private static void interpolateMetrics( EvaluationDeclarationBuilder builder )
     {
-        DataType rightType = builder.right()
-                                    .type();
+        DataType rightType = null;
+
+        if ( Objects.nonNull( builder.right() ) )
+        {
+            rightType = builder.right()
+                               .type();
+        }
 
         // No metrics defined and the type is known, so interpolate all valid metrics
         if ( builder.metrics()
@@ -1125,8 +1149,8 @@ public class DeclarationInterpolator
                         .getThresholdValueUnits()
                         .isBlank()
                  // ... that is not an "all data" threshold
-                 && !ALL_DATA_THRESHOLD.threshold()
-                                       .equals( next.threshold() ) )
+                 && !DeclarationUtilities.ALL_DATA_THRESHOLD.threshold()
+                                                            .equals( next.threshold() ) )
             {
                 wres.statistics.generated.Threshold adjusted = next.threshold()
                                                                    .toBuilder()
@@ -1462,7 +1486,7 @@ public class DeclarationInterpolator
         // Add "all data" thresholds?
         if ( name.isContinuous() && addAllData )
         {
-            valueThresholds.add( ALL_DATA_THRESHOLD );
+            valueThresholds.add( DeclarationUtilities.ALL_DATA_THRESHOLD );
         }
 
         // Render the value thresholds featureful, if possible
@@ -1797,11 +1821,11 @@ public class DeclarationInterpolator
         if ( orientation == DatasetOrientation.COVARIATE )
         {
             article = "a";
-            if( Objects.nonNull( datasetBuilder.variable() ) )
+            if ( Objects.nonNull( datasetBuilder.variable() ) )
             {
                 extra = "with a variable name of '" + datasetBuilder.variable()
                                                                     .name()
-                + "' ";
+                        + "' ";
             }
         }
 
@@ -2475,10 +2499,399 @@ public class DeclarationInterpolator
     }
 
     /**
+     * Interpolates the variable names using the supplied input.
+     *
+     * @param builder the declaration builder to adjust
+     * @param variableNames the variable names
+     * @return any interpolation events encountered
+     */
+    private static List<EvaluationStatusEvent> interpolateVariableNames( EvaluationDeclarationBuilder builder,
+                                                                         VariableNames variableNames )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Interpolate the name for the left dataset
+        if ( Objects.nonNull( builder.left() ) )
+        {
+            String oldLeftName = null;
+            if ( DeclarationInterpolator.hasVariableName( builder.left() ) )
+            {
+                oldLeftName = builder.left()
+                                     .variable()
+                                     .name();
+            }
+
+            DatasetBuilder leftBuilder = DatasetBuilder.builder( builder.left() );
+            VariableBuilder leftVariable = VariableBuilder.builder();
+            if ( Objects.nonNull( builder.left()
+                                         .variable() ) )
+            {
+                leftVariable = VariableBuilder.builder( builder.left()
+                                                               .variable() );
+            }
+
+            List<EvaluationStatusEvent> leftEvents =
+                    DeclarationInterpolator.interpolateVariableNames( oldLeftName,
+                                                                      variableNames.leftVariableName(),
+                                                                      leftVariable::name,
+                                                                      DatasetOrientation.LEFT );
+            leftBuilder.variable( leftVariable.build() );
+            builder.left( leftBuilder.build() );
+            events.addAll( leftEvents );
+        }
+
+        // Interpolate the name for the right dataset
+        if ( Objects.nonNull( builder.right() ) )
+        {
+            String oldRightName = null;
+            if ( DeclarationInterpolator.hasVariableName( builder.right() ) )
+            {
+                oldRightName = builder.right()
+                                      .variable()
+                                      .name();
+            }
+
+            DatasetBuilder rightBuilder = DatasetBuilder.builder( builder.right() );
+            VariableBuilder rightVariable = VariableBuilder.builder();
+            if ( Objects.nonNull( builder.right()
+                                         .variable() ) )
+            {
+                rightVariable = VariableBuilder.builder( builder.right()
+                                                                .variable() );
+            }
+
+            List<EvaluationStatusEvent> rightEvents =
+                    DeclarationInterpolator.interpolateVariableNames( oldRightName,
+                                                                      variableNames.rightVariableName(),
+                                                                      rightVariable::name,
+                                                                      DatasetOrientation.RIGHT );
+            rightBuilder.variable( rightVariable.build() );
+            builder.right( rightBuilder.build() );
+
+            // Add the right events
+            events.addAll( rightEvents );
+        }
+
+        // Interpolate the name for the baseline dataset, where present
+        if ( Objects.nonNull( builder.baseline() ) )
+        {
+            String oldBaselineName = null;
+            if ( DeclarationInterpolator.hasVariableName( builder.baseline()
+                                                                 .dataset() ) )
+            {
+                oldBaselineName = builder.baseline()
+                                         .dataset()
+                                         .variable()
+                                         .name();
+            }
+
+            DatasetBuilder baselineDatasetBuilder = DatasetBuilder.builder( builder.baseline()
+                                                                                   .dataset() );
+            VariableBuilder baselineVariable = VariableBuilder.builder();
+            if ( Objects.nonNull( builder.baseline()
+                                         .dataset()
+                                         .variable() ) )
+            {
+                baselineVariable = VariableBuilder.builder( builder.baseline()
+                                                                   .dataset()
+                                                                   .variable() );
+            }
+
+            BaselineDatasetBuilder baselineBuilder = BaselineDatasetBuilder.builder( builder.baseline() );
+
+            List<EvaluationStatusEvent> baselineEvents =
+                    DeclarationInterpolator.interpolateVariableNames( oldBaselineName,
+                                                                      variableNames.baselineVariableName(),
+                                                                      baselineVariable::name,
+                                                                      DatasetOrientation.BASELINE );
+            baselineDatasetBuilder.variable( baselineVariable.build() );
+            baselineBuilder.dataset( baselineDatasetBuilder.build() );
+            builder.baseline( baselineBuilder.build() );
+
+            // Add the baseline events
+            events.addAll( baselineEvents );
+        }
+
+        // Covariate dataset(s)?
+        List<EvaluationStatusEvent> covariateEvents =
+                DeclarationInterpolator.interpolateCovariateVariableName( builder,
+                                                                          variableNames );
+        events.addAll( covariateEvents );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Interpolates the covariate variable names using the supplied input.
+     *
+     * @param builder the declaration builder to adjust
+     * @param variableNames the variable names
+     * @return any interpolation events encountered
+     */
+    private static List<EvaluationStatusEvent> interpolateCovariateVariableName( EvaluationDeclarationBuilder builder,
+                                                                                 VariableNames variableNames )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Covariate dataset(s)?
+        if ( !builder.covariates()
+                     .isEmpty() )
+        {
+            // If there is more than one covariate, all names must be declared
+            if ( builder.covariates()
+                        .size() > 1
+                 && builder.covariates()
+                           .stream()
+                           .anyMatch( c -> Objects.isNull( c.dataset()
+                                                            .variable() )
+                                           || Objects.isNull( c.dataset()
+                                                               .variable()
+                                                               .name() ) ) )
+            {
+                EvaluationStatusEvent error =
+                        EvaluationStatusEvent.newBuilder()
+                                             .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
+                                             .setEventMessage( "When declaring two or more 'covariates', the 'name' "
+                                                               + "of each 'variable' must be declared explicitly, but "
+                                                               + "one or more of the 'covariates' had no declared "
+                                                               + "'variable' and 'name'. Please clarify the 'name' of "
+                                                               + "the 'variable' for each covariate and try again." )
+                                             .build();
+                events.add( error );
+            }
+            // If there is one covariate declared and multiple ingested names, the covariate name must be declared
+            else if ( builder.covariates()
+                             .size() == 1
+                      && variableNames.covariateVariableNames()
+                                      .size() > 1
+                      && builder.covariates()
+                                .stream()
+                                .anyMatch( c -> Objects.isNull( c.dataset()
+                                                                 .variable() )
+                                                || Objects.isNull( c.dataset()
+                                                                    .variable()
+                                                                    .name() ) ) )
+            {
+                EvaluationStatusEvent error =
+                        EvaluationStatusEvent.newBuilder()
+                                             .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
+                                             .setEventMessage( "Discovered a 'covariate' dataset that contains more "
+                                                               + "than one variable: "
+                                                               + variableNames.covariateVariableNames()
+                                                               + ". However, the declaration does not identify which "
+                                                               + "of these variables should be used. Please declare "
+                                                               + "the 'name' of the 'variable' to use and try again." )
+                                             .build();
+                events.add( error );
+            }
+            // Interpolate the name for the covariate dataset
+            else
+            {
+                String oldCovariateName = null;
+                if ( DeclarationInterpolator.hasVariableName( builder.covariates()
+                                                                     .get( 0 )
+                                                                     .dataset() ) )
+                {
+                    oldCovariateName = builder.covariates()
+                                              .get( 0 )
+                                              .dataset()
+                                              .variable()
+                                              .name();
+                }
+
+                DatasetBuilder covariateDatasetBuilder = DatasetBuilder.builder( builder.covariates()
+                                                                                        .get( 0 )
+                                                                                        .dataset() );
+                CovariateDatasetBuilder covariateBuilder = CovariateDatasetBuilder.builder( builder.covariates()
+                                                                                                   .get( 0 ) );
+                VariableBuilder covariateVariable = VariableBuilder.builder();
+                if ( Objects.nonNull( covariateDatasetBuilder
+                                              .variable() ) )
+                {
+                    covariateVariable = VariableBuilder.builder( covariateDatasetBuilder.variable() );
+                }
+
+                String newCovariateName = variableNames.covariateVariableNames()
+                                                       .stream()
+                                                       .findAny()
+                                                       .orElse( null );
+
+                List<EvaluationStatusEvent> covariateEvents =
+                        DeclarationInterpolator.interpolateVariableNames( oldCovariateName,
+                                                                          newCovariateName,
+                                                                          covariateVariable::name,
+                                                                          DatasetOrientation.COVARIATE );
+                covariateDatasetBuilder.variable( covariateVariable.build() );
+                covariateBuilder.dataset( covariateDatasetBuilder.build() );
+                builder.covariates( List.of( covariateBuilder.build() ) );
+
+                // Add the covariate events
+                events.addAll( covariateEvents );
+            }
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * @param dataset the dataset
+     * @return whether the dataset has a variable name
+     */
+    private static boolean hasVariableName( Dataset dataset )
+    {
+        return Objects.nonNull( dataset )
+               && Objects.nonNull( dataset.variable() )
+               && Objects.nonNull( dataset.variable()
+                                          .name() );
+    }
+
+    /**
+     * Interpolates the variable names using the supplied input.
+     *
+     * @param oldName the existing variable name, possibly null
+     * @param newName the new variable name
+     * @param nameSetter the setter for the new name
+     * @param orientation the dataset orientation
+     * @return any interpolation events encountered
+     */
+    private static List<EvaluationStatusEvent> interpolateVariableNames( String oldName,
+                                                                         String newName,
+                                                                         Consumer<String> nameSetter,
+                                                                         DatasetOrientation orientation )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        if ( Objects.isNull( oldName ) )
+        {
+            nameSetter.accept( newName );
+        }
+        else if ( !oldName.equalsIgnoreCase( newName ) )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
+                                           .setEventMessage( "When attempting to set the variable name for the '"
+                                                             + orientation
+                                                             + "' dataset, found a declared variable name of '"
+                                                             + oldName
+                                                             + "', which is inconsistent with the variable name of '"
+                                                             + newName
+                                                             + "' discovered in the time-series data source. Please "
+                                                             + "omit the 'name' of the 'variable' for the '"
+                                                             + orientation
+                                                             + "' dataset from the declaration or use '"
+                                                             + newName
+                                                             + "' for consistency with the data source." )
+                                           .build();
+            events.add( event );
+        }
+        // Set the name, which is the same as the old name, ignoring case. The reason to set here is to render the case
+        // equivalent to the ingested name
+        else
+        {
+            LOGGER.debug( "Found matching variable names in the declaration and data sources for the {} dataset.",
+                          orientation );
+
+            nameSetter.accept( newName );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Interpolates the measurement unit.
+     * @param builder the evaluation builder
+     * @param measurementUnit the measurement unit
+     * @return any interpolation events encountered
+     */
+    private static List<EvaluationStatusEvent> interpolateMeasurementUnit( EvaluationDeclarationBuilder builder,
+                                                                           String measurementUnit )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+        if ( Objects.isNull( builder.unit() ) )
+        {
+            LOGGER.debug( "Set the measurement unit to {}.", measurementUnit );
+            builder.unit( measurementUnit );
+        }
+        else if ( !builder.unit()
+                          .equalsIgnoreCase( measurementUnit ) )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
+                                           .setEventMessage( "The declared measurement unit of '"
+                                                             + builder.unit()
+                                                             + "' is inconsistent with the measurement unit of '"
+                                                             + measurementUnit
+                                                             + "', which was analyzed from the source data. Please "
+                                                             + "remove the 'unit' from the declaration or use the "
+                                                             + "analyzed unit of '"
+                                                             + measurementUnit
+                                                             + "'." )
+                                           .build();
+            events.add( event );
+        }
+        // Set the unit, which is the same as the declared unit, ignoring case. The reason to set here is to render the
+        // case equivalent to the analyzed unit
+        else
+        {
+            LOGGER.debug( "Found declared and analyzed measurement units of '{}' are consistent.",
+                          measurementUnit );
+
+            builder.unit( measurementUnit );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Interpolates the evaluation timescale.
+     * @param builder the evaluation builder
+     * @param timeScale the evaluation timescale
+     * @return any interpolation events encountered
+     */
+    private static List<EvaluationStatusEvent> interpolateTimeScale( EvaluationDeclarationBuilder builder,
+                                                                     TimeScale timeScale )
+    {
+        if ( Objects.isNull( timeScale ) )
+        {
+            LOGGER.debug( "The analyzed timescale is unknown." );
+            return List.of();
+        }
+
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+        if ( Objects.isNull( builder.timeScale() ) )
+        {
+            LOGGER.debug( "Set the measurement unit to {}.", timeScale );
+            builder.timeScale( new wres.config.yaml.components.TimeScale( timeScale ) );
+        }
+        else if ( !builder.timeScale()
+                          .timeScale()
+                          .equals( timeScale ) )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
+                                           .setEventMessage( "The declared evaluation timescale of '"
+                                                             + builder.timeScale()
+                                                             + "' is inconsistent with the timescale of '"
+                                                             + timeScale
+                                                             + "', which was analyzed from the source data. Please "
+                                                             + "remove the 'time_scale' from the declaration or use "
+                                                             + "the analyzed timescale of '"
+                                                             + timeScale
+                                                             + "'." )
+                                           .build();
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
      * Hidden constructor.
      */
     private DeclarationInterpolator()
     {
     }
-
 }

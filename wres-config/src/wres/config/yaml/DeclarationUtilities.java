@@ -25,6 +25,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Timestamp;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tika.config.TikaConfig;
@@ -80,6 +81,17 @@ public class DeclarationUtilities
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( DeclarationUtilities.class );
+
+    /** All data threshold. */
+    public static final Threshold ALL_DATA_THRESHOLD =
+            new Threshold( wres.statistics.generated.Threshold.newBuilder()
+                                                              .setLeftThresholdValue( DoubleValue.of( Double.NEGATIVE_INFINITY ) )
+                                                              .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
+                                                              .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                                              .build(),
+                           wres.config.yaml.components.ThresholdType.VALUE,
+                           null,
+                           null );
 
     /** Re-used message. */
     private static final String CANNOT_DETERMINE_TIME_WINDOWS_FROM_MISSING_DECLARATION = "Cannot determine time "
