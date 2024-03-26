@@ -3258,7 +3258,7 @@ public class DeclarationValidator
         Set<String> thresholdFeatureNames = thresholds.stream()
                                                       .filter( n -> n.featureNameFrom() == orientation )
                                                       // Ignore all data, which was added automagically
-                                                      .filter( n -> !DeclarationInterpolator.ALL_DATA_THRESHOLD.threshold()
+                                                      .filter( n -> !DeclarationUtilities.ALL_DATA_THRESHOLD.threshold()
                                                                                                                .equals(
                                                                                                                        n.threshold() ) )
                                                       .map( Threshold::feature )

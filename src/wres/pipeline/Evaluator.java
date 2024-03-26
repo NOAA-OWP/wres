@@ -705,13 +705,8 @@ public class Evaluator
                                                    adjustedFeatureGroups,
                                                    metricsAndThresholds );
 
-            // Create the evaluation description with any analyzed units and variable names,  post-ingest
-            // This is akin to a post-ingest interpolation/augmentation of the declared project. Earlier stages of
-            // interpolation include interpolation of missing declaration and service calls to interpolate features and
-            // thresholds. This is the latest step in that process of combining the declaration and data
-            Evaluation evaluationDescription = MessageFactory.parse( declaration );
-            evaluationDescription = EvaluationUtilities.setAnalyzedUnitsAndVariableNames( evaluationDescription,
-                                                                                          project );
+            // Create the evaluation description for messaging
+            Evaluation evaluationDescription = MessageFactory.parse( declarationWithFeaturesAndThresholds );
 
             // Build the evaluation description for messaging. In the future, there may be a desire to build the
             // evaluation description prior to ingest, in order to message the status of ingest to client applications.

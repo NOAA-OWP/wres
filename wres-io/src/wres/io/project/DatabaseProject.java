@@ -51,7 +51,7 @@ import wres.io.ingesting.IngestResult;
 import wres.reading.netcdf.grid.GriddedFeatures;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
-import wres.io.project.ProjectUtilities.VariableNames;
+import wres.config.yaml.VariableNames;
 import wres.io.retrieving.DataAccessException;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -167,10 +167,14 @@ public class DatabaseProject implements Project
         this.desiredTimeScale = this.getDesiredTimeScale( declaration, this.projectId );
 
         // Set the measurement unit
-        this.measurementUnit = this.getMeasurementUnitFromDatabase( declaration, this.projectId );
+        this.measurementUnit = this.getAnalyzedMeasurementUnit( declaration, this.projectId );
 
         // Interpolate and validate the declaration before setting it
-        EvaluationDeclaration innerDeclaration = ProjectUtilities.interpolate( declaration, ingestResults );
+        EvaluationDeclaration innerDeclaration = ProjectUtilities.interpolate( declaration,
+                                                                               ingestResults,
+                                                                               variableNames,
+                                                                               this.measurementUnit,
+                                                                               this.desiredTimeScale );
         ProjectUtilities.validate( innerDeclaration );
         this.declaration = innerDeclaration;
 
@@ -1478,7 +1482,7 @@ public class DatabaseProject implements Project
      * @throws IllegalArgumentException if the project identity is required and undefined
      */
 
-    private String getMeasurementUnitFromDatabase( EvaluationDeclaration declaration, long projectId )
+    private String getAnalyzedMeasurementUnit( EvaluationDeclaration declaration, long projectId )
     {
         String measurementUnitInner = null;
 

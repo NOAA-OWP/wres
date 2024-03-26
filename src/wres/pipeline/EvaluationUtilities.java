@@ -594,40 +594,6 @@ class EvaluationUtilities
     }
 
     /**
-     * @param evaluation the evaluation description
-     * @param project the project
-     * @return an evaluation description with analyzed measurement units and variables, as needed
-     */
-
-    static Evaluation setAnalyzedUnitsAndVariableNames( Evaluation evaluation,
-                                                        Project project )
-    {
-        String desiredMeasurementUnit = project.getMeasurementUnit();
-        Evaluation.Builder builder = evaluation.toBuilder()
-                                               .setMeasurementUnit( desiredMeasurementUnit );
-
-        // Only set the names with analyzed names if the existing names are empty
-        if ( evaluation.getLeftVariableName()
-                       .isBlank() )
-        {
-            builder.setLeftVariableName( project.getLeftVariableName() );
-        }
-        if ( evaluation.getRightVariableName()
-                       .isBlank() )
-        {
-            builder.setRightVariableName( project.getRightVariableName() );
-        }
-        if ( project.hasBaseline()
-             && evaluation.getBaselineVariableName()
-                          .isBlank() )
-        {
-            builder.setBaselineVariableName( project.getBaselineVariableName() );
-        }
-
-        return builder.build();
-    }
-
-    /**
      * Creates the pool requests from the project.
      *
      * @param evaluationDescription the evaluation description

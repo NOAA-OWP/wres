@@ -41,7 +41,7 @@ import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.Feature;
 import wres.io.NoProjectDataException;
 import wres.io.ingesting.IngestResult;
-import wres.io.project.ProjectUtilities.VariableNames;
+import wres.config.yaml.VariableNames;
 import wres.reading.DataSource.DataDisposition;
 import wres.io.retrieving.DataAccessException;
 import wres.statistics.generated.Geometry;
@@ -142,13 +142,17 @@ public class InMemoryProject implements Project
         this.rightVariable = variableNames.rightVariableName();
         this.baselineVariable = variableNames.baselineVariableName();
 
-        this.measurementUnit = this.getMeasurementUnit( declaration, timeSeriesStore );
+        this.measurementUnit = this.getAnalyzedMeasurementUnit( declaration, timeSeriesStore );
         this.desiredTimeScale = this.getDesiredTimeScale( declaration, timeSeriesStore );
 
         this.validateEnsembleConditions( timeSeriesStore, declaration );
 
         // Interpolate and validate the declaration before setting it
-        EvaluationDeclaration innerDeclaration = ProjectUtilities.interpolate( declaration, ingestResults );
+        EvaluationDeclaration innerDeclaration = ProjectUtilities.interpolate( declaration,
+                                                                               ingestResults,
+                                                                               variableNames,
+                                                                               this.measurementUnit,
+                                                                               this.desiredTimeScale );
         ProjectUtilities.validate( innerDeclaration );
         this.declaration = innerDeclaration;
     }
@@ -985,8 +989,8 @@ public class InMemoryProject implements Project
      * @throws IllegalArgumentException if the project identity is required and undefined
      */
 
-    private String getMeasurementUnit( EvaluationDeclaration declaration,
-                                       TimeSeriesStore timeSeriesStore )
+    private String getAnalyzedMeasurementUnit( EvaluationDeclaration declaration,
+                                               TimeSeriesStore timeSeriesStore )
     {
         String innerMeasurementUnit = null;
 
