@@ -154,6 +154,42 @@ public class RetrieverUtilities
     }
 
     /**
+     * Generates a time window from the supplied time window and adjusts to use unconditional lead durations. In
+     * addition, extends the time window to account for the timescale period when the timescale is supplied.
+     * @param timeWindow the time window
+     * @param timeScale the timescale
+     * @return the adjusted time window with unconditional lead durations
+     * @throws NullPointerException if the time window is null
+     */
+    public static TimeWindowOuter getTimeWindowWithUnconditionalLeadTimes( TimeWindowOuter timeWindow,
+                                                                           TimeScaleOuter timeScale )
+    {
+        Objects.requireNonNull( timeWindow );
+
+        // Consider all possible lead durations
+        com.google.protobuf.Duration lower =
+                com.google.protobuf.Duration.newBuilder()
+                                            .setSeconds( TimeWindowOuter.DURATION_MIN.getSeconds() )
+                                            .setNanos( TimeWindowOuter.DURATION_MIN.getNano() )
+                                            .build();
+
+        com.google.protobuf.Duration upper =
+                com.google.protobuf.Duration.newBuilder()
+                                            .setSeconds( TimeWindowOuter.DURATION_MAX.getSeconds() )
+                                            .setNanos( TimeWindowOuter.DURATION_MAX.getNano() )
+                                            .build();
+
+        TimeWindow inner = timeWindow.getTimeWindow()
+                                     .toBuilder()
+                                     .setEarliestLeadDuration( lower )
+                                     .setLatestLeadDuration( upper )
+                                     .build();
+
+        return TimeSeriesSlicer.adjustByTimeScalePeriod( TimeWindowOuter.of( inner ),
+                                                         timeScale );
+    }
+
+    /**
      * Creates an analysis time window from the inputs.
      * @param timeWindow the time window, optional
      * @param earliestAnalysisDuration the earliest analysis duration

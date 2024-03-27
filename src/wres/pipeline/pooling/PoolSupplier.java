@@ -791,7 +791,8 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
             LOGGER.debug( "Finished creating pool, which contains {} time-series and {} pairs "
                           + "and has this metadata: {}.",
-                          pool.get().size(),
+                          pool.get()
+                              .size(),
                           pairCount,
                           this.getMetadata() );
         }
@@ -1472,13 +1473,13 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                           + " which contained {} values: "
                           + "created {} pairs at the desired time scale of {}.",
                           DatasetOrientation.LEFT,
-                          scaledAndTransformedLeft.getMetadata(),
-                          scaledAndTransformedLeft.getEvents()
-                                                  .size(),
+                          filteredLeft.getMetadata(),
+                          filteredLeft.getEvents()
+                                      .size(),
                           orientation,
-                          scaledAndTransformedRight.getMetadata(),
-                          scaledAndTransformedRight.getEvents()
-                                                   .size(),
+                          filteredRight.getMetadata(),
+                          filteredRight.getEvents()
+                                       .size(),
                           snippedPairs.getEvents()
                                       .size(),
                           desiredTimeScale );
@@ -1588,11 +1589,10 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
      * @return the generated baseline pairs
      */
 
-    private Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>
-    getGeneratedBaselinePairs( Transformers<R> rightTransformers,
-                               Set<FeatureTuple> featureTuples,
-                               TimeSeries<L> leftSeries,
-                               TimeSeries<R> templateSeries )
+    private Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> getGeneratedBaselinePairs( Transformers<R> rightTransformers,
+                                                                                       Set<FeatureTuple> featureTuples,
+                                                                                       TimeSeries<L> leftSeries,
+                                                                                       TimeSeries<R> templateSeries )
     {
         Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> generatedBaseline = new HashMap<>();
 
@@ -1715,6 +1715,12 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                           Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> mainPairs,
                           Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> basePairs )
     {
+        if ( Objects.isNull( basePairs ) )
+        {
+            LOGGER.debug( "No baseline pairs found for cross-pairing." );
+            return Pair.of( mainPairs, null );
+        }
+
         LOGGER.debug( "Conducting cross-pairing of {} and {}.",
                       this.getMetadata(),
                       this.getBaselineMetadata() );

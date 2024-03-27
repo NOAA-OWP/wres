@@ -1270,6 +1270,8 @@ class PoolSupplierTest
 
         List<TimeSeries<Pair<Double, Double>>> series = poolOneActual.get();
 
+        System.out.println( series );
+
 
         assertAll( () -> assertEquals( 2, poolOneActual.get()
                                                        .size() ),

@@ -27,6 +27,7 @@ import wres.config.yaml.DeclarationValidator;
 import wres.config.yaml.VariableNames;
 import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.DataType;
+import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EvaluationDeclaration;
@@ -783,7 +784,7 @@ class ProjectUtilities
                                          covariateType );
 
         wres.statistics.generated.TimeScale innerTimeScale = null;
-        if( Objects.nonNull( timeScale ) )
+        if ( Objects.nonNull( timeScale ) )
         {
             innerTimeScale = timeScale.getTimeScale();
         }
@@ -812,6 +813,35 @@ class ProjectUtilities
         // Validate the declaration in relation to the interpolated data types and other analyzed information
         LOGGER.debug( "Performing post-ingest validation of the declaration" );
         DeclarationValidator.validatePostDataIngest( declaration );
+    }
+
+    /**
+     * Returns the named covariate dataset from the supplied declaration.
+     * @param declaration the declaration
+     * @param variableName the variable name
+     * @return the covariate dataset
+     * @throws IllegalArgumentException if the covariate dataset does not exist
+     * @throws NullPointerException if any input is null
+     */
+    static Dataset getCovariateDatset( EvaluationDeclaration declaration, String variableName )
+    {
+        Objects.requireNonNull( declaration );
+        Objects.requireNonNull( variableName );
+
+        return declaration.covariates()
+                          .stream()
+                          .map( CovariateDataset::dataset )
+                          .filter( c -> Objects.nonNull( c.variable() )
+                                        && Objects.nonNull( c.variable()
+                                                             .name() )
+                                        && c.variable()
+                                            .name()
+                                            .equals( variableName ) )
+                          .findFirst()
+                          .orElseThrow( () -> new IllegalArgumentException( "Could not find a covariate dataset with "
+                                                                            + "a variable name of '"
+                                                                            + variableName
+                                                                            + "'." ) );
     }
 
     /**

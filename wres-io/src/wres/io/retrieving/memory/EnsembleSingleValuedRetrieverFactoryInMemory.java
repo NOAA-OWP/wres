@@ -86,26 +86,9 @@ public class EnsembleSingleValuedRetrieverFactoryInMemory implements RetrieverFa
                                                                   TimeWindowOuter timeWindow )
     {
         // Consider all possible lead durations
-        com.google.protobuf.Duration lower =
-                com.google.protobuf.Duration.newBuilder()
-                                            .setSeconds( TimeWindowOuter.DURATION_MIN.getSeconds() )
-                                            .setNanos( TimeWindowOuter.DURATION_MIN.getNano() )
-                                            .build();
-
-        com.google.protobuf.Duration upper =
-                com.google.protobuf.Duration.newBuilder()
-                                            .setSeconds( TimeWindowOuter.DURATION_MAX.getSeconds() )
-                                            .setNanos( TimeWindowOuter.DURATION_MAX.getNano() )
-                                            .build();
-
-        TimeWindow inner = timeWindow.getTimeWindow()
-                                     .toBuilder()
-                                     .setEarliestLeadDuration( lower )
-                                     .setLatestLeadDuration( upper )
-                                     .build();
-
-        TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustByTimeScalePeriod( TimeWindowOuter.of( inner ),
-                                                                                   this.project.getDesiredTimeScale() );
+        TimeWindowOuter adjustedWindow =
+                RetrieverUtilities.getTimeWindowWithUnconditionalLeadTimes( timeWindow,
+                                                                            this.project.getDesiredTimeScale() );
 
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.LEFT );
@@ -194,6 +177,58 @@ public class EnsembleSingleValuedRetrieverFactoryInMemory implements RetrieverFa
                                                                                                data ) );
     }
 
+    @Override
+    public Supplier<Stream<TimeSeries<Double>>> getCovariateRetriever( Set<Feature> features, String variableName )
+    {
+        Stream<TimeSeries<Double>> originalSeries =
+                this.timeSeriesStore.getSingleValuedSeries( DatasetOrientation.COVARIATE,
+                                                            features,
+                                                            variableName );
+
+        Stream<TimeSeries<Double>> adaptedTimeSeries = this.getAdaptedTimeSeries( DatasetOrientation.COVARIATE,
+                                                                                  originalSeries,
+                                                                                  null );
+        // Wrap in a caching retriever
+        Dataset data = this.project.getCovariateDataset( variableName );
+        Supplier<Stream<TimeSeries<Double>>> supplier =
+                () -> adaptedTimeSeries.map( timeSeries ->
+                                                     RetrieverUtilities.augmentTimeScale( timeSeries,
+                                                                                          DatasetOrientation.COVARIATE,
+                                                                                          data ) );
+        return CachingRetriever.of( supplier );
+    }
+
+    @Override
+    public Supplier<Stream<TimeSeries<Double>>> getCovariateRetriever( Set<Feature> features,
+                                                                       String variableName,
+                                                                       TimeWindowOuter timeWindow )
+    {
+        // Consider all possible lead durations
+        TimeWindowOuter adjustedWindow =
+                RetrieverUtilities.getTimeWindowWithUnconditionalLeadTimes( timeWindow,
+                                                                            this.project.getDesiredTimeScale() );
+
+        Dataset data = this.project.getCovariateDataset( variableName );
+        adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
+                                                                             data.type(),
+                                                                             this.project.getEarliestAnalysisDuration(),
+                                                                             this.project.getLatestAnalysisDuration() );
+
+        Stream<TimeSeries<Double>> originalSeries =
+                this.timeSeriesStore.getSingleValuedSeries( adjustedWindow,
+                                                            DatasetOrientation.COVARIATE,
+                                                            features );
+
+        Stream<TimeSeries<Double>> adaptedTimeSeries = this.getAdaptedTimeSeries( DatasetOrientation.COVARIATE,
+                                                                                  originalSeries,
+                                                                                  adjustedWindow );
+
+        // Wrap in a caching retriever to allow re-use of left-ish data
+        return CachingRetriever.of( () -> adaptedTimeSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale(
+                timeSeries,
+                DatasetOrientation.LEFT,
+                data ) ) );
+    }
 
     /**
      * @param <T> the time-series event value type

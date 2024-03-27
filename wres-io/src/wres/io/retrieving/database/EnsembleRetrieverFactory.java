@@ -167,6 +167,21 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
         return baseline;
     }
 
+    @Override
+    public Supplier<Stream<TimeSeries<Double>>> getCovariateRetriever( Set<Feature> features, String variableName )
+    {
+        return this.leftFactory.getCovariateRetriever( features, variableName );
+
+    }
+
+    @Override
+    public Supplier<Stream<TimeSeries<Double>>> getCovariateRetriever( Set<Feature> features,
+                                                                       String variableName,
+                                                                       TimeWindowOuter timeWindow )
+    {
+        return this.leftFactory.getCovariateRetriever( features, variableName, timeWindow );
+    }
+
     /**
      * Returns <code>true</code> if the project associated with this retriever factory has a baseline, otherwise
      * <code>false</code>.
@@ -283,7 +298,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
         this.rightDataset = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
                                                                      DatasetOrientation.RIGHT );
 
-        if( project.hasBaseline() )
+        if ( project.hasBaseline() )
         {
             this.baselineDataset = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
                                                                             DatasetOrientation.BASELINE );

@@ -380,21 +380,24 @@ public class EvaluationSubscriber implements Closeable
         this.isClosing.set( true );
 
         // Log a warning if there are open evaluations
-        if ( this.hasOpenEvaluations() )
+        if ( LOGGER.isWarnEnabled() )
         {
             Set<String> open = this.evaluations.asMap()
                                                .entrySet()
                                                .stream()
-                                               .filter( next -> !next.getValue().isComplete() )
+                                               .filter( next -> !next.getValue()
+                                                                     .isComplete() )
                                                .map( Map.Entry::getKey )
                                                .collect( Collectors.toSet() );
-
-            LOGGER.warn( "While closing subscriber {}, {} open evaluations were discovered: {}. These "
-                         + "evaluations will not be notified complete. They should be notified before a "
-                         + "subscriber is closed.",
-                         this.getClientId(),
-                         open.size(),
-                         open );
+            if ( !open.isEmpty() )
+            {
+                LOGGER.warn( "While closing subscriber {}, {} open evaluations were discovered: {}. These "
+                             + "evaluations will not be notified complete. They should be notified before a "
+                             + "subscriber is closed.",
+                             this.getClientId(),
+                             open.size(),
+                             open );
+            }
         }
 
         // Durable subscriptions are removed if all evaluations succeeded
@@ -570,15 +573,17 @@ public class EvaluationSubscriber implements Closeable
 
     private boolean hasOpenEvaluations()
     {
-        if(! this.isStarted.get() )
+        if ( !this.isStarted.get() )
         {
             return false;
         }
 
         // Iterate the evaluations
-        for ( Map.Entry<String, EvaluationConsumer> next : this.evaluations.asMap().entrySet() )
+        for ( Map.Entry<String, EvaluationConsumer> next : this.evaluations.asMap()
+                                                                           .entrySet() )
         {
-            if ( !next.getValue().isComplete() )
+            if ( !next.getValue()
+                      .isComplete() )
             {
                 return true;
             }
@@ -1634,7 +1639,7 @@ public class EvaluationSubscriber implements Closeable
 
     private void validateStarted()
     {
-        if( ! this.isStarted.get() )
+        if ( !this.isStarted.get() )
         {
             throw new IllegalStateException( "The evaluation subscriber "
                                              + this.getClientId()

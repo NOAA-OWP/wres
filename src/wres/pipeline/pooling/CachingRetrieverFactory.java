@@ -28,7 +28,7 @@ import wres.io.retrieving.RetrieverFactory;
  * one retriever (i.e., multiple requests will always consider the same collection of features). Thus, the size of the 
  * cache is currently one for each type of retrieval. Uses a coarse-grained write lock on creating cached values that 
  * reflects the current usage pattern.
- *  
+ *
  * @param <L> the left data type
  * @param <R> the right data type
  * @param <B> the baseline data type
@@ -179,6 +179,20 @@ class CachingRetrieverFactory<L, R, B> implements RetrieverFactory<L, R, B>
                                                                  TimeWindowOuter timeWindow )
     {
         return this.delegate.getBaselineRetriever( features, timeWindow );
+    }
+
+    @Override
+    public Supplier<Stream<TimeSeries<L>>> getCovariateRetriever( Set<Feature> features, String variableName )
+    {
+        return this.delegate.getCovariateRetriever( features, variableName );
+    }
+
+    @Override
+    public Supplier<Stream<TimeSeries<L>>> getCovariateRetriever( Set<Feature> features,
+                                                                  String variableName,
+                                                                  TimeWindowOuter timeWindow )
+    {
+        return this.delegate.getCovariateRetriever( features, variableName, timeWindow );
     }
 
     /**

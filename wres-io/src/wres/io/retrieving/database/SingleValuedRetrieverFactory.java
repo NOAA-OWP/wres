@@ -147,6 +147,29 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
                          timeWindow );
     }
 
+    @Override
+    public Supplier<Stream<TimeSeries<Double>>> getCovariateRetriever( Set<Feature> features, String variableName )
+    {
+        return this.get( this.getProject()
+                             .getCovariateDataset( variableName ),
+                         DatasetOrientation.COVARIATE,
+                         features,
+                         null );
+
+    }
+
+    @Override
+    public Supplier<Stream<TimeSeries<Double>>> getCovariateRetriever( Set<Feature> features,
+                                                                       String variableName,
+                                                                       TimeWindowOuter timeWindow )
+    {
+        return this.get( this.getProject()
+                             .getCovariateDataset( variableName ),
+                         DatasetOrientation.COVARIATE,
+                         features,
+                         timeWindow );
+    }
+
     /**
      * Returns a supplier of time-series.
      *
@@ -176,19 +199,8 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
         boolean isConfiguredAsForecast = DeclarationUtilities.isForecast( dataset );
 
-        String variableName =
-                switch ( orientation )
-                {
-                    case LEFT -> this.getProject()
-                                     .getLeftVariableName();
-                    case RIGHT -> this.getProject()
-                                      .getRightVariableName();
-                    case BASELINE -> this.getProject()
-                                         .getBaselineVariableName();
-                    default -> throw new IllegalArgumentException( "Unrecognized dataset orientation in this context: "
-                                                                   + orientation
-                                                                   + "." );
-                };
+        String variableName = dataset.variable()
+                                     .name();
 
         TimeScaleOuter declaredExistingTimeScale = this.getDeclaredExistingTimeScale( dataset );
 
