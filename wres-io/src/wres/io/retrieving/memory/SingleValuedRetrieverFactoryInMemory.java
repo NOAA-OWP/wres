@@ -68,7 +68,10 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<Feature> features )
     {
-        Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( DatasetOrientation.LEFT, null, features );
+        Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( DatasetOrientation.LEFT,
+                                                                   null,
+                                                                   features,
+                                                                   null );
 
         // Wrap in a caching retriever
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
@@ -85,27 +88,9 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<Feature> features,
                                                                   TimeWindowOuter timeWindow )
     {
-        // Consider all possible lead durations
-        com.google.protobuf.Duration lower =
-                com.google.protobuf.Duration.newBuilder()
-                                            .setSeconds( TimeWindowOuter.DURATION_MIN.getSeconds() )
-                                            .setNanos( TimeWindowOuter.DURATION_MIN.getNano() )
-                                            .build();
-
-        com.google.protobuf.Duration upper =
-                com.google.protobuf.Duration.newBuilder()
-                                            .setSeconds( TimeWindowOuter.DURATION_MAX.getSeconds() )
-                                            .setNanos( TimeWindowOuter.DURATION_MAX.getNano() )
-                                            .build();
-
-        TimeWindow inner = timeWindow.getTimeWindow()
-                                     .toBuilder()
-                                     .setEarliestLeadDuration( lower )
-                                     .setLatestLeadDuration( upper )
-                                     .build();
-
-        TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustByTimeScalePeriod( TimeWindowOuter.of( inner ),
-                                                                                   this.project.getDesiredTimeScale() );
+        TimeWindowOuter adjustedWindow =
+                RetrieverUtilities.getTimeWindowWithUnconditionalLeadTimes( timeWindow,
+                                                                            this.project.getDesiredTimeScale() );
 
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.LEFT );
@@ -116,7 +101,8 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
 
         Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( DatasetOrientation.LEFT,
                                                                    adjustedWindow,
-                                                                   features );
+                                                                   features,
+                                                                   null );
 
         // Wrap in a caching retriever to allow re-use of left-ish data
         return CachingRetriever.of( () -> allSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
@@ -140,7 +126,8 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
 
         Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( DatasetOrientation.RIGHT,
                                                                    adjustedWindow,
-                                                                   features );
+                                                                   features,
+                                                                   null );
 
         Supplier<Stream<TimeSeries<Double>>> supplier =
                 () -> allSeries.map( timeSeries ->
@@ -174,7 +161,8 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
 
         Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( DatasetOrientation.BASELINE,
                                                                    adjustedWindow,
-                                                                   features );
+                                                                   features,
+                                                                   null );
         Supplier<Stream<TimeSeries<Double>>> supplier =
                 () -> allSeries.map( timeSeries ->
                                              RetrieverUtilities.augmentTimeScale( timeSeries,
@@ -183,28 +171,80 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
         return CachingRetriever.of( supplier );
     }
 
+
+    @Override
+    public Supplier<Stream<TimeSeries<Double>>> getCovariateRetriever( Set<Feature> features, String variableName )
+    {
+        Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( DatasetOrientation.COVARIATE,
+                                                                   null,
+                                                                   features,
+                                                                   variableName );
+
+        // Wrap in a caching retriever
+        Dataset data = this.project.getCovariateDataset( variableName );
+
+        Supplier<Stream<TimeSeries<Double>>> supplier =
+                () -> allSeries.map( timeSeries ->
+                                             RetrieverUtilities.augmentTimeScale( timeSeries,
+                                                                                  DatasetOrientation.COVARIATE,
+                                                                                  data ) );
+        return CachingRetriever.of( supplier );
+    }
+
+    @Override
+    public Supplier<Stream<TimeSeries<Double>>> getCovariateRetriever( Set<Feature> features,
+                                                                       String variableName,
+                                                                       TimeWindowOuter timeWindow )
+    {
+        TimeWindowOuter adjustedWindow =
+                RetrieverUtilities.getTimeWindowWithUnconditionalLeadTimes( timeWindow,
+                                                                            this.project.getDesiredTimeScale() );
+
+        Dataset data = this.project.getCovariateDataset( variableName );
+
+        adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
+                                                                             data.type(),
+                                                                             this.project.getEarliestAnalysisDuration(),
+                                                                             this.project.getLatestAnalysisDuration() );
+
+        Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( DatasetOrientation.COVARIATE,
+                                                                   adjustedWindow,
+                                                                   features,
+                                                                   variableName );
+
+        // Wrap in a caching retriever to allow re-use of left-ish data
+        return CachingRetriever.of( () -> allSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
+                                                                                                            DatasetOrientation.LEFT,
+                                                                                                            data ) ) );
+
+    }
+
     /**
      * @param orientation the orientation
      * @param timeWindow the time window, optional
+     * @param variableName the variable name, optional
      * @return the time-series
      */
 
     private Stream<TimeSeries<Double>> getTimeSeries( DatasetOrientation orientation,
                                                       TimeWindowOuter timeWindow,
-                                                      Set<Feature> features )
+                                                      Set<Feature> features,
+                                                      String variableName )
     {
         Stream<TimeSeries<Double>> allSeries;
 
         if ( Objects.isNull( timeWindow ) )
         {
             allSeries = this.timeSeriesStore.getSingleValuedSeries( orientation,
-                                                                    features );
+                                                                    features,
+                                                                    variableName );
         }
         else
         {
             allSeries = this.timeSeriesStore.getSingleValuedSeries( timeWindow,
                                                                     orientation,
-                                                                    features );
+                                                                    features,
+                                                                    variableName );
         }
 
         // Analysis shape of evaluation?

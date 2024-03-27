@@ -1008,9 +1008,8 @@ public class PoolFactory
      * @return a list of requests to suppliers
      */
 
-    private <T> List<Pair<PoolRequest, Supplier<T>>>
-    unpack( Map<FeatureGroup, OptimizedPoolRequests> optimizedGroups,
-            List<SupplierWithPoolRequest<T>> suppliers )
+    private <T> List<Pair<PoolRequest, Supplier<T>>> unpack( Map<FeatureGroup, OptimizedPoolRequests> optimizedGroups,
+                                                             List<SupplierWithPoolRequest<T>> suppliers )
     {
         List<Pair<PoolRequest, Supplier<T>>> returnMe = new ArrayList<>();
 

@@ -265,6 +265,12 @@ public class InMemoryProject implements Project
     }
 
     @Override
+    public Dataset getCovariateDataset( String variableName )
+    {
+        return ProjectUtilities.getCovariateDatset( this.declaration, variableName );
+    }
+
+    @Override
     public SortedSet<String> getEnsembleLabels( DatasetOrientation orientation )
     {
         Objects.requireNonNull( orientation );

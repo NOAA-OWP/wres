@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
+import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
@@ -191,7 +192,6 @@ public class SingleValuedRetrieverFactoryTest
     @Test
     public void testGetLeftRetrieverWithTimeWindowReturnsOneTimeSeriesWithFiveEvents()
     {
-
         // The time window to select events
         TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2023-04-01T02:00:00Z" ),
                                                                          T2023_04_01T07_00_00Z );
@@ -200,6 +200,46 @@ public class SingleValuedRetrieverFactoryTest
         // Get the actual left series
         List<TimeSeries<Double>> actualCollection = this.factoryToTest.getLeftRetriever( Set.of( FEATURE ),
                                                                                          timeWindow )
+                                                                      .get()
+                                                                      .toList();
+
+        // There is only one time-series, so assert that
+        assertEquals( 1, actualCollection.size() );
+        TimeSeries<Double> actualSeries = actualCollection.get( 0 );
+
+        // Create the expected series
+        TimeSeriesMetadata expectedMetadata =
+                TimeSeriesMetadata.of( Collections.emptyMap(),
+                                       TimeScaleOuter.of(),
+                                       VARIABLE_NAME,
+                                       FEATURE,
+                                       UNIT );
+        TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
+        TimeSeries<Double> expectedSeries =
+                builder.setMetadata( expectedMetadata )
+                       .addEvent( Event.of( T2023_04_01T03_00_00Z, 44.0 ) )
+                       .addEvent( Event.of( T2023_04_01T04_00_00Z, 51.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 58.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T06:00:00Z" ), 65.0 ) )
+                       .addEvent( Event.of( T2023_04_01T07_00_00Z, 72.0 ) )
+                       .build();
+
+        // Actual series equals expected series
+        assertEquals( expectedSeries, actualSeries );
+    }
+
+    @Test
+    public void testGetCovariateRetrieverWithTimeWindowReturnsOneTimeSeriesWithFiveEvents()
+    {
+        // The time window to select events
+        TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "2023-04-01T02:00:00Z" ),
+                                                                         T2023_04_01T07_00_00Z );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( inner );
+
+        // Get the actual left series
+        List<TimeSeries<Double>> actualCollection = this.factoryToTest.getCovariateRetriever( Set.of( FEATURE ),
+                                                                                              VARIABLE_NAME,
+                                                                                              timeWindow )
                                                                       .get()
                                                                       .toList();
 
@@ -369,6 +409,13 @@ public class SingleValuedRetrieverFactoryTest
         BaselineDataset baseline = BaselineDatasetBuilder.builder()
                                                          .dataset( right )
                                                          .build();
+
+        Dataset covariate = DatasetBuilder.builder()
+                                          .type( DataType.OBSERVATIONS )
+                                          .variable( VariableBuilder.builder()
+                                                                    .name( VARIABLE_NAME )
+                                                                    .build() )
+                                          .build();
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
                                             .left( left )
@@ -400,6 +447,8 @@ public class SingleValuedRetrieverFactoryTest
                .thenReturn( true );
         Mockito.when( project.hasProbabilityThresholds() )
                .thenReturn( false );
+        Mockito.when( project.getCovariateDataset( VARIABLE_NAME ) )
+               .thenReturn( covariate );
 
         // Create the factory instance
         this.factoryToTest = SingleValuedRetrieverFactory.of( project, this.wresDatabase, this.caches );
@@ -419,9 +468,12 @@ public class SingleValuedRetrieverFactoryTest
         DataSource rightData = TestData.generateDataSource( DatasetOrientation.RIGHT,
                                                             DataType.SINGLE_VALUED_FORECASTS );
         DataSource baselineData = TestData.generateBaselineDataSource( DataType.SINGLE_VALUED_FORECASTS );
-        LOGGER.debug( "leftData: {}", leftData );
-        LOGGER.debug( "rightData: {}", rightData );
-        LOGGER.debug( "baselineData: {}", rightData );
+        DataSource covariateData = TestData.generateDataSource( DatasetOrientation.COVARIATE,
+                                                                DataType.OBSERVATIONS );
+        LOGGER.debug( "leftDataSource: {}", leftData );
+        LOGGER.debug( "rightDataSource: {}", rightData );
+        LOGGER.debug( "baselineDataSource: {}", rightData );
+        LOGGER.debug( "covariateDataSource: {}", covariateData );
 
         String featureName = FEATURE.getName();
         Geometry geometry = Geometry.newBuilder()
@@ -441,6 +493,11 @@ public class SingleValuedRetrieverFactoryTest
         Dataset right = DatasetBuilder.builder()
                                       .type( DataType.SINGLE_VALUED_FORECASTS )
                                       .build();
+
+        Dataset covariate = DatasetBuilder.builder()
+                                          .type( DataType.OBSERVATIONS )
+                                          .build();
+        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null );
         BaselineDataset baseline = BaselineDatasetBuilder.builder()
                                                          .dataset( right )
                                                          .build();
@@ -449,12 +506,14 @@ public class SingleValuedRetrieverFactoryTest
                                             .left( left )
                                             .right( right )
                                             .baseline( baseline )
+                                            .covariates( List.of( covariateDataset ) )
                                             .features( new wres.config.yaml.components.Features( features ) )
                                             .build();
 
         LOGGER.debug( "leftData: {}", leftData );
         LOGGER.debug( "rightData: {}", rightData );
         LOGGER.debug( "baselineData: {}", baselineData );
+        LOGGER.debug( "covariateData: {}", covariateDataset );
 
         TimeSeries<Double> timeSeriesOne = TestData.generateTimeSeriesDoubleOne( T0 );
         DatabaseTimeSeriesIngester ingesterOne =
@@ -512,30 +571,42 @@ public class SingleValuedRetrieverFactoryTest
                 ingesterThree.ingest( tupleStreamThree, leftData )
                              .get( 0 );
 
+        Stream<TimeSeriesTuple> tupleStreamFour =
+                Stream.of( TimeSeriesTuple.ofSingleValued( timeSeriesThree, covariateData ) );
+        IngestResult ingestResultFour =
+                ingesterThree.ingest( tupleStreamFour, covariateData )
+                             .get( 0 );
+
         List<IngestResult> results = List.of( ingestResultOne,
                                               ingestResultTwo,
                                               ingestResultOneBaseline,
                                               ingestResultTwoBaseline,
-                                              ingestResultThree );
+                                              ingestResultThree,
+                                              ingestResultFour );
 
-        try ( Statement statement = this.rawConnection.createStatement() )
+        if ( LOGGER.isDebugEnabled() )
         {
-            ResultSet sourceData =
-                    statement.executeQuery( "select source_id, hash, measurementunit_id, path from wres.source" );
-
-            while ( sourceData.next() )
+            try ( Statement statement = this.rawConnection.createStatement() )
             {
-                LOGGER.debug( "source_id={} hash={} measurementunit_id={} path={}",
-                              sourceData.getLong( "source_id" ),
-                              sourceData.getString( "hash" ),
-                              sourceData.getShort( "measurementunit_id" ),
-                              sourceData.getString( "path" ) );
+                ResultSet sourceData =
+                        statement.executeQuery( "select source_id, hash, measurementunit_id, path from wres.source" );
+
+                while ( sourceData.next() )
+                {
+                    LOGGER.debug( "source_id={} hash={} measurementunit_id={} path={}",
+                                  sourceData.getLong( "source_id" ),
+                                  sourceData.getString( "hash" ),
+                                  sourceData.getShort( "measurementunit_id" ),
+                                  sourceData.getString( "path" ) );
+                }
             }
         }
 
         LOGGER.debug( "ingestResultOne: {}", ingestResultOne );
         LOGGER.debug( "ingestResultTwo: {}", ingestResultTwo );
         LOGGER.debug( "ingestResultThree: {}", ingestResultThree );
+        LOGGER.debug( "ingestResultFour: {}", ingestResultFour );
+
         Projects.getProject( this.wresDatabase,
                              declaration,
                              this.caches,

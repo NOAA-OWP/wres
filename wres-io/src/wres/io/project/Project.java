@@ -5,6 +5,7 @@ import java.time.MonthDay;
 import java.util.Set;
 import java.util.SortedSet;
 
+import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -106,6 +107,16 @@ public interface Project
      */
 
     String getBaselineVariableName();
+
+    /**
+     * Returns the covarariate dataset for the named variable.
+     * @param variableName the variable name
+     * @return the covariate dataset
+     * @throws IllegalArgumentException if the named covariate does not exist
+     * @throws NullPointerException if the variable name is null
+     */
+
+    Dataset getCovariateDataset( String variableName );
 
     /**
      * @param orientation the side of data for which the ensemble labels are required

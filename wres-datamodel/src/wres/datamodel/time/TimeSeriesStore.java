@@ -70,7 +70,39 @@ public class TimeSeriesStore
                                                      this.covariateSingleValuedSeries,
                                                      orientation )
                               .stream()
-                              .filter( next -> features.contains( next.getMetadata().getFeature() ) );
+                              .filter( next -> features.contains( next.getMetadata()
+                                                                      .getFeature() ) );
+    }
+
+    /**
+     * Returns all single-valued series by feature.
+     * @param orientation the orientation
+     * @param features the features
+     * @param variableName an optional variable name
+     * @return the filtered series
+     * @throws NullPointerException if any input is null
+     * @throws IllegalArgumentException if the orientation is unrecognized
+     */
+
+    public Stream<TimeSeries<Double>> getSingleValuedSeries( DatasetOrientation orientation,
+                                                             Set<Feature> features,
+                                                             String variableName )
+    {
+        Objects.requireNonNull( orientation );
+        Objects.requireNonNull( features );
+
+        return TimeSeriesStore.getSingleValuedStore( this.leftSingleValuedSeries,
+                                                     this.rightSingleValuedSeries,
+                                                     this.baselineSingleValuedSeries,
+                                                     this.covariateSingleValuedSeries,
+                                                     orientation )
+                              .stream()
+                              .filter( next -> features.contains( next.getMetadata()
+                                                                      .getFeature() )
+                                               && Objects.isNull( variableName )
+                                               || Objects.equals( next.getMetadata()
+                                                                      .getVariableName(),
+                                                                  variableName ) );
     }
 
     /**
@@ -132,6 +164,41 @@ public class TimeSeriesStore
                               .stream()
                               .filter( next -> features.contains( next.getMetadata()
                                                                       .getFeature() ) )
+                              .map( next -> TimeSeriesSlicer.filter( next, timeWindow ) );
+    }
+
+    /**
+     * Filters the single-valued series by time window and feature.
+     * @param timeWindow the time window
+     * @param orientation the orientation
+     * @param features the features
+     * @param variableName the optional variable name
+     * @return the filtered series
+     * @throws NullPointerException if any input is null
+     * @throws IllegalArgumentException if the orientation is unrecognized
+     */
+
+    public Stream<TimeSeries<Double>> getSingleValuedSeries( TimeWindowOuter timeWindow,
+                                                             DatasetOrientation orientation,
+                                                             Set<Feature> features,
+                                                             String variableName )
+    {
+        Objects.requireNonNull( timeWindow );
+        Objects.requireNonNull( orientation );
+        Objects.requireNonNull( features );
+
+        return TimeSeriesStore.getSingleValuedStore( this.leftSingleValuedSeries,
+                                                     this.rightSingleValuedSeries,
+                                                     this.baselineSingleValuedSeries,
+                                                     this.covariateSingleValuedSeries,
+                                                     orientation )
+                              .stream()
+                              .filter( next -> features.contains( next.getMetadata()
+                                                                      .getFeature() )
+                                               && Objects.isNull( variableName )
+                                               || Objects.equals( next.getMetadata()
+                                                                      .getVariableName(),
+                                                                  variableName ) )
                               .map( next -> TimeSeriesSlicer.filter( next, timeWindow ) );
     }
 

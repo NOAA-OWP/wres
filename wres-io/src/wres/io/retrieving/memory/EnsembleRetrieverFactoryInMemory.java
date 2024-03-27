@@ -60,6 +60,35 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
         return this.getLeftRetriever( features );
     }
 
+    /**
+     * Throws {@link UnsupportedOperationException} always.
+     * @param features the spatial features
+     * @param variableName the variable name
+     * @return the supplier
+     * @throws UnsupportedOperationException always
+     */
+    @Override
+    public Supplier<Stream<TimeSeries<Double>>> getCovariateRetriever( Set<Feature> features, String variableName )
+    {
+        throw new UnsupportedOperationException( "Ensemble time-series are not currently supported for covariates." );
+    }
+
+    /**
+     * Throws {@link UnsupportedOperationException} always.
+     * @param features the spatial features
+     * @param variableName the variable name
+     * @param timeWindow the time window
+     * @return the supplier
+     * @throws UnsupportedOperationException always
+     */
+    @Override
+    public Supplier<Stream<TimeSeries<Double>>> getCovariateRetriever( Set<Feature> features,
+                                                                       String variableName,
+                                                                       TimeWindowOuter timeWindow )
+    {
+        throw new UnsupportedOperationException( "Ensemble time-series are not currently supported for covariates." );
+    }
+
     @Override
     public Supplier<Stream<TimeSeries<Double>>> getLeftRetriever( Set<Feature> features )
     {

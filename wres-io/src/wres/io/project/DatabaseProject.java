@@ -395,6 +395,12 @@ public class DatabaseProject implements Project
     }
 
     @Override
+    public Dataset getCovariateDataset( String variableName )
+    {
+        return ProjectUtilities.getCovariateDatset( this.declaration, variableName );
+    }
+
+    @Override
     public String toString()
     {
         return "Project { Name: " + this.getProjectName()

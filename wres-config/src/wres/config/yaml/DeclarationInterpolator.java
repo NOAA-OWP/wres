@@ -1791,7 +1791,7 @@ public class DeclarationInterpolator
                                                              + datasetBuilder.type()
                                                              + THE_EVALUATION_WILL_PROCEED_WITH_THE_EXPLICITLY
                                                              + DECLARED_TYPE_OF
-                                                             + dataType
+                                                             + datasetBuilder.type()
                                                              + IF_THIS_IS_INCORRECT_PLEASE_FIX_THE_DECLARED
                                                              + TYPE )
                                            .build();
@@ -2134,7 +2134,7 @@ public class DeclarationInterpolator
                                                              + predicted.type()
                                                              + THE_EVALUATION_WILL_PROCEED_WITH_THE_EXPLICITLY
                                                              + DECLARED_TYPE_OF
-                                                             + dataType
+                                                             + predicted.type()
                                                              + IF_THIS_IS_INCORRECT_PLEASE_FIX_THE_DECLARED
                                                              + TYPE )
                                            .build();
@@ -2317,7 +2317,7 @@ public class DeclarationInterpolator
                                                              + baselineDataset.type()
                                                              + THE_EVALUATION_WILL_PROCEED_WITH_THE_EXPLICITLY
                                                              + DECLARED_TYPE_OF
-                                                             + dataType
+                                                             + baselineDataset.type()
                                                              + IF_THIS_IS_INCORRECT_PLEASE_FIX_THE_DECLARED
                                                              + TYPE )
                                            .build();
