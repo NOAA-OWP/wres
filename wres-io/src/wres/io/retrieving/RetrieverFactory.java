@@ -41,7 +41,7 @@ public interface RetrieverFactory<L, R, B>
      * @return a retriever for left data
      * @throws DataAccessException if the retriever could not be created for any reason
      * @throws IllegalArgumentException if the set of features is empty
-     * @throws NullPointerException if the set of features is null
+     * @throws NullPointerException if any input is null
      */
 
     Supplier<Stream<TimeSeries<L>>> getLeftRetriever( Set<Feature> features, TimeWindowOuter timeWindow );
@@ -54,7 +54,7 @@ public interface RetrieverFactory<L, R, B>
      * @return a retriever for right data
      * @throws DataAccessException if the retriever could not be created for any reason
      * @throws IllegalArgumentException if the set of features is empty
-     * @throws NullPointerException if the set of features is null
+     * @throws NullPointerException if any input is null
      */
 
     Supplier<Stream<TimeSeries<R>>> getRightRetriever( Set<Feature> features, TimeWindowOuter timeWindow );
@@ -79,7 +79,7 @@ public interface RetrieverFactory<L, R, B>
      * @return a retriever for baseline data
      * @throws DataAccessException if the retriever could not be created for any reason
      * @throws IllegalArgumentException if the set of features is empty
-     * @throws NullPointerException if the set of features is null
+     * @throws NullPointerException if any input is null
      */
 
     Supplier<Stream<TimeSeries<B>>> getBaselineRetriever( Set<Feature> features, TimeWindowOuter timeWindow );
@@ -105,7 +105,7 @@ public interface RetrieverFactory<L, R, B>
      * @return a retriever for covariate data
      * @throws DataAccessException if the retriever could not be created for any reason
      * @throws IllegalArgumentException if the set of features is empty
-     * @throws NullPointerException if the set of features is null
+     * @throws NullPointerException if any input is null
      */
 
     Supplier<Stream<TimeSeries<L>>> getCovariateRetriever( Set<Feature> features, String variableName );
@@ -119,7 +119,7 @@ public interface RetrieverFactory<L, R, B>
      * @return a retriever for covariate data
      * @throws DataAccessException if the retriever could not be created for any reason
      * @throws IllegalArgumentException if the set of features is empty
-     * @throws NullPointerException if the set of features is null
+     * @throws NullPointerException if any input is null
      */
 
     Supplier<Stream<TimeSeries<L>>> getCovariateRetriever( Set<Feature> features,
