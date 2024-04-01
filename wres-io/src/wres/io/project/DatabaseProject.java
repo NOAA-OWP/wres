@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.BaselineDataset;
+import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EnsembleFilter;
@@ -154,9 +155,6 @@ public class DatabaseProject implements Project
         this.featureGroups = featureSets.featureGroups();
         this.doNotPublish = featureSets.doNotPublish();
 
-        // Validate any ensemble conditions
-        this.validateEnsembleConditions( declaration, this.projectId );
-
         // Determine and set the variables to evaluate
         VariableNames variableNames = this.getVariablesToEvaluate( declaration, this.projectId );
         this.leftVariable = variableNames.leftVariableName();
@@ -177,6 +175,12 @@ public class DatabaseProject implements Project
                                                                                this.desiredTimeScale );
         ProjectUtilities.validate( innerDeclaration );
         this.declaration = innerDeclaration;
+
+        // Validate any ensemble conditions
+        this.validateEnsembleConditions( declaration, this.projectId );
+
+        // Check that the feature names associated with each covariate select some data
+        this.validateCovariateFeatureNames( declaration, this.projectId, this.features );
 
         LOGGER.info( "Project validation and metadata loading is complete." );
     }
@@ -1085,6 +1089,118 @@ public class DatabaseProject implements Project
                                               + "ensure that each filter selects some data. The invalid filters are: "
                                               + failed
                                               + "." );
+        }
+    }
+
+
+    /**
+     * Checks that each covariate has some data for the feature names associated with it. Otherwise, the feature
+     * authority of the covariate may need to be declared explicitly.
+     *
+     * @param declaration the project declaration
+     * @param projectId the project identifier
+     * @param projectFeatures the project features
+     * @throws NoProjectDataException if the conditions select no data
+     * @throws DataAccessException if the data could not be accessed
+     */
+
+    private void validateCovariateFeatureNames( EvaluationDeclaration declaration,
+                                                long projectId,
+                                                Set<FeatureTuple> projectFeatures )
+    {
+        for ( CovariateDataset covariate : declaration.covariates() )
+        {
+            DatasetOrientation orientation = covariate.featureNameOrientation();
+
+            Objects.requireNonNull( orientation,
+                                    "Failed to identify the feature name orientation for the covariate dataset: "
+                                    + covariate
+                                    + "." );
+            Objects.requireNonNull( covariate.dataset(), "Expected a covariate dataset." );
+            Objects.requireNonNull( covariate.dataset()
+                                             .variable(), "Expected a covariate variable." );
+            Objects.requireNonNull( covariate.dataset()
+                                             .variable()
+                                             .name(), "Expected a covariate variable name." );
+
+            // Get the set of features to evaluate for this orientation
+            Set<Feature> covariateFeatures;
+            switch ( orientation )
+            {
+                case LEFT -> covariateFeatures = projectFeatures.stream()
+                                                                .map( FeatureTuple::getLeft )
+                                                                .collect( Collectors.toSet() );
+                case RIGHT -> covariateFeatures = projectFeatures.stream()
+                                                                 .map( FeatureTuple::getRight )
+                                                                 .collect( Collectors.toSet() );
+                case BASELINE -> covariateFeatures = projectFeatures.stream()
+                                                                    .map( FeatureTuple::getBaseline )
+                                                                    .collect( Collectors.toSet() );
+                default -> throw new IllegalStateException( "Unrecognized dataset orientation, '"
+                                                            + orientation
+                                                            + "'. " );
+            }
+
+            String covariateName = covariate.dataset()
+                                            .variable()
+                                            .name();
+
+            // Get the set of features available for this covariate
+            Database db = this.getDatabase();
+            DataScripter script = new DataScripter( db );
+            script.addLine( "SELECT DISTINCT F.name" );
+            script.addLine( "FROM wres.Feature F" );
+            script.addLine( "INNER JOIN wres.Source S" );
+            script.addTab().addLine( "ON F.feature_id = S.feature_id" );
+            script.addLine( "INNER JOIN wres.ProjectSource PS" );
+            script.addTab().addLine( "ON S.source_id = PS.source_id" );
+            script.addLine( "WHERE PS.project_id = ?" );
+            script.addArgument( projectId );
+            script.addTab().addLine( "AND PS.member = ?" );
+            script.addArgument( DatasetOrientation.COVARIATE.toString() );
+            script.addTab().addLine( "AND S.variable_name = ?" );
+            script.addArgument( covariateName );
+            Set<String> dataFeatures = new HashSet<>();
+            try ( DataProvider provider = script.getData() )
+            {
+                while ( provider.next() )
+                {
+                    String nextName = provider.getString( "name" );
+                    dataFeatures.add( nextName );
+                }
+            }
+            catch ( SQLException e )
+            {
+                throw new DataAccessException( "While attempting to determine whether the covariate feature names "
+                                               + "select some data.", e );
+            }
+
+            Set<String> covariateFeatureNames = covariateFeatures.stream()
+                                                                 .map( Feature::getName )
+                                                                 .collect( Collectors.toSet() );
+            Set<String> nodataFeatures = new HashSet<>( covariateFeatureNames );
+            nodataFeatures.removeAll( dataFeatures );
+
+            if ( nodataFeatures.equals( covariateFeatureNames ) )
+            {
+                throw new NoProjectDataException( "Could not find time-series data for any of the feature names "
+                                                  + "associated with covariate '"
+                                                  + covariateName
+                                                  + "'. These feature names were interpreted with the feature "
+                                                  + "authority of the '"
+                                                  + orientation
+                                                  + "' data. If this is incorrect, please explicitly and accurately "
+                                                  + "declare the 'feature_authority' for this covariate, as well as "
+                                                  + "the 'feature_authority' of the corresponding 'observed', "
+                                                  + "'predicted' or 'baseline' dataset (each covariate must have the "
+                                                  + "same feature authority as one of these datasets). Otherwise, "
+                                                  + "ensure that one or more of the features to evaluate has some "
+                                                  + "covariate data or remove the covariate entirely. The feature "
+                                                  + "names with data (and whose feature authority should be declared) "
+                                                  + "for this covariate are: "
+                                                  + dataFeatures
+                                                  + "." );
+            }
         }
     }
 

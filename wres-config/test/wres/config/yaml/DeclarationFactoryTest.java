@@ -2167,7 +2167,7 @@ class DeclarationFactoryTest
                                                     .variable( new Variable( "precipitation", null ) )
                                                     .build();
 
-        CovariateDataset covariateOne = new CovariateDataset( covariateOneDataset, 0.25, null );
+        CovariateDataset covariateOne = new CovariateDataset( covariateOneDataset, 0.25, null, null );
 
         URI covariateTwoUri = URI.create( "temperature.tgz" );
         Source covariateTwoSource = SourceBuilder.builder()
@@ -2181,7 +2181,7 @@ class DeclarationFactoryTest
                                                     .variable( new Variable( "temperature", null ) )
                                                     .build();
 
-        CovariateDataset covariateTwo = new CovariateDataset( covariateTwoDataset, null, 0.0 );
+        CovariateDataset covariateTwo = new CovariateDataset( covariateTwoDataset, null, 0.0, null );
 
         List<CovariateDataset> covariateDatasets = List.of( covariateOne, covariateTwo );
 

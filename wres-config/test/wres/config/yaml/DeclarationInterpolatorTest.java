@@ -1096,7 +1096,7 @@ class DeclarationInterpolatorTest
                                                          .dataset( this.predictedDataset )
                                                          .build();
 
-        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null );
+        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null, null );
         List<CovariateDataset> covariates = List.of( covariate );
         EvaluationDeclaration evaluation =
                 EvaluationDeclarationBuilder.builder()
@@ -1314,7 +1314,7 @@ class DeclarationInterpolatorTest
     void testInterpolateVariableNames()
     {
         BaselineDataset baseline = new BaselineDataset( this.observedDataset, null, null );
-        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null );
+        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null, null );
         List<CovariateDataset> covariates = List.of( covariate );
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
@@ -1357,7 +1357,7 @@ class DeclarationInterpolatorTest
     void testInterpolateVariableNamesForTooManyDeclaredCovariatesProducesError()
     {
         BaselineDataset baseline = new BaselineDataset( this.observedDataset, null, null );
-        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null );
+        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null, null );
         List<CovariateDataset> covariates = List.of( covariate, covariate );
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
@@ -1390,7 +1390,7 @@ class DeclarationInterpolatorTest
     void testInterpolateVariableNamesForTooManyIngestedCovariatesProducesError()
     {
         BaselineDataset baseline = new BaselineDataset( this.observedDataset, null, null );
-        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null );
+        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null, null );
         List<CovariateDataset> covariates = List.of( covariate );
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
@@ -1451,6 +1451,35 @@ class DeclarationInterpolatorTest
                                    .contains( "When attempting to set the variable name for the 'observed' dataset, "
                                               + "found a declared variable name" ) );
 
+    }
+
+    @Test
+    void testInterpolateFeatureOrientationForCovariate()
+    {
+        // Implicit declaration of feature authority for the right-ish data, to be re-used for the covariate data
+        Source source = SourceBuilder.builder()
+                                     .sourceInterface( SourceInterface.WRDS_NWM )
+                                     .build();
+
+        Dataset rightData = DatasetBuilder.builder( this.observedDataset )
+                                          .sources( List.of( source ) )
+                                          .build();
+
+        CovariateDataset covariate = new CovariateDataset( rightData, null, null, null );
+        List<CovariateDataset> covariates = List.of( covariate );
+        EvaluationDeclaration evaluation =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( rightData )
+                                            .covariates( covariates )
+                                            .build();
+        EvaluationDeclaration actual = DeclarationInterpolator.interpolate( evaluation );
+
+        DatasetOrientation actualCovariateOrieintation = actual.covariates()
+                                                               .get( 0 )
+                                                               .featureNameOrientation();
+
+        assertEquals( DatasetOrientation.RIGHT, actualCovariateOrieintation );
     }
 
     @Test

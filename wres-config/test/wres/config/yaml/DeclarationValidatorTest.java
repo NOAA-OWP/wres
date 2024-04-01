@@ -132,7 +132,7 @@ class DeclarationValidatorTest
         BaselineDataset baseline = BaselineDatasetBuilder.builder()
                                                          .dataset( dataset )
                                                          .build();
-        List<CovariateDataset> covariates = List.of( new CovariateDataset( dataset, null, null ) );
+        List<CovariateDataset> covariates = List.of( new CovariateDataset( dataset, null, null, null ) );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( dataset )
                                                                         .right( dataset )
@@ -186,11 +186,11 @@ class DeclarationValidatorTest
         Dataset dataOne = DatasetBuilder.builder( this.defaultDataset )
                                         .variable( one )
                                         .build();
-        CovariateDataset covariateOne = new CovariateDataset( dataOne, null, null );
+        CovariateDataset covariateOne = new CovariateDataset( dataOne, null, null, null );
         Dataset dataTwo = DatasetBuilder.builder( this.defaultDataset )
                                         .variable( two )
                                         .build();
-        CovariateDataset covariateTwo = new CovariateDataset( dataTwo, null, null );
+        CovariateDataset covariateTwo = new CovariateDataset( dataTwo, null, null, null );
 
         List<CovariateDataset> covariates = List.of( covariateOne, covariateTwo );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
@@ -210,11 +210,11 @@ class DeclarationValidatorTest
         Dataset dataOne = DatasetBuilder.builder( this.defaultDataset )
                                         .type( DataType.OBSERVATIONS )
                                         .build();
-        CovariateDataset covariateOne = new CovariateDataset( dataOne, null, null );
+        CovariateDataset covariateOne = new CovariateDataset( dataOne, null, null, null );
         Dataset dataTwo = DatasetBuilder.builder( this.defaultDataset )
                                         .type( DataType.SINGLE_VALUED_FORECASTS )
                                         .build();
-        CovariateDataset covariateTwo = new CovariateDataset( dataTwo, null, null );
+        CovariateDataset covariateTwo = new CovariateDataset( dataTwo, null, null, null );
 
         List<CovariateDataset> covariates = List.of( covariateOne, covariateTwo );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
@@ -257,7 +257,7 @@ class DeclarationValidatorTest
                                                          .dataset( baselineInner )
                                                          .build();
 
-        CovariateDataset covariate = new CovariateDataset( left, null, null );
+        CovariateDataset covariate = new CovariateDataset( left, null, null, null );
         List<CovariateDataset> covariates = List.of( covariate );
 
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
@@ -343,7 +343,7 @@ class DeclarationValidatorTest
                                           .timeZoneOffset( ZoneOffset.ofHours( -7 ) )
                                           .build();
 
-        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null );
+        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null, null );
 
         List<CovariateDataset> covariates = List.of( covariateDataset );
 
@@ -613,7 +613,7 @@ class DeclarationValidatorTest
                                           .timeScale( timeScaleCovariate )
                                           .build();
 
-        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null );
+        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null, null );
         List<CovariateDataset> covariates = List.of( covariateDataset );
 
         TimeScale timeScaleInner = TimeScale.newBuilder()
@@ -951,7 +951,7 @@ class DeclarationValidatorTest
 
         Features features = new Features( geometries );
 
-        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null );
+        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null, null );
         List<CovariateDataset> covariates = List.of( covariateDataset );
 
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
@@ -2199,7 +2199,7 @@ class DeclarationValidatorTest
                                         .sources( List.of( source, anotherSource ) )
                                         .type( DataType.OBSERVATIONS )
                                         .build();
-        CovariateDataset covariate = new CovariateDataset( dataset, null, null );
+        CovariateDataset covariate = new CovariateDataset( dataset, null, null, null );
         List<CovariateDataset> covariates = List.of( covariate, covariate );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .covariates( covariates )

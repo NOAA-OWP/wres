@@ -757,6 +757,7 @@ public class DeclarationUtilities
      * @param orientation the data orientation
      * @return the feature authority or null if none was discovered
      * @throws NullPointerException if either input is null
+     * @throws IllegalArgumentException if the orientation cannot be delivered
      */
 
     public static FeatureAuthority getFeatureAuthorityFor( EvaluationDeclaration evaluation,
@@ -764,6 +765,13 @@ public class DeclarationUtilities
     {
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( orientation );
+
+        if ( orientation == DatasetOrientation.BASELINE
+             && !DeclarationUtilities.hasBaseline( evaluation ) )
+        {
+            throw new IllegalArgumentException( "There is no baseline dataset whose feature authority can be "
+                                                + "determined." );
+        }
 
         return switch ( orientation )
         {
