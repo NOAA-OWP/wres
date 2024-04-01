@@ -37,8 +37,10 @@ import wres.config.yaml.components.TimeScale;
 import wres.config.yaml.components.TimeScaleLenience;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
+import wres.io.NoProjectDataException;
 import wres.io.ingesting.IngestResult;
 import wres.io.retrieving.DataAccessException;
 import wres.statistics.generated.GeometryTuple;
@@ -842,6 +844,84 @@ class ProjectUtilities
                                                                             + "a variable name of '"
                                                                             + variableName
                                                                             + "'." ) );
+    }
+
+    /**
+     * Checks that some time-series data is present for the feature names associated with the covariate feature
+     * authority when inspecting the corresponding feature names for the dataset whose feature authority matches that
+     * of the covariate. If no data is discovered when using the covariate feature names and the assumed authority, an
+     * exception is thrown, indicating that the authority may not be correct.
+     *
+     * @param covariate the covariate dataset
+     * @param projectFeatures the project features, post-ingest
+     * @param ingestedCovariateFeatureNames the ingested covariate feature names
+     * @throws NoProjectDataException if the covariate feature names do not select any time-series data
+     */
+    static void covariateFeatureNamesSelectSomeData( CovariateDataset covariate,
+                                                     Set<FeatureTuple> projectFeatures,
+                                                     Set<String> ingestedCovariateFeatureNames )
+    {
+        DatasetOrientation orientation = covariate.featureNameOrientation();
+
+        Objects.requireNonNull( orientation,
+                                "Failed to identify the feature name orientation for the covariate dataset: "
+                                + covariate
+                                + "." );
+        Objects.requireNonNull( covariate.dataset(), "Expected a covariate dataset." );
+        Objects.requireNonNull( covariate.dataset()
+                                         .variable(), "Expected a covariate variable." );
+        Objects.requireNonNull( covariate.dataset()
+                                         .variable()
+                                         .name(), "Expected a covariate variable name." );
+
+        // Get the set of features to evaluate for this orientation
+        Set<Feature> covariateFeatures;
+        switch ( orientation )
+        {
+            case LEFT -> covariateFeatures = projectFeatures.stream()
+                                                            .map( FeatureTuple::getLeft )
+                                                            .collect( Collectors.toSet() );
+            case RIGHT -> covariateFeatures = projectFeatures.stream()
+                                                             .map( FeatureTuple::getRight )
+                                                             .collect( Collectors.toSet() );
+            case BASELINE -> covariateFeatures = projectFeatures.stream()
+                                                                .map( FeatureTuple::getBaseline )
+                                                                .collect( Collectors.toSet() );
+            default -> throw new IllegalStateException( "Unrecognized dataset orientation, '"
+                                                        + orientation
+                                                        + "'. " );
+        }
+
+        String covariateName = covariate.dataset()
+                                        .variable()
+                                        .name();
+
+        Set<String> covariateFeatureNames = covariateFeatures.stream()
+                                                             .map( Feature::getName )
+                                                             .collect( Collectors.toSet() );
+        Set<String> nodataFeatures = new HashSet<>( covariateFeatureNames );
+        nodataFeatures.removeAll( ingestedCovariateFeatureNames );
+
+        if ( nodataFeatures.equals( covariateFeatureNames ) )
+        {
+            throw new NoProjectDataException( "Could not find time-series data for any of the feature names "
+                                              + "associated with covariate '"
+                                              + covariateName
+                                              + "'. These feature names were interpreted with the feature "
+                                              + "authority of the '"
+                                              + orientation
+                                              + "' data. If this is incorrect, please explicitly and accurately "
+                                              + "declare the 'feature_authority' for this covariate, as well as "
+                                              + "the 'feature_authority' of the corresponding 'observed', "
+                                              + "'predicted' or 'baseline' dataset (each covariate must have the "
+                                              + "same feature authority as one of these datasets). Otherwise, "
+                                              + "ensure that one or more of the features to evaluate has some "
+                                              + "covariate data or remove the covariate entirely. The feature "
+                                              + "names with data (and whose feature authority should be declared) "
+                                              + "for this covariate are: "
+                                              + ingestedCovariateFeatureNames
+                                              + "." );
+        }
     }
 
     /**

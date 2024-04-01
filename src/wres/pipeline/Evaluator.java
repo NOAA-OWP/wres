@@ -176,7 +176,7 @@ public class Evaluator
         SystemSettings settings = this.getSystemSettings();
         if ( !settings.isUseDatabase() )
         {
-            LOGGER.info( "Running evaluation in memory." );
+            LOGGER.info( "Running evaluation in main system memory, without a database." );
         }
 
         return this.evaluate( declaration, rawDeclaration, canceller, evaluationId );

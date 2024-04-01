@@ -1092,7 +1092,6 @@ public class DatabaseProject implements Project
         }
     }
 
-
     /**
      * Checks that each covariate has some data for the feature names associated with it. Otherwise, the feature
      * authority of the covariate may need to be declared explicitly.
@@ -1110,36 +1109,12 @@ public class DatabaseProject implements Project
     {
         for ( CovariateDataset covariate : declaration.covariates() )
         {
-            DatasetOrientation orientation = covariate.featureNameOrientation();
-
-            Objects.requireNonNull( orientation,
-                                    "Failed to identify the feature name orientation for the covariate dataset: "
-                                    + covariate
-                                    + "." );
             Objects.requireNonNull( covariate.dataset(), "Expected a covariate dataset." );
             Objects.requireNonNull( covariate.dataset()
                                              .variable(), "Expected a covariate variable." );
             Objects.requireNonNull( covariate.dataset()
                                              .variable()
                                              .name(), "Expected a covariate variable name." );
-
-            // Get the set of features to evaluate for this orientation
-            Set<Feature> covariateFeatures;
-            switch ( orientation )
-            {
-                case LEFT -> covariateFeatures = projectFeatures.stream()
-                                                                .map( FeatureTuple::getLeft )
-                                                                .collect( Collectors.toSet() );
-                case RIGHT -> covariateFeatures = projectFeatures.stream()
-                                                                 .map( FeatureTuple::getRight )
-                                                                 .collect( Collectors.toSet() );
-                case BASELINE -> covariateFeatures = projectFeatures.stream()
-                                                                    .map( FeatureTuple::getBaseline )
-                                                                    .collect( Collectors.toSet() );
-                default -> throw new IllegalStateException( "Unrecognized dataset orientation, '"
-                                                            + orientation
-                                                            + "'. " );
-            }
 
             String covariateName = covariate.dataset()
                                             .variable()
@@ -1175,32 +1150,9 @@ public class DatabaseProject implements Project
                                                + "select some data.", e );
             }
 
-            Set<String> covariateFeatureNames = covariateFeatures.stream()
-                                                                 .map( Feature::getName )
-                                                                 .collect( Collectors.toSet() );
-            Set<String> nodataFeatures = new HashSet<>( covariateFeatureNames );
-            nodataFeatures.removeAll( dataFeatures );
+            dataFeatures = Collections.unmodifiableSet( dataFeatures );
 
-            if ( nodataFeatures.equals( covariateFeatureNames ) )
-            {
-                throw new NoProjectDataException( "Could not find time-series data for any of the feature names "
-                                                  + "associated with covariate '"
-                                                  + covariateName
-                                                  + "'. These feature names were interpreted with the feature "
-                                                  + "authority of the '"
-                                                  + orientation
-                                                  + "' data. If this is incorrect, please explicitly and accurately "
-                                                  + "declare the 'feature_authority' for this covariate, as well as "
-                                                  + "the 'feature_authority' of the corresponding 'observed', "
-                                                  + "'predicted' or 'baseline' dataset (each covariate must have the "
-                                                  + "same feature authority as one of these datasets). Otherwise, "
-                                                  + "ensure that one or more of the features to evaluate has some "
-                                                  + "covariate data or remove the covariate entirely. The feature "
-                                                  + "names with data (and whose feature authority should be declared) "
-                                                  + "for this covariate are: "
-                                                  + dataFeatures
-                                                  + "." );
-            }
+            ProjectUtilities.covariateFeatureNamesSelectSomeData( covariate, projectFeatures, dataFeatures );
         }
     }
 

@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.BaselineDataset;
+import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EnsembleFilter;
@@ -155,6 +156,8 @@ public class InMemoryProject implements Project
                                                                                this.desiredTimeScale );
         ProjectUtilities.validate( innerDeclaration );
         this.declaration = innerDeclaration;
+
+        this.validateCovariateFeatureNames( declaration, timeSeriesStore, this.features );
     }
 
     @Override
@@ -1127,6 +1130,48 @@ public class InMemoryProject implements Project
         }
 
         return innerTimeScale;
+    }
+
+    /**
+     * Checks that each covariate has some data for the feature names associated with it. Otherwise, the feature
+     * authority of the covariate may need to be declared explicitly.
+     *
+     * @param declaration the project declaration
+     * @param timeSeriesStore the time-series data store
+     * @param projectFeatures the project features
+     * @throws NoProjectDataException if the conditions select no data
+     * @throws DataAccessException if the data could not be accessed
+     */
+
+    private void validateCovariateFeatureNames( EvaluationDeclaration declaration,
+                                                TimeSeriesStore timeSeriesStore,
+                                                Set<FeatureTuple> projectFeatures )
+    {
+        for ( CovariateDataset covariate : declaration.covariates() )
+        {
+            Stream<TimeSeries<Double>> covariates =
+                    timeSeriesStore.getSingleValuedSeries( DatasetOrientation.COVARIATE );
+
+            Objects.requireNonNull( covariate.dataset(), "Expected a covariate dataset." );
+            Objects.requireNonNull( covariate.dataset()
+                                             .variable(), "Expected a covariate variable." );
+            Objects.requireNonNull( covariate.dataset()
+                                             .variable()
+                                             .name(), "Expected a covariate variable name." );
+
+            String covariateName = covariate.dataset()
+                                            .variable()
+                                            .name();
+
+            Set<String> dataFeatures = covariates.filter( c -> Objects.equals( covariateName, c.getMetadata()
+                                                                                               .getVariableName() ) )
+                                                 .map( c -> c.getMetadata()
+                                                             .getFeature()
+                                                             .getName() )
+                                                 .collect( Collectors.toUnmodifiableSet() );
+
+            ProjectUtilities.covariateFeatureNamesSelectSomeData( covariate, projectFeatures, dataFeatures );
+        }
     }
 
     /**
