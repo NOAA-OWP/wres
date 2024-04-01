@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.ThreadSafe;
 
+import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.CrossPair;
 import wres.config.yaml.components.CrossPairScope;
 import wres.config.yaml.components.DatasetOrientation;
@@ -171,6 +172,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
      * TODO: remove this shim when pools support different types of right and baseline data. */
     private final Function<TimeSeries<B>, TimeSeries<R>> baselineShim;
 
+    /** Covariate data sources. Optional. */
+    private final Map<CovariateDataset, Supplier<Stream<TimeSeries<L>>>> covariates;
+
     /** Left data source. */
     private Supplier<Stream<TimeSeries<L>>> left;
 
@@ -233,7 +237,8 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         Stream<TimeSeries<B>> baselineData = null;
 
         // Baseline that is not generated?
-        if ( this.hasBaseline() && !this.hasBaselineGenerator() )
+        if ( this.hasBaseline()
+             && !this.hasBaselineGenerator() )
         {
             baselineData = this.baseline.get();
         }
@@ -249,6 +254,18 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
             returnMe = this.createPool( leftData, rightData, finalBaselineData );
         }
 
+        // Filter the pool against each covariate
+        for ( Map.Entry<CovariateDataset, Supplier<Stream<TimeSeries<L>>>> covariate : this.covariates.entrySet() )
+        {
+            CovariateDataset covariateDataset = covariate.getKey();
+            Supplier<Stream<TimeSeries<L>>> covariateSource = covariate.getValue();
+            CovariateFilter<L, R> filter = CovariateFilter.of( returnMe,
+                                                               covariateDataset,
+                                                               covariateSource,
+                                                               this.getDesiredTimeScale() );
+            returnMe = filter.get();
+        }
+
         poolMonitor.commit();
 
         if ( LOGGER.isDebugEnabled() )
@@ -262,10 +279,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         }
 
         // Render any potentially expensive state eligible for gc, since this instance is one-and-done
-        this.left = null;
-        this.right = null;
-        this.baseline = null;
-        this.climatology = null;
+        this.squash();
 
         return returnMe;
     }
@@ -281,6 +295,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
     static class Builder<L, R, B>
     {
+        /** Covariate data sources with left-ish values, one for each covariate dataset. Optional. */
+        private final Map<CovariateDataset, Supplier<Stream<TimeSeries<L>>>> covariates = new HashMap<>();
+
         /** The climatology. */
         private Supplier<Climatology> climatology;
 
@@ -405,6 +422,16 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         Builder<L, R, B> setBaseline( Supplier<Stream<TimeSeries<B>>> baseline )
         {
             this.baseline = baseline;
+
+            return this;
+        }
+
+        Builder<L, R, B> setCovariates( Map<CovariateDataset, Supplier<Stream<TimeSeries<L>>>> covariates )
+        {
+            if ( Objects.nonNull( covariates ) )
+            {
+                this.covariates.putAll( covariates );
+            }
 
             return this;
         }
@@ -693,7 +720,6 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
      * @param leftData the left time-series
      * @param rightData the right time-series
      * @param baselineData the baseline time-series
-     * @return the pool
      * @throws NullPointerException if any input is null
      */
 
@@ -725,15 +751,17 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         List<TimeSeries<L>> transformedLeft = leftData.map( mapper )
                                                       .toList();
 
+        TimeParameters timeParametersMain = new TimeParameters( desiredTimeScaleToUse,
+                                                                pairedFrequency,
+                                                                this.getMetadata()
+                                                                    .getTimeWindow(),
+                                                                this.getRightTimeShift() );
+
         // Calculate the main pairs
         TimeSeriesPlusValidation<L, R> mainPairsPlus = this.createPairsPerFeature( transformedLeft.stream(),
                                                                                    rightData,
-                                                                                   desiredTimeScaleToUse,
-                                                                                   pairedFrequency,
                                                                                    DatasetOrientation.RIGHT,
-                                                                                   this.getMetadata()
-                                                                                       .getTimeWindow(),
-                                                                                   this.getRightTimeShift() );
+                                                                                   timeParametersMain );
 
         List<EvaluationStatusMessage> validationEvents = new ArrayList<>( mainPairsPlus.getEvaluationStatusMessages() );
 
@@ -755,14 +783,16 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
             else
             {
                 Stream<TimeSeries<R>> shimmed = baselineData.map( this.getBaselineShim() );
+                TimeParameters timeParametersBaseline = new TimeParameters( desiredTimeScaleToUse,
+                                                                            pairedFrequency,
+                                                                            this.getBaselineMetadata()
+                                                                                .getTimeWindow(),
+                                                                            this.getBaselineTimeShift() );
                 TimeSeriesPlusValidation<L, R> basePairsPlus =
                         this.createPairsPerFeature( transformedLeft.stream(),
                                                     shimmed,
-                                                    desiredTimeScaleToUse,
-                                                    pairedFrequency,
                                                     DatasetOrientation.BASELINE,
-                                                    this.baselineMetadata.getTimeWindow(),
-                                                    this.getBaselineTimeShift() );
+                                                    timeParametersBaseline );
 
                 validationEvents.addAll( basePairsPlus.getEvaluationStatusMessages() );
                 basePairs = basePairsPlus.getTimeSeries();
@@ -995,9 +1025,8 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
      * @return the existing pools or empty pools
      */
 
-    private Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>
-    getExistingPoolsOrEmpty( Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> pools,
-                             PoolMetadata metadata )
+    private Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> getExistingPoolsOrEmpty( Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> pools,
+                                                                                     PoolMetadata metadata )
     {
         if ( Objects.nonNull( pools ) && pools.isEmpty() )
         {
@@ -1018,12 +1047,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
      *
      * @param left the left data, required
      * @param rightOrBaseline the right or baseline data, required
-     * @param desiredTimeScale the desired time-scale
-     * @param frequency the frequency with which to create pairs at the desired time scale
-     * @param rightOrBaselineOrientation the orientation of the non-left data, one of 
+     * @param rightOrBaselineOrientation the orientation of the non-left data, one of
      *            {@link DatasetOrientation#RIGHT} or {@link DatasetOrientation#BASELINE}, required
-     * @param timeWindow the time window to snip the pairs
-     * @param timeShift the valid time shift to apply
+     * @param timeParameters the time parameters for pairing
      * @return the pairs
      * @throws RescalingException if the pool data could not be rescaled
      * @throws PairingException if the pool data could not be paired
@@ -1033,11 +1059,8 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
     private TimeSeriesPlusValidation<L, R> createPairsPerFeature( Stream<TimeSeries<L>> left,
                                                                   Stream<TimeSeries<R>> rightOrBaseline,
-                                                                  TimeScaleOuter desiredTimeScale,
-                                                                  Duration frequency,
                                                                   DatasetOrientation rightOrBaselineOrientation,
-                                                                  TimeWindowOuter timeWindow,
-                                                                  Duration timeShift )
+                                                                  TimeParameters timeParameters )
     {
         Objects.requireNonNull( left );
         Objects.requireNonNull( rightOrBaseline );
@@ -1102,7 +1125,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
             }
 
             TimeSeries<R> transformedRightOrBaseline = this.applyValidTimeOffset( nextRightOrBaselineSeries,
-                                                                                  timeShift,
+                                                                                  timeParameters.timeShift(),
                                                                                   rightOrBaselineOrientation );
 
             Feature nextRightOrBaselineFeature = transformedRightOrBaseline.getMetadata()
@@ -1119,10 +1142,8 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                 List<TimeSeriesPlusValidation<L, R>> nextPairedSeries =
                         this.createPairsPerLeftSeries( nextLeftSeries,
                                                        transformedRightOrBaseline,
-                                                       desiredTimeScale,
-                                                       frequency,
+                                                       timeParameters,
                                                        rightOrBaselineOrientation,
-                                                       timeWindow,
                                                        rightOrBaselineTransformers );
 
                 this.addPairsForFeature( pairsPerFeature,
@@ -1215,10 +1236,8 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
      * Creates a time-series of pairs for each left series.
      * @param leftSeries the left time-series, which may be null
      * @param rightOrBaselineSeries the right time-series
-     * @param desiredTimeScale the desired time scale
-     * @param frequency the frequency of the pairs
+     * @param timeParameters the time parameters for pairing
      * @param rightOrBaselineOrientation the orientation of the pairs
-     * @param timeWindow the time window
      * @param rightOrBaselineTransformers the transformers for right-ish data
      * @return the pairs plus validation
      * @throws NullPointerException if any required input is null
@@ -1226,10 +1245,8 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
     private List<TimeSeriesPlusValidation<L, R>> createPairsPerLeftSeries( List<TimeSeries<L>> leftSeries,
                                                                            TimeSeries<R> rightOrBaselineSeries,
-                                                                           TimeScaleOuter desiredTimeScale,
-                                                                           Duration frequency,
+                                                                           TimeParameters timeParameters,
                                                                            DatasetOrientation rightOrBaselineOrientation,
-                                                                           TimeWindowOuter timeWindow,
                                                                            Transformers<R> rightOrBaselineTransformers )
     {
         Objects.requireNonNull( rightOrBaselineSeries );
@@ -1249,9 +1266,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         {
             TimeSeriesPlusValidation<L, R> pairsPlus = this.createSeriesPairs( nextLeftSeries,
                                                                                rightOrBaselineSeries,
-                                                                               desiredTimeScale,
-                                                                               frequency,
-                                                                               timeWindow,
+                                                                               timeParameters,
                                                                                rightOrBaselineOrientation,
                                                                                rightOrBaselineTransformers );
 
@@ -1281,11 +1296,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
     /**
      * Returns a time-series of pairs from a left and right or baseline series, rescaling as needed.
      *
-     * @param left the left time-series
-     * @param rightOrBaseline the right or baseline time-series
-     * @param desiredTimeScale the desired timescale
-     * @param frequency the frequency with which to create pairs at the desired timescale
-     * @param timeWindow the time window to snip the pairs
+     * @param leftSeries the left time-series
+     * @param rightOrBaselineSeries the right or baseline time-series
+     * @param timeParameters the timing parameters for pairing
      * @param orientation the orientation of the non-left data, one of {@link DatasetOrientation#RIGHT} or
      *            {@link DatasetOrientation#BASELINE}
      * @param rightOrBaselineTransformers the right-ish transformers
@@ -1293,17 +1306,16 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
      * @throws NullPointerException if the left, rightOrBaseline or timeWindow is null
      */
 
-    private TimeSeriesPlusValidation<L, R> createSeriesPairs( TimeSeries<L> left,
-                                                              TimeSeries<R> rightOrBaseline,
-                                                              TimeScaleOuter desiredTimeScale,
-                                                              Duration frequency,
-                                                              TimeWindowOuter timeWindow,
+    private TimeSeriesPlusValidation<L, R> createSeriesPairs( TimeSeries<L> leftSeries,
+                                                              TimeSeries<R> rightOrBaselineSeries,
+                                                              TimeParameters timeParameters,
                                                               DatasetOrientation orientation,
                                                               Transformers<R> rightOrBaselineTransformers )
     {
-        Objects.requireNonNull( left );
-        Objects.requireNonNull( rightOrBaseline );
-        Objects.requireNonNull( timeWindow );
+        Objects.requireNonNull( leftSeries );
+        Objects.requireNonNull( rightOrBaselineSeries );
+        Objects.requireNonNull( timeParameters );
+        Objects.requireNonNull( timeParameters.timeWindow() );
 
         // Desired unit
         String desiredUnit = this.getMetadata()
@@ -1312,11 +1324,11 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
         // Snip the left data to the right with a buffer on the lower bound, if required. This greatly improves
         // performance for a very long left series, which is quite typical
-        Duration period = this.getPeriodFromTimeScale( desiredTimeScale );
+        Duration period = this.getPeriodFromTimeScale( timeParameters.desiredTimeScale() );
 
-        TimeSeries<L> scaledLeft = TimeSeriesSlicer.snip( left, rightOrBaseline, period, Duration.ZERO );
+        TimeSeries<L> scaledLeft = TimeSeriesSlicer.snip( leftSeries, rightOrBaselineSeries, period, Duration.ZERO );
 
-        TimeSeries<R> scaledRight = rightOrBaseline;
+        TimeSeries<R> scaledRight = rightOrBaselineSeries;
 
         // No events on one or both sides? Stop here.
         if ( scaledLeft.getEvents()
@@ -1332,15 +1344,17 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                                                    List.of() );
         }
 
-        boolean upscaleLeft = Objects.nonNull( desiredTimeScale )
-                              && Objects.nonNull( left.getTimeScale() )
-                              && TimeScaleOuter.isRescalingRequired( left.getTimeScale(), desiredTimeScale )
-                              && !desiredTimeScale.equals( left.getTimeScale() );
+        boolean upscaleLeft = Objects.nonNull( timeParameters.desiredTimeScale() )
+                              && Objects.nonNull( leftSeries.getTimeScale() )
+                              && TimeScaleOuter.isRescalingRequired( leftSeries.getTimeScale(),
+                                                                     timeParameters.desiredTimeScale() )
+                              && !timeParameters.desiredTimeScale()
+                                                .equals( leftSeries.getTimeScale() );
 
-        boolean upscaleRight = Objects.nonNull( desiredTimeScale )
-                               && Objects.nonNull( rightOrBaseline.getTimeScale() )
-                               && TimeScaleOuter.isRescalingRequired( rightOrBaseline.getTimeScale(),
-                                                                      desiredTimeScale );
+        boolean upscaleRight = Objects.nonNull( timeParameters.desiredTimeScale() )
+                               && Objects.nonNull( rightOrBaselineSeries.getTimeScale() )
+                               && TimeScaleOuter.isRescalingRequired( rightOrBaselineSeries.getTimeScale(),
+                                                                      timeParameters.desiredTimeScale() );
 
         List<EvaluationStatusMessage> statusEvents = new ArrayList<>();
 
@@ -1349,16 +1363,14 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                                                                           upscaleRight,
                                                                           scaledLeft,
                                                                           scaledRight,
-                                                                          timeWindow,
-                                                                          desiredTimeScale,
-                                                                          frequency );
+                                                                          timeParameters );
 
         // Upscale left?
         if ( upscaleLeft )
         {
             PoolRescalingEvent rescalingMonitor = PoolRescalingEvent.of( RescalingType.UPSCALED, // Monitor
                                                                          DatasetOrientation.LEFT,
-                                                                         left.getMetadata() );
+                                                                         leftSeries.getMetadata() );
 
             rescalingMonitor.begin();
 
@@ -1366,15 +1378,15 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
             {
                 LOGGER.trace( "Upscaling {} time-series {} from {} to {}.",
                               DatasetOrientation.LEFT,
-                              left.hashCode(),
-                              left.getTimeScale(),
-                              desiredTimeScale );
+                              leftSeries.hashCode(),
+                              leftSeries.getTimeScale(),
+                              timeParameters.desiredTimeScale() );
             }
 
             TimeSeriesUpscaler<L> leftUp = this.getLeftUpscaler();
             // #92892
             RescaledTimeSeriesPlusValidation<L> upscaledLeft = leftUp.upscale( scaledLeft,
-                                                                               desiredTimeScale,
+                                                                               timeParameters.desiredTimeScale(),
                                                                                endsAt,
                                                                                desiredUnit );
 
@@ -1386,14 +1398,15 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                 LOGGER.trace( "Finished upscaling {} time-series {} from {} to {}, which produced a "
                               + "new time-series, {}.",
                               DatasetOrientation.LEFT,
-                              left.hashCode(),
-                              left.getTimeScale(),
-                              desiredTimeScale,
+                              leftSeries.hashCode(),
+                              leftSeries.getTimeScale(),
+                              timeParameters.desiredTimeScale(),
                               scaledLeft.hashCode() );
             }
 
             // Log any warnings
-            RescaledTimeSeriesPlusValidation.logScaleValidationWarnings( left, upscaledLeft.getValidationEvents() );
+            RescaledTimeSeriesPlusValidation.logScaleValidationWarnings( leftSeries,
+                                                                         upscaledLeft.getValidationEvents() );
 
             rescalingMonitor.commit();
         }
@@ -1403,7 +1416,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         {
             PoolRescalingEvent rescalingMonitor = PoolRescalingEvent.of( RescalingType.UPSCALED, // Monitor
                                                                          orientation,
-                                                                         rightOrBaseline.getMetadata() );
+                                                                         rightOrBaselineSeries.getMetadata() );
 
             rescalingMonitor.begin();
 
@@ -1411,14 +1424,14 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
             {
                 LOGGER.trace( "Upscaling {} time-series {} from {} to {}.",
                               orientation,
-                              rightOrBaseline.hashCode(),
-                              rightOrBaseline.getTimeScale(),
-                              desiredTimeScale );
+                              rightOrBaselineSeries.hashCode(),
+                              rightOrBaselineSeries.getTimeScale(),
+                              timeParameters.desiredTimeScale() );
             }
 
             TimeSeriesUpscaler<R> rightUp = this.getRightOrBaselineUpscaler( orientation );
-            RescaledTimeSeriesPlusValidation<R> upscaledRight = rightUp.upscale( rightOrBaseline,
-                                                                                 desiredTimeScale,
+            RescaledTimeSeriesPlusValidation<R> upscaledRight = rightUp.upscale( rightOrBaselineSeries,
+                                                                                 timeParameters.desiredTimeScale(),
                                                                                  endsAt,
                                                                                  desiredUnit );
 
@@ -1430,14 +1443,14 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                 LOGGER.trace( "Finished upscaling {} time-series {} from {} to {}, which produced a "
                               + "new time-series, {}.",
                               orientation,
-                              rightOrBaseline.hashCode(),
-                              rightOrBaseline.getTimeScale(),
-                              desiredTimeScale,
+                              rightOrBaselineSeries.hashCode(),
+                              rightOrBaselineSeries.getTimeScale(),
+                              timeParameters.desiredTimeScale(),
                               scaledRight.hashCode() );
             }
 
             // Log any warnings
-            RescaledTimeSeriesPlusValidation.logScaleValidationWarnings( rightOrBaseline,
+            RescaledTimeSeriesPlusValidation.logScaleValidationWarnings( rightOrBaselineSeries,
                                                                          upscaledRight.getValidationEvents() );
 
             rescalingMonitor.commit();
@@ -1462,7 +1475,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                                            .pair( filteredLeft, filteredRight );
 
         // Snip the pairs to the pool boundary
-        TimeSeries<Pair<L, R>> snippedPairs = TimeSeriesSlicer.snip( pairs, timeWindow );
+        TimeSeries<Pair<L, R>> snippedPairs = TimeSeriesSlicer.snip( pairs, timeParameters.timeWindow() );
 
         // Log the pairing
         if ( LOGGER.isTraceEnabled() )
@@ -1482,15 +1495,15 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                                        .size(),
                           snippedPairs.getEvents()
                                       .size(),
-                          desiredTimeScale );
+                          timeParameters.desiredTimeScale() );
         }
 
         // Get the feature tuple context in which these pairs are required. There may be more than one tuple. For 
         // example, the same left/right pairs may appear in multiple baseline contexts
-        Set<FeatureTuple> featureTuples = this.getFeatureTuplesForFeaturePair( left.getMetadata()
-                                                                                   .getFeature(),
-                                                                               rightOrBaseline.getMetadata()
-                                                                                              .getFeature(),
+        Set<FeatureTuple> featureTuples = this.getFeatureTuplesForFeaturePair( leftSeries.getMetadata()
+                                                                                         .getFeature(),
+                                                                               rightOrBaselineSeries.getMetadata()
+                                                                                                    .getFeature(),
                                                                                orientation );
 
         // The pairs, packed by feature tuple
@@ -1520,9 +1533,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
      * @param upscaleRight whether to upscae the right-ish time-series
      * @param scaledLeft the left-ish time-series
      * @param scaledRight the right-ish time-series
-     * @param timeWindow the time window
-     * @param desiredTimeScale the desired timescale
-     * @param frequency the frequency
+     * @param timeParameters the time parameters for pairing
      * @return the end times for upscaling
      */
 
@@ -1530,9 +1541,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
                                                                 boolean upscaleRight,
                                                                 TimeSeries<L> scaledLeft,
                                                                 TimeSeries<R> scaledRight,
-                                                                TimeWindowOuter timeWindow,
-                                                                TimeScaleOuter desiredTimeScale,
-                                                                Duration frequency )
+                                                                TimeParameters timeParameters )
     {
         // Get the end times for paired values if upscaling is required. If upscaling both the left and right, the
         // superset of intersecting times is thinned to a regular sequence that depends on the desired timescale and
@@ -1542,9 +1551,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         {
             endsAt = TimeSeriesSlicer.getRegularSequenceOfIntersectingTimes( scaledLeft,
                                                                              scaledRight,
-                                                                             timeWindow,
-                                                                             desiredTimeScale,
-                                                                             frequency );
+                                                                             timeParameters.timeWindow(),
+                                                                             timeParameters.desiredTimeScale(),
+                                                                             timeParameters.frequency() );
         }
 
         return Collections.unmodifiableSortedSet( endsAt );
@@ -2200,7 +2209,8 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         {
             returnMe = this.frequency;
         }
-        else if ( Objects.nonNull( this.desiredTimeScale ) && this.desiredTimeScale.hasPeriod() )
+        else if ( Objects.nonNull( this.desiredTimeScale )
+                  && this.desiredTimeScale.hasPeriod() )
         {
             returnMe = this.desiredTimeScale.getPeriod();
         }
@@ -2299,6 +2309,18 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
     }
 
     /**
+     * Cleans up any expensive internal state after completion.
+     */
+    private void squash()
+    {
+        this.left = null;
+        this.right = null;
+        this.baseline = null;
+        this.climatology = null;
+        this.covariates.clear();
+    }
+
+    /**
      * Hidden constructor.  
      *
      * @param builder the builder
@@ -2312,6 +2334,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         this.left = builder.left;
         this.right = builder.right;
         this.baseline = builder.baseline;
+        this.covariates = new HashMap<>( builder.covariates );
         this.pairer = builder.pairer;
         this.leftUpscaler = builder.leftUpscaler;
         this.rightUpscaler = builder.rightUpscaler;
@@ -2483,6 +2506,14 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
     private record Transformers<R>( UnaryOperator<TimeSeries<R>> rightTransformer,
                                     Predicate<R> rightMissingFilter,
                                     Function<TimeSeries<?>, TimeSeries<R>> baselineGenerator )
+    {
+    }
+
+    /** Record of time parameters to use when pairing. */
+    private record TimeParameters( TimeScaleOuter desiredTimeScale,
+                                   Duration frequency,
+                                   TimeWindowOuter timeWindow,
+                                   Duration timeShift )
     {
     }
 }

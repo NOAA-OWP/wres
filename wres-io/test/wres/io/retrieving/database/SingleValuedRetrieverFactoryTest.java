@@ -41,6 +41,7 @@ import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.Variable;
 import wres.config.yaml.components.VariableBuilder;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.messages.MessageFactory;
@@ -496,8 +497,12 @@ public class SingleValuedRetrieverFactoryTest
 
         Dataset covariate = DatasetBuilder.builder()
                                           .type( DataType.OBSERVATIONS )
+                                          .variable( new Variable( VARIABLE_NAME, null ) )
                                           .build();
-        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null );
+        CovariateDataset covariateDataset = new CovariateDataset( covariate,
+                                                                  null,
+                                                                  null,
+                                                                  DatasetOrientation.LEFT );
         BaselineDataset baseline = BaselineDatasetBuilder.builder()
                                                          .dataset( right )
                                                          .build();

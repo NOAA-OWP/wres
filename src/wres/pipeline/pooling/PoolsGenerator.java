@@ -22,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.DeclarationException;
+import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.types.Climatology;
@@ -675,6 +676,10 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                     }
                 }
 
+                // Add the covariate datasets
+                Map<CovariateDataset, Supplier<Stream<TimeSeries<L>>>> covariates = this.getCovariates( nextWindow );
+                builder.setCovariates( covariates );
+
                 returnMe.add( builder.build() );
             }
 
@@ -1230,6 +1235,67 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     private Function<TimeSeries<B>, TimeSeries<R>> getBaselineShim()
     {
         return this.baselineShim;
+    }
+
+    /**
+     * Generates the suppliers or covariate datasets.
+     * @param timeWindow the time window
+     * @return the covariate dataset suppliers
+     */
+
+    private Map<CovariateDataset, Supplier<Stream<TimeSeries<L>>>> getCovariates( TimeWindowOuter timeWindow )
+    {
+        Map<CovariateDataset, Supplier<Stream<TimeSeries<L>>>> covariates = new HashMap<>();
+        for ( CovariateDataset covariate : this.getProject()
+                                               .getDeclaration()
+                                               .covariates() )
+        {
+            Set<Feature> features = this.getCovariateFeatures( covariate );
+
+            String variable = covariate.dataset()
+                                       .variable()
+                                       .name();
+            Supplier<Stream<TimeSeries<L>>> supplier = this.getRetrieverFactory()
+                                                           .getCovariateRetriever( features, variable, timeWindow );
+            covariates.put( covariate, supplier );
+        }
+
+        return Collections.unmodifiableMap( covariates );
+    }
+
+    /**
+     * Generates the features for he covariate dataset.
+     * @param dataset the dataset
+     * @return the covariate features
+     */
+    private Set<Feature> getCovariateFeatures( CovariateDataset dataset )
+    {
+        Objects.requireNonNull( dataset.featureNameOrientation(), "Could not find the orientation of the "
+                                                                  + "feature names associated with the covariate "
+                                                                  + "dataset whose variable name is '"
+                                                                  + dataset.dataset()
+                                                                           .variable()
+                                                                           .name()
+                                                                  + "'." );
+
+        switch ( dataset.featureNameOrientation() )
+        {
+            case LEFT ->
+            {
+                return this.getFeatures( FeatureTuple::getLeft );
+            }
+            case RIGHT ->
+            {
+                return this.getFeatures( FeatureTuple::getRight );
+            }
+            case BASELINE ->
+            {
+                return this.getFeatures( FeatureTuple::getBaseline );
+            }
+            default -> throw new IllegalStateException( "Unrecognized dataset orientation, '"
+                                                        + dataset.featureNameOrientation()
+                                                        + "'." );
+        }
     }
 
     /**

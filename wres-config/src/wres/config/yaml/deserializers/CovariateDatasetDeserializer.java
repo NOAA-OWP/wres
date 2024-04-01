@@ -47,6 +47,6 @@ public class CovariateDatasetDeserializer extends JsonDeserializer<CovariateData
             }
         }
 
-        return new CovariateDataset( basicDataset, minimum, maximum );
+        return new CovariateDataset( basicDataset, minimum, maximum, null );
     }
 }

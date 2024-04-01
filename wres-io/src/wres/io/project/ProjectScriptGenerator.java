@@ -30,12 +30,12 @@ final class ProjectScriptGenerator
     private static final String WHERE_PS_PROJECT_IDQ = "WHERE PS.project_id = ?";
 
     /**
-     * Creates a script that retrieves a mapping between forecasted and observed features.
+     * Creates a script that retrieves a mapping between predicted and observed features.
      *
-     * @param database The database to use
-     * @param projectId The wres.project row id to look for intersecting data.
-     * @param featureDeclarations Original or generated feature declarations.
-     * @param hasBaseline Whether the project has a baseline dataset.
+     * @param database the database to use
+     * @param projectId the project identity
+     * @param featureDeclarations original or generated feature declarations
+     * @param hasBaseline whether the project has a baseline dataset
      * @param isGrouped is true if the features are part of a group
      * @return the script
      */

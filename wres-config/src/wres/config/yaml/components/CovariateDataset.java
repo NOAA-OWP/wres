@@ -13,12 +13,14 @@ import wres.config.yaml.deserializers.CovariateDatasetDeserializer;
  * @param dataset the dataset
  * @param minimum the minimum value, optional
  * @param maximum the maximum value, optional
+ * @param featureNameOrientation the orientation of the feature names used by the covariate dataset, optional
  */
 @RecordBuilder
 @JsonDeserialize( using = CovariateDatasetDeserializer.class )
 public record CovariateDataset( Dataset dataset,
                                 @JsonProperty( "minimum" ) Double minimum,
-                                @JsonProperty( "maximum" ) Double maximum )
+                                @JsonProperty( "maximum" ) Double maximum,
+                                DatasetOrientation featureNameOrientation )
 {
     /**
      * Creates an instance.

@@ -148,6 +148,8 @@ public class DeclarationInterpolator
         DeclarationInterpolator.interpolateFeatureAuthorities( adjustedDeclarationBuilder );
         // Interpolate geospatial features when required, but without using a feature service
         DeclarationInterpolator.interpolateFeaturesWithoutFeatureService( adjustedDeclarationBuilder );
+        // Interpolate the covariate feature name orientations
+        DeclarationInterpolator.interpolateCovariateFeatureOrientations( adjustedDeclarationBuilder );
         // Interpolate evaluation metrics when required
         DeclarationInterpolator.interpolateMetrics( adjustedDeclarationBuilder );
         // Interpolate the evaluation-wide decimal format string for each numeric format type
@@ -1409,6 +1411,22 @@ public class DeclarationInterpolator
 
             builder.baseline( adjustedBaseline );
         }
+
+        // Covariates
+        List<CovariateDataset> adjustedCovariates = new ArrayList<>();
+        for ( CovariateDataset covariateDataset : builder.covariates() )
+        {
+            Dataset covariate = covariateDataset.dataset();
+            Set<FeatureAuthority> covariateAuthorities = DeclarationUtilities.getFeatureAuthorities( covariate );
+            Dataset adjustedCovariate = DeclarationInterpolator.setFeatureAuthorityIfConsistent( covariate,
+                                                                                                 covariateAuthorities,
+                                                                                                 DatasetOrientation.COVARIATE );
+            CovariateDataset adjustedCovariateDataset = CovariateDatasetBuilder.builder( covariateDataset )
+                                                                               .dataset( adjustedCovariate )
+                                                                               .build();
+            adjustedCovariates.add( adjustedCovariateDataset );
+        }
+        builder.covariates( adjustedCovariates );
     }
 
     /**
@@ -1441,6 +1459,72 @@ public class DeclarationInterpolator
                           + "discovered authorities were: {}", orientation, authorities );
 
             return dataset;
+        }
+    }
+
+    /**
+     * Interpolates the orientation of the feature names associated with each covariate dataset.
+     * @param builder the builder
+     */
+
+    private static void interpolateCovariateFeatureOrientations( EvaluationDeclarationBuilder builder )
+    {
+        List<CovariateDataset> adjustedCovariates = new ArrayList<>();
+        for ( CovariateDataset covariateDataset : builder.covariates() )
+        {
+            DatasetOrientation orientation = DeclarationInterpolator.getCovariateFeatureOrientation( builder.build(),
+                                                                                                     covariateDataset );
+
+            LOGGER.debug( "Interpolated a dataset orientation of {} for the covariate dataset {}.",
+                          orientation,
+                          covariateDataset );
+
+            CovariateDataset adjusted = CovariateDatasetBuilder.builder( covariateDataset )
+                                                               .featureNameOrientation( orientation )
+                                                               .build();
+            adjustedCovariates.add( adjusted );
+        }
+        builder.covariates( adjustedCovariates );
+    }
+
+    /**
+     * Inspects the covariate dataset to determine the {@link DatasetOrientation} of the dataset whose feature
+     * authority matches that of the covariate. If the covariate dataset has no declared feature authority, defaults
+     * to {@link DatasetOrientation#LEFT}.
+     *
+     * @param declaration the declaration
+     * @param covariate the covariate dataset
+     * @return the orientation of the dataset whose feature authority matches the covariate
+     */
+
+    private static DatasetOrientation getCovariateFeatureOrientation( EvaluationDeclaration declaration,
+                                                                      CovariateDataset covariate )
+    {
+        FeatureAuthority covariateAuthority = covariate.dataset()
+                                                       .featureAuthority();
+
+        if ( Objects.isNull( covariateAuthority ) )
+        {
+            return DatasetOrientation.LEFT;
+        }
+
+        FeatureAuthority rightAuthority = DeclarationUtilities.getFeatureAuthorityFor( declaration,
+                                                                                       DatasetOrientation.RIGHT );
+
+        if ( covariateAuthority == rightAuthority )
+        {
+            return DatasetOrientation.RIGHT;
+        }
+        else if ( DeclarationUtilities.hasBaseline( declaration )
+                  && DeclarationUtilities.getFeatureAuthorityFor( declaration,
+                                                                  DatasetOrientation.BASELINE )
+                     == covariateAuthority )
+        {
+            return DatasetOrientation.BASELINE;
+        }
+        else
+        {
+            return DatasetOrientation.LEFT;
         }
     }
 
@@ -2530,9 +2614,10 @@ public class DeclarationInterpolator
                                                                .variable() );
             }
 
+            Set<String> newName = DeclarationInterpolator.getSingletonOrEmptySet( variableNames.leftVariableName() );
             List<EvaluationStatusEvent> leftEvents =
                     DeclarationInterpolator.interpolateVariableNames( oldLeftName,
-                                                                      variableNames.leftVariableName(),
+                                                                      newName,
                                                                       leftVariable::name,
                                                                       DatasetOrientation.LEFT );
             leftBuilder.variable( leftVariable.build() );
@@ -2560,9 +2645,10 @@ public class DeclarationInterpolator
                                                                 .variable() );
             }
 
+            Set<String> newName = DeclarationInterpolator.getSingletonOrEmptySet( variableNames.rightVariableName() );
             List<EvaluationStatusEvent> rightEvents =
                     DeclarationInterpolator.interpolateVariableNames( oldRightName,
-                                                                      variableNames.rightVariableName(),
+                                                                      newName,
                                                                       rightVariable::name,
                                                                       DatasetOrientation.RIGHT );
             rightBuilder.variable( rightVariable.build() );
@@ -2599,9 +2685,11 @@ public class DeclarationInterpolator
 
             BaselineDatasetBuilder baselineBuilder = BaselineDatasetBuilder.builder( builder.baseline() );
 
+            Set<String> newName =
+                    DeclarationInterpolator.getSingletonOrEmptySet( variableNames.baselineVariableName() );
             List<EvaluationStatusEvent> baselineEvents =
                     DeclarationInterpolator.interpolateVariableNames( oldBaselineName,
-                                                                      variableNames.baselineVariableName(),
+                                                                      newName,
                                                                       baselineVariable::name,
                                                                       DatasetOrientation.BASELINE );
             baselineDatasetBuilder.variable( baselineVariable.build() );
@@ -2619,6 +2707,21 @@ public class DeclarationInterpolator
         events.addAll( covariateEvents );
 
         return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Helper that returns a singleton if the input is available, otherwise an empty set.
+     * @param variableName the variable name
+     * @return a singleton or empty set
+     */
+    private static Set<String> getSingletonOrEmptySet( String variableName )
+    {
+        if ( Objects.isNull( variableName ) )
+        {
+            return Set.of();
+        }
+
+        return Set.of( variableName );
     }
 
     /**
@@ -2711,14 +2814,9 @@ public class DeclarationInterpolator
                     covariateVariable = VariableBuilder.builder( covariateDatasetBuilder.variable() );
                 }
 
-                String newCovariateName = variableNames.covariateVariableNames()
-                                                       .stream()
-                                                       .findAny()
-                                                       .orElse( null );
-
                 List<EvaluationStatusEvent> covariateEvents =
                         DeclarationInterpolator.interpolateVariableNames( oldCovariateName,
-                                                                          newCovariateName,
+                                                                          variableNames.covariateVariableNames(),
                                                                           covariateVariable::name,
                                                                           DatasetOrientation.COVARIATE );
                 covariateDatasetBuilder.variable( covariateVariable.build() );
@@ -2749,23 +2847,32 @@ public class DeclarationInterpolator
      * Interpolates the variable names using the supplied input.
      *
      * @param oldName the existing variable name, possibly null
-     * @param newName the new variable name
+     * @param newNames the new variable name options
      * @param nameSetter the setter for the new name
      * @param orientation the dataset orientation
      * @return any interpolation events encountered
      */
     private static List<EvaluationStatusEvent> interpolateVariableNames( String oldName,
-                                                                         String newName,
+                                                                         Set<String> newNames,
                                                                          Consumer<String> nameSetter,
                                                                          DatasetOrientation orientation )
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
-        if ( Objects.isNull( oldName ) )
+        if ( newNames.isEmpty() )
         {
-            nameSetter.accept( newName );
+            LOGGER.debug( "New new variable name to interpolate for the {} dataset.", orientation );
+            return List.of();
         }
-        else if ( !oldName.equalsIgnoreCase( newName ) )
+        else if ( Objects.isNull( oldName )
+                  && newNames.size() == 1 )
+        {
+            nameSetter.accept( newNames.iterator()
+                                       .next() );
+        }
+        else if ( Objects.nonNull( oldName )
+                  && newNames.stream()
+                             .noneMatch( oldName::equalsIgnoreCase ) )
         {
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
@@ -2774,13 +2881,13 @@ public class DeclarationInterpolator
                                                              + orientation
                                                              + "' dataset, found a declared variable name of '"
                                                              + oldName
-                                                             + "', which is inconsistent with the variable name of '"
-                                                             + newName
+                                                             + "', which is inconsistent with the variable names of '"
+                                                             + newNames
                                                              + "' discovered in the time-series data source. Please "
                                                              + "omit the 'name' of the 'variable' for the '"
                                                              + orientation
-                                                             + "' dataset from the declaration or use '"
-                                                             + newName
+                                                             + "' dataset from the declaration or use one of '"
+                                                             + newNames
                                                              + "' for consistency with the data source." )
                                            .build();
             events.add( event );
@@ -2792,7 +2899,8 @@ public class DeclarationInterpolator
             LOGGER.debug( "Found matching variable names in the declaration and data sources for the {} dataset.",
                           orientation );
 
-            nameSetter.accept( newName );
+            nameSetter.accept( newNames.iterator()
+                                       .next() );
         }
 
         return Collections.unmodifiableList( events );
