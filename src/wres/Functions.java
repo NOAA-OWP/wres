@@ -951,8 +951,15 @@ public final class Functions
                                                           Main.getVersion(),
                                                           executionResult.getEvaluationId() );
 
-            DatabaseOperations.logExecution( Functions.database,
-                                             logParameters );
+            try
+            {
+                DatabaseOperations.logExecution( Functions.database,
+                                                 logParameters );
+            }
+            catch ( NullPointerException npe )
+            {
+                throw new InternalWresException( "Failed to log in the database.", npe );
+            }
         }
     }
 
