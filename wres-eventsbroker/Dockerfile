@@ -4,7 +4,7 @@
 
 FROM alpine AS builder
 
-ARG BROKER_VERSION=2.31.2
+ARG BROKER_VERSION=2.33.0
 
 WORKDIR /workspace
 

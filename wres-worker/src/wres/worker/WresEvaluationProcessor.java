@@ -248,7 +248,17 @@ class WresEvaluationProcessor implements Callable<Integer>
         executorService.submit( stderrMessenger );
 
         // Wait until a job is finished before attempting to get results
-        statusMessenger.run();
+        try
+        {
+            statusMessenger.run();
+        }
+        catch ( RuntimeException re )
+        {
+            // Heartbeating a job should never propagate an exception before checking the return of an evaluation
+            LOGGER.warn( "Unexpected exception while checking if process is alive.", re );
+        }
+
+        // Status either returned closed or failed, attempt to get evaluation results
         try
         {
             // If for some reason a job kicked off does not return ANY response code, ther server is likely in a bad state
