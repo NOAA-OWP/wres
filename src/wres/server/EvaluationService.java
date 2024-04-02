@@ -756,6 +756,12 @@ public class EvaluationService implements ServletContextListener
                                .entity( failureMessage + iwe.getMessage() )
                                .build();
             }
+            catch ( RuntimeException r )
+            {
+                // When we encounter an unexpected exception we want to set the status to closed before propagating the exception
+                updateStatus( COMPLETED, id );
+                throw r;
+            }
 
             // Put output paths in a stream to send to user
             StreamingOutput streamingOutput = outputStream -> {
