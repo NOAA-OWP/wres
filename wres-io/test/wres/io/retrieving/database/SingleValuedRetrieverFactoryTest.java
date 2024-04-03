@@ -92,10 +92,7 @@ public class SingleValuedRetrieverFactoryTest
     private ExecutorService ingestExecutor;
     private AutoCloseable mocks;
 
-    /**
-     * The retriever factory to test.
-     */
-
+    /** The retriever factory to test. */
     private SingleValuedRetrieverFactory factoryToTest;
 
     @BeforeClass

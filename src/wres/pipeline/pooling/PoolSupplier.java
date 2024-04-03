@@ -111,6 +111,9 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
     /** Upscaler for baseline-type data. Optional on construction, but may be exceptional if later required. */
     private final TimeSeriesUpscaler<R> baselineUpscaler;
 
+    /** Upscaler for covariate data. Optional on construction, but may be exceptional if absent and later required. */
+    private final Map<String, TimeSeriesUpscaler<L>> covariateUpscalers;
+
     /** The desired timescale. */
     private final TimeScaleOuter desiredTimeScale;
 
@@ -259,10 +262,15 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         {
             CovariateDataset covariateDataset = covariate.getKey();
             Supplier<Stream<TimeSeries<L>>> covariateSource = covariate.getValue();
+            String variableName = covariateDataset.dataset()
+                                                  .variable()
+                                                  .name();
+            TimeSeriesUpscaler<L> covariateUpscaler = this.getCovariateUpscaler( variableName );
             CovariateFilter<L, R> filter = CovariateFilter.of( returnMe,
                                                                covariateDataset,
                                                                covariateSource,
-                                                               this.getDesiredTimeScale() );
+                                                               this.getDesiredTimeScale(),
+                                                               covariateUpscaler );
             returnMe = filter.get();
         }
 
@@ -325,7 +333,10 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         /** Upscaler for baseline-type data. Optional on construction, but may be exceptional if later required. */
         private TimeSeriesUpscaler<R> baselineUpscaler;
 
-        /** The desired time-scale. */
+        /** Upscaler for covariate data. Optional on construction, but may be exceptional if later required. */
+        private final Map<String, TimeSeriesUpscaler<L>> covariateUpscalers = new HashMap<>();
+
+        /** The desired timescale. */
         private TimeScaleOuter desiredTimeScale;
 
         /** Metadata for the mains pairs. */
@@ -383,7 +394,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         private Function<TimeSeries<B>, TimeSeries<R>> baselineShim;
 
         /**
-         * @param climatology the climatology to set
+         * @param climatology the climatology
          * @return the builder
          */
         Builder<L, R, B> setClimatology( Supplier<Climatology> climatology )
@@ -394,7 +405,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         }
 
         /**
-         * @param left the left to set
+         * @param left the left dataset
          * @return the builder
          */
         Builder<L, R, B> setLeft( Supplier<Stream<TimeSeries<L>>> left )
@@ -405,7 +416,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         }
 
         /**
-         * @param right the right to set
+         * @param right the right dataset
          * @return the builder
          */
         Builder<L, R, B> setRight( Supplier<Stream<TimeSeries<R>>> right )
@@ -416,7 +427,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         }
 
         /**
-         * @param baseline the baseline to set
+         * @param baseline the baseline
          * @return the builder
          */
         Builder<L, R, B> setBaseline( Supplier<Stream<TimeSeries<B>>> baseline )
@@ -426,6 +437,10 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
             return this;
         }
 
+        /**
+         * @param covariates the covariates
+         * @return the builder
+         */
         Builder<L, R, B> setCovariates( Map<CovariateDataset, Supplier<Stream<TimeSeries<L>>>> covariates )
         {
             if ( Objects.nonNull( covariates ) )
@@ -437,7 +452,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         }
 
         /**
-         * @param baselineGenerator a baseline generator to set
+         * @param baselineGenerator a baseline generator
          * @return the builder
          */
         Builder<L, R, B> setBaselineGenerator( Function<Set<Feature>, BaselineGenerator<R>> baselineGenerator )
@@ -448,7 +463,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         }
 
         /**
-         * @param pairer the pairer to set
+         * @param pairer the pairer
          * @return the builder
          */
         Builder<L, R, B> setPairer( TimeSeriesPairer<L, R> pairer )
@@ -459,7 +474,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         }
 
         /**
-         * @param crossPairer the cross-pairer to set
+         * @param crossPairer the cross-pairer
          * @param crossPair the cross-pairing declaration to set
          * @return the builder
          */
@@ -473,7 +488,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         }
 
         /**
-         * @param leftUpscaler the leftUpscaler to set
+         * @param leftUpscaler the left upscaler
          * @return the builder
          */
         Builder<L, R, B> setLeftUpscaler( TimeSeriesUpscaler<L> leftUpscaler )
@@ -484,7 +499,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         }
 
         /**
-         * @param rightUpscaler the rightUpscaler to set
+         * @param rightUpscaler the right upscaler
          * @return the builder
          */
         Builder<L, R, B> setRightUpscaler( TimeSeriesUpscaler<R> rightUpscaler )
@@ -501,6 +516,17 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         Builder<L, R, B> setBaselineUpscaler( TimeSeriesUpscaler<R> baselineUpscaler )
         {
             this.baselineUpscaler = baselineUpscaler;
+
+            return this;
+        }
+
+        /**
+         * @param covariateUpscalers the covariate upscalers by variable name
+         * @return the builder
+         */
+        Builder<L, R, B> setCovariateUpscalers( Map<String, TimeSeriesUpscaler<L>> covariateUpscalers )
+        {
+            this.covariateUpscalers.putAll( covariateUpscalers );
 
             return this;
         }
@@ -1954,41 +1980,43 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
     }
 
     /**
-     * Returns the upscaler for left values. Throws an exception if not available, because this is an internal call and 
-     * is only requested when necessary.
+     * Returns the upscaler for left values, possibly null.
      *
      * @return the upscaler for left values
-     * @throws NullPointerException if the upscaler is not available
      */
 
     private TimeSeriesUpscaler<L> getLeftUpscaler()
     {
-        Objects.requireNonNull( this.leftUpscaler );
-
         return this.leftUpscaler;
     }
 
     /**
-     * Returns the upscaler for right or baseline values. Throws an exception if not available, because this is 
-     * an internal call and is only requested when necessary.
+     * Returns the upscaler for right or baseline values, possibly null.
      *
      * @param lrb the orientation required
      * @return the upscaler for right or baseline values
-     * @throws NullPointerException if the upscaler is not available
      */
 
     private TimeSeriesUpscaler<R> getRightOrBaselineUpscaler( DatasetOrientation lrb )
     {
         if ( lrb == DatasetOrientation.RIGHT )
         {
-            Objects.requireNonNull( this.rightUpscaler );
-
             return this.rightUpscaler;
         }
 
-        Objects.requireNonNull( this.baselineUpscaler );
-
         return this.baselineUpscaler;
+    }
+
+    /**
+     * Returns the upscaler for covariate values, possibly null.
+     *
+     * @param variableName the variable name
+     * @return the upscaler for covariate values
+     */
+
+    private TimeSeriesUpscaler<L> getCovariateUpscaler( String variableName )
+    {
+        return this.covariateUpscalers.get( variableName );
     }
 
     /**
@@ -2339,6 +2367,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         this.leftUpscaler = builder.leftUpscaler;
         this.rightUpscaler = builder.rightUpscaler;
         this.baselineUpscaler = builder.baselineUpscaler;
+        this.covariateUpscalers = Map.copyOf( builder.covariateUpscalers );
         this.desiredTimeScale = builder.desiredTimeScale;
         this.metadata = builder.metadata;
         this.baselineMetadata = builder.baselineMetadata;

@@ -12,6 +12,7 @@ import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.TimeSeries;
+import wres.datamodel.time.TimeSeriesUpscaler;
 
 /**
  * Filters a pool against a covariate dataset.
@@ -32,6 +33,9 @@ class CovariateFilter<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>>
     /** The desired timescale of the covariate. */
     private final TimeScaleOuter desiredTimeScale;
 
+    /** Upscaler. */
+    private final TimeSeriesUpscaler<L> upscaler;
+
     @Override
     public Pool<TimeSeries<Pair<L, R>>> get()
     {
@@ -44,17 +48,20 @@ class CovariateFilter<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>>
      * @param covariateDescription the covariate dataset description, required
      * @param covariateData the covariate data source, required
      * @param desiredTimeScale the desired timescale, optional
+     * @param upscaler a time-series upscaler, optional unless rescaling is required
      * @throws NullPointerException if any required input is null
      */
     static <L, R> CovariateFilter<L, R> of( Pool<TimeSeries<Pair<L, R>>> pool,
                                             CovariateDataset covariateDescription,
                                             Supplier<Stream<TimeSeries<L>>> covariateData,
-                                            TimeScaleOuter desiredTimeScale )
+                                            TimeScaleOuter desiredTimeScale,
+                                            TimeSeriesUpscaler<L> upscaler )
     {
         return new CovariateFilter<>( pool,
                                       covariateDescription,
                                       covariateData,
-                                      desiredTimeScale );
+                                      desiredTimeScale,
+                                      upscaler );
     }
 
     /**
@@ -99,12 +106,14 @@ class CovariateFilter<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>>
      * @param covariateDescription the covariate dataset description, required
      * @param covariateData the covariate data source, required
      * @param desiredTimeScale the desired timescale, optional
+     * @param upscaler a time-series upscaler, optional unless rescaling is required
      * @throws NullPointerException if any required input is null
      */
     private CovariateFilter( Pool<TimeSeries<Pair<L, R>>> pool,
                              CovariateDataset covariateDescription,
                              Supplier<Stream<TimeSeries<L>>> covariateData,
-                             TimeScaleOuter desiredTimeScale )
+                             TimeScaleOuter desiredTimeScale,
+                             TimeSeriesUpscaler<L> upscaler )
     {
         Objects.requireNonNull( pool );
         Objects.requireNonNull( covariateDescription );
@@ -115,5 +124,6 @@ class CovariateFilter<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>>
         this.covariateDescription = covariateDescription;
         this.pool = pool;
         this.desiredTimeScale = desiredTimeScale;
+        this.upscaler = upscaler;
     }
 }
