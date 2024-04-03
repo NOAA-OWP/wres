@@ -80,6 +80,9 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     /** A function to upscale baseline data. */
     private final TimeSeriesUpscaler<R> baselineUpscaler;
 
+    /** The upscaler for covariate values. */
+    private final Map<String, TimeSeriesUpscaler<L>> covariateUpscalers;
+
     /** The pairer, which admits finite value pairs. */
     private final TimeSeriesPairer<L, R> pairer;
 
@@ -176,6 +179,9 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
 
         /** A function to upscale baseline data. */
         private TimeSeriesUpscaler<R> baselineUpscaler;
+
+        /** A function to upscale covariate data. */
+        private final Map<String, TimeSeriesUpscaler<L>> covariateUpscalers = new HashMap<>();
 
         /** A transformer that applies value constraints to left-ish values. */
         private UnaryOperator<TimeSeries<L>> leftTransformer = in -> in;
@@ -315,6 +321,17 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         Builder<L, R, B> setBaselineUpscaler( TimeSeriesUpscaler<R> baselineUpscaler )
         {
             this.baselineUpscaler = baselineUpscaler;
+
+            return this;
+        }
+
+        /**
+         * @param covariateUpscalers the upscalers for covariate values by variable name
+         * @return the builder
+         */
+        Builder<L, R, B> setCovariateUpscalers( Map<String, TimeSeriesUpscaler<L>> covariateUpscalers )
+        {
+            this.covariateUpscalers.putAll( covariateUpscalers );
 
             return this;
         }
@@ -553,6 +570,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                         .setLeftUpscaler( this.getLeftUpscaler() )
                         .setRightUpscaler( this.getRightUpscaler() )
                         .setBaselineUpscaler( this.getBaselineUpscaler() )
+                        .setCovariateUpscalers( this.getCovariateUpscalers() )
                         .setPairer( this.getPairer() )
                         .setCrossPairer( this.getCrossPairer(),
                                          this.getProject()
@@ -765,7 +783,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     /**
      * Returns the upscaler for left-ish data.
      *
-     * @return the upscaler
+     * @return the upscaler for left data
      */
 
     private TimeSeriesUpscaler<L> getLeftUpscaler()
@@ -776,7 +794,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     /**
      * Returns the upscaler for right-ish data.
      *
-     * @return the upscaler
+     * @return the upscaler for right data
      */
 
     private TimeSeriesUpscaler<R> getRightUpscaler()
@@ -787,12 +805,23 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     /**
      * Returns the upscaler for baseline-ish data.
      *
-     * @return the upscaler
+     * @return the upscaler for baseline data
      */
 
     private TimeSeriesUpscaler<R> getBaselineUpscaler()
     {
         return this.baselineUpscaler;
+    }
+
+    /**
+     * Returns the upscalers for covariate data.
+     *
+     * @return the upscalers for covariate data
+     */
+
+    private Map<String, TimeSeriesUpscaler<L>> getCovariateUpscalers()
+    {
+        return this.covariateUpscalers;
     }
 
     /**
@@ -1317,6 +1346,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         this.leftUpscaler = builder.leftUpscaler;
         this.rightUpscaler = builder.rightUpscaler;
         this.baselineUpscaler = builder.baselineUpscaler;
+        this.covariateUpscalers = Map.copyOf( builder.covariateUpscalers );
         this.climateAdmissibleValue = builder.climateAdmissibleValue;
         this.leftTransformer = builder.leftTransformer;
         this.rightTransformer = builder.rightTransformer;

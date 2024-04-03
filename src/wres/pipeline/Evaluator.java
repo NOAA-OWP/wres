@@ -184,11 +184,14 @@ public class Evaluator
 
     /**
      * Executes an evaluation.
-     * @param declaration the declaration
+     * @param declaration the declaration, required
      * @param rawDeclaration the raw declaration string to log
-     * @param canceller a cancellation callback to cancel the running evaluation, not null
+     * @param canceller a cancellation callback to cancel the running evaluation, required
+     * @param evaluationId  the evaluation identifier, required
      * @return the result of the execution
-     * @throws NullPointerException if the projectConfigPlus is null
+     * @throws NullPointerException if any required input is null
+     * @throws UserInputException when WRES detects a problem with the declaration
+     * @throws InternalWresException when WRES encounters an internal error, unrelated to the declaration
      */
 
     private ExecutionResult evaluate( EvaluationDeclaration declaration,
@@ -198,6 +201,7 @@ public class Evaluator
     {
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( canceller );
+        Objects.requireNonNull( evaluationId );
 
         EvaluationEvent monitor = EvaluationEvent.of();
         monitor.begin();
@@ -466,6 +470,7 @@ public class Evaluator
         Objects.requireNonNull( executors );
         Objects.requireNonNull( monitor );
         Objects.requireNonNull( canceller );
+        Objects.requireNonNull( evaluationId );
 
         // Database needed?
         if ( systemSettings.isUseDatabase() )

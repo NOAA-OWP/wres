@@ -514,6 +514,9 @@ public class PoolFactory
                                                                                      this.getUnitMapper()
                                                                                          .getUnitAliases() );
 
+        Map<String, TimeSeriesUpscaler<Double>> covariateUpscalers = this.getCovariateUpscalers( declaration,
+                                                                                                 leftUpscaler );
+
         // Create a feature-specific baseline generator function (e.g., persistence), if required
         Function<Set<Feature>, BaselineGenerator<Double>> baselineGenerator = null;
         // Generated baseline declared?
@@ -608,6 +611,7 @@ public class PoolFactory
                                                                     .setBaselineMissingFilter( missingFilter )
                                                                     .setLeftUpscaler( leftUpscaler )
                                                                     .setRightUpscaler( rightUpscaler )
+                                                                    .setCovariateUpscalers( covariateUpscalers )
                                                                     .setBaselineUpscaler( baselineUpscaler )
                                                                     .setLeftTimeShift( leftTimeShift )
                                                                     .setRightTimeShift( rightTimeShift )
@@ -686,6 +690,10 @@ public class PoolFactory
         TimeSeriesUpscaler<Ensemble> baselineUpscaler = TimeSeriesOfEnsembleUpscaler.of( baselineLenient,
                                                                                          this.getUnitMapper()
                                                                                              .getUnitAliases() );
+
+        Map<String, TimeSeriesUpscaler<Double>> covariateUpscalers = this.getCovariateUpscalers( declaration,
+                                                                                                 leftUpscaler );
+
         // Left transformer
         DoubleUnaryOperator leftValueTransformer = this.getValueTransformer( declaration.values() );
         UnaryOperator<TimeSeries<Double>> leftValueAndUnitTransformer =
@@ -769,6 +777,7 @@ public class PoolFactory
                         .setLeftUpscaler( leftUpscaler )
                         .setRightUpscaler( rightUpscaler )
                         .setBaselineUpscaler( baselineUpscaler )
+                        .setCovariateUpscalers( covariateUpscalers )
                         .setLeftFilter( singleValuedFilter )
                         .setRightFilter( ensembleFilter )
                         .setBaselineFilter( ensembleFilter )
@@ -850,6 +859,10 @@ public class PoolFactory
         TimeSeriesUpscaler<Ensemble> baselineUpscaler = TimeSeriesOfEnsembleUpscaler.of( baselineLenient,
                                                                                          this.getUnitMapper()
                                                                                              .getUnitAliases() );
+
+        Map<String, TimeSeriesUpscaler<Double>> covariateUpscalers = this.getCovariateUpscalers( declaration,
+                                                                                                 leftUpscaler );
+
         // Left transformer
         DoubleUnaryOperator leftValueTransformer = this.getValueTransformer( declaration.values() );
         UnaryOperator<TimeSeries<Double>> leftValueAndUnitTransformer =
@@ -937,6 +950,7 @@ public class PoolFactory
                         .setLeftUpscaler( leftUpscaler )
                         .setRightUpscaler( rightUpscaler )
                         .setBaselineUpscaler( baselineUpscaler )
+                        .setCovariateUpscalers( covariateUpscalers )
                         .setLeftFilter( singleValuedFilter )
                         .setRightFilter( ensembleFilter )
                         .setBaselineFilter( ensembleFilter )
@@ -2303,6 +2317,22 @@ public class PoolFactory
         }
 
         return frequency;
+    }
+
+    /**
+     * @param declaration the declaration
+     * @param upscaler an upscaler for each covariate dataset by variable name
+     * @return the covariate upscalers
+     */
+    private Map<String, TimeSeriesUpscaler<Double>> getCovariateUpscalers( EvaluationDeclaration declaration,
+                                                                           TimeSeriesUpscaler<Double> upscaler )
+    {
+        return declaration.covariates()
+                          .stream()
+                          .collect( Collectors.toMap( c -> c.dataset()
+                                                            .variable()
+                                                            .name(),
+                                                      c -> upscaler ) );
     }
 
     /**
