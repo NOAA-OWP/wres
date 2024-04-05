@@ -499,7 +499,8 @@ public class SingleValuedRetrieverFactoryTest
         CovariateDataset covariateDataset = new CovariateDataset( covariate,
                                                                   null,
                                                                   null,
-                                                                  DatasetOrientation.LEFT );
+                                                                  DatasetOrientation.LEFT,
+                                                                  null );
         BaselineDataset baseline = BaselineDatasetBuilder.builder()
                                                          .dataset( right )
                                                          .build();

@@ -10,6 +10,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetOrientation;
+import wres.statistics.generated.TimeScale;
 
 /**
  * Custom deserializer for a covariate dataset, which composes an ordinary dataset and adds some attributes.
@@ -29,6 +31,10 @@ public class CovariateDatasetDeserializer extends JsonDeserializer<CovariateData
 
         Double minimum = null;
         Double maximum = null;
+        TimeScale.TimeScaleFunction rescaleFunction = null;
+
+        // Not part of the declaration language, just used internally
+        DatasetOrientation featureNameOrientation = null;
 
         // The node just read
         JsonNode lastNode = deserializer.getLastNode();
@@ -45,8 +51,16 @@ public class CovariateDatasetDeserializer extends JsonDeserializer<CovariateData
                 JsonNode maxNode = lastNode.get( "maximum" );
                 maximum = maxNode.asDouble();
             }
+
+            if ( lastNode.has( "rescale_function" ) )
+            {
+                JsonNode functionNode = lastNode.get( "rescale_function" );
+                String functionString = functionNode.asText()
+                                                    .toUpperCase();
+                rescaleFunction = TimeScale.TimeScaleFunction.valueOf( functionString );
+            }
         }
 
-        return new CovariateDataset( basicDataset, minimum, maximum, null );
+        return new CovariateDataset( basicDataset, minimum, maximum, featureNameOrientation, rescaleFunction );
     }
 }

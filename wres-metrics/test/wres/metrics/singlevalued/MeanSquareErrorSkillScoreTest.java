@@ -206,10 +206,10 @@ public final class MeanSquareErrorSkillScoreTest
         TimeSeries<Pair<Double, Double>> main = pairer.pair( observed, simulated );
         TimeSeries<Pair<Double, Double>> baseline = pairer.pair( observed, persistence );
 
-        TimeSeriesCrossPairer<Pair<Double, Double>> p = TimeSeriesCrossPairer.of();
+        TimeSeriesCrossPairer<Pair<Double, Double>,Pair<Double, Double>> p = TimeSeriesCrossPairer.of();
 
         // Cross-pair
-        CrossPairs<Pair<Double, Double>> cp = p.apply( List.of( main ), List.of( baseline ) );
+        CrossPairs<Pair<Double, Double>,Pair<Double, Double>> cp = p.apply( List.of( main ), List.of( baseline ) );
         main = cp.getFirstPairs()
                  .get( 0 );
         baseline = cp.getSecondPairs()

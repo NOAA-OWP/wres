@@ -2151,6 +2151,7 @@ class DeclarationFactoryTest
                   - sources: temperature.tgz
                     variable: temperature
                     maximum: 0.0
+                    rescale_function: mean
                   """;
 
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
@@ -2167,7 +2168,7 @@ class DeclarationFactoryTest
                                                     .variable( new Variable( "precipitation", null ) )
                                                     .build();
 
-        CovariateDataset covariateOne = new CovariateDataset( covariateOneDataset, 0.25, null, null );
+        CovariateDataset covariateOne = new CovariateDataset( covariateOneDataset, 0.25, null, null, null );
 
         URI covariateTwoUri = URI.create( "temperature.tgz" );
         Source covariateTwoSource = SourceBuilder.builder()
@@ -2181,7 +2182,8 @@ class DeclarationFactoryTest
                                                     .variable( new Variable( "temperature", null ) )
                                                     .build();
 
-        CovariateDataset covariateTwo = new CovariateDataset( covariateTwoDataset, null, 0.0, null );
+        CovariateDataset covariateTwo =
+                new CovariateDataset( covariateTwoDataset, null, 0.0, null, TimeScale.TimeScaleFunction.MEAN );
 
         List<CovariateDataset> covariateDatasets = List.of( covariateOne, covariateTwo );
 

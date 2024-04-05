@@ -12,14 +12,15 @@ import wres.datamodel.time.TimeSeries;
 /**
  * A collection of cross-pairs whose pairs are accessible.
  *
- * @param <T> the time-series event value type
+ * @param <S> the time-series event value types for the first set of pairs
+ * @param <T> the time-series event value type for the second set of pairs
  * @author James Brown
  */
 
-public class CrossPairs<T>
+public class CrossPairs<S,T>
 {
     /** The first pairs. */
-    private final List<TimeSeries<T>> firstPairs;
+    private final List<TimeSeries<S>> firstPairs;
 
     /** The second pairs. */
     private final List<TimeSeries<T>> secondPairs;
@@ -34,7 +35,7 @@ public class CrossPairs<T>
      * @throws NullPointerException if either input is null
      */
 
-    public static <T> CrossPairs<T> of( List<TimeSeries<T>> firstPairs,
+    public static <S,T> CrossPairs<S,T> of( List<TimeSeries<S>> firstPairs,
                                         List<TimeSeries<T>> secondPairs )
     {
         return new CrossPairs<>( firstPairs, secondPairs );
@@ -46,7 +47,7 @@ public class CrossPairs<T>
      * @return the first pairs
      */
 
-    public List<TimeSeries<T>> getFirstPairs()
+    public List<TimeSeries<S>> getFirstPairs()
     {
         return this.firstPairs;
     }
@@ -65,7 +66,7 @@ public class CrossPairs<T>
     @Override
     public boolean equals( Object o )
     {
-        if ( !( o instanceof CrossPairs<?> in ) )
+        if ( !( o instanceof CrossPairs<?,?> in ) )
         {
             return false;
         }
@@ -104,7 +105,7 @@ public class CrossPairs<T>
      * @throws NullPointerException if either input is null
      */
 
-    private CrossPairs( List<TimeSeries<T>> firstPairs, List<TimeSeries<T>> secondPairs )
+    private CrossPairs( List<TimeSeries<S>> firstPairs, List<TimeSeries<T>> secondPairs )
     {
         Objects.requireNonNull( firstPairs );
         Objects.requireNonNull( secondPairs );

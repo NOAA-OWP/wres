@@ -238,7 +238,8 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
             joiner.add( this.getPeriod() + "" );
         }
 
-        joiner.add( this.getFunction().toString() );
+        joiner.add( this.getFunction()
+                        .toString() );
 
         MonthDay startMonthDay = this.getStartMonthDay();
 

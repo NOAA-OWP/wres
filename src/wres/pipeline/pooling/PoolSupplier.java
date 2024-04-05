@@ -26,7 +26,6 @@ import org.slf4j.LoggerFactory;
 
 import net.jcip.annotations.ThreadSafe;
 
-import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.CrossPair;
 import wres.config.yaml.components.CrossPairScope;
 import wres.config.yaml.components.DatasetOrientation;
@@ -97,7 +96,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
     private final TimeSeriesPairer<L, R> pairer;
 
     /** An optional cross-pairer to ensure that the main pairs and baseline pairs are coincident in time. */
-    private final TimeSeriesCrossPairer<Pair<L, R>> crossPairer;
+    private final TimeSeriesCrossPairer<Pair<L, R>, Pair<L, R>> crossPairer;
 
     /** The cross-pairing declaration, if any. */
     private final CrossPair crossPair;
@@ -110,9 +109,6 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
     /** Upscaler for baseline-type data. Optional on construction, but may be exceptional if later required. */
     private final TimeSeriesUpscaler<R> baselineUpscaler;
-
-    /** Upscaler for covariate data. Optional on construction, but may be exceptional if absent and later required. */
-    private final Map<String, TimeSeriesUpscaler<L>> covariateUpscalers;
 
     /** The desired timescale. */
     private final TimeScaleOuter desiredTimeScale;
@@ -176,7 +172,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
     private final Function<TimeSeries<B>, TimeSeries<R>> baselineShim;
 
     /** Covariate data sources. Optional. */
-    private final Map<CovariateDataset, Supplier<Stream<TimeSeries<L>>>> covariates;
+    private final Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> covariates;
 
     /** Left data source. */
     private Supplier<Stream<TimeSeries<L>>> left;
@@ -258,19 +254,13 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         }
 
         // Filter the pool against each covariate
-        for ( Map.Entry<CovariateDataset, Supplier<Stream<TimeSeries<L>>>> covariate : this.covariates.entrySet() )
+        for ( Map.Entry<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> covariateEntry : this.covariates.entrySet() )
         {
-            CovariateDataset covariateDataset = covariate.getKey();
-            Supplier<Stream<TimeSeries<L>>> covariateSource = covariate.getValue();
-            String variableName = covariateDataset.dataset()
-                                                  .variable()
-                                                  .name();
-            TimeSeriesUpscaler<L> covariateUpscaler = this.getCovariateUpscaler( variableName );
+            Covariate<L> covariate = covariateEntry.getKey();
+            Supplier<Stream<TimeSeries<L>>> data = covariateEntry.getValue();
             CovariateFilter<L, R> filter = CovariateFilter.of( returnMe,
-                                                               covariateDataset,
-                                                               covariateSource,
-                                                               this.getDesiredTimeScale(),
-                                                               covariateUpscaler );
+                                                               covariate,
+                                                               data );
             returnMe = filter.get();
         }
 
@@ -304,7 +294,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
     static class Builder<L, R, B>
     {
         /** Covariate data sources with left-ish values, one for each covariate dataset. Optional. */
-        private final Map<CovariateDataset, Supplier<Stream<TimeSeries<L>>>> covariates = new HashMap<>();
+        private final Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> covariates = new HashMap<>();
 
         /** The climatology. */
         private Supplier<Climatology> climatology;
@@ -332,9 +322,6 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
         /** Upscaler for baseline-type data. Optional on construction, but may be exceptional if later required. */
         private TimeSeriesUpscaler<R> baselineUpscaler;
-
-        /** Upscaler for covariate data. Optional on construction, but may be exceptional if later required. */
-        private final Map<String, TimeSeriesUpscaler<L>> covariateUpscalers = new HashMap<>();
 
         /** The desired timescale. */
         private TimeScaleOuter desiredTimeScale;
@@ -385,7 +372,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         private Duration frequency;
 
         /** An optional cross-pairer to ensure that the main pairs and baseline pairs are coincident in time. */
-        private TimeSeriesCrossPairer<Pair<L, R>> crossPairer;
+        private TimeSeriesCrossPairer<Pair<L, R>, Pair<L, R>> crossPairer;
 
         /** The cross-pairing declaration, if any. */
         private CrossPair crossPair;
@@ -441,7 +428,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
          * @param covariates the covariates
          * @return the builder
          */
-        Builder<L, R, B> setCovariates( Map<CovariateDataset, Supplier<Stream<TimeSeries<L>>>> covariates )
+        Builder<L, R, B> setCovariates( Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> covariates )
         {
             if ( Objects.nonNull( covariates ) )
             {
@@ -478,7 +465,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
          * @param crossPair the cross-pairing declaration to set
          * @return the builder
          */
-        Builder<L, R, B> setCrossPairer( TimeSeriesCrossPairer<Pair<L, R>> crossPairer,
+        Builder<L, R, B> setCrossPairer( TimeSeriesCrossPairer<Pair<L, R>, Pair<L, R>> crossPairer,
                                          CrossPair crossPair )
         {
             this.crossPairer = crossPairer;
@@ -516,17 +503,6 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         Builder<L, R, B> setBaselineUpscaler( TimeSeriesUpscaler<R> baselineUpscaler )
         {
             this.baselineUpscaler = baselineUpscaler;
-
-            return this;
-        }
-
-        /**
-         * @param covariateUpscalers the covariate upscalers by variable name
-         * @return the builder
-         */
-        Builder<L, R, B> setCovariateUpscalers( Map<String, TimeSeriesUpscaler<L>> covariateUpscalers )
-        {
-            this.covariateUpscalers.putAll( covariateUpscalers );
 
             return this;
         }
@@ -1720,7 +1696,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
      */
 
     private Pair<Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>, Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>>
-    getCrossPairs( TimeSeriesCrossPairer<Pair<L, R>> crossPairer,
+    getCrossPairs( TimeSeriesCrossPairer<Pair<L, R>, Pair<L, R>> crossPairer,
                    CrossPair crossPair,
                    Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> mainPairs,
                    Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> basePairs )
@@ -1746,7 +1722,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
      */
 
     private Pair<Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>, Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>>
-    getCrossPairsPartial( TimeSeriesCrossPairer<Pair<L, R>> crossPairer,
+    getCrossPairsPartial( TimeSeriesCrossPairer<Pair<L, R>, Pair<L, R>> crossPairer,
                           Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> mainPairs,
                           Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> basePairs )
     {
@@ -1773,7 +1749,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
             {
                 List<TimeSeries<Pair<L, R>>> nextBasePairs = basePairs.get( nextFeature );
 
-                CrossPairs<Pair<L, R>> crossPairs = crossPairer.apply( nextMainPairs, nextBasePairs );
+                CrossPairs<Pair<L, R>, Pair<L, R>> crossPairs = crossPairer.apply( nextMainPairs, nextBasePairs );
 
                 mainPairsCrossed.put( nextFeature, crossPairs.getFirstPairs() );
                 basePairsCrossed.put( nextFeature, crossPairs.getSecondPairs() );
@@ -1812,7 +1788,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
      */
 
     private Pair<Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>, Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>>>
-    getCrossPairsFull( TimeSeriesCrossPairer<Pair<L, R>> crossPairer,
+    getCrossPairsFull( TimeSeriesCrossPairer<Pair<L, R>, Pair<L, R>> crossPairer,
                        Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> mainPairs,
                        Map<FeatureTuple, List<TimeSeries<Pair<L, R>>>> basePairs )
     {
@@ -1837,7 +1813,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         {
             FeatureTuple nextFeature = nextEntry.getKey();
             List<TimeSeries<Pair<L, R>>> nextPairs = nextEntry.getValue();
-            CrossPairs<Pair<L, R>> crossPaired = crossPairer.apply( nextPairs, first );
+            CrossPairs<Pair<L, R>, Pair<L, R>> crossPaired = crossPairer.apply( nextPairs, first );
             mainFinal.put( nextFeature, crossPaired.getFirstPairs() );
         }
         mainFinal = Collections.unmodifiableMap( mainFinal );
@@ -1851,7 +1827,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
             {
                 FeatureTuple nextFeature = nextEntry.getKey();
                 List<TimeSeries<Pair<L, R>>> nextPairs = nextEntry.getValue();
-                CrossPairs<Pair<L, R>> crossPaired = crossPairer.apply( nextPairs, first );
+                CrossPairs<Pair<L, R>, Pair<L, R>> crossPaired = crossPairer.apply( nextPairs, first );
                 baseFinal.put( nextFeature, crossPaired.getFirstPairs() );
             }
             baseFinal = Collections.unmodifiableMap( baseFinal );
@@ -2005,18 +1981,6 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         }
 
         return this.baselineUpscaler;
-    }
-
-    /**
-     * Returns the upscaler for covariate values, possibly null.
-     *
-     * @param variableName the variable name
-     * @return the upscaler for covariate values
-     */
-
-    private TimeSeriesUpscaler<L> getCovariateUpscaler( String variableName )
-    {
-        return this.covariateUpscalers.get( variableName );
     }
 
     /**
@@ -2190,7 +2154,7 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
      * @return the cross-pairer
      */
 
-    private TimeSeriesCrossPairer<Pair<L, R>> getCrossPairer()
+    private TimeSeriesCrossPairer<Pair<L, R>, Pair<L, R>> getCrossPairer()
     {
         return this.crossPairer;
     }
@@ -2345,7 +2309,6 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         this.right = null;
         this.baseline = null;
         this.climatology = null;
-        this.covariates.clear();
     }
 
     /**
@@ -2362,12 +2325,11 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         this.left = builder.left;
         this.right = builder.right;
         this.baseline = builder.baseline;
-        this.covariates = new HashMap<>( builder.covariates );
+        this.covariates = Map.copyOf( builder.covariates );
         this.pairer = builder.pairer;
         this.leftUpscaler = builder.leftUpscaler;
         this.rightUpscaler = builder.rightUpscaler;
         this.baselineUpscaler = builder.baselineUpscaler;
-        this.covariateUpscalers = Map.copyOf( builder.covariateUpscalers );
         this.desiredTimeScale = builder.desiredTimeScale;
         this.metadata = builder.metadata;
         this.baselineMetadata = builder.baselineMetadata;

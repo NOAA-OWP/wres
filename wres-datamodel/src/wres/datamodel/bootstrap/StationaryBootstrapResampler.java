@@ -961,7 +961,7 @@ public class StationaryBootstrapResampler<T>
         }
 
         LOGGER.debug( "The pool to resample contains {} mini-pools.", miniPools.size() );
-        TimeSeriesCrossPairer<T> crossPairer = TimeSeriesCrossPairer.of( CrossPairMethod.FUZZY );
+        TimeSeriesCrossPairer<T, T> crossPairer = TimeSeriesCrossPairer.of( CrossPairMethod.FUZZY );
 
         // Take the main time-series from the first mini-pool and cross-pair against all other main and baseline pairs
         // from all other mini-pools. Then use this to cross-pair the main and baseline time-series across all other
@@ -1001,7 +1001,7 @@ public class StationaryBootstrapResampler<T>
         {
             List<TimeSeries<T>> nextBaseline = firstPool.getBaselineData()
                                                         .get();
-            CrossPairs<T> crossPaired = crossPairer.apply( first, nextBaseline );
+            CrossPairs<T, T> crossPaired = crossPairer.apply( first, nextBaseline );
             first = crossPaired.getFirstPairs();
             firstPoolBuilder.setMetadataForBaseline( firstPool.getBaselineData()
                                                               .getMetadata() );

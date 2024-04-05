@@ -27,11 +27,13 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 /**
  * Supports cross-pairing of two sets of {@link TimeSeries} by reference time and valid time.
  *
- * @param <T> the time-series event value type
+ * @param <S> the time-series event value type in the first dataset
+ * @param <T> the time-series event value type in the second dataset
  * @author James Brown
  */
 
-public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>, List<TimeSeries<T>>, CrossPairs<T>>
+public class TimeSeriesCrossPairer<S, T>
+        implements BiFunction<List<TimeSeries<S>>, List<TimeSeries<T>>, CrossPairs<S, T>>
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( TimeSeriesCrossPairer.class );
@@ -47,7 +49,7 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
      * @return an instance
      */
 
-    public static <T> TimeSeriesCrossPairer<T> of()
+    public static <S, T> TimeSeriesCrossPairer<S, T> of()
     {
         return new TimeSeriesCrossPairer<>( CrossPairMethod.FUZZY );
     }
@@ -61,7 +63,7 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
      * @throws NullPointerException if the match mode is null
      */
 
-    public static <T> TimeSeriesCrossPairer<T> of( CrossPairMethod crossPair )
+    public static <S, T> TimeSeriesCrossPairer<S, T> of( CrossPairMethod crossPair )
     {
         return new TimeSeriesCrossPairer<>( crossPair );
     }
@@ -77,17 +79,17 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
      */
 
     @Override
-    public CrossPairs<T> apply( List<TimeSeries<T>> first, List<TimeSeries<T>> second )
+    public CrossPairs<S, T> apply( List<TimeSeries<S>> first, List<TimeSeries<T>> second )
     {
         Objects.requireNonNull( first );
         Objects.requireNonNull( second );
 
         // Sort the time-series in time order using the first reference time, if available
-        List<TimeSeries<T>> firstSorted = new ArrayList<>( first );
+        List<TimeSeries<S>> firstSorted = new ArrayList<>( first );
         List<TimeSeries<T>> secondSorted = new ArrayList<>( second );
 
         // Filter both sets of pairs
-        List<TimeSeries<T>> filteredMain = this.crossPair( firstSorted, secondSorted, this.crossPair );
+        List<TimeSeries<S>> filteredMain = this.crossPair( firstSorted, secondSorted, this.crossPair );
         List<TimeSeries<T>> filteredBaseline = this.crossPair( secondSorted, filteredMain, this.crossPair );
 
         // Log the pairs removed
@@ -146,6 +148,8 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
     /**
      * Cross-pair the first input against the second.
      *
+     * @param <P> the type of data to filter
+     * @param <Q> the type of data to filter against
      * @param filterThese the pairs to be filtered
      * @param againstThese the pairs to filter against
      * @param method the cross-pairing method
@@ -153,25 +157,26 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
      * @throws PairingException if the pairs could not be compared
      */
 
-    private List<TimeSeries<T>> crossPair( List<TimeSeries<T>> filterThese,
-                                           List<TimeSeries<T>> againstThese,
-                                           CrossPairMethod method )
+    private <P, Q> List<TimeSeries<P>> crossPair( List<TimeSeries<P>> filterThese,
+                                                  List<TimeSeries<Q>> againstThese,
+                                                  CrossPairMethod method )
     {
-        List<TimeSeries<T>> filterTheseMutable = new ArrayList<>( filterThese );
-        List<TimeSeries<T>> returnMe = new ArrayList<>();
+        List<TimeSeries<P>> filterTheseMutable = new ArrayList<>( filterThese );
+        List<TimeSeries<P>> returnMe = new ArrayList<>();
 
         // Iterate through the time-series to filter
-        for ( TimeSeries<T> next : againstThese )
+        for ( TimeSeries<Q> next : againstThese )
         {
             // Find the nearest time-series by reference time
-            TimeSeries<T> nearest = this.getNearestByReferenceTimesWithMatchingValidTimes( filterTheseMutable, next, method );
+            TimeSeries<P> nearest =
+                    this.getNearestByReferenceTimesWithMatchingValidTimes( filterTheseMutable, next, method );
 
             Set<Instant> validTimesToCheck = next.getEvents()
                                                  .stream()
                                                  .map( Event::getTime )
                                                  .collect( Collectors.toSet() );
 
-            SortedSet<Event<T>> events = nearest.getEvents()
+            SortedSet<Event<P>> events = nearest.getEvents()
                                                 .stream()
                                                 .filter( nextEvent -> validTimesToCheck.contains( nextEvent.getTime() ) )
                                                 .collect( Collectors.toCollection( TreeSet::new ) );
@@ -199,8 +204,8 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
             if ( !events.isEmpty() )
             {
                 // Consider only valid times that are part of the next time-series
-                TimeSeries<T> nextSeries =
-                        new Builder<T>().setMetadata( nearest.getMetadata() )
+                TimeSeries<P> nextSeries =
+                        new Builder<P>().setMetadata( nearest.getMetadata() )
                                         .setEvents( events )
                                         .build();
 
@@ -213,7 +218,6 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
             {
                 LOGGER.debug( "Eliminated a time-series from cross-pairing because no valid times matched." );
             }
-
         }
 
         return Collections.unmodifiableList( returnMe );
@@ -225,6 +229,8 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
      * identical reference times, else the first time-series whose common reference times differ by the minimum total
      * duration (first if there are several such cases).
      *
+     * @param <P> the type of data to be inspected
+     * @param <Q> the type of data to match against
      * @param lookInHere the list in which to look
      * @param lookNearToMe the time-series whose reference times will be matched as closely as possible
      * @param method the cross-pairing method
@@ -232,12 +238,12 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
      * @throws PairingException if there are no reference times in any one time-series
      */
 
-    private TimeSeries<T> getNearestByReferenceTimesWithMatchingValidTimes( List<TimeSeries<T>> lookInHere,
-                                                                            TimeSeries<T> lookNearToMe,
-                                                                            CrossPairMethod method )
+    private <P, Q> TimeSeries<P> getNearestByReferenceTimesWithMatchingValidTimes( List<TimeSeries<P>> lookInHere,
+                                                                                   TimeSeries<Q> lookNearToMe,
+                                                                                   CrossPairMethod method )
     {
         // Default to empty
-        TimeSeries<T> nearest = null;
+        TimeSeries<P> nearest = null;
         Duration durationError = TimeWindowOuter.DURATION_MAX;
 
         Map<ReferenceTimeType, Instant> refTimesToCheck = lookNearToMe.getReferenceTimes();
@@ -247,7 +253,7 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
                                                      .map( Event::getTime )
                                                      .collect( Collectors.toSet() );
 
-        for ( TimeSeries<T> next : lookInHere )
+        for ( TimeSeries<P> next : lookInHere )
         {
             // Some common valid times?
             if ( next.getEvents()
@@ -289,16 +295,19 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
 
     /**
      * Returns the input time-series or an empty one if the input is null.
+     *
+     * @param <P> the type of data to filter
+     * @param <Q> the type of data to filter against
      * @param nearest the nearest time-series to check
      * @param durationError the duration error
      * @param lookInHere the list in which to look
      * @param lookNearToMe the time-series whose reference times will be matched as closely as possible
      * @return the nearest time-series or any empty one
      */
-    private TimeSeries<T> getNearestOrEmpty( TimeSeries<T> nearest,
-                                             Duration durationError,
-                                             List<TimeSeries<T>> lookInHere,
-                                             TimeSeries<T> lookNearToMe )
+    private <P, Q> TimeSeries<P> getNearestOrEmpty( TimeSeries<P> nearest,
+                                                    Duration durationError,
+                                                    List<TimeSeries<P>> lookInHere,
+                                                    TimeSeries<Q> lookNearToMe )
     {
 
         // Return the empty time-series if nothing found or if the duration error is not zero when exact matching
@@ -337,9 +346,9 @@ public class TimeSeriesCrossPairer<T> implements BiFunction<List<TimeSeries<T>>,
      * @throws PairingException if there are no reference times in either input
      */
 
-    private Duration getTotalDurationBetweenCommonTimeTypes( TimeSeries<T> first,
-                                                             TimeSeries<T> second,
-                                                             CrossPairMethod method )
+    private <P, Q> Duration getTotalDurationBetweenCommonTimeTypes( TimeSeries<P> first,
+                                                                    TimeSeries<Q> second,
+                                                                    CrossPairMethod method )
     {
         Map<ReferenceTimeType, Instant> firstTimes = first.getReferenceTimes();
         Map<ReferenceTimeType, Instant> secondTimes = second.getReferenceTimes();
