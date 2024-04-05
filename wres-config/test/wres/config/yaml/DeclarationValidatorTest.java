@@ -132,7 +132,7 @@ class DeclarationValidatorTest
         BaselineDataset baseline = BaselineDatasetBuilder.builder()
                                                          .dataset( dataset )
                                                          .build();
-        List<CovariateDataset> covariates = List.of( new CovariateDataset( dataset, null, null, null ) );
+        List<CovariateDataset> covariates = List.of( new CovariateDataset( dataset, null, null, null, null ) );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( dataset )
                                                                         .right( dataset )
@@ -186,11 +186,11 @@ class DeclarationValidatorTest
         Dataset dataOne = DatasetBuilder.builder( this.defaultDataset )
                                         .variable( one )
                                         .build();
-        CovariateDataset covariateOne = new CovariateDataset( dataOne, null, null, null );
+        CovariateDataset covariateOne = new CovariateDataset( dataOne, null, null, null, null );
         Dataset dataTwo = DatasetBuilder.builder( this.defaultDataset )
                                         .variable( two )
                                         .build();
-        CovariateDataset covariateTwo = new CovariateDataset( dataTwo, null, null, null );
+        CovariateDataset covariateTwo = new CovariateDataset( dataTwo, null, null, null, null );
 
         List<CovariateDataset> covariates = List.of( covariateOne, covariateTwo );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
@@ -205,16 +205,45 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testEvaluationWithoutTimeScaleAndCovariateWithRescaleFunctionProducesError()
+    {
+        Variable one = new Variable( "foo", null );
+
+        Dataset dataOne = DatasetBuilder.builder( this.defaultDataset )
+                                        .variable( one )
+                                        .build();
+        CovariateDataset covariateOne = new CovariateDataset( dataOne,
+                                                              null,
+                                                              null,
+                                                              null,
+                                                              TimeScale.TimeScaleFunction.TOTAL );
+
+        List<CovariateDataset> covariates = List.of( covariateOne );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .covariates( covariates )
+                                                                        .build();
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        System.out.println( events );
+
+        assertTrue( DeclarationValidatorTest.contains( events, "Please declare an evaluation 'time_scale' or "
+                                                               + "remove the 'rescale_function'",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
     void testForecastDataTypeForCovariatesResultsInError()
     {
         Dataset dataOne = DatasetBuilder.builder( this.defaultDataset )
                                         .type( DataType.OBSERVATIONS )
                                         .build();
-        CovariateDataset covariateOne = new CovariateDataset( dataOne, null, null, null );
+        CovariateDataset covariateOne = new CovariateDataset( dataOne, null, null, null, null );
         Dataset dataTwo = DatasetBuilder.builder( this.defaultDataset )
                                         .type( DataType.SINGLE_VALUED_FORECASTS )
                                         .build();
-        CovariateDataset covariateTwo = new CovariateDataset( dataTwo, null, null, null );
+        CovariateDataset covariateTwo = new CovariateDataset( dataTwo, null, null, null, null );
 
         List<CovariateDataset> covariates = List.of( covariateOne, covariateTwo );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
@@ -257,7 +286,7 @@ class DeclarationValidatorTest
                                                          .dataset( baselineInner )
                                                          .build();
 
-        CovariateDataset covariate = new CovariateDataset( left, null, null, null );
+        CovariateDataset covariate = new CovariateDataset( left, null, null, null, null );
         List<CovariateDataset> covariates = List.of( covariate );
 
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
@@ -343,7 +372,7 @@ class DeclarationValidatorTest
                                           .timeZoneOffset( ZoneOffset.ofHours( -7 ) )
                                           .build();
 
-        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null, null );
+        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null, null, null );
 
         List<CovariateDataset> covariates = List.of( covariateDataset );
 
@@ -613,7 +642,7 @@ class DeclarationValidatorTest
                                           .timeScale( timeScaleCovariate )
                                           .build();
 
-        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null, null );
+        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null, null, null );
         List<CovariateDataset> covariates = List.of( covariateDataset );
 
         TimeScale timeScaleInner = TimeScale.newBuilder()
@@ -646,6 +675,49 @@ class DeclarationValidatorTest
                                                                                 + "'covariate'",
                                                                         StatusLevel.ERROR ) )
         );
+    }
+
+    @Test
+    void testEvaluationTimeScaleIsConsistentWithDatasetTimeScalesForCovariateWithRescaleFunctionResultsInErrors()
+    {
+        TimeScale covariateTimeScale = TimeScale.newBuilder()
+                                                .setPeriod( Duration.newBuilder()
+                                                                    .setSeconds( 100 )
+                                                                    .build() )
+                                                .setFunction( TimeScale.TimeScaleFunction.MINIMUM )
+                                                .build();
+
+        wres.config.yaml.components.TimeScale timeScaleCovariate =
+                new wres.config.yaml.components.TimeScale( covariateTimeScale );
+
+        Dataset covariate = DatasetBuilder.builder()
+                                          .timeScale( timeScaleCovariate )
+                                          .build();
+
+        CovariateDataset covariateDataset =
+                new CovariateDataset( covariate, null, null, null, TimeScale.TimeScaleFunction.TOTAL );
+        List<CovariateDataset> covariates = List.of( covariateDataset );
+
+        TimeScale timeScaleInner = TimeScale.newBuilder()
+                                            .setPeriod( Duration.newBuilder()
+                                                                .setSeconds( 1000 )
+                                                                .build() )
+                                            .setFunction( TimeScale.TimeScaleFunction.MINIMUM )
+                                            .build();
+        wres.config.yaml.components.TimeScale timeScale = new wres.config.yaml.components.TimeScale( timeScaleInner );
+
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( this.defaultDataset )
+                                              .right( this.defaultDataset )
+                                              .covariates( covariates )
+                                              .timeScale( timeScale )
+                                              .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, "does not have a supported time scale function",
+                                                       StatusLevel.ERROR ) );
     }
 
     @Test
@@ -951,7 +1023,7 @@ class DeclarationValidatorTest
 
         Features features = new Features( geometries );
 
-        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null, null );
+        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null, null, null );
         List<CovariateDataset> covariates = List.of( covariateDataset );
 
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
@@ -2199,7 +2271,7 @@ class DeclarationValidatorTest
                                         .sources( List.of( source, anotherSource ) )
                                         .type( DataType.OBSERVATIONS )
                                         .build();
-        CovariateDataset covariate = new CovariateDataset( dataset, null, null, null );
+        CovariateDataset covariate = new CovariateDataset( dataset, null, null, null, null );
         List<CovariateDataset> covariates = List.of( covariate, covariate );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .covariates( covariates )

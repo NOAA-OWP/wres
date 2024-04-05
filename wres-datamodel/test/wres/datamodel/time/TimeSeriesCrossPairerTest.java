@@ -48,7 +48,7 @@ class TimeSeriesCrossPairerTest
      * An instance to test.
      */
 
-    private TimeSeriesCrossPairer<Pair<Integer, Integer>> instance;
+    private TimeSeriesCrossPairer<Pair<Integer, Integer>, Pair<Integer, Integer>> instance;
 
     @BeforeEach
     void runBeforeEachTest()
@@ -94,7 +94,7 @@ class TimeSeriesCrossPairerTest
                                                      .addEvent( fifth )
                                                      .build();
 
-        CrossPairs<Pair<Integer, Integer>> actual =
+        CrossPairs<Pair<Integer, Integer>, Pair<Integer, Integer>> actual =
                 this.instance.apply( List.of( firstSeries, firstSeries ), List.of( secondSeries, secondSeries ) );
 
         TimeSeries<Pair<Integer, Integer>> expectedSeriesMain =
@@ -111,7 +111,7 @@ class TimeSeriesCrossPairerTest
                                                      .addEvent( eighth )
                                                      .build();
 
-        CrossPairs<Pair<Integer, Integer>> expected =
+        CrossPairs<Pair<Integer, Integer>, Pair<Integer, Integer>> expected =
                 CrossPairs.of( List.of( expectedSeriesMain, expectedSeriesMain ),
                                List.of( expectedSeriesBase, expectedSeriesBase ) );
 
@@ -171,10 +171,11 @@ class TimeSeriesCrossPairerTest
                                                      .addEvent( fourth )
                                                      .build();
 
-        CrossPairs<Pair<Integer, Integer>> actual =
+        CrossPairs<Pair<Integer, Integer>, Pair<Integer, Integer>> actual =
                 this.instance.apply( List.of( firstSeries, secondSeries ), List.of( thirdSeries, fourthSeries ) );
 
-        CrossPairs<Pair<Integer, Integer>> expected = CrossPairs.of( List.of( firstSeries ), List.of( thirdSeries ) );
+        CrossPairs<Pair<Integer, Integer>, Pair<Integer, Integer>> expected =
+                CrossPairs.of( List.of( firstSeries ), List.of( thirdSeries ) );
 
         assertEquals( expected, actual );
     }
@@ -210,11 +211,11 @@ class TimeSeriesCrossPairerTest
                                                      .addEvent( second )
                                                      .build();
 
-        CrossPairs<Pair<Integer, Integer>> actual =
+        CrossPairs<Pair<Integer, Integer>, Pair<Integer, Integer>> actual =
                 this.instance.apply( List.of( firstSeries ), List.of( secondSeries ) );
 
 
-        CrossPairs<Pair<Integer, Integer>> expected =
+        CrossPairs<Pair<Integer, Integer>, Pair<Integer, Integer>> expected =
                 CrossPairs.of( List.of(), List.of() );
 
         assertEquals( expected, actual );
@@ -251,11 +252,11 @@ class TimeSeriesCrossPairerTest
                                                      .addEvent( second )
                                                      .build();
 
-        CrossPairs<Pair<Integer, Integer>> actual =
+        CrossPairs<Pair<Integer, Integer>, Pair<Integer, Integer>> actual =
                 this.instance.apply( List.of( firstSeries ), List.of( secondSeries ) );
 
 
-        CrossPairs<Pair<Integer, Integer>> expected =
+        CrossPairs<Pair<Integer, Integer>, Pair<Integer, Integer>> expected =
                 CrossPairs.of( List.of(), List.of() );
 
         assertEquals( expected, actual );
@@ -294,7 +295,7 @@ class TimeSeriesCrossPairerTest
                                                      .addEvent( third )
                                                      .build();
 
-        CrossPairs<Pair<Integer, Integer>> actual =
+        CrossPairs<Pair<Integer, Integer>, Pair<Integer, Integer>> actual =
                 this.instance.apply( List.of( firstSeries ), List.of( secondSeries ) );
 
         TimeSeries<Pair<Integer, Integer>> thirdSeries =
@@ -302,7 +303,7 @@ class TimeSeriesCrossPairerTest
                                                      .addEvent( second )
                                                      .build();
 
-        CrossPairs<Pair<Integer, Integer>> expected =
+        CrossPairs<Pair<Integer, Integer>, Pair<Integer, Integer>> expected =
                 CrossPairs.of( List.of( firstSeries ), List.of( thirdSeries ) );
 
         assertEquals( expected, actual );
@@ -311,7 +312,7 @@ class TimeSeriesCrossPairerTest
     @Test
     void testCrossPairTimeSeriesWithNoEqualReferenceTimesAndSomeEqualValidTimesWhenExactMatching()
     {
-        TimeSeriesCrossPairer<Pair<Integer, Integer>> crossPairerExact =
+        TimeSeriesCrossPairer<Pair<Integer, Integer>, Pair<Integer, Integer>> crossPairerExact =
                 TimeSeriesCrossPairer.of( CrossPairMethod.EXACT );
 
         Event<Pair<Integer, Integer>> first = Event.of( FIRST, Pair.of( 1, 1 ) );
@@ -342,10 +343,10 @@ class TimeSeriesCrossPairerTest
                                                      .addEvent( second )
                                                      .build();
 
-        CrossPairs<Pair<Integer, Integer>> actual =
+        CrossPairs<Pair<Integer, Integer>, Pair<Integer, Integer>> actual =
                 crossPairerExact.apply( List.of( firstSeries ), List.of( secondSeries ) );
 
-        CrossPairs<Pair<Integer, Integer>> expected =
+        CrossPairs<Pair<Integer, Integer>, Pair<Integer, Integer>> expected =
                 CrossPairs.of( List.of(), List.of() );
 
         assertEquals( expected, actual );
@@ -380,10 +381,10 @@ class TimeSeriesCrossPairerTest
                                                      .addEvent( second )
                                                      .build();
 
-        CrossPairs<Pair<Integer, Integer>> actual =
+        CrossPairs<Pair<Integer, Integer>, Pair<Integer, Integer>> actual =
                 this.instance.apply( List.of( firstSeries ), List.of( secondSeries ) );
 
-        CrossPairs<Pair<Integer, Integer>> expected =
+        CrossPairs<Pair<Integer, Integer>, Pair<Integer, Integer>> expected =
                 CrossPairs.of( List.of( firstSeries ), List.of( secondSeries ) );
 
         assertEquals( expected, actual );
@@ -477,11 +478,11 @@ class TimeSeriesCrossPairerTest
                                                      .addEvent( sixth )
                                                      .build();
 
-        CrossPairs<Pair<Integer, Integer>> actual =
+        CrossPairs<Pair<Integer, Integer>, Pair<Integer, Integer>> actual =
                 this.instance.apply( List.of( firstSeries, secondSeries ),
                                      List.of( thirdSeries, fourthSeries, fifthSeries, sixthSeries ) );
 
-        CrossPairs<Pair<Integer, Integer>> expected =
+        CrossPairs<Pair<Integer, Integer>, Pair<Integer, Integer>> expected =
                 CrossPairs.of( List.of( firstSeries, secondSeries ), List.of( thirdSeries, fifthSeries ) );
 
         assertEquals( expected, actual );
@@ -522,7 +523,8 @@ class TimeSeriesCrossPairerTest
 
         List<TimeSeries<Pair<Integer, Integer>>> firstThrow = List.of( firstSeries );
         List<TimeSeries<Pair<Integer, Integer>>> secondThrow = List.of( secondSeries );
-        TimeSeriesCrossPairer<Pair<Integer, Integer>> exact = TimeSeriesCrossPairer.of( CrossPairMethod.EXACT );
+        TimeSeriesCrossPairer<Pair<Integer, Integer>, Pair<Integer, Integer>> exact =
+                TimeSeriesCrossPairer.of( CrossPairMethod.EXACT );
         PairingException exception = assertThrows( PairingException.class,
                                                    () -> exact.apply( firstThrow,
                                                                       secondThrow ) );
@@ -830,9 +832,9 @@ class TimeSeriesCrossPairerTest
         List<TimeSeries<Double>> secondList =
                 List.of( g1, g2, g3, g4, g5, g6, g7, g8, g9, g10, g11, g12, g13, g14, g15, g16 );
 
-        TimeSeriesCrossPairer<Double> fuzzy = TimeSeriesCrossPairer.of( CrossPairMethod.FUZZY );
+        TimeSeriesCrossPairer<Double, Double> fuzzy = TimeSeriesCrossPairer.of( CrossPairMethod.FUZZY );
 
-        CrossPairs<Double> cross = fuzzy.apply( secondList, firstList );
+        CrossPairs<Double, Double> cross = fuzzy.apply( secondList, firstList );
 
         assertEquals( cross.getFirstPairs()
                            .size(), cross.getSecondPairs()

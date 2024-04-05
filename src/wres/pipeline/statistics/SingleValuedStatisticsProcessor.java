@@ -763,7 +763,7 @@ public class SingleValuedStatisticsProcessor extends StatisticsProcessor<Pool<Ti
 
     private void validate()
     {
-        //Check the metrics individually, as some may belong to multiple groups
+        // Check the metrics individually, as some may belong to multiple groups
         for ( MetricConstants next : super.getMetrics() )
         {
             // Thresholds required for dichotomous metrics

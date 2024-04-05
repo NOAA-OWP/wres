@@ -150,7 +150,7 @@ class EnsembleRetrieverFactoryInMemoryTest
                                                                     .name( VARIABLE_NAME )
                                                                     .build() )
                                           .build();
-        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null, DatasetOrientation.LEFT );
+        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null, DatasetOrientation.LEFT, null );
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
                                             .left( left )

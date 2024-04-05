@@ -1040,11 +1040,12 @@ public class DeclarationValidator
             EvaluationStatusEvent error =
                     EvaluationStatusEvent.newBuilder()
                                          .setStatusLevel( StatusLevel.ERROR )
-                                         .setEventMessage( "When declaring two or more 'covariates', the 'name' of each "
-                                                           + "'variable' must be declared explicitly, but one or more "
-                                                           + "of the 'covariates' had no declared 'variable' and "
-                                                           + "'name'. Please clarify the 'name' of the 'variable' for "
-                                                           + "each covariate and try again." )
+                                         .setEventMessage(
+                                                 "When declaring two or more 'covariates', the 'name' of each "
+                                                 + "'variable' must be declared explicitly, but one or more "
+                                                 + "of the 'covariates' had no declared 'variable' and "
+                                                 + "'name'. Please clarify the 'name' of the 'variable' for "
+                                                 + "each covariate and try again." )
                                          .build();
             events.add( error );
         }
@@ -1291,15 +1292,15 @@ public class DeclarationValidator
     {
         // Left dataset
         List<EvaluationStatusEvent> events =
-                new ArrayList<>( DeclarationValidator.datasetTimeScaleConsistentWithEvaluationTimeScale( declaration.left(),
-                                                                                                         DatasetOrientation.LEFT,
-                                                                                                         declaration.timeScale() ) );
+                new ArrayList<>( DeclarationValidator.datasetTimeScaleConsistentWithDesiredTimeScale( declaration.left(),
+                                                                                                      DatasetOrientation.LEFT,
+                                                                                                      declaration.timeScale() ) );
 
         // Right dataset
         List<EvaluationStatusEvent> rightEvents =
-                DeclarationValidator.datasetTimeScaleConsistentWithEvaluationTimeScale( declaration.right(),
-                                                                                        DatasetOrientation.RIGHT,
-                                                                                        declaration.timeScale() );
+                DeclarationValidator.datasetTimeScaleConsistentWithDesiredTimeScale( declaration.right(),
+                                                                                     DatasetOrientation.RIGHT,
+                                                                                     declaration.timeScale() );
 
         events.addAll( rightEvents );
 
@@ -1308,10 +1309,10 @@ public class DeclarationValidator
         {
             // Source timescale must be consistent with desired/evaluation timescale
             List<EvaluationStatusEvent> baselineEvents =
-                    DeclarationValidator.datasetTimeScaleConsistentWithEvaluationTimeScale( declaration.baseline()
-                                                                                                       .dataset(),
-                                                                                            DatasetOrientation.BASELINE,
-                                                                                            declaration.timeScale() );
+                    DeclarationValidator.datasetTimeScaleConsistentWithDesiredTimeScale( declaration.baseline()
+                                                                                                    .dataset(),
+                                                                                         DatasetOrientation.BASELINE,
+                                                                                         declaration.timeScale() );
 
             events.addAll( baselineEvents );
         }
@@ -1319,12 +1320,31 @@ public class DeclarationValidator
         // Covariates
         for ( CovariateDataset covariate : declaration.covariates() )
         {
+            TimeScale desiredScale = declaration.timeScale();
+
+            // Validate with respect to the target timescale function
+            if ( Objects.nonNull( covariate.rescaleFunction() )
+                 && Objects.nonNull( desiredScale ) )
+            {
+                wres.statistics.generated.TimeScale innerScale = desiredScale.timeScale()
+                                                                             .toBuilder()
+                                                                             .setFunction( covariate.rescaleFunction() )
+                                                                             .build();
+                desiredScale = new TimeScale( innerScale );
+            }
+
             List<EvaluationStatusEvent> covariateEvents =
-                    DeclarationValidator.datasetTimeScaleConsistentWithEvaluationTimeScale( covariate.dataset(),
-                                                                                            DatasetOrientation.COVARIATE,
-                                                                                            declaration.timeScale() );
+                    DeclarationValidator.datasetTimeScaleConsistentWithDesiredTimeScale( covariate.dataset(),
+                                                                                         DatasetOrientation.COVARIATE,
+                                                                                         desiredScale );
 
             events.addAll( covariateEvents );
+
+            // Can only define a rescale function when there is an evaluation timescale
+            List<EvaluationStatusEvent> covariateRescale =
+                    DeclarationValidator.covariateRescaleFunctionIsConsistent( covariate, declaration );
+
+            events.addAll( covariateRescale );
         }
 
         // There are extra constraints on the evaluation timescale, so check those
@@ -1354,15 +1374,61 @@ public class DeclarationValidator
     }
 
     /**
-     * Checks that any declared time-scaled associated with the dataset is consistent with the evaluation timescale.
-     * @param dataset the dataset
-     * @param orientation the dataset orientation
-     * @param evaluationTimeScale the evaluation timescale
+     * Checks that an evaluation timescale is declared when a covariate dataset includes a rescale function.
+     * @param dataset the covariate dataset
+     * @param declaration the declaration
      * @return the validation events encountered
      */
-    private static List<EvaluationStatusEvent> datasetTimeScaleConsistentWithEvaluationTimeScale( Dataset dataset,
-                                                                                                  DatasetOrientation orientation,
-                                                                                                  TimeScale evaluationTimeScale )
+    private static List<EvaluationStatusEvent> covariateRescaleFunctionIsConsistent( CovariateDataset dataset,
+                                                                                     EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        if ( Objects.nonNull( dataset.rescaleFunction() )
+             && Objects.isNull( declaration.timeScale() ) )
+        {
+            String extra = "";
+
+            if ( Objects.nonNull( dataset.dataset() )
+                 && Objects.nonNull( dataset.dataset()
+                                            .variable() )
+                 && Objects.nonNull( dataset.dataset()
+                                            .variable()
+                                            .name() ) )
+            {
+                extra = "for variable '" + dataset.dataset()
+                                                  .variable()
+                                                  .name() + "' ";
+            }
+
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "Discovered a covariate dataset "
+                                                             + extra
+                                                             + "with a 'rescale_function' of '"
+                                                             + dataset.rescaleFunction()
+                                                             + "', but the evaluation 'time_scale' was missing, "
+                                                             + "which is not allowed. Please declare an evaluation "
+                                                             + "'time_scale' or remove the 'rescale_function' from "
+                                                             + "the covariate dataset and try again." )
+                                           .build();
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that any declared timescale associated with the dataset is consistent with the evaluation timescale.
+     * @param dataset the dataset
+     * @param orientation the dataset orientation
+     * @param desiredTimeScale the evaluation timescale
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> datasetTimeScaleConsistentWithDesiredTimeScale( Dataset dataset,
+                                                                                               DatasetOrientation orientation,
+                                                                                               TimeScale desiredTimeScale )
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
@@ -1377,9 +1443,9 @@ public class DeclarationValidator
 
             // Source timescale must be consistent with desired/evaluation timescale
             List<EvaluationStatusEvent> scaleEvents =
-                    DeclarationValidator.datasetTimeScaleConsistentWithEvaluationTimeScale( timeScale,
-                                                                                            evaluationTimeScale,
-                                                                                            orientation );
+                    DeclarationValidator.datasetTimeScaleConsistentWithDesiredTimeScale( timeScale,
+                                                                                         desiredTimeScale,
+                                                                                         orientation );
             events.addAll( scaleEvents );
         }
 
@@ -3259,8 +3325,8 @@ public class DeclarationValidator
                                                       .filter( n -> n.featureNameFrom() == orientation )
                                                       // Ignore all data, which was added automagically
                                                       .filter( n -> !DeclarationUtilities.ALL_DATA_THRESHOLD.threshold()
-                                                                                                               .equals(
-                                                                                                                       n.threshold() ) )
+                                                                                                            .equals(
+                                                                                                                    n.threshold() ) )
                                                       .map( Threshold::feature )
                                                       .map( wres.statistics.generated.Geometry::getName )
                                                       .collect( Collectors.toSet() );
@@ -3588,17 +3654,17 @@ public class DeclarationValidator
     /**
      * Checks that the dataset timescale is consistent with the evaluation timescale.
      * @param sourceScale the source timescale
-     * @param evaluationScale the desired timescale
+     * @param desiredScale the desired timescale
      * @param orientation the dataset context to help with messaging
      * @return the validation events encountered
      */
-    private static List<EvaluationStatusEvent> datasetTimeScaleConsistentWithEvaluationTimeScale( TimeScale sourceScale,
-                                                                                                  TimeScale evaluationScale,
-                                                                                                  DatasetOrientation orientation )
+    private static List<EvaluationStatusEvent> datasetTimeScaleConsistentWithDesiredTimeScale( TimeScale sourceScale,
+                                                                                               TimeScale desiredScale,
+                                                                                               DatasetOrientation orientation )
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
-        if ( Objects.isNull( sourceScale ) || Objects.isNull( evaluationScale ) )
+        if ( Objects.isNull( sourceScale ) || Objects.isNull( desiredScale ) )
         {
             LOGGER.debug( "Not checking the consistency of the dataset time scale and the evaluation time scale for "
                           + "the {} dataset because one or both of the time scales were missing.", orientation );
@@ -3607,17 +3673,24 @@ public class DeclarationValidator
         }
 
         wres.statistics.generated.TimeScale sourceScaleInner = sourceScale.timeScale();
-        wres.statistics.generated.TimeScale evaluationScaleInner = evaluationScale.timeScale();
+        wres.statistics.generated.TimeScale evaluationScaleInner = desiredScale.timeScale();
 
         String orientationString = DeclarationValidator.getTimeScaleOrientationString( orientation, false );
 
         // If the desired scale is a sum, the existing scale must be instantaneous or the function must be a sum or mean
-        if ( evaluationScale.timeScale()
-                            .getFunction() == TimeScaleFunction.TOTAL
+        if ( desiredScale.timeScale()
+                         .getFunction() == TimeScaleFunction.TOTAL
              && !DeclarationValidator.isInstantaneous( sourceScaleInner )
              && sourceScaleInner.getFunction() != TimeScaleFunction.MEAN
              && sourceScaleInner.getFunction() != TimeScaleFunction.TOTAL )
         {
+            String extra = "";
+
+            if ( orientation == DatasetOrientation.COVARIATE )
+            {
+                extra = "and/or the 'rescale_function' associated with each covariate dataset";
+            }
+
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.ERROR )
@@ -3625,8 +3698,10 @@ public class DeclarationValidator
                                                              + "time scale associated with "
                                                              + orientationString
                                                              + " dataset does not have a supported time scale "
-                                                             + "function from  which to compute this total. Please "
-                                                             + "change the evaluation 'time_scale' and try again." )
+                                                             + "function from which to compute this total. Please "
+                                                             + "check the evaluation 'time_scale' "
+                                                             + extra
+                                                             + " and try again." )
                                            .build();
             events.add( event );
         }

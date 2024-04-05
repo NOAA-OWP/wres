@@ -1096,7 +1096,7 @@ class DeclarationInterpolatorTest
                                                          .dataset( this.predictedDataset )
                                                          .build();
 
-        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null, null );
+        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null, null, null );
         List<CovariateDataset> covariates = List.of( covariate );
         EvaluationDeclaration evaluation =
                 EvaluationDeclarationBuilder.builder()
@@ -1314,7 +1314,7 @@ class DeclarationInterpolatorTest
     void testInterpolateVariableNames()
     {
         BaselineDataset baseline = new BaselineDataset( this.observedDataset, null, null );
-        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null, null );
+        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null, null, null );
         List<CovariateDataset> covariates = List.of( covariate );
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
@@ -1357,7 +1357,7 @@ class DeclarationInterpolatorTest
     void testInterpolateVariableNamesForTooManyDeclaredCovariatesProducesError()
     {
         BaselineDataset baseline = new BaselineDataset( this.observedDataset, null, null );
-        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null, null );
+        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null, null, null );
         List<CovariateDataset> covariates = List.of( covariate, covariate );
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
@@ -1390,7 +1390,7 @@ class DeclarationInterpolatorTest
     void testInterpolateVariableNamesForTooManyIngestedCovariatesProducesError()
     {
         BaselineDataset baseline = new BaselineDataset( this.observedDataset, null, null );
-        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null, null );
+        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null, null, null );
         List<CovariateDataset> covariates = List.of( covariate );
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
@@ -1465,7 +1465,7 @@ class DeclarationInterpolatorTest
                                           .sources( List.of( source ) )
                                           .build();
 
-        CovariateDataset covariate = new CovariateDataset( rightData, null, null, null );
+        CovariateDataset covariate = new CovariateDataset( rightData, null, null, null, null );
         List<CovariateDataset> covariates = List.of( covariate );
         EvaluationDeclaration evaluation =
                 EvaluationDeclarationBuilder.builder()

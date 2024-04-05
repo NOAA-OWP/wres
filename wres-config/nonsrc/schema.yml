@@ -387,6 +387,9 @@ definitions:
       # The minimum value of the covariate
       maximum:
         type: number
+      # Target time-scale function, if not the evaluation time-scale function
+      rescale_function:
+        "$ref": "#/definitions/TimeScaleFunctionEnum"
 
   Source:
     title: A data source.

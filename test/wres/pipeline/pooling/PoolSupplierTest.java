@@ -1222,7 +1222,7 @@ class PoolSupplierTest
                                                         poolOneWindow,
                                                         this.desiredTimeScale );
 
-        TimeSeriesCrossPairer<Pair<Double, Double>> crossPairer = TimeSeriesCrossPairer.of();
+        TimeSeriesCrossPairer<Pair<Double, Double>,Pair<Double, Double>> crossPairer = TimeSeriesCrossPairer.of();
         CrossPair crossPair = new CrossPair( CrossPairMethod.EXACT, CrossPairScope.ACROSS_FEATURES );
 
         Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolOneSupplier =
@@ -1319,7 +1319,7 @@ class PoolSupplierTest
 
         Function<Set<Feature>, BaselineGenerator<Double>> featuredBaselineGenerator = in -> baselineGenerator;
 
-        TimeSeriesCrossPairer<Pair<Double, Double>> crossPairer = TimeSeriesCrossPairer.of();
+        TimeSeriesCrossPairer<Pair<Double, Double>,Pair<Double, Double>> crossPairer = TimeSeriesCrossPairer.of();
         CrossPair crossPair = new CrossPair( CrossPairMethod.EXACT, null );
 
         Supplier<Pool<TimeSeries<Pair<Double, Double>>>> poolOneSupplier =

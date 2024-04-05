@@ -2736,96 +2736,105 @@ public class DeclarationInterpolator
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
-        // Covariate dataset(s)?
-        if ( !builder.covariates()
-                     .isEmpty() )
+        // No covariate dataset(s)?
+        if ( builder.covariates()
+                    .isEmpty() )
         {
-            // If there is more than one covariate, all names must be declared
+            LOGGER.debug( "No covariates were discovered with variable names to interpolate." );
+        }
+        // If there is more than one covariate, all names must be declared
+        else if ( builder.covariates()
+                         .size() > 1 )
+        {
             if ( builder.covariates()
-                        .size() > 1
-                 && builder.covariates()
-                           .stream()
-                           .anyMatch( c -> Objects.isNull( c.dataset()
-                                                            .variable() )
-                                           || Objects.isNull( c.dataset()
-                                                               .variable()
-                                                               .name() ) ) )
+                        .stream()
+                        .anyMatch( c -> Objects.isNull( c.dataset()
+                                                         .variable() )
+                                        || Objects.isNull( c.dataset()
+                                                            .variable()
+                                                            .name() ) ) )
             {
                 EvaluationStatusEvent error =
                         EvaluationStatusEvent.newBuilder()
                                              .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
-                                             .setEventMessage( "When declaring two or more 'covariates', the 'name' "
-                                                               + "of each 'variable' must be declared explicitly, but "
-                                                               + "one or more of the 'covariates' had no declared "
-                                                               + "'variable' and 'name'. Please clarify the 'name' of "
-                                                               + "the 'variable' for each covariate and try again." )
+                                             .setEventMessage(
+                                                     "When declaring two or more 'covariates', the 'name' "
+                                                     + "of each 'variable' must be declared explicitly, but "
+                                                     + "one or more of the 'covariates' had no declared "
+                                                     + "'variable' and 'name'. Please clarify the 'name' of "
+                                                     + "the 'variable' for each covariate and try again." )
                                              .build();
                 events.add( error );
             }
-            // If there is one covariate declared and multiple ingested names, the covariate name must be declared
-            else if ( builder.covariates()
-                             .size() == 1
-                      && variableNames.covariateVariableNames()
-                                      .size() > 1
-                      && builder.covariates()
-                                .stream()
-                                .anyMatch( c -> Objects.isNull( c.dataset()
-                                                                 .variable() )
-                                                || Objects.isNull( c.dataset()
-                                                                    .variable()
-                                                                    .name() ) ) )
-            {
-                EvaluationStatusEvent error =
-                        EvaluationStatusEvent.newBuilder()
-                                             .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
-                                             .setEventMessage( "Discovered a 'covariate' dataset that contains more "
-                                                               + "than one variable: "
-                                                               + variableNames.covariateVariableNames()
-                                                               + ". However, the declaration does not identify which "
-                                                               + "of these variables should be used. Please declare "
-                                                               + "the 'name' of the 'variable' to use and try again." )
-                                             .build();
-                events.add( error );
-            }
-            // Interpolate the name for the covariate dataset
             else
             {
-                String oldCovariateName = null;
-                if ( DeclarationInterpolator.hasVariableName( builder.covariates()
-                                                                     .get( 0 )
-                                                                     .dataset() ) )
-                {
-                    oldCovariateName = builder.covariates()
-                                              .get( 0 )
-                                              .dataset()
-                                              .variable()
-                                              .name();
-                }
-
-                DatasetBuilder covariateDatasetBuilder = DatasetBuilder.builder( builder.covariates()
-                                                                                        .get( 0 )
-                                                                                        .dataset() );
-                CovariateDatasetBuilder covariateBuilder = CovariateDatasetBuilder.builder( builder.covariates()
-                                                                                                   .get( 0 ) );
-                VariableBuilder covariateVariable = VariableBuilder.builder();
-                if ( Objects.nonNull( covariateDatasetBuilder
-                                              .variable() ) )
-                {
-                    covariateVariable = VariableBuilder.builder( covariateDatasetBuilder.variable() );
-                }
-
-                List<EvaluationStatusEvent> covariateEvents =
-                        DeclarationInterpolator.interpolateVariableNames( oldCovariateName,
-                                                                          variableNames.covariateVariableNames(),
-                                                                          covariateVariable::name,
-                                                                          DatasetOrientation.COVARIATE );
-                covariateDatasetBuilder.variable( covariateVariable.build() );
-                covariateBuilder.dataset( covariateDatasetBuilder.build() );
-                builder.covariates( List.of( covariateBuilder.build() ) );
-
-                // Add the covariate events
-                events.addAll( covariateEvents );
+                LOGGER.debug( "Discovered multiple covariates, each with a declared variable named, so the variable "
+                              + "names were not interpolated." );
             }
+        }
+        // If there is one covariate declared and multiple ingested names, the covariate name must be declared
+        else if ( builder.covariates()
+                         .size() == 1
+                  && variableNames.covariateVariableNames()
+                                  .size() > 1
+                  && builder.covariates()
+                            .stream()
+                            .anyMatch( c -> Objects.isNull( c.dataset()
+                                                             .variable() )
+                                            || Objects.isNull( c.dataset()
+                                                                .variable()
+                                                                .name() ) ) )
+        {
+            EvaluationStatusEvent error =
+                    EvaluationStatusEvent.newBuilder()
+                                         .setStatusLevel( EvaluationStatusEvent.StatusLevel.ERROR )
+                                         .setEventMessage( "Discovered a 'covariate' dataset that contains more "
+                                                           + "than one variable: "
+                                                           + variableNames.covariateVariableNames()
+                                                           + ". However, the declaration does not identify which "
+                                                           + "of these variables should be used. Please declare "
+                                                           + "the 'name' of the 'variable' to use and try again." )
+                                         .build();
+            events.add( error );
+        }
+        // Interpolate the name for the covariate dataset
+        else
+        {
+            String oldCovariateName = null;
+            if ( DeclarationInterpolator.hasVariableName( builder.covariates()
+                                                                 .get( 0 )
+                                                                 .dataset() ) )
+            {
+                oldCovariateName = builder.covariates()
+                                          .get( 0 )
+                                          .dataset()
+                                          .variable()
+                                          .name();
+            }
+
+            DatasetBuilder covariateDatasetBuilder = DatasetBuilder.builder( builder.covariates()
+                                                                                    .get( 0 )
+                                                                                    .dataset() );
+            CovariateDatasetBuilder covariateBuilder = CovariateDatasetBuilder.builder( builder.covariates()
+                                                                                               .get( 0 ) );
+            VariableBuilder covariateVariable = VariableBuilder.builder();
+            if ( Objects.nonNull( covariateDatasetBuilder
+                                          .variable() ) )
+            {
+                covariateVariable = VariableBuilder.builder( covariateDatasetBuilder.variable() );
+            }
+
+            List<EvaluationStatusEvent> covariateEvents =
+                    DeclarationInterpolator.interpolateVariableNames( oldCovariateName,
+                                                                      variableNames.covariateVariableNames(),
+                                                                      covariateVariable::name,
+                                                                      DatasetOrientation.COVARIATE );
+            covariateDatasetBuilder.variable( covariateVariable.build() );
+            covariateBuilder.dataset( covariateDatasetBuilder.build() );
+            builder.covariates( List.of( covariateBuilder.build() ) );
+
+            // Add the covariate events
+            events.addAll( covariateEvents );
         }
 
         return Collections.unmodifiableList( events );
