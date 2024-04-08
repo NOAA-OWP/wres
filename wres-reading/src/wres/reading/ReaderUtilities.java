@@ -56,6 +56,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.units.UnitMapper;
+import wres.http.WebClient;
 import wres.reading.DataSource.DataDisposition;
 import wres.reading.wrds.geography.FeatureFiller;
 import wres.statistics.generated.GeometryTuple;
@@ -839,6 +840,26 @@ public class ReaderUtilities
         LOGGER.debug( "Delaying retrieval of chunk until more tasks have been submitted." );
 
         return List.of();
+    }
+
+    /**
+     * Closes a web client response.
+     * @param response the response
+     */
+
+    public static void closeWebClientResponse( WebClient.ClientResponse response )
+    {
+        if ( Objects.nonNull( response ) )
+        {
+            try
+            {
+                response.close();
+            }
+            catch ( IOException e )
+            {
+                LOGGER.warn( "Failed to close a web client response.", e );
+            }
+        }
     }
 
     /**

@@ -139,7 +139,7 @@ class WrdsNwmReaderTest
                                                     + "      ]\n"
                                                     + "    }\n"
                                                     + "  ]\n"
-                                                    + "}";
+                                                    + "}\n";
 
     /** Path used by GET for forecasts. */
     private static final String FORECAST_PATH = "/api/v1/nwm/ops/short_range/streamflow/nwm_feature_id/"
@@ -207,7 +207,7 @@ class WrdsNwmReaderTest
                                                     + "      ]\n"
                                                     + "    }\n"
                                                     + "  ]\n"
-                                                    + "}";
+                                                    + "}\n";
 
     private static final String GET = "GET";
 
@@ -295,6 +295,11 @@ class WrdsNwmReaderTest
     @Test
     void testReadReturnsOneAnalysisTimeSeriesAfterTwoDroppedConnections()
     {
+        LOGGER.debug( "This unit test produces expected exceptions from dropped connections. Ignore any "
+                      + "java.io.EOFException or similar that originates from these unit tests during error recovery, "
+                      + "prior to success. Two of these exceptions can be expected because a connection is "
+                      + "intentionally dropped twice before recovery." );
+
         this.mockServer.when( HttpRequest.request()
                                          .withPath( ANALYSIS_PATH )
                                          .withMethod( GET ),
