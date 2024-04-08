@@ -418,8 +418,9 @@ public class WrdsAhpsReader implements TimeSeriesReader
         {
             try
             {
-                // Stream is closed at a higher level
-                WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() );
+                // Stream is closed on completion of streaming data, unless there is an error response
+                WebClient.ClientResponse response =
+                        WEB_CLIENT.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() );
                 int httpStatus = response.getStatusCode();
 
                 // Is this too broad? Perhaps a 404 only, else a read exception. The problem is that "no data" is
@@ -431,6 +432,9 @@ public class WrdsAhpsReader implements TimeSeriesReader
                     LOGGER.warn( "Treating HTTP response code {} as no data found from URI {}.",
                                  httpStatus,
                                  uri );
+
+                    // Error response, so clean up now
+                    ReaderUtilities.closeWebClientResponse( response );
 
                     // Flag to the caller as no data
                     return null;

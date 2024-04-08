@@ -692,8 +692,9 @@ public class WrdsNwmReader implements TimeSeriesReader
         {
             try
             {
-                // Stream us closed at a higher level
-                WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() );
+                // Stream is closed on completion of streaming data, unless there is an error response
+                WebClient.ClientResponse response =
+                        WEB_CLIENT.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() );
                 int httpStatus = response.getStatusCode();
 
                 // Read an error if possible
@@ -711,6 +712,9 @@ public class WrdsNwmReader implements TimeSeriesReader
                                      uri,
                                      possibleError );
                     }
+
+                    // Error response, so clean up now
+                    ReaderUtilities.closeWebClientResponse( response );
 
                     // Flag to the caller as no data
                     return null;

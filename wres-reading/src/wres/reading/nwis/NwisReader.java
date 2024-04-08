@@ -459,8 +459,9 @@ public class NwisReader implements TimeSeriesReader
         {
             if ( ReaderUtilities.isWebSource( uri ) )
             {
-                // Stream is closed at a higher level
-                WebClient.ClientResponse response = WEB_CLIENT.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() );
+                // Stream is closed on completion of streaming data, unless there is an error response
+                WebClient.ClientResponse response =
+                        WEB_CLIENT.getFromWeb( uri, WebClientUtils.getDefaultRetryStates() );
                 int httpStatus = response.getStatusCode();
 
                 if ( httpStatus == 404 )
@@ -469,10 +470,16 @@ public class NwisReader implements TimeSeriesReader
                                  httpStatus,
                                  uri );
 
+                    // Error response, so clean up now
+                    ReaderUtilities.closeWebClientResponse( response );
+
                     return null;
                 }
                 else if ( !( httpStatus >= 200 && httpStatus < 300 ) )
                 {
+                    // Error response, so clean up now
+                    ReaderUtilities.closeWebClientResponse( response );
+
                     throw new ReadException( "Failed to read data from '"
                                              + uri
                                              +
