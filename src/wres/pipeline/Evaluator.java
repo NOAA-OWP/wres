@@ -35,9 +35,6 @@ import wres.config.MultiDeclarationFactory;
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.EvaluationDeclaration;
-import wres.config.yaml.components.EvaluationDeclarationBuilder;
-import wres.config.yaml.components.FeatureGroups;
-import wres.config.yaml.components.Features;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
@@ -685,21 +682,6 @@ public class Evaluator
             // feature groups are part of the singletons list for evaluation, but do not publish statistics for these
             // singleton features unless they were declared explicitly
             Set<FeatureGroup> doNotPublish = project.getFeatureGroupsForWhichStatisticsShouldNotBePublished();
-
-            // Adjust the declaration to include the fully described features based on the ingested data
-            Features dataFeatures = new Features( unwrappedFeatures );
-            FeatureGroups dataFeatureGroups = new FeatureGroups( featureGroups.stream()
-                                                                              .map( FeatureGroup::getGeometryGroup )
-                                                                              // Non-singletons only
-                                                                              .filter( g -> g.getGeometryTuplesList()
-                                                                                             .size()
-                                                                                            > 1 )
-                                                                              .collect( Collectors.toSet() ) );
-            declarationWithFeaturesAndThresholds =
-                    EvaluationDeclarationBuilder.builder( declarationWithFeaturesAndThresholds )
-                                                .features( dataFeatures )
-                                                .featureGroups( dataFeatureGroups )
-                                                .build();
 
             // Get the atomic metrics and thresholds for processing, each group representing a distinct processing task.
             // Ensure that named features correspond to the features associated with the data rather than declaration,

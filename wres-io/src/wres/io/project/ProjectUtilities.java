@@ -31,7 +31,9 @@ import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.Features;
 import wres.config.yaml.components.SpatialMask;
 import wres.config.yaml.components.TimeScale;
 import wres.config.yaml.components.TimeScaleLenience;
@@ -708,6 +710,8 @@ class ProjectUtilities
      * @param variableNames the analyzed variable names
      * @param measurementUnit the analyzed measurement unit
      * @param timeScale the analyzed evaluation timescale, possibly null
+     * @param features the features
+     * @param featureGroups the feature groups
      * @return the augmented declaration
      * @throws NullPointerException if any required input is null
      */
@@ -715,12 +719,16 @@ class ProjectUtilities
                                               List<IngestResult> ingestResults,
                                               VariableNames variableNames,
                                               String measurementUnit,
-                                              TimeScaleOuter timeScale )
+                                              TimeScaleOuter timeScale,
+                                              Set<FeatureTuple> features,
+                                              Set<FeatureGroup> featureGroups )
     {
         Objects.requireNonNull( declaration );
         Objects.requireNonNull( ingestResults );
         Objects.requireNonNull( variableNames );
         Objects.requireNonNull( measurementUnit );
+        Objects.requireNonNull( features );
+        Objects.requireNonNull( featureGroups );
 
         // Organize the data types by dataset orientation, including linked types
         Map<DatasetOrientation, Set<DataType>> dataTypes = new EnumMap<>( DatasetOrientation.class );
@@ -799,6 +807,24 @@ class ProjectUtilities
                                                            measurementUnit,
                                                            innerTimeScale,
                                                            true );
+
+        // Adjust the declaration to include the fully described features based on the ingested data
+        Set<GeometryTuple> unwrappedFeatures = features.stream()
+                                                       .map( FeatureTuple::getGeometryTuple )
+                                                       .collect( Collectors.toUnmodifiableSet() );
+
+        Features dataFeatures = new Features( unwrappedFeatures );
+        FeatureGroups dataFeatureGroups = new FeatureGroups( featureGroups.stream()
+                                                                          .map( FeatureGroup::getGeometryGroup )
+                                                                          // Non-singletons only
+                                                                          .filter( g -> g.getGeometryTuplesList()
+                                                                                         .size()
+                                                                                        > 1 )
+                                                                          .collect( Collectors.toSet() ) );
+        declaration = EvaluationDeclarationBuilder.builder( declaration )
+                                                  .features( dataFeatures )
+                                                  .featureGroups( dataFeatureGroups )
+                                                  .build();
 
         return declaration;
     }

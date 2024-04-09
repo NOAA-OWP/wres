@@ -153,7 +153,9 @@ public class InMemoryProject implements Project
                                                                                ingestResults,
                                                                                variableNames,
                                                                                this.measurementUnit,
-                                                                               this.desiredTimeScale );
+                                                                               this.desiredTimeScale,
+                                                                               this.features,
+                                                                               this.featureGroups );
         ProjectUtilities.validate( innerDeclaration );
         this.declaration = innerDeclaration;
 
