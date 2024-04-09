@@ -538,19 +538,15 @@ class EvaluationUtilities
     }
 
     /**
-     * @param project the project
+     * @param featureGroups the feature groups
      * @param featuresWithExplicitThresholds features with explicit thresholds (not the implicit "all data" threshold)
-     * @return the feature groups
      */
 
-    static Set<FeatureGroup> getFeatureGroups( Project project,
-                                               Set<FeatureTuple> featuresWithExplicitThresholds )
+    static void validateThresholdsForFeatureGroups( Set<FeatureGroup> featureGroups,
+                                                    Set<FeatureTuple> featuresWithExplicitThresholds )
     {
-        Objects.requireNonNull( project );
+        Objects.requireNonNull( featureGroups );
         Objects.requireNonNull( featuresWithExplicitThresholds );
-
-        // Get the baseline groups in a sorted set
-        Set<FeatureGroup> featureGroups = new TreeSet<>( project.getFeatureGroups() );
 
         // Log a warning about any discrepancies between features with thresholds and features to evaluate
         if ( LOGGER.isWarnEnabled() )
@@ -589,8 +585,6 @@ class EvaluationUtilities
                              missing );
             }
         }
-
-        return Collections.unmodifiableSet( featureGroups );
     }
 
     /**

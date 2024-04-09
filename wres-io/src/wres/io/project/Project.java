@@ -15,9 +15,14 @@ import wres.io.retrieving.DataAccessException;
 import wres.datamodel.time.TimeWindowOuter;
 
 /**
- * Provides an interface between the project declaration and the ingested time-series data, augmenting and validating
- * the declaration in the context of the ingested data. Specifically, {@link #getDeclaration()} provides an interface
- * to the augmented declaration.
+ * <p>Wraps an {@link EvaluationDeclaration} and updates it to reflect the information ingested from time-series data
+ * sources. Specifically, {@link #getDeclaration()} provides an interface to the augmented declaration. Also includes
+ * several helpers to assist with the use of a project declaration through time-series data retrieval.
+ *
+ * <p>Implementation notes:
+ *
+ * <p>Concrete implementations decide how to access information about the time-series data, depending on how/where the
+ * time-series data is stored (e.g., in a database).
  *
  * @author James Brown
  */

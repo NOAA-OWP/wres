@@ -28,6 +28,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -863,11 +864,11 @@ public class ReaderUtilities
     }
 
     /**
-     * Attempts to acquire thresholds from WRDS and populate them in the supplied declaration, as needed.
+     * Attempts to acquire thresholds from an external source and populate them in the supplied declaration, as needed.
      * @param thresholdSource the threshold source
      * @param evaluation the declaration to adjust
      * @param unitMapper a unit mapper to map the threshold values to correct units
-     * @return the adjusted declaration, including any thresholds acquired from WRDS
+     * @return the adjusted declaration, including any thresholds acquired from the external source
      */
     private static EvaluationDeclaration fillThresholds( ThresholdSource thresholdSource,
                                                          EvaluationDeclaration evaluation,
@@ -888,21 +889,19 @@ public class ReaderUtilities
 
         if ( Objects.isNull( orientation ) )
         {
-            throw new ThresholdReadingException( "The 'feature_name_from' is missing from the 'threshold_service' "
-                                                 + "declaration, which is not allowed because the feature service "
-                                                 + "request must use feature names with a prescribed feature "
-                                                 + "authority." );
+            throw new ThresholdReadingException( "The 'feature_name_from' is missing from the 'threshold_sources', "
+                                                 + "which is not allowed." );
         }
 
         // If the orientation for service thresholds is 'BASELINE', then a baseline must be present
         if ( orientation == DatasetOrientation.BASELINE && !DeclarationUtilities.hasBaseline( evaluation ) )
         {
-            throw new ThresholdReadingException( "The 'threshold_service' declaration requested that feature names "
+            throw new ThresholdReadingException( "The 'threshold_sources' declaration requested that feature names "
                                                  + "with an orientation of '"
                                                  + DatasetOrientation.BASELINE
                                                  + "' are used to correlate features with thresholds, but no "
                                                  + "'baseline' dataset was discovered. Please add a 'baseline' dataset "
-                                                 + "or fix the 'feature_name_from' in the 'threshold_service' "
+                                                 + "or fix the 'feature_name_from' in the 'threshold_sources' "
                                                  + "declaration." );
         }
 
@@ -912,7 +911,7 @@ public class ReaderUtilities
         // No features?
         if ( features.isEmpty() )
         {
-            throw new ThresholdReadingException( "While attempting to read thresholds from the WRDS feature service, "
+            throw new ThresholdReadingException( "While attempting to read thresholds from an external source, "
                                                  + "discovered no features in the declaration for which thresholds "
                                                  + "could be acquired. Please add some features to the declaration "
                                                  + "using 'features', 'feature_groups' or 'feature_service' and try "
@@ -927,13 +926,13 @@ public class ReaderUtilities
              && features.stream()
                         .anyMatch( next -> !next.hasBaseline() ) )
         {
-            throw new ThresholdReadingException( "Discovered declaration for a 'threshold_service', which requests "
+            throw new ThresholdReadingException( "Discovered declaration for 'threshold_sources', which requests "
                                                  + "thresholds whose feature names have an orientation of '"
                                                  + DatasetOrientation.BASELINE
                                                  + "'. However, some features were discovered with a missing '"
                                                  + DatasetOrientation.BASELINE
                                                  + "' feature name. Please fix the 'feature_name_from' in the "
-                                                 + "'threshold_service' declaration or supply fully composed feature "
+                                                 + "'threshold_sources' declaration or supply fully composed feature "
                                                  + "tuples with an appropriate feature for the '"
                                                  + DatasetOrientation.BASELINE
                                                  + "' dataset." );
@@ -950,6 +949,23 @@ public class ReaderUtilities
                                                                              unitMapper,
                                                                              featureNames,
                                                                              featureAuthority );
+
+        // Check that some thresholds are available for features to evaluate
+        Set<String> intersection = thresholds.stream()
+                                             .map( t -> t.feature()
+                                                         .getName() )
+                                             .collect( Collectors.toCollection( TreeSet::new ) );
+        intersection.retainAll( featureNames );
+
+        if ( intersection.isEmpty() )
+        {
+            throw new ThresholdReadingException( "While reading thresholds from an external source, failed to discover "
+                                                 + "thresholds for any of the geographic features to evaluate. Please "
+                                                 + "ensure that each threshold source contains thresholds for at least "
+                                                 + "some of the geographic features to evaluate. The invalid threshold "
+                                                 + "source is: "
+                                                 + thresholdSource.uri() );
+        }
 
         LOGGER.trace( "Read the following thresholds from {}: {}.", thresholdSource.uri(), thresholds );
 
