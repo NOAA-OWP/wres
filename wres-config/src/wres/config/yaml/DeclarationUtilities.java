@@ -1058,7 +1058,7 @@ public class DeclarationUtilities
 
         Set<Threshold> thresholds = DeclarationUtilities.getThresholds( declaration );
 
-        // Get the names of left-ish features with thresholds
+        // Get the names of features with thresholds
         Set<String> leftFeatureNamesWithThresholds = thresholds.stream()
                                                                .filter( n -> n.featureNameFrom()
                                                                              == DatasetOrientation.LEFT )
@@ -2242,11 +2242,13 @@ public class DeclarationUtilities
             Set<GeometryTuple> filtered = features.stream()
                                                   .filter( retain )
                                                   .collect( Collectors.toSet() );
+
             // Set the new features
             Features filteredFeatures = new Features( filtered );
             builder.features( filteredFeatures );
 
-            if ( LOGGER.isWarnEnabled() && filtered.size() != features.size() )
+            if ( LOGGER.isWarnEnabled()
+                 && filtered.size() != features.size() )
             {
                 Set<GeometryTuple> copy = new HashSet<>( features );
                 copy.removeAll( filtered );
@@ -2292,7 +2294,8 @@ public class DeclarationUtilities
                 }
             }
 
-            if ( LOGGER.isWarnEnabled() && !groupsWithAdjustments.isEmpty() )
+            if ( LOGGER.isWarnEnabled()
+                 && !groupsWithAdjustments.isEmpty() )
             {
                 LOGGER.warn( "Discovered {} feature group(s) where thresholds were not available for one or more of "
                              + "their component features. These features have been removed from the evaluation. "

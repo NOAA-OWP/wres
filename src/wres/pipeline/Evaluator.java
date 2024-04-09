@@ -561,8 +561,8 @@ public class Evaluator
 
             // Open an evaluation, to be closed on completion or stopped on exception
 
-            // Look up any needed feature correlations and thresholds, generate a new declaration. These are needed for
-            // reading and ingest, as well as subsequent steps, so perform this upfront: #116208
+            // Look up any needed feature correlations and generate a new declaration. These features are needed for
+            // reading/ingest (e.g., to form requests to data services), so perform this upfront: #116208
             EvaluationDeclaration declarationWithFeatures = ReaderUtilities.readAndFillFeatures( declaration );
 
             // Update the small bag-o-state
@@ -575,6 +575,7 @@ public class Evaluator
 
             LOGGER.debug( "Beginning ingest of time-series data..." );
 
+            // A project is an "enhanced" project declaration that reflects information learned during ingest
             Project project;
 
             // Is the evaluation in a database? If so, use implementations that support a database
@@ -607,7 +608,8 @@ public class Evaluator
                     griddedFeatures = griddedFeaturesBuilder.build();
                 }
 
-                // Get the project, which provides an interface to the underlying store of time-series data
+                // Get the project, which provides an interface to the declaration, augmented/updated to reflect the
+                // information ingested from the time-series data sources
                 project = Projects.getProject( databaseServices.database(),
                                                declarationWithFeatures,
                                                caches,
@@ -640,6 +642,9 @@ public class Evaluator
                 evaluationDetails = EvaluationDetailsBuilder.builder( evaluationDetails )
                                                             .timeSeriesStore( timeSeriesStore )
                                                             .build();
+
+                // Get the project, which provides an interface to the declaration, augmented/updated to reflect the
+                // information ingested from the time-series data sources
                 project = Projects.getProject( declarationWithFeatures,
                                                timeSeriesStore,
                                                ingestResults );
@@ -658,7 +663,9 @@ public class Evaluator
             UnitMapper unitMapper = UnitMapper.of( desiredMeasurementUnit,
                                                    declaration.unitAliases() );
 
-            // Read external thresholds into the declaration
+            // Read external thresholds into the declaration. Unlike features, which georeference time-series datasets,
+            // thresholds are orthogonal to time-series datasets and are not required during reading/ingest. Read them
+            // now and update the declaration to reflect them
             EvaluationDeclaration declarationWithFeaturesAndThresholds =
                     ReaderUtilities.readAndFillThresholds( declarationWithFeatures, unitMapper );
 
@@ -670,8 +677,9 @@ public class Evaluator
                                                            .map( FeatureTuple::getGeometryTuple )
                                                            .collect( Collectors.toUnmodifiableSet() );
 
-            // Create the feature groups
-            Set<FeatureGroup> featureGroups = EvaluationUtilities.getFeatureGroups( project, features );
+            // Create the feature groups and validate the thresholds against the groups
+            Set<FeatureGroup> featureGroups = new TreeSet<>( project.getFeatureGroups() );
+            EvaluationUtilities.validateThresholdsForFeatureGroups( featureGroups, features );
 
             // If summary statistics are required for multi-feature groups, ensure that all the singletons within
             // feature groups are part of the singletons list for evaluation, but do not publish statistics for these
