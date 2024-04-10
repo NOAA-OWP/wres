@@ -31,8 +31,6 @@ public class Scenario504
                     Path.of( "FAKE2_FAKE2_FAKE2_MEAN_ERROR.csv" ),
                     Path.of( "FAKE2_FAKE2_FAKE2_MEAN_SQUARE_ERROR_SKILL_SCORE.csv" ),
                     Path.of( "FAKE2_FAKE2_FAKE2_SAMPLE_SIZE.csv" ),
-                    Path.of( "evaluation.csvt" ),
-                    Path.of( "evaluation.csv.gz" ),
                     Path.of( "pairs.csv.gz" ) );
 
     private ScenarioInformation scenarioInfo;
