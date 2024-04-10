@@ -52,6 +52,7 @@
     <outputs>
         <destination type="pairs" decimalFormat="0.00" />
         <destination type="numeric" decimalFormat="0.00" />
+        <destination type="csv2" decimalFormat="0.000000" />
     </outputs>
 
 </project>
