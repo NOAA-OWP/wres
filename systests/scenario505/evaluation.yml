@@ -39,3 +39,4 @@ duration_format: hours
 output_formats:
   - csv
   - pairs
+  - csv2

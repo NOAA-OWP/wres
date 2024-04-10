@@ -306,7 +306,11 @@ public class ScenarioHelper
                     //Pairs has its own method because it has to sort the lines.
                     if ( outputFileName.endsWith( "pairs.csv.gz" ) )
                     {
-                        assertOutputPairsEqualExpectedPairs( outputFilePath.toFile(), benchmarkFile );
+                        assertOutputZippedEqualExpectedPairs( outputFilePath.toFile(), benchmarkFile );
+                    }
+                    else if ( outputFileName.endsWith( "evaluation.csv.gz" ) )
+                    {
+                        assertOutputZippedEqualExpectedPairs( outputFilePath.toFile(), benchmarkFile );
                     }
                     //Otherwise just do the comparison without sorting.
                     else
@@ -397,6 +401,19 @@ public class ScenarioHelper
                 }
             }
         }
+        else if ( outputFile.getName().endsWith( "evaluation.csv.gz" ) )
+        {
+            benchmarkFile = Paths.get( benchmarkDirPath.toString(), outputFile.getName() ).toFile();
+            if ( !benchmarkFile.isFile() || !benchmarkFile.canRead() )
+            {
+                //First attempt wasn't good; look for evaluation.csv.
+                benchmarkFile = Paths.get( benchmarkDirPath.toString(), "evaluation.csv" ).toFile();
+                if ( !benchmarkFile.isFile() || !benchmarkFile.canRead() )
+                {
+                    return null;
+                }
+            }
+        }
         //Otherwise just do the comparison.
         else
         {
@@ -447,18 +464,18 @@ public class ScenarioHelper
     }
 
     /**
-     * Asserts that the output pairs are equal to a benchmark file, if one exists.
-     * @param pairsFile
+     * Asserts that the zipped output are equal to a benchmark file, if one exists.
+     * @param zippedFile
      * @param benchmarkDirPath
      * @throws IOException
      */
-    private static void assertOutputPairsEqualExpectedPairs( File pairsFile, File benchmarkFile ) throws IOException
+    private static void assertOutputZippedEqualExpectedPairs( File zippedFile, File benchmarkFile ) throws IOException
     {
         //Ensure that the output is a readable file.  The benchmark file has already been established as such.
-        assertTrue( pairsFile.isFile() && pairsFile.canRead() );
+        assertTrue( zippedFile.isFile() && zippedFile.canRead() );
 
         //Read in all of the data.  May need a lot of memory!
-        List<String> actualRows = readZipFile( pairsFile );
+        List<String> actualRows = readZipFile( zippedFile );
         List<String> expectedRows = Files.readAllLines( benchmarkFile.toPath() );
 
         //Files must not be zero sized and must be identical in number of lines.
@@ -474,7 +491,7 @@ public class ScenarioHelper
         {
             LOGGER.trace("Compare output file " + pairsFile.getName() + " line " + i + " with benchmarks file " + benchmarkFile.getName());
             LOGGER.trace("Are they equal? " + actualRows.get( i ).equals(expectedRows.get( i )));
-            assertEquals( "For pairs file file, " + pairsFile.getName()
+            assertEquals( "For zipped file, " + pairsFile.getName()
                           + ", after sorting alphabetically, row "
                           + i 
                           + " differs from benchmark.",

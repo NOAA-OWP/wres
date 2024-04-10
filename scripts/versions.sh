@@ -44,6 +44,10 @@ do
     then
         version=$( get_ver ${directory} "wres-datamodel" \
                            "wres-util" "wres-eventsbroker" "wres-events" )
+    elif [[ "$directory" == "wres-writing" ]]
+    then
+        version=$( get_ver ${directory} "wres-datamodel" \
+                           "wres-util" "wres-eventsbroker" "wres-events" )
     else
         version=$( get_ver ${directory} )
     fi
