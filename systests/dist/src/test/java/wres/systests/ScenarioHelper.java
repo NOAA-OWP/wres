@@ -489,9 +489,9 @@ public class ScenarioHelper
         // Verify by row, rather than all at once
         for ( int i = 0; i < actualRows.size(); i++ )
         {
-            LOGGER.trace("Compare output file " + pairsFile.getName() + " line " + i + " with benchmarks file " + benchmarkFile.getName());
+            LOGGER.trace("Compare output file " + zippedFile.getName() + " line " + i + " with benchmarks file " + benchmarkFile.getName());
             LOGGER.trace("Are they equal? " + actualRows.get( i ).equals(expectedRows.get( i )));
-            assertEquals( "For zipped file, " + pairsFile.getName()
+            assertEquals( "For zipped file, " + zippedFile.getName()
                           + ", after sorting alphabetically, row "
                           + i 
                           + " differs from benchmark.",
