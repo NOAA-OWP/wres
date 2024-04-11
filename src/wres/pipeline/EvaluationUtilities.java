@@ -471,7 +471,9 @@ class EvaluationUtilities
         if ( Objects.nonNull( jobId ) )
         {
             LOGGER.debug( "Discovered system property {} with value {}.", "wres.jobId", jobId );
-            tempDir = tempDir + System.getProperty( "file.separator" ) + jobId;
+            tempDir = tempDir + FileSystems.getDefault()
+                                           .getSeparator()
+                      + jobId;
         }
 
         Path namedPath = Paths.get( tempDir, "wres_evaluation_" + evaluationId );
@@ -1346,6 +1348,8 @@ class EvaluationUtilities
             // Estimate the number of traces using the largest of the first ensemble events in each time-series
             List<TimeSeries<Pair<Double, Ensemble>>> series = pool.get();
             int traceCount = series.stream()
+                                   .filter( next -> !next.getEvents()
+                                                         .isEmpty() )
                                    .mapToInt( next -> next.getEvents()
                                                           .first()
                                                           .getValue()

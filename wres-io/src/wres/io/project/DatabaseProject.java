@@ -179,10 +179,10 @@ public class DatabaseProject implements Project
         this.declaration = innerDeclaration;
 
         // Validate any ensemble conditions
-        this.validateEnsembleConditions( declaration, this.projectId );
+        this.validateEnsembleConditions( this.declaration, this.projectId );
 
         // Check that the feature names associated with each covariate select some data
-        this.validateCovariateFeatureNames( declaration, this.projectId, this.features );
+        this.validateCovariateFeatureNames( this.declaration, this.projectId, this.features );
 
         LOGGER.info( "Project validation and metadata loading is complete." );
     }

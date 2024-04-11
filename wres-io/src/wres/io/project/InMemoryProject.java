@@ -159,7 +159,7 @@ public class InMemoryProject implements Project
         ProjectUtilities.validate( innerDeclaration );
         this.declaration = innerDeclaration;
 
-        this.validateCovariateFeatureNames( declaration, timeSeriesStore, this.features );
+        this.validateCovariateFeatureNames( this.declaration, timeSeriesStore, this.features );
     }
 
     @Override
