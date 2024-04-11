@@ -438,7 +438,7 @@ public class EvaluationService implements ServletContextListener
         if ( EVALUATION_ID.get() != id || Objects.isNull( evaluationResponse ) )
         {
             EvaluationMetadata cachedEntry = getCachedEntry( id );
-            if ( Objects.nonNull( cachedEntry.getOutputs() ) )
+            if ( cachedEntry.hasOutputs() )
             {
                 LOGGER.info( "Returning outputs from cache" );
                 StreamingOutput streamingOutput = outputStream -> {
@@ -944,6 +944,7 @@ public class EvaluationService implements ServletContextListener
                     Thread.sleep( ONE_MINUTE_IN_MILLISECONDS );
                     if ( EVALUATION_STAGE.get().equals( OPENED ) || EVALUATION_STAGE.get().equals( COMPLETED ) )
                     {
+                        LOGGER.info( "Timeout thread closing project" );
                         close();
                     }
                 }

@@ -408,9 +408,12 @@ class WresEvaluationProcessor implements Callable<Integer>
         {
             if ( clientResponse.getStatusCode() != HttpURLConnection.HTTP_OK )
             {
-                LOGGER.info( "Evaluation was not able to be closed" );
+                LOGGER.info( "Evaluation was not able to be closed by the worker shim" );
             }
-            LOGGER.info( "Evaluation Closed" );
+            else
+            {
+                LOGGER.info( "Evaluation Closed" );
+            }
         }
         catch ( IOException e )
         {

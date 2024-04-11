@@ -3,6 +3,7 @@ package wres.worker;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -165,9 +166,14 @@ public class JobStatusMessenger
                                                                           WebClientUtils.getDefaultRetryStates() )
         )
         {
-            return new BufferedReader( new InputStreamReader( fromWeb.getResponse() ) ).lines()
-                                                                                       .collect( Collectors.joining(
-                                                                                               "\n" ) );
+            if ( fromWeb.getStatusCode() == HttpURLConnection.HTTP_OK )
+            {
+                return new BufferedReader( new InputStreamReader( fromWeb.getResponse() ) ).lines()
+                                                                                           .collect( Collectors.joining(
+                                                                                                   "\n" ) );
+            }
+
+            throw new IOException( "Unable to get status with given ID" );
         }
     }
 

@@ -124,6 +124,16 @@ public class EvaluationMetadata implements Serializable
     }
 
     /**
+     * Check if outputs have been set
+     * @return The Set of output URIs.
+     */
+
+    public boolean hasOutputs()
+    {
+        return Objects.nonNull( outputs );
+    }
+
+    /**
      * Sets the outputs of this object
      * @param outputs the outputs to set to
      */
