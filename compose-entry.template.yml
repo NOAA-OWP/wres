@@ -181,13 +181,13 @@ services:
       depends_on:
         eventsbroker:
           condition: service_started
-      image: "wres/wres-writing:WRITING_IMAGE"
+      image: "${DOCKER_REGISTRY}/wres/wres-writing:WRITING_IMAGE"
       restart: always
       volumes:
         # To write numeric outputs
-        - //c/Users/epagr/IdeaProjects/deploy/wres_share/evaluations:/mnt/wres_share/evaluations
+        - /mnt/wres_share/evaluations:/mnt/wres_share/evaluations
         # To write heap dumps
-        - //c/Users/epagr/IdeaProjects/deploy/wres_share/heap_dumps/writing:/mnt/wres_share/heap_dumps/writing
+        - /mnt/wres_share/heap_dumps/writing:/mnt/wres_share/heap_dumps/writing
       environment:
         # Override the broker address and port in the binding URL of the event.properties
         - JAVA_OPTS=-Dwres.startBroker=false -Dwres.eventsBrokerAddress=eventsbroker -Dwres.eventsBrokerPort=5673 -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/evaluations -Xms3640m -Xmx3640m -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/writing -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/writing/java_pid%p.hprof /mnt/wres_share/heap_dumps/writing/java_pid%p_$$CON_HOSTNAME.hprof;
