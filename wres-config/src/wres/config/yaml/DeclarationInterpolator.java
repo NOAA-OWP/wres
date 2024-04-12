@@ -1201,6 +1201,17 @@ public class DeclarationInterpolator
             builder.baseline( adjustedBaseline );
         }
 
+        // Covariates?
+        List<CovariateDataset> adjustedCovariates = new ArrayList<>();
+        for ( CovariateDataset covariate : builder.covariates() )
+        {
+            CovariateDatasetBuilder covariateBuilder = CovariateDatasetBuilder.builder( covariate );
+            Dataset adjustedDataset = DeclarationInterpolator.interpolateUris( covariate.dataset() );
+            covariateBuilder.dataset( adjustedDataset );
+            adjustedCovariates.add( covariateBuilder.build() );
+        }
+        builder.covariates( adjustedCovariates );
+
         // Adjust any threshold sources
         Set<ThresholdSource> thresholdSources = builder.thresholdSources();
         Set<ThresholdSource> adjustedThresholdSources = new HashSet<>();
