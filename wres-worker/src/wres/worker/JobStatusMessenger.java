@@ -135,7 +135,6 @@ public class JobStatusMessenger
                 Thread.sleep( 1000 );
                 evaluationStatus = getEvaluationStatus();
             }
-            this.sendMessage( channel, DEAD );
         }
         catch ( TimeoutException te )
         {
