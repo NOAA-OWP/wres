@@ -251,7 +251,8 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                                      .clearOneBoxPerPair()
                                      .clearOneBoxPerPool()
                                      .build();
-                LOGGER.debug( "Set the nominal statistics metadata for summary statistics calculation: {}",
+                LOGGER.debug( "Set the nominal statistics metadata for summary statistics calculator {} to: {}",
+                              this,
                               this.nominal );
             }
 
@@ -716,15 +717,13 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                                                              .getName(),
                                                     component.getName() );
                 List<MutableDoubleList> samples = this.diagrams.get( name );
+                component.clearValues();
 
-                int componentCount = samples.size();
-
-                for ( int i = 0; i < componentCount; i++ )
+                for ( MutableDoubleList nextSamples : samples )
                 {
-                    MutableDoubleList nextSamples = samples.get( i );
                     double[] nextSampleArray = nextSamples.toArray();
                     double statisticValue = summaryStatistic.applyAsDouble( nextSampleArray );
-                    component.setValues( i, statisticValue );
+                    component.addValues( statisticValue );
                 }
             }
         }

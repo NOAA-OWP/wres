@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author James Brown
  */
-public class BlockSizeEstimator
+class BlockSizeEstimator
 {
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( BlockSizeEstimator.class );
@@ -51,7 +51,7 @@ public class BlockSizeEstimator
      * @throws NullPointerException if the data is null
      */
 
-    public static int getOptimalBlockSize( double[] data )
+    static int getOptimalBlockSize( double[] data )
     {
         Objects.requireNonNull( data );
 

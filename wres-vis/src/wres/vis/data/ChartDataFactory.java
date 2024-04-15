@@ -445,9 +445,8 @@ public class ChartDataFactory
                                                 .filter( n -> !n.isBlank() )
                                                 .collect( Collectors.toCollection( TreeSet::new ) );
 
-            // No qualifiers or a summary statistic that does not need to be sliced by qualifier
-            if ( qualified.isEmpty()
-                 || first.isSummaryStatistic() )
+            // No qualifiers
+            if ( qualified.isEmpty() )
             {
                 String name = DataUtilities.toStringWithoutUnits( key );
                 XYIntervalSeries nextSeries = ChartDataFactory.getIntervalSeries( sliced,
@@ -546,9 +545,8 @@ public class ChartDataFactory
                                                 .filter( n -> !n.isBlank() )
                                                 .collect( Collectors.toCollection( TreeSet::new ) );
 
-            // No qualifiers or a summary statistic that does not need to be sliced by qualifier
-            if ( qualified.isEmpty()
-                 || first.isSummaryStatistic() )
+            // No qualifiers
+            if ( qualified.isEmpty() )
             {
                 Number leadDuration = DataUtilities.durationToNumericUnits( key.getLatestLeadDuration(),
                                                                             durationUnits );
@@ -1274,12 +1272,18 @@ public class ChartDataFactory
         // Add the series data
         for ( int j = 0; j < valueCount; j++ )
         {
-            double xC = xCentral.getValues( j );
-            double yC = yCentral.getValues( j );
+            double xC = Double.NaN;
+            double yC = Double.NaN;
             double xL = Double.NaN;
             double xU = Double.NaN;
             double yL = Double.NaN;
             double yU = Double.NaN;
+
+            if ( j < xCentral.getValuesCount() )
+            {
+                xC = xCentral.getValues( j );
+                yC = yCentral.getValues( j );
+            }
 
             if ( Objects.nonNull( lower ) )
             {

@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.SamplingUncertainty;
+import wres.datamodel.bootstrap.BootstrapUtilities;
 import wres.metrics.FunctionFactory;
 import wres.metrics.ScalarSummaryStatisticFunction;
 import wres.metrics.SummaryStatisticsCalculator;
@@ -528,9 +529,11 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         // Sampling uncertainty requested?
         if ( Objects.nonNull( samplingUncertainty ) )
         {
-            // Cannot estimate the sampling uncertainties of an empty pool
-            if ( pool.get()
-                     .isEmpty() )
+            // Insufficient data for the stationary bootstrap?
+            if ( !( BootstrapUtilities.hasSufficientDataForStationaryBootstrap( pool.get() )
+                    || ( pool.hasBaseline()
+                         && BootstrapUtilities.hasSufficientDataForStationaryBootstrap( pool.getBaselineData()
+                                                                                            .get() ) ) ) )
             {
                 LOGGER.warn( "Insufficient data to estimate the sampling uncertainties of pool: {}.",
                              pool.getMetadata() );
@@ -1086,7 +1089,7 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
             Objects.requireNonNull( this.blockSize );
         }
 
-        if( this.metricProcessors.isEmpty() )
+        if ( this.metricProcessors.isEmpty() )
         {
             throw new PoolCreationException( "Cannot create a pool without one or more metric processors." );
         }
