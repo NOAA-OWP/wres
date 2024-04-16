@@ -36,7 +36,7 @@ public class BootstrapUtilities
      * optimal block sizes across all time-series.
      * @param <R> the type of right-ish time-series data
      * @param pool the pool
-     * @return the optimal block size for the stationary bootstrap
+     * @return the optimal block size for the stationary bootstrap in timestep units, together with the timestep
      */
     public static <R> Pair<Long, Duration> getOptimalBlockSizeForStationaryBootstrap( Pool<TimeSeries<Pair<Double, R>>> pool )
     {
@@ -129,7 +129,8 @@ public class BootstrapUtilities
     }
 
     /**
-     * Estimates the optimal block size for the consolidated left-ish time-series in the input.
+     * Estimates the optimal block size for the consolidated left-ish time-series in the input, together with the modal
+     * timestep of the supplied time-series.
      * @param <T> the type of time-series data
      * @param pool the pool
      * @return the optimal block size for the stationary bootstrap
