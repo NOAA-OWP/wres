@@ -100,7 +100,7 @@ class TestDeclarationGenerator
                                                                         .minimumSampleSize( 0 )
                                                                         .metrics( Set.of() ) // All valid
                                                                         .build();
-        return DeclarationInterpolator.interpolate( declaration );
+        return DeclarationInterpolator.interpolate( declaration, false );
     }
 
     /**
@@ -131,7 +131,7 @@ class TestDeclarationGenerator
                                                                                 .baseline( baseline )
                                                                                 .metrics( Set.of() ) // All valid
                                                                                 .build();
-        return DeclarationInterpolator.interpolate( ensembleDeclaration );
+        return DeclarationInterpolator.interpolate( ensembleDeclaration, false );
     }
 
     /**
@@ -175,7 +175,7 @@ class TestDeclarationGenerator
                                                                         .minimumSampleSize( 0 )
                                                                         .metrics( metrics ) // All valid
                                                                         .build();
-        return DeclarationInterpolator.interpolate( declaration );
+        return DeclarationInterpolator.interpolate( declaration, false );
     }
 
     /**
@@ -236,7 +236,7 @@ class TestDeclarationGenerator
                                                                         .metrics( metrics )
                                                                         .thresholds( valueThresholds )
                                                                         .build();
-        return DeclarationInterpolator.interpolate( declaration );
+        return DeclarationInterpolator.interpolate( declaration, false );
     }
 
     /**
@@ -284,7 +284,7 @@ class TestDeclarationGenerator
                                                                         .metrics( Set.of() )
                                                                         .thresholds( valueThresholds )
                                                                         .build();
-        return DeclarationInterpolator.interpolate( declaration );
+        return DeclarationInterpolator.interpolate( declaration, false );
     }
 
     /**
@@ -312,20 +312,25 @@ class TestDeclarationGenerator
                                            .build();
 
         SummaryStatistic.Builder template = SummaryStatistic.newBuilder()
-                .setDimension( SummaryStatistic.StatisticDimension.FEATURES );
+                                                            .setDimension( SummaryStatistic.StatisticDimension.FEATURES );
 
         MetricParameters metricParameters = MetricParametersBuilder.builder()
-                .summaryStatistics( Set.of( template.setStatistic( SummaryStatistic.StatisticName.MEAN )
-                                                    .build(),
-                                            template.setStatistic( SummaryStatistic.StatisticName.MEDIAN )
-                                                    .build(),
-                                            template.setStatistic( SummaryStatistic.StatisticName.MINIMUM )
-                                                    .build(),
-                                            template.setStatistic( SummaryStatistic.StatisticName.MAXIMUM )
-                                                    .build(),
-                                            template.setStatistic( SummaryStatistic.StatisticName.MEAN_ABSOLUTE )
-                                                    .build() ) )
-                .build();
+                                                                   .summaryStatistics( Set.of( template.setStatistic(
+                                                                                                               SummaryStatistic.StatisticName.MEAN )
+                                                                                                       .build(),
+                                                                                               template.setStatistic(
+                                                                                                               SummaryStatistic.StatisticName.MEDIAN )
+                                                                                                       .build(),
+                                                                                               template.setStatistic(
+                                                                                                               SummaryStatistic.StatisticName.MINIMUM )
+                                                                                                       .build(),
+                                                                                               template.setStatistic(
+                                                                                                               SummaryStatistic.StatisticName.MAXIMUM )
+                                                                                                       .build(),
+                                                                                               template.setStatistic(
+                                                                                                               SummaryStatistic.StatisticName.MEAN_ABSOLUTE )
+                                                                                                       .build() ) )
+                                                                   .build();
 
         Metric metric = MetricBuilder.builder()
                                      .name( MetricConstants.TIME_TO_PEAK_ERROR )
@@ -340,7 +345,7 @@ class TestDeclarationGenerator
                                                                         .minimumSampleSize( 0 )
                                                                         .metrics( Set.of( metric ) )
                                                                         .build();
-        return DeclarationInterpolator.interpolate( declaration );
+        return DeclarationInterpolator.interpolate( declaration, false );
     }
 
     /**
@@ -404,7 +409,7 @@ class TestDeclarationGenerator
                                                                                 .thresholds( thresholds )
                                                                                 .build();
 
-        return DeclarationInterpolator.interpolate( ensembleDeclaration );
+        return DeclarationInterpolator.interpolate( ensembleDeclaration, false );
     }
 
     /**
@@ -429,7 +434,7 @@ class TestDeclarationGenerator
                                                                                   .metrics( metrics )
                                                                                   .build();
 
-        return DeclarationInterpolator.interpolate( evaluationDeclaration );
+        return DeclarationInterpolator.interpolate( evaluationDeclaration, false );
     }
 
     /**
@@ -505,7 +510,7 @@ class TestDeclarationGenerator
                                                                                .probabilityThresholds( thresholds )
                                                                                .metrics( metrics )
                                                                                .build();
-        return DeclarationInterpolator.interpolate( ensembleDecaration );
+        return DeclarationInterpolator.interpolate( ensembleDecaration, false );
     }
 
     /**
@@ -610,7 +615,7 @@ class TestDeclarationGenerator
                                             .classifierThresholds( probabilityThresholds )
                                             .build();
 
-        return DeclarationInterpolator.interpolate( ensembleDeclaration );
+        return DeclarationInterpolator.interpolate( ensembleDeclaration, false );
     }
 
     /**

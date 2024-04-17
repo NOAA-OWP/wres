@@ -63,11 +63,11 @@ import wres.statistics.generated.TimeScale;
 /**
  * <p>Interpolates missing declaration from the other declaration present. The interpolation of missing declaration may
  * be performed in stages, depending on when it is required and how it is informed. For example, the
- * {@link #interpolate(EvaluationDeclaration)} performs minimal interpolation that is informed by the declaration
- * alone, such as the interpolation of geographic features when the missing information can be obtained without a
- * service call.
+ * {@link #interpolate(EvaluationDeclaration, boolean)} performs minimal interpolation that is informed by the
+ * declaration alone, such as the interpolation of geographic features when the missing information can be obtained
+ * without a service call.
  *
- * <p>Currently, {@link #interpolate(EvaluationDeclaration)} does not perform any external service calls. For
+ * <p>Currently, {@link #interpolate(EvaluationDeclaration, boolean)} does not perform any external service calls. For
  * example, features and thresholds may be declared implicitly using a feature service or a threshold service,
  * respectively. The resulting features and thresholds are not resolved into explicit descriptions of the same options.
  * It is assumed that another module (wres-io) resolves these attributes.
@@ -133,41 +133,47 @@ public class DeclarationInterpolator
      *
      * @see #interpolate(EvaluationDeclaration, DataTypes, VariableNames, String, TimeScale, boolean)
      * @param declaration the raw declaration to interpolate
+     * @param notify whether to notify any warnings encountered or assumptions made during interpolation
      * @return the interpolated declaration
+     * @throws DeclarationException when the interpolation fails for any reason
      */
-    public static EvaluationDeclaration interpolate( EvaluationDeclaration declaration )
+    public static EvaluationDeclaration interpolate( EvaluationDeclaration declaration, boolean notify )
     {
-        EvaluationDeclarationBuilder adjustedDeclarationBuilder = EvaluationDeclarationBuilder.builder( declaration );
+        EvaluationDeclarationBuilder adjustedBuilder = EvaluationDeclarationBuilder.builder( declaration );
 
         // Interpolate any absolute paths from paths relative to the default data directory. The UriDeserializer
         // performs basic disambiguation only and does not interpolate absolute paths
-        DeclarationInterpolator.interpolateUris( adjustedDeclarationBuilder );
+        DeclarationInterpolator.interpolateUris( adjustedBuilder );
         // Interpolate the time zone offsets for individual sources when supplied for the overall dataset
-        DeclarationInterpolator.interpolateTimeZoneOffsets( adjustedDeclarationBuilder );
+        DeclarationInterpolator.interpolateTimeZoneOffsets( adjustedBuilder );
         // Interpolate the feature authorities
-        DeclarationInterpolator.interpolateFeatureAuthorities( adjustedDeclarationBuilder );
+        DeclarationInterpolator.interpolateFeatureAuthorities( adjustedBuilder );
         // Interpolate geospatial features when required, but without using a feature service
-        DeclarationInterpolator.interpolateFeaturesWithoutFeatureService( adjustedDeclarationBuilder );
+        DeclarationInterpolator.interpolateFeaturesWithoutFeatureService( adjustedBuilder );
         // Interpolate the covariate feature name orientations
-        DeclarationInterpolator.interpolateCovariateFeatureOrientations( adjustedDeclarationBuilder );
+        List<EvaluationStatusEvent> events =
+                new ArrayList<>( DeclarationInterpolator.interpolateCovariateFeatureOrientations( adjustedBuilder ) );
         // Interpolate evaluation metrics when required
-        DeclarationInterpolator.interpolateMetrics( adjustedDeclarationBuilder );
+        DeclarationInterpolator.interpolateMetrics( adjustedBuilder );
         // Interpolate the evaluation-wide decimal format string for each numeric format type
-        DeclarationInterpolator.interpolateDecimalFormatforNumericFormats( adjustedDeclarationBuilder );
+        DeclarationInterpolator.interpolateDecimalFormatforNumericFormats( adjustedBuilder );
         // Interpolate the metrics to ignore for each graphics format
-        DeclarationInterpolator.interpolateMetricsToOmitFromGraphicsFormats( adjustedDeclarationBuilder );
+        DeclarationInterpolator.interpolateMetricsToOmitFromGraphicsFormats( adjustedBuilder );
         // Interpolate the graphics formats from the other declaration present
-        DeclarationInterpolator.interpolateGraphicsFormats( adjustedDeclarationBuilder );
+        DeclarationInterpolator.interpolateGraphicsFormats( adjustedBuilder );
         // Interpolate the measurement units for value thresholds when they have not been declared explicitly
-        DeclarationInterpolator.interpolateMeasurementUnitForValueThresholds( adjustedDeclarationBuilder );
+        DeclarationInterpolator.interpolateMeasurementUnitForValueThresholds( adjustedBuilder );
         // Interpolate thresholds for individual metrics, adding an "all data" threshold as needed
-        DeclarationInterpolator.interpolateThresholdsForIndividualMetrics( adjustedDeclarationBuilder );
+        DeclarationInterpolator.interpolateThresholdsForIndividualMetrics( adjustedBuilder );
         // Interpolate metric parameters
-        DeclarationInterpolator.interpolateMetricParameters( adjustedDeclarationBuilder );
+        DeclarationInterpolator.interpolateMetricParameters( adjustedBuilder );
         // Interpolate output formats where none exist
-        DeclarationInterpolator.interpolateOutputFormatsWhenNoneDeclared( adjustedDeclarationBuilder );
+        DeclarationInterpolator.interpolateOutputFormatsWhenNoneDeclared( adjustedBuilder );
 
-        return adjustedDeclarationBuilder.build();
+        // Handle any events encountered
+        DeclarationInterpolator.handleEvents( events, notify, true );
+
+        return adjustedBuilder.build();
     }
 
     /**
@@ -175,7 +181,7 @@ public class DeclarationInterpolator
      * This includes interpolation of the data types and all declaration that depends on the data types, as well as the
      * variable names, measurement unit and evaluation timescale.
      *
-     * @see #interpolate(EvaluationDeclaration)
+     * @see #interpolate(EvaluationDeclaration, boolean)
      * @param declaration the raw declaration to interpolate
      * @param dataTypes types the analyzed data types
      * @param variableNames the analyzed variable names
@@ -229,47 +235,8 @@ public class DeclarationInterpolator
         // Interpolate metric parameters
         DeclarationInterpolator.interpolateMetricParameters( adjustedDeclarationBuilder );
 
-        // Notify any warnings? Push to log for now, but see #61930 (logging isn't for users)
-        if ( notify
-             && LOGGER.isWarnEnabled() )
-        {
-            List<EvaluationStatus.EvaluationStatusEvent> warnEvents =
-                    events.stream()
-                          .filter( a -> a.getStatusLevel()
-                                        == EvaluationStatus.EvaluationStatusEvent.StatusLevel.WARN )
-                          .toList();
-            if ( !warnEvents.isEmpty() )
-            {
-                StringJoiner message = new StringJoiner( System.lineSeparator() );
-                String spacer = "    - ";
-                warnEvents.forEach( e -> message.add( spacer + e.getEventMessage() ) );
-
-                LOGGER.warn( "Encountered {} warnings when interpolating missing declaration: {}{}",
-                             warnEvents.size(),
-                             System.lineSeparator(),
-                             message );
-            }
-        }
-
-        // Errors?
-        List<EvaluationStatus.EvaluationStatusEvent> errorEvents =
-                events.stream()
-                      .filter( a -> a.getStatusLevel()
-                                    == EvaluationStatus.EvaluationStatusEvent.StatusLevel.ERROR )
-                      .toList();
-        if ( !errorEvents.isEmpty() )
-        {
-            StringJoiner message = new StringJoiner( System.lineSeparator() );
-            String spacer = "    - ";
-            errorEvents.forEach( e -> message.add( spacer + e.getEventMessage() ) );
-
-            throw new DeclarationException( "While attempting to reconcile the declared evaluation with the "
-                                            + "time-series data read from sources, encountered "
-                                            + errorEvents.size()
-                                            + " error(s) that must be fixed:"
-                                            + System.lineSeparator() +
-                                            message );
-        }
+        // Handle any events encountered
+        DeclarationInterpolator.handleEvents( events, notify, false );
 
         return adjustedDeclarationBuilder.build();
     }
@@ -415,6 +382,67 @@ public class DeclarationInterpolator
         }
 
         builder.metrics( adjustedMetrics );
+    }
+
+    /**
+     * Handles evaluation status events, logging warnings when requested and throwing an {@link DeclarationException}
+     * when errors are encountered.
+     * @param events the evaluation status events
+     * @param notify whether to notify warnings
+     * @param beforeIngest whether the interpolation is happening before or after time-series ingest
+     */
+    private static void handleEvents( List<EvaluationStatusEvent> events, boolean notify, boolean beforeIngest )
+    {
+        // Notify any warnings? Push to log for now, but see #61930 (logging isn't for users)
+        if ( notify
+             && LOGGER.isWarnEnabled() )
+        {
+            List<EvaluationStatus.EvaluationStatusEvent> warnEvents =
+                    events.stream()
+                          .filter( a -> a.getStatusLevel()
+                                        == EvaluationStatus.EvaluationStatusEvent.StatusLevel.WARN )
+                          .toList();
+            if ( !warnEvents.isEmpty() )
+            {
+                StringJoiner message = new StringJoiner( System.lineSeparator() );
+                String spacer = "    - ";
+                warnEvents.forEach( e -> message.add( spacer + e.getEventMessage() ) );
+
+                String context = "after";
+
+                if ( beforeIngest )
+                {
+                    context = "before";
+                }
+
+                LOGGER.warn( "Encountered {} warnings when interpolating missing declaration {} time-series ingest: "
+                             + "{}{}",
+                             warnEvents.size(),
+                             context,
+                             System.lineSeparator(),
+                             message );
+            }
+        }
+
+        // Errors?
+        List<EvaluationStatus.EvaluationStatusEvent> errorEvents =
+                events.stream()
+                      .filter( a -> a.getStatusLevel()
+                                    == EvaluationStatus.EvaluationStatusEvent.StatusLevel.ERROR )
+                      .toList();
+        if ( !errorEvents.isEmpty() )
+        {
+            StringJoiner message = new StringJoiner( System.lineSeparator() );
+            String spacer = "    - ";
+            errorEvents.forEach( e -> message.add( spacer + e.getEventMessage() ) );
+
+            throw new DeclarationException( "While attempting to reconcile the declared evaluation with the "
+                                            + "time-series data read from sources, encountered "
+                                            + errorEvents.size()
+                                            + " error(s) that must be fixed:"
+                                            + System.lineSeparator() +
+                                            message );
+        }
     }
 
     /**
@@ -1476,15 +1504,63 @@ public class DeclarationInterpolator
     /**
      * Interpolates the orientation of the feature names associated with each covariate dataset.
      * @param builder the builder
+     * @return any warnings or errors encountered
      */
 
-    private static void interpolateCovariateFeatureOrientations( EvaluationDeclarationBuilder builder )
+    private static List<EvaluationStatusEvent> interpolateCovariateFeatureOrientations( EvaluationDeclarationBuilder builder )
     {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
         List<CovariateDataset> adjustedCovariates = new ArrayList<>();
         for ( CovariateDataset covariateDataset : builder.covariates() )
         {
-            DatasetOrientation orientation = DeclarationInterpolator.getCovariateFeatureOrientation( builder.build(),
-                                                                                                     covariateDataset );
+            FeatureAuthority covariateAuthority = covariateDataset.dataset()
+                                                                  .featureAuthority();
+            DatasetOrientation orientation;
+
+            // Default to LEFT and warn
+            if ( Objects.isNull( covariateAuthority ) )
+            {
+                orientation = DatasetOrientation.LEFT;
+
+                String extra = "";
+
+                if ( Objects.nonNull( covariateDataset.dataset()
+                                                      .variable() )
+                     && Objects.nonNull( covariateDataset.dataset()
+                                                         .variable()
+                                                         .name() ) )
+                {
+                    extra = "for variable '" + covariateDataset.dataset()
+                                                               .variable()
+                                                               .name() + "' ";
+                }
+
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
+                                               .setEventMessage( "Discovered a covariate dataset "
+                                                                 + extra
+                                                                 + "without an explicit 'feature_authority' declared."
+                                                                 + " It is assumed that this covariate dataset uses "
+                                                                 + "the same feature identities as the 'observed' "
+                                                                 + "dataset. If this is incorrect, please "
+                                                                 + "declare an explicit 'feature_authority' for both "
+                                                                 + "the covariate dataset and the 'predicted' or "
+                                                                 + "'baseline' dataset whose features are identified "
+                                                                 + "with the same authority as the covariate. Failure "
+                                                                 + "to correctly identify the feature names of the "
+                                                                 + "covariate dataset could lead to the discovery of "
+                                                                 + "no covariate data, which could in turn lead to "
+                                                                 + "all pairs being filtered/ignored." )
+                                               .build();
+                events.add( event );
+            }
+            // Correlate with the declared authority of other datasets
+            else
+            {
+                orientation = DeclarationInterpolator.getCovariateFeatureOrientation( builder.build(),
+                                                                                      covariateDataset );
+            }
 
             LOGGER.debug( "Interpolated a dataset orientation of {} for the covariate dataset {}.",
                           orientation,
@@ -1496,6 +1572,8 @@ public class DeclarationInterpolator
             adjustedCovariates.add( adjusted );
         }
         builder.covariates( adjustedCovariates );
+
+        return Collections.unmodifiableList( events );
     }
 
     /**
@@ -1514,14 +1592,14 @@ public class DeclarationInterpolator
         FeatureAuthority covariateAuthority = covariate.dataset()
                                                        .featureAuthority();
 
-        if ( Objects.isNull( covariateAuthority ) )
-        {
-            return DatasetOrientation.LEFT;
-        }
-
         FeatureAuthority rightAuthority = DeclarationUtilities.getFeatureAuthorityFor( declaration,
                                                                                        DatasetOrientation.RIGHT );
 
+        // In principle, the same authority could be declared/identified for more than one side of data and yet the
+        // post-ingest attributes of the feature (e.g. presence/absence of coordinates) could lead to different
+        // feature identities (e.g., in a database) for different dataset orientations, given the same feature name.
+        // In that case, the retrieval of time-series data by feature name would need to be more sophisticated when the
+        // feature authorities match.
         if ( covariateAuthority == rightAuthority )
         {
             return DatasetOrientation.RIGHT;

@@ -311,7 +311,7 @@ public final class SingleValuedStatisticsProcessorTest
                                                                         .features( features )
                                                                         .metrics( metrics )
                                                                         .build();
-        declaration = DeclarationInterpolator.interpolate( declaration );
+        declaration = DeclarationInterpolator.interpolate( declaration, false );
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
                 SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( declaration );
@@ -442,7 +442,7 @@ public final class SingleValuedStatisticsProcessorTest
                                                                         .thresholds( thresholds )
                                                                         .metrics( metrics ) // All valid
                                                                         .build();
-        declaration = DeclarationInterpolator.interpolate( declaration );
+        declaration = DeclarationInterpolator.interpolate( declaration, false );
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
                 SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( declaration );
@@ -951,7 +951,7 @@ public final class SingleValuedStatisticsProcessorTest
                                                                         .metrics( metrics ) // All valid
                                                                         .build();
 
-        declaration = DeclarationInterpolator.interpolate( declaration );
+        declaration = DeclarationInterpolator.interpolate( declaration, false );
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
                 SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( declaration );
@@ -998,7 +998,7 @@ public final class SingleValuedStatisticsProcessorTest
                                                                              .metrics( metrics )
                                                                              .features( f )
                                                                              .build();
-        finalDeclaration = DeclarationInterpolator.interpolate( finalDeclaration );
+        finalDeclaration = DeclarationInterpolator.interpolate( finalDeclaration, false );
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Double>>>>> processors =
                 SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( finalDeclaration );

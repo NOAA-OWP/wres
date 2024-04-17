@@ -368,7 +368,7 @@ public final class EnsembleStatisticsProcessorTest
                                                                         .minimumSampleSize( 0 )
                                                                         .metrics( metrics ) // All valid
                                                                         .build();
-        declaration = DeclarationInterpolator.interpolate( declaration );
+        declaration = DeclarationInterpolator.interpolate( declaration, false );
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors =
                 EnsembleStatisticsProcessorTest.ofMetricProcessorForEnsemblePairs( declaration );
@@ -641,7 +641,7 @@ public final class EnsembleStatisticsProcessorTest
                                                                         .metrics( metrics ) // All valid
                                                                         .build();
 
-        declaration = DeclarationInterpolator.interpolate( declaration );
+        declaration = DeclarationInterpolator.interpolate( declaration, false );
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors =
                 EnsembleStatisticsProcessorTest.ofMetricProcessorForEnsemblePairs( declaration );
@@ -1231,7 +1231,7 @@ public final class EnsembleStatisticsProcessorTest
                                                                         .probabilityThresholds( Set.of( oneOuter ) )
                                                                         .metrics( metrics )
                                                                         .build();
-        declaration = DeclarationInterpolator.interpolate( declaration );
+        declaration = DeclarationInterpolator.interpolate( declaration, false );
 
         List<StatisticsProcessor<Pool<TimeSeries<Pair<Double, Ensemble>>>>> processors =
                 EnsembleStatisticsProcessorTest.ofMetricProcessorForEnsemblePairs( declaration );
