@@ -1962,9 +1962,9 @@ public class DeclarationInterpolator
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( EvaluationStatusEvent.StatusLevel.WARN )
                                            .setEventMessage( defaultStartMessage
-                                                             + " Currently assuming that the 'type' is 'observations'. "
-                                                             + "This assumption may be adjusted if the 'type' can be "
-                                                             + "inferred from the time-series data. "
+                                                             + " Provisionally assuming that the 'type' is "
+                                                             + "'observations'. This assumption may be adjusted if the "
+                                                             + "'type' can be inferred from the time-series data. "
                                                              + defaultEndMessage )
                                            .build();
             events.add( event );

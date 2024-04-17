@@ -1415,6 +1415,41 @@ public class DeclarationValidator
                                            .build();
             events.add( event );
         }
+        else if ( Objects.isNull( dataset.rescaleFunction() )
+                  && Objects.nonNull( declaration.timeScale() ) )
+        {
+            String extra = "";
+
+            if ( Objects.nonNull( dataset.dataset() )
+                 && Objects.nonNull( dataset.dataset()
+                                            .variable() )
+                 && Objects.nonNull( dataset.dataset()
+                                            .variable()
+                                            .name() ) )
+            {
+                extra = "for variable '" + dataset.dataset()
+                                                  .variable()
+                                                  .name() + "' ";
+            }
+
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( "Discovered a covariate dataset "
+                                                             + extra
+                                                             + "that does not have a 'rescale_function' declared. If "
+                                                             + "this dataset needs to be rescaled, it will be rescaled "
+                                                             + "to the evaluation 'time_scale', which has a declared "
+                                                             + "'function' of '"
+                                                             + declaration.timeScale()
+                                                                          .timeScale()
+                                                                          .getFunction()
+                                                             + "'. If this is incorrect, please add the correct "
+                                                             + "'rescale_function' for the covariate dataset and "
+                                                             + "try again." )
+                                           .build();
+            events.add( event );
+        }
 
         return Collections.unmodifiableList( events );
     }

@@ -259,6 +259,36 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testEvaluationWithTimeScaleAndCovariateWithoutRescaleFunctionResultsInWarning()
+    {
+        Dataset dataOne = DatasetBuilder.builder( this.defaultDataset )
+                                        .type( DataType.OBSERVATIONS )
+                                        .build();
+        CovariateDataset covariate = new CovariateDataset( dataOne, null, null, null, null );
+
+        TimeScale timeScaleInner = TimeScale.newBuilder()
+                                            .setPeriod( Duration.newBuilder()
+                                                                .setSeconds( 3600 ) )
+                                            .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                            .build();
+
+        wres.config.yaml.components.TimeScale timeScale = new wres.config.yaml.components.TimeScale( timeScaleInner );
+
+        List<CovariateDataset> covariates = List.of( covariate );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .covariates( covariates )
+                                                                        .timeScale( timeScale )
+                                                                        .build();
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events, "that does not have a 'rescale_function' "
+                                                               + "declared",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
     void testDatesAreDeclaredForWebServiceSourcesResultsInErrors()
     {
         Source source = SourceBuilder.builder()

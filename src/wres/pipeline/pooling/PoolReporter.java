@@ -218,13 +218,23 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
         // exceptional behavior
         if ( successfulPoolsToReport.isEmpty() )
         {
+            String extra = "";
+
+            if ( !this.declaration.covariates()
+                                  .isEmpty() )
+            {
+                extra = " In addition, please check that the covariates declared in this evaluation select at least "
+                        + "some data for one or more pools.";
+            }
+
             throw new WresProcessingException( "Statistics could not be produced for any pools. This probably occurred "
                                                + "because none of the pools contained valid pairs. Check that the "
                                                + "declaration contains some pools whose boundaries (e.g., earliest and "
                                                + "latest issued times, earliest and latest valid times and earliest "
                                                + "and latest lead durations) are sufficiently broad to capture some "
                                                + "pairs at the desired time scale for at least one feature and "
-                                               + "threshold.",
+                                               + "threshold."
+                                               + extra,
                                                null );
         }
 
