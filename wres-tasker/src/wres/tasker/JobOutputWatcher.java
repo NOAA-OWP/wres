@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import com.google.protobuf.GeneratedMessageV3;
@@ -101,6 +102,12 @@ class JobOutputWatcher implements Runnable
         try
         {
             channel = this.getConnection().createChannel();
+            if ( Objects.isNull( channel ) )
+            {
+                LOGGER.warn( "Channel was unable to be created. There might be a leak" );
+                return;
+            }
+
             channel.exchangeDeclare( exchangeName, exchangeType, true );
 
             // As the consumer, I want an exclusive queue for me.
@@ -137,21 +144,30 @@ class JobOutputWatcher implements Runnable
         }
         finally
         {
-            if ( (queueName != null) && (channel != null) )
+            try
             {
-                try
+                if ( queueName != null )
                 {
                     LOGGER.info( "Deleting the queue {}", queueName );
-                    AMQP.Queue.DeleteOk deleteOk = channel.queueDelete(queueName);
-                    if (deleteOk == null)
-                    { 
-                        LOGGER.warn( "Delete queue with name {} failed. There might be a zombie queue.", queueName );
+                    AMQP.Queue.DeleteOk deleteOk = channel.queueDelete( queueName );
+                    if ( deleteOk == null )
+                    {
+                        LOGGER.warn( "Delete queue with name {} failed. There might be a zombie queue.",
+                                     queueName );
                     }
                 }
-                catch ( IOException e ) 
+
+                if ( channel != null )
                 {
-                    LOGGER.warn( "Delete queue with name {} failed due to an exception. There might be a zombie queue.", queueName, e );
+                    channel.close();
                 }
+            }
+            catch ( IOException | TimeoutException e )
+            {
+                LOGGER.warn(
+                        "Delete queue with name {} failed or unable to close channel due to an exception. There might be a zombie queue.",
+                        queueName,
+                        e );
             }
         }
 

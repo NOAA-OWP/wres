@@ -155,7 +155,7 @@ class JobResults
                 {
                     try
                     {
-                        Future<?> future = (Future<?>) r;
+                        Future<?> future = ( Future<?> ) r;
                         if ( future.isDone() )
                         {
                             future.get();
@@ -238,9 +238,9 @@ class JobResults
                 catch ( IOException | TimeoutException e )
                 {
                     LOGGER.warn(
-                                 "Timed out while waiting for job feedback watchers to bind for job {}; aborting watching that job.",
-                                 jobId,
-                                 e );
+                            "Timed out while waiting for job feedback watchers to bind for job {}; aborting watching that job.",
+                            jobId,
+                            e );
                 }
                 catch ( InterruptedException e )
                 {
@@ -392,6 +392,12 @@ class JobResults
             try
             {
                 channel = this.getConnection().createChannel();
+                if ( Objects.isNull( channel ) )
+                {
+                    LOGGER.warn( "Channel was unable to be created. There might be a leak" );
+                    throw new IOException( "Unable to connect to broker" );
+                }
+
                 channel.exchangeDeclare( exchangeName, exchangeType, true );
 
                 // As the consumer, I want an exclusive queue for me?
@@ -443,9 +449,9 @@ class JobResults
             }
             finally
             {
-                if ( ( queueName != null ) && ( channel != null ) )
+                try
                 {
-                    try
+                    if ( queueName != null )
                     {
                         LOGGER.info( "Deleting the queue {}", queueName );
                         AMQP.Queue.DeleteOk deleteOk = channel.queueDelete( queueName );
@@ -455,13 +461,18 @@ class JobResults
                                          queueName );
                         }
                     }
-                    catch ( IOException e )
+
+                    if ( channel != null )
                     {
-                        LOGGER.warn(
-                                     "Delete queue with name {} failed due to an exception. There might be a zombie queue.",
-                                     queueName,
-                                     e );
+                        channel.close();
                     }
+                }
+                catch ( IOException | TimeoutException e )
+                {
+                    LOGGER.warn(
+                            "Delete queue with name {} failed or unable to close channel due to an exception. There might be a zombie queue.",
+                            queueName,
+                            e );
                 }
             }
 
@@ -541,7 +552,7 @@ class JobResults
         long usedSpace = totalSpace - usableSpace;
 
 
-        double percentageUsed = ( ( (double) usedSpace / totalSpace ) * 100 );
+        double percentageUsed = ( ( ( double ) usedSpace / totalSpace ) * 100 );
 
         return percentageUsed >= diskThreshold;
     }
@@ -728,6 +739,12 @@ class JobResults
             try
             {
                 channel = this.getConnection().createChannel();
+                if ( Objects.isNull( channel ) )
+                {
+                    LOGGER.warn( "Channel was unable to be created. There might be a leak" );
+                    throw new IOException( "Unable to establish connection to broker" );
+                }
+
                 channel.exchangeDeclare( exchangeName, exchangeType, true );
 
                 // As the consumer, I want an exclusive queue for me.
@@ -766,9 +783,9 @@ class JobResults
             }
             finally
             {
-                if ( ( queueName != null ) && ( channel != null ) )
+                try
                 {
-                    try
+                    if ( queueName != null )
                     {
                         LOGGER.info( "Deleting the queue {}", queueName );
                         AMQP.Queue.DeleteOk deleteOk = channel.queueDelete( queueName );
@@ -778,13 +795,18 @@ class JobResults
                                          queueName );
                         }
                     }
-                    catch ( IOException e )
+
+                    if ( channel != null )
                     {
-                        LOGGER.warn(
-                                     "Delete queue with name {} failed due to an exception. There might be a zombie queue.",
-                                     queueName,
-                                     e );
+                        channel.close();
                     }
+                }
+                catch ( IOException | TimeoutException e )
+                {
+                    LOGGER.warn(
+                            "Delete queue with name {} failed or unable to close channel due to an exception. There might be a zombie queue.",
+                            queueName,
+                            e );
                 }
             }
 
@@ -817,6 +839,7 @@ class JobResults
             result.add( "jobId=" + this.getJobId() );
             return result.toString();
         }
+
     }
 
     /**
@@ -881,11 +904,11 @@ class JobResults
              */
 
             metadataExisted =
-                    ( (RMapCache<String, JobMetadata>) this.jobMetadataById )
-                                                                             .putIfAbsent( jobId,
-                                                                                           jobMetadata,
-                                                                                           EXPIRY_IN_MINUTES,
-                                                                                           TimeUnit.MINUTES ) != null;
+                    ( ( RMapCache<String, JobMetadata> ) this.jobMetadataById )
+                            .putIfAbsent( jobId,
+                                          jobMetadata,
+                                          EXPIRY_IN_MINUTES,
+                                          TimeUnit.MINUTES ) != null;
         }
         else
         {

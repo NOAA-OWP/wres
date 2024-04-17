@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import com.google.protobuf.GeneratedMessageV3;
@@ -98,16 +99,22 @@ class JobStatusWatcher implements Runnable
         String queueName = null;
         Channel channel = null;
 
-        try 
+        try
         {
             channel = this.getConnection().createChannel();
+            if ( Objects.isNull( channel ) )
+            {
+                LOGGER.warn( "Channel was unable to be created. There might be a leak" );
+                return;
+            }
+
             channel.exchangeDeclare( exchangeName, exchangeType, true );
 
             // As the consumer, I want an exclusive queue for me.
-            queueName = channel.queueDeclare(bindingKey, true, false, false, null).getQueue();
+            queueName = channel.queueDeclare( bindingKey, true, false, false, null ).getQueue();
             channel.queueBind( queueName, exchangeName, bindingKey );
 
-            LOGGER.info("Watching the queue {} for status information on the evaluation.", queueName);
+            LOGGER.info( "Watching the queue {} for status information on the evaluation.", queueName );
 
             JobStatusConsumer jobStatusConsumer =
                     new JobStatusConsumer( channel, jobStatusQueue );
@@ -116,13 +123,13 @@ class JobStatusWatcher implements Runnable
                                   true,
                                   jobStatusConsumer );
             this.getCountDownLatch().countDown();
-            LOGGER.info("Now waiting for messages in the queue {}.", queueName);
+            LOGGER.info( "Now waiting for messages in the queue {}.", queueName );
             JobMessageHelper.waitForAllMessages( queueName,
                                                  this.getJobId(),
                                                  jobStatusQueue,
                                                  sharer,
                                                  TOPIC );
-            LOGGER.info("Done waiting for messages in the queue {}.", queueName);
+            LOGGER.info( "Done waiting for messages in the queue {}.", queueName );
         }
         catch ( InterruptedException ie )
         {
@@ -138,21 +145,30 @@ class JobStatusWatcher implements Runnable
         }
         finally
         {
-            if ( (queueName != null) && (channel != null) )
+            try
             {
-                try
+                if ( queueName != null )
                 {
                     LOGGER.info( "Deleting the queue {}", queueName );
-                    AMQP.Queue.DeleteOk deleteOk = channel.queueDelete(queueName);
-                    if (deleteOk == null)
+                    AMQP.Queue.DeleteOk deleteOk = channel.queueDelete( queueName );
+                    if ( deleteOk == null )
                     {
-                        LOGGER.warn( "Delete queue with name {} failed. There might be a zombie queue.", queueName );
+                        LOGGER.warn( "Delete queue with name {} failed. There might be a zombie queue.",
+                                     queueName );
                     }
                 }
-                catch ( IOException e )
+
+                if ( channel != null )
                 {
-                    LOGGER.warn( "Delete queue with name {} failed due to an exception. There might be a zombie queue.", queueName, e );
+                    channel.close();
                 }
+            }
+            catch ( IOException | TimeoutException e )
+            {
+                LOGGER.warn(
+                        "Delete queue with name {} failed or unable to close channel due to an exception. There might be a zombie queue.",
+                        queueName,
+                        e );
             }
         }
     }
