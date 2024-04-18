@@ -5,6 +5,7 @@ import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.TreeSet;
 import java.util.List;
@@ -76,6 +77,9 @@ public class InMemoryProject implements Project
 
     /** The features related to the project. */
     private final Set<FeatureTuple> features;
+
+    /** The covariate features by variable name. **/
+    private final Map<String, Set<Feature>> covariateFeatures;
 
     /** The feature groups related to the project. */
     private final Set<FeatureGroup> featureGroups;
@@ -159,7 +163,12 @@ public class InMemoryProject implements Project
         ProjectUtilities.validate( innerDeclaration );
         this.declaration = innerDeclaration;
 
-        this.validateCovariateFeatureNames( this.declaration, timeSeriesStore, this.features );
+        // Set the covariate features
+        this.covariateFeatures = this.getCovariateFeatures( this.declaration.covariates(),
+                                                            timeSeriesStore,
+                                                            this.features );
+
+        LOGGER.info( "Project validation and metadata loading is complete." );
     }
 
     @Override
@@ -212,6 +221,14 @@ public class InMemoryProject implements Project
         }
 
         return this.features;
+    }
+
+    @Override
+    public Set<Feature> getCovariateFeatures( String variableName )
+    {
+        Objects.requireNonNull( variableName );
+
+        return this.covariateFeatures.get( variableName );
     }
 
     @Override
@@ -1138,20 +1155,23 @@ public class InMemoryProject implements Project
      * Checks that each covariate has some data for the feature names associated with it. Otherwise, the feature
      * authority of the covariate may need to be declared explicitly.
      *
-     * @param declaration the project declaration
+     * @param covariates the declared covariates
      * @param timeSeriesStore the time-series data store
      * @param projectFeatures the project features
-     * @throws NoProjectDataException if the conditions select no data
+     * @return the covariate features by variable name
      * @throws DataAccessException if the data could not be accessed
+     * @throws NoProjectDataException if no features could be correlated with time-series data
      */
 
-    private void validateCovariateFeatureNames( EvaluationDeclaration declaration,
-                                                TimeSeriesStore timeSeriesStore,
-                                                Set<FeatureTuple> projectFeatures )
+    private Map<String, Set<Feature>> getCovariateFeatures( List<CovariateDataset> covariates,
+                                                            TimeSeriesStore timeSeriesStore,
+                                                            Set<FeatureTuple> projectFeatures )
     {
-        for ( CovariateDataset covariate : declaration.covariates() )
+        Map<String, Set<Feature>> covariateFeaturesInner = new HashMap<>();
+
+        for ( CovariateDataset covariate : covariates )
         {
-            Stream<TimeSeries<Double>> covariates =
+            Stream<TimeSeries<Double>> covariateSeries =
                     timeSeriesStore.getSingleValuedSeries( DatasetOrientation.COVARIATE );
 
             Objects.requireNonNull( covariate.dataset(), "Expected a covariate dataset." );
@@ -1165,15 +1185,26 @@ public class InMemoryProject implements Project
                                             .variable()
                                             .name();
 
-            Set<String> dataFeatures = covariates.filter( c -> Objects.equals( covariateName, c.getMetadata()
-                                                                                               .getVariableName() ) )
-                                                 .map( c -> c.getMetadata()
-                                                             .getFeature()
-                                                             .getName() )
-                                                 .collect( Collectors.toUnmodifiableSet() );
+            Objects.requireNonNull( covariate.featureNameOrientation(), "Could not find the orientation of the "
+                                                                        + "feature names associated with the covariate "
+                                                                        + "dataset whose variable name is '"
+                                                                        + covariateName
+                                                                        + "'." );
 
-            ProjectUtilities.covariateFeatureNamesSelectSomeData( covariate, projectFeatures, dataFeatures );
+            Set<Feature> ingestedFeatures = covariateSeries.filter( c -> Objects.equals( covariateName, c.getMetadata()
+                                                                                                         .getVariableName() ) )
+                                                           .map( c -> c.getMetadata()
+                                                                       .getFeature() )
+                                                           .collect( Collectors.toUnmodifiableSet() );
+
+            Set<Feature> matchingFeatures = ProjectUtilities.covariateFeaturesSelectSomeData( covariate,
+                                                                                              projectFeatures,
+                                                                                              ingestedFeatures );
+
+            covariateFeaturesInner.put( covariateName, matchingFeatures );
         }
+
+        return Collections.unmodifiableMap( covariateFeaturesInner );
     }
 
     /**

@@ -88,7 +88,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     private final TimeSeriesPairer<L, R> pairer;
 
     /** An optional cross-pairer to use common pairs (by time) for the main and baseline pairs. */
-    private final TimeSeriesCrossPairer<Pair<L, R>,Pair<L, R>> crossPairer;
+    private final TimeSeriesCrossPairer<Pair<L, R>, Pair<L, R>> crossPairer;
 
     /** A transformer for left-ish values. */
     private final UnaryOperator<TimeSeries<L>> leftTransformer;
@@ -170,7 +170,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
         private TimeSeriesPairer<L, R> pairer;
 
         /** An optional cross-pairer to use common pairs (by time) for the main and baseline pairs. */
-        private TimeSeriesCrossPairer<Pair<L, R>,Pair<L, R>> crossPairer;
+        private TimeSeriesCrossPairer<Pair<L, R>, Pair<L, R>> crossPairer;
 
         /** A function to upscale left data. */
         private TimeSeriesUpscaler<L> leftUpscaler;
@@ -286,7 +286,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
          * @param crossPairer the cross-pairer
          * @return the builder
          */
-        Builder<L, R, B> setCrossPairer( TimeSeriesCrossPairer<Pair<L, R>,Pair<L, R>> crossPairer )
+        Builder<L, R, B> setCrossPairer( TimeSeriesCrossPairer<Pair<L, R>, Pair<L, R>> crossPairer )
         {
             this.crossPairer = crossPairer;
 
@@ -844,7 +844,7 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
      * @return the cross pairer
      */
 
-    private TimeSeriesCrossPairer<Pair<L, R>,Pair<L, R>> getCrossPairer()
+    private TimeSeriesCrossPairer<Pair<L, R>, Pair<L, R>> getCrossPairer()
     {
         return this.crossPairer;
     }
@@ -1301,32 +1301,10 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
      */
     private Set<Feature> getCovariateFeatures( CovariateDataset dataset )
     {
-        Objects.requireNonNull( dataset.featureNameOrientation(), "Could not find the orientation of the "
-                                                                  + "feature names associated with the covariate "
-                                                                  + "dataset whose variable name is '"
-                                                                  + dataset.dataset()
-                                                                           .variable()
-                                                                           .name()
-                                                                  + "'." );
-
-        switch ( dataset.featureNameOrientation() )
-        {
-            case LEFT ->
-            {
-                return this.getFeatures( FeatureTuple::getLeft );
-            }
-            case RIGHT ->
-            {
-                return this.getFeatures( FeatureTuple::getRight );
-            }
-            case BASELINE ->
-            {
-                return this.getFeatures( FeatureTuple::getBaseline );
-            }
-            default -> throw new IllegalStateException( "Unrecognized dataset orientation, '"
-                                                        + dataset.featureNameOrientation()
-                                                        + "'." );
-        }
+        return this.getProject()
+                   .getCovariateFeatures( dataset.dataset()
+                                                 .variable()
+                                                 .name() );
     }
 
     /**

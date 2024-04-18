@@ -9,6 +9,7 @@ import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.datamodel.scale.TimeScaleOuter;
+import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.io.retrieving.DataAccessException;
@@ -67,15 +68,23 @@ public interface Project
      * feature groups.
      * @return a set of all feature tuples involved in the project
      * @throws DataAccessException if the features cannot be retrieved
-     * @throws IllegalStateException if the features have not been set
      */
 
     Set<FeatureTuple> getFeatures();
 
     /**
+     * Returns the set of {@link Feature} associated with the named covariate dataset.
+     * @param variableName the name of the covariate variable whose features are required
+     * @return a set of all features associated with the named covariate dataset
+     * @throws DataAccessException if the features cannot be retrieved
+     * @throws NullPointerException if the declared variable name is null
+     */
+
+    Set<Feature> getCovariateFeatures( String variableName );
+
+    /**
      * Returns the set of {@link FeatureGroup} to evaluate, including singletons.
      * @return a set of all feature groups involved in the project
-     * @throws IllegalStateException if the features have not been set
      */
 
     Set<FeatureGroup> getFeatureGroups();
@@ -84,7 +93,6 @@ public interface Project
      * Returns a set of singleton {@link FeatureGroup} for which statistics should not be published. These groups are
      * used to calculate summary statistics only. They were not declared, explicitly, as singletons.
      * @return a set of singleton feature groups whose statistics should not be published
-     * @throws IllegalStateException if the features have not been set
      */
 
     Set<FeatureGroup> getFeatureGroupsForWhichStatisticsShouldNotBePublished();

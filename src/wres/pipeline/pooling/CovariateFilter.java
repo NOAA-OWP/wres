@@ -95,12 +95,14 @@ class CovariateFilter<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>>
                                                                 .map( Event::getTime ) )
                                                 .collect( Collectors.toCollection( TreeSet::new ) );
 
-        // Get the feature name with the same feature authority as the covariate dataset
+        // Get the feature with the same name and feature authority as the covariate dataset. Note that other
+        // attributes of the feature, such as coordinates, may differ
         Feature feature = this.getFeatureName( pool, covariate.datasetDescription() );
         List<TimeSeries<L>> featuredCovariate = covariateSeries.stream()
-                                                               .filter( t -> Objects.equals( feature,
+                                                               .filter( t -> Objects.equals( feature.getName(),
                                                                                              t.getMetadata()
-                                                                                              .getFeature() ) )
+                                                                                              .getFeature()
+                                                                                              .getName() ) )
                                                                .toList();
 
         // Upscale the covariate time-series as needed

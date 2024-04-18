@@ -640,7 +640,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         }
 
         // Feature identifier, can be null with no baseline.
-        if ( !this.getFeatures().isEmpty() )
+        if ( !this.getFeatures()
+                  .isEmpty() )
         {
             Long[] featureIds = this.getFeatureIds();
             Object parameter = featureIds;
@@ -1713,7 +1714,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
                               "the supplied lead duration column was null." );
             }
         }
-
     }
 
     /**

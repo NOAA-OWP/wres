@@ -86,6 +86,9 @@ public class DatabaseProject implements Project
     /** The set of all features pertaining to the project. */
     private final Set<FeatureTuple> features;
 
+    /** The covariate features by variable name. **/
+    private final Map<String, Set<Feature>> covariateFeatures;
+
     /** The feature groups related to the project. */
     private final Set<FeatureGroup> featureGroups;
 
@@ -181,8 +184,11 @@ public class DatabaseProject implements Project
         // Validate any ensemble conditions
         this.validateEnsembleConditions( this.declaration, this.projectId );
 
-        // Check that the feature names associated with each covariate select some data
-        this.validateCovariateFeatureNames( this.declaration, this.projectId, this.features );
+        // Set the covariate features
+        this.covariateFeatures = this.getCovariateFeatures( this.declaration.covariates(),
+                                                            this.projectId,
+                                                            this.features,
+                                                            caches.getFeaturesCache() );
 
         LOGGER.info( "Project validation and metadata loading is complete." );
     }
@@ -247,6 +253,14 @@ public class DatabaseProject implements Project
         }
 
         return this.features;
+    }
+
+    @Override
+    public Set<Feature> getCovariateFeatures( String variableName )
+    {
+        Objects.requireNonNull( variableName );
+
+        return this.covariateFeatures.get( variableName );
     }
 
     @Override
@@ -1098,18 +1112,23 @@ public class DatabaseProject implements Project
      * Checks that each covariate has some data for the feature names associated with it. Otherwise, the feature
      * authority of the covariate may need to be declared explicitly.
      *
-     * @param declaration the project declaration
+     * @param covariates the covariates
      * @param projectId the project identifier
      * @param projectFeatures the project features
-     * @throws NoProjectDataException if the conditions select no data
+     * @param featureCache the feature cache
+     * @return the covariate features by variable name
      * @throws DataAccessException if the data could not be accessed
+     * @throws NoProjectDataException if no features could be correlated with time-series data
      */
 
-    private void validateCovariateFeatureNames( EvaluationDeclaration declaration,
-                                                long projectId,
-                                                Set<FeatureTuple> projectFeatures )
+    private Map<String, Set<Feature>> getCovariateFeatures( List<CovariateDataset> covariates,
+                                                            long projectId,
+                                                            Set<FeatureTuple> projectFeatures,
+                                                            Features featureCache )
     {
-        for ( CovariateDataset covariate : declaration.covariates() )
+        Map<String, Set<Feature>> covariateFeaturesInner = new HashMap<>();
+
+        for ( CovariateDataset covariate : covariates )
         {
             Objects.requireNonNull( covariate.dataset(), "Expected a covariate dataset." );
             Objects.requireNonNull( covariate.dataset()
@@ -1122,10 +1141,16 @@ public class DatabaseProject implements Project
                                             .variable()
                                             .name();
 
+            Objects.requireNonNull( covariate.featureNameOrientation(), "Could not find the orientation of the "
+                                                                        + "feature names associated with the covariate "
+                                                                        + "dataset whose variable name is '"
+                                                                        + covariateName
+                                                                        + "'." );
+
             // Get the set of features available for this covariate
             Database db = this.getDatabase();
             DataScripter script = new DataScripter( db );
-            script.addLine( "SELECT DISTINCT F.name" );
+            script.addLine( "SELECT DISTINCT F.feature_id" );
             script.addLine( "FROM wres.Feature F" );
             script.addLine( "INNER JOIN wres.Source S" );
             script.addTab().addLine( "ON F.feature_id = S.feature_id" );
@@ -1137,13 +1162,14 @@ public class DatabaseProject implements Project
             script.addArgument( DatasetOrientation.COVARIATE.toString() );
             script.addTab().addLine( "AND S.variable_name = ?" );
             script.addArgument( covariateName );
-            Set<String> dataFeatures = new HashSet<>();
+            Set<Feature> ingestedFeatures = new HashSet<>();
             try ( DataProvider provider = script.getData() )
             {
                 while ( provider.next() )
                 {
-                    String nextName = provider.getString( "name" );
-                    dataFeatures.add( nextName );
+                    long nextId = provider.getLong( "feature_id" );
+                    Feature nextFeature = featureCache.getFeatureKey( nextId );
+                    ingestedFeatures.add( nextFeature );
                 }
             }
             catch ( SQLException e )
@@ -1152,10 +1178,14 @@ public class DatabaseProject implements Project
                                                + "select some data.", e );
             }
 
-            dataFeatures = Collections.unmodifiableSet( dataFeatures );
+            Set<Feature> matchingFeatures = ProjectUtilities.covariateFeaturesSelectSomeData( covariate,
+                                                                                              projectFeatures,
+                                                                                              ingestedFeatures );
 
-            ProjectUtilities.covariateFeatureNamesSelectSomeData( covariate, projectFeatures, dataFeatures );
+            covariateFeaturesInner.put( covariateName, matchingFeatures );
         }
+
+        return Collections.unmodifiableMap( covariateFeaturesInner );
     }
 
     /**

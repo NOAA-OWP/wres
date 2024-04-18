@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -873,19 +874,20 @@ class ProjectUtilities
     }
 
     /**
-     * Checks that some time-series data is present for the feature names associated with the covariate feature
-     * authority when inspecting the corresponding feature names for the dataset whose feature authority matches that
-     * of the covariate. If no data is discovered when using the covariate feature names and the assumed authority, an
+     * Checks that some time-series data is present for the features associated with the covariate feature
+     * authority when inspecting the corresponding features for the dataset whose feature authority matches that
+     * of the covariate. If no data is discovered when using the covariate features and the assumed authority, an
      * exception is thrown, indicating that the authority may not be correct.
      *
      * @param covariate the covariate dataset
      * @param projectFeatures the project features, post-ingest
-     * @param ingestedCovariateFeatureNames the ingested covariate feature names
+     * @param ingestedCovariateFeatures the ingested covariate feature names
+     * @return the covariate features with time-series data for the dataset that has the same feature authority
      * @throws NoProjectDataException if the covariate feature names do not select any time-series data
      */
-    static void covariateFeatureNamesSelectSomeData( CovariateDataset covariate,
-                                                     Set<FeatureTuple> projectFeatures,
-                                                     Set<String> ingestedCovariateFeatureNames )
+    static Set<Feature> covariateFeaturesSelectSomeData( CovariateDataset covariate,
+                                                         Set<FeatureTuple> projectFeatures,
+                                                         Set<Feature> ingestedCovariateFeatures )
     {
         DatasetOrientation orientation = covariate.featureNameOrientation();
 
@@ -900,42 +902,46 @@ class ProjectUtilities
                                          .variable()
                                          .name(), "Expected a covariate variable name." );
 
-        // Get the set of features to evaluate for this orientation
-        Set<Feature> covariateFeatures;
-        switch ( orientation )
-        {
-            case LEFT -> covariateFeatures = projectFeatures.stream()
-                                                            .map( FeatureTuple::getLeft )
-                                                            .collect( Collectors.toSet() );
-            case RIGHT -> covariateFeatures = projectFeatures.stream()
-                                                             .map( FeatureTuple::getRight )
-                                                             .collect( Collectors.toSet() );
-            case BASELINE -> covariateFeatures = projectFeatures.stream()
-                                                                .map( FeatureTuple::getBaseline )
-                                                                .collect( Collectors.toSet() );
-            default -> throw new IllegalStateException( "Unrecognized dataset orientation, '"
-                                                        + orientation
-                                                        + "'. " );
-        }
-
         String covariateName = covariate.dataset()
                                         .variable()
                                         .name();
 
-        Set<String> covariateFeatureNames = covariateFeatures.stream()
+        Objects.requireNonNull( covariate.featureNameOrientation(), "Could not find the orientation of the "
+                                                                    + "feature names associated with the covariate "
+                                                                    + "dataset whose variable name is '"
+                                                                    + covariateName
+                                                                    + "'." );
+
+        Set<String> ingestedNames = ingestedCovariateFeatures.stream()
                                                              .map( Feature::getName )
                                                              .collect( Collectors.toSet() );
-        Set<String> nodataFeatures = new HashSet<>( covariateFeatureNames );
-        nodataFeatures.removeAll( ingestedCovariateFeatureNames );
+        Set<Feature> matchingFeatures;
 
-        if ( nodataFeatures.equals( covariateFeatureNames ) )
+        switch ( covariate.featureNameOrientation() )
         {
-            throw new NoProjectDataException( "Could not find time-series data for any of the feature names "
-                                              + "associated with covariate '"
+            case LEFT -> matchingFeatures = ProjectUtilities.getMatchingFeatures( ingestedCovariateFeatures,
+                                                                                  projectFeatures,
+                                                                                  FeatureTuple::getLeft );
+            case RIGHT -> matchingFeatures = ProjectUtilities.getMatchingFeatures( ingestedCovariateFeatures,
+                                                                                   projectFeatures,
+                                                                                   FeatureTuple::getRight );
+            case BASELINE -> matchingFeatures = ProjectUtilities.getMatchingFeatures( ingestedCovariateFeatures,
+                                                                                      projectFeatures,
+                                                                                      FeatureTuple::getBaseline );
+            default -> throw new IllegalStateException( "Unrecognized dataset orientation, '"
+                                                        + covariate.featureNameOrientation()
+                                                        + "'." );
+        }
+
+        // No covariate feature names with corresponding feature names for time-series data?
+        if ( matchingFeatures.isEmpty() )
+        {
+            throw new NoProjectDataException( "Could not find non-covariate time-series data for any of the feature "
+                                              + "names associated with covariate '"
                                               + covariateName
                                               + "'. These feature names were interpreted with the feature "
                                               + "authority of the '"
-                                              + orientation
+                                              + covariate.featureNameOrientation()
                                               + "' data. If this is incorrect, please explicitly and accurately "
                                               + "declare the 'feature_authority' for this covariate, as well as "
                                               + "the 'feature_authority' of the corresponding 'observed', "
@@ -945,9 +951,30 @@ class ProjectUtilities
                                               + "covariate data or remove the covariate entirely. The feature "
                                               + "names with data (and whose feature authority should be declared) "
                                               + "for this covariate are: "
-                                              + ingestedCovariateFeatureNames
+                                              + ingestedNames
                                               + "." );
         }
+
+        return matchingFeatures;
+    }
+
+    /**
+     * Retrieves the matching features using the inputs.
+     * @param ingestedCovariateFeatures the ingested covariate features to filter
+     * @param projectFeatures the project features to match with the ingested covariate features
+     * @param getter the getter to retrieve a feature from a tuple
+     * @return the matching features
+     */
+    private static Set<Feature> getMatchingFeatures( Set<Feature> ingestedCovariateFeatures,
+                                                     Set<FeatureTuple> projectFeatures,
+                                                     Function<FeatureTuple, Feature> getter )
+    {
+        return ingestedCovariateFeatures.stream()
+                                        .filter( f -> projectFeatures.stream()
+                                                                     .anyMatch( g -> Objects.equals( getter.apply( g )
+                                                                                                           .getName(),
+                                                                                                     f.getName() ) ) )
+                                        .collect( Collectors.toUnmodifiableSet() );
     }
 
     /**
