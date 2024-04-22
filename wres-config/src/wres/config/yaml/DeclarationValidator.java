@@ -733,7 +733,7 @@ public class DeclarationValidator
                                                                         .generatedBaseline()
                                                                         .method()
                                                            + "', which requires observation-like data sources, but the "
-                                                           + "declared data 'type' is '"
+                                                           + "data 'type' is '"
                                                            + declaration.baseline()
                                                                         .dataset()
                                                                         .type()

@@ -24,9 +24,21 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.statistics.MessageFactory;
+import wres.statistics.generated.BoxplotMetric;
+import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.DiagramMetric;
+import wres.statistics.generated.DiagramStatistic;
+import wres.statistics.generated.DoubleScoreMetric;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DurationDiagramMetric;
+import wres.statistics.generated.DurationDiagramStatistic;
+import wres.statistics.generated.DurationScoreMetric;
+import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Statistics;
 
 /**
  * Tests the {@link BootstrapUtilitiesTest}.
@@ -154,5 +166,135 @@ class BootstrapUtilitiesTest
         Pair<Long, Duration> expected = Pair.of( 4L, Duration.ofHours( 1 ) );
 
         assertEquals( expected, actual );
+    }
+
+    @Test
+    void testReconcileQuantilesWithNominalStatistics()
+    {
+        // Add some quantiles
+        MetricName p = MetricName.TIME_TO_PEAK_ERROR;
+        MetricName q = MetricName.TIME_TO_PEAK_RELATIVE_ERROR;
+        Statistics quantile =
+                Statistics.newBuilder()
+                          .addDiagrams( DiagramStatistic.newBuilder()
+                                                        .setMetric( DiagramMetric.newBuilder()
+                                                                                 .setName( MetricName.RELIABILITY_DIAGRAM )
+                                                                                 .build() ) )
+                          .addDiagrams( DiagramStatistic.newBuilder()
+                                                        .setMetric( DiagramMetric.newBuilder()
+                                                                                 .setName( MetricName.RANK_HISTOGRAM )
+                                                                                 .build() ) )
+                          .addScores( DoubleScoreStatistic.newBuilder()
+                                                          .setMetric( DoubleScoreMetric.newBuilder()
+                                                                                       .setName( MetricName.MEAN_ABSOLUTE_ERROR ) ) )
+                          .addScores( DoubleScoreStatistic.newBuilder()
+                                                          .setMetric( DoubleScoreMetric.newBuilder()
+                                                                                       .setName( MetricName.MEAN_ERROR ) ) )
+                          .addDurationScores( DurationScoreStatistic.newBuilder()
+                                                                    .setMetric( DurationScoreMetric.newBuilder()
+                                                                                                   .setName( p ) ) )
+                          .addDurationScores( DurationScoreStatistic.newBuilder()
+                                                                    .setMetric( DurationScoreMetric.newBuilder()
+                                                                                                   .setName( q ) ) )
+                          .addDurationDiagrams( DurationDiagramStatistic.newBuilder()
+                                                                        .setMetric( DurationDiagramMetric.newBuilder()
+                                                                                                         .setName( p )
+                                                                                                         .build() ) )
+                          .addDurationDiagrams( DurationDiagramStatistic.newBuilder()
+                                                                        .setMetric( DurationDiagramMetric.newBuilder()
+                                                                                                         .setName( q )
+                                                                                                         .build() ) )
+                          .addOneBoxPerPool( BoxplotStatistic.newBuilder()
+                                                             .setMetric( BoxplotMetric.newBuilder()
+                                                                                      .setName( MetricName.BOX_PLOT_OF_ERRORS ) ) )
+                          .addOneBoxPerPool( BoxplotStatistic.newBuilder()
+                                                             .setMetric( BoxplotMetric.newBuilder()
+                                                                                      .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE ) ) )
+                          .addOneBoxPerPair( BoxplotStatistic.newBuilder()
+                                                             .setMetric( BoxplotMetric.newBuilder()
+                                                                                      .setName( MetricName.BOX_PLOT_OF_ERRORS ) ) )
+                          .addOneBoxPerPair( BoxplotStatistic.newBuilder()
+                                                             .setMetric( BoxplotMetric.newBuilder()
+                                                                                      .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE ) ) )
+                          .build();
+
+        Statistics nominal =
+                Statistics.newBuilder()
+                          .addDiagrams( DiagramStatistic.newBuilder()
+                                                        .setMetric( DiagramMetric.newBuilder()
+                                                                                 .setName( MetricName.RANK_HISTOGRAM )
+                                                                                 .build() ) )
+                          .addScores( DoubleScoreStatistic.newBuilder()
+                                                          .setMetric( DoubleScoreMetric.newBuilder()
+                                                                                       .setName( MetricName.MEAN_ABSOLUTE_ERROR ) ) )
+                          .addDurationScores( DurationScoreStatistic.newBuilder()
+                                                                    .setMetric( DurationScoreMetric.newBuilder()
+                                                                                                   .setName( q ) ) )
+                          .addDurationDiagrams( DurationDiagramStatistic.newBuilder()
+                                                                        .setMetric( DurationDiagramMetric.newBuilder()
+                                                                                                         .setName( p )
+                                                                                                         .build() ) )
+                          .addOneBoxPerPool( BoxplotStatistic.newBuilder()
+                                                             .setMetric( BoxplotMetric.newBuilder()
+                                                                                      .setName( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE ) ) )
+                          .addOneBoxPerPair( BoxplotStatistic.newBuilder()
+                                                             .setMetric( BoxplotMetric.newBuilder()
+                                                                                      .setName( MetricName.BOX_PLOT_OF_ERRORS ) ) )
+                          .build();
+
+        Statistics nominalTwo =
+                Statistics.newBuilder()
+                          .addScores( DoubleScoreStatistic.newBuilder()
+                                                          .setMetric( DoubleScoreMetric.newBuilder()
+                                                                                       .setName( MetricName.MEAN_ABSOLUTE_ERROR ) ) )
+                          .build();
+
+        List<Statistics> actual = BootstrapUtilities.reconcileQuantilesWithNominalStatistics( List.of( quantile ),
+                                                                                              List.of( nominal,
+                                                                                                       nominalTwo ) );
+
+        assertAll( () -> assertEquals( List.of( MetricName.RANK_HISTOGRAM ),
+                                       actual.stream()
+                                             .flatMap( a -> a.getDiagramsList()
+                                                             .stream() )
+                                             .map( d -> d.getMetric()
+                                                         .getName() )
+                                             .toList() ),
+                   () -> assertEquals( List.of( MetricName.MEAN_ABSOLUTE_ERROR ),
+                                       actual.stream()
+                                             .flatMap( a -> a.getScoresList()
+                                                             .stream() )
+                                             .map( d -> d.getMetric()
+                                                         .getName() )
+                                             .toList() ),
+                   () -> assertEquals( List.of( MetricName.TIME_TO_PEAK_ERROR ),
+                                       actual.stream()
+                                             .flatMap( a -> a.getDurationDiagramsList()
+                                                             .stream() )
+                                             .map( d -> d.getMetric()
+                                                         .getName() )
+                                             .toList() ),
+                   () -> assertEquals( List.of( MetricName.TIME_TO_PEAK_RELATIVE_ERROR ),
+                                       actual.stream()
+                                             .flatMap( a -> a.getDurationScoresList()
+                                                             .stream() )
+                                             .map( d -> d.getMetric()
+                                                         .getName() )
+                                             .toList() ),
+                   () -> assertEquals( List.of( MetricName.BOX_PLOT_OF_ERRORS_BY_OBSERVED_VALUE ),
+                                       actual.stream()
+                                             .flatMap( a -> a.getOneBoxPerPoolList()
+                                                             .stream() )
+                                             .map( d -> d.getMetric()
+                                                         .getName() )
+                                             .toList() ),
+                   () -> assertEquals( List.of( MetricName.BOX_PLOT_OF_ERRORS ),
+                                       actual.stream()
+                                             .flatMap( a -> a.getOneBoxPerPairList()
+                                                             .stream() )
+                                             .map( d -> d.getMetric()
+                                                         .getName() )
+                                             .toList() ) );
+
     }
 }

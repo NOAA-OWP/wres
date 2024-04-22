@@ -493,6 +493,9 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                                                            samplingUncertainty,
                                                            blockSizeEstimator,
                                                            Collections.unmodifiableList( statistics ) );
+
+            // Reconcile the estimates with the nominal statistics: #128868
+            quantiles = BootstrapUtilities.reconcileQuantilesWithNominalStatistics( quantiles, statistics );
             statistics.addAll( quantiles );
         }
         catch ( InterruptedException e )
@@ -815,11 +818,11 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
         Map<DatasetOrientation, List<Statistics>> grouped = Slicer.getGroupedStatistics( statistics );
 
         // Create the quantile statistics
-        Set<ScalarSummaryStatisticFunction> quantiles = samplingUncertainty.quantiles()
-                                                                           .stream()
-                                                                           .map( FunctionFactory::quantileForSamplingUncertainty )
-                                                                           .collect( Collectors.toCollection(
-                                                                                   LinkedHashSet::new ) );
+        Set<ScalarSummaryStatisticFunction> quantiles =
+                samplingUncertainty.quantiles()
+                                   .stream()
+                                   .map( FunctionFactory::quantileForSamplingUncertainty )
+                                   .collect( Collectors.toCollection( LinkedHashSet::new ) );
         quantiles = Collections.unmodifiableSet( quantiles );
 
         Map<OneOrTwoThresholds, Map<DatasetOrientation, SummaryStatisticsCalculator>> returnMe = new HashMap<>();
@@ -845,6 +848,8 @@ public class PoolProcessor<L, R> implements Supplier<PoolProcessingResult>
                                                                                          null,
                                                                                          ( a, b ) -> a,
                                                                                          null );
+
+                // Add the nominal statistics
                 calculator.test( mergedStatistics );
 
                 if ( returnMe.containsKey( key ) )

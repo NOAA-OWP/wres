@@ -1917,8 +1917,7 @@ class DeclarationValidatorTest
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
         assertTrue( DeclarationValidatorTest.contains( events,
-                                                       "which requires observation-like data sources, but the "
-                                                       + "declared data",
+                                                       "which requires observation-like data sources, but the ",
                                                        StatusLevel.ERROR ) );
     }
 

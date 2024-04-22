@@ -764,11 +764,11 @@ public class InMemoryProject implements Project
         if ( featuresInner.isEmpty()
              && featureGroupsInner.isEmpty() )
         {
-            throw new NoProjectDataException( "Failed to identify any features with data on all required sides (left, "
-                                              + "right and, when declared, baseline) for the variables and other "
-                                              + "declaration supplied. Please check that the declaration is expected "
-                                              + "to produce some features with time-series data on both sides of the "
-                                              + "pairing." );
+            throw new NoProjectDataException( "Failed to identify any geographic features with data on all required "
+                                              + "sides (left, right and, when declared, baseline) for the variables "
+                                              + "and other declaration supplied. Please check that the declaration is "
+                                              + "expected to produce some features with time-series data on both sides "
+                                              + "of the pairing." );
         }
 
         return new FeatureSets( featuresInner, featureGroupsInner, doNotPublishInner );

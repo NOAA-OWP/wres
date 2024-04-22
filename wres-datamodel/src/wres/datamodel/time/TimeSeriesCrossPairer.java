@@ -45,7 +45,8 @@ public class TimeSeriesCrossPairer<S, T>
      * Creates an instance of a cross pairer using {@link wres.config.yaml.components.CrossPairMethod#FUZZY} matching by
      * reference time.
      *
-     * @param <T> the time-series event value type
+     * @param <S> the time-series event value type for the first series
+     * @param <T> the time-series event value type for the second series
      * @return an instance
      */
 
@@ -57,7 +58,8 @@ public class TimeSeriesCrossPairer<S, T>
     /**
      * Creates an instance of a cross pairer using a prescribed {@link wres.config.yaml.components.CrossPairMethod}.
      *
-     * @param <T> the time-series event value type
+     * @param <S> the time-series event value type for the first series
+     * @param <T> the time-series event value type for the second series
      * @param crossPair the match mode for reference times
      * @return an instance
      * @throws NullPointerException if the match mode is null

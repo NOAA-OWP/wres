@@ -3,13 +3,16 @@ package wres.datamodel.bootstrap;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -20,6 +23,13 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
+import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.DiagramStatistic;
+import wres.statistics.generated.DoubleScoreStatistic;
+import wres.statistics.generated.DurationDiagramStatistic;
+import wres.statistics.generated.DurationScoreStatistic;
+import wres.statistics.generated.MetricName;
+import wres.statistics.generated.Statistics;
 
 /**
  * Utilities to assist with bootstrap resampling of data pools.
@@ -126,6 +136,275 @@ public class BootstrapUtilities
         }
 
         return eventCount > 1;
+    }
+
+    /**
+     * Returns the subset of quantile statistics for which nominal statistics are available. Since bootstrap sampling
+     * can generate "novel" statistics in some cases (i.e., resampled statistics for which nominal statistics) are not
+     * available, such as when a minimum sample size is evaluated separately for the nominal statistics and resampled
+     * statistics, this method allows the resampled quantiles to be reconciled with the nominal statistics.
+     *
+     * @param quantiles the quantiles
+     * @param nominal the nominal statistics
+     * @return the quantiles with corresponding nominal statistics
+     * @throws NullPointerException if either input is null
+     */
+
+    public static List<Statistics> reconcileQuantilesWithNominalStatistics( List<Statistics> quantiles,
+                                                                            List<Statistics> nominal )
+    {
+        Objects.requireNonNull( quantiles );
+        Objects.requireNonNull( nominal );
+
+        // Group the statistics by common pool boundaries
+        List<Statistics> adjustedQuantiles = new ArrayList<>();
+        for ( Statistics quantile : quantiles )
+        {
+            Statistics clean = quantile.toBuilder()
+                                       .clearDiagrams()
+                                       .clearDurationDiagrams()
+                                       .clearScores()
+                                       .clearDurationScores()
+                                       .clearOneBoxPerPair()
+                                       .clearOneBoxPerPool()
+                                       .clearSummaryStatistic() // Clear the quantile information
+                                       .build();
+
+            Predicate<Statistics> filter = statistics ->
+                    Objects.equals( statistics.toBuilder()
+                                              .clearDiagrams()
+                                              .clearDurationDiagrams()
+                                              .clearScores()
+                                              .clearDurationScores()
+                                              .clearOneBoxPerPair()
+                                              .clearOneBoxPerPool()
+                                              .build(), clean );
+
+            List<Statistics> matched = nominal.stream()
+                                              .filter( filter )
+                                              .toList();
+
+            if ( !matched.isEmpty() )
+            {
+                Statistics adjustedQuantile = BootstrapUtilities.reconcileQuantilesWithNominalStatistics( quantile,
+                                                                                                          matched );
+                adjustedQuantiles.add( adjustedQuantile );
+            }
+            else if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Nominal statistics were discovered for the quantile with the following metadata: {}",
+                              clean );
+            }
+        }
+
+        return Collections.unmodifiableList( adjustedQuantiles );
+    }
+
+    /**
+     * Returns the subset of quantile statistics for which nominal statistics are available.
+     *
+     * @param quantile the quantiles
+     * @param nominal the nominal statistics
+     * @return the quantiles with corresponding nominal statistics
+     * @throws NullPointerException if either input is null
+     */
+
+    private static Statistics reconcileQuantilesWithNominalStatistics( Statistics quantile,
+                                                                       List<Statistics> nominal )
+    {
+        Statistics.Builder builder = quantile.toBuilder()
+                                             .clearDiagrams()
+                                             .clearDurationDiagrams()
+                                             .clearScores()
+                                             .clearDurationScores()
+                                             .clearOneBoxPerPair()
+                                             .clearOneBoxPerPool();
+
+        // Diagrams
+        List<DiagramStatistic> diagrams = nominal.stream()
+                                                 .flatMap( s -> s.getDiagramsList()
+                                                                 .stream() )
+                                                 .toList();
+        BootstrapUtilities.addQuantileForDiagrams( quantile.getDiagramsList(),
+                                                   diagrams,
+                                                   builder );
+
+        // Duration diagrams
+        List<DurationDiagramStatistic> durationDiagrams = nominal.stream()
+                                                                 .flatMap( s -> s.getDurationDiagramsList()
+                                                                                 .stream() )
+                                                                 .toList();
+        BootstrapUtilities.addQuantileForDurationDiagrams( quantile.getDurationDiagramsList(),
+                                                           durationDiagrams,
+                                                           builder );
+
+        // Scores
+        List<DoubleScoreStatistic> scores = nominal.stream()
+                                                   .flatMap( s -> s.getScoresList()
+                                                                   .stream() )
+                                                   .toList();
+        BootstrapUtilities.addQuantileForScores( quantile.getScoresList(),
+                                                 scores,
+                                                 builder );
+
+        // Duration scores
+        List<DurationScoreStatistic> durationScores = nominal.stream()
+                                                             .flatMap( s -> s.getDurationScoresList()
+                                                                             .stream() )
+                                                             .toList();
+        BootstrapUtilities.addQuantileForDurationScores( quantile.getDurationScoresList(),
+                                                         durationScores,
+                                                         builder );
+
+        // Box plots per pool
+        List<BoxplotStatistic> boxPooled = nominal.stream()
+                                                  .flatMap( s -> s.getOneBoxPerPoolList()
+                                                                  .stream() )
+                                                  .toList();
+        BootstrapUtilities.addQuantileForBoxplot( quantile.getOneBoxPerPoolList(),
+                                                  boxPooled,
+                                                  builder::addOneBoxPerPool );
+
+        // Box plots per pair
+        List<BoxplotStatistic> boxPaired = nominal.stream()
+                                                  .flatMap( s -> s.getOneBoxPerPairList()
+                                                                  .stream() )
+                                                  .toList();
+        BootstrapUtilities.addQuantileForBoxplot( quantile.getOneBoxPerPairList(),
+                                                  boxPaired,
+                                                  builder::addOneBoxPerPair );
+
+        return builder.build();
+    }
+
+    /**
+     * Adds the quantile statistics for the supplied diagrams to the builder when a corresponding nominal statistic
+     * exists.
+     *
+     * @param quantile the quantile statistics
+     * @param nominal the nominal statistics
+     * @param builder the builder to mutate
+     */
+
+    private static void addQuantileForDiagrams( List<DiagramStatistic> quantile,
+                                                List<DiagramStatistic> nominal,
+                                                Statistics.Builder builder )
+    {
+        for ( DiagramStatistic diagram : quantile )
+        {
+            MetricName name = diagram.getMetric()
+                                     .getName();
+            if ( nominal.stream()
+                        .anyMatch( d -> d.getMetric()
+                                         .getName() == name ) )
+            {
+                builder.addDiagrams( diagram );
+            }
+        }
+    }
+
+    /**
+     * Adds the quantile statistics for the supplied duration diagrams to the builder when a corresponding nominal
+     * statistic exists.
+     *
+     * @param quantile the quantile statistics
+     * @param nominal the nominal statistics
+     * @param builder the builder to mutate
+     */
+
+    private static void addQuantileForDurationDiagrams( List<DurationDiagramStatistic> quantile,
+                                                        List<DurationDiagramStatistic> nominal,
+                                                        Statistics.Builder builder )
+    {
+        for ( DurationDiagramStatistic diagram : quantile )
+        {
+            MetricName name = diagram.getMetric()
+                                     .getName();
+            if ( nominal.stream()
+                        .anyMatch( d -> d.getMetric()
+                                         .getName() == name ) )
+            {
+                builder.addDurationDiagrams( diagram );
+            }
+        }
+    }
+
+    /**
+     * Adds the quantile statistics for the supplied scores to the builder when a corresponding nominal statistic
+     * exists.
+     *
+     * @param quantile the quantile statistics
+     * @param nominal the nominal statistics
+     * @param builder the builder to mutate
+     */
+
+    private static void addQuantileForScores( List<DoubleScoreStatistic> quantile,
+                                              List<DoubleScoreStatistic> nominal,
+                                              Statistics.Builder builder )
+    {
+        for ( DoubleScoreStatistic score : quantile )
+        {
+            MetricName name = score.getMetric()
+                                   .getName();
+            if ( nominal.stream()
+                        .anyMatch( d -> d.getMetric()
+                                         .getName() == name ) )
+            {
+                builder.addScores( score );
+            }
+        }
+    }
+
+    /**
+     * Adds the quantile statistics for the supplied scores to the builder when a corresponding nominal statistic
+     * exists.
+     *
+     * @param quantile the quantile statistics
+     * @param nominal the nominal statistics
+     * @param builder the builder to mutate
+     */
+
+    private static void addQuantileForDurationScores( List<DurationScoreStatistic> quantile,
+                                                      List<DurationScoreStatistic> nominal,
+                                                      Statistics.Builder builder )
+    {
+        for ( DurationScoreStatistic score : quantile )
+        {
+            MetricName name = score.getMetric()
+                                   .getName();
+            if ( nominal.stream()
+                        .anyMatch( d -> d.getMetric()
+                                         .getName() == name ) )
+            {
+                builder.addDurationScores( score );
+            }
+        }
+    }
+
+    /**
+     * Adds the quantile statistics for the supplied box plots to the builder when a corresponding nominal statistic
+     * exists.
+     *
+     * @param quantile the quantile statistics
+     * @param nominal the nominal statistics
+     * @param consumer the consumer that mutates the builder
+     */
+
+    private static void addQuantileForBoxplot( List<BoxplotStatistic> quantile,
+                                               List<BoxplotStatistic> nominal,
+                                               Consumer<BoxplotStatistic> consumer )
+    {
+        for ( BoxplotStatistic box : quantile )
+        {
+            MetricName name = box.getMetric()
+                                 .getName();
+            if ( nominal.stream()
+                        .anyMatch( d -> d.getMetric()
+                                         .getName() == name ) )
+            {
+                consumer.accept( box );
+            }
+        }
     }
 
     /**
