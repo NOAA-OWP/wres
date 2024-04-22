@@ -233,7 +233,14 @@ class JobResults
                 {
                     latch = watchForJobFeedback( jobId,
                                                  getJobStatusExchangeName() );
-                    latch.await();
+                    boolean await = latch.await( 30, TimeUnit.SECONDS );
+
+                    if ( !await )
+                    {
+                        shutdownNow();
+                        LOGGER.warn( "Some Channel was not able to be created. There might be a leak" );
+                        throw new IOException( "Unable to connect to broker" );
+                    }
                 }
                 catch ( IOException | TimeoutException e )
                 {
@@ -742,6 +749,8 @@ class JobResults
                 if ( Objects.isNull( channel ) )
                 {
                     LOGGER.warn( "Channel was unable to be created. There might be a leak" );
+                    // We are unable to create a channel, stop waiting for one
+                    this.getCountDownLatch().countDown();
                     throw new IOException( "Unable to establish connection to broker" );
                 }
 

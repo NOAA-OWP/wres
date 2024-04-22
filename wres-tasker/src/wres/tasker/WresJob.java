@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.net.ssl.SSLContext;
 import javax.crypto.SecretKeyFactory;
@@ -793,6 +794,12 @@ public class WresJob
         Connection connection = WresJob.getConnection();
         try ( Channel channel = connection.createChannel() )
         {
+            if ( Objects.isNull( channel ) )
+            {
+                LOGGER.warn( "Channel was unable to be created. There might be a leak" );
+                throw new IOException( "Unable to connect to broker" );
+            }
+
             Map<String, Object> queueArgs = new HashMap<>();
             queueArgs.put( "x-max-priority", 2 );
             channel.queueDeclare( SEND_QUEUE_NAME,
@@ -817,7 +824,14 @@ public class WresJob
             CountDownLatch latch = JOB_RESULTS.watchForJobFeedback( jobId,
                                                                     jobStatusExchange );
             // Block until the last listener is ready and then publish the job.
-            latch.await();
+            boolean await = latch.await( 30, TimeUnit.SECONDS );
+
+            if ( !await )
+            {
+                JOB_RESULTS.shutdownNow();
+                LOGGER.warn( "Some Channel was not able to be created. There might be a leak" );
+                throw new IOException( "Unable to connect to broker" );
+            }
             channel.basicPublish( "",
                                   SEND_QUEUE_NAME,
                                   properties,

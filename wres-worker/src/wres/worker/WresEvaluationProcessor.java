@@ -157,6 +157,8 @@ class WresEvaluationProcessor implements Callable<Integer>
 
     public Integer call() throws IOException
     {
+        LOGGER.info( "Starting processing on job with ID {}", this.getJobId() );
+
         // Convert the job message into a job to see if we need to migrate or clean the database
         Job.job job;
         try
@@ -206,6 +208,8 @@ class WresEvaluationProcessor implements Callable<Integer>
 
         // Open and start an evaluation
         String evaluationId = startEvaluation( job );
+
+        LOGGER.info( "Starting evaluation with internal ID {} and job ID {}", evaluationId, this.getJobId() );
 
         // Halt evaluation if we are unable to open a project successfully
         // an empty response means there is a bad state on the server but we are accepting a new job
