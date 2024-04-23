@@ -1,7 +1,9 @@
 package wres.server;
 
+import jakarta.servlet.Servlet;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -9,8 +11,11 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.server.handler.ShutdownHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
@@ -94,17 +99,9 @@ public class WebServer
         context.setContextPath( "/" );
         ServletHolder dynamicHolder = context.addServlet( ServletContainer.class, "/*" );
 
-        // Multiple ways of binding using jersey, but Application is standard,
-        // see here:
-        // https://stackoverflow.com/questions/22994690/which-init-param-to-use-jersey-config-server-provider-packages-or-javax-ws-rs-a#23041643
-        dynamicHolder.setInitParameter( "jakarta.ws.rs.Application",
-                                        JaxRSApplication.class.getCanonicalName() );
-
         // Registering the EvaluationService explicitly so stream redirects are sent real time
-        ServletContainer servlet = new ServletContainer( new ResourceConfig().register( new EvaluationService() ) );
+        ServletContainer servlet = new ServletContainer( new ResourceConfig( EvaluationService.class ) );
         dynamicHolder.setServlet( servlet );
-
-        LOGGER.debug( "Setting dynamic holder initialization to {}", JaxRSApplication.class.getCanonicalName() );
 
         // Static handler:
         ResourceHandler resourceHandler = new ResourceHandler();
@@ -139,6 +136,18 @@ public class WebServer
         // Support ALPN
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol( httpOne.getProtocol() );
+
+        Runtime.getRuntime().addShutdownHook( new Thread( () -> {
+            try
+            {
+                LOGGER.info( "Shutting down the application..." );
+                jettyServer.stop();
+            }
+            catch ( Exception e )
+            {
+                LOGGER.info( "Unable to close down application" );
+            }
+        } ) );
 
         try ( ServerConnector serverConnector = new ServerConnector( jettyServer, httpOne, httpTwo, alpn ) )
         {
