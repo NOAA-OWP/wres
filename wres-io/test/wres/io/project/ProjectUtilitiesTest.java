@@ -74,7 +74,7 @@ class ProjectUtilitiesTest
                                                             FeatureTuple.of( leftRightBaseline ),
                                                             FeatureTuple.of( leftRightBaselineOther ) );
 
-        ProjectUtilities.FeatureGroupsPlus actual =
+        ProjectUtilities.FeatureSets actual =
                 ProjectUtilities.getFeatureGroups( featuresWithData, groupedFeaturesWithData, evaluation, 1 );
 
         assertEquals( 4, actual.featureGroups()

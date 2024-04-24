@@ -148,12 +148,12 @@ public class DatabaseProject implements Project
         this.baselineUsesGriddedData = this.getUsesGriddedData( DatasetOrientation.BASELINE );
         this.covariatesUseGriddedData = this.getUsesGriddedData( DatasetOrientation.COVARIATE );
 
-        FeatureSets featureSets = this.getFeaturesAndFeatureGroups( this.projectId,
-                                                                    declaration,
-                                                                    caches,
-                                                                    this.leftUsesGriddedData
-                                                                    || this.rightUsesGriddedData,
-                                                                    griddedFeatures );
+        ProjectUtilities.FeatureSets featureSets = this.getFeaturesAndFeatureGroups( this.projectId,
+                                                                                     declaration,
+                                                                                     caches,
+                                                                                     this.leftUsesGriddedData
+                                                                                     || this.rightUsesGriddedData,
+                                                                                     griddedFeatures );
         this.features = featureSets.features();
         this.featureGroups = featureSets.featureGroups();
         this.doNotPublish = featureSets.doNotPublish();
@@ -452,11 +452,11 @@ public class DatabaseProject implements Project
      * @throws DataAccessException if the features and/or feature groups could not be set
      */
 
-    private FeatureSets getFeaturesAndFeatureGroups( long projectId,
-                                                     EvaluationDeclaration declaration,
-                                                     DatabaseCaches caches,
-                                                     boolean gridded,
-                                                     GriddedFeatures griddedFeatures )
+    private ProjectUtilities.FeatureSets getFeaturesAndFeatureGroups( long projectId,
+                                                                      EvaluationDeclaration declaration,
+                                                                      DatabaseCaches caches,
+                                                                      boolean gridded,
+                                                                      GriddedFeatures griddedFeatures )
     {
         LOGGER.debug( "Setting the features and feature groups for project {}.", projectId );
 
@@ -538,7 +538,7 @@ public class DatabaseProject implements Project
         }
 
         // Combine the singletons and feature groups into groups that contain one or more tuples
-        ProjectUtilities.FeatureGroupsPlus
+        ProjectUtilities.FeatureSets
                 groups = ProjectUtilities.getFeatureGroups( Collections.unmodifiableSet( singletons ),
                                                             Collections.unmodifiableSet( grouped ),
                                                             declaration,
@@ -579,7 +579,9 @@ public class DatabaseProject implements Project
                                               + "of the pairing." );
         }
 
-        return new FeatureSets( Collections.unmodifiableSet( singletons ), finalGroups, groups.doNotPublish() );
+        return new ProjectUtilities.FeatureSets( Collections.unmodifiableSet( singletons ),
+                                                 finalGroups,
+                                                 groups.doNotPublish() );
     }
 
     /**
@@ -1808,14 +1810,4 @@ public class DatabaseProject implements Project
                                  String[] rightHashes,
                                  String[] baselineHashes,
                                  String[] covariateHashes ) {}
-
-    /**
-     * Small collection of geographic faetures to use in different contexts.
-     * @param features the singleton features
-     * @param featureGroups the feature groups
-     * @param doNotPublish the feature groups whose raw statistics should not be published
-     */
-    private record FeatureSets( Set<FeatureTuple> features,
-                                Set<FeatureGroup> featureGroups,
-                                Set<FeatureGroup> doNotPublish ) {}
 }

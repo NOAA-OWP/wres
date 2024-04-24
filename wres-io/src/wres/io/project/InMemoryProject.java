@@ -665,10 +665,10 @@ public class InMemoryProject implements Project
             Set<FeatureTuple> griddedTuples = this.getGriddedFeatureTuples( timeSeriesStore, hasBaseline );
 
             featuresInner = griddedTuples;
-            ProjectUtilities.FeatureGroupsPlus groups = ProjectUtilities.getFeatureGroups( featuresInner,
-                                                                                           Set.of(),
-                                                                                           declaration,
-                                                                                           DEFAULT_PROJECT_ID );
+            ProjectUtilities.FeatureSets groups = ProjectUtilities.getFeatureGroups( featuresInner,
+                                                                                     Set.of(),
+                                                                                     declaration,
+                                                                                     DEFAULT_PROJECT_ID );
             featureGroupsInner = groups.featureGroups();
             doNotPublishInner = groups.doNotPublish();
 
@@ -740,10 +740,10 @@ public class InMemoryProject implements Project
             // upfront. Do this before forming the groups, which include singleton groups
             singletons = ProjectUtilities.filterFeatures( singletons, declaration.spatialMask() );
 
-            ProjectUtilities.FeatureGroupsPlus groups = ProjectUtilities.getFeatureGroups( singletons,
-                                                                                           groupedTuples,
-                                                                                           declaration,
-                                                                                           DEFAULT_PROJECT_ID );
+            ProjectUtilities.FeatureSets groups = ProjectUtilities.getFeatureGroups( singletons,
+                                                                                     groupedTuples,
+                                                                                     declaration,
+                                                                                     DEFAULT_PROJECT_ID );
             Set<FeatureGroup> innerFeatureGroups = groups.featureGroups();
 
             // Filter the multi-group features against any spatial mask, unless there is gridded data, which is masked

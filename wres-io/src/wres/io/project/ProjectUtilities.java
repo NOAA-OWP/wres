@@ -79,13 +79,14 @@ class ProjectUtilities
     private static final String WHILE_ATTEMPTING_TO_DETECT_THE = "While attempting to detect the ";
 
     /**
-     * Small value class to hold feature group information.
+     * Small collection of geographic features to use in different contexts.
+     * @param features the singleton features
      * @param featureGroups the feature groups
-     * @param doNotPublish a set of feature groups for which statistics should not be published
-     * @author James Brown
+     * @param doNotPublish the feature groups whose raw statistics should not be published
      */
-
-    record FeatureGroupsPlus( Set<FeatureGroup> featureGroups, Set<FeatureGroup> doNotPublish ) {}
+    record FeatureSets( Set<FeatureTuple> features,
+                        Set<FeatureGroup> featureGroups,
+                        Set<FeatureGroup> doNotPublish ) {}
 
     /**
      * Creates feature groups from the inputs.
@@ -96,10 +97,10 @@ class ProjectUtilities
      * @return the feature groups
      */
 
-    static FeatureGroupsPlus getFeatureGroups( Set<FeatureTuple> singletonsWithData,
-                                               Set<FeatureTuple> groupedFeaturesWithData,
-                                               EvaluationDeclaration declaration,
-                                               long projectId )
+    static FeatureSets getFeatureGroups( Set<FeatureTuple> singletonsWithData,
+                                         Set<FeatureTuple> groupedFeaturesWithData,
+                                         EvaluationDeclaration declaration,
+                                         long projectId )
     {
         LOGGER.debug( "Creating feature groups for project {}.", projectId );
 
@@ -142,8 +143,79 @@ class ProjectUtilities
             innerGroups.addAll( doNotPublish );
         }
 
-        return new FeatureGroupsPlus( Collections.unmodifiableSet( innerGroups ),
-                                      Collections.unmodifiableSet( doNotPublish ) );
+        FeatureSets featureSets = new FeatureSets( singletonsWithData,
+                                                   Collections.unmodifiableSet( innerGroups ),
+                                                   Collections.unmodifiableSet( doNotPublish ) );
+
+        return ProjectUtilities.adjustForAliasedFeatures( featureSets );
+    }
+
+    /**
+     * Insects the input for singleton feature tuples that are "aliased" and places the aliased tuples in a
+     * multi-feature group, removing them as singleton groups. A feature tuple is "aliased" if more than one tuple
+     * contains the same feature names across all dataset orientations or sides of data, implying that some metadata
+     * other than the feature names (e.g., coordinates) differs between the aliased tuples. In this situation, a user
+     * would generally expect that the aliased feature tuples are grouped together rather than, for example, evaluating
+     * the time-series from each aliased feature tuple separately.
+     *
+     * @param featureSets the feature sets
+     * @return the feature sets adjusted for aliases
+     */
+
+    private static FeatureSets adjustForAliasedFeatures( FeatureSets featureSets )
+    {
+        // Group the singletons by common feature tuple name, filtering for those with two or more per group
+        Map<String, List<FeatureTuple>> grouped =
+                featureSets.features()
+                           .stream()
+                           .collect( Collectors.groupingBy( FeatureTuple::toStringShort ) )
+                           .entrySet()
+                           .stream()
+                           .filter( e -> e.getValue()
+                                          .size() > 1 )
+                           .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
+
+        if ( !grouped.isEmpty() )
+        {
+            LOGGER.warn( "Discovered several feature tuples with aliased feature names. This occurs when the feature "
+                         + "names are shared across two or more feature tuples whose other geospatial metadata (e.g., "
+                         + "coordinates) is different. Since these features have the same names and feature authorities, "
+                         + "it is assumed that they are intended to be treated as the same features. As such, the "
+                         + "following feature tuples will be grouped together under their corresponding feature "
+                         + "names, which has the same effect as treating the aliased features as part of a multi-"
+                         + "feature group whose time-series data will be pooled: {}.",
+                         grouped );
+        }
+
+        // Adjust the feature set, removing the aliased singletons and replacing them with a multi-feature group
+        Set<String> remove = grouped.keySet();
+        Set<FeatureTuple> adjustedSingletons = featureSets.features()
+                                                          .stream()
+                                                          .filter( f -> !remove.contains( f.toStringShort() ) )
+                                                          .collect( Collectors.toUnmodifiableSet() );
+        // Singletons are also one-feature groups, so remove from the groups too
+        Set<FeatureGroup> adjustedGroups = featureSets.featureGroups()
+                                                      .stream()
+                                                      .filter( f -> !remove.contains( f.getName() ) )
+                                                      .collect( Collectors.toSet() );
+
+        for ( Map.Entry<String, List<FeatureTuple>> nextGroup : grouped.entrySet() )
+        {
+            String groupName = nextGroup.getKey();
+            List<FeatureTuple> groupFeatures = nextGroup.getValue();
+            GeometryGroup geometryGroup = GeometryGroup.newBuilder()
+                                                       .setRegionName( groupName )
+                                                       .addAllGeometryTuples( groupFeatures.stream()
+                                                                                           .map( FeatureTuple::getGeometryTuple )
+                                                                                           .toList() )
+                                                       .build();
+            FeatureGroup group = FeatureGroup.of( geometryGroup );
+            adjustedGroups.add( group );
+        }
+
+        return new FeatureSets( adjustedSingletons,
+                                Collections.unmodifiableSet( adjustedGroups ),
+                                featureSets.doNotPublish() );
     }
 
     /**

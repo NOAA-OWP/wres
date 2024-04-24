@@ -129,7 +129,8 @@ public class FeatureTuple implements Comparable<FeatureTuple>
 
         StringJoiner joiner = new StringJoiner( separator );
 
-        joiner.add( this.getLeftName() ).add( this.getRightName() );
+        joiner.add( this.getLeftName() )
+              .add( this.getRightName() );
 
         if ( Objects.nonNull( this.getBaseline() ) )
         {
