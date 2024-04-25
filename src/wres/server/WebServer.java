@@ -145,7 +145,7 @@ public class WebServer
             }
             catch ( Exception e )
             {
-                LOGGER.info( "Unable to close down application" );
+                LOGGER.warn( "Unable to close down application", e );
             }
         } ) );
 
