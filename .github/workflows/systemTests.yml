@@ -15,7 +15,7 @@ on:
         description: 'Build description'
         
   workflow_run:
-    workflows: [Java CI with Gradle]
+    workflows: [Build]
     types: 
       - completed
 
@@ -43,6 +43,8 @@ jobs:
     # Download artifacts from previous step
     - name: Download Artifacts
       uses: actions/download-artifact@v4
+      with: 
+        name: build-artifacts-${{ github.sha }}
 
     # LS current workspace
     - name: LS current workspace
