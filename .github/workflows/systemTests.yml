@@ -15,9 +15,9 @@ on:
         description: 'Build description'
         
   workflow_run:
-    workflows: ["Java CI with Gradle"]
+    workflows: [Java CI with Gradle]
     types: 
-      - complete
+      - completed
 
 jobs:
   systests:
