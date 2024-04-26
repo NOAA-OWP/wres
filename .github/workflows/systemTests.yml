@@ -44,7 +44,6 @@ jobs:
     - name: Download Artifacts
       uses: actions/download-artifact@v4
       with: 
-        name: build-artifacts-${{ github.sha }}
         run-id: ${{ github.event.workflow_run.id }}
         github-token: ${{ github.token }}
 
