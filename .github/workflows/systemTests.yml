@@ -44,10 +44,15 @@ jobs:
     - name: Download Artifacts
       uses: actions/download-artifact@v4
       with: 
+        name: build-artifacts-${{ github.sha }}
         run-id: ${{ github.event.workflow_run.id }}
         github-token: ${{ github.token }}
 
     # LS current workspace
     - name: LS current workspace
-      run: ls -R
+      run: | 
+        ls -R
+        sha256sum *.zip
+        ls -1tf wres-[0-9]*.zip | tail -1 | cut -d '-' -f 2-3 | cut -d'.' -f 1
+        ls -1tf wres-vis-[0-9]*.zip | tail -1 | cut -d '-' -f 3-4 | cut -d'.' -f 1
 
