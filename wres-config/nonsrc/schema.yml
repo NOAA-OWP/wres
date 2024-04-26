@@ -1036,6 +1036,9 @@ definitions:
         uniqueItems: true
       # Single number
       - type: number
+      # All data sentinel
+      - type: string
+        const: 'all data'
 
   ElaboratedThresholds:
     title: Thresholds with parameters.

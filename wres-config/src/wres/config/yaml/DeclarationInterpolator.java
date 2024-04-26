@@ -204,41 +204,41 @@ public class DeclarationInterpolator
         Objects.requireNonNull( variableNames );
         Objects.requireNonNull( measurementUnit );
 
-        EvaluationDeclarationBuilder adjustedDeclarationBuilder = EvaluationDeclarationBuilder.builder( declaration );
+        EvaluationDeclarationBuilder adjustedBuilder = EvaluationDeclarationBuilder.builder( declaration );
 
         // Disambiguate the "type" of data when it is not declared
         List<EvaluationStatusEvent> events =
-                new ArrayList<>( DeclarationInterpolator.interpolateDataTypes( adjustedDeclarationBuilder,
+                new ArrayList<>( DeclarationInterpolator.interpolateDataTypes( adjustedBuilder,
                                                                                dataTypes ) );
         // Interpolate the variable names
         List<EvaluationStatusEvent> variableEvents =
-                DeclarationInterpolator.interpolateVariableNames( adjustedDeclarationBuilder,
+                DeclarationInterpolator.interpolateVariableNames( adjustedBuilder,
                                                                   variableNames );
         events.addAll( variableEvents );
 
         // Interpolate the measurement unit
         List<EvaluationStatusEvent> unitEvents =
-                DeclarationInterpolator.interpolateMeasurementUnit( adjustedDeclarationBuilder,
+                DeclarationInterpolator.interpolateMeasurementUnit( adjustedBuilder,
                                                                     measurementUnit );
         events.addAll( unitEvents );
 
         // Interpolate the timescale
         List<EvaluationStatusEvent> scaleEvents =
-                DeclarationInterpolator.interpolateTimeScale( adjustedDeclarationBuilder,
+                DeclarationInterpolator.interpolateTimeScale( adjustedBuilder,
                                                               timeScale );
         events.addAll( scaleEvents );
 
         // Interpolate evaluation metrics when required
-        DeclarationInterpolator.interpolateMetrics( adjustedDeclarationBuilder );
+        DeclarationInterpolator.interpolateMetrics( adjustedBuilder );
         // Interpolate thresholds for individual metrics, adding an "all data" threshold as needed
-        DeclarationInterpolator.interpolateThresholdsForIndividualMetrics( adjustedDeclarationBuilder );
+        DeclarationInterpolator.interpolateThresholdsForIndividualMetrics( adjustedBuilder );
         // Interpolate metric parameters
-        DeclarationInterpolator.interpolateMetricParameters( adjustedDeclarationBuilder );
+        DeclarationInterpolator.interpolateMetricParameters( adjustedBuilder );
 
         // Handle any events encountered
         DeclarationInterpolator.handleEvents( events, notify, false );
 
-        return adjustedDeclarationBuilder.build();
+        return adjustedBuilder.build();
     }
 
     /**
@@ -1646,6 +1646,21 @@ public class DeclarationInterpolator
         if ( Objects.nonNull( nextParameters ) )
         {
             parametersBuilder = MetricParametersBuilder.builder( nextParameters );
+
+            // Special case: an 'all data' threshold is declared explicitly for a metric. This indicates that the metric
+            // should be computed for 'all data' only, as the 'all data' threshold is otherwise added by default, which
+            // would render the request meaningless
+            if ( parametersBuilder.thresholds()
+                                  .size() == 1
+                 && parametersBuilder.thresholds()
+                                     .iterator()
+                                     .next()
+                                     .threshold()
+                                     .equals( DeclarationUtilities.ALL_DATA_THRESHOLD.threshold() ) )
+            {
+                LOGGER.debug( "The metric {} contained a threshold override for 'all data' only.", name );
+                globalThresholds = Map.of();
+            }
         }
 
         // Value thresholds
@@ -1657,7 +1672,8 @@ public class DeclarationInterpolator
                                                                addThresholds );
 
         // Add "all data" thresholds?
-        if ( name.isContinuous() && addAllData )
+        if ( name.isContinuous()
+             && addAllData )
         {
             valueThresholds.add( DeclarationUtilities.ALL_DATA_THRESHOLD );
         }

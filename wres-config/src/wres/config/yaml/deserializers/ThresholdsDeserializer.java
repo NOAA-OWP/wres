@@ -89,6 +89,12 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             Set<Threshold> innerThresholds = this.getThresholds( reader, thresholdsNode, type );
             thresholds.addAll( innerThresholds );
         }
+        // Schema requires a constant value, all data
+        else if ( thresholdsNode.isTextual() )
+        {
+            LOGGER.debug( "Discovered an 'all data' threshold." );
+            thresholds.add( DeclarationUtilities.ALL_DATA_THRESHOLD );
+        }
         // Implicit array of one
         else if ( thresholdsNode.isNumber() )
         {
@@ -99,9 +105,15 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         // Explicit array node, which is either a plain array of thresholds or an array of thresholds with attributes
         else if ( thresholdsNode instanceof ArrayNode arrayNode )
         {
+            // Sentinel for all data
+            if ( arrayNode.isEmpty() )
+            {
+                LOGGER.debug( "Discovered an empty threshold array, adding an 'all data' threshold only." );
+                thresholds.add( DeclarationUtilities.ALL_DATA_THRESHOLD );
+            }
             // An array of embellished thresholds
-            if ( arrayNode.get( 0 )
-                          .has( VALUES ) )
+            else if ( arrayNode.get( 0 )
+                               .has( VALUES ) )
             {
                 int setCount = arrayNode.size();
 
@@ -150,7 +162,7 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
                                                   wres.statistics.generated.Threshold.Builder builder )
     {
         // No builder supplied?
-        if( Objects.isNull( builder ) )
+        if ( Objects.isNull( builder ) )
         {
             builder = DeclarationFactory.DEFAULT_CANONICAL_THRESHOLD.toBuilder();
         }
