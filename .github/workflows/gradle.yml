@@ -33,8 +33,34 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@417ae3ccd767c252f5661f1ace9f835f9654f2b5 # v3.1.0
 
-    - name: Build with Gradle Wrapper
-      run: ./gradlew build
+    # Run and build using gradle
+    # Disable aggregateJavaDocs
+    - name: Run build
+      run: ./gradlew distZip testCodeCoverageReport javadoc
+
+    # Confirm the test code inside wres-external-services-tests zip compiles
+    - name: Compile external-services-tests
+      run: |
+        cd wres-external-services-tests
+        ../gradlew installDist
+        cd build/install/wres-external-services-tests
+        ./gradlew testClasses
+
+
+    # Create the system tests zip
+    - name: Create systests zip
+      run: |
+        cd systests
+        ../gradlew distZip installDist
+
+    # Create the admin scripts zip
+    - name: Create admin scripts
+      run: |
+        cd scripts
+        ../gradlew distZip
+
+    #- name: Build with Gradle Wrapper
+    #  run: ./gradlew build
 
     # Archive the artifacts created from this build
     - name: Archive artifacts
@@ -43,7 +69,9 @@ jobs:
         name: build-artifacts
         path: |
           build/distributions/wres-*.zip
-          */build/distributions/wres-*-*.zip
+          wres-*/build/distributions/wres-*-*.zip
+          systests/build/distributions/systests-*.zip
+          scripts/build/distributions/wres-admin-scripts-*.zip
 
       
     # NOTE: The Gradle Wrapper is the default and recommended way to run Gradle (https://docs.gradle.org/current/userguide/gradle_wrapper.html).
