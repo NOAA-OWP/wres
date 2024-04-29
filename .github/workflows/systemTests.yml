@@ -56,6 +56,6 @@ jobs:
         ls build-artifacts/build/distributions
         ls build-artifacts/build/distributions | tail -1 | cut -d '-' -f 2-3 | cut -d'.' -f 1
         wres-version=$(ls build-artifacts/build/distributions | tail -1 | cut -d '-' -f 2-3 | cut -d'.' -f 1)
-        cat "wres=$wres-version"
+        echo "wres=$wres-version"
         ls build-artifacts/wres-vis/build/distributions | tail -1 | cut -d '-' -f 3-4 | cut -d'.' -f 1
 
