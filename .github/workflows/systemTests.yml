@@ -47,6 +47,10 @@ jobs:
         run-id: ${{ github.event.workflow_run.id }}
         github-token: ${{ github.token }}
 
+    # Set env
+    - name: Set git envs
+      run: |
+        echo "wres_version=$(ls build-artifacts/build/distributions | tail -1 | cut -d '-' -f 2-3 | cut -d'.' -f 1)" >> "$GITHUB_ENV"
     # LS current workspace
     - name: LS current workspace
       run: | 
@@ -54,13 +58,8 @@ jobs:
         echo "Testing"
         ls build-artifacts/build/distributions
         echo "$(ls build-artifacts/build/distributions | tail -1 | cut -d '-' -f 2-3 | cut -d'.' -f 1)"
-        echo "wres_version=$(ls build-artifacts/build/distributions | tail -1 | cut -d '-' -f 2-3 | cut -d'.' -f 1)" >> "$GITHUB_ENV"
 
         echo "wres=$wres_version"
-        echo "wres=$env.wres_version"
-        echo "wres=$(wres_version)"
-        
-        echo "wres=$(env.wres_version)"
         echo "wres=${ wres_version }"
         ls build-artifacts/wres-vis/build/distributions | tail -1 | cut -d '-' -f 3-4 | cut -d'.' -f 1
 
