@@ -505,6 +505,9 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> covariateVariables
                 = DeclarationValidator.covariateVariableNamesAreUnique( declaration );
         events.addAll( covariateVariables );
+        // Covariate filters must be logical
+        List<EvaluationStatusEvent> covariateFilters = DeclarationValidator.covariateFiltersAreValid( declaration );
+        events.addAll( covariateFilters );
         // When obtaining data from web services, dates must be defined
         List<EvaluationStatusEvent> services = DeclarationValidator.datesPresentForWebServices( declaration );
         events.addAll( services );
@@ -1107,7 +1110,7 @@ public class DeclarationValidator
     }
 
     /**
-     * Checks that any covariates have unique variable names.
+     * Checks that all covariates have unique variable names.
      * @param declaration the declaration
      * @return the validation events encountered
      */
@@ -1151,6 +1154,79 @@ public class DeclarationValidator
                                                              + "were: "
                                                              + duplicates
                                                              + "." )
+                                           .build();
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that all covariates filters are valid.
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> covariateFiltersAreValid( EvaluationDeclaration declaration )
+    {
+        if ( declaration.covariates()
+                        .isEmpty() )
+        {
+            LOGGER.debug( "Not checking covariate filters because no covariates were declared." );
+
+            return List.of();
+        }
+
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        // Filter covariates whose minimum > maximum
+        Set<CovariateDataset> variables = declaration.covariates()
+                                                     .stream()
+                                                     .filter( c -> Objects.nonNull( c.minimum() )
+                                                                   && Objects.nonNull( c.maximum() )
+                                                                   && c.minimum() > c.maximum() )
+                                                     .collect( Collectors.toSet() );
+
+        Set<String> named = variables.stream()
+                                     .filter( c -> Objects.nonNull( c.dataset() )
+                                                   && Objects.nonNull( c.dataset()
+                                                                        .variable() )
+                                                   && Objects.nonNull( c.dataset()
+                                                                        .variable()
+                                                                        .name() ) )
+                                     .map( c -> c.dataset()
+                                                 .variable()
+                                                 .name() )
+                                     .collect( Collectors.toSet() );
+
+        if ( !named.isEmpty() )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "Discovered covariates with declared variable names whose "
+                                                             + "'minimum' value is larger than the 'maximum' value, "
+                                                             + "which is not allowed. Please fix the 'minimum' and/or "
+                                                             + "'maximum' value associated with the following "
+                                                             + "covariates and try again: "
+                                                             + named )
+                                           .build();
+            events.add( event );
+        }
+
+        if ( variables.size() - named.size() > 0 )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "Discovered covariates with declared variable names whose "
+                                                             + "'minimum' value is larger than the 'maximum' value, "
+                                                             + "which is not allowed. These covariates were not "
+                                                             + "declared with a variable name to distinguish them. The "
+                                                             + "number of these covariates to fix is: "
+                                                             + ( variables.size() - named.size() )
+                                                             + " of them to fix. Please fix the 'minimum' and/or "
+                                                             + "'maximum' value associated with these covariates and "
+                                                             + "try again." )
                                            .build();
             events.add( event );
         }

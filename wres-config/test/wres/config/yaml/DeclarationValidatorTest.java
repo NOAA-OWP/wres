@@ -2314,6 +2314,42 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testCovariatesWithInvalidFiltersProducesErrors()
+    {
+        Dataset dataset = DatasetBuilder.builder()
+                                        .type( DataType.OBSERVATIONS )
+                                        .variable( new Variable( "foo", null ) )
+                                        .build();
+        CovariateDataset covariate = new CovariateDataset( dataset, 5.0, 1.0, null, null );
+
+        Dataset anotherDataset = DatasetBuilder.builder()
+                                               .type( DataType.OBSERVATIONS )
+                                               .build();
+        CovariateDataset anotherCovariate = new CovariateDataset( anotherDataset,
+                                                                  6.3,
+                                                                  6.2999,
+                                                                  null, null );
+
+        List<CovariateDataset> covariates = List.of( covariate, anotherCovariate );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .covariates( covariates )
+                                                                        .build();
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "'minimum' value is larger than the "
+                                                                        + "'maximum' value, which is not allowed. "
+                                                                        + "Please fix",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "'minimum' value is larger than the "
+                                                                        + "'maximum' value, which is not allowed. "
+                                                                        + "These covariates were not",
+                                                                        StatusLevel.ERROR ) ) );
+    }
+
+    @Test
     void testInconsistentGraphicsOrientationAndPoolingDeclarationProducesError() throws IOException  // NOSONAR
     {
         // #57969-86
