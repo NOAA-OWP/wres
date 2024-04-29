@@ -40,6 +40,9 @@ public class TimeSeriesStore
     /** Covariate time-series of {@link Double}. **/
     private final List<TimeSeries<Double>> covariateSingleValuedSeries;
 
+    /** Covariate time-series of {@link Double}. **/
+    private final List<TimeSeries<Ensemble>> covariateEnsembleSeries;
+
     /** Left-ish time-series of {@link Ensemble}. **/
     private final List<TimeSeries<Ensemble>> leftEnsembleSeries;
 
@@ -223,6 +226,7 @@ public class TimeSeriesStore
         return TimeSeriesStore.getEnsembleStore( this.leftEnsembleSeries,
                                                  this.rightEnsembleSeries,
                                                  this.baselineEnsembleSeries,
+                                                 this.covariateEnsembleSeries,
                                                  orientation )
                               .stream()
                               .filter( next -> features.contains( next.getMetadata().getFeature() ) )
@@ -245,6 +249,7 @@ public class TimeSeriesStore
         return TimeSeriesStore.getEnsembleStore( this.leftEnsembleSeries,
                                                  this.rightEnsembleSeries,
                                                  this.baselineEnsembleSeries,
+                                                 this.covariateEnsembleSeries,
                                                  orientation )
                               .stream();
     }
@@ -278,6 +283,9 @@ public class TimeSeriesStore
 
         /** Covariate time-series of {@link Double}. **/
         private final Queue<TimeSeries<Double>> covariateSingleValuedSeries = new ConcurrentLinkedQueue<>();
+
+        /** Covariate time-series of {@link Ensemble}. **/
+        private final Queue<TimeSeries<Ensemble>> covariateEnsembleSeries = new ConcurrentLinkedQueue<>();
 
         /** Left-ish time-series of {@link Ensemble}. **/
         private final Queue<TimeSeries<Ensemble>> leftEnsembleSeries = new ConcurrentLinkedQueue<>();
@@ -329,6 +337,7 @@ public class TimeSeriesStore
             TimeSeriesStore.getEnsembleStore( this.leftEnsembleSeries,
                                               this.rightEnsembleSeries,
                                               this.baselineEnsembleSeries,
+                                              this.covariateEnsembleSeries,
                                               context )
                            .add( series );
 
@@ -376,6 +385,7 @@ public class TimeSeriesStore
      * @param leftEnsembleSeries the store of left single-valued series
      * @param rightEnsembleSeries the store of right single-valued series
      * @param baselineEnsembleSeries the store of baseline single-valued series
+     * @param covariateEnsembleSeries the store of covariate ensemble series
      * @param context the context
      * @return an ensemble store with the prescribed context
      * @throws IllegalArgumentException if the context is unrecognized
@@ -384,6 +394,7 @@ public class TimeSeriesStore
     private static Collection<TimeSeries<Ensemble>> getEnsembleStore( Collection<TimeSeries<Ensemble>> leftEnsembleSeries,
                                                                       Collection<TimeSeries<Ensemble>> rightEnsembleSeries,
                                                                       Collection<TimeSeries<Ensemble>> baselineEnsembleSeries,
+                                                                      Collection<TimeSeries<Ensemble>> covariateEnsembleSeries,
                                                                       DatasetOrientation context )
     {
         return switch ( context )
@@ -391,9 +402,7 @@ public class TimeSeriesStore
             case LEFT -> leftEnsembleSeries;
             case RIGHT -> rightEnsembleSeries;
             case BASELINE -> baselineEnsembleSeries;
-            default -> throw new IllegalArgumentException( "Unrecognized dataset orientation in this context: "
-                                                           + context +
-                                                           "." );
+            case COVARIATE -> covariateEnsembleSeries;
         };
     }
 
@@ -414,6 +423,7 @@ public class TimeSeriesStore
         this.rightEnsembleSeries = List.copyOf( builder.rightEnsembleSeries );
         this.baselineEnsembleSeries = List.copyOf( builder.baselineEnsembleSeries );
         this.covariateSingleValuedSeries = List.copyOf( builder.covariateSingleValuedSeries );
+        this.covariateEnsembleSeries = List.copyOf( builder.covariateEnsembleSeries );
 
         if ( LOGGER.isInfoEnabled() )
         {
@@ -421,6 +431,7 @@ public class TimeSeriesStore
                        + this.rightSingleValuedSeries.size()
                        + this.baselineSingleValuedSeries.size()
                        + this.covariateSingleValuedSeries.size()
+                       + this.covariateEnsembleSeries.size()
                        + this.leftEnsembleSeries.size()
                        + this.rightEnsembleSeries.size()
                        + this.baselineEnsembleSeries.size();
@@ -429,8 +440,9 @@ public class TimeSeriesStore
                          + "include {} single-valued time-series with an {} orientation, {} single-valued time-series "
                          + "with a {} orientation, {} single-valued time-series with a {} orientation, {} single-"
                          + "valued time-series with a {} orientation, {} ensemble time-series with an {} orientation, "
-                         + "{} ensemble time-series with a {} orientation and {} ensemble time-series with a {} "
-                         + "orientation. The total number of time-series events within the store is: {}.",
+                         + "{} ensemble time-series with a {} orientation, {} ensemble time-series with a {} "
+                         + "orientation and {} ensemble time-series with a {} orientation. The total number of "
+                         + "time-series events within the store is: {}.",
                          size,
                          size,
                          this.leftSingleValuedSeries.size(),
@@ -447,6 +459,8 @@ public class TimeSeriesStore
                          DatasetOrientation.RIGHT,
                          this.baselineEnsembleSeries.size(),
                          DatasetOrientation.BASELINE,
+                         this.covariateEnsembleSeries.size(),
+                         DatasetOrientation.COVARIATE,
                          this.getEventCount() );
         }
     }

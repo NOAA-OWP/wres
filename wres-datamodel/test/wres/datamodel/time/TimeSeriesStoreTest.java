@@ -38,6 +38,9 @@ class TimeSeriesStoreTest
     /** Expected covariate single-valued series. */
     private TimeSeries<Double> covariateSingleValued;
 
+    /** Expected covariate single-valued series. */
+    private TimeSeries<Ensemble> covariateEnsemble;
+
     /** A geographic feature. */
     private Feature feature;
 
@@ -45,7 +48,6 @@ class TimeSeriesStoreTest
     void runBeforeEachTest()
     {
         TimeSeriesStore.Builder builder = new TimeSeriesStore.Builder();
-
 
         this.feature = Feature.of( MessageFactory.getGeometry( "feature" ) );
 
@@ -104,6 +106,9 @@ class TimeSeriesStoreTest
 
         builder.addSingleValuedSeries( this.covariateSingleValued, DatasetOrientation.COVARIATE );
 
+        this.covariateEnsemble = this.baselineEnsemble;
+        builder.addEnsembleSeries( this.covariateEnsemble, DatasetOrientation.COVARIATE );
+
         this.store = builder.build();
     }
 
@@ -136,6 +141,14 @@ class TimeSeriesStoreTest
     {
         assertEquals( List.of( this.covariateSingleValued ),
                       this.store.getSingleValuedSeries( DatasetOrientation.COVARIATE )
+                                .toList() );
+    }
+
+    @Test
+    void testGetCovariateEnsembleSeries()
+    {
+        assertEquals( List.of( this.covariateEnsemble ),
+                      this.store.getEnsembleSeries( DatasetOrientation.COVARIATE )
                                 .toList() );
     }
 

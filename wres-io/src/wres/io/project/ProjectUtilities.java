@@ -247,10 +247,11 @@ class ProjectUtilities
              && !Objects.equals( leftVariableName, rightVariableName )
              && LOGGER.isWarnEnabled() )
         {
-            LOGGER.warn( "The left and right variable names were auto-detected, but the detected variable names do not "
-                         + "match. The left name is {} and the right name is {}. Proceeding to pair and evaluate these "
-                         + "variables. If this is unexpected behavior, please add explicit variable declaration for "
-                         + "both the left and right data and try again.",
+            LOGGER.warn( "The 'observed' and 'predicted' variable names were auto-detected, but the detected variable "
+                         + "names do not match. The 'observed' name is {} and the 'predicted' name is {}. Proceeding "
+                         + "to pair and evaluate these variables. If this is unexpected behavior, please explicitly "
+                         + "declare the 'name' of the 'variable' for both the 'observed' and 'predicted' datasets and "
+                         + "try again.",
                          leftVariableName,
                          rightVariableName );
         }
@@ -261,10 +262,11 @@ class ProjectUtilities
              && !Objects.equals( leftVariableName, baselineVariableName )
              && LOGGER.isWarnEnabled() )
         {
-            LOGGER.warn( "The left and baseline variable names were auto-detected, but the detected variable names do "
-                         + "not match. The left name is {} and the baseline name is {}. Proceeding to pair and "
-                         + "evaluate these variables. If this is unexpected behavior, please add explicit variable "
-                         + "declaration for both the left and baseline data and try again.",
+            LOGGER.warn( "The 'observed' and 'baseline' variable names were auto-detected, but the detected variable "
+                         + "names do not match. The 'observed' name is {} and the 'baseline' name is {}. Proceeding to "
+                         + "pair and evaluate these variables. If this is unexpected behavior, please explicitly "
+                         + "declare the 'name' of the 'variable' for both the 'observed' and 'baseline' datasets and "
+                         + "try again.",
                          leftVariableName,
                          rightVariableName );
         }
@@ -462,7 +464,7 @@ class ProjectUtilities
         // Further determine the variable names based on ingested sources
         VariableNames variableNames;
 
-        // One variable name for all? Allow. 
+        // One variable name for all? Allow.
         if ( left.size() == 1
              && right.size() == 1
              && ( baseline.isEmpty()
@@ -1099,7 +1101,7 @@ class ProjectUtilities
                                             + POSSIBILITIES_PLEASE_DECLARE_AN_EXPLICIT_VARIABLE
                                             + "name for each "
                                             + DatasetOrientation.COVARIATE
-                                            + "dataset to disambiguate." );
+                                            + " dataset to disambiguate." );
 
         }
 
@@ -1296,11 +1298,11 @@ class ProjectUtilities
             throw new DeclarationException( "While attempting to auto-detect "
                                             + "the variable to evaluate, failed to identify a "
                                             + "single variable name that is common to all data "
-                                            + "sources. Discovered LEFT variable names of "
+                                            + "sources. Discovered 'observed' variable names of "
                                             + left
-                                            + ", RIGHT variable names of "
+                                            + ", 'predicted' variable names of "
                                             + right
-                                            + " and BASELINE variable names of "
+                                            + " and 'baseline' variable names of "
                                             + baseline
                                             + ". Please declare an explicit variable name for "
                                             + "each required data source to disambiguate." );

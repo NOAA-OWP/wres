@@ -531,21 +531,11 @@ public class InMemoryProject implements Project
     private Set<String> getVariableNameByInspectingData( TimeSeriesStore timeSeriesStore,
                                                          DatasetOrientation orientation )
     {
-        if ( orientation == DatasetOrientation.COVARIATE )
-        {
-            Stream<TimeSeries<Double>> series = timeSeriesStore.getSingleValuedSeries( orientation );
-            return series.map( next -> next.getMetadata()
-                                           .getVariableName() )
-                         .collect( Collectors.toSet() );
-        }
-        else
-        {
-            Stream<TimeSeries<?>> series = Stream.concat( timeSeriesStore.getSingleValuedSeries( orientation ),
-                                                          timeSeriesStore.getEnsembleSeries( orientation ) );
-            return series.map( next -> next.getMetadata()
-                                           .getVariableName() )
-                         .collect( Collectors.toSet() );
-        }
+        Stream<TimeSeries<?>> series = Stream.concat( timeSeriesStore.getSingleValuedSeries( orientation ),
+                                                      timeSeriesStore.getEnsembleSeries( orientation ) );
+        return series.map( next -> next.getMetadata()
+                                       .getVariableName() )
+                     .collect( Collectors.toSet() );
     }
 
     /**
