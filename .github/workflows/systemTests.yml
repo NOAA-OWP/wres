@@ -55,7 +55,7 @@ jobs:
         echo "Testing"
         ls build-artifacts/build/distributions
         ls build-artifacts/build/distributions | tail -1 | cut -d '-' -f 2-3 | cut -d'.' -f 1
-        wres-version=$(ls build-artifacts/build/distributions | tail -1 | cut -d '-' -f 2-3 | cut -d'.' -f 1)
-        echo "wres=$wres-version"
+        echo "wres-version=$(ls build-artifacts/build/distributions | tail -1 | cut -d '-' -f 2-3 | cut -d'.' -f 1)" >> $GITHUB_ENV
+        echo "wres=${{ env.wres-version }}"
         ls build-artifacts/wres-vis/build/distributions | tail -1 | cut -d '-' -f 3-4 | cut -d'.' -f 1
 
