@@ -51,7 +51,6 @@ jobs:
     - name: LS current workspace
       run: | 
         ls -R build-artifacts
-        sha256sum *.zip
         ls -1tf build-artifacts/build/distributions/wres-[0-9]*.zip | tail -1 | cut -d '-' -f 2-3 | cut -d'.' -f 1
         ls -1tf build-artifacts/wres-vis/build/distributions/wres-vis-[0-9]*.zip | tail -1 | cut -d '-' -f 3-4 | cut -d'.' -f 1
 
