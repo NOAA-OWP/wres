@@ -51,15 +51,17 @@ jobs:
     - name: Set git envs
       run: |
         echo "wres_version=$(ls build-artifacts/build/distributions | tail -1 | cut -d '-' -f 2-3 | cut -d'.' -f 1)" >> "$GITHUB_ENV"
+        echo "wres_vis=$(ls build-artifacts/wres-vis/build/distributions | tail -1 | cut -d '-' -f 3-4 | cut -d'.' -f 1)" >> "$GITHUB_ENV"
+        unzip build-artifacts/systests/build/distributions/systests-*[a-f0-9].zip
+        echo "systests_dir=$( ls -1d systests-*[a-f0-9] )" >> "$GITHUB_ENV"
+
+       
     # LS current workspace
     - name: LS current workspace
       run: | 
         ls 
         echo "Testing"
-        ls build-artifacts/build/distributions
-        echo "$(ls build-artifacts/build/distributions | tail -1 | cut -d '-' -f 2-3 | cut -d'.' -f 1)"
-
         echo "wres=$wres_version"
-        echo "wres=${ wres_version }"
-        ls build-artifacts/wres-vis/build/distributions | tail -1 | cut -d '-' -f 3-4 | cut -d'.' -f 1
+        echo "vis=$wres_vis"
+        echo "systest=$systests_dir"
 
