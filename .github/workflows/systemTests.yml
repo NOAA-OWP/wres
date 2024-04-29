@@ -49,7 +49,6 @@ jobs:
 
     # LS current workspace
     - name: LS current workspace
-      shell: bash
       run: | 
         ls 
         echo "Testing"
