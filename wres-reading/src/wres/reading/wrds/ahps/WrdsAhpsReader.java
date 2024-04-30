@@ -46,7 +46,6 @@ import wres.reading.ReadException;
 import wres.reading.ReaderUtilities;
 import wres.reading.TimeSeriesReader;
 import wres.reading.TimeSeriesTuple;
-import wres.reading.waterml.WatermlReader;
 import wres.http.WebClient;
 import wres.statistics.generated.GeometryTuple;
 import wres.system.SystemSettings;
@@ -155,15 +154,6 @@ public class WrdsAhpsReader implements TimeSeriesReader
 
         return this.read( dataSource, stream );
     }
-
-    /**
-     * This implementation is equivalent to calling {@link WatermlReader#read(DataSource, InputStream)}.
-     * @param dataSource the data source, required
-     * @param stream the input stream, required
-     * @return the stream of time-series
-     * @throws NullPointerException if any input is null
-     * @throws ReadException if the reading fails for any other reason
-     */
 
     @Override
     public Stream<TimeSeriesTuple> read( DataSource dataSource, InputStream stream )

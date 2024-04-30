@@ -44,7 +44,7 @@ import wres.statistics.generated.TimeScale;
 class CovariateFilterTest
 {
     @Test
-    void testUnconditionalFilterWithoutUpscaling()
+    void testUnconditionalFilter()
     {
         Dataset covariateData = DatasetBuilder.builder()
                                               .type( DataType.OBSERVATIONS )
@@ -52,7 +52,8 @@ class CovariateFilterTest
                                                                         .name( "foo" )
                                                                         .build() )
                                               .build();
-        CovariateDataset covariateDataset = new CovariateDataset( covariateData, null, null, DatasetOrientation.LEFT, null );
+        CovariateDataset covariateDataset =
+                new CovariateDataset( covariateData, null, null, DatasetOrientation.LEFT, null );
 
         // Unconditional filter
         Predicate<Double> filter = d -> true;
@@ -138,15 +139,18 @@ class CovariateFilterTest
     }
 
     @Test
-    void testFilterWithoutUpscaling()
+    void testFilterWithTimeShift()
     {
         Dataset covariateData = DatasetBuilder.builder()
                                               .type( DataType.OBSERVATIONS )
                                               .variable( VariableBuilder.builder()
                                                                         .name( "foo" )
                                                                         .build() )
+                                              // Add 4 hours
+                                              .timeShift( Duration.ofHours( 4 ) )
                                               .build();
-        CovariateDataset covariateDataset = new CovariateDataset( covariateData, null, null, DatasetOrientation.LEFT, null );
+        CovariateDataset covariateDataset =
+                new CovariateDataset( covariateData, null, null, DatasetOrientation.LEFT, null );
 
         Predicate<Double> filter = d -> d > 0.5;
 
@@ -162,8 +166,8 @@ class CovariateFilterTest
                                                                       "covariate_unit" );
 
         TimeSeries<Double> covariateSeries = new TimeSeries.Builder<Double>()
-                .addEvent( Event.of( Instant.parse( "2123-12-01T07:00:00Z" ), 0.4 ) )
-                .addEvent( Event.of( Instant.parse( "2123-12-01T08:00:00Z" ), 4.0 ) )
+                .addEvent( Event.of( Instant.parse( "2123-12-01T03:00:00Z" ), 0.4 ) )
+                .addEvent( Event.of( Instant.parse( "2123-12-01T04:00:00Z" ), 4.0 ) )
                 .setMetadata( covariateMetadata )
                 .build();
 
@@ -246,7 +250,8 @@ class CovariateFilterTest
                                                                         .build() )
                                               .timeScale( existingTimeScale )
                                               .build();
-        CovariateDataset covariateDataset = new CovariateDataset( covariateData, null, null, DatasetOrientation.LEFT, null );
+        CovariateDataset covariateDataset =
+                new CovariateDataset( covariateData, null, null, DatasetOrientation.LEFT, null );
 
         Predicate<Double> filter = d -> d > 0.5;
 

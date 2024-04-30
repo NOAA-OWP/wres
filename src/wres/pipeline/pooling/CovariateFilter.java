@@ -1,5 +1,6 @@
 package wres.pipeline.pooling;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -104,6 +105,25 @@ class CovariateFilter<L, R> implements Supplier<Pool<TimeSeries<Pair<L, R>>>>
                                                                                               .getFeature()
                                                                                               .getName() ) )
                                                                .toList();
+
+        // Apply any declared time offset: #129340
+        Duration offset = covariate.datasetDescription()
+                                   .dataset()
+                                   .timeShift();
+        if ( Objects.nonNull( offset )
+             && !Duration.ZERO.equals( offset ) )
+        {
+            // Log the time shift
+            if ( LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Applying a valid time offset of {} to covariate {}.", offset,
+                              covariate.datasetDescription() );
+            }
+
+            featuredCovariate = featuredCovariate.stream()
+                                                 .map( t -> TimeSeriesSlicer.applyOffsetToValidTimes( t, offset ) )
+                                                 .toList();
+        }
 
         // Upscale the covariate time-series as needed
         List<TimeSeries<L>> filteredAndUpscaledSeries = new ArrayList<>();
