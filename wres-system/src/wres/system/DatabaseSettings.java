@@ -11,6 +11,8 @@ import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.Value;
 import lombok.experimental.NonFinal;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * <p>Contains access to configured settings and objects for accessing the database
@@ -32,6 +34,27 @@ import lombok.experimental.NonFinal;
 @Builder( toBuilder = true )
 public class DatabaseSettings
 {
+    // Initialize all available driver classes for known databases. Strictly, this should not be necessary for JDBC 4.0+
+    // drivers, which should be loaded automatically. However, #103770 suggests otherwise in some environments or class
+    // loading contexts.
+    private static final Logger LOGGER = LoggerFactory.getLogger( DatabaseSettings.class );
+
+    static
+    {
+        for ( DatabaseType nextType : DatabaseType.values() )
+        {
+            try
+            {
+                Class.forName( nextType.getDriverClassName() );
+            }
+            catch ( ClassNotFoundException classError )
+            {
+                LOGGER.debug( "Failed to load the database driver class {}.", nextType.getDriverClassName() );
+            }
+        }
+    }
+
+    
     /**
      * When the jdbcUrl is specified, it takes precedence over the fields used
      * to programmatically generate a jdbcUrl. The alternative to specifying a
