@@ -10,8 +10,10 @@ on:
         description: 'Build description'
 
   # Runs systests after a successful build
-  repository_dispatch:
-    types: [build-event]
+  workflow_run:
+    workflows: [Build]
+    types: 
+      - completed
       
 run-name: Systests for build ${{ context.payload.workflow_run.id }}
 
