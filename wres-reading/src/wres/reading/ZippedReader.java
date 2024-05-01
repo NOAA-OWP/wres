@@ -99,7 +99,8 @@ public class ZippedReader implements TimeSeriesReader
                                                            dataSource.getContext(),
                                                            dataSource.getLinks(),
                                                            mashupUri,
-                                                           dataSource.getDatasetOrientation() );
+                                                           dataSource.getDatasetOrientation(),
+                                                           dataSource.getCovariateFeatureOrientation() );
 
             TimeSeriesReader reader = this.getReaderFactory()
                                           .getReader( decompressedSource );

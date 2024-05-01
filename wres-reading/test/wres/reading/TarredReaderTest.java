@@ -139,7 +139,8 @@ class TarredReaderTest
                                                    dataset,
                                                    Collections.emptyList(),
                                                    tarPath.toUri(),
-                                                   DatasetOrientation.RIGHT );
+                                                   DatasetOrientation.RIGHT,
+                                                   null );
 
             SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
             Mockito.when( systemSettings.getMaximumArchiveThreads() )

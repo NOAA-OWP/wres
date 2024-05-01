@@ -160,7 +160,7 @@ public class TestData
     }
 
     public static DataSource generateDataSource( DatasetOrientation orientation,
-                                          DataType type )
+                                                 DataType type )
     {
         Source fakeDeclarationSource = SourceBuilder.builder()
                                                     .uri( FAKE_URI )
@@ -179,6 +179,7 @@ public class TestData
                               dataset,
                               Collections.emptyList(),
                               FAKE_URI,
+                              orientation,
                               orientation );
     }
 
@@ -201,6 +202,7 @@ public class TestData
                               dataset,
                               Collections.emptyList(),
                               FAKE_URI,
-                              DatasetOrientation.BASELINE );
+                              DatasetOrientation.BASELINE,
+                              null );
     }
 }

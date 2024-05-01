@@ -204,8 +204,7 @@ public class WrdsAhpsReader implements TimeSeriesReader
 
         // The features
         Set<GeometryTuple> geometries = DeclarationUtilities.getFeatures( declaration );
-        Set<String> features = DeclarationUtilities.getFeatureNamesFor( geometries,
-                                                                        dataSource.getDatasetOrientation() );
+        Set<String> features = ReaderUtilities.getFeatureNamesFor( geometries, dataSource );
 
         // Date ranges
         Set<Pair<Instant, Instant>> dateRanges;
@@ -313,7 +312,8 @@ public class WrdsAhpsReader implements TimeSeriesReader
                                            dataSource.getContext(),
                                            dataSource.getLinks(),
                                            nextUri,
-                                           dataSource.getDatasetOrientation() );
+                                           dataSource.getDatasetOrientation(),
+                                           dataSource.getCovariateFeatureOrientation() );
 
                     LOGGER.debug( "Created data source for chunk, {}.", innerSource );
 

@@ -33,6 +33,7 @@ import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.Source;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.database.ConnectionSupplier;
@@ -268,12 +269,13 @@ class SingleValuedGriddedRetrieverTest
             assertNotNull( sourceId );
 
             DataSource source = DataSource.of( DataSource.DataDisposition.NETCDF_GRIDDED,
-                                               null,
+                                               Mockito.mock( Source.class ),
                                                DatasetBuilder.builder()
                                                              .build(),
                                                List.of(),
                                                uri,
-                                               SingleValuedGriddedRetrieverTest.ORIENTATION );
+                                               SingleValuedGriddedRetrieverTest.ORIENTATION,
+                                               null );
             IngestResult ingestResult = new IngestResultNeedingRetry( source,
                                                                       DataType.SINGLE_VALUED_FORECASTS,
                                                                       sourceId );
@@ -305,12 +307,13 @@ class SingleValuedGriddedRetrieverTest
 
         // Add a fake left source, which is needed for validation
         DataSource leftSource = DataSource.of( DataSource.DataDisposition.NETCDF_GRIDDED,
-                                           null,
-                                           DatasetBuilder.builder()
-                                                         .build(),
-                                           List.of(),
-                                           URI.create( "http://foo" ),
-                                           DatasetOrientation.LEFT );
+                                               Mockito.mock( Source.class ),
+                                               DatasetBuilder.builder()
+                                                             .build(),
+                                               List.of(),
+                                               URI.create( "http://foo" ),
+                                               DatasetOrientation.LEFT,
+                                               null );
         IngestResult leftResult = new IngestResultNeedingRetry( leftSource,
                                                                 DataType.OBSERVATIONS,
                                                                 ingestResults.get( 0 )

@@ -342,7 +342,8 @@ public class TarredReader implements TimeSeriesReader
                                                     dataSource.getContext(),
                                                     dataSource.getLinks(),
                                                     archivedFileName,
-                                                    dataSource.getDatasetOrientation() );
+                                                    dataSource.getDatasetOrientation(),
+                                                    dataSource.getCovariateFeatureOrientation() );
 
         LOGGER.debug( "Created an inner data source from a tarred archive entry: {}.", innerDataSource );
 

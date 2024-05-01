@@ -270,7 +270,8 @@ class NwisReaderTest
                                                dataset,
                                                Collections.emptyList(),
                                                fakeUri,
-                                               DatasetOrientation.LEFT );
+                                               DatasetOrientation.LEFT,
+                                               null );
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
@@ -378,7 +379,8 @@ class NwisReaderTest
                                                dataset,
                                                Collections.emptyList(),
                                                fakeUri,
-                                               DatasetOrientation.LEFT );
+                                               DatasetOrientation.LEFT,
+                                               null );
 
         LeadTimeInterval leadTimes = LeadTimeIntervalBuilder.builder()
                                                             .minimum( Duration.ofHours( 0 ) )
@@ -512,7 +514,8 @@ class NwisReaderTest
                                                dataset,
                                                Collections.emptyList(),
                                                fakeUri,
-                                               DatasetOrientation.BASELINE );
+                                               DatasetOrientation.BASELINE,
+                                               null );
 
         LeadTimeInterval leadTimes = LeadTimeIntervalBuilder.builder()
                                                             .minimum( Duration.ofHours( 0 ) )
@@ -521,7 +524,7 @@ class NwisReaderTest
         Instant earliest = Instant.parse( "2018-01-01T00:00:00Z" );
         Instant later = Instant.parse( "2019-01-01T00:00:00Z" );
         TimeInterval validDates = TimeIntervalBuilder.builder()
-                                                     .minimum( earliest  )
+                                                     .minimum( earliest )
                                                      .maximum( later )
                                                      .build();
         TimePools referenceTimePools = TimePoolsBuilder.builder()

@@ -250,7 +250,8 @@ class WrdsNwmReaderTest
                                                dataset,
                                                Collections.emptyList(),
                                                fakeUri,
-                                               DatasetOrientation.LEFT );
+                                               DatasetOrientation.LEFT,
+                                               null );
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
@@ -333,7 +334,8 @@ class WrdsNwmReaderTest
                                                dataset,
                                                Collections.emptyList(),
                                                fakeUri,
-                                               DatasetOrientation.LEFT );
+                                               DatasetOrientation.LEFT,
+                                               null );
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
@@ -438,7 +440,8 @@ class WrdsNwmReaderTest
                                                dataset,
                                                Collections.emptyList(),
                                                fakeUri,
-                                               DatasetOrientation.RIGHT );
+                                               DatasetOrientation.RIGHT,
+                                               null );
 
         TimeInterval referenceDates = TimeIntervalBuilder.builder()
                                                          .minimum( Instant.parse( "2022-01-03T00:00:00Z" ) )
@@ -527,7 +530,8 @@ class WrdsNwmReaderTest
                                                dataset,
                                                Collections.emptyList(),
                                                fakeUri,
-                                               DatasetOrientation.RIGHT );
+                                               DatasetOrientation.RIGHT,
+                                               null );
 
         TimeInterval referenceDates = TimeIntervalBuilder.builder()
                                                          .minimum( Instant.parse( "2022-01-03T00:00:00Z" ) )

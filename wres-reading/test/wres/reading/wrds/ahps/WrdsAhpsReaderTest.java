@@ -814,7 +814,8 @@ class WrdsAhpsReaderTest
                                                fakeDataset,
                                                Collections.emptyList(),
                                                fakeUri,
-                                               DatasetOrientation.RIGHT );
+                                               DatasetOrientation.RIGHT,
+                                               null );
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
@@ -900,7 +901,8 @@ class WrdsAhpsReaderTest
                                                fakeDataset,
                                                Collections.emptyList(),
                                                fakeUri,
-                                               DatasetOrientation.RIGHT );
+                                               DatasetOrientation.RIGHT,
+                                               null );
 
         SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
         Mockito.when( systemSettings.getMaximumWebClientThreads() )
@@ -953,7 +955,8 @@ class WrdsAhpsReaderTest
                                                fakeDataset,
                                                Collections.emptyList(),
                                                fakeUri,
-                                               DatasetOrientation.RIGHT );
+                                               DatasetOrientation.RIGHT,
+                                               null );
 
         TimeInterval interval = TimeIntervalBuilder.builder()
                                                    .minimum( Instant.parse( "2022-09-17T00:00:00Z" ) )
@@ -1053,7 +1056,8 @@ class WrdsAhpsReaderTest
                                                fakeDataset,
                                                Collections.emptyList(),
                                                fakeUri,
-                                               DatasetOrientation.LEFT );
+                                               DatasetOrientation.LEFT,
+                                               null );
 
         TimeInterval interval = TimeIntervalBuilder.builder()
                                                    .minimum( Instant.parse( "2018-01-01T00:00:00Z" ) )

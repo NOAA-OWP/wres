@@ -61,7 +61,8 @@ class WrdsAhpsJsonReaderTest
                                          // Use a fake URI with an NWIS-like string as this is used to trigger the
                                          // identification of an instantaneous time-scale
                                          URI.create( "https://fake.wrds.gov/" ),
-                                         DatasetOrientation.RIGHT );
+                                         DatasetOrientation.RIGHT,
+                                         null );
         this.jsonString =
                 """
                         {

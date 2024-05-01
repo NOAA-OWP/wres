@@ -451,13 +451,15 @@ public class SourceLoader
         SourceLoader.mutateSourcesToLoadAndLink( sources,
                                                  declaration,
                                                  declaration.left(),
-                                                 DatasetOrientation.LEFT );
+                                                 DatasetOrientation.LEFT,
+                                                 null );
 
         // Must have one or more right sources to load and link
         SourceLoader.mutateSourcesToLoadAndLink( sources,
                                                  declaration,
                                                  declaration.right(),
-                                                 DatasetOrientation.RIGHT );
+                                                 DatasetOrientation.RIGHT,
+                                                 null );
 
         // May have one or more baseline sources to load and link
         if ( DeclarationUtilities.hasBaseline( declaration ) )
@@ -466,7 +468,8 @@ public class SourceLoader
                                                      declaration,
                                                      declaration.baseline()
                                                                 .dataset(),
-                                                     DatasetOrientation.BASELINE );
+                                                     DatasetOrientation.BASELINE,
+                                                     null );
         }
 
         // Prepare the covariate datasets
@@ -475,7 +478,8 @@ public class SourceLoader
             SourceLoader.mutateSourcesToLoadAndLink( sources,
                                                      declaration,
                                                      covariate.dataset(),
-                                                     DatasetOrientation.COVARIATE );
+                                                     DatasetOrientation.COVARIATE,
+                                                     covariate.featureNameOrientation() );
         }
 
         // Create a simple entry (DataSource) for each complex entry
@@ -499,6 +503,7 @@ public class SourceLoader
                                                       .getLeft();
             Dataset dataset = dataSource.dataset();
             DatasetOrientation orientation = dataSource.orientation();
+            DatasetOrientation covariateFeatureOrientation = dataSource.covariateFeatureorientation();
 
             // Evaluate the path, which is null for a source that is not file-like
             Path path = SourceLoader.evaluatePath( nextSource.getKey() );
@@ -512,7 +517,8 @@ public class SourceLoader
                                                    dataset,
                                                    links,
                                                    path.toUri(),
-                                                   orientation );
+                                                   orientation,
+                                                   covariateFeatureOrientation );
 
                 Set<DataSource> filesources = SourceLoader.decomposeFileSource( source );
                 returnMe.addAll( filesources );
@@ -527,7 +533,8 @@ public class SourceLoader
                                                              links,
                                                              nextSource.getKey()
                                                                        .uri(),
-                                                             orientation );
+                                                             orientation,
+                                                             covariateFeatureOrientation );
 
                 DataDisposition disposition = SourceLoader.getDispositionOfNonFileSource( sourceToEvaluate );
                 DataSource evaluatedSource = DataSource.of( disposition,
@@ -536,7 +543,8 @@ public class SourceLoader
                                                             links,
                                                             nextSource.getKey()
                                                                       .uri(),
-                                                            orientation );
+                                                            orientation,
+                                                            covariateFeatureOrientation );
 
                 returnMe.add( evaluatedSource );
             }
@@ -626,7 +634,8 @@ public class SourceLoader
                                                     dataSource.getContext(),
                                                     dataSource.getLinks(),
                                                     dataSource.getUri(),
-                                                    dataSource.getDatasetOrientation() );
+                                                    dataSource.getDatasetOrientation(),
+                                                    dataSource.getCovariateFeatureOrientation() );
             return Set.of( innerSource );
         }
 
@@ -644,7 +653,8 @@ public class SourceLoader
                                                         dataSource.getContext(),
                                                         dataSource.getLinks(),
                                                         dataSource.getUri(),
-                                                        dataSource.getDatasetOrientation() );
+                                                        dataSource.getDatasetOrientation(),
+                                                        dataSource.getCovariateFeatureOrientation() );
             return Set.of( withDisposition );
         }
     }
@@ -703,7 +713,8 @@ public class SourceLoader
                                                      dataSource.getContext(),
                                                      dataSource.getLinks(),
                                                      path.toUri(),
-                                                     dataSource.getDatasetOrientation() ) );
+                                                     dataSource.getDatasetOrientation(),
+                                                     dataSource.getCovariateFeatureOrientation() ) );
                     }
                     else
                     {
@@ -811,13 +822,15 @@ public class SourceLoader
      * @param declaration the project configuration
      * @param dataset the dataset for which sources to load or link are required
      * @param orientation the orientation of the source
+     * @param covariateFeatureOrientation the feature orientation of a covariate dataset
      * @throws NullPointerException if any input is null
      */
 
     private static void mutateSourcesToLoadAndLink( Map<Source, Pair<OrientedDataSource, List<DatasetOrientation>>> sources,
                                                     EvaluationDeclaration declaration,
                                                     Dataset dataset,
-                                                    DatasetOrientation orientation )
+                                                    DatasetOrientation orientation,
+                                                    DatasetOrientation covariateFeatureOrientation )
     {
         Objects.requireNonNull( sources );
         Objects.requireNonNull( declaration );
@@ -842,7 +855,9 @@ public class SourceLoader
             // Load
             else
             {
-                OrientedDataSource orientedSource = new OrientedDataSource( dataset, orientation );
+                OrientedDataSource orientedSource = new OrientedDataSource( dataset,
+                                                                            orientation,
+                                                                            covariateFeatureOrientation );
                 Pair<OrientedDataSource, List<DatasetOrientation>> sourcePair
                         = Pair.of( orientedSource, new ArrayList<>() );
                 sources.put( source, sourcePair );
@@ -943,7 +958,10 @@ public class SourceLoader
      *
      * @param dataset the dataset
      * @param orientation the orientation
+     * @param covariateFeatureorientation the feature orientation of a covariate dataset
      */
-    private record OrientedDataSource( Dataset dataset, DatasetOrientation orientation ) {}
+    private record OrientedDataSource( Dataset dataset,
+                                       DatasetOrientation orientation,
+                                       DatasetOrientation covariateFeatureorientation ) {}
 
 }

@@ -864,6 +864,26 @@ public class ReaderUtilities
     }
 
     /**
+     * Returns the feature names for the prescribed data source.
+     * @param geometries the geometries, required
+     * @param dataSource the data source, required
+     * @return the feature names
+     */
+    public static Set<String> getFeatureNamesFor( Set<GeometryTuple> geometries, DataSource dataSource )
+    {
+        Objects.requireNonNull( geometries );
+        Objects.requireNonNull( dataSource );
+        if ( dataSource.getDatasetOrientation() == DatasetOrientation.COVARIATE )
+        {
+            return DeclarationUtilities.getFeatureNamesFor( geometries,
+                                                            dataSource.getCovariateFeatureOrientation() );
+        }
+
+        return DeclarationUtilities.getFeatureNamesFor( geometries,
+                                                        dataSource.getDatasetOrientation() );
+    }
+
+    /**
      * Attempts to acquire thresholds from an external source and populate them in the supplied declaration, as needed.
      * @param thresholdSource the threshold source
      * @param evaluation the declaration to adjust

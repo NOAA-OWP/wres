@@ -62,7 +62,8 @@ class WatermlReaderTest
                                                dataset,
                                                Collections.emptyList(),
                                                fakeUri,
-                                               DatasetOrientation.LEFT );
+                                               DatasetOrientation.LEFT,
+                                         null );
 
         this.watermlString =
                 """

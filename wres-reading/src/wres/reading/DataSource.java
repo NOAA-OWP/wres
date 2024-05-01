@@ -12,11 +12,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.StringJoiner;
 
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.detect.Detector;
@@ -41,10 +42,12 @@ import wres.config.yaml.components.Variable;
 
 public class DataSource
 {
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( DataSource.class );
+
+    /** Re-used string. */
     private static final String WHILE_CHECKING_FOR_A_DATACARD_STRING_DISCOVERED_THAT_THE_SECOND_NON_COMMENT_LINE =
             "While checking {} for a Datacard string, discovered that the second non-comment line ";
-
-    private static final Logger LOGGER = LoggerFactory.getLogger( DataSource.class );
 
     /**
      * The disposition of the original or generated-from-original source
@@ -90,50 +93,29 @@ public class DataSource
         }
     }
 
-    /**
-     * The count of bytes to use for detecting WRES-compatible type.
-     */
-
+    /** The count of bytes to use for detecting WRES-compatible type. */
     private static final int DETECTION_BYTES = 1024;
 
-    /**
-     * The disposition of the data for this source.
-     */
-
+    /** The disposition of the data for this source. */
     private final DataDisposition disposition;
 
-    /**
-     * The context in which this source is declared.
-     */
-
+    /** The context in which this source is declared. */
     private final Dataset context;
 
-    /**
-     * The source to load and link.
-     */
-
+    /** The source to load and link. */
     private final Source source;
 
-    /**
-     * Additional links; may be empty, in which case, link only to
-     * its own {@link #context}.
-     */
-
+    /** Additional links; may be empty, in which case, link only to its own {@link #getContext()}. */
     private final List<DatasetOrientation> links;
 
-    /**
-     * URI of the source. Required when ingesting, but null when this object is
-     * used in a wres.io.ingesting.IngestResult to report back that ingest is complete, for
-     * heap savings.
-     */
-
+    /** URI of the source. */
     private final URI uri;
 
-    /**
-     * Whether the source originates from the left, right or baseline side of the evaluation.
-     */
-
+    /** Whether the source originates from the left, right or baseline side of the evaluation. */
     private final DatasetOrientation orientation;
+
+    /** The covariate feature orientation, if defined. */
+    private final DatasetOrientation covariateFeatureOrientation;
 
     /**
      * Create a data source to load, with optional links to the multiple other contexts in which it appears. If the
@@ -143,13 +125,14 @@ public class DataSource
      * must be loaded. Each file has a separate {@link DataSource}. For each of those decomposed paths, there is only
      * one {@link Source}.
      *
-     * @param disposition the disposition of the data source or data inside
-     * @param source the source to load
-     * @param context the context in which the source appears
-     * @param links the optional links to other contexts in which the same source appears
-     * @param uri the uri for the source
-     * @param orientation the orientation of the dataset to which the source belongs
-     * @throws NullPointerException if any input is null
+     * @param disposition the disposition of the data source or data inside, required
+     * @param source the source to load, required
+     * @param context the context in which the source appears, required
+     * @param links the links to other contexts in which the same source appears, not null
+     * @param uri the uri for the source, required
+     * @param orientation the orientation of the dataset to which the source belongs, optional
+     * @param covariateFeatureOrientation the covariate feature orientation, optional
+     * @throws NullPointerException if any required input is null
      * @return The newly created DataSource.
      */
 
@@ -158,52 +141,28 @@ public class DataSource
                                  Dataset context,
                                  List<DatasetOrientation> links,
                                  URI uri,
-                                 DatasetOrientation orientation )
+                                 DatasetOrientation orientation,
+                                 DatasetOrientation covariateFeatureOrientation )
     {
         Objects.requireNonNull( disposition );
+        Objects.requireNonNull( source );
         Objects.requireNonNull( uri );
         Objects.requireNonNull( context );
         Objects.requireNonNull( links );
+
+        if ( orientation == DatasetOrientation.COVARIATE )
+        {
+            Objects.requireNonNull( covariateFeatureOrientation,
+                                    "A covariate data source requires a feature orientation." );
+        }
+
         return new DataSource( disposition,
                                source,
                                context,
                                links,
                                uri,
-                               orientation );
-    }
-
-    /**
-     * Create a source.
-     * @param disposition the disposition of the data source or data inside
-     * @param source the source
-     * @param context the context in which the source appears
-     * @param links the links
-     * @param uri the uri
-     * @param orientation whether the data source originates from the left or right or baseline side of the evaluation
-     */
-
-    private DataSource( DataDisposition disposition,
-                        Source source,
-                        Dataset context,
-                        List<DatasetOrientation> links,
-                        URI uri,
-                        DatasetOrientation orientation )
-    {
-        this.disposition = disposition;
-        this.source = source;
-        this.context = context;
-
-        if ( links.equals( Collections.emptyList() ) )
-        {
-            this.links = links;
-        }
-        else
-        {
-            this.links = Collections.unmodifiableList( links );
-        }
-
-        this.uri = uri;
-        this.orientation = orientation;
+                               orientation,
+                               covariateFeatureOrientation );
     }
 
     /**
@@ -215,6 +174,18 @@ public class DataSource
     public DataDisposition getDisposition()
     {
         return this.disposition;
+    }
+
+    /**
+     * Returns the feature orientation of a covariate dataset or possibly null if the {@link #getDatasetOrientation()}
+     * is undefined or not {@link DatasetOrientation#COVARIATE}.
+     *
+     * @return the covariate feature orientation
+     */
+
+    public DatasetOrientation getCovariateFeatureOrientation()
+    {
+        return this.covariateFeatureOrientation;
     }
 
     /**
@@ -315,45 +286,41 @@ public class DataSource
         {
             return false;
         }
+
         DataSource that = ( DataSource ) o;
-        return source.equals( that.source ) &&
-               links.equals( that.links )
-               &&
-               Objects.equals( context, that.context )
-               &&
-               Objects.equals( uri, that.uri );
+        return this.disposition == that.disposition
+               && this.source.equals( that.source )
+               && this.links.equals( that.links )
+               && Objects.equals( this.context, that.context )
+               && Objects.equals( this.uri, that.uri )
+               && Objects.equals( this.orientation, that.orientation )
+               && Objects.equals( this.covariateFeatureOrientation, that.covariateFeatureOrientation );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( this.context,
+        return Objects.hash( this.disposition,
+                             this.context,
                              this.source,
                              this.links,
-                             this.uri );
+                             this.uri,
+                             this.orientation,
+                             this.covariateFeatureOrientation );
     }
 
     @Override
     public String toString()
     {
         // Improved for #63493
-
-        StringJoiner joiner = new StringJoiner( ";", "(", ")" );
-
-        joiner.add( "Disposition: " + this.getDisposition() );
-        joiner.add( " URI: " + this.getUri() );
-        joiner.add( " Type: " + this.getContext()
-                                    .type() );
-        joiner.add( " Orientation: " + this.getDatasetOrientation() );
-
-        if ( !this.getLinks().isEmpty() )
-        {
-            joiner.add( " Links to other contexts: " + this.getLinks() );
-        }
-
-        return joiner.toString();
+        return new ToStringBuilder( this, ToStringStyle.SHORT_PREFIX_STYLE )
+                .append( "Disposition", this.disposition )
+                .append( "URI", this.uri )
+                .append( "Type", this.context.type() )
+                .append( "Orientation", this.orientation )
+                .append( "Links", this.links )
+                .toString();
     }
-
 
     /**
      * Look at the data, open the data, to detect its WRES type.
@@ -1162,4 +1129,40 @@ public class DataSource
         return true;
     }
 
+    /**
+     * Create a source.
+     * @param disposition the disposition of the data source or data inside
+     * @param source the source
+     * @param context the context in which the source appears
+     * @param links the links
+     * @param uri the uri
+     * @param orientation the dataset orientation
+     * @param covariateFeatureOrientation the covariate feature orientation
+     */
+
+    private DataSource( DataDisposition disposition,
+                        Source source,
+                        Dataset context,
+                        List<DatasetOrientation> links,
+                        URI uri,
+                        DatasetOrientation orientation,
+                        DatasetOrientation covariateFeatureOrientation )
+    {
+        this.disposition = disposition;
+        this.source = source;
+        this.context = context;
+        this.covariateFeatureOrientation = covariateFeatureOrientation;
+
+        if ( links.equals( Collections.emptyList() ) )
+        {
+            this.links = links;
+        }
+        else
+        {
+            this.links = Collections.unmodifiableList( links );
+        }
+
+        this.uri = uri;
+        this.orientation = orientation;
+    }
 }

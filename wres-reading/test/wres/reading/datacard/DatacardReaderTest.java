@@ -101,7 +101,8 @@ class DatacardReaderTest
                                                                  .build(),
                                                    Collections.emptyList(),
                                                    cardPath.toUri(),
-                                                   DatasetOrientation.LEFT );
+                                                   DatasetOrientation.LEFT,
+                                                   null );
 
             DatacardReader reader = DatacardReader.of();
 
@@ -195,7 +196,8 @@ class DatacardReaderTest
                                                                  .build(),
                                                    Collections.emptyList(),
                                                    cardPath.toUri(),
-                                                   DatasetOrientation.LEFT );
+                                                   DatasetOrientation.LEFT,
+                                                   null );
 
             DatacardReader reader = DatacardReader.of();
 

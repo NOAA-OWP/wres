@@ -76,7 +76,8 @@ class NwmVectorReaderTest
                                                // Use a fake URI with an NWIS-like string as this is used to trigger the
                                                // identification of an instantaneous timescale
                                                path.toUri(),
-                                               DatasetOrientation.RIGHT );
+                                               DatasetOrientation.RIGHT,
+                                               null );
 
         LeadTimeInterval leadTimes = LeadTimeIntervalBuilder.builder()
                                                             .minimum( Duration.ofHours( 0 ) )

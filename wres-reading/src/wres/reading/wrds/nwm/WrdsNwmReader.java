@@ -249,8 +249,7 @@ public class WrdsNwmReader implements TimeSeriesReader
 
         // The features
         Set<GeometryTuple> geometries = DeclarationUtilities.getFeatures( declaration );
-        Set<String> featureSet = DeclarationUtilities.getFeatureNamesFor( geometries,
-                                                                          dataSource.getDatasetOrientation() );
+        Set<String> featureSet = ReaderUtilities.getFeatureNamesFor( geometries, dataSource );
 
         List<String> features = List.copyOf( featureSet );
 
@@ -352,7 +351,8 @@ public class WrdsNwmReader implements TimeSeriesReader
                                            dataSource.getContext(),
                                            dataSource.getLinks(),
                                            nextUri,
-                                           dataSource.getDatasetOrientation() );
+                                           dataSource.getDatasetOrientation(),
+                                           dataSource.getCovariateFeatureOrientation() );
 
                     LOGGER.debug( "Created data source for chunk, {}.", innerSource );
 

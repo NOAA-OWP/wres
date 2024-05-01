@@ -59,7 +59,8 @@ class WrdsNwmJsonReaderTest
                                          dataset,
                                          Collections.emptyList(),
                                          fakeUri,
-                                         DatasetOrientation.LEFT );
+                                         DatasetOrientation.LEFT,
+                                         null );
 
         this.jsonString =
                 """

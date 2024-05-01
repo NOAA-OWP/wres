@@ -562,8 +562,7 @@ public class NwmVectorReader implements TimeSeriesReader
     {
         // Get the feature set
         Set<GeometryTuple> geometries = DeclarationUtilities.getFeatures( declaration );
-        Set<String> features = DeclarationUtilities.getFeatureNamesFor( geometries,
-                                                                        dataSource.getDatasetOrientation() );
+        Set<String> features = ReaderUtilities.getFeatureNamesFor( geometries, dataSource );
 
         // A list of featureIds that will be sorted in NWM id order to be used
         // to create blocks of sequential NWM ids.
