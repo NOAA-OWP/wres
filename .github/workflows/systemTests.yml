@@ -15,7 +15,7 @@ on:
     types: 
       - completed
       
-run-name: Systests for commit: $(git rev-parse --short "$GITHUB_SHA")
+run-name: Systests for commit ${{ github.ref }}
 
 jobs:
   systests:
