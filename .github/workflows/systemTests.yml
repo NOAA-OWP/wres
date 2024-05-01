@@ -1,7 +1,6 @@
 # This workflow runs systests in various configurations for the WRES service
 
 name: Systests 
-run-name: Systests for commit: $(git rev-parse --short "$GITHUB_SHA")
 
 on:
   # Manual trigger from the UI
@@ -15,6 +14,8 @@ on:
     workflows: [Build]
     types: 
       - completed
+      
+run-name: Systests for commit: $(git rev-parse --short "$GITHUB_SHA")
 
 jobs:
   systests:
