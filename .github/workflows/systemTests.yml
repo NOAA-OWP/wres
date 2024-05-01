@@ -1,6 +1,6 @@
 # This workflow runs systests in various configurations for the WRES service
 
-name: Systests
+name: Systests $(git rev-parse --short "$GITHUB_SHA")
 
 on:
   # Manual trigger from the UI
