@@ -15,7 +15,7 @@ on:
     types: 
       - completed
       
-run-name: Systests for commit ${{ github.ref }}
+run-name: Systests for commit ${{ github.sha }}
 
 jobs:
   systests:
