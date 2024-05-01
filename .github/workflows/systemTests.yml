@@ -13,7 +13,7 @@ on:
   repository_dispatch:
     types: [build-event]
       
-run-name: Systests for commit ${{ github.sha }}
+run-name: Systests for build ${{ context.payload.workflow_run.id }}
 
 jobs:
   systests:
@@ -40,8 +40,8 @@ jobs:
     - name: Download Artifacts
       uses: actions/download-artifact@v4
       with: 
-        name: build-artifacts-${{ github.event.client_payload.sha }}
-        run-id: ${{ github.event.workflow_run.id }}
+        #name: build-artifacts-${{ github.event.workflow_run.id }}
+        run-id: ${{ context.payload.workflow_run.id }}
         github-token: ${{ github.token }}
 
     # Set env variables for zip versions
