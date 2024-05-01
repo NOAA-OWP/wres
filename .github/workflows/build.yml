@@ -63,11 +63,11 @@ jobs:
           systests/build/distributions/systests-*.zip
           scripts/build/distributions/wres-admin-scripts-*.zip
 
-    # Kicks off an event to trigger 
+    # Kicks off an event to trigger related system tests
     - name: Repository Dispatch
       uses: peter-evans/repository-dispatch@v1
       with:
-        token: ${{ secrets.PAT }}
+        token: ${{ github.token }}
         event-type: build-event
         client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
 
