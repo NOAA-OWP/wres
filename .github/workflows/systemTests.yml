@@ -1,9 +1,4 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-# This workflow will build a Java project with Gradle and cache/restore any dependencies to improve the workflow execution time
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-gradle
+# This workflow runs systests in various configurations for the WRES service
 
 name: Systests
 
@@ -13,7 +8,8 @@ on:
     inputs:
       message:
         description: 'Build description'
-        
+
+  # Runs systests after a successful build
   workflow_run:
     workflows: [Build]
     types: 
@@ -47,7 +43,7 @@ jobs:
         run-id: ${{ github.event.workflow_run.id }}
         github-token: ${{ github.token }}
 
-    # Set env
+    # Set env variables for zip versions
     - name: Set git envs
       run: |
         # Get the wres versions from their respective zips and storing these to env
@@ -59,7 +55,7 @@ jobs:
 
        
     # Run systests
-    - name: Run systests
+    - name: Systests With Externalized Writers
       run: | 
         echo "Starting a test using a separate graphics and numeric processes..."
 
@@ -69,7 +65,7 @@ jobs:
         sed -i "s/testJvmSystemPropertiesGraphics =.*/testJvmSystemPropertiesGraphics = -Djava.io.tmpdir=. -Dwres.startBroker=true -Dwres.eventsBrokerAddress=localhost -Dwres.eventsBrokerPort=5673/g" $systests_dir/gradle.properties
         sed -i "s/testJvmSystemPropertiesWriting =.*/testJvmSystemPropertiesWriting = -Djava.io.tmpdir=. -Dwres.startBroker=false -Dwres.eventsBrokerAddress=localhost -Dwres.eventsBrokerPort=5673/g" $systests_dir/gradle.properties
 
-        # Run the tests using a separate graphics process
+        # Run the tests using a separate graphics and writing process 
         $systests_dir/gradlew --debug -p $systests_dir cleanTest test -PwresZipDirectory=../build-artifacts/build/distributions/ -PwresGraphicsZipDirectory=../build-artifacts/wres-vis/build/distributions/ -PwresWritingZipDirectory=../build-artifacts/wres-writing/build/distributions/ -PversionToTest=$wres_version -PgraphicsVersionToTest=$wres_vis -PwritingVersionToTest=$wres_writing --tests=Scenario052 --tests=Scenario053 --tests=Scenario1000 --tests=Scenario1001 --tests=Scenario500 --tests=Scenario501 --tests=Scenario502 --tests=Scenario504 --tests=Scenario505 --tests=Scenario506 --tests=Scenario507 --tests=Scenario508 --tests=Scenario509 --tests=Scenario510 --tests=Scenario511 --tests=Scenario512 --tests=Scenario513 --tests=Scenario720 --tests=Scenario721
 
         # Save the test results
@@ -77,7 +73,9 @@ jobs:
         mv systests-*/build/reports/tests/test/* test_results_1
         mv systests-*/build/*.log test_results_1
 
-
+    # Run systests
+    - name: Systests With Self-contained Process
+      run: | 
         echo "Starting a second test using a self-contained process..."
         
         # Configure the parameters sent to the test JVM in the settings file (avoids some quoting/escaping issues). 
@@ -91,7 +89,9 @@ jobs:
         mkdir -p test_results_2
         mv systests-*/build/reports/tests/test/* test_results_2
 
-
+    # Run systests
+    - name: Systests Legacy Evaluation Testing
+      run: | 
         echo "Starting a third test using the legacy evaluation language..."
 
         # Configure the parameters sent to the test JVM in the settings file (avoids some quoting/escaping issues). 
@@ -106,7 +106,7 @@ jobs:
         mv systests-*/build/reports/tests/test/* test_results_3
 
 
-      # Archive the artifacts created from this build
+    # Archive the artifacts created from this build
     - name: Archive system tests
       uses: actions/upload-artifact@v4
       with:
