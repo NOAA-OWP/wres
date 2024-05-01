@@ -56,12 +56,20 @@ jobs:
     - name: Archive artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: build-artifacts
+        name: build-artifacts-${{ github.sha }}
         path: |
           build/distributions/wres-*.zip
           wres-*/build/distributions/wres-*-*.zip
           systests/build/distributions/systests-*.zip
           scripts/build/distributions/wres-admin-scripts-*.zip
+
+    # Kicks off an event to trigger 
+    - name: Repository Dispatch
+      uses: peter-evans/repository-dispatch@v1
+      with:
+        token: ${{ secrets.PAT }}
+        event-type: build-event
+        client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
 
   dependency-submission:
 
