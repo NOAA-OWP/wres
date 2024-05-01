@@ -15,7 +15,7 @@ on:
     types: 
       - completed
       
-run-name: Systests for build ${{ github.event.workflow_run.id }} commit ${{ github.event.workflow_run.head_commit.id }} head sha ${{ github.event.workflow_run.head_sha }} 
+run-name: Systests for commit ${{ github.event.workflow_run.head_commit.id }} triggered by build ${{ github.event.workflow_run.id }}
 
 jobs:
   systests:
