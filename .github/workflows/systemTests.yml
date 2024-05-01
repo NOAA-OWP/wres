@@ -15,7 +15,7 @@ on:
     types: 
       - completed
       
-run-name: Systests for build ${{ context.payload.workflow_run.id }}
+run-name: Systests for build ${{ github.event.workflow_run.id }}
 
 jobs:
   systests:
@@ -43,7 +43,7 @@ jobs:
       uses: actions/download-artifact@v4
       with: 
         #name: build-artifacts-${{ github.event.workflow_run.id }}
-        run-id: ${{ context.payload.workflow_run.id }}
+        run-id: ${{ github.event.workflow_run.id }}
         github-token: ${{ github.token }}
 
     # Set env variables for zip versions
