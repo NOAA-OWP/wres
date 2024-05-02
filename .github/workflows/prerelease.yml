@@ -1,4 +1,4 @@
-name: Release workflow
+name: Prerelease
 
 on:
   push:
@@ -60,6 +60,7 @@ jobs:
     - name: Release
       uses: softprops/action-gh-release@v2
       with:
+        prerelease: true
         files: |
           Release.txt
           build/distributions/wres-*.zip
