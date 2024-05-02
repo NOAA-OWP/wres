@@ -31,9 +31,24 @@ jobs:
     - uses: robinraju/release-downloader@v1.10
       with:
         latest: true
+        tag: 'prerelease'
         fileName: '*'
 
-    - run: ls
+    - uses: dev-drprasad/delete-tag-and-release@v1.1
+      with:
+        tag_name: prerelease
+        delete_release: true
+        github_token: ${{ secrets.GITHUB_TOKEN }} 
 
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          Release.txt
+          build/distributions/wres-*.zip
+          wres-*/build/distributions/wres-*-*.zip
+          systests/build/distributions/systests-*.zip
+          scripts/build/distributions/wres-admin-scripts-*.zip
 
+    
 
