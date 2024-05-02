@@ -36,10 +36,7 @@ jobs:
       with:
         files: |
           Release.txt
-          wres-*.zip
-          wres-*-*.zip
-          systests-*.zip
-          wres-admin-scripts-*.zip
+          *.zip
 
     
 
