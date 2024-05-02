@@ -1203,11 +1203,10 @@ public class DeclarationValidator
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.ERROR )
-                                           .setEventMessage( "Discovered covariates with declared variable names whose "
-                                                             + "'minimum' value is larger than the 'maximum' value, "
-                                                             + "which is not allowed. Please fix the 'minimum' and/or "
-                                                             + "'maximum' value associated with the following "
-                                                             + "covariates and try again: "
+                                           .setEventMessage( "Discovered covariates whose 'minimum' value is larger "
+                                                             + "than the 'maximum' value, which is not allowed. Please "
+                                                             + "fix the 'minimum' and/or 'maximum' value associated "
+                                                             + "with the following covariates and try again: "
                                                              + named )
                                            .build();
             events.add( event );
@@ -1218,13 +1217,13 @@ public class DeclarationValidator
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.ERROR )
-                                           .setEventMessage( "Discovered covariates with declared variable names whose "
-                                                             + "'minimum' value is larger than the 'maximum' value, "
-                                                             + "which is not allowed. These covariates were not "
-                                                             + "declared with a variable name to distinguish them. The "
-                                                             + "number of these covariates to fix is: "
+                                           .setEventMessage( "Discovered covariates whose 'minimum' value is larger "
+                                                             + "than the 'maximum' value, which is not allowed. These "
+                                                             + "covariates were not declared with a variable name to "
+                                                             + "distinguish them. The number of unnamed covariates to "
+                                                             + "fix is: "
                                                              + ( variables.size() - named.size() )
-                                                             + " of them to fix. Please fix the 'minimum' and/or "
+                                                             + ". Please fix the 'minimum' and/or "
                                                              + "'maximum' value associated with these covariates and "
                                                              + "try again." )
                                            .build();

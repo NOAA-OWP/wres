@@ -10,12 +10,18 @@ import org.locationtech.jts.geom.Polygon;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import wres.config.yaml.VariableNames;
+import wres.config.yaml.components.BaselineDataset;
+import wres.config.yaml.components.BaselineDatasetBuilder;
+import wres.config.yaml.components.Dataset;
+import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.SpatialMask;
 import wres.config.yaml.components.SpatialMaskBuilder;
+import wres.config.yaml.components.VariableBuilder;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.statistics.generated.Geometry;
@@ -216,6 +222,175 @@ class ProjectUtilitiesTest
                                                  .build();
         FeatureGroup expectedFeatureGroupAdjusted = FeatureGroup.of( expectedAdjusted );
         Set<FeatureGroup> expected = Set.of( featureGroupOne, expectedFeatureGroupAdjusted );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetVariableNamesWithObservedNameDeclaredAndPredictedAndBaselineNamesIntersected()
+    {
+        Set<String> observed = Set.of( "qux", "quux" );
+        Set<String> predicted = Set.of( "foo", "bar" );
+        Set<String> baseline = Set.of( "foo", "baz" );
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .variable( VariableBuilder.builder()
+                                                                  .build() )
+                                        .build();
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( DatasetBuilder.builder()
+                                                                   .variable( VariableBuilder.builder()
+                                                                                             .name( "qux" )
+                                                                                             .build() )
+                                                                   .build() )
+                                              .right( dataset )
+                                              .baseline( BaselineDatasetBuilder.builder()
+                                                                               .dataset( dataset )
+                                                                               .build() )
+                                              .build();
+
+        VariableNames actual = ProjectUtilities.getVariableNames( declaration,
+                                                                  observed,
+                                                                  predicted,
+                                                                  baseline,
+                                                                  Set.of() );
+
+        VariableNames expected = new VariableNames( "qux", "foo", "foo", Set.of() );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetVariableNamesWithAllNamesIntersected()
+    {
+        Set<String> observed = Set.of( "foo", "qux" );
+        Set<String> predicted = Set.of( "foo", "bar" );
+        Set<String> baseline = Set.of( "foo", "baz" );
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .variable( VariableBuilder.builder()
+                                                                  .build() )
+                                        .build();
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( dataset )
+                                              .right( dataset )
+                                              .baseline( BaselineDatasetBuilder.builder()
+                                                                               .dataset( dataset )
+                                                                               .build() )
+                                              .build();
+
+        VariableNames actual = ProjectUtilities.getVariableNames( declaration,
+                                                                  observed,
+                                                                  predicted,
+                                                                  baseline,
+                                                                  Set.of() );
+
+        VariableNames expected = new VariableNames( "foo", "foo", "foo", Set.of() );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetVariableNamesWithAllNamesIntersectedAndOneNameOnly()
+    {
+        Set<String> observed = Set.of( "foo" );
+        Set<String> predicted = Set.of( "foo" );
+        Set<String> baseline = Set.of( "foo" );
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .variable( VariableBuilder.builder()
+                                                                  .build() )
+                                        .build();
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( dataset )
+                                              .right( dataset )
+                                              .baseline( BaselineDatasetBuilder.builder()
+                                                                               .dataset( dataset )
+                                                                               .build() )
+                                              .build();
+
+        VariableNames actual = ProjectUtilities.getVariableNames( declaration,
+                                                                  observed,
+                                                                  predicted,
+                                                                  baseline,
+                                                                  Set.of() );
+
+        VariableNames expected = new VariableNames( "foo", "foo", "foo", Set.of() );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetVariableNamesWithAllNamesDeclared()
+    {
+        Set<String> observed = Set.of( "foo" );
+        Set<String> predicted = Set.of( "bar" );
+        Set<String> baseline = Set.of( "baz" );
+
+        BaselineDataset baselineDataset
+                = BaselineDatasetBuilder.builder()
+                                        .dataset( DatasetBuilder.builder()
+                                                                .variable( VariableBuilder.builder()
+                                                                                          .name( "baz" )
+                                                                                          .build() )
+                                                                .build() )
+                                        .build();
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( DatasetBuilder.builder()
+                                                                   .variable( VariableBuilder.builder()
+                                                                                             .name( "foo" )
+                                                                                             .build() )
+                                                                   .build() )
+                                              .right( DatasetBuilder.builder()
+                                                                    .variable( VariableBuilder.builder()
+                                                                                              .name( "bar" )
+                                                                                              .build() )
+                                                                    .build() )
+                                              .baseline( baselineDataset )
+                                              .build();
+
+        VariableNames actual = ProjectUtilities.getVariableNames( declaration,
+                                                                  observed,
+                                                                  predicted,
+                                                                  baseline,
+                                                                  Set.of() );
+
+        VariableNames expected = new VariableNames( "foo", "bar", "baz", Set.of() );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testGetVariableNamesWithAllNamesIntersectedAndEachNameUnique()
+    {
+        Set<String> observed = Set.of( "foo" );
+        Set<String> predicted = Set.of( "bar" );
+        Set<String> baseline = Set.of( "baz" );
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .variable( VariableBuilder.builder()
+                                                                  .build() )
+                                        .build();
+        EvaluationDeclaration declaration
+                = EvaluationDeclarationBuilder.builder()
+                                              .left( dataset )
+                                              .right( dataset )
+                                              .baseline( BaselineDatasetBuilder.builder()
+                                                                               .dataset( dataset )
+                                                                               .build() )
+                                              .build();
+
+        VariableNames actual = ProjectUtilities.getVariableNames( declaration,
+                                                                  observed,
+                                                                  predicted,
+                                                                  baseline,
+                                                                  Set.of() );
+
+        VariableNames expected = new VariableNames( "foo", "bar", "baz", Set.of() );
 
         assertEquals( expected, actual );
     }

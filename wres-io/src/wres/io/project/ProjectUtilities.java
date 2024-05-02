@@ -402,28 +402,28 @@ class ProjectUtilities
 
     /**
      * Attempts to get the variable names from a set of left, right and baseline names.
-     * @param left the possible left variable names
-     * @param right the possible right variable names
-     * @param baseline the possible baseline variable names
-     * @param covariates the covariate variable names
+     * @param leftVariablesFromData the possible left variable names from ingested data
+     * @param rightVariablesFromData the possible right variable names from ingested data
+     * @param baselineVariablesFromData the possible baseline variable names from ingested data
+     * @param covariateVariablesFromData the covariate variable names from ingested data
      * @return the variable names
      * @throws DeclarationException is the variable names could not be determined or are otherwise invalid
      */
 
     static VariableNames getVariableNames( EvaluationDeclaration declaration,
-                                           Set<String> left,
-                                           Set<String> right,
-                                           Set<String> baseline,
-                                           Set<String> covariates )
+                                           Set<String> leftVariablesFromData,
+                                           Set<String> rightVariablesFromData,
+                                           Set<String> baselineVariablesFromData,
+                                           Set<String> covariateVariablesFromData )
     {
         Objects.requireNonNull( declaration );
-        Objects.requireNonNull( left );
-        Objects.requireNonNull( right );
-        Objects.requireNonNull( baseline );
-        Objects.requireNonNull( covariates );
+        Objects.requireNonNull( leftVariablesFromData );
+        Objects.requireNonNull( rightVariablesFromData );
+        Objects.requireNonNull( baselineVariablesFromData );
+        Objects.requireNonNull( covariateVariablesFromData );
 
         // Could not determine variable name
-        if ( left.isEmpty() )
+        if ( leftVariablesFromData.isEmpty() )
         {
             throw new DeclarationException( WHILE_ATTEMPTING_TO_DETECT_THE + DatasetOrientation.LEFT
                                             + VARIABLE
@@ -434,7 +434,7 @@ class ProjectUtilities
                                             + DATA_SOURCES_TO_DISAMBIGUATE );
         }
 
-        if ( right.isEmpty() )
+        if ( rightVariablesFromData.isEmpty() )
         {
             throw new DeclarationException( WHILE_ATTEMPTING_TO_DETECT_THE + DatasetOrientation.RIGHT
                                             + VARIABLE
@@ -446,7 +446,7 @@ class ProjectUtilities
         }
 
         if ( DeclarationUtilities.hasBaseline( declaration )
-             && baseline.isEmpty() )
+             && baselineVariablesFromData.isEmpty() )
         {
             throw new DeclarationException( WHILE_ATTEMPTING_TO_DETECT_THE + DatasetOrientation.BASELINE
                                             + VARIABLE
@@ -459,45 +459,77 @@ class ProjectUtilities
         }
 
         // Check that covariate names are present when required
-        ProjectUtilities.covariateVariableNamesArePresentWhenRequired( declaration, covariates );
+        ProjectUtilities.covariateVariableNamesArePresentWhenRequired( declaration, covariateVariablesFromData );
 
         // Further determine the variable names based on ingested sources
         VariableNames variableNames;
 
-        // One variable name for all? Allow.
-        if ( left.size() == 1
-             && right.size() == 1
-             && ( baseline.isEmpty()
-                  || baseline.size() == 1 ) )
+        // Use declared names when available, otherwise ingested names when there is one of them. If there is more than
+        // one, then intersect
+        String leftVariableName = null;
+        String rightVariableName = null;
+        String baselineVariableName = null;
+
+        if ( ProjectUtilities.hasVAriableName( declaration.left() ) )
         {
-            String leftVariableName = left.iterator()
-                                          .next();
-            String rightVariableName = right.iterator()
-                                            .next();
+            leftVariableName = declaration.left()
+                                          .variable()
+                                          .name();
+        }
+        else if ( leftVariablesFromData.size() == 1 )
+        {
+            leftVariableName = leftVariablesFromData.iterator()
+                                                    .next();
+        }
 
-            String baselineVariableName = null;
+        if ( ProjectUtilities.hasVAriableName( declaration.right() ) )
+        {
+            rightVariableName = declaration.right()
+                                           .variable()
+                                           .name();
+        }
+        else if ( rightVariablesFromData.size() == 1 )
+        {
+            rightVariableName = rightVariablesFromData.iterator()
+                                                      .next();
+        }
 
-            if ( DeclarationUtilities.hasBaseline( declaration ) )
-            {
-                baselineVariableName = baseline.iterator()
-                                               .next();
-            }
+        if ( DeclarationUtilities.hasBaseline( declaration )
+             && ProjectUtilities.hasVAriableName( declaration.baseline()
+                                                             .dataset() ) )
+        {
+            baselineVariableName = declaration.baseline()
+                                              .dataset()
+                                              .variable()
+                                              .name();
+        }
+        else if ( baselineVariablesFromData.size() == 1 )
+        {
+            baselineVariableName = baselineVariablesFromData.iterator()
+                                                            .next();
+        }
 
+        // One variable name for all? Allow.
+        if ( Objects.nonNull( leftVariableName )
+             && Objects.nonNull( rightVariableName )
+             && ( !DeclarationUtilities.hasBaseline( declaration )
+                  || Objects.nonNull( baselineVariableName ) ) )
+        {
             LOGGER.debug( "Discovered one variable name for each data source." );
 
             variableNames = new VariableNames( leftVariableName,
                                                rightVariableName,
                                                baselineVariableName,
-                                               covariates );
+                                               covariateVariablesFromData );
         }
         // More than one for some, need to intersect
         else
         {
-            variableNames = ProjectUtilities.getVariableNamesFromIntersection( left,
-                                                                               right,
-                                                                               baseline,
-                                                                               covariates,
-                                                                               declaration );
+            variableNames = ProjectUtilities.getUniqueVariableNames( leftVariablesFromData,
+                                                                     rightVariablesFromData,
+                                                                     baselineVariablesFromData,
+                                                                     covariateVariablesFromData,
+                                                                     declaration );
         }
 
         // Perform additional validation checks
@@ -505,10 +537,10 @@ class ProjectUtilities
                                                          variableNames );
 
         ProjectUtilities.checkDeclaredAndIngestedVariablesAgree( declaration,
-                                                                 left,
-                                                                 right,
-                                                                 baseline,
-                                                                 covariates );
+                                                                 leftVariablesFromData,
+                                                                 rightVariablesFromData,
+                                                                 baselineVariablesFromData,
+                                                                 covariateVariablesFromData );
 
         return variableNames;
     }
@@ -1243,7 +1275,58 @@ class ProjectUtilities
     }
 
     /**
-     * Attempts to find a unique name by intersecting the left, right and baseline names.
+     * Attempts to find a unique variable name across the datasets that have several possibilities.
+     * @param left the possible left variable names
+     * @param right the possible right variable names
+     * @param baseline the possible baseline variable names
+     * @param covariates the covariate variable names
+     * @param declaration the declaration
+     * @throws DeclarationException if a unique name could not be discovered
+     */
+
+    private static VariableNames getUniqueVariableNames( Set<String> left,
+                                                         Set<String> right,
+                                                         Set<String> baseline,
+                                                         Set<String> covariates,
+                                                         EvaluationDeclaration declaration )
+    {
+        LOGGER.debug( "Discovered several variable names for the data sources. Will attempt to intersect them and "
+                      + "discover one. The LEFT variable names are {}, the RIGHT variable names are {}, the "
+                      + "BASELINE variable names are {} and the COVARIATE variable names are {}.",
+                      left,
+                      right,
+                      baseline,
+                      covariates );
+
+        // No intersection needed, short-circuit
+        if ( left.size() == 1
+             && right.size() == 1
+             && ( !DeclarationUtilities.hasBaseline( declaration ) || baseline.size() == 1 ) )
+        {
+            String leftVariableName = left.iterator()
+                                          .next();
+            String rightVariableName = right.iterator()
+                                            .next();
+            String baselineVariableName = null;
+
+            if ( DeclarationUtilities.hasBaseline( declaration ) )
+            {
+                baselineVariableName = declaration.baseline()
+                                                  .dataset()
+                                                  .variable()
+                                                  .name();
+            }
+
+            return new VariableNames( leftVariableName, rightVariableName, baselineVariableName, covariates );
+        }
+
+        return ProjectUtilities.getVariableNamesFromIntersection( left, right, baseline, covariates, declaration );
+    }
+
+    /**
+     * Attempts to find a unique name across the datasets that have several possibilities by intersecting these
+     * possibilities and identifying the unique name among them.
+     *
      * @param left the possible left variable names
      * @param right the possible right variable names
      * @param baseline the possible baseline variable names
@@ -1258,55 +1341,140 @@ class ProjectUtilities
                                                                    Set<String> covariates,
                                                                    EvaluationDeclaration declaration )
     {
-        LOGGER.debug( "Discovered several variable names for the data sources. Will attempt to intersect them and "
-                      + "discover one. The LEFT variable names are {}, the RIGHT variable names are {}, the "
-                      + "BASELINE variable names are {} and the COVARIATE variable names are {}.",
-                      left,
-                      right,
-                      baseline,
-                      covariates );
+        Set<String> intersection = new HashSet<>();
 
-        Set<String> intersection = new HashSet<>( left );
-        intersection.retainAll( right );
-
-        if ( DeclarationUtilities.hasBaseline( declaration ) )
+        if ( Objects.isNull( declaration.left()
+                                        .variable()
+                                        .name() ) )
         {
-            intersection.retainAll( baseline );
+            intersection.addAll( left );
         }
 
+        if ( Objects.isNull( declaration.right()
+                                        .variable()
+                                        .name() ) )
+        {
+            if ( intersection.isEmpty() )
+            {
+                intersection.addAll( right );
+            }
+            else
+            {
+                intersection.retainAll( right );
+            }
+        }
+
+        if ( DeclarationUtilities.hasBaseline( declaration )
+             && Objects.isNull( declaration.baseline()
+                                           .dataset()
+                                           .variable()
+                                           .name() ) )
+        {
+            if ( intersection.isEmpty() )
+            {
+                intersection.addAll( baseline );
+            }
+            else
+            {
+                intersection.retainAll( baseline );
+            }
+        }
+
+        return ProjectUtilities.getVariableNamesFromIntersection( left,
+                                                                  right,
+                                                                  baseline,
+                                                                  covariates,
+                                                                  intersection,
+                                                                  declaration );
+    }
+
+    /**
+     * Attempts to find a unique name across the datasets that have several possibilities by intersecting these
+     * possibilities and identifying the unique name among them.
+     *
+     * @param left the possible left variable names
+     * @param right the possible right variable names
+     * @param baseline the possible baseline variable names
+     * @param covariates the covariate variable names
+     * @param intersection the intersection
+     * @param declaration the declaration
+     * @throws DeclarationException if a unique name could not be discovered
+     */
+
+    private static VariableNames getVariableNamesFromIntersection( Set<String> left,
+                                                                   Set<String> right,
+                                                                   Set<String> baseline,
+                                                                   Set<String> covariates,
+                                                                   Set<String> intersection,
+                                                                   EvaluationDeclaration declaration )
+    {
         if ( intersection.size() == 1 )
         {
-            String leftVariableName = intersection.iterator()
-                                                  .next();
+            String uniqueVariableName = intersection.iterator()
+                                                    .next();
+
+            String leftVariableName = uniqueVariableName;
+            String rightVariableName = uniqueVariableName;
             String baselineVariableName = null;
 
+            // If the name is declared, use that instead
             if ( DeclarationUtilities.hasBaseline( declaration ) )
             {
-                baselineVariableName = leftVariableName;
+                if ( Objects.nonNull( declaration.baseline()
+                                                 .dataset()
+                                                 .variable()
+                                                 .name() ) )
+                {
+                    baselineVariableName = declaration.baseline()
+                                                      .dataset()
+                                                      .variable()
+                                                      .name();
+                }
+                else
+                {
+                    baselineVariableName = uniqueVariableName;
+                }
+            }
+
+            if ( Objects.nonNull( declaration.left()
+                                             .variable()
+                                             .name() ) )
+            {
+                leftVariableName = declaration.left()
+                                              .variable()
+                                              .name();
+            }
+
+            if ( Objects.nonNull( declaration.right()
+                                             .variable()
+                                             .name() ) )
+            {
+                rightVariableName = declaration.right()
+                                               .variable()
+                                               .name();
             }
 
             LOGGER.debug( "After intersecting the variable names, discovered one variable name to evaluate, {}.",
-                          leftVariableName );
+                          uniqueVariableName );
 
             return new VariableNames( leftVariableName,
-                                      leftVariableName,
+                                      rightVariableName,
                                       baselineVariableName,
                                       covariates );
         }
-        else
-        {
-            throw new DeclarationException( "While attempting to auto-detect "
-                                            + "the variable to evaluate, failed to identify a "
-                                            + "single variable name that is common to all data "
-                                            + "sources. Discovered 'observed' variable names of "
-                                            + left
-                                            + ", 'predicted' variable names of "
-                                            + right
-                                            + " and 'baseline' variable names of "
-                                            + baseline
-                                            + ". Please declare an explicit variable name for "
-                                            + "each required data source to disambiguate." );
-        }
+
+        // No unique name
+        throw new DeclarationException( "While attempting to auto-detect "
+                                        + "the variable to evaluate, failed to identify a "
+                                        + "single variable name that is common to all data "
+                                        + "sources. Discovered 'observed' variable names of "
+                                        + left
+                                        + ", 'predicted' variable names of "
+                                        + right
+                                        + " and 'baseline' variable names of "
+                                        + baseline
+                                        + ". Please declare an explicit variable name for "
+                                        + "each required data source to disambiguate." );
     }
 
     /**
@@ -1541,4 +1709,15 @@ class ProjectUtilities
                                         + "." );
     }
 
+    /**
+     * @param dataset the dataset
+     * @return whether the dataset has a variable name
+     */
+    private static boolean hasVAriableName( Dataset dataset )
+    {
+        return Objects.nonNull( dataset )
+               && Objects.nonNull( dataset.variable() )
+               && Objects.nonNull( dataset.variable()
+                                          .name() );
+    }
 }
