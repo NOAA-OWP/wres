@@ -5,7 +5,7 @@ on:
     tags:
       - "staging"
 
-run-name: Pre-release for commit ${{ github.event.workflow_run.head_commit.id }}
+run-name: Pre-release for commit ${{ github.event.push.head_commit.id }}
 
 jobs:
   build:
