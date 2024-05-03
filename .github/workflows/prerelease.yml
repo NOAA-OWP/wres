@@ -5,10 +5,10 @@ on:
     tags:
       - "staging"
 
-run-name: Pre-release for commit ${{ github.event.push.head_commit.id }}
+run-name: Pre-release for commit ${{ github.sha }}
 
 jobs:
-  build:
+  Create_Pre-release:
   
     runs-on: ubuntu-latest
     steps:
@@ -58,16 +58,21 @@ jobs:
       run: |
         echo "Tag name from github.ref_name: ${{  github.ref_name }}"
         tar -zcvf ../wres-${{  github.ref_name }}-all-src.tar.gz *   
+        echo "${{ github.event_name }}" 
 
-    # Deletes and existing pre-release tag/release if one exists before creating a new one
+    # Deletes an existing pre-release tag/release if one exists before creating a new one
     # Doesn't do this if the pre-release is triggered from the GUI instead of tagging
-    - name: Delete old tag/release 
-      uses: dev-drprasad/delete-tag-and-release@v1.1
-      if: ${{ ! github.event_name == 'release' }}
-      with:
-        tag_name: staging
-        delete_release: true
-        github_token: ${{ secrets.GITHUB_TOKEN }} 
+    #- name: Delete old tag/release 
+    #  uses: dev-drprasad/delete-tag-and-release@v1.1
+    #  with:
+    #    tag_name: staging
+    #    delete_release: true
+    #    github_token: ${{ secrets.GITHUB_TOKEN }} 
+
+    - name: Delete drafts
+      uses: hugo19941994/delete-draft-releases@v1.0.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Create pre-release
       uses: softprops/action-gh-release@v2
