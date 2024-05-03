@@ -1,9 +1,11 @@
-name: Prerelease
+name: Pre-release
 
 on:
   push:
     tags:
-      - "prerelease"
+      - "staging"
+
+run-name: Pre-release for commit ${{ github.event.workflow_run.head_commit.id }}
 
 jobs:
   build:
@@ -55,9 +57,19 @@ jobs:
     - name: Tar project
       run: |
         echo "Tag name from github.ref_name: ${{  github.ref_name }}"
-        tar -zcvf ../wres-${{  github.ref_name }}-all-src.tar.gz *    
+        tar -zcvf ../wres-${{  github.ref_name }}-all-src.tar.gz *   
 
-    - name: Release
+    # Deletes and existing pre-release tag/release if one exists before creating a new one
+    # Doesn't do this if the pre-release is triggered from the GUI instead of tagging
+    - name: Delete old tag/release 
+      uses: dev-drprasad/delete-tag-and-release@v1.1
+      if: ${{ ! github.event_name == 'release' }}
+      with:
+        tag_name: staging
+        delete_release: true
+        github_token: ${{ secrets.GITHUB_TOKEN }} 
+
+    - name: Create pre-release
       uses: softprops/action-gh-release@v2
       with:
         prerelease: true
