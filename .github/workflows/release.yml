@@ -4,11 +4,8 @@ on:
   push:
     tags:
       - "v*.*.*"
-    # Manual trigger from the UI
-  workflow_dispatch:
-    inputs:
-      message:
-        description: 'Build description'
+
+run-name: Release ${{  github.ref_name }} for commit ${{ github.event.workflow_run.head_commit.id }}
 
 jobs:
   build:
@@ -18,14 +15,14 @@ jobs:
 
     - uses: robinraju/release-downloader@v1.10
       with:
-        tag: 'prerelease'
+        tag: 'staging'
         tarBall: true
         zipBall: true
         fileName: '*'
 
     - uses: dev-drprasad/delete-tag-and-release@v1.1
       with:
-        tag_name: prerelease
+        tag_name: staging
         delete_release: true
         github_token: ${{ secrets.GITHUB_TOKEN }} 
 
