@@ -50,7 +50,9 @@ import wres.io.retrieving.DataAccessException;
 import wres.io.retrieving.RetrieverFactory;
 
 /**
- * Generates a collection of {@link PoolSupplier} that contain the pools for a particular evaluation.
+ * Generates a collection of {@link PoolSupplier} that contain the pools for a particular evaluation. Creates one
+ * {@link PoolSupplier} for each {@link PoolRequest} supplied on construction. Note that a {@link PoolRequest} may
+ * contain an arbitrary spatio-temporal shape, such as a single geographic feature or a multi-feature group.
  *
  * @author James Brown
  */
@@ -698,14 +700,15 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                 }
 
                 // Add the covariate datasets
-                Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> covariatesInner = this.getCovariates( nextWindow );
+                Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> covariatesInner = this.getCovariates( nextPool );
                 builder.setCovariates( covariatesInner );
 
                 returnMe.add( builder.build() );
             }
 
             LOGGER.debug( "Created pool suppliers for {} pool requests: {}.",
-                          this.getPoolRequests().size(),
+                          this.getPoolRequests()
+                              .size(),
                           this.getPoolRequests() );
 
             return Collections.unmodifiableList( returnMe );
@@ -1271,16 +1274,19 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
 
     /**
      * Generates the suppliers or covariate datasets.
-     * @param timeWindow the time window
+     * @param nextPool the pool request
      * @return the covariate dataset suppliers
      */
 
-    private Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> getCovariates( TimeWindowOuter timeWindow )
+    private Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> getCovariates( PoolRequest nextPool )
     {
         Map<Covariate<L>, Supplier<Stream<TimeSeries<L>>>> innerCovariates = new HashMap<>();
+        TimeWindowOuter timeWindow = nextPool.getMetadata()
+                                             .getTimeWindow();
         for ( Covariate<L> covariate : this.getCovariates() )
         {
-            Set<Feature> features = this.getCovariateFeatures( covariate.datasetDescription() );
+            Set<Feature> features = this.getCovariateFeatures( covariate.datasetDescription(),
+                                                               nextPool.getMetadata() );
 
             String variable = covariate.datasetDescription()
                                        .dataset()
@@ -1295,16 +1301,47 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     }
 
     /**
-     * Generates the features for the covariate dataset.
+     * Generates the features for the prescribed covariate dataset and pool.
      * @param dataset the dataset
+     * @param metadata the pool metadata
      * @return the covariate features
      */
-    private Set<Feature> getCovariateFeatures( CovariateDataset dataset )
+    private Set<Feature> getCovariateFeatures( CovariateDataset dataset,
+                                               PoolMetadata metadata )
     {
+        // Find the covariate features whose names match the declared names for the covariate feature orientation.
+        // It is important to perform this matching as the covariate datasets may have different metadata from
+        // ingested sources for the same feature name
+
+        // First, find the features whose orientation matches the covariate feature orientation. These features have the
+        // same names as covariate features, but not necessarily the same metadata otherwise
+        Set<Feature> nonCovariateFeaturesWithCovariateOrientation;
+        switch ( dataset.featureNameOrientation() )
+        {
+            case LEFT ->
+                    nonCovariateFeaturesWithCovariateOrientation = this.getFeatures( metadata, FeatureTuple::getLeft );
+            case RIGHT ->
+                    nonCovariateFeaturesWithCovariateOrientation = this.getFeatures( metadata, FeatureTuple::getRight );
+            case BASELINE -> nonCovariateFeaturesWithCovariateOrientation =
+                    this.getFeatures( metadata, FeatureTuple::getBaseline );
+            default -> throw new IllegalArgumentException( "Encountered an unexpected feature orientation for a "
+                                                           + "covariate dataset: " + dataset.featureNameOrientation() );
+        }
+
+        // Next, filter the feature names associated with the covariate dataset that have a corresponding feature name
+        // as one of the non-covariate datasets whose features compose this pool
+        Predicate<Feature> contained = feature -> nonCovariateFeaturesWithCovariateOrientation.stream()
+                                                                                              .anyMatch( f -> Objects.equals(
+                                                                                                      f.getName(),
+                                                                                                      feature.getName() ) );
+
         return this.getProject()
                    .getCovariateFeatures( dataset.dataset()
                                                  .variable()
-                                                 .name() );
+                                                 .name() )
+                   .stream()
+                   .filter( contained )
+                   .collect( Collectors.toUnmodifiableSet() );
     }
 
     /**

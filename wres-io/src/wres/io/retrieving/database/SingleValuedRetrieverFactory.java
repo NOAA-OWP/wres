@@ -312,11 +312,10 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
             case ANALYSES -> new AnalysisRetriever.Builder().setEarliestAnalysisDuration( earliestAnalysisDuration )
                                                             .setLatestAnalysisDuration( latestAnalysisDuration )
                                                             .setDuplicatePolicy( DuplicatePolicy.KEEP_LATEST_REFERENCE_TIME );
-            default -> throw new IllegalArgumentException(
-                    "Unrecognized data type from which to create the single-valued "
-                    + "retriever: "
-                    + dataType
-                    + "'." );
+            default -> throw new IllegalArgumentException( "Unrecognized data type from which to create the "
+                                                           + "single-valued retriever: "
+                                                           + dataType
+                                                           + "'." );
         };
     }
 
