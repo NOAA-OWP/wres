@@ -47,12 +47,7 @@ jobs:
     - name: Create admin scripts
       run: |
         cd scripts
-        ../gradlew distZip  
-
-    - name: Tar project
-      run: |
-        echo "Tag name from github.ref_name: ${{  github.ref_name }}"
-        tar -zcvf wres-${{  github.ref_name }}-all-src.tar.gz *   
+        ../gradlew distZip 
 
     - name: Delete drafts
       uses: hugo19941994/delete-draft-releases@v1.0.0
@@ -65,11 +60,8 @@ jobs:
         prerelease: true
         files: |
           Release.txt
-          wres-${{  github.ref_name }}-all-src.tar.gz
           build/distributions/wres-*.zip
           wres-*/build/distributions/wres-*-*.zip
           systests/build/distributions/systests-*.zip
           scripts/build/distributions/wres-admin-scripts-*.zip
-
-
 
