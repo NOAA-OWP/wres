@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - "v*.*"
+    tags-ignore:
+      - "v*.*-docker"
 
 run-name: Release ${{  github.ref_name }} for commit ${{ github.event.workflow_run.head_commit.id }}
 
