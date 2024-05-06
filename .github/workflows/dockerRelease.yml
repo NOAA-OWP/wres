@@ -22,13 +22,12 @@ jobs:
 
     - name: Tar Docker
       run: |
-        tar -zcvf ../wres-${{  github.ref_name }}-docker-src.tar.gz scripts/doc*sh */Dockerfile  .dockerignore .gitignore compose*yml Dockerfile
+        tar -zcvf wres-${{  github.ref_name }}-src.tar.gz scripts/doc*sh */Dockerfile  .dockerignore .gitignore compose*yml Dockerfile
     
     - name: Create docker-release
       uses: softprops/action-gh-release@v2
       with:
-        prerelease: true
         files: |
-          wres-${{  github.ref_name }}-docker-src.tar.gz
-          compose-entry-*-*.yml
-          compose-workers-*-*.yml
+          wres-${{  github.ref_name }}-src.tar.gz
+          compose-entry.yml
+          compose-workers.yml
