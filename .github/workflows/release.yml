@@ -3,7 +3,7 @@ name: Release workflow
 on:
   push:
     tags:
-      - "v*.*.*"
+      - "v*.*"
 
 run-name: Release ${{  github.ref_name }} for commit ${{ github.event.workflow_run.head_commit.id }}
 
