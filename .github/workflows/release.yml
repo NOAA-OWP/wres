@@ -26,7 +26,10 @@ jobs:
         delete_release: true
         github_token: ${{ secrets.GITHUB_TOKEN }} 
 
-    - run: ls
+    - name: Tar project
+      run: |
+        echo "Tag name from github.ref_name: ${{  github.ref_name }}"
+        tar -zcvf wres-${{  github.ref_name }}-all-src.tar.gz *   
 
     - name: Release
       uses: softprops/action-gh-release@v2
