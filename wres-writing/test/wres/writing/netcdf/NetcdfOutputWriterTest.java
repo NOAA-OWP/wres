@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
 import org.junit.jupiter.api.AfterEach;
@@ -194,21 +193,21 @@ class NetcdfOutputWriterTest
 
             // Create the thresholds
             Threshold thresholdOne = Threshold.newBuilder()
-                                              .setLeftThresholdValue( DoubleValue.of( 6440.34 ) )
+                                              .setLeftThresholdValue( 6440.34 )
                                               .setThresholdValueUnits( "CFS" )
                                               .setOperator( Threshold.ThresholdOperator.GREATER )
                                               .setName( "1_5_year_recurrence_flow" )
                                               .build();
 
             Threshold thresholdTwo = Threshold.newBuilder()
-                                              .setLeftThresholdValue( DoubleValue.of( 295.94 ) )
+                                              .setLeftThresholdValue( 295.94 )
                                               .setThresholdValueUnits( "CFS" )
                                               .setOperator( Threshold.ThresholdOperator.GREATER )
                                               .setName( "1_5_year_recurrence_flow" )
                                               .build();
 
             Threshold thresholdThree = Threshold.newBuilder()
-                                                .setLeftThresholdValue( DoubleValue.of( 0.5 ) )
+                                                .setLeftThresholdValue( 0.5 )
                                                 .setOperator( Threshold.ThresholdOperator.GREATER )
                                                 .build();
 

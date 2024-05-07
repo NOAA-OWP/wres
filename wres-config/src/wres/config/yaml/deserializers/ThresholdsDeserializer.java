@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.protobuf.DoubleValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -169,15 +168,13 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
 
         // Preserve insertion order
         double value = thresholdNode.asDouble();
-        DoubleValue doubleValue = DoubleValue.of( value );
-
         if ( type.isProbability() )
         {
-            builder.setLeftThresholdProbability( doubleValue );
+            builder.setLeftThresholdProbability( value );
         }
         else
         {
-            builder.setLeftThresholdValue( doubleValue );
+            builder.setLeftThresholdValue( value );
         }
 
         wres.statistics.generated.Threshold nextThreshold = builder.build();
@@ -318,15 +315,13 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             {
                 JsonNode valueNode = nextNode.get( VALUE );
                 double value = valueNode.doubleValue();
-                DoubleValue wrappedDouble = DoubleValue.of( value );
-
                 if ( type.isProbability() )
                 {
-                    builder.setLeftThresholdProbability( wrappedDouble );
+                    builder.setLeftThresholdProbability( value );
                 }
                 else
                 {
-                    builder.setLeftThresholdValue( wrappedDouble );
+                    builder.setLeftThresholdValue( value );
                 }
             }
 
@@ -381,15 +376,13 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
 
         for ( double nextValue : values )
         {
-            DoubleValue doubleValue = DoubleValue.of( nextValue );
-
             if ( type.isProbability() )
             {
-                thresholdBuilder.setLeftThresholdProbability( doubleValue );
+                thresholdBuilder.setLeftThresholdProbability( nextValue );
             }
             else
             {
-                thresholdBuilder.setLeftThresholdValue( doubleValue );
+                thresholdBuilder.setLeftThresholdValue( nextValue );
             }
 
             wres.statistics.generated.Threshold nextThreshold = thresholdBuilder.build();

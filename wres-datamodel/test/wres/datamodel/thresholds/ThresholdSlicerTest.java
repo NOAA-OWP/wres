@@ -12,7 +12,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import com.google.protobuf.DoubleValue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -506,7 +505,7 @@ class ThresholdSlicerTest
         wres.config.yaml.components.Threshold thresholdOne
                 = ThresholdBuilder.builder()
                                   .threshold( Threshold.newBuilder()
-                                                       .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
+                                                       .setLeftThresholdValue( 23.0 )
                                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                                        .build() )
                                   .type( ThresholdType.VALUE )
@@ -516,7 +515,7 @@ class ThresholdSlicerTest
         wres.config.yaml.components.Threshold thresholdTwo
                 = ThresholdBuilder.builder()
                                   .threshold( Threshold.newBuilder()
-                                                       .setLeftThresholdValue( DoubleValue.of( 25.0 ) )
+                                                       .setLeftThresholdValue( 25.0 )
                                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                                        .build() )
                                   .type( ThresholdType.VALUE )
@@ -527,7 +526,7 @@ class ThresholdSlicerTest
         wres.config.yaml.components.Threshold thresholdThree
                 = ThresholdBuilder.builder()
                                   .threshold( Threshold.newBuilder()
-                                                       .setLeftThresholdValue( DoubleValue.of( 0.3 ) )
+                                                       .setLeftThresholdValue( 0.3 )
                                                        .setOperator( Threshold.ThresholdOperator.LESS )
                                                        .build() )
                                   .type( ThresholdType.PROBABILITY )
@@ -537,7 +536,7 @@ class ThresholdSlicerTest
         wres.config.yaml.components.Threshold thresholdFour
                 = ThresholdBuilder.builder()
                                   .threshold( Threshold.newBuilder()
-                                                       .setLeftThresholdValue( DoubleValue.of( 0.5 ) )
+                                                       .setLeftThresholdValue( 0.5 )
                                                        .setOperator( Threshold.ThresholdOperator.LESS )
                                                        .build() )
                                   .type( ThresholdType.PROBABILITY )
@@ -649,7 +648,7 @@ class ThresholdSlicerTest
         wres.config.yaml.components.Threshold thresholdOne
                 = ThresholdBuilder.builder()
                                   .threshold( Threshold.newBuilder()
-                                                       .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
+                                                       .setLeftThresholdValue( 23.0 )
                                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                                        .build() )
                                   .type( ThresholdType.VALUE )
@@ -659,7 +658,7 @@ class ThresholdSlicerTest
         wres.config.yaml.components.Threshold thresholdTwo
                 = ThresholdBuilder.builder()
                                   .threshold( Threshold.newBuilder()
-                                                       .setLeftThresholdValue( DoubleValue.of( 0.2 ) )
+                                                       .setLeftThresholdValue( 0.2 )
                                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                                        .build() )
                                   .type( ThresholdType.PROBABILITY )

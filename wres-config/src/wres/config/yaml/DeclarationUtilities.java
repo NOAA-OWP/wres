@@ -25,7 +25,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Timestamp;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tika.config.TikaConfig;
@@ -85,7 +84,7 @@ public class DeclarationUtilities
     /** All data threshold. */
     public static final Threshold ALL_DATA_THRESHOLD =
             new Threshold( wres.statistics.generated.Threshold.newBuilder()
-                                                              .setLeftThresholdValue( DoubleValue.of( Double.NEGATIVE_INFINITY ) )
+                                                              .setLeftThresholdValue( Double.NEGATIVE_INFINITY )
                                                               .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
                                                               .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT_AND_RIGHT )
                                                               .build(),
@@ -1787,8 +1786,8 @@ public class DeclarationUtilities
         // Window increments are zero?
         if ( Duration.ZERO.equals( increment ) )
         {
-            com.google.protobuf.Duration earliest = MessageFactory.parse( earliestExclusive );
-            com.google.protobuf.Duration latest = MessageFactory.parse( latestInclusive );
+            com.google.protobuf.Duration earliest = MessageFactory.getDuration( earliestExclusive );
+            com.google.protobuf.Duration latest = MessageFactory.getDuration( latestInclusive );
             TimeWindow window = baseWindow.toBuilder()
                                           .setEarliestLeadDuration( earliest )
                                           .setLatestLeadDuration( latest )
@@ -1801,8 +1800,8 @@ public class DeclarationUtilities
             while ( latestInclusive.compareTo( latestLeadDurationInclusive ) <= 0 )
             {
                 // Add the current time window
-                com.google.protobuf.Duration earliest = MessageFactory.parse( earliestExclusive );
-                com.google.protobuf.Duration latest = MessageFactory.parse( latestInclusive );
+                com.google.protobuf.Duration earliest = MessageFactory.getDuration( earliestExclusive );
+                com.google.protobuf.Duration latest = MessageFactory.getDuration( latestInclusive );
                 TimeWindow window = baseWindow.toBuilder()
                                               .setEarliestLeadDuration( earliest )
                                               .setLatestLeadDuration( latest )
@@ -1971,8 +1970,8 @@ public class DeclarationUtilities
                                                       TimeWindow baseWindow,
                                                       boolean areReferenceTimes )
     {
-        Timestamp earliest = MessageFactory.parse( earliestExclusive );
-        Timestamp latest = MessageFactory.parse( latestInclusive );
+        Timestamp earliest = MessageFactory.getTimestamp( earliestExclusive );
+        Timestamp latest = MessageFactory.getTimestamp( latestInclusive );
 
         // Reference dates
         if ( areReferenceTimes )

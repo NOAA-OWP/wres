@@ -485,7 +485,7 @@ public class TestDataGenerator
         DiagramStatisticOuter second = DiagramStatisticOuter.of( diagram, poolTwo );
         statistics.add( second );
 
-        com.google.protobuf.Duration secondDuration = wres.statistics.MessageFactory.parse( Duration.ofHours( 2 ) );
+        com.google.protobuf.Duration secondDuration = wres.statistics.MessageFactory.getDuration( Duration.ofHours( 2 ) );
         TimeWindow innerWindowTwo =
                 innerWindowOne.toBuilder()
                               .setEarliestLeadDuration( secondDuration )
@@ -502,7 +502,7 @@ public class TestDataGenerator
         DiagramStatisticOuter fourth = DiagramStatisticOuter.of( diagram, poolFour );
         statistics.add( fourth );
 
-        com.google.protobuf.Duration thirdDuration = wres.statistics.MessageFactory.parse( Duration.ofHours( 3 ) );
+        com.google.protobuf.Duration thirdDuration = wres.statistics.MessageFactory.getDuration( Duration.ofHours( 3 ) );
         TimeWindow innerWindowThree =
                 innerWindowOne.toBuilder()
                               .setEarliestLeadDuration( thirdDuration )

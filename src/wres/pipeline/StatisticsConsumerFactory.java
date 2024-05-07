@@ -203,8 +203,8 @@ class StatisticsConsumerFactory implements ConsumerFactory
                    .addDurationScoreConsumer( wres.config.yaml.components.Format.CSV,
                                               CommaSeparatedScoreWriter.of( this.declaration,
                                                                             path,
-                                                                            next -> MessageFactory.parse( next.getStatistic()
-                                                                                                              .getValue() )
+                                                                            next -> MessageFactory.getDuration( next.getStatistic()
+                                                                                                                    .getValue() )
                                                                                                   .toString() ) )
                    .addDoubleScoreConsumer( wres.config.yaml.components.Format.CSV,
                                             CommaSeparatedScoreWriter.of( this.declaration,
@@ -366,13 +366,13 @@ class StatisticsConsumerFactory implements ConsumerFactory
                 MetricName metricName = metricComponent.getName();
 
                 com.google.protobuf.Duration minimum = metricComponent.getMinimum();
-                Duration minimumDuration = MessageFactory.parse( minimum );
+                Duration minimumDuration = MessageFactory.getDuration( minimum );
                 double minimumDecimal = TimeSeriesSlicer.durationToDecimalMilliPrecision( minimumDuration, units );
                 com.google.protobuf.Duration maximum = metricComponent.getMaximum();
-                Duration maximumDuration = MessageFactory.parse( maximum );
+                Duration maximumDuration = MessageFactory.getDuration( maximum );
                 double maximumDecimal = TimeSeriesSlicer.durationToDecimalMilliPrecision( maximumDuration, units );
                 com.google.protobuf.Duration optimum = metricComponent.getOptimum();
-                Duration optimumDuration = MessageFactory.parse( optimum );
+                Duration optimumDuration = MessageFactory.getDuration( optimum );
                 double optimumDecimal = TimeSeriesSlicer.durationToDecimalMilliPrecision( optimumDuration, units );
 
                 DoubleScoreMetric.DoubleScoreMetricComponent doubleMetric =
@@ -385,7 +385,7 @@ class StatisticsConsumerFactory implements ConsumerFactory
                                                                     .build();
 
                 com.google.protobuf.Duration statistic = nextComponent.getValue();
-                Duration statisticDuration = MessageFactory.parse( statistic );
+                Duration statisticDuration = MessageFactory.getDuration( statistic );
                 double decimalStatistic = TimeSeriesSlicer.durationToDecimalMilliPrecision( statisticDuration, units );
                 DoubleScoreStatistic.DoubleScoreStatisticComponent doubleStatistic =
                         DoubleScoreStatistic.DoubleScoreStatisticComponent.newBuilder()

@@ -22,7 +22,6 @@ import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.google.protobuf.DoubleValue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1767,11 +1766,11 @@ class EvaluationUtilities
             {
                 // Set to missing rather than clearing: #126545
                 Threshold.Builder builder = existingPool.getEventThresholdBuilder()
-                                                        .setLeftThresholdValue( DoubleValue.of( MissingValues.DOUBLE ) );
+                                                        .setLeftThresholdValue( MissingValues.DOUBLE );
                 if ( existingPool.getEventThreshold()
                                  .getOperator() == Threshold.ThresholdOperator.BETWEEN )
                 {
-                    builder.setRightThresholdValue( DoubleValue.of( MissingValues.DOUBLE ) );
+                    builder.setRightThresholdValue( MissingValues.DOUBLE );
                 }
             }
 

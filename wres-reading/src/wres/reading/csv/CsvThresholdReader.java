@@ -20,7 +20,6 @@ import java.util.TreeSet;
 import java.util.function.DoubleUnaryOperator;
 import java.util.stream.Collectors;
 
-import com.google.protobuf.DoubleValue;
 import com.opencsv.CSVReader;
 import com.opencsv.exceptions.CsvValidationException;
 import org.apache.commons.lang3.tuple.Pair;
@@ -603,7 +602,7 @@ public class CsvThresholdReader implements ThresholdReader
                                                      + "probability of 1.0." );
             }
 
-            canonical.setLeftThresholdProbability( DoubleValue.of( threshold ) );
+            canonical.setLeftThresholdProbability( threshold );
         }
         else
         {
@@ -620,9 +619,7 @@ public class CsvThresholdReader implements ThresholdReader
                 canonical.setThresholdValueUnits( desiredUnit );
             }
 
-            DoubleValue wrappedThresholdInCorrectUnits =
-                    DoubleValue.of( thresholdInCorrectUnits );
-            canonical.setLeftThresholdValue( wrappedThresholdInCorrectUnits );
+            canonical.setLeftThresholdValue( thresholdInCorrectUnits );
         }
 
         if ( Objects.nonNull( name ) )

@@ -10,7 +10,6 @@ import java.util.Set;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import com.google.protobuf.DoubleValue;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -75,37 +74,37 @@ class CsvThresholdReaderTest
 
             // Build the expectation
             Threshold one = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( DoubleValue.of( 0.4 ) )
+                                     .setLeftThresholdProbability( 0.4 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setName( "A" )
                                      .build();
             Threshold two = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( DoubleValue.of( 0.6 ) )
+                                     .setLeftThresholdProbability( 0.6 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setName( "B" )
                                      .build();
             Threshold three = Threshold.newBuilder()
-                                       .setLeftThresholdProbability( DoubleValue.of( 0.8 ) )
+                                       .setLeftThresholdProbability( 0.8 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setDataType( Threshold.ThresholdDataType.LEFT )
                                        .setName( "C" )
                                        .build();
             Threshold four = Threshold.newBuilder()
-                                      .setLeftThresholdProbability( DoubleValue.of( 0.2 ) )
+                                      .setLeftThresholdProbability( 0.2 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setDataType( Threshold.ThresholdDataType.LEFT )
                                       .setName( "A" )
                                       .build();
             Threshold five = Threshold.newBuilder()
-                                      .setLeftThresholdProbability( DoubleValue.of( 0.3 ) )
+                                      .setLeftThresholdProbability( 0.3 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setDataType( Threshold.ThresholdDataType.LEFT )
                                       .setName( "B" )
                                       .build();
             Threshold six = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( DoubleValue.of( 0.7 ) )
+                                     .setLeftThresholdProbability( 0.7 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setName( "C" )
@@ -202,42 +201,42 @@ class CsvThresholdReaderTest
 
             // Build the expectation
             Threshold one = Threshold.newBuilder()
-                                     .setLeftThresholdValue( DoubleValue.of( 3.0 ) )
+                                     .setLeftThresholdValue( 3.0 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setName( "E" )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold two = Threshold.newBuilder()
-                                     .setLeftThresholdValue( DoubleValue.of( 7.0 ) )
+                                     .setLeftThresholdValue( 7.0 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setName( "F" )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold three = Threshold.newBuilder()
-                                       .setLeftThresholdValue( DoubleValue.of( 15.0 ) )
+                                       .setLeftThresholdValue( 15.0 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setDataType( Threshold.ThresholdDataType.LEFT )
                                        .setName( "G" )
                                        .setThresholdValueUnits( UNIT_STRING )
                                        .build();
             Threshold four = Threshold.newBuilder()
-                                      .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
+                                      .setLeftThresholdValue( 23.0 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setDataType( Threshold.ThresholdDataType.LEFT )
                                       .setName( "E" )
                                       .setThresholdValueUnits( UNIT_STRING )
                                       .build();
             Threshold five = Threshold.newBuilder()
-                                      .setLeftThresholdValue( DoubleValue.of( 12.0 ) )
+                                      .setLeftThresholdValue( 12.0 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setDataType( Threshold.ThresholdDataType.LEFT )
                                       .setName( "F" )
                                       .setThresholdValueUnits( UNIT_STRING )
                                       .build();
             Threshold six = Threshold.newBuilder()
-                                     .setLeftThresholdValue( DoubleValue.of( 99.7 ) )
+                                     .setLeftThresholdValue( 99.7 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setName( "G" )
@@ -331,32 +330,32 @@ class CsvThresholdReaderTest
 
             // Build the expectation
             Threshold one = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( DoubleValue.of( 0.4 ) )
+                                     .setLeftThresholdProbability( 0.4 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .build();
             Threshold two = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( DoubleValue.of( 0.6 ) )
+                                     .setLeftThresholdProbability( 0.6 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .build();
             Threshold three = Threshold.newBuilder()
-                                       .setLeftThresholdProbability( DoubleValue.of( 0.8 ) )
+                                       .setLeftThresholdProbability( 0.8 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setDataType( Threshold.ThresholdDataType.LEFT )
                                        .build();
             Threshold four = Threshold.newBuilder()
-                                      .setLeftThresholdProbability( DoubleValue.of( 0.2 ) )
+                                      .setLeftThresholdProbability( 0.2 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setDataType( Threshold.ThresholdDataType.LEFT )
                                       .build();
             Threshold five = Threshold.newBuilder()
-                                      .setLeftThresholdProbability( DoubleValue.of( 0.3 ) )
+                                      .setLeftThresholdProbability( 0.3 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setDataType( Threshold.ThresholdDataType.LEFT )
                                       .build();
             Threshold six = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( DoubleValue.of( 0.7 ) )
+                                     .setLeftThresholdProbability( 0.7 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .build();
@@ -451,37 +450,37 @@ class CsvThresholdReaderTest
 
             // Build the expectation
             Threshold one = Threshold.newBuilder()
-                                     .setLeftThresholdValue( DoubleValue.of( 3.0 ) )
+                                     .setLeftThresholdValue( 3.0 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold two = Threshold.newBuilder()
-                                     .setLeftThresholdValue( DoubleValue.of( 7.0 ) )
+                                     .setLeftThresholdValue( 7.0 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold three = Threshold.newBuilder()
-                                       .setLeftThresholdValue( DoubleValue.of( 15.0 ) )
+                                       .setLeftThresholdValue( 15.0 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setDataType( Threshold.ThresholdDataType.LEFT )
                                        .setThresholdValueUnits( UNIT_STRING )
                                        .build();
             Threshold four = Threshold.newBuilder()
-                                      .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
+                                      .setLeftThresholdValue( 23.0 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setDataType( Threshold.ThresholdDataType.LEFT )
                                       .setThresholdValueUnits( UNIT_STRING )
                                       .build();
             Threshold five = Threshold.newBuilder()
-                                      .setLeftThresholdValue( DoubleValue.of( 12.0 ) )
+                                      .setLeftThresholdValue( 12.0 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setDataType( Threshold.ThresholdDataType.LEFT )
                                       .setThresholdValueUnits( UNIT_STRING )
                                       .build();
             Threshold six = Threshold.newBuilder()
-                                     .setLeftThresholdValue( DoubleValue.of( 99.7 ) )
+                                     .setLeftThresholdValue( 99.7 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setThresholdValueUnits( UNIT_STRING )
@@ -568,7 +567,7 @@ class CsvThresholdReaderTest
             Mockito.when( unitMapper.getUnitMapper( UNIT_STRING ) )
                    .thenReturn( d -> d * 2 );
             Mockito.when( unitMapper.getDesiredMeasurementUnitName() )
-                    .thenReturn( "BANANAS" );
+                   .thenReturn( "BANANAS" );
             CsvThresholdReader reader = CsvThresholdReader.of();
             Set<wres.config.yaml.components.Threshold> actual = reader.read( source,
                                                                              unitMapper,
@@ -577,7 +576,7 @@ class CsvThresholdReaderTest
 
             // Build the expectation
             Threshold one = Threshold.newBuilder()
-                                     .setLeftThresholdValue( DoubleValue.of( 6.0 ) )
+                                     .setLeftThresholdValue( 6.0 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setThresholdValueUnits( "BANANAS" )
@@ -650,25 +649,25 @@ class CsvThresholdReaderTest
 
             // Build the expectation
             Threshold one = Threshold.newBuilder()
-                                     .setLeftThresholdValue( DoubleValue.of( 3.0 ) )
+                                     .setLeftThresholdValue( 3.0 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold two = Threshold.newBuilder()
-                                     .setLeftThresholdValue( DoubleValue.of( 7.0 ) )
+                                     .setLeftThresholdValue( 7.0 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold three = Threshold.newBuilder()
-                                       .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
+                                       .setLeftThresholdValue( 23.0 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setDataType( Threshold.ThresholdDataType.LEFT )
                                        .setThresholdValueUnits( UNIT_STRING )
                                        .build();
             Threshold four = Threshold.newBuilder()
-                                      .setLeftThresholdValue( DoubleValue.of( 99.7 ) )
+                                      .setLeftThresholdValue( 99.7 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setDataType( Threshold.ThresholdDataType.LEFT )
                                       .setThresholdValueUnits( UNIT_STRING )
@@ -834,19 +833,19 @@ class CsvThresholdReaderTest
 
             // Build the expectation
             Threshold one = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( DoubleValue.of( 0.4 ) )
+                                     .setLeftThresholdProbability( 0.4 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setName( "A" )
                                      .build();
             Threshold two = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( DoubleValue.of( 0.6 ) )
+                                     .setLeftThresholdProbability( 0.6 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setName( "B" )
                                      .build();
             Threshold three = Threshold.newBuilder()
-                                       .setLeftThresholdProbability( DoubleValue.of( 0.8 ) )
+                                       .setLeftThresholdProbability( 0.8 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setDataType( Threshold.ThresholdDataType.LEFT )
                                        .setName( "C" )

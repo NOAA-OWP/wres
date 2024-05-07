@@ -213,7 +213,7 @@ class ThresholdExtractorTest
 
             assertTrue( thresholdValues.containsKey( threshold.getName() ) );
             assertEquals( thresholdValues.get( threshold.getName() ),
-                          threshold.getLeftThresholdValue().getValue(),
+                          threshold.getLeftThresholdValue(),
                           EPSILON );
         }
 
@@ -261,7 +261,7 @@ class ThresholdExtractorTest
             assertTrue( thresholdValues.containsKey( threshold.getName() ) );
 
             assertEquals( thresholdValues.get( threshold.getName() ),
-                          threshold.getLeftThresholdValue().getValue(),
+                          threshold.getLeftThresholdValue(),
                           EPSILON );
         }
 
@@ -287,7 +287,7 @@ class ThresholdExtractorTest
             assertTrue( thresholdValues.containsKey( threshold.getName() ) );
 
             assertEquals( thresholdValues.get( threshold.getName() ),
-                          threshold.getLeftThresholdValue().getValue(),
+                          threshold.getLeftThresholdValue(),
                           EPSILON );
         }
 
@@ -322,7 +322,7 @@ class ThresholdExtractorTest
             assertTrue( thresholdValues.containsKey( threshold.getName() ) );
             assertEquals(
                     thresholdValues.get( threshold.getName() ),
-                    threshold.getLeftThresholdValue().getValue(),
+                    threshold.getLeftThresholdValue(),
                     EPSILON );
         }
 
@@ -341,7 +341,7 @@ class ThresholdExtractorTest
 
             assertTrue( thresholdValues.containsKey( threshold.getName() ) );
             assertEquals( thresholdValues.get( threshold.getName() ),
-                          threshold.getLeftThresholdValue().getValue(),
+                          threshold.getLeftThresholdValue(),
                           EPSILON );
         }
 
@@ -377,7 +377,7 @@ class ThresholdExtractorTest
 
             assertTrue( thresholdValues.containsKey( threshold.getName() ) );
             assertEquals( thresholdValues.get( threshold.getName() ),
-                          threshold.getLeftThresholdValue().getValue(),
+                          threshold.getLeftThresholdValue(),
                           EPSILON );
         }
     }

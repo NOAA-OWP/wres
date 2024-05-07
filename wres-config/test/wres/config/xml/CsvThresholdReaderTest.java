@@ -1,6 +1,5 @@
 package wres.config.xml;
 
-import com.google.protobuf.DoubleValue;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -76,21 +75,21 @@ class CsvThresholdReaderTest
             Map<String, Set<Threshold>> expected = new TreeMap<>();
 
             Threshold one = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( DoubleValue.of( 0.4 ) )
+                                     .setLeftThresholdProbability( 0.4 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setName( "A" )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold two = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( DoubleValue.of( 0.6 ) )
+                                     .setLeftThresholdProbability( 0.6 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setName( "B" )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold three = Threshold.newBuilder()
-                                       .setLeftThresholdProbability( DoubleValue.of( 0.8 ) )
+                                       .setLeftThresholdProbability( 0.8 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setDataType( Threshold.ThresholdDataType.LEFT )
                                        .setName( "C" )
@@ -105,21 +104,21 @@ class CsvThresholdReaderTest
             expected.put( "DRRC2", first );
 
             Threshold four = Threshold.newBuilder()
-                                      .setLeftThresholdProbability( DoubleValue.of( 0.2 ) )
+                                      .setLeftThresholdProbability( 0.2 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setDataType( Threshold.ThresholdDataType.LEFT )
                                       .setName( "A" )
                                       .setThresholdValueUnits( UNIT_STRING )
                                       .build();
             Threshold five = Threshold.newBuilder()
-                                      .setLeftThresholdProbability( DoubleValue.of( 0.3 ) )
+                                      .setLeftThresholdProbability( 0.3 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setDataType( Threshold.ThresholdDataType.LEFT )
                                       .setName( "B" )
                                       .setThresholdValueUnits( UNIT_STRING )
                                       .build();
             Threshold six = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( DoubleValue.of( 0.7 ) )
+                                     .setLeftThresholdProbability( 0.7 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setName( "C" )
@@ -185,21 +184,21 @@ class CsvThresholdReaderTest
             Map<String, Set<Threshold>> expected = new TreeMap<>();
 
             Threshold one = Threshold.newBuilder()
-                                     .setLeftThresholdValue( DoubleValue.of( 3.0 ) )
+                                     .setLeftThresholdValue( 3.0 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setName( "E" )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold two = Threshold.newBuilder()
-                                     .setLeftThresholdValue( DoubleValue.of( 7.0 ) )
+                                     .setLeftThresholdValue( 7.0 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setName( "F" )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold three = Threshold.newBuilder()
-                                       .setLeftThresholdValue( DoubleValue.of( 15.0 ) )
+                                       .setLeftThresholdValue( 15.0 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setDataType( Threshold.ThresholdDataType.LEFT )
                                        .setName( "G" )
@@ -214,21 +213,21 @@ class CsvThresholdReaderTest
             expected.put( "DRRC2", first );
 
             Threshold four = Threshold.newBuilder()
-                                      .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
+                                      .setLeftThresholdValue( 23.0 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setDataType( Threshold.ThresholdDataType.LEFT )
                                       .setName( "E" )
                                       .setThresholdValueUnits( UNIT_STRING )
                                       .build();
             Threshold five = Threshold.newBuilder()
-                                      .setLeftThresholdValue( DoubleValue.of( 12.0 ) )
+                                      .setLeftThresholdValue( 12.0 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setDataType( Threshold.ThresholdDataType.LEFT )
                                       .setName( "F" )
                                       .setThresholdValueUnits( UNIT_STRING )
                                       .build();
             Threshold six = Threshold.newBuilder()
-                                     .setLeftThresholdValue( DoubleValue.of( 99.7 ) )
+                                     .setLeftThresholdValue( 99.7 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setName( "G" )
@@ -292,19 +291,19 @@ class CsvThresholdReaderTest
             Map<String, Set<Threshold>> expected = new TreeMap<>();
 
             Threshold one = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( DoubleValue.of( 0.4 ) )
+                                     .setLeftThresholdProbability( 0.4 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold two = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( DoubleValue.of( 0.6 ) )
+                                     .setLeftThresholdProbability( 0.6 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold three = Threshold.newBuilder()
-                                       .setLeftThresholdProbability( DoubleValue.of( 0.8 ) )
+                                       .setLeftThresholdProbability( 0.8 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setDataType( Threshold.ThresholdDataType.LEFT )
                                        .setThresholdValueUnits( UNIT_STRING )
@@ -318,19 +317,19 @@ class CsvThresholdReaderTest
             expected.put( "DRRC2", first );
 
             Threshold four = Threshold.newBuilder()
-                                      .setLeftThresholdProbability( DoubleValue.of( 0.2 ) )
+                                      .setLeftThresholdProbability( 0.2 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setDataType( Threshold.ThresholdDataType.LEFT )
                                       .setThresholdValueUnits( UNIT_STRING )
                                       .build();
             Threshold five = Threshold.newBuilder()
-                                      .setLeftThresholdProbability( DoubleValue.of( 0.3 ) )
+                                      .setLeftThresholdProbability( 0.3 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setDataType( Threshold.ThresholdDataType.LEFT )
                                       .setThresholdValueUnits( UNIT_STRING )
                                       .build();
             Threshold six = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( DoubleValue.of( 0.7 ) )
+                                     .setLeftThresholdProbability( 0.7 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setThresholdValueUnits( UNIT_STRING )
@@ -394,19 +393,19 @@ class CsvThresholdReaderTest
             Map<String, Set<Threshold>> expected = new TreeMap<>();
 
             Threshold one = Threshold.newBuilder()
-                                     .setLeftThresholdValue( DoubleValue.of( 3.0 ) )
+                                     .setLeftThresholdValue( 3.0 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold two = Threshold.newBuilder()
-                                     .setLeftThresholdValue( DoubleValue.of( 7.0 ) )
+                                     .setLeftThresholdValue( 7.0 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold three = Threshold.newBuilder()
-                                       .setLeftThresholdValue( DoubleValue.of( 15.0 ) )
+                                       .setLeftThresholdValue( 15.0 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setDataType( Threshold.ThresholdDataType.LEFT )
                                        .setThresholdValueUnits( UNIT_STRING )
@@ -420,19 +419,19 @@ class CsvThresholdReaderTest
             expected.put( "DRRC2", first );
 
             Threshold four = Threshold.newBuilder()
-                                      .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
+                                      .setLeftThresholdValue( 23.0 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setDataType( Threshold.ThresholdDataType.LEFT )
                                       .setThresholdValueUnits( UNIT_STRING )
                                       .build();
             Threshold five = Threshold.newBuilder()
-                                      .setLeftThresholdValue( DoubleValue.of( 12.0 ) )
+                                      .setLeftThresholdValue( 12.0 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setDataType( Threshold.ThresholdDataType.LEFT )
                                       .setThresholdValueUnits( UNIT_STRING )
                                       .build();
             Threshold six = Threshold.newBuilder()
-                                     .setLeftThresholdValue( DoubleValue.of( 99.7 ) )
+                                     .setLeftThresholdValue( 99.7 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setThresholdValueUnits( UNIT_STRING )
@@ -496,13 +495,13 @@ class CsvThresholdReaderTest
             Map<String, Set<Threshold>> expected = new TreeMap<>();
 
             Threshold one = Threshold.newBuilder()
-                                     .setLeftThresholdValue( DoubleValue.of( 3.0 ) )
+                                     .setLeftThresholdValue( 3.0 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold two = Threshold.newBuilder()
-                                     .setLeftThresholdValue( DoubleValue.of( 7.0 ) )
+                                     .setLeftThresholdValue( 7.0 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setThresholdValueUnits( UNIT_STRING )
@@ -515,13 +514,13 @@ class CsvThresholdReaderTest
             expected.put( "DRRC2", first );
 
             Threshold three = Threshold.newBuilder()
-                                       .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
+                                       .setLeftThresholdValue( 23.0 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setDataType( Threshold.ThresholdDataType.LEFT )
                                        .setThresholdValueUnits( UNIT_STRING )
                                        .build();
             Threshold four = Threshold.newBuilder()
-                                      .setLeftThresholdValue( DoubleValue.of( 99.7 ) )
+                                      .setLeftThresholdValue( 99.7 )
                                       .setOperator( Threshold.ThresholdOperator.GREATER )
                                       .setDataType( Threshold.ThresholdDataType.LEFT )
                                       .setThresholdValueUnits( UNIT_STRING )
@@ -653,21 +652,21 @@ class CsvThresholdReaderTest
             Map<String, Set<Threshold>> expected = new TreeMap<>();
 
             Threshold one = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( DoubleValue.of( 0.4 ) )
+                                     .setLeftThresholdProbability( 0.4 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setName( "A" )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold two = Threshold.newBuilder()
-                                     .setLeftThresholdProbability( DoubleValue.of( 0.6 ) )
+                                     .setLeftThresholdProbability( 0.6 )
                                      .setOperator( Threshold.ThresholdOperator.GREATER )
                                      .setDataType( Threshold.ThresholdDataType.LEFT )
                                      .setName( "B" )
                                      .setThresholdValueUnits( UNIT_STRING )
                                      .build();
             Threshold three = Threshold.newBuilder()
-                                       .setLeftThresholdProbability( DoubleValue.of( 0.8 ) )
+                                       .setLeftThresholdProbability( 0.8 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setDataType( Threshold.ThresholdDataType.LEFT )
                                        .setName( "C" )

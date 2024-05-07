@@ -15,7 +15,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import com.google.protobuf.DoubleValue;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -731,43 +730,43 @@ class ReaderUtilitiesTest
 
             Threshold firstOne = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
-                                          .setLeftThresholdValue( DoubleValue.of( 0.0 ) )
+                                          .setLeftThresholdValue(0.0 )
                                           .setThresholdValueUnits( FT )
                                           .setName( "low" )
                                           .build();
             Threshold firstTwo = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
-                                          .setLeftThresholdValue( DoubleValue.of( 8.0 ) )
+                                          .setLeftThresholdValue(8.0 )
                                           .setThresholdValueUnits( FT )
                                           .setName( "action" )
                                           .build();
             Threshold firstThree = Threshold.newBuilder()
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
-                                            .setLeftThresholdValue( DoubleValue.of( 9.5 ) )
+                                            .setLeftThresholdValue( 9.5 )
                                             .setThresholdValueUnits( FT )
                                             .setName( "flood" )
                                             .build();
             Threshold firstFour = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setLeftThresholdValue( DoubleValue.of( 9.5 ) )
+                                           .setLeftThresholdValue( 9.5 )
                                            .setThresholdValueUnits( FT )
                                            .setName( "minor" )
                                            .build();
             Threshold firstFive = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setLeftThresholdValue( DoubleValue.of( 11.5 ) )
+                                           .setLeftThresholdValue( 11.5 )
                                            .setThresholdValueUnits( FT )
                                            .setName( "moderate" )
                                            .build();
             Threshold firstSix = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
-                                          .setLeftThresholdValue( DoubleValue.of( 13.5 ) )
+                                          .setLeftThresholdValue( 13.5 )
                                           .setThresholdValueUnits( FT )
                                           .setName( "major" )
                                           .build();
             Threshold firstSeven = Threshold.newBuilder()
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
-                                            .setLeftThresholdValue( DoubleValue.of( 15.36 ) )
+                                            .setLeftThresholdValue( 15.36 )
                                             .setThresholdValueUnits( FT )
                                             .setName( "record" )
                                             .build();
@@ -836,13 +835,13 @@ class ReaderUtilitiesTest
 
             Threshold secondOne = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setLeftThresholdValue( DoubleValue.of( 0.0 ) )
+                                           .setLeftThresholdValue( 0.0 )
                                            .setThresholdValueUnits( FT )
                                            .setName( "low" )
                                            .build();
             Threshold secondTwo = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setLeftThresholdValue( DoubleValue.of( 14.29 ) )
+                                           .setLeftThresholdValue( 14.29 )
                                            .setThresholdValueUnits( FT )
                                            .setName( "record" )
                                            .build();
@@ -871,7 +870,7 @@ class ReaderUtilitiesTest
 
             Threshold thirdOne = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
-                                          .setLeftThresholdValue( DoubleValue.of( 0.0 ) )
+                                          .setLeftThresholdValue( 0.0 )
                                           .setThresholdValueUnits( FT )
                                           .setName( "low" )
                                           .build();
@@ -892,43 +891,43 @@ class ReaderUtilitiesTest
 
             Threshold fourthOne = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setLeftThresholdValue( DoubleValue.of( 13.0 ) )
+                                           .setLeftThresholdValue( 13.0 )
                                            .setThresholdValueUnits( FT )
                                            .setName( "action" )
                                            .build();
             Threshold fourthTwo = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setLeftThresholdValue( DoubleValue.of( 15.0 ) )
+                                           .setLeftThresholdValue( 15.0 )
                                            .setThresholdValueUnits( FT )
                                            .setName( "bankfull" )
                                            .build();
             Threshold fourthThree = Threshold.newBuilder()
                                              .setOperator( Threshold.ThresholdOperator.GREATER )
-                                             .setLeftThresholdValue( DoubleValue.of( 17.0 ) )
+                                             .setLeftThresholdValue( 17.0 )
                                              .setThresholdValueUnits( FT )
                                              .setName( "flood" )
                                              .build();
             Threshold fourthFour = Threshold.newBuilder()
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
-                                            .setLeftThresholdValue( DoubleValue.of( 17.0 ) )
+                                            .setLeftThresholdValue( 17.0 )
                                             .setThresholdValueUnits( FT )
                                             .setName( "minor" )
                                             .build();
             Threshold fourthFive = Threshold.newBuilder()
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
-                                            .setLeftThresholdValue( DoubleValue.of( 23.5 ) )
+                                            .setLeftThresholdValue( 23.5 )
                                             .setThresholdValueUnits( FT )
                                             .setName( "moderate" )
                                             .build();
             Threshold fourthSix = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setLeftThresholdValue( DoubleValue.of( 26.0 ) )
+                                           .setLeftThresholdValue( 26.0 )
                                            .setThresholdValueUnits( FT )
                                            .setName( "major" )
                                            .build();
             Threshold fourthSeven = Threshold.newBuilder()
                                              .setOperator( Threshold.ThresholdOperator.GREATER )
-                                             .setLeftThresholdValue( DoubleValue.of( 28.6 ) )
+                                             .setLeftThresholdValue( 28.6 )
                                              .setThresholdValueUnits( FT )
                                              .setName( "record" )
                                              .build();
@@ -997,49 +996,49 @@ class ReaderUtilitiesTest
 
             Threshold fifthOne = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
-                                          .setLeftThresholdValue( DoubleValue.of( -0.16 ) )
+                                          .setLeftThresholdValue( -0.16 )
                                           .setThresholdValueUnits( FT )
                                           .setName( "low" )
                                           .build();
             Threshold fifthTwo = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
-                                          .setLeftThresholdValue( DoubleValue.of( 11.0 ) )
+                                          .setLeftThresholdValue( 11.0 )
                                           .setThresholdValueUnits( FT )
                                           .setName( "action" )
                                           .build();
             Threshold fifthThree = Threshold.newBuilder()
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
-                                            .setLeftThresholdValue( DoubleValue.of( 11.0 ) )
+                                            .setLeftThresholdValue( 11.0 )
                                             .setThresholdValueUnits( FT )
                                             .setName( "bankfull" )
                                             .build();
             Threshold fifthFour = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setLeftThresholdValue( DoubleValue.of( 20.0 ) )
+                                           .setLeftThresholdValue( 20.0 )
                                            .setThresholdValueUnits( FT )
                                            .setName( "flood" )
                                            .build();
             Threshold fifthFive = Threshold.newBuilder()
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
-                                           .setLeftThresholdValue( DoubleValue.of( 20.0 ) )
+                                           .setLeftThresholdValue( 20.0 )
                                            .setThresholdValueUnits( FT )
                                            .setName( "minor" )
                                            .build();
             Threshold fifthSix = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
-                                          .setLeftThresholdValue( DoubleValue.of( 28.0 ) )
+                                          .setLeftThresholdValue( 28.0 )
                                           .setThresholdValueUnits( FT )
                                           .setName( "moderate" )
                                           .build();
             Threshold fifthSeven = Threshold.newBuilder()
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
-                                            .setLeftThresholdValue( DoubleValue.of( 31.0 ) )
+                                            .setLeftThresholdValue( 31.0 )
                                             .setThresholdValueUnits( FT )
                                             .setName( "major" )
                                             .build();
             Threshold fifthEighth = Threshold.newBuilder()
                                              .setOperator( Threshold.ThresholdOperator.GREATER )
-                                             .setLeftThresholdValue( DoubleValue.of( 34.11 ) )
+                                             .setLeftThresholdValue( 34.11 )
                                              .setThresholdValueUnits( FT )
                                              .setName( "record" )
                                              .build();

@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.protobuf.DoubleValue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -161,7 +160,7 @@ class DeclarationInterpolatorTest
     private static final wres.config.yaml.components.Threshold
             ALL_DATA_THRESHOLD =
             new wres.config.yaml.components.Threshold( Threshold.newBuilder()
-                                                                .setLeftThresholdValue( DoubleValue.of( Double.NEGATIVE_INFINITY ) )
+                                                                .setLeftThresholdValue( Double.NEGATIVE_INFINITY )
                                                                 .setOperator( Threshold.ThresholdOperator.GREATER )
                                                                 .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
                                                                 .build(),
@@ -638,7 +637,7 @@ class DeclarationInterpolatorTest
                                       .build();
 
         Threshold one = Threshold.newBuilder()
-                                 .setLeftThresholdValue( DoubleValue.of( 1.0 ) )
+                                 .setLeftThresholdValue( 1.0 )
                                  .build();
         wres.config.yaml.components.Threshold wrappedOne = ThresholdBuilder.builder()
                                                                            .threshold( one )
@@ -647,7 +646,7 @@ class DeclarationInterpolatorTest
                                                                            .type( ThresholdType.VALUE )
                                                                            .build();
         Threshold two = Threshold.newBuilder()
-                                 .setLeftThresholdValue( DoubleValue.of( 2.0 ) )
+                                 .setLeftThresholdValue( 2.0 )
                                  .build();
         wres.config.yaml.components.Threshold wrappedTwo = ThresholdBuilder.builder()
                                                                            .threshold( two )
@@ -656,7 +655,7 @@ class DeclarationInterpolatorTest
                                                                            .type( ThresholdType.VALUE )
                                                                            .build();
         Threshold three = Threshold.newBuilder()
-                                   .setLeftThresholdValue( DoubleValue.of( 2.0 ) )
+                                   .setLeftThresholdValue( 2.0 )
                                    .build();
         wres.config.yaml.components.Threshold wrappedThree = ThresholdBuilder.builder()
                                                                              .threshold( three )
@@ -711,7 +710,7 @@ class DeclarationInterpolatorTest
         wres.config.yaml.components.Threshold one =
                 ThresholdBuilder.builder()
                                 .threshold( Threshold.newBuilder()
-                                                     .setLeftThresholdValue( DoubleValue.of( 1.0 ) )
+                                                     .setLeftThresholdValue( 1.0 )
                                                      .build() )
                                 .type( ThresholdType.VALUE )
                                 .build();
@@ -719,7 +718,7 @@ class DeclarationInterpolatorTest
         wres.config.yaml.components.Threshold two =
                 ThresholdBuilder.builder()
                                 .threshold( Threshold.newBuilder()
-                                                     .setLeftThresholdValue( DoubleValue.of( 2.0 ) )
+                                                     .setLeftThresholdValue( 2.0 )
                                                      .build() )
                                 .type( ThresholdType.VALUE )
                                 .build();
@@ -941,13 +940,13 @@ class DeclarationInterpolatorTest
                 ThresholdBuilder.builder()
                                 .feature( LEFT_NAME_ONE_DECLARED_FEATURE.getLeft() )
                                 .threshold( Threshold.newBuilder()
-                                                     .setLeftThresholdValue( DoubleValue.of( 1.0 ) ).build() )
+                                                     .setLeftThresholdValue( 1.0 ).build() )
                                 .featureNameFrom( DatasetOrientation.LEFT )
                                 .build();
         wres.config.yaml.components.Threshold two =
                 ThresholdBuilder.builder()
                                 .threshold( Threshold.newBuilder()
-                                                     .setLeftThresholdValue( DoubleValue.of( 2.0 ) ).build() )
+                                                     .setLeftThresholdValue( 2.0 ).build() )
                                 .featureNameFrom( DatasetOrientation.LEFT )
                                 .build();
         // Add some metrics
@@ -1020,7 +1019,7 @@ class DeclarationInterpolatorTest
     {
         // Create some metric-specific thresholds, one with a feature, one without
         Threshold oneInner = Threshold.newBuilder()
-                                      .setLeftThresholdValue( DoubleValue.of( 1.0 ) )
+                                      .setLeftThresholdValue( 1.0 )
                                       .build();
         wres.config.yaml.components.Threshold one =
                 ThresholdBuilder.builder()
@@ -1953,7 +1952,7 @@ class DeclarationInterpolatorTest
         Set<Metric> actual = actualInterpolated.metrics();
 
         Threshold one = Threshold.newBuilder()
-                                 .setLeftThresholdValue( DoubleValue.of( 1 ) )
+                                 .setLeftThresholdValue( 1 )
                                  .setOperator( Threshold.ThresholdOperator.GREATER )
                                  .build();
         wres.config.yaml.components.Threshold oneWrapped =
@@ -1963,7 +1962,7 @@ class DeclarationInterpolatorTest
                                 .build();
 
         Threshold two = Threshold.newBuilder()
-                                 .setLeftThresholdValue( DoubleValue.of( 2 ) )
+                                 .setLeftThresholdValue( 2 )
                                  .setOperator( Threshold.ThresholdOperator.GREATER )
                                  .build();
 
@@ -1989,7 +1988,7 @@ class DeclarationInterpolatorTest
                                     .build();
 
         Threshold three = Threshold.newBuilder()
-                                   .setLeftThresholdProbability( DoubleValue.of( 0.1 ) )
+                                   .setLeftThresholdProbability( 0.1 )
                                    .setOperator( Threshold.ThresholdOperator.GREATER )
                                    .build();
         wres.config.yaml.components.Threshold threeWrapped =
@@ -1999,7 +1998,7 @@ class DeclarationInterpolatorTest
                                 .build();
 
         Threshold four = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( DoubleValue.of( 0.2 ) )
+                                  .setLeftThresholdProbability( 0.2 )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .build();
 

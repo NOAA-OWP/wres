@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.protobuf.DoubleValue;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,7 +46,7 @@ class EvaluationUtilitiesTest
                                                  java.time.Duration.ofHours( 17 ) );
 
         Threshold pOneValue = Threshold.newBuilder()
-                                       .setLeftThresholdValue( DoubleValue.of( 5 ) )
+                                       .setLeftThresholdValue( 5 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
                                        .build();
@@ -59,7 +58,7 @@ class EvaluationUtilitiesTest
                                   .build();
 
         Threshold pTwoValue = Threshold.newBuilder()
-                                       .setLeftThresholdValue( DoubleValue.of( 10 ) )
+                                       .setLeftThresholdValue( 10 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
                                        .build();
@@ -75,7 +74,7 @@ class EvaluationUtilitiesTest
         valueThresholds.add( pTwoValueWrapped );
 
         Threshold pOneClassifier = Threshold.newBuilder()
-                                            .setLeftThresholdProbability( DoubleValue.of( 0.05 ) )
+                                            .setLeftThresholdProbability( 0.05 )
                                             .setOperator( Threshold.ThresholdOperator.LESS_EQUAL )
                                             .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
                                             .build();
@@ -87,7 +86,7 @@ class EvaluationUtilitiesTest
                                   .build();
 
         Threshold pTwoClassifier = Threshold.newBuilder()
-                                            .setLeftThresholdProbability( DoubleValue.of( 0.1 ) )
+                                            .setLeftThresholdProbability( 0.1 )
                                             .setOperator( Threshold.ThresholdOperator.LESS_EQUAL )
                                             .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
                                             .build();
@@ -141,7 +140,7 @@ class EvaluationUtilitiesTest
     {
         // Create the declaration
         Threshold pOneValue = Threshold.newBuilder()
-                                       .setLeftThresholdValue( DoubleValue.of( 5 ) )
+                                       .setLeftThresholdValue( 5 )
                                        .setOperator( Threshold.ThresholdOperator.GREATER )
                                        .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
                                        .setName( "FLOOD" )
@@ -178,7 +177,7 @@ class EvaluationUtilitiesTest
 
         // Filter accepts arbitrary statistics with "FLOOD" threshold
         Threshold eventThreshold = pOneValue.toBuilder()
-                                            .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
+                                            .setLeftThresholdValue( 23.0 )
                                             .build();
 
         TimeWindow big = DeclarationUtilities.getOneBigTimeWindow( evaluation );

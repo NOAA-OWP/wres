@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -611,7 +610,7 @@ class DeclarationMigratorTest
         EvaluationDeclaration actual = DeclarationMigrator.from( project, false );
 
         Threshold pOne = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( DoubleValue.of( 0.1 ) )
+                                  .setLeftThresholdProbability( 0.1 )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .build();
 
@@ -631,7 +630,7 @@ class DeclarationMigratorTest
                                         .build();
 
         Threshold pTwo = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( DoubleValue.of( 0.2 ) )
+                                  .setLeftThresholdProbability( 0.2 )
                                   .setOperator( Threshold.ThresholdOperator.GREATER )
                                   .build();
 
@@ -1136,7 +1135,7 @@ class DeclarationMigratorTest
         EvaluationDeclaration actualEvaluation = DeclarationMigrator.from( project, false );
 
         Threshold pOne = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( DoubleValue.of( 0.05 ) )
+                                  .setLeftThresholdProbability( 0.05 )
                                   .setOperator( Threshold.ThresholdOperator.LESS_EQUAL )
                                   .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
                                   .build();
@@ -1148,7 +1147,7 @@ class DeclarationMigratorTest
                                   .build();
 
         Threshold pTwo = Threshold.newBuilder()
-                                  .setLeftThresholdProbability( DoubleValue.of( 0.1 ) )
+                                  .setLeftThresholdProbability( 0.1 )
                                   .setOperator( Threshold.ThresholdOperator.LESS_EQUAL )
                                   .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
                                   .build();
@@ -1160,7 +1159,7 @@ class DeclarationMigratorTest
                                   .build();
 
         Threshold pThree = Threshold.newBuilder()
-                                    .setLeftThresholdProbability( DoubleValue.of( 0.05 ) )
+                                    .setLeftThresholdProbability( 0.05 )
                                     .setOperator( Threshold.ThresholdOperator.EQUAL )
                                     .setDataType( Threshold.ThresholdDataType.ANY_RIGHT )
                                     .build();
@@ -1172,7 +1171,7 @@ class DeclarationMigratorTest
                                 .build();
 
         Threshold pFour = Threshold.newBuilder()
-                                   .setLeftThresholdProbability( DoubleValue.of( 0.1 ) )
+                                   .setLeftThresholdProbability( 0.1 )
                                    .setOperator( Threshold.ThresholdOperator.EQUAL )
                                    .setDataType( Threshold.ThresholdDataType.ANY_RIGHT )
                                    .build();

@@ -371,12 +371,12 @@ class SummaryStatisticsCalculatorTest
                 DurationDiagramMetric.newBuilder().setName( MetricName.TIME_TO_PEAK_ERROR )
                                      .build();
 
-        Timestamp first = MessageFactory.parse( Instant.parse( "2023-03-03T00:00:00Z" ) );
-        Timestamp second = MessageFactory.parse( Instant.parse( "2023-03-03T01:00:00Z" ) );
-        Timestamp third = MessageFactory.parse( Instant.parse( "2023-03-03T02:00:00Z" ) );
-        Duration one = MessageFactory.parse( java.time.Duration.ofHours( 1 ) );
-        Duration two = MessageFactory.parse( java.time.Duration.ofHours( 2 ) );
-        Duration three = MessageFactory.parse( java.time.Duration.ofHours( 3 ) );
+        Timestamp first = MessageFactory.getTimestamp( Instant.parse( "2023-03-03T00:00:00Z" ) );
+        Timestamp second = MessageFactory.getTimestamp( Instant.parse( "2023-03-03T01:00:00Z" ) );
+        Timestamp third = MessageFactory.getTimestamp( Instant.parse( "2023-03-03T02:00:00Z" ) );
+        Duration one = MessageFactory.getDuration( java.time.Duration.ofHours( 1 ) );
+        Duration two = MessageFactory.getDuration( java.time.Duration.ofHours( 2 ) );
+        Duration three = MessageFactory.getDuration( java.time.Duration.ofHours( 3 ) );
 
         List<DurationDiagramStatistic.PairOfInstantAndDuration> errorPairs =
                 List.of( DurationDiagramStatistic.PairOfInstantAndDuration.newBuilder()
@@ -430,9 +430,9 @@ class SummaryStatisticsCalculatorTest
         {
             Statistics.Builder next = nominal.toBuilder();
 
-            Duration firstDuration = MessageFactory.parse( java.time.Duration.ofHours( i ) );
-            Duration secondDuration = MessageFactory.parse( java.time.Duration.ofHours( i + 1 ) );
-            Duration thirdDuration = MessageFactory.parse( java.time.Duration.ofHours( i + 2 ) );
+            Duration firstDuration = MessageFactory.getDuration( java.time.Duration.ofHours( i ) );
+            Duration secondDuration = MessageFactory.getDuration( java.time.Duration.ofHours( i + 1 ) );
+            Duration thirdDuration = MessageFactory.getDuration( java.time.Duration.ofHours( i + 2 ) );
 
             // Set the new pairs
             next.getDurationDiagramsBuilder( 0 )
@@ -449,9 +449,9 @@ class SummaryStatisticsCalculatorTest
 
         List<Statistics> actual = calculator.get();
 
-        Duration firstExpected = MessageFactory.parse( java.time.Duration.ofSeconds( 3960 ) );
-        Duration secondExpected = MessageFactory.parse( java.time.Duration.ofSeconds( 7560 ) );
-        Duration thirdExpected = MessageFactory.parse( java.time.Duration.ofSeconds( 11160 ) );
+        Duration firstExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 3960 ) );
+        Duration secondExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 7560 ) );
+        Duration thirdExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 11160 ) );
         Statistics.Builder expectedFirstBuilder = nominal.toBuilder()
                                                          .setSummaryStatistic( q1 );
         expectedFirstBuilder.getDurationDiagramsBuilder( 0 )
@@ -464,9 +464,9 @@ class SummaryStatisticsCalculatorTest
                             .getStatisticsBuilder( 2 )
                             .setDuration( thirdExpected );
 
-        Duration fourthExpected = MessageFactory.parse( java.time.Duration.ofSeconds( 19800 ) );
-        Duration fifthExpected = MessageFactory.parse( java.time.Duration.ofSeconds( 23400 ) );
-        Duration sixthExpected = MessageFactory.parse( java.time.Duration.ofSeconds( 27000 ) );
+        Duration fourthExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 19800 ) );
+        Duration fifthExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 23400 ) );
+        Duration sixthExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 27000 ) );
         Statistics.Builder expectedSecondBuilder = nominal.toBuilder()
                                                           .setSummaryStatistic( q2 );
         expectedSecondBuilder.getDurationDiagramsBuilder( 0 )
@@ -479,9 +479,9 @@ class SummaryStatisticsCalculatorTest
                              .getStatisticsBuilder( 2 )
                              .setDuration( sixthExpected );
 
-        Duration seventhExpected = MessageFactory.parse( java.time.Duration.ofSeconds( 35640 ) );
-        Duration eighthExpected = MessageFactory.parse( java.time.Duration.ofSeconds( 39240 ) );
-        Duration ninthExpected = MessageFactory.parse( java.time.Duration.ofSeconds( 42840 ) );
+        Duration seventhExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 35640 ) );
+        Duration eighthExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 39240 ) );
+        Duration ninthExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 42840 ) );
         Statistics.Builder expectedThirdBuilder = nominal.toBuilder()
                                                          .setSummaryStatistic( q3 );
         expectedThirdBuilder.getDurationDiagramsBuilder( 0 )
@@ -667,12 +667,12 @@ class SummaryStatisticsCalculatorTest
                 DurationDiagramMetric.newBuilder().setName( MetricName.TIME_TO_PEAK_ERROR )
                                      .build();
 
-        Timestamp one = MessageFactory.parse( Instant.parse( "2023-03-03T00:00:00Z" ) );
-        Timestamp two = MessageFactory.parse( Instant.parse( "2023-03-03T01:00:00Z" ) );
-        Timestamp three = MessageFactory.parse( Instant.parse( "2023-03-03T02:00:00Z" ) );
-        Duration a = MessageFactory.parse( java.time.Duration.ofHours( 1 ) );
-        Duration b = MessageFactory.parse( java.time.Duration.ofHours( 2 ) );
-        Duration c = MessageFactory.parse( java.time.Duration.ofHours( 3 ) );
+        Timestamp one = MessageFactory.getTimestamp( Instant.parse( "2023-03-03T00:00:00Z" ) );
+        Timestamp two = MessageFactory.getTimestamp( Instant.parse( "2023-03-03T01:00:00Z" ) );
+        Timestamp three = MessageFactory.getTimestamp( Instant.parse( "2023-03-03T02:00:00Z" ) );
+        Duration a = MessageFactory.getDuration( java.time.Duration.ofHours( 1 ) );
+        Duration b = MessageFactory.getDuration( java.time.Duration.ofHours( 2 ) );
+        Duration c = MessageFactory.getDuration( java.time.Duration.ofHours( 3 ) );
 
         List<DurationDiagramStatistic.PairOfInstantAndDuration> errorPairs =
                 List.of( DurationDiagramStatistic.PairOfInstantAndDuration.newBuilder()
@@ -757,9 +757,9 @@ class SummaryStatisticsCalculatorTest
                                           .setSeconds( i * 60 * 60 ) );
 
             // Create the duration diagram
-            Duration firstDuration = MessageFactory.parse( java.time.Duration.ofHours( i ) );
-            Duration secondDuration = MessageFactory.parse( java.time.Duration.ofHours( i + 1 ) );
-            Duration thirdDuration = MessageFactory.parse( java.time.Duration.ofHours( i + 2 ) );
+            Duration firstDuration = MessageFactory.getDuration( java.time.Duration.ofHours( i ) );
+            Duration secondDuration = MessageFactory.getDuration( java.time.Duration.ofHours( i + 1 ) );
+            Duration thirdDuration = MessageFactory.getDuration( java.time.Duration.ofHours( i + 2 ) );
 
             // Set the new pairs
             nextBuilder.getDurationDiagramsBuilder( 0 )
@@ -806,9 +806,9 @@ class SummaryStatisticsCalculatorTest
                             .setValue( Duration.newBuilder()
                                                .setSeconds( 3960 ) );
 
-        Duration firstExpected = MessageFactory.parse( java.time.Duration.ofSeconds( 3960 ) );
-        Duration secondExpected = MessageFactory.parse( java.time.Duration.ofSeconds( 7560 ) );
-        Duration thirdExpected = MessageFactory.parse( java.time.Duration.ofSeconds( 11160 ) );
+        Duration firstExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 3960 ) );
+        Duration secondExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 7560 ) );
+        Duration thirdExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 11160 ) );
 
         expectedFirstBuilder.getDurationDiagramsBuilder( 0 )
                             .getStatisticsBuilder( 0 )
@@ -840,9 +840,9 @@ class SummaryStatisticsCalculatorTest
                              .setValue( Duration.newBuilder()
                                                 .setSeconds( 19800 ) );
 
-        Duration fourthExpected = MessageFactory.parse( java.time.Duration.ofSeconds( 19800 ) );
-        Duration fifthExpected = MessageFactory.parse( java.time.Duration.ofSeconds( 23400 ) );
-        Duration sixthExpected = MessageFactory.parse( java.time.Duration.ofSeconds( 27000 ) );
+        Duration fourthExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 19800 ) );
+        Duration fifthExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 23400 ) );
+        Duration sixthExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 27000 ) );
 
         expectedSecondBuilder.getDurationDiagramsBuilder( 0 )
                              .getStatisticsBuilder( 0 )
@@ -874,9 +874,9 @@ class SummaryStatisticsCalculatorTest
                             .setValue( Duration.newBuilder()
                                                .setSeconds( 35640 ) );
 
-        Duration seventhExpected = MessageFactory.parse( java.time.Duration.ofSeconds( 35640 ) );
-        Duration eighthExpected = MessageFactory.parse( java.time.Duration.ofSeconds( 39240 ) );
-        Duration ninthExpected = MessageFactory.parse( java.time.Duration.ofSeconds( 42840 ) );
+        Duration seventhExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 35640 ) );
+        Duration eighthExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 39240 ) );
+        Duration ninthExpected = MessageFactory.getDuration( java.time.Duration.ofSeconds( 42840 ) );
 
         expectedThirdBuilder.getDurationDiagramsBuilder( 0 )
                             .getStatisticsBuilder( 0 )

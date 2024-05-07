@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import com.google.protobuf.ProtocolStringList;
 
+import wres.statistics.generated.Covariate;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.Geometry;
@@ -29,16 +30,17 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 /**
  * A collection of utilities that help to add behavior to the dumb-data containers in {@link wres.statistics}, notably
  * to facilitate implementations of {@link Comparable}.
- * 
+ *
  * @author James Brown
  */
 
 public class MessageUtilities
 {
     /**
-     * Compares the first {@link Evaluation} against the second and returns zero, a positive or negative value as to 
-     * whether the first description is equal to, greater than or less than the second description.
-     * 
+     * Compares the first {@link Evaluation} against the second and returns zero, a positive or negative value,
+     * according to whether the first description is equal to, greater than or less than the second description,
+     * respectively.
+     *
      * @param first the first description
      * @param second the second description
      * @return a number that is zero, negative or positive when first description is the same as, less than or greater 
@@ -146,9 +148,9 @@ public class MessageUtilities
     }
 
     /**
-     * Compares the first {@link Outputs} against the second and returns zero, a positive or negative value as to 
-     * whether the first description is equal to, greater than or less than the second description.
-     * 
+     * Compares the first {@link Outputs} against the second and returns zero, a positive or negative value, according
+     * to whether the first description is equal to, greater than or less than the second description, respectively.
+     *
      * @param first the first description
      * @param second the second description
      * @return a number that is zero, negative or positive when first description is the same as, less than or greater 
@@ -261,9 +263,9 @@ public class MessageUtilities
     }
 
     /**
-     * Compares the first {@link Season} against the second and returns zero, a positive or negative value as to whether 
-     * the first description is equal to, greater than or less than the second description.
-     * 
+     * Compares the first {@link Season} against the second and returns zero, a positive or negative value, according to
+     * whether the first description is equal to, greater than or less than the second description, respectively.
+     *
      * @param first the first description
      * @param second the second description
      * @return a number that is zero, negative or positive when first description is the same as, less than or greater 
@@ -307,9 +309,10 @@ public class MessageUtilities
     }
 
     /**
-     * Compares the first {@link ValueFilter} against the second and returns zero, a positive or negative value as to 
-     * whether the first description is equal to, greater than or less than the second description.
-     * 
+     * Compares the first {@link ValueFilter} against the second and returns zero, a positive or negative value
+     * according to whether the first description is equal to, greater than or less than the second description,
+     * respectively.
+     *
      * @param first the first description
      * @param second the second description
      * @return a number that is zero, negative or positive when first description is the same as, less than or greater 
@@ -339,9 +342,9 @@ public class MessageUtilities
     }
 
     /**
-     * Compares the first {@link Pool} against the second and returns zero, a positive or negative value as to whether 
-     * the first description is equal to, greater than or less than the second description.
-     * 
+     * Compares the first {@link Pool} against the second and returns zero, a positive or negative value according to
+     * whether the first description is equal to, greater than or less than the second description, respectively.
+     *
      * @param first the first description
      * @param second the second description
      * @return a number that is zero, negative or positive when first description is the same as, less than or greater 
@@ -442,13 +445,13 @@ public class MessageUtilities
     }
 
     /**
-     * Compares two {@link GeometryGroup} and returns a zero, negative or positive value as to whether the 
-     * first is equal to, less than or greater than the second. 
-     * 
+     * Compares two {@link GeometryGroup} and returns a zero, negative or positive value according to whether the
+     * first is equal to, less than or greater than the second, respectively.
+     *
      * @param first the first group
      * @param second the second group
-     * @return a zero, negative or positive value as to whether the first is equal to, less than or greater than the 
-     *            second, respectively
+     * @return a zero, negative or positive value when the first is equal to, less than or greater than the second,
+     *            respectively
      * @throws NullPointerException if either list is null
      */
 
@@ -490,9 +493,9 @@ public class MessageUtilities
     }
 
     /**
-     * Compares the first {@link Threshold} against the second and returns zero, a positive or negative value as to 
-     * whether the first description is equal to, greater than or less than the second description.
-     * 
+     * Compares the first {@link Threshold} against the second and returns zero, a positive or negative value, according
+     * to whether the first description is equal to, greater than or less than the second description, respectively.
+     *
      * @param first the first description
      * @param second the second description
      * @return a number that is zero, negative or positive when first description is the same as, less than or greater 
@@ -546,32 +549,32 @@ public class MessageUtilities
             return compare;
         }
 
-        compare = Double.compare( first.getLeftThresholdValue().getValue(),
-                                  second.getLeftThresholdValue().getValue() );
+        compare = Double.compare( first.getLeftThresholdValue(),
+                                  second.getLeftThresholdValue() );
 
         if ( compare != 0 )
         {
             return compare;
         }
 
-        compare = Double.compare( first.getRightThresholdValue().getValue(),
-                                  second.getRightThresholdValue().getValue() );
+        compare = Double.compare( first.getRightThresholdValue(),
+                                  second.getRightThresholdValue() );
 
         if ( compare != 0 )
         {
             return compare;
         }
 
-        compare = Double.compare( first.getLeftThresholdProbability().getValue(),
-                                  second.getLeftThresholdProbability().getValue() );
+        compare = Double.compare( first.getLeftThresholdProbability(),
+                                  second.getLeftThresholdProbability() );
 
         if ( compare != 0 )
         {
             return compare;
         }
 
-        compare = Double.compare( first.getRightThresholdProbability().getValue(),
-                                  second.getRightThresholdProbability().getValue() );
+        compare = Double.compare( first.getRightThresholdProbability(),
+                                  second.getRightThresholdProbability() );
 
         if ( compare != 0 )
         {
@@ -596,9 +599,9 @@ public class MessageUtilities
     }
 
     /**
-     * Compares the first {@link TimeScale} against the second and returns zero, a positive or negative value as to 
-     * whether the first description is equal to, greater than or less than the second description.
-     * 
+     * Compares the first {@link TimeScale} against the second and returns zero, a positive or negative value, according
+     * to whether the first description is equal to, greater than or less than the second description, respectively.
+     *
      * @param first the first description
      * @param second the second description
      * @return a number that is zero, negative or positive when first description is the same as, less than or greater 
@@ -674,9 +677,10 @@ public class MessageUtilities
     }
 
     /**
-     * Compares the first {@link TimeWindow} against the second and returns zero, a positive or negative value as to 
-     * whether the first description is equal to, greater than or less than the second description.
-     * 
+     * Compares the first {@link TimeWindow} against the second and returns zero, a positive or negative value,
+     * according to whether the first description is equal to, greater than or less than the second description,
+     * respectively.
+     *
      * @param first the first description
      * @param second the second description
      * @return a number that is zero, negative or positive when first description is the same as, less than or greater 
@@ -796,9 +800,10 @@ public class MessageUtilities
     }
 
     /**
-     * Compares the first {@link GeometryTuple} against the second and returns zero, a positive or negative value as to 
-     * whether the first description is equal to, greater than or less than the second description.
-     * 
+     * Compares the first {@link GeometryTuple} against the second and returns zero, a positive or negative value,
+     * according to whether the first description is equal to, greater than or less than the second description,
+     * respectively.
+     *
      * @param first the first description
      * @param second the second description
      * @return a number that is zero, negative or positive when first description is the same as, less than or greater 
@@ -835,9 +840,9 @@ public class MessageUtilities
     }
 
     /**
-     * Compares the first {@link Geometry} against the second and returns zero, a positive or negative value as to 
-     * whether the first description is equal to, greater than or less than the second description.
-     * 
+     * Compares the first {@link Geometry} against the second and returns zero, a positive or negative value, according
+     * to whether the first description is equal to, greater than or less than the second description, respectively.
+     *
      * @param first the first description
      * @param second the second description
      * @return a number that is zero, negative or positive when first description is the same as, less than or greater 
@@ -881,9 +886,9 @@ public class MessageUtilities
     }
 
     /**
-     * Compares the first {@link Pairs} against the second and returns zero, a positive or negative value as to whether 
-     * the first description is equal to, greater than or less than the second description.
-     * 
+     * Compares the first {@link Pairs} against the second and returns zero, a positive or negative value, according to
+     * whether the first description is equal to, greater than or less than the second description, respectively.
+     *
      * @param first the first description
      * @param second the second description
      * @return a number that is zero, negative or positive when first description is the same as, less than or greater 
@@ -906,9 +911,10 @@ public class MessageUtilities
     }
 
     /**
-     * Compares the first {@link TimeSeriesOfPairs} against the second and returns zero, a positive or negative value as 
-     * to whether the first description is equal to, greater than or less than the second description.
-     * 
+     * Compares the first {@link TimeSeriesOfPairs} against the second and returns zero, a positive or negative value,
+     * according to whether the first description is equal to, greater than or less than the second description,
+     * respectively.
+     *
      * @param first the first description
      * @param second the second description
      * @return a number that is zero, negative or positive when first description is the same as, less than or greater 
@@ -939,9 +945,10 @@ public class MessageUtilities
     }
 
     /**
-     * Compares the first {@link ReferenceTime} against the second and returns zero, a positive or negative value as to 
-     * whether the first description is equal to, greater than or less than the second description.
-     * 
+     * Compares the first {@link ReferenceTime} against the second and returns zero, a positive or negative value,
+     * according to whether the first description is equal to, greater than or less than the second description,
+     * respectively.
+     *
      * @param first the first description
      * @param second the second description
      * @return a number that is zero, negative or positive when first description is the same as, less than or greater 
@@ -980,9 +987,9 @@ public class MessageUtilities
     }
 
     /**
-     * Compares the first {@link Pair} against the second and returns zero, a positive or negative value as to whether 
-     * the first description is equal to, greater than or less than the second description.
-     * 
+     * Compares the first {@link Pair} against the second and returns zero, a positive or negative value, according to
+     * whether the first description is equal to, greater than or less than the second description, respectively.
+     *
      * @param first the first description
      * @param second the second description
      * @return a number that is zero, negative or positive when first description is the same as, less than or greater 
@@ -1047,8 +1054,9 @@ public class MessageUtilities
 
     /**
      * Compares the first {@link EvaluationStatusEvent} against the second and returns zero, a positive or negative 
-     * value as to whether the first description is equal to, greater than or less than the second description.
-     * 
+     * value, according to whether the first description is equal to, greater than or less than the second description,
+     * respectively.
+     *
      * @param first the first description
      * @param second the second description
      * @return a number that is zero, negative or positive when first description is the same as, less than or greater 
@@ -1093,9 +1101,34 @@ public class MessageUtilities
     }
 
     /**
-     * Compares two lists of strings and returns a zero, negative or positive value as to whether the first list is
-     * equal to, less than or greater than the second list. 
-     * 
+     * Generates a string representation of the covariate.
+     * @param covariate the covariate
+     * @return a string representation
+     */
+    public static String toString( Covariate covariate )
+    {
+        Objects.requireNonNull( covariate );
+
+        if ( covariate.hasMinimumInclusiveValue()
+             && covariate.hasMaximumInclusiveValue() )
+        {
+            return covariate.getMinimumInclusiveValue() + " <= "
+                   + covariate.getVariableName()
+                   + " <= "
+                   + covariate.getMaximumInclusiveValue();
+        }
+        else if ( covariate.hasMinimumInclusiveValue() )
+        {
+            return covariate.getVariableName() + " >= " + covariate.getMinimumInclusiveValue();
+        }
+
+        return covariate.getVariableName() + " <= " + covariate.getMaximumInclusiveValue();
+    }
+
+    /**
+     * Compares two lists of strings and returns a zero, negative or positive value, according to whether the first
+     * list is equal to, less than or greater than the second list.
+     *
      * @param first the first list
      * @param second the second list
      * @throws NullPointerException if either list is null
@@ -1131,9 +1164,9 @@ public class MessageUtilities
     }
 
     /**
-     * Compares two lists of {@link MetricName} and returns a zero, negative or positive value as to whether the first 
-     * list is equal to, less than or greater than the second list. 
-     * 
+     * Compares two lists of {@link MetricName} and returns a zero, negative or positive value, according to whether the
+     * first list is equal to, less than or greater than the second list, respectively.
+     *
      * @param first the first list
      * @param second the second list
      * @throws NullPointerException if either list is null
@@ -1169,9 +1202,9 @@ public class MessageUtilities
     }
 
     /**
-     * Compares two lists of {@link ReferenceTimeType} and returns a zero, negative or positive value as to whether the 
-     * first list is equal to, less than or greater than the second list. 
-     * 
+     * Compares two lists of {@link ReferenceTimeType} and returns a zero, negative or positive value, according to
+     * whether the first list is equal to, less than or greater than the second list, respectively.
+     *
      * @param first the first list
      * @param second the second list
      * @throws NullPointerException if either list is null
@@ -1207,9 +1240,9 @@ public class MessageUtilities
     }
 
     /**
-     * Compares two lists of {@link TimeSeriesOfPairs} and returns a zero, negative or positive value as to whether the 
-     * first list is equal to, less than or greater than the second list. 
-     * 
+     * Compares two lists of {@link TimeSeriesOfPairs} and returns a zero, negative or positive value, according to
+     * whether the first list is equal to, less than or greater than the second list, respectively.
+     *
      * @param first the first list
      * @param second the second list
      * @throws NullPointerException if either list is null
@@ -1243,9 +1276,9 @@ public class MessageUtilities
     }
 
     /**
-     * Compares two lists of {@link ReferenceTime} and returns a zero, negative or positive value as to whether the 
-     * first list is equal to, less than or greater than the second list. 
-     * 
+     * Compares two lists of {@link ReferenceTime} and returns a zero, negative or positive value, according to whether
+     * the first list is equal to, less than or greater than the second list, respectively.
+     *
      * @param first the first list
      * @param second the second list
      * @throws NullPointerException if either list is null
@@ -1279,9 +1312,9 @@ public class MessageUtilities
     }
 
     /**
-     * Compares two lists of {@link Pair} and returns a zero, negative or positive value as to whether the 
-     * first list is equal to, less than or greater than the second list. 
-     * 
+     * Compares two lists of {@link Pair} and returns a zero, negative or positive value, according to whether the
+     * first list is equal to, less than or greater than the second list, respectively.
+     *
      * @param first the first list
      * @param second the second list
      * @throws NullPointerException if either list is null
@@ -1315,9 +1348,9 @@ public class MessageUtilities
     }
 
     /**
-     * Compares two lists of {@link Double} and returns a zero, negative or positive value as to whether the 
-     * first list is equal to, less than or greater than the second list. 
-     * 
+     * Compares two lists of {@link Double} and returns a zero, negative or positive value, according to whether the
+     * first list is equal to, less than or greater than the second list, respectively.
+     *
      * @param first the first list
      * @param second the second list
      * @throws NullPointerException if either list is null

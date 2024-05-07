@@ -5,10 +5,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
 
+import wres.statistics.generated.Covariate;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -38,7 +38,7 @@ import wres.statistics.generated.Pairs.TimeSeriesOfPairs;
 
 /**
  * Tests the {@link MessageUtilities}.
- * 
+ *
  * @author James Brown
  */
 
@@ -71,21 +71,28 @@ class MessageUtilitiesTest
                                       .setOutputs( Outputs.newBuilder()
                                                           .setCsv( CsvFormat.newBuilder()
                                                                             .setOptions( NumericFormat.newBuilder()
-                                                                                                      .setDecimalFormat( "0.0" ) ) )
+                                                                                                      .setDecimalFormat(
+                                                                                                              "0.0" ) ) )
                                                           .setPng( PngFormat.newBuilder()
                                                                             .setOptions( GraphicFormat.newBuilder()
                                                                                                       .setHeight( 600 )
                                                                                                       .setWidth( 800 )
-                                                                                                      .addIgnore( MetricName.BIAS_FRACTION )
-                                                                                                      .setLeadUnit( DurationUnit.HOURS )
-                                                                                                      .setShape( GraphicShape.ISSUED_DATE_POOLS ) ) )
+                                                                                                      .addIgnore(
+                                                                                                              MetricName.BIAS_FRACTION )
+                                                                                                      .setLeadUnit(
+                                                                                                              DurationUnit.HOURS )
+                                                                                                      .setShape(
+                                                                                                              GraphicShape.ISSUED_DATE_POOLS ) ) )
                                                           .setSvg( SvgFormat.newBuilder()
                                                                             .setOptions( GraphicFormat.newBuilder()
                                                                                                       .setHeight( 600 )
                                                                                                       .setWidth( 800 )
-                                                                                                      .addIgnore( MetricName.BOX_PLOT_OF_ERRORS )
-                                                                                                      .setLeadUnit( DurationUnit.MINUTES )
-                                                                                                      .setShape( GraphicShape.LEAD_THRESHOLD ) ) )
+                                                                                                      .addIgnore(
+                                                                                                              MetricName.BOX_PLOT_OF_ERRORS )
+                                                                                                      .setLeadUnit(
+                                                                                                              DurationUnit.MINUTES )
+                                                                                                      .setShape(
+                                                                                                              GraphicShape.LEAD_THRESHOLD ) ) )
                                                           .setProtobuf( ProtobufFormat.newBuilder() )
                                                           .setNetcdf( NetcdfFormat.newBuilder() ) )
                                       .setValueFilter( ValueFilter.newBuilder()
@@ -191,7 +198,8 @@ class MessageUtilitiesTest
                                           .setOutputs( Outputs.newBuilder()
                                                               .setCsv( CsvFormat.newBuilder()
                                                                                 .setOptions( NumericFormat.newBuilder()
-                                                                                                          .setDecimalFormat( "0.0" ) ) ) )
+                                                                                                          .setDecimalFormat(
+                                                                                                                  "0.0" ) ) ) )
                                           .build();
 
         assertTrue( MessageUtilities.compare( eighteenth, nineteenth ) < 0 );
@@ -375,26 +383,30 @@ class MessageUtilitiesTest
                          .setGeometryGroup( GeometryGroup.newBuilder()
                                                          .addGeometryTuples( GeometryTuple.newBuilder()
                                                                                           .setLeft( Geometry.newBuilder()
-                                                                                                            .setName( "left" )
-                                                                                                            .setDescription( "description" )
-                                                                                                            .setSrid( 5643 )
-                                                                                                            .setWkt( "POINT( 1 2 )" ) )
+                                                                                                            .setName(
+                                                                                                                    "left" )
+                                                                                                            .setDescription(
+                                                                                                                    "description" )
+                                                                                                            .setSrid(
+                                                                                                                    5643 )
+                                                                                                            .setWkt(
+                                                                                                                    "POINT( 1 2 )" ) )
                                                                                           .setRight( Geometry.newBuilder()
-                                                                                                             .setName( "right" )
-                                                                                                             .setDescription( "description" )
-                                                                                                             .setSrid( 5643 )
-                                                                                                             .setWkt( "POINT( 1 2 )" ) ) ) )
+                                                                                                             .setName(
+                                                                                                                     "right" )
+                                                                                                             .setDescription(
+                                                                                                                     "description" )
+                                                                                                             .setSrid(
+                                                                                                                     5643 )
+                                                                                                             .setWkt(
+                                                                                                                     "POINT( 1 2 )" ) ) ) )
                          .setIsBaselinePool( false )
                          .setEventThreshold( Threshold.newBuilder()
-                                                      .setLeftThresholdValue( DoubleValue.newBuilder()
-                                                                                         .setValue( 1.0 ) )
-                                                      .setRightThresholdValue( DoubleValue.newBuilder()
-                                                                                          .setValue( 1.0 ) ) )
+                                                      .setLeftThresholdValue( 1.0 )
+                                                      .setRightThresholdValue( 1.0 ) )
                          .setDecisionThreshold( Threshold.newBuilder()
-                                                         .setLeftThresholdValue( DoubleValue.newBuilder()
-                                                                                            .setValue( 2.0 ) )
-                                                         .setRightThresholdValue( DoubleValue.newBuilder()
-                                                                                             .setValue( 2.0 ) ) )
+                                                         .setLeftThresholdValue( 2.0 )
+                                                         .setRightThresholdValue( 2.0 ) )
                          .setTimeScale( TimeScale.newBuilder()
                                                  .setFunction( TimeScale.TimeScaleFunction.MAXIMUM )
                                                  .setPeriod( Duration.newBuilder()
@@ -423,20 +435,28 @@ class MessageUtilitiesTest
                          .setGeometryGroup( GeometryGroup.newBuilder()
                                                          .addGeometryTuples( GeometryTuple.newBuilder()
                                                                                           .setLeft( Geometry.newBuilder()
-                                                                                                            .setName( "left" )
-                                                                                                            .setDescription( "description" )
-                                                                                                            .setSrid( 5643 )
-                                                                                                            .setWkt( "POINT( 1 2 )" ) ) ) )
+                                                                                                            .setName(
+                                                                                                                    "left" )
+                                                                                                            .setDescription(
+                                                                                                                    "description" )
+                                                                                                            .setSrid(
+                                                                                                                    5643 )
+                                                                                                            .setWkt(
+                                                                                                                    "POINT( 1 2 )" ) ) ) )
                          .build();
 
         Pool fourth = Pool.newBuilder()
                           .setGeometryGroup( GeometryGroup.newBuilder()
                                                           .addGeometryTuples( GeometryTuple.newBuilder()
                                                                                            .setLeft( Geometry.newBuilder()
-                                                                                                             .setName( "left" )
-                                                                                                             .setDescription( "description" )
-                                                                                                             .setSrid( 5643 )
-                                                                                                             .setWkt( "POINT( 3 4 )" ) ) ) )
+                                                                                                             .setName(
+                                                                                                                     "left" )
+                                                                                                             .setDescription(
+                                                                                                                     "description" )
+                                                                                                             .setSrid(
+                                                                                                                     5643 )
+                                                                                                             .setWkt(
+                                                                                                                     "POINT( 3 4 )" ) ) ) )
                           .build();
 
         assertTrue( MessageUtilities.compare( third, fourth ) < 0 );
@@ -454,36 +474,28 @@ class MessageUtilitiesTest
 
         Pool seventh = Pool.newBuilder()
                            .setEventThreshold( Threshold.newBuilder()
-                                                        .setLeftThresholdValue( DoubleValue.newBuilder()
-                                                                                           .setValue( 1.0 ) )
-                                                        .setRightThresholdValue( DoubleValue.newBuilder()
-                                                                                            .setValue( 1.0 ) ) )
+                                                        .setLeftThresholdValue( 1.0 )
+                                                        .setRightThresholdValue( 1.0 ) )
                            .build();
 
         Pool eighth = Pool.newBuilder()
                           .setEventThreshold( Threshold.newBuilder()
-                                                       .setLeftThresholdValue( DoubleValue.newBuilder()
-                                                                                          .setValue( 2.0 ) )
-                                                       .setRightThresholdValue( DoubleValue.newBuilder()
-                                                                                           .setValue( 2.0 ) ) )
+                                                       .setLeftThresholdValue( 2.0 )
+                                                       .setRightThresholdValue( 2.0 ) )
                           .build();
 
         assertTrue( MessageUtilities.compare( seventh, eighth ) < 0 );
 
         Pool ninth = Pool.newBuilder()
                          .setDecisionThreshold( Threshold.newBuilder()
-                                                         .setLeftThresholdValue( DoubleValue.newBuilder()
-                                                                                            .setValue( 1.0 ) )
-                                                         .setRightThresholdValue( DoubleValue.newBuilder()
-                                                                                             .setValue( 1.0 ) ) )
+                                                         .setLeftThresholdValue( 1.0 )
+                                                         .setRightThresholdValue( 1.0 ) )
                          .build();
 
         Pool tenth = Pool.newBuilder()
                          .setDecisionThreshold( Threshold.newBuilder()
-                                                         .setLeftThresholdValue( DoubleValue.newBuilder()
-                                                                                            .setValue( 2.0 ) )
-                                                         .setRightThresholdValue( DoubleValue.newBuilder()
-                                                                                             .setValue( 2.0 ) ) )
+                                                         .setLeftThresholdValue( 2.0 )
+                                                         .setRightThresholdValue( 2.0 ) )
                          .build();
 
         assertTrue( MessageUtilities.compare( ninth, tenth ) < 0 );
@@ -525,9 +537,12 @@ class MessageUtilitiesTest
                                                                                              .addLeft( 1.0 )
                                                                                              .addRight( 2.0 ) )
                                                                               .addReferenceTimes( ReferenceTime.newBuilder()
-                                                                                                               .setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME )
-                                                                                                               .setReferenceTime( Timestamp.newBuilder()
-                                                                                                                                           .setSeconds( 1234 ) ) ) ) )
+                                                                                                               .setReferenceTimeType(
+                                                                                                                       ReferenceTimeType.ANALYSIS_START_TIME )
+                                                                                                               .setReferenceTime(
+                                                                                                                       Timestamp.newBuilder()
+                                                                                                                                .setSeconds(
+                                                                                                                                        1234 ) ) ) ) )
                              .build();
 
         Pool sixteenth = Pool.newBuilder()
@@ -537,9 +552,12 @@ class MessageUtilitiesTest
                                                                                              .addLeft( 3.0 )
                                                                                              .addRight( 2.0 ) )
                                                                               .addReferenceTimes( ReferenceTime.newBuilder()
-                                                                                                               .setReferenceTimeType( ReferenceTimeType.ANALYSIS_START_TIME )
-                                                                                                               .setReferenceTime( Timestamp.newBuilder()
-                                                                                                                                           .setSeconds( 1234 ) ) ) ) )
+                                                                                                               .setReferenceTimeType(
+                                                                                                                       ReferenceTimeType.ANALYSIS_START_TIME )
+                                                                                                               .setReferenceTime(
+                                                                                                                       Timestamp.newBuilder()
+                                                                                                                                .setSeconds(
+                                                                                                                                        1234 ) ) ) ) )
                              .build();
 
         assertTrue( MessageUtilities.compare( fifteenth, sixteenth ) < 0 );
@@ -590,4 +608,37 @@ class MessageUtilitiesTest
         assertTrue( MessageUtilities.compare( first, third ) < 0 );
     }
 
+    @Test
+    void testToStringForCovariateWithMinimumAndMaximum()
+    {
+        Covariate covariate = Covariate.newBuilder()
+                                       .setMaximumInclusiveValue( 4.3 )
+                                       .setMinimumInclusiveValue( 2.1 )
+                                       .setVariableName( "foo" )
+                                       .build();
+
+        assertEquals( "2.1 <= foo <= 4.3", MessageUtilities.toString( covariate ) );
+    }
+
+    @Test
+    void testToStringForCovariateWithMinimumOnly()
+    {
+        Covariate covariate = Covariate.newBuilder()
+                                       .setMinimumInclusiveValue( 2.1 )
+                                       .setVariableName( "foo" )
+                                       .build();
+
+        assertEquals( "foo >= 2.1", MessageUtilities.toString( covariate ) );
+    }
+
+    @Test
+    void testToStringForCovariateWithMaximumOnly()
+    {
+        Covariate covariate = Covariate.newBuilder()
+                                       .setMaximumInclusiveValue( 4.3 )
+                                       .setVariableName( "foo" )
+                                       .build();
+
+        assertEquals( "foo <= 4.3", MessageUtilities.toString( covariate ) );
+    }
 }

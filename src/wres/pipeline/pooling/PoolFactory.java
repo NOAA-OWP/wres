@@ -2341,23 +2341,28 @@ public class PoolFactory
 
         for ( CovariateDataset covariateDataset : declaration.covariates() )
         {
-            TimeScale.Builder covariateScale = desiredTimeScale.getTimeScale()
-                                                               .toBuilder();
-
-            // Set the intended scale function, if declared
-            if ( Objects.nonNull( covariateDataset.rescaleFunction() ) )
+            TimeScaleOuter covariateTimeScale = null;
+            if ( ( Objects.nonNull( desiredTimeScale ) ) )
             {
-                covariateScale.setFunction( covariateDataset.rescaleFunction() );
+
+                TimeScale.Builder covariateScale = desiredTimeScale.getTimeScale()
+                                                                   .toBuilder();
+
+                // Set the intended scale function, if declared
+                if ( Objects.nonNull( covariateDataset.rescaleFunction() ) )
+                {
+                    covariateScale.setFunction( covariateDataset.rescaleFunction() );
+                }
+
+                covariateTimeScale = TimeScaleOuter.of( covariateScale.build() );
+
+                LOGGER.debug( "Adjusted the covariate timescale function for variable {} from {} to {}.",
+                              covariateDataset.dataset()
+                                              .variable()
+                                              .name(),
+                              desiredTimeScale.getFunction(),
+                              covariateTimeScale.getFunction() );
             }
-
-            TimeScaleOuter covariateTimeScale = TimeScaleOuter.of( covariateScale.build() );
-
-            LOGGER.debug( "Adjusted the covariate timescale function for variable {} from {} to {}.",
-                          covariateDataset.dataset()
-                                          .variable()
-                                          .name(),
-                          desiredTimeScale.getFunction(),
-                          covariateTimeScale.getFunction() );
 
             // Create a filter
             Predicate<Double> filter = d -> ( Objects.isNull( covariateDataset.minimum() )

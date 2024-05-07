@@ -63,6 +63,7 @@ import org.jfree.data.xy.XYDataset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.datamodel.messages.MessageUtilities;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -83,6 +84,7 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotMetric.QuantileValueType;
+import wres.statistics.generated.Covariate;
 import wres.statistics.generated.DiagramMetric;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent;
 import wres.statistics.generated.DiagramMetric.DiagramMetricComponent.DiagramComponentType;
@@ -125,6 +127,9 @@ public class ChartFactory
     /** A set of diagram statistic types that do not have lead duration axes, including sub-categories. */
     private static final Set<StatisticType> DIAGRAMS_WITHOUT_LEAD_AXIS = Set.of( StatisticType.DIAGRAM,
                                                                                  StatisticType.BOXPLOT_PER_PAIR );
+
+    /** Character limit for qualifying covariates. */
+    private static final int COVARIATE_CHARACTER_LIMIT = 53;
 
     /** Grid paint. */
     private static final Paint GRID_PAINT = new Color( 225, 225, 225 );
@@ -1635,6 +1640,7 @@ public class ChartFactory
         name += this.getTimeScaleForTitle( metadata, durationUnits );
         name += this.getTimeWindowForTitle( metadata, chartType, statisticType, durationUnits );
         name += this.getThresholdForTitle( metadata, chartType, statisticType );
+        name += this.getCovariatesForTitle( metadata );
         name += this.getQuantilesQualifier( metricName,
                                             parameters.quantiles(),
                                             isSummaryStatistic );
@@ -1977,6 +1983,49 @@ public class ChartFactory
                         + metadata.getThresholds()
                                   .first()
                                   .toString();
+        }
+
+        return threshold;
+    }
+
+    /**
+     * Uncovers the covariate information for the plot title.
+     *
+     * @param metadata the sample metadata
+     * @return the threshold
+     * @throws NullPointerException if any input is null
+     */
+
+    private String getCovariatesForTitle( PoolMetadata metadata )
+    {
+        Objects.requireNonNull( metadata );
+
+        String threshold = "";
+
+        List<Covariate> covariates = metadata.getEvaluation()
+                                             .getCovariatesList();
+        if ( !covariates.isEmpty() )
+        {
+            threshold = " and covariate filters of: ";
+            StringJoiner builder = new StringJoiner( "; " );
+            String append = "";
+
+            // Iterate the covariates and continue to add while less than the character limit
+            for ( Covariate covariate : covariates )
+            {
+                String next = MessageUtilities.toString( covariate );
+                if ( ( ( builder + "; " + next ).length() + 3 ) < COVARIATE_CHARACTER_LIMIT )
+                {
+                    builder.add( next );
+                }
+                else
+                {
+                    append = "...";
+                    break;
+                }
+            }
+
+            threshold = threshold + builder + append;
         }
 
         return threshold;

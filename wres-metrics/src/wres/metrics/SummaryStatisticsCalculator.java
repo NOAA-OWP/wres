@@ -353,7 +353,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                                                     null );
 
                 List<Duration> samples = this.getOrAddDurationScoreSlot( name );
-                Duration nextScore = MessageFactory.parse( component.getValue() );
+                Duration nextScore = MessageFactory.getDuration( component.getValue() );
                 samples.add( nextScore );
             }
         }
@@ -468,8 +468,8 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
             for ( int i = 0; i < valuesCount; i++ )
             {
                 DurationDiagramStatistic.PairOfInstantAndDuration statistic = diagram.getStatistics( i );
-                Instant instant = MessageFactory.parse( statistic.getTime() );
-                Duration duration = MessageFactory.parse( statistic.getDuration() );
+                Instant instant = MessageFactory.getInstant( statistic.getTime() );
+                Duration duration = MessageFactory.getDuration( statistic.getDuration() );
 
                 // Create a thread safe list to add, if needed
                 List<Duration> newList = new FastList<Duration>().asSynchronized();
@@ -689,7 +689,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                 Duration[] durations = samples.toArray( new Duration[0] );
 
                 Duration statisticValue = durationStatistic.apply( durations );
-                com.google.protobuf.Duration statisticProto = MessageFactory.parse( statisticValue );
+                com.google.protobuf.Duration statisticProto = MessageFactory.getDuration( statisticValue );
                 component.setValue( statisticProto );
             }
         }
@@ -753,7 +753,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
             for ( int i = 0; i < componentCount; i++ )
             {
                 DurationDiagramStatistic.PairOfInstantAndDuration.Builder pair = diagram.getStatisticsBuilder( i );
-                Instant instant = MessageFactory.parse( pair.getTime() );
+                Instant instant = MessageFactory.getInstant( pair.getTime() );
                 List<Duration> sample = samples.get( instant );
 
                 // Filter any null values and sort. Null values can occur if the pairs were empty, for example,
@@ -764,7 +764,7 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                 Duration[] durations = sample.toArray( new Duration[0] );
 
                 Duration statisticValue = durationStatistic.apply( durations );
-                com.google.protobuf.Duration statisticProto = MessageFactory.parse( statisticValue );
+                com.google.protobuf.Duration statisticProto = MessageFactory.getDuration( statisticValue );
                 pair.setDuration( statisticProto );
             }
         }

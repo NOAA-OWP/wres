@@ -10,7 +10,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import com.google.protobuf.DoubleValue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -211,7 +210,7 @@ class InMemoryProjectTest
                                      .build();
         wres.statistics.generated.Threshold probThreshold =
                 wres.statistics.generated.Threshold.newBuilder()
-                                                   .setLeftThresholdValue( DoubleValue.of( 0.4 ) )
+                                                   .setLeftThresholdValue(0.4 )
                                                    .build();
         Set<Threshold> thresholds =
                 Set.of( ThresholdBuilder.builder()

@@ -12,7 +12,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Duration;
 
 import wres.statistics.generated.DoubleScoreMetric;
@@ -73,7 +72,7 @@ public class ProtobufWriterTest
         Pool.Builder poolOneProto =
                 Pool.newBuilder()
                     .setEventThreshold( Threshold.newBuilder()
-                                                 .setLeftThresholdValue( DoubleValue.of( 12345 ) )
+                                                 .setLeftThresholdValue( 12345 )
                                                  .setName( "Flooding" ) )
                     .setGeometryGroup( GeometryGroup.newBuilder()
                                                     .addGeometryTuples( GeometryTuple.newBuilder()
@@ -132,7 +131,7 @@ public class ProtobufWriterTest
         Pool.Builder poolTwoProto =
                 Pool.newBuilder()
                     .setEventThreshold( Threshold.newBuilder()
-                                                 .setLeftThresholdValue( DoubleValue.of( 12345 ) )
+                                                 .setLeftThresholdValue( 12345 )
                                                  .setName( "Flooding" ) )
                     .setGeometryGroup( GeometryGroup.newBuilder()
                                                     .addGeometryTuples( GeometryTuple.newBuilder()

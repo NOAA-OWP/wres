@@ -1,6 +1,5 @@
 package wres.config.xml;
 
-import com.google.protobuf.DoubleValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -589,11 +588,11 @@ public class CsvThresholdReader
                                                     + "probability of 1.0." );
             }
 
-            canonical.setLeftThresholdProbability( DoubleValue.of( threshold ) );
+            canonical.setLeftThresholdProbability( threshold );
         }
         else
         {
-            canonical.setLeftThresholdValue( DoubleValue.of( threshold ) );
+            canonical.setLeftThresholdValue( threshold );
         }
 
         if ( Objects.nonNull( name ) )

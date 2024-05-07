@@ -4,7 +4,6 @@ import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.DoublePredicate;
 
-import com.google.protobuf.DoubleValue;
 import net.jcip.annotations.Immutable;
 
 import wres.config.yaml.components.ThresholdOrientation;
@@ -350,14 +349,15 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         Threshold innerThreshold = this.getThreshold();
 
-        if ( innerThreshold.hasLeftThresholdValue() && innerThreshold.hasRightThresholdValue() )
+        if ( innerThreshold.hasLeftThresholdValue()
+             && innerThreshold.hasRightThresholdValue() )
         {
-            returnMe = OneOrTwoDoubles.of( innerThreshold.getLeftThresholdValue().getValue(),
-                                           innerThreshold.getRightThresholdValue().getValue() );
+            returnMe = OneOrTwoDoubles.of( innerThreshold.getLeftThresholdValue(),
+                                           innerThreshold.getRightThresholdValue() );
         }
         else if ( innerThreshold.hasLeftThresholdValue() )
         {
-            returnMe = OneOrTwoDoubles.of( innerThreshold.getLeftThresholdValue().getValue() );
+            returnMe = OneOrTwoDoubles.of( innerThreshold.getLeftThresholdValue() );
         }
 
         return returnMe;
@@ -378,12 +378,12 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
 
         if ( innerThreshold.hasLeftThresholdProbability() && innerThreshold.hasRightThresholdProbability() )
         {
-            returnMe = OneOrTwoDoubles.of( innerThreshold.getLeftThresholdProbability().getValue(),
-                                           innerThreshold.getRightThresholdProbability().getValue() );
+            returnMe = OneOrTwoDoubles.of( innerThreshold.getLeftThresholdProbability(),
+                                           innerThreshold.getRightThresholdProbability() );
         }
         else if ( innerThreshold.hasLeftThresholdProbability() )
         {
-            returnMe = OneOrTwoDoubles.of( innerThreshold.getLeftThresholdProbability().getValue() );
+            returnMe = OneOrTwoDoubles.of( innerThreshold.getLeftThresholdProbability() );
         }
 
         return returnMe;
@@ -592,14 +592,14 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         wres.config.yaml.components.ThresholdOperator operator = this.getOperator();
 
         return switch ( operator )
-                {
-                    case GREATER -> t > lowerBound;
-                    case LESS -> t < lowerBound;
-                    case GREATER_EQUAL -> t >= lowerBound;
-                    case LESS_EQUAL -> t <= lowerBound;
-                    case BETWEEN -> t >= lowerBound && t < upperBound;
-                    case EQUAL -> Math.abs( t - lowerBound ) < .00000001;
-                };
+        {
+            case GREATER -> t > lowerBound;
+            case LESS -> t < lowerBound;
+            case GREATER_EQUAL -> t >= lowerBound;
+            case LESS_EQUAL -> t <= lowerBound;
+            case BETWEEN -> t >= lowerBound && t < upperBound;
+            case EQUAL -> Math.abs( t - lowerBound ) < .00000001;
+        };
     }
 
     /**
@@ -676,10 +676,10 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         {
             if ( Objects.nonNull( values ) )
             {
-                innerBuilder.setLeftThresholdValue( DoubleValue.of( values.first() ) );
+                innerBuilder.setLeftThresholdValue( values.first() );
                 if ( values.hasTwo() )
                 {
-                    innerBuilder.setRightThresholdValue( DoubleValue.of( values.second() ) );
+                    innerBuilder.setRightThresholdValue( values.second() );
                 }
             }
             return this;
@@ -696,10 +696,10 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         {
             if ( Objects.nonNull( probabilities ) )
             {
-                innerBuilder.setLeftThresholdProbability( DoubleValue.of( probabilities.first() ) );
+                innerBuilder.setLeftThresholdProbability( probabilities.first() );
                 if ( probabilities.hasTwo() )
                 {
-                    innerBuilder.setRightThresholdProbability( DoubleValue.of( probabilities.second() ) );
+                    innerBuilder.setRightThresholdProbability( probabilities.second() );
                 }
             }
             return this;
@@ -958,14 +958,14 @@ public class ThresholdOuter implements Comparable<ThresholdOuter>, DoublePredica
         ThresholdOperator operator = this.getOperator();
 
         return switch ( operator )
-                {
-                    case GREATER -> "> ";
-                    case LESS -> "< ";
-                    case GREATER_EQUAL -> ">= ";
-                    case LESS_EQUAL -> "<= ";
-                    case EQUAL -> "= ";
-                    default -> "";
-                };
+        {
+            case GREATER -> "> ";
+            case LESS -> "< ";
+            case GREATER_EQUAL -> ">= ";
+            case LESS_EQUAL -> "<= ";
+            case EQUAL -> "= ";
+            default -> "";
+        };
     }
 
     /**

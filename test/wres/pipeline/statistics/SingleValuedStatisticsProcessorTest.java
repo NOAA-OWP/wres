@@ -15,7 +15,6 @@ import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
-import com.google.protobuf.DoubleValue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 import org.junit.Test;
@@ -426,7 +425,7 @@ public final class SingleValuedStatisticsProcessorTest
 
         wres.statistics.generated.Threshold thresholdOne =
                 wres.statistics.generated.Threshold.newBuilder()
-                                                   .setLeftThresholdValue( DoubleValue.of( 5.0 ) )
+                                                   .setLeftThresholdValue( 5.0 )
                                                    .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
                                                    .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT_AND_RIGHT )
                                                    .build();
@@ -604,11 +603,11 @@ public final class SingleValuedStatisticsProcessorTest
 
         PoolMetadata scoreMeta = PoolMetadata.of( evaluation, pool );
 
-        com.google.protobuf.Duration expectedMean = wres.statistics.MessageFactory.parse( Duration.ofHours( 3 ) );
-        com.google.protobuf.Duration expectedMedian = wres.statistics.MessageFactory.parse( Duration.ofHours( 3 ) );
-        com.google.protobuf.Duration expectedMin = wres.statistics.MessageFactory.parse( Duration.ofHours( -6 ) );
-        com.google.protobuf.Duration expectedMax = wres.statistics.MessageFactory.parse( Duration.ofHours( 12 ) );
-        com.google.protobuf.Duration expectedMeanAbs = wres.statistics.MessageFactory.parse( Duration.ofHours( 9 ) );
+        com.google.protobuf.Duration expectedMean = wres.statistics.MessageFactory.getDuration( Duration.ofHours( 3 ) );
+        com.google.protobuf.Duration expectedMedian = wres.statistics.MessageFactory.getDuration( Duration.ofHours( 3 ) );
+        com.google.protobuf.Duration expectedMin = wres.statistics.MessageFactory.getDuration( Duration.ofHours( -6 ) );
+        com.google.protobuf.Duration expectedMax = wres.statistics.MessageFactory.getDuration( Duration.ofHours( 12 ) );
+        com.google.protobuf.Duration expectedMeanAbs = wres.statistics.MessageFactory.getDuration( Duration.ofHours( 9 ) );
 
         DurationScoreMetricComponent baseMetric =
                 DurationScoreMetricComponent.newBuilder()
@@ -934,7 +933,7 @@ public final class SingleValuedStatisticsProcessorTest
 
         wres.statistics.generated.Threshold one =
                 wres.statistics.generated.Threshold.newBuilder()
-                                                   .setLeftThresholdProbability( DoubleValue.of( 0.1 ) )
+                                                   .setLeftThresholdProbability( 0.1 )
                                                    .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
                                                    .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT )
                                                    .build();

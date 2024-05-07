@@ -16,35 +16,35 @@ option java_multiple_files = true;
 
 message Statistics
 {
-    /*A message that encapsulates an atomic collection of statistics, namely the 
-    statistics associated with one pool. An evaluation identifier is required to 
-    connect a Statistics message to an Evaluation message. It is assumed that 
+    /*A message that encapsulates an atomic collection of statistics, namely the
+    statistics associated with one pool. An evaluation identifier is required to
+    connect a Statistics message to an Evaluation message. It is assumed that
     this identifier is packaged with the protocol; it is not provided inband.*/
 
     Pool pool = 1;
     // The pool whose pairs were used to create the statistics here.
 
     Pool baseline_pool = 2;
-    // The pool of baseline pairs used to create the statistics here. When the 
+    // The pool of baseline pairs used to create the statistics here. When the
     // statistics include skill scores, both the pool and baseline_pool should
-    // be populated. The boundaries of the baseline_pool may differ from those 
+    // be populated. The boundaries of the baseline_pool may differ from those
     // of the pool.
-    
+
     repeated DoubleScoreStatistic scores = 3;
     // Zero or more score statistics.
-    
+
     repeated DiagramStatistic diagrams = 4;
     // Zero or more diagram statistics.
-    
+
     repeated BoxplotStatistic one_box_per_pool = 5;
     // Zero or more boxplot statistics that contain one box per pool.
 
     repeated BoxplotStatistic one_box_per_pair = 6;
     // Zero or more boxplot statistics that contain one box per pair.
-    
+
     repeated DurationScoreStatistic duration_scores = 7;
     // Zero or more duration score statistics.
-    
+
     repeated DurationDiagramStatistic duration_diagrams = 8;
     // Zero or more duration diagram statistics.
 
@@ -59,11 +59,11 @@ message Statistics
     // actual quantile.
 
     SummaryStatistic summary_statistic = 11;
-    // When present, all of the statistics in this collection correspond to the 
+    // When present, all of the statistics in this collection correspond to the
     // prescribed summary statistic and not a raw statistic value. A summary
-    // statistic includes a statistic name, such as a mean, and a dimension over 
-    // which the statistic is computed, such as all geographic features within  
-    // the evaluation. In that case, the pool information refers only to those 
+    // statistic includes a statistic name, such as a mean, and a dimension over
+    // which the statistic is computed, such as all geographic features within
+    // the evaluation. In that case, the pool information refers only to those
     // attributes of the pool that are common to all pools from which the
     // summary statistic was computed and, specifically, not to the dimension.
     // By way of example, this collection may include a continuous ranked

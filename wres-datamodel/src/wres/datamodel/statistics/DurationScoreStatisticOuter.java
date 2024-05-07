@@ -85,7 +85,7 @@ public class DurationScoreStatisticOuter
                                              PoolMetadata metadata,
                                              SummaryStatistic summaryStatistic )
         {
-            super( component, metadata, next -> MessageFactory.parse( next.getValue() ).toString(), summaryStatistic );
+            super( component, metadata, next -> MessageFactory.getDuration( next.getValue() ).toString(), summaryStatistic );
 
             this.metricName = MetricConstants.valueOf( component.getMetric().getName().name() );
         }

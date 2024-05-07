@@ -2,7 +2,6 @@ package wres.reading.wrds.thresholds;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.protobuf.DoubleValue;
 
 import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
@@ -377,7 +376,7 @@ class ThresholdDefinition implements Serializable
                                          String unit )
     {
         return Threshold.newBuilder()
-                        .setLeftThresholdValue( DoubleValue.of( threshold ) )
+                        .setLeftThresholdValue( threshold )
                         .setOperator( Threshold.ThresholdOperator.valueOf( thresholdOperator.name() ) )
                         .setDataType( Threshold.ThresholdDataType.valueOf( dataType.name() ) )
                         .setName( name )

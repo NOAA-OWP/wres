@@ -18,7 +18,6 @@ import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
-import com.google.protobuf.DoubleValue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.math3.util.Precision;
 import org.junit.Test;
@@ -329,7 +328,7 @@ public final class EnsembleStatisticsProcessorTest
         Set<wres.config.yaml.components.Threshold> thresholds = new HashSet<>();
         wres.statistics.generated.Threshold threshold =
                 wres.statistics.generated.Threshold.newBuilder()
-                                                   .setLeftThresholdValue( DoubleValue.of( 1.0 ) )
+                                                   .setLeftThresholdValue( 1.0 )
                                                    .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
                                                    .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT )
                                                    .build();
@@ -345,7 +344,7 @@ public final class EnsembleStatisticsProcessorTest
                                            .build();
         wres.statistics.generated.Threshold one =
                 wres.statistics.generated.Threshold.newBuilder()
-                                                   .setLeftThresholdProbability( DoubleValue.of( 0.5 ) )
+                                                   .setLeftThresholdProbability( 0.5 )
                                                    .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
                                                    .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT )
                                                    .build();
@@ -624,7 +623,7 @@ public final class EnsembleStatisticsProcessorTest
 
         wres.statistics.generated.Threshold one =
                 wres.statistics.generated.Threshold.newBuilder()
-                                                   .setLeftThresholdProbability( DoubleValue.of( 0.1 ) )
+                                                   .setLeftThresholdProbability(0.1 )
                                                    .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
                                                    .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT )
                                                    .build();
@@ -888,7 +887,7 @@ public final class EnsembleStatisticsProcessorTest
                                     .build();
 
         Threshold classifierOne = Threshold.newBuilder()
-                                           .setLeftThresholdProbability( DoubleValue.of( 0.05 ) )
+                                           .setLeftThresholdProbability( 0.05 )
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
                                            .setDataType( Threshold.ThresholdDataType.LEFT )
                                            .build();
@@ -934,7 +933,7 @@ public final class EnsembleStatisticsProcessorTest
                                     .build();
 
         Threshold classifierTwo = Threshold.newBuilder()
-                                           .setLeftThresholdProbability( DoubleValue.of( 0.25 ) )
+                                           .setLeftThresholdProbability(0.25 )
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
                                            .setDataType( Threshold.ThresholdDataType.LEFT )
                                            .build();
@@ -975,7 +974,7 @@ public final class EnsembleStatisticsProcessorTest
                                     .build();
 
         Threshold classifierThree = Threshold.newBuilder()
-                                             .setLeftThresholdProbability( DoubleValue.of( 0.5 ) )
+                                             .setLeftThresholdProbability(0.5 )
                                              .setOperator( Threshold.ThresholdOperator.GREATER )
                                              .setDataType( Threshold.ThresholdDataType.LEFT )
                                              .build();
@@ -1016,7 +1015,7 @@ public final class EnsembleStatisticsProcessorTest
                                     .build();
 
         Threshold classifierFour = Threshold.newBuilder()
-                                            .setLeftThresholdProbability( DoubleValue.of( 0.75 ) )
+                                            .setLeftThresholdProbability( 0.75 )
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
                                             .setDataType( Threshold.ThresholdDataType.LEFT )
                                             .build();
@@ -1056,7 +1055,7 @@ public final class EnsembleStatisticsProcessorTest
                                     .build();
 
         Threshold classifierFive = Threshold.newBuilder()
-                                            .setLeftThresholdProbability( DoubleValue.of( 0.9 ) )
+                                            .setLeftThresholdProbability( 0.9 )
                                             .setOperator( Threshold.ThresholdOperator.GREATER )
                                             .setDataType( Threshold.ThresholdDataType.LEFT )
                                             .build();
@@ -1098,7 +1097,7 @@ public final class EnsembleStatisticsProcessorTest
                                     .build();
 
         Threshold classifierSix = Threshold.newBuilder()
-                                           .setLeftThresholdProbability( DoubleValue.of( 0.95 ) )
+                                           .setLeftThresholdProbability( 0.95 )
                                            .setOperator( Threshold.ThresholdOperator.GREATER )
                                            .setDataType( Threshold.ThresholdDataType.LEFT )
                                            .build();
@@ -1215,7 +1214,7 @@ public final class EnsembleStatisticsProcessorTest
 
         wres.statistics.generated.Threshold one =
                 wres.statistics.generated.Threshold.newBuilder()
-                                                   .setLeftThresholdProbability( DoubleValue.of( 0.1 ) )
+                                                   .setLeftThresholdProbability( 0.1 )
                                                    .setOperator( wres.statistics.generated.Threshold.ThresholdOperator.GREATER )
                                                    .setDataType( wres.statistics.generated.Threshold.ThresholdDataType.LEFT )
                                                    .build();

@@ -18,7 +18,6 @@ import java.util.Set;
 
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
-import com.google.protobuf.DoubleValue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Test;
 
@@ -1681,7 +1680,7 @@ class DeclarationUtilitiesTest
         Set<wres.config.yaml.components.Threshold> thresholdsOne
                 = Set.of( ThresholdBuilder.builder()
                                           .threshold( Threshold.newBuilder()
-                                                               .setLeftThresholdValue( DoubleValue.of( 23.0 ) )
+                                                               .setLeftThresholdValue( 23.0 )
                                                                .setOperator( Threshold.ThresholdOperator.GREATER )
                                                                .build() )
                                           .type( ThresholdType.VALUE )
@@ -1701,7 +1700,7 @@ class DeclarationUtilitiesTest
         Set<wres.config.yaml.components.Threshold> thresholdsTwo
                 = Set.of( ThresholdBuilder.builder()
                                           .threshold( Threshold.newBuilder()
-                                                               .setLeftThresholdValue( DoubleValue.of( 0.3 ) )
+                                                               .setLeftThresholdValue( 0.3 )
                                                                .setOperator( Threshold.ThresholdOperator.LESS )
                                                                .build() )
                                           .type( ThresholdType.PROBABILITY )
@@ -2313,21 +2312,21 @@ class DeclarationUtilitiesTest
     void testGetThresholds()
     {
         Threshold one = Threshold.newBuilder()
-                                 .setLeftThresholdValue( DoubleValue.of( 1.0 ) )
+                                 .setLeftThresholdValue( 1.0 )
                                  .build();
         wres.config.yaml.components.Threshold wrappedOne = ThresholdBuilder.builder()
                                                                            .threshold( one )
                                                                            .type( ThresholdType.VALUE )
                                                                            .build();
         Threshold two = Threshold.newBuilder()
-                                 .setLeftThresholdValue( DoubleValue.of( 2.0 ) )
+                                 .setLeftThresholdValue( 2.0 )
                                  .build();
         wres.config.yaml.components.Threshold wrappedTwo = ThresholdBuilder.builder()
                                                                            .threshold( two )
                                                                            .type( ThresholdType.VALUE )
                                                                            .build();
         Threshold three = Threshold.newBuilder()
-                                   .setLeftThresholdValue( DoubleValue.of( 3.0 ) )
+                                   .setLeftThresholdValue( 3.0 )
                                    .build();
         wres.config.yaml.components.Threshold wrappedThree = ThresholdBuilder.builder()
                                                                              .threshold( three )
@@ -2412,21 +2411,21 @@ class DeclarationUtilitiesTest
                                             .build();
 
         Threshold one = Threshold.newBuilder()
-                                 .setLeftThresholdValue( DoubleValue.of( 0.1 ) )
+                                 .setLeftThresholdValue( 0.1 )
                                  .build();
         wres.config.yaml.components.Threshold wrappedOne = ThresholdBuilder.builder()
                                                                            .threshold( one )
                                                                            .type( ThresholdType.VALUE )
                                                                            .build();
         Threshold two = Threshold.newBuilder()
-                                 .setLeftThresholdValue( DoubleValue.of( 0.2 ) )
+                                 .setLeftThresholdValue( 0.2 )
                                  .build();
         wres.config.yaml.components.Threshold wrappedTwo = ThresholdBuilder.builder()
                                                                            .threshold( two )
                                                                            .type( ThresholdType.PROBABILITY )
                                                                            .build();
         Threshold three = Threshold.newBuilder()
-                                   .setLeftThresholdValue( DoubleValue.of( 0.3 ) )
+                                   .setLeftThresholdValue( 0.3 )
                                    .build();
         wres.config.yaml.components.Threshold wrappedThree = ThresholdBuilder.builder()
                                                                              .threshold( three )
@@ -2497,7 +2496,7 @@ class DeclarationUtilitiesTest
                                            .build();
 
         Threshold threshold = Threshold.newBuilder()
-                                       .setLeftThresholdValue( DoubleValue.of( 1 ) )
+                                       .setLeftThresholdValue( 1 )
                                        .build();
         wres.config.yaml.components.Threshold wrappedThresholdOne =
                 ThresholdBuilder.builder()
@@ -2578,7 +2577,7 @@ class DeclarationUtilitiesTest
                                          .build();
 
         Threshold threshold = Threshold.newBuilder()
-                                       .setLeftThresholdValue( DoubleValue.of( 1 ) )
+                                       .setLeftThresholdValue( 1 )
                                        .build();
         wres.config.yaml.components.Threshold wrappedThresholdOne =
                 ThresholdBuilder.builder()

@@ -22,18 +22,18 @@ message Threshold
     string name = 3;
     // A user-friendly name for a threshold (e.g., MINOR FLOOD).
     
-    google.protobuf.DoubleValue left_threshold_value = 4;
+    optional double left_threshold_value = 4;
     // A real-valued left threshold. Wrapped to expose when unset.
-        
-    google.protobuf.DoubleValue right_threshold_value = 5;
+
+    optional double right_threshold_value = 5;
     // A real-valued right threshold when the ThresholdType is BETWEEN.
     // Wrapped to expose when unset.
-        
-    google.protobuf.DoubleValue left_threshold_probability = 6;
+
+    optional double left_threshold_probability = 6;
     // The probability associated with the left threshold in [0,1].
     // Wrapped to expose when unset.
 
-    google.protobuf.DoubleValue right_threshold_probability = 7;
+    optional double right_threshold_probability = 7;
     // The probability associated with the right threshold when BETWEEN in [0,1].
     // Wrapped to expose when unset.
         

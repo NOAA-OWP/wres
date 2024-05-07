@@ -277,12 +277,12 @@ public class MessageFactory
         }
 
         return TimeWindow.newBuilder()
-                         .setEarliestReferenceTime( MessageFactory.parse( earliestR ) )
-                         .setLatestReferenceTime( MessageFactory.parse( latestR ) )
-                         .setEarliestValidTime( MessageFactory.parse( earliestV ) )
-                         .setLatestValidTime( MessageFactory.parse( latestV ) )
-                         .setEarliestLeadDuration( MessageFactory.parse( earliestL ) )
-                         .setLatestLeadDuration( MessageFactory.parse( latestL ) )
+                         .setEarliestReferenceTime( MessageFactory.getTimestamp( earliestR ) )
+                         .setLatestReferenceTime( MessageFactory.getTimestamp( latestR ) )
+                         .setEarliestValidTime( MessageFactory.getTimestamp( earliestV ) )
+                         .setLatestValidTime( MessageFactory.getTimestamp( latestV ) )
+                         .setEarliestLeadDuration( MessageFactory.getDuration( earliestL ) )
+                         .setLatestLeadDuration( MessageFactory.getDuration( latestL ) )
                          .build();
     }
 
@@ -442,7 +442,7 @@ public class MessageFactory
      * @return the duration
      */
 
-    public static java.time.Duration parse( Duration duration )
+    public static java.time.Duration getDuration( Duration duration )
     {
         Objects.requireNonNull( duration );
 
@@ -456,7 +456,7 @@ public class MessageFactory
      * @return the duration
      */
 
-    public static Duration parse( java.time.Duration duration )
+    public static Duration getDuration( java.time.Duration duration )
     {
         Objects.requireNonNull( duration );
 
@@ -473,7 +473,7 @@ public class MessageFactory
      * @return the instant
      */
 
-    public static Instant parse( Timestamp timeStamp )
+    public static Instant getInstant( Timestamp timeStamp )
     {
         Objects.requireNonNull( timeStamp );
 
@@ -487,7 +487,7 @@ public class MessageFactory
      * @return the time stamp
      */
 
-    public static Timestamp parse( Instant instant )
+    public static Timestamp getTimestamp( Instant instant )
     {
         Objects.requireNonNull( instant );
 

@@ -17,7 +17,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.protobuf.DoubleValue;
 import org.apache.commons.lang3.tuple.Pair;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.CoordinateXY;
@@ -1960,15 +1959,13 @@ public class DeclarationMigrator
             builder.clearLeftThresholdValue()
                    .clearLeftThresholdProbability();
 
-            DoubleValue value = DoubleValue.of( next );
-
             if ( newType == ThresholdType.VALUE )
             {
-                builder.setLeftThresholdValue( value );
+                builder.setLeftThresholdValue( next );
             }
             else
             {
-                builder.setLeftThresholdProbability( value );
+                builder.setLeftThresholdProbability( next );
             }
 
             wres.statistics.generated.Threshold migratedThreshold = builder.build();

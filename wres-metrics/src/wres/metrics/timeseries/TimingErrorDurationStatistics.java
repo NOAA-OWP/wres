@@ -110,7 +110,7 @@ public class TimingErrorDurationStatistics
                                                   .getStatisticsList()
                                                   .stream()
                                                   .map( DurationDiagramStatistic.PairOfInstantAndDuration::getDuration )
-                                                  .map( wres.statistics.MessageFactory::parse )
+                                                  .map( wres.statistics.MessageFactory::getDuration )
                                                   .toArray( Duration[]::new);
 
                 Duration duration = nextFunction.apply( input );
@@ -121,7 +121,7 @@ public class TimingErrorDurationStatistics
                         = DurationScoreStatisticComponent.newBuilder()
                                                          .setMetric( componentMetric );
 
-                builder.setValue( MessageFactory.parse( duration ) );
+                builder.setValue( MessageFactory.getDuration( duration ) );
 
                 scoreBuilder.addStatistics( builder );
             }

@@ -303,7 +303,7 @@ public class ChartDataFactory
                 com.google.protobuf.Duration score = entry.getComponent( metric )
                                                           .getStatistic()
                                                           .getValue();
-                Duration durationStat = MessageFactory.parse( score );
+                Duration durationStat = MessageFactory.getDuration( score );
 
                 // Find the decimal hours
                 double doubleResult = Double.NaN;

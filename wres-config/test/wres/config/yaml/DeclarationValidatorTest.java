@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import com.google.protobuf.DoubleValue;
 import com.google.protobuf.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -1468,7 +1467,7 @@ class DeclarationValidatorTest
         Set<GeometryTuple> features = Set.of( tupleFooBaz, tupleFooBar, tupleBarBaz );
 
         Threshold one = Threshold.newBuilder()
-                                 .setLeftThresholdValue( DoubleValue.of( 1.0 ) )
+                                 .setLeftThresholdValue( 1.0 )
                                  .build();
         wres.config.yaml.components.Threshold wrappedOne = ThresholdBuilder.builder()
                                                                            .threshold( one )
@@ -1477,7 +1476,7 @@ class DeclarationValidatorTest
                                                                            .type( ThresholdType.VALUE )
                                                                            .build();
         Threshold two = Threshold.newBuilder()
-                                 .setLeftThresholdValue( DoubleValue.of( 2.0 ) )
+                                 .setLeftThresholdValue( 2.0 )
                                  .build();
         wres.config.yaml.components.Threshold wrappedTwo = ThresholdBuilder.builder()
                                                                            .threshold( two )
@@ -1486,7 +1485,7 @@ class DeclarationValidatorTest
                                                                            .type( ThresholdType.VALUE )
                                                                            .build();
         Threshold three = Threshold.newBuilder()
-                                   .setLeftThresholdValue( DoubleValue.of( 2.0 ) )
+                                   .setLeftThresholdValue( 2.0 )
                                    .build();
         wres.config.yaml.components.Threshold wrappedThree = ThresholdBuilder.builder()
                                                                              .threshold( three )
@@ -1496,7 +1495,7 @@ class DeclarationValidatorTest
                                                                              .build();
 
         Threshold four = Threshold.newBuilder()
-                                  .setLeftThresholdValue( DoubleValue.of( 2.0 ) )
+                                  .setLeftThresholdValue( 2.0 )
                                   .build();
         Geometry featureQux = Geometry.newBuilder()
                                       .setName( "qux" )
@@ -1536,7 +1535,7 @@ class DeclarationValidatorTest
                                       .setName( "foo" )
                                       .build();
         Threshold one = Threshold.newBuilder()
-                                 .setLeftThresholdValue( DoubleValue.of( 1.0 ) )
+                                 .setLeftThresholdValue( 1.0 )
                                  .build();
         wres.config.yaml.components.Threshold wrappedOne = ThresholdBuilder.builder()
                                                                            .threshold( one )

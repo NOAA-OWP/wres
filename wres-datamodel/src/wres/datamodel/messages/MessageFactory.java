@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.Timestamp;
 
+import wres.config.yaml.components.CovariateDataset;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
@@ -45,6 +46,7 @@ import wres.config.yaml.components.Variable;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.StatisticType;
 import wres.statistics.generated.BoxplotStatistic;
+import wres.statistics.generated.Covariate;
 import wres.statistics.generated.DiagramStatistic;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationDiagramStatistic;
@@ -481,6 +483,9 @@ public class MessageFactory
             builder.setOutputs( innerOutputs );
             LOGGER.debug( "Set the outputs to: {}.", formats );
         }
+
+        // Set the covariates
+        MessageFactory.addCovariates( evaluation, builder );
 
         return builder.build();
     }
@@ -1318,6 +1323,46 @@ public class MessageFactory
         {
             LOGGER.warn( "Discovered ensemble members to exclude from the evaluation, but these will not appear in "
                          + "the statistics metadata, which only records the subset of members to include." );
+        }
+    }
+
+    /**
+     * Copies the covariates from an evaluation declaration to the evaluation builder.
+     * @param evaluation the evaluation declaration
+     * @param builder the messaging evaluation builder
+     */
+    private static void addCovariates( EvaluationDeclaration evaluation, Evaluation.Builder builder )
+    {
+        for ( CovariateDataset covariate : evaluation.covariates() )
+        {
+            Objects.requireNonNull( covariate.dataset()
+                                             .variable()
+                                             .name() );
+
+            Covariate.Builder covariateBuilder = Covariate.newBuilder()
+                                                          .setVariableName( covariate.dataset()
+                                                                                     .variable()
+                                                                                     .name() );
+
+            if ( Objects.nonNull( covariate.minimum() ) )
+            {
+                covariateBuilder.setMinimumInclusiveValue( covariate.minimum() );
+            }
+
+            if ( Objects.nonNull( covariate.maximum() ) )
+            {
+                covariateBuilder.setMaximumInclusiveValue( covariate.maximum() );
+            }
+
+            builder.addCovariates( covariateBuilder.build() );
+
+            LOGGER.debug( "Added a covariate with a variable name of '{}', a minimum value of {}, and a maximum value "
+                          + "of {}.",
+                          covariate.dataset()
+                                   .variable()
+                                   .name(),
+                          covariate.minimum(),
+                          covariate.maximum() );
         }
     }
 

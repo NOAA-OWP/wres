@@ -32,6 +32,8 @@ import com.google.protobuf.Timestamp;
 
 import wres.config.MetricConstants;
 import wres.config.yaml.components.BaselineDataset;
+import wres.config.yaml.components.CovariateDataset;
+import wres.config.yaml.components.CovariateDatasetBuilder;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.EnsembleFilter;
@@ -68,6 +70,7 @@ import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.Covariate;
 import wres.statistics.generated.DoubleScoreStatistic;
 import wres.statistics.generated.DurationScoreStatistic;
 import wres.statistics.generated.Evaluation;
@@ -123,15 +126,12 @@ class MessageFactoryTest
     private static final Instant THIRD_TIME = Instant.parse( "1985-01-01T02:00:00Z" );
     private static final Instant SECOND_TIME = Instant.parse( "1985-01-01T01:00:00Z" );
     private static final Instant FIRST_TIME = Instant.parse( "1985-01-01T00:00:00Z" );
-
     private static final Duration EARLIEST_LEAD = Duration.ofHours( 1 );
     private static final Duration LATEST_LEAD = Duration.ofHours( 7 );
-
     private static final String VARIABLE_NAME = "Streamflow";
     private static final String FEATURE_NAME = "DRRC2";
     private static final Feature FEATURE = Feature.of( wres.statistics.MessageFactory.getGeometry( FEATURE_NAME ) );
     private static final MeasurementUnit CMS = MeasurementUnit.of( "CMS" );
-
     private static final wres.datamodel.time.TimeWindowOuter TIME_WINDOW =
             wres.datamodel.time.TimeWindowOuter.of( wres.statistics.MessageFactory.getTimeWindow( NINTH_TIME,
                                                                                                   TENTH_TIME,
@@ -157,40 +157,22 @@ class MessageFactoryTest
                                                                                       ANOTHER_LOCATION,
                                                                                       ANOTHER_LOCATION ) ) );
 
-    /**
-     * Scores to serialize.
-     */
-
+    /** Scores to serialize. */
     private List<DoubleScoreStatisticOuter> scores = null;
 
-    /**
-     * Duration scores to serialize.
-     */
-
+    /** Duration scores to serialize. */
     private List<DurationScoreStatisticOuter> durationScores = null;
 
-    /**
-     * Duration scores to serialize.
-     */
-
+    /** Duration scores to serialize. */
     private List<DurationDiagramStatisticOuter> durationDiagrams = null;
 
-    /**
-     * Diagrams to serialize.
-     */
-
+    /** Diagrams to serialize. */
     private List<DiagramStatisticOuter> diagrams = null;
 
-    /**
-     * Box plot statistics.
-     */
-
+    /** Box plot statistics. */
     private List<BoxplotStatisticOuter> boxplots = null;
 
-    /**
-     * Pairs to serialize.
-     */
-
+    /** Pairs to serialize. */
     private wres.datamodel.pools.Pool<TimeSeries<Pair<Double, Ensemble>>> ensemblePairs = null;
 
     /**
@@ -436,6 +418,30 @@ class MessageFactoryTest
                                                 .label( "bazData" )
                                                 .build();
 
+        Dataset covariateOne = DatasetBuilder.builder()
+                                             .variable( new Variable( "qux", "quxest" ) )
+                                             .label( "quxData" )
+                                             .build();
+
+        Dataset covariateTwo = DatasetBuilder.builder()
+                                             .variable( new Variable( "quux", "quuxest" ) )
+                                             .label( "quuxData" )
+                                             .build();
+
+        CovariateDataset covariateDatasetOne = CovariateDatasetBuilder.builder()
+                                                                      .dataset( covariateOne )
+                                                                      .minimum( 3.0 )
+                                                                      .maximum( 4.5 )
+                                                                      .build();
+
+        CovariateDataset covariateDatasetTwo = CovariateDatasetBuilder.builder()
+                                                                      .dataset( covariateTwo )
+                                                                      .minimum( 2.9 )
+                                                                      .maximum( 7.3 )
+                                                                      .build();
+
+        List<CovariateDataset> covariates = List.of( covariateDatasetOne, covariateDatasetTwo );
+
         BaselineDataset baseline = new BaselineDataset( baselineDataset, null, true );
 
         Season season = SeasonBuilder.builder()
@@ -481,6 +487,7 @@ class MessageFactoryTest
                                                                        .left( observedDataset )
                                                                        .right( predictedDataset )
                                                                        .baseline( baseline )
+                                                                       .covariates( covariates )
                                                                        .unit( "qux" )
                                                                        .metrics( metrics )
                                                                        .season( season )
@@ -503,6 +510,18 @@ class MessageFactoryTest
                                              .setMaximumInclusiveValue( 23.2 )
                                              .build();
 
+        Covariate expectedCovariateOne = Covariate.newBuilder()
+                                                  .setVariableName( "qux" )
+                                                  .setMinimumInclusiveValue( 3.0 )
+                                                  .setMaximumInclusiveValue( 4.5 )
+                                                  .build();
+
+        Covariate expectedCovariateTwo = Covariate.newBuilder()
+                                                  .setVariableName( "quux" )
+                                                  .setMinimumInclusiveValue( 2.9 )
+                                                  .setMaximumInclusiveValue( 7.3 )
+                                                  .build();
+
         Evaluation expected = Evaluation.newBuilder()
                                         .setLeftDataName( "fooData" )
                                         .setRightDataName( "barData" )
@@ -517,6 +536,8 @@ class MessageFactoryTest
                                         .setOutputs( outputs )
                                         .addAllEnsembleMemberSubset( List.of( "1923", "1924" ) )
                                         .setMetricCount( 3 )
+                                        .addCovariates( expectedCovariateOne )
+                                        .addCovariates( expectedCovariateTwo )
                                         .build();
 
         assertEquals( expected, actual );

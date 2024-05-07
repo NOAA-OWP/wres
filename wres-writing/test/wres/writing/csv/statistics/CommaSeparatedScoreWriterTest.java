@@ -126,7 +126,7 @@ public class CommaSeparatedScoreWriterTest
         CommaSeparatedScoreWriter<DurationScoreComponentOuter, DurationScoreStatisticOuter> writer =
                 CommaSeparatedScoreWriter.of( declaration,
                                               this.outputDirectory,
-                                              next -> MessageFactory.parse( next.getStatistic().getValue() ).toString() );
+                                              next -> MessageFactory.getDuration( next.getStatistic().getValue() ).toString() );
 
         Set<Path> pathsToFile = writer.apply( WriterTestHelper.getDurationScoreStatisticsForOnePool() );
 

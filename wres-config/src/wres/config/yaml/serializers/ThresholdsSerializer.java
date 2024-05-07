@@ -296,8 +296,7 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
         {
             values = thresholds.stream()
                                .mapToDouble( next -> next.threshold()
-                                                         .getLeftThresholdValue()
-                                                         .getValue() )
+                                                         .getLeftThresholdValue() )
                                .sorted()
                                .toArray();
         }
@@ -305,8 +304,7 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
         {
             values = thresholds.stream()
                                .mapToDouble( next -> next.threshold()
-                                                         .getLeftThresholdProbability()
-                                                         .getValue() )
+                                                         .getLeftThresholdProbability() )
                                .sorted()
                                .toArray();
         }
