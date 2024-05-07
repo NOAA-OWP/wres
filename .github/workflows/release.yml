@@ -1,3 +1,5 @@
+# Prepares a commit for release. This will pull the artifacts from the commit tagged for staging
+# THIS SHOULD BE THE SAME COMMIT THAT WAS FIRST TAGGED FOR STAGING
 name: Release workflow
 
 on:
@@ -14,6 +16,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    # Downloads the pre-release release to copy the artifacts used for testing
     - uses: robinraju/release-downloader@v1.10
       with:
         tag: 'staging'
@@ -21,17 +24,20 @@ jobs:
         zipBall: true
         fileName: '*'
 
+    # Deletes the pre-release staging release as it is now promoted to release
     - uses: dev-drprasad/delete-tag-and-release@v1.1
       with:
         tag_name: staging
         delete_release: true
         github_token: ${{ secrets.GITHUB_TOKEN }} 
 
+    # Tars the project for artifact storage
     - name: Tar project
       run: |
         echo "Tag name from github.ref_name: ${{  github.ref_name }}"
         tar -zcvf wres-${{  github.ref_name }}-all-src.tar.gz *   
 
+    # Generates the release 
     - name: Release
       uses: softprops/action-gh-release@v2
       with:
