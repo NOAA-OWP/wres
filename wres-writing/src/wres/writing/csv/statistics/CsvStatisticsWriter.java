@@ -37,6 +37,7 @@ import net.jcip.annotations.ThreadSafe;
 
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DatasetOrientation;
+import wres.datamodel.messages.MessageUtilities;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricDimension;
@@ -94,27 +95,27 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
     private static final Logger LOGGER = LoggerFactory.getLogger( CsvStatisticsWriter.class );
 
     /** The file header. */
-    private static final String HEADER = "LEFT VARIABLE NAME,RIGHT VARIABLE NAME,BASELINE VARIABLE NAME,POOL NUMBER,"
-                                         + "EVALUATION SUBJECT,FEATURE GROUP NAME,LEFT FEATURE NAME,LEFT FEATURE WKT,"
-                                         + "LEFT FEATURE SRID,LEFT FEATURE DESCRIPTION,RIGHT FEATURE NAME,RIGHT "
-                                         + "FEATURE WKT,RIGHT FEATURE SRID,RIGHT FEATURE DESCRIPTION,BASELINE FEATURE "
-                                         + "NAME,BASELINE FEATURE WKT,BASELINE FEATURE SRID,BASELINE FEATURE "
-                                         + "DESCRIPTION,EARLIEST ISSUED TIME EXCLUSIVE,LATEST ISSUED TIME INCLUSIVE,"
-                                         + "EARLIEST VALID TIME EXCLUSIVE,LATEST VALID TIME INCLUSIVE,EARLIEST LEAD "
-                                         + "DURATION EXCLUSIVE,LATEST LEAD DURATION INCLUSIVE,TIME SCALE DURATION,"
-                                         + "TIME SCALE FUNCTION,TIME SCALE START MONTH-DAY INCLUSIVE,TIME SCALE END "
-                                         + "MONTH-DAY INCLUSIVE,EVENT THRESHOLD NAME,EVENT THRESHOLD LOWER VALUE,EVENT "
-                                         + "THRESHOLD UPPER VALUE,EVENT THRESHOLD UNITS,EVENT THRESHOLD LOWER "
-                                         + "PROBABILITY,EVENT THRESHOLD UPPER PROBABILITY,EVENT THRESHOLD SIDE,EVENT "
-                                         + "THRESHOLD OPERATOR,DECISION THRESHOLD NAME,DECISION THRESHOLD LOWER VALUE,"
-                                         + "DECISION THRESHOLD UPPER VALUE,DECISION THRESHOLD UNITS,DECISION THRESHOLD "
-                                         + "LOWER PROBABILITY,DECISION THRESHOLD UPPER PROBABILITY,DECISION THRESHOLD "
-                                         + "SIDE,DECISION THRESHOLD OPERATOR,METRIC NAME,METRIC COMPONENT NAME,METRIC "
-                                         + "COMPONENT QUALIFIER,METRIC COMPONENT UNITS,METRIC COMPONENT MINIMUM,METRIC "
-                                         + "COMPONENT MAXIMUM,METRIC COMPONENT OPTIMUM,STATISTIC GROUP NUMBER,SUMMARY "
-                                         + "STATISTIC NAME,SUMMARY STATISTIC COMPONENT NAME,SUMMARY STATISTIC UNITS,"
-                                         + "SUMMARY STATISTIC DIMENSION,SUMMARY STATISTIC QUANTILE,SAMPLE QUANTILE,"
-                                         + "STATISTIC";
+    private static final String HEADER = "LEFT VARIABLE NAME,RIGHT VARIABLE NAME,BASELINE VARIABLE NAME,COVARIATE "
+                                         + "FILTERS,POOL NUMBER,EVALUATION SUBJECT,FEATURE GROUP NAME,LEFT FEATURE "
+                                         + "NAME,LEFT FEATURE WKT,LEFT FEATURE SRID,LEFT FEATURE DESCRIPTION,RIGHT "
+                                         + "FEATURE NAME,RIGHT FEATURE WKT,RIGHT FEATURE SRID,RIGHT FEATURE "
+                                         + "DESCRIPTION,BASELINE FEATURE NAME,BASELINE FEATURE WKT,BASELINE FEATURE "
+                                         + "SRID,BASELINE FEATURE DESCRIPTION,EARLIEST ISSUED TIME EXCLUSIVE,LATEST "
+                                         + "ISSUED TIME INCLUSIVE,EARLIEST VALID TIME EXCLUSIVE,LATEST VALID TIME "
+                                         + "INCLUSIVE,EARLIEST LEAD DURATION EXCLUSIVE,LATEST LEAD DURATION INCLUSIVE,"
+                                         + "TIME SCALE DURATION,TIME SCALE FUNCTION,TIME SCALE START MONTH-DAY "
+                                         + "INCLUSIVE,TIME SCALE END MONTH-DAY INCLUSIVE,EVENT THRESHOLD NAME,EVENT "
+                                         + "THRESHOLD LOWER VALUE,EVENT THRESHOLD UPPER VALUE,EVENT THRESHOLD UNITS,"
+                                         + "EVENT THRESHOLD LOWER PROBABILITY,EVENT THRESHOLD UPPER PROBABILITY,EVENT "
+                                         + "THRESHOLD SIDE,EVENT THRESHOLD OPERATOR,DECISION THRESHOLD NAME,DECISION "
+                                         + "THRESHOLD LOWER VALUE,DECISION THRESHOLD UPPER VALUE,DECISION THRESHOLD "
+                                         + "UNITS,DECISION THRESHOLD LOWER PROBABILITY,DECISION THRESHOLD UPPER "
+                                         + "PROBABILITY,DECISION THRESHOLD SIDE,DECISION THRESHOLD OPERATOR,METRIC "
+                                         + "NAME,METRIC COMPONENT NAME,METRIC COMPONENT QUALIFIER,METRIC COMPONENT "
+                                         + "UNITS,METRIC COMPONENT MINIMUM,METRIC COMPONENT MAXIMUM,METRIC COMPONENT "
+                                         + "OPTIMUM,STATISTIC GROUP NUMBER,SUMMARY STATISTIC NAME,SUMMARY STATISTIC "
+                                         + "COMPONENT NAME,SUMMARY STATISTIC UNITS,SUMMARY STATISTIC DIMENSION,"
+                                         + "SUMMARY STATISTIC QUANTILE,SAMPLE QUANTILE,STATISTIC";
 
     /** The CSV delimiter. */
     private static final String DELIMITER = ",";
@@ -2113,14 +2114,31 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
     {
         StringJoiner joiner = new StringJoiner( CsvStatisticsWriter.DELIMITER );
 
-        joiner.add( evaluation.getLeftVariableName() );
-        joiner.add( evaluation.getRightVariableName() );
+        this.append( joiner, evaluation.getLeftVariableName(), false );
+        this.append( joiner, evaluation.getRightVariableName(), false );
 
-        if ( !evaluation.getBaselineVariableName().isBlank() )
+        if ( !evaluation.getBaselineVariableName()
+                        .isBlank() )
         {
-            joiner.add( evaluation.getBaselineVariableName() );
+            this.append( joiner, evaluation.getBaselineVariableName(), false );
         }
         // Placeholder
+        else
+        {
+            CsvStatisticsWriter.addEmptyValues( joiner, 1 );
+        }
+
+        // Covariate filters
+        if ( !evaluation.getCovariatesList()
+                        .isEmpty() )
+        {
+            String joined = evaluation.getCovariatesList()
+                                      .stream()
+                                      .map( MessageUtilities::toString )
+                                      .collect( Collectors.joining( LIST_DELIMITER ) );
+
+            this.append( joiner, joined, true );
+        }
         else
         {
             CsvStatisticsWriter.addEmptyValues( joiner, 1 );
@@ -2153,14 +2171,14 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
 
     private void writeCsvtFileForGdalApplications( Path path ) throws IOException
     {
-        String columnClasses = "\"String\",\"String\",\"String\",\"String\",\"Integer\",\"String\",\"String\",\"WKT\","
-                               + "\"Integer\",\"String\",\"String\",\"WKT\",\"Integer\",\"String\",\"String\",\"WKT\","
-                               + "\"Integer\",\"String\",\"String\",\"String\",\"String\",\"String\",\"String\","
-                               + "\"String\",\"String\",\"String\",\"String\",\"String\",\"String\",\"Real\",\"Real\","
-                               + "\"String\",\"Real\",\"Real\",\"String\",\"String\",\"String\",\"Real\",\"Real\","
-                               + "\"String\",\"Real\",\"Real\",\"String\",\"String\",\"String\",\"String\",\"String\","
-                               + "\"String\",\"Real\",\"Real\",\"Real\",\"Integer\",\"String\",\"String\",\"String\","
-                               + "\"String\",\"Real\",\"Real\",\"Real\"";
+        String columnClasses = "\"String\",\"String\",\"String\",\"String\",\"String\",\"Integer\",\"String\","
+                               + "\"String\",\"WKT\",\"Integer\",\"String\",\"String\",\"WKT\",\"Integer\",\"String\","
+                               + "\"String\",\"WKT\",\"Integer\",\"String\",\"String\",\"String\",\"String\","
+                               + "\"String\",\"String\",\"String\",\"String\",\"String\",\"String\",\"String\","
+                               + "\"String\",\"Real\",\"Real\",\"String\",\"Real\",\"Real\",\"String\",\"String\","
+                               + "\"String\",\"Real\",\"Real\",\"String\",\"Real\",\"Real\",\"String\",\"String\","
+                               + "\"String\",\"String\",\"String\",\"String\",\"Real\",\"Real\",\"Real\",\"Integer\","
+                               + "\"String\",\"String\",\"String\",\"String\",\"Real\",\"Real\",\"Real\"";
 
         // Sanity check that the number of column classes equals the number of columns
         int classCount = columnClasses.split( "," ).length;
