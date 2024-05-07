@@ -1,3 +1,4 @@
+# This workflow deals with commits tagged with vx.x-docker tag
 name: Docker_Release
 
 on:
@@ -11,16 +12,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'temurin'
 
+    # Zips the docker related components of the release to store them
     - name: Tar Docker
       run: |
         tar -zcvf wres-${{  github.ref_name }}-src.tar.gz scripts/doc*sh */Dockerfile  .dockerignore .gitignore compose*yml Dockerfile
-    
+
+    # Stores the docker related artifacts for this release
     - name: Create docker-release
       uses: softprops/action-gh-release@v2
       with:
