@@ -1,3 +1,4 @@
+# Sets up the pre-release of a deploy for staging testing with the staging tag
 name: Pre-release
 
 on:
@@ -49,11 +50,13 @@ jobs:
         cd scripts
         ../gradlew distZip 
 
+    # Deletes drafts incase the staging tag was deleted to change it to a different commit
     - name: Delete drafts
       uses: hugo19941994/delete-draft-releases@v1.0.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+    # Stores relevant artifacts for the pre-release
     - name: Create pre-release
       uses: softprops/action-gh-release@v2
       with:
