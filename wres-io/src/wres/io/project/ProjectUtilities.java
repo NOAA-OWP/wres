@@ -2,6 +2,7 @@ package wres.io.project;
 
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -470,7 +471,7 @@ class ProjectUtilities
         String rightVariableName = null;
         String baselineVariableName = null;
 
-        if ( ProjectUtilities.hasVAriableName( declaration.left() ) )
+        if ( ProjectUtilities.hasVariableName( declaration.left() ) )
         {
             leftVariableName = declaration.left()
                                           .variable()
@@ -482,7 +483,7 @@ class ProjectUtilities
                                                     .next();
         }
 
-        if ( ProjectUtilities.hasVAriableName( declaration.right() ) )
+        if ( ProjectUtilities.hasVariableName( declaration.right() ) )
         {
             rightVariableName = declaration.right()
                                            .variable()
@@ -495,7 +496,7 @@ class ProjectUtilities
         }
 
         if ( DeclarationUtilities.hasBaseline( declaration )
-             && ProjectUtilities.hasVAriableName( declaration.baseline()
+             && ProjectUtilities.hasVariableName( declaration.baseline()
                                                              .dataset() ) )
         {
             baselineVariableName = declaration.baseline()
@@ -937,17 +938,22 @@ class ProjectUtilities
     }
 
     /**
-     * Validates the declaration, post-ingest.
-     * @param declaration the declaration
+     * Performs post-ingest validation that does not depend on the precise implementation details of a {@link Project}.
+     * Validation that depends on the implementation details of a {@link Project} should be performed within that
+     * implementation, leveraging this method for implementation-invariant validation.
+     *
+     * @param project the project
      * @throws DeclarationException if the declaration and ingest are inconsistent
      */
-    static void validate( EvaluationDeclaration declaration )
+    static void validate( Project project )
     {
-        Objects.requireNonNull( declaration );
+        Objects.requireNonNull( project );
 
         // Validate the declaration in relation to the interpolated data types and other analyzed information
         LOGGER.debug( "Performing post-ingest validation of the declaration" );
-        DeclarationValidator.validatePostDataIngest( declaration );
+        DeclarationValidator.validatePostDataIngest( project.getDeclaration() );
+
+        ProjectUtilities.validateThresholdsForFeatureGroups( project.getFeatureGroups(), project.getFeatures() );
     }
 
     /**
@@ -1709,11 +1715,62 @@ class ProjectUtilities
                                         + "." );
     }
 
+
+    /**
+     * @param featureGroups the feature groups
+     * @param featuresWithExplicitThresholds features with explicit thresholds (not the implicit "all data" threshold)
+     */
+
+    private static void validateThresholdsForFeatureGroups( Set<FeatureGroup> featureGroups,
+                                                    Set<FeatureTuple> featuresWithExplicitThresholds )
+    {
+        Objects.requireNonNull( featureGroups );
+        Objects.requireNonNull( featuresWithExplicitThresholds );
+
+        // Log a warning about any discrepancies between features with thresholds and features to evaluate
+        if ( LOGGER.isWarnEnabled() )
+        {
+            Map<String, Set<String>> missing = new HashMap<>();
+
+            // Check that every group has one or more thresholds for every tuple, else warn
+            for ( FeatureGroup nextGroup : featureGroups )
+            {
+                if ( nextGroup.getFeatures()
+                              .size() > 1
+                     && !featuresWithExplicitThresholds.containsAll( nextGroup.getFeatures() ) )
+                {
+                    Set<FeatureTuple> missingFeatures = new HashSet<>( nextGroup.getFeatures() );
+                    missingFeatures.removeAll( featuresWithExplicitThresholds );
+
+                    // Show abbreviated information only
+                    missing.put( nextGroup.getName(),
+                                 missingFeatures.stream()
+                                                .map( FeatureTuple::toStringShort )
+                                                .collect( Collectors.toSet() ) );
+                }
+            }
+
+            // Warn about groups without thresholds, which will be skipped
+            if ( !missing.isEmpty() )
+            {
+                LOGGER.warn( "While correlating thresholds with the features contained in feature groups, "
+                             + "discovered {} feature groups that did not have thresholds for every feature within the "
+                             + "group. These groups will be evaluated, but the grouped statistics will not include the "
+                             + "pairs associated with the features that have missing thresholds (for the thresholds "
+                             + "that are missing). By default, the \"all data\" threshold is added to every feature "
+                             + "and the statistics for this threshold will not be impacted. The features with missing "
+                             + "thresholds and their associated feature groups are: {}.",
+                             missing.size(),
+                             missing );
+            }
+        }
+    }
+
     /**
      * @param dataset the dataset
      * @return whether the dataset has a variable name
      */
-    private static boolean hasVAriableName( Dataset dataset )
+    private static boolean hasVariableName( Dataset dataset )
     {
         return Objects.nonNull( dataset )
                && Objects.nonNull( dataset.variable() )

@@ -41,11 +41,13 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.Feature;
+import wres.datamodel.units.UnitMapper;
 import wres.io.NoProjectDataException;
 import wres.io.ingesting.IngestResult;
 import wres.config.yaml.VariableNames;
 import wres.reading.DataSource.DataDisposition;
 import wres.io.retrieving.DataAccessException;
+import wres.reading.ReaderUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -132,6 +134,15 @@ public class InMemoryProject implements Project
         this.covariatesUseGriddedData = this.getUsesGriddedData( ingestResults, DatasetOrientation.COVARIATE );
 
         this.hash = this.getHash( timeSeriesStore );
+        this.measurementUnit = this.getAnalyzedMeasurementUnit( declaration, timeSeriesStore );
+
+        // Get a unit mapper for the declared or analyzed measurement units
+        UnitMapper unitMapper = UnitMapper.of( this.measurementUnit,
+                                               declaration.unitAliases() );
+
+        // Read external thresholds into the declaration and remove any features for which thresholds are not available
+        // #129805
+        declaration = ReaderUtilities.readAndFillThresholds( declaration, unitMapper );
 
         FeatureSets featureSets = this.getFeaturesAndFeatureGroups( declaration,
                                                                     this.leftUsesGriddedData
@@ -147,26 +158,27 @@ public class InMemoryProject implements Project
         this.rightVariable = variableNames.rightVariableName();
         this.baselineVariable = variableNames.baselineVariableName();
 
-        this.measurementUnit = this.getAnalyzedMeasurementUnit( declaration, timeSeriesStore );
         this.desiredTimeScale = this.getDesiredTimeScale( declaration, timeSeriesStore );
 
-        this.validateEnsembleConditions( timeSeriesStore, declaration );
-
-        // Interpolate and validate the declaration before setting it
-        EvaluationDeclaration innerDeclaration = ProjectUtilities.interpolate( declaration,
-                                                                               ingestResults,
-                                                                               variableNames,
-                                                                               this.measurementUnit,
-                                                                               this.desiredTimeScale,
-                                                                               this.features,
-                                                                               this.featureGroups );
-        ProjectUtilities.validate( innerDeclaration );
-        this.declaration = innerDeclaration;
+        // Interpolate and set the declaration
+        this.declaration = ProjectUtilities.interpolate( declaration,
+                                                         ingestResults,
+                                                         variableNames,
+                                                         this.measurementUnit,
+                                                         this.desiredTimeScale,
+                                                         this.features,
+                                                         this.featureGroups );
 
         // Set the covariate features
         this.covariateFeatures = this.getCovariateFeatures( this.declaration.covariates(),
                                                             timeSeriesStore,
                                                             this.features );
+
+        // Validate any ensemble conditions in the declaration
+        this.validateEnsembleConditions( timeSeriesStore, this.declaration );
+
+        // Validate the project
+        ProjectUtilities.validate( this );
 
         LOGGER.info( "Project validation and metadata loading is complete." );
     }

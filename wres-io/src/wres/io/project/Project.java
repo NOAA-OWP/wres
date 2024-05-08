@@ -17,8 +17,9 @@ import wres.datamodel.time.TimeWindowOuter;
 
 /**
  * <p>Wraps an {@link EvaluationDeclaration} and updates it to reflect the information ingested from time-series data
- * sources. Specifically, {@link #getDeclaration()} provides an interface to the augmented declaration. Also includes
- * several helpers to assist with the use of a project declaration through time-series data retrieval.
+ * sources and, where applicable, threshold data sources. Specifically, {@link #getDeclaration()} provides an interface
+ * to the augmented declaration. Also includes several helpers to assist with the use of a project declaration through
+ * time-series data retrieval.
  *
  * <p>Implementation notes:
  *

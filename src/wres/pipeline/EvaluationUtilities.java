@@ -40,7 +40,6 @@ import wres.datamodel.MissingValues;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.space.FeatureGroup;
-import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.MetricsAndThresholds;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
@@ -526,63 +525,14 @@ class EvaluationUtilities
         }
 
         // Add external numerics if required
-        if ( Objects.nonNull( externalNumerics ) && "true".equalsIgnoreCase( externalNumerics ) )
+        if ( Objects.nonNull( externalNumerics )
+             && "true".equalsIgnoreCase( externalNumerics ) )
         {
             formats.add( Format.PROTOBUF );
             formats.add( Format.CSV2 );
         }
 
         return Collections.unmodifiableSet( formats );
-    }
-
-    /**
-     * @param featureGroups the feature groups
-     * @param featuresWithExplicitThresholds features with explicit thresholds (not the implicit "all data" threshold)
-     */
-
-    static void validateThresholdsForFeatureGroups( Set<FeatureGroup> featureGroups,
-                                                    Set<FeatureTuple> featuresWithExplicitThresholds )
-    {
-        Objects.requireNonNull( featureGroups );
-        Objects.requireNonNull( featuresWithExplicitThresholds );
-
-        // Log a warning about any discrepancies between features with thresholds and features to evaluate
-        if ( LOGGER.isWarnEnabled() )
-        {
-            Map<String, Set<String>> missing = new HashMap<>();
-
-            // Check that every group has one or more thresholds for every tuple, else warn
-            for ( FeatureGroup nextGroup : featureGroups )
-            {
-                if ( nextGroup.getFeatures()
-                              .size() > 1
-                     && !featuresWithExplicitThresholds.containsAll( nextGroup.getFeatures() ) )
-                {
-                    Set<FeatureTuple> missingFeatures = new HashSet<>( nextGroup.getFeatures() );
-                    missingFeatures.removeAll( featuresWithExplicitThresholds );
-
-                    // Show abbreviated information only
-                    missing.put( nextGroup.getName(),
-                                 missingFeatures.stream()
-                                                .map( FeatureTuple::toStringShort )
-                                                .collect( Collectors.toSet() ) );
-                }
-            }
-
-            // Warn about groups without thresholds, which will be skipped
-            if ( !missing.isEmpty() )
-            {
-                LOGGER.warn( "While correlating thresholds with the features contained in feature groups, "
-                             + "discovered {} feature groups that did not have thresholds for every feature within the "
-                             + "group. These groups will be evaluated, but the grouped statistics will not include the "
-                             + "pairs associated with the features that have missing thresholds (for the thresholds "
-                             + "that are missing). By default, the \"all data\" threshold is added to every feature "
-                             + "and the statistics for this threshold will not be impacted. The features with missing "
-                             + "thresholds and their associated feature groups are: {}.",
-                             missing.size(),
-                             missing );
-            }
-        }
     }
 
     /**

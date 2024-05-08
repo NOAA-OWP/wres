@@ -42,6 +42,7 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.Feature;
+import wres.datamodel.units.UnitMapper;
 import wres.io.NoProjectDataException;
 import wres.datamodel.DataProvider;
 import wres.io.database.DatabaseOperations;
@@ -49,6 +50,7 @@ import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.Features;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
+import wres.reading.ReaderUtilities;
 import wres.reading.netcdf.grid.GriddedFeatures;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
@@ -148,6 +150,17 @@ public class DatabaseProject implements Project
         this.baselineUsesGriddedData = this.getUsesGriddedData( DatasetOrientation.BASELINE );
         this.covariatesUseGriddedData = this.getUsesGriddedData( DatasetOrientation.COVARIATE );
 
+        // Set the measurement unit
+        this.measurementUnit = this.getAnalyzedMeasurementUnit( declaration, this.projectId );
+
+        // Get a unit mapper for the declared or analyzed measurement units
+        UnitMapper unitMapper = UnitMapper.of( this.measurementUnit,
+                                               declaration.unitAliases() );
+
+        // Read external thresholds into the declaration and remove any features for which thresholds are not available
+        // #129805
+        declaration = ReaderUtilities.readAndFillThresholds( declaration, unitMapper );
+
         ProjectUtilities.FeatureSets featureSets = this.getFeaturesAndFeatureGroups( this.projectId,
                                                                                      declaration,
                                                                                      caches,
@@ -167,28 +180,26 @@ public class DatabaseProject implements Project
         // Set the desired timescale
         this.desiredTimeScale = this.getDesiredTimeScale( declaration, this.projectId );
 
-        // Set the measurement unit
-        this.measurementUnit = this.getAnalyzedMeasurementUnit( declaration, this.projectId );
-
-        // Interpolate and validate the declaration before setting it
-        EvaluationDeclaration innerDeclaration = ProjectUtilities.interpolate( declaration,
-                                                                               ingestResults,
-                                                                               variableNames,
-                                                                               this.measurementUnit,
-                                                                               this.desiredTimeScale,
-                                                                               this.features,
-                                                                               this.featureGroups );
-        ProjectUtilities.validate( innerDeclaration );
-        this.declaration = innerDeclaration;
-
-        // Validate any ensemble conditions
-        this.validateEnsembleConditions( this.declaration, this.projectId );
+        // Interpolate the declaration and set it
+        this.declaration = ProjectUtilities.interpolate( declaration,
+                                                         ingestResults,
+                                                         variableNames,
+                                                         this.measurementUnit,
+                                                         this.desiredTimeScale,
+                                                         this.features,
+                                                         this.featureGroups );
 
         // Set the covariate features
         this.covariateFeatures = this.getCovariateFeatures( this.declaration.covariates(),
                                                             this.projectId,
                                                             this.features,
                                                             caches.getFeaturesCache() );
+
+        // Validate any ensemble conditions in the declaration
+        this.validateEnsembleConditions( this.declaration, this.projectId );
+
+        // Perform validation that requires the API only, no implementation details
+        ProjectUtilities.validate( this );
 
         LOGGER.info( "Project validation and metadata loading is complete." );
     }

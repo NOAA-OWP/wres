@@ -42,7 +42,6 @@ import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.thresholds.MetricsAndThresholds;
 import wres.datamodel.thresholds.ThresholdSlicer;
 import wres.datamodel.time.TimeSeriesStore;
-import wres.datamodel.units.UnitMapper;
 import wres.events.EvaluationEventUtilities;
 import wres.events.EvaluationMessager;
 import wres.events.broker.BrokerConnectionFactory;
@@ -655,29 +654,6 @@ public class Evaluator
             // Set the project hash for identification
             projectHash = project.getHash();
 
-            // Get a unit mapper for the declared or analyzed measurement units
-            String desiredMeasurementUnit = project.getMeasurementUnit();
-            UnitMapper unitMapper = UnitMapper.of( desiredMeasurementUnit,
-                                                   declaration.unitAliases() );
-
-            // Read external thresholds into the declaration. Unlike features, which georeference time-series datasets,
-            // thresholds are orthogonal to time-series datasets and are not required during reading/ingest. Read them
-            // now and update the declaration to reflect them
-            EvaluationDeclaration declarationWithFeaturesAndThresholds =
-                    ReaderUtilities.readAndFillThresholds( declarationWithFeatures, unitMapper );
-
-            // Get the features, as described in the ingested time-series data, which may differ in number and details
-            // from the declared features. For example, they are filtered for data availability, spatial mask etc. and
-            // may include extra descriptive information, such as a geometry or location description.
-            Set<FeatureTuple> features = new HashSet<>( project.getFeatures() );
-            Set<GeometryTuple> unwrappedFeatures = features.stream()
-                                                           .map( FeatureTuple::getGeometryTuple )
-                                                           .collect( Collectors.toUnmodifiableSet() );
-
-            // Create the feature groups and validate the thresholds against the groups
-            Set<FeatureGroup> featureGroups = new TreeSet<>( project.getFeatureGroups() );
-            EvaluationUtilities.validateThresholdsForFeatureGroups( featureGroups, features );
-
             // If summary statistics are required for multi-feature groups, ensure that all the singletons within
             // feature groups are part of the singletons list for evaluation, but do not publish statistics for these
             // singleton features unless they were declared explicitly
@@ -687,21 +663,25 @@ public class Evaluator
             // Ensure that named features correspond to the features associated with the data rather than declaration,
             // i.e., use the adjusted declaration
             Set<MetricsAndThresholds> metricsAndThresholds =
-                    ThresholdSlicer.getMetricsAndThresholdsForProcessing( declarationWithFeaturesAndThresholds );
+                    ThresholdSlicer.getMetricsAndThresholdsForProcessing( declarationWithFeatures );
 
             // Create any netcdf blobs for writing. See #80267-137.
+            Set<FeatureTuple> features = new HashSet<>( project.getFeatures() );
+            Set<GeometryTuple> unwrappedFeatures = features.stream()
+                                                           .map( FeatureTuple::getGeometryTuple )
+                                                           .collect( Collectors.toUnmodifiableSet() );
+            Set<FeatureGroup> featureGroups = new TreeSet<>( project.getFeatureGroups() );
             Set<FeatureGroup> adjustedFeatureGroups =
                     EvaluationUtilities.adjustFeatureGroupsForSummaryStatistics( featureGroups,
                                                                                  unwrappedFeatures,
                                                                                  declaration.summaryStatistics(),
                                                                                  doNotPublish );
-
             EvaluationUtilities.createNetcdfBlobs( netcdfWriters,
                                                    adjustedFeatureGroups,
                                                    metricsAndThresholds );
 
             // Create the evaluation description for messaging
-            Evaluation evaluationDescription = MessageFactory.parse( declarationWithFeaturesAndThresholds );
+            Evaluation evaluationDescription = MessageFactory.parse( declarationWithFeatures );
 
             // Build the evaluation description for messaging. In the future, there may be a desire to build the
             // evaluation description prior to ingest, in order to message the status of ingest to client applications.
@@ -731,7 +711,7 @@ public class Evaluator
             // features and remove all singletons as there are no summary statistics for singletons
             Set<FeatureGroup> summaryStatisticsOnly =
                     EvaluationUtilities.getFeatureGroupsForSummaryStatisticsOnly( adjustedFeatureGroups, declaration );
-            PoolReporter poolReporter = new PoolReporter( declarationWithFeaturesAndThresholds,
+            PoolReporter poolReporter = new PoolReporter( declarationWithFeatures,
                                                           summaryStatisticsOnly,
                                                           poolCount,
                                                           true,
@@ -743,7 +723,7 @@ public class Evaluator
 
             // Create the summary statistics calculators to increment with raw statistics
             Map<String, List<SummaryStatisticsCalculator>> summaryStatsCalculators =
-                    EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds,
+                    EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeatures,
                                                                          poolCount );
             Map<String, List<SummaryStatisticsCalculator>> summaryStataCalculatorsForBaseline = Map.of();
             boolean separateMetricsForBaseline = DeclarationUtilities.hasBaseline( declaration )
@@ -752,21 +732,21 @@ public class Evaluator
             if ( separateMetricsForBaseline )
             {
                 summaryStataCalculatorsForBaseline =
-                        EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds,
+                        EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeatures,
                                                                              poolCount );
             }
 
             // Set the project and evaluation, metrics and thresholds and summary statistics
-            evaluationDetails = EvaluationDetailsBuilder.builder( evaluationDetails )
-                                                        .project( project )
-                                                        .evaluation( evaluationMessager )
-                                                        .declaration( declarationWithFeaturesAndThresholds )
-                                                        .metricsAndThresholds( metricsAndThresholds )
-                                                        .summaryStatistics( summaryStatsCalculators )
-                                                        .summaryStatisticsForBaseline(
-                                                                summaryStataCalculatorsForBaseline )
-                                                        .summaryStatisticsOnly( doNotPublish )
-                                                        .build();
+            evaluationDetails =
+                    EvaluationDetailsBuilder.builder( evaluationDetails )
+                                            .project( project )
+                                            .evaluation( evaluationMessager )
+                                            .declaration( declarationWithFeatures )
+                                            .metricsAndThresholds( metricsAndThresholds )
+                                            .summaryStatistics( summaryStatsCalculators )
+                                            .summaryStatisticsForBaseline( summaryStataCalculatorsForBaseline )
+                                            .summaryStatisticsOnly( doNotPublish )
+                                            .build();
 
             // Create and publish the raw evaluation statistics
             PoolDetails poolDetails = new PoolDetails( poolFactory, poolRequests, poolReporter, groupTracker );
