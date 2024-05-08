@@ -57,6 +57,7 @@ import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.SamplingUncertainty;
+import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.DataUtilities;
 import wres.datamodel.MissingValues;
@@ -74,6 +75,7 @@ import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.thresholds.ThresholdSlicer;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.Covariate;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -844,6 +846,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
 
         boolean hasBaseline = DeclarationUtilities.hasBaseline( declaration );
 
+        List<Covariate> covariates = MessageFactory.parse( declaration.covariates() );
+
         // Iterate through the ensemble average types
         for ( Map.Entry<EnsembleAverageType, Map<MetricConstants, SortedSet<OneOrTwoThresholds>>> next : thresholds.entrySet() )
         {
@@ -861,7 +865,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                                                     null,
                                                                                     hasBaseline,
                                                                                     nextType,
-                                                                                    declaration.summaryStatistics() );
+                                                                                    declaration.summaryStatistics(),
+                                                                                    covariates );
                 Collection<MetricVariable> variables = this.getMetricVariablesForOneTimeWindow( parameters );
                 merged.addAll( variables );
             }
@@ -876,7 +881,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                                                     null,
                                                                                     true,
                                                                                     nextType,
-                                                                                    declaration.summaryStatistics() );
+                                                                                    declaration.summaryStatistics(),
+                                                                                    covariates );
                 Collection<MetricVariable> right = this.getMetricVariablesForOneTimeWindow( parameters );
 
                 MetricVariableParameters baselineParameters =
@@ -887,7 +893,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                       DatasetOrientation.BASELINE,
                                                       true,
                                                       nextType,
-                                                      declaration.summaryStatistics() );
+                                                      declaration.summaryStatistics(),
+                                                      covariates );
                 Collection<MetricVariable> baseline = this.getMetricVariablesForOneTimeWindow( baselineParameters );
 
                 merged.addAll( right );
@@ -956,7 +963,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                                     .setUnits( parameters.units() )
                                                     .setDesiredTimeScale( parameters.desiredTimeScale() )
                                                     .setDurationUnits( this.getDurationUnits() )
-                                                    .setEnsembleAverageType( parameters.ensembleAverageType() );
+                                                    .setEnsembleAverageType( parameters.ensembleAverageType() )
+                                                    .setCovariates( parameters.covariates() );
 
                 Collection<MetricVariable> metricVariables =
                         this.getMetricVariableForEachMetricAndSummaryStatistic( nextVariable,
@@ -2193,6 +2201,7 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
      * @param hasBaseline is true if a baseline is declared
      * @param ensembleAverageType the ensemble average type
      * @param summaryStatistics the summary statistics, possibly empty
+     * @param covariates the covariates, possibly empty
      * @author James Brown
      */
     private record MetricVariableParameters( TimeWindowOuter timeWindow,
@@ -2202,7 +2211,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
                                              DatasetOrientation context,
                                              boolean hasBaseline,
                                              EnsembleAverageType ensembleAverageType,
-                                             Set<SummaryStatistic> summaryStatistics )
+                                             Set<SummaryStatistic> summaryStatistics,
+                                             List<Covariate> covariates )
     {
     }
 }

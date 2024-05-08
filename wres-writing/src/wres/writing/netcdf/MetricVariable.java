@@ -2,27 +2,32 @@ package wres.writing.netcdf;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.datamodel.DataUtilities;
+import wres.datamodel.messages.MessageUtilities;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.Covariate;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.SummaryStatistic;
 
 class MetricVariable
 {
+    private static final String LIST_DELIMITER = "; ";
     private static final String UNDEFINED = "UNDEFINED";
     private static final String UNKNOWN = "UNKNOWN";
     private static final String NONE = "NONE";
-
     private final ChronoUnit durationUnits;
     private final String variableName;
     private final MetricNames metricNames;
@@ -47,6 +52,7 @@ class MetricVariable
     private final Double sampleQuantile;
     private final Pool.EnsembleAverageType ensembleAverageType;
     private final SummaryStatistic summaryStatistic;
+    private final String covariateString;
 
     /**
      * @return the variable name
@@ -102,6 +108,7 @@ class MetricVariable
                                              .name()
                                              .toLowerCase(),
                         this.latestLead );
+        attributes.put( "covariate_filters", this.covariateString );
         attributes.put( "event_threshold_data_type", this.firstDataType );
         attributes.put( "decision_threshold_data_type", this.secondDataType );
         attributes.put( "event_threshold_name", this.eventThresholdName );
@@ -154,6 +161,7 @@ class MetricVariable
      */
     static class Builder
     {
+        private final List<Covariate> covariates = new ArrayList<>();
         private String variableName;
         private TimeWindowOuter timeWindow;
         private MetricNames metricNames;
@@ -225,6 +233,15 @@ class MetricVariable
             return this;
         }
 
+        Builder setCovariates( List<Covariate> covariates )
+        {
+            if ( Objects.nonNull( covariates ) )
+            {
+                this.covariates.addAll( covariates );
+            }
+            return this;
+        }
+
         /**
          * @return an instance
          */
@@ -249,6 +266,17 @@ class MetricVariable
         this.sampleQuantile = builder.sampleQuantile;
         this.metricNames = builder.metricNames;
         this.summaryStatistic = builder.summaryStatistic;
+
+        if ( builder.covariates.isEmpty() )
+        {
+            this.covariateString = NONE;
+        }
+        else
+        {
+            this.covariateString = builder.covariates.stream()
+                                                     .map( MessageUtilities::toString )
+                                                     .collect( Collectors.joining( LIST_DELIMITER ) );
+        }
 
         // Build the long_name. This should not contain numbers for the thresholds because they can vary by feature.
         String fullName = builder.metricNames.metricName() + " " + this.getThreshold();
@@ -295,7 +323,9 @@ class MetricVariable
         if ( this.thresholds.first()
                             .hasLabel() )
         {
-            this.eventThresholdName = this.getThreshold().first().getLabel();
+            this.eventThresholdName = this.getThreshold()
+                                          .first()
+                                          .getLabel();
         }
         else
         {

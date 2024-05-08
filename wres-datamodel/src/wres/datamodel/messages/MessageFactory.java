@@ -485,7 +485,8 @@ public class MessageFactory
         }
 
         // Set the covariates
-        MessageFactory.addCovariates( evaluation, builder );
+        List<Covariate> covariates = MessageFactory.parse( evaluation.covariates() );
+        builder.addAllCovariates( covariates );
 
         return builder.build();
     }
@@ -671,6 +672,52 @@ public class MessageFactory
         Objects.requireNonNull( location );
 
         return FeatureTuple.of( location );
+    }
+
+    /**
+     * Copies the covariates from an evaluation declaration to the evaluation builder.
+     * @param covariates the covariates
+     * @return the canonical covariates
+     */
+    public static List<Covariate> parse( List<CovariateDataset> covariates )
+    {
+        Objects.requireNonNull( covariates );
+
+        List<Covariate> mapped = new ArrayList<>();
+
+        for ( CovariateDataset covariate : covariates )
+        {
+            Objects.requireNonNull( covariate.dataset()
+                                             .variable()
+                                             .name() );
+
+            Covariate.Builder covariateBuilder = Covariate.newBuilder()
+                                                          .setVariableName( covariate.dataset()
+                                                                                     .variable()
+                                                                                     .name() );
+
+            if ( Objects.nonNull( covariate.minimum() ) )
+            {
+                covariateBuilder.setMinimumInclusiveValue( covariate.minimum() );
+            }
+
+            if ( Objects.nonNull( covariate.maximum() ) )
+            {
+                covariateBuilder.setMaximumInclusiveValue( covariate.maximum() );
+            }
+
+            mapped.add( covariateBuilder.build() );
+
+            LOGGER.debug( "Added a covariate with a variable name of '{}', a minimum value of {}, and a maximum value "
+                          + "of {}.",
+                          covariate.dataset()
+                                   .variable()
+                                   .name(),
+                          covariate.minimum(),
+                          covariate.maximum() );
+        }
+
+        return Collections.unmodifiableList( mapped );
     }
 
     /**
@@ -1323,46 +1370,6 @@ public class MessageFactory
         {
             LOGGER.warn( "Discovered ensemble members to exclude from the evaluation, but these will not appear in "
                          + "the statistics metadata, which only records the subset of members to include." );
-        }
-    }
-
-    /**
-     * Copies the covariates from an evaluation declaration to the evaluation builder.
-     * @param evaluation the evaluation declaration
-     * @param builder the messaging evaluation builder
-     */
-    private static void addCovariates( EvaluationDeclaration evaluation, Evaluation.Builder builder )
-    {
-        for ( CovariateDataset covariate : evaluation.covariates() )
-        {
-            Objects.requireNonNull( covariate.dataset()
-                                             .variable()
-                                             .name() );
-
-            Covariate.Builder covariateBuilder = Covariate.newBuilder()
-                                                          .setVariableName( covariate.dataset()
-                                                                                     .variable()
-                                                                                     .name() );
-
-            if ( Objects.nonNull( covariate.minimum() ) )
-            {
-                covariateBuilder.setMinimumInclusiveValue( covariate.minimum() );
-            }
-
-            if ( Objects.nonNull( covariate.maximum() ) )
-            {
-                covariateBuilder.setMaximumInclusiveValue( covariate.maximum() );
-            }
-
-            builder.addCovariates( covariateBuilder.build() );
-
-            LOGGER.debug( "Added a covariate with a variable name of '{}', a minimum value of {}, and a maximum value "
-                          + "of {}.",
-                          covariate.dataset()
-                                   .variable()
-                                   .name(),
-                          covariate.minimum(),
-                          covariate.maximum() );
         }
     }
 
