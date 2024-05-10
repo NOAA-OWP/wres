@@ -2,7 +2,7 @@
 # Build image
 #############
 
-FROM alpine AS builder
+FROM alpine:3.19.1 AS builder
 
 ARG BROKER_VERSION=2.33.0
 
@@ -20,7 +20,7 @@ RUN sha512sum -c apache-artemis-${BROKER_VERSION}-bin.tar.gz.sha512
 ARG BASE_TMPDIR="out/artemis"
 
 # Extract binaries to ${ARG BASE_TMPDIR}
-RUN apk add tar && \ 
+RUN apk --no-cache add tar && \
     mkdir -p ${BASE_TMPDIR} && \
     tar xf apache-artemis-${BROKER_VERSION}-bin.tar.gz -C ${BASE_TMPDIR} --strip-components=1 apache-artemis-${BROKER_VERSION}/
 
