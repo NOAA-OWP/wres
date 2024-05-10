@@ -1412,8 +1412,8 @@ project(':wres-tasker') {
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
 
         // To generate fake certificates and keys for testing
-        testImplementation 'org.bouncycastle:bcpkix-jdk15on:1.70'
-        testImplementation 'org.bouncycastle:bcprov-jdk15on:1.70'
+        testImplementation 'org.bouncycastle:bcpkix-jdk18on:1.78.1'
+        testImplementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
 
         // To test against an embedded AMQP broker
         testImplementation 'org.apache.qpid:qpid-broker-core:9.2.0'
@@ -1502,21 +1502,35 @@ project(':wres-eventsbroker') {
 
         // Apache ActiveMQ Artemis server
         implementation('org.apache.activemq:artemis-server:2.33.0') {
+            // TODO: remove when Artemis catches up
+
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
 
             // Because we use slf4j, not jboss-logmanager:
             exclude group: 'org.jboss.logmanager', module: 'jboss-logmanager'
 
-            // Because of CVE-2022-24823. TODO: remove when Artemis catches up
+            // Because of CVE-2022-24823.
             exclude group: 'io.netty'
 
-            // Because of CVE-2023-2976, CVE-2020-8908. TODO: remove when Artemis catches up
+            // Because of CVE-2023-2976, CVE-2020-8908.
             exclude group: 'com.google.guava', module: 'guava'
+
+            // Because of CVE-2024-29131, CVE-2024-29133.
+            exclude group: 'org.apache.commons', module: 'commons-configuration2'
+
+            // Because of CVE-2024-34447, CVE-2024-29857, CVE-2024-30171, CVE-2024-30172.
+            exclude group: 'org.bouncycastle', module: 'bcprov-jdk18on'
         }
 
         // Include later dependency versions for the excluded dependencies above
         implementation 'com.google.guava:guava:33.2.0-jre'
+
+        // Include later dependency version
+        implementation group: 'org.apache.commons', name: 'commons-configuration2', version: '2.10.1'
+
+        // Include later dependency version
+        implementation group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.78.1'
 
         // AMQP 1.0 protocol support for the ActiveMQ Artemis server
         implementation('org.apache.activemq:artemis-amqp-protocol:2.33.0') {
