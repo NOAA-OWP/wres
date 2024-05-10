@@ -1218,7 +1218,8 @@ project(':wres-worker') {
     apply plugin: 'org.beryx.jlink'
 
     mainClassName = 'wres.worker.Worker'
-    applicationDefaultJvmArgs = ['-Xms64m', '-Xmx64m',
+
+    applicationDefaultJvmArgs = ['-Xms128m','-Xmx128m',
                                  '-XX:+HeapDumpOnOutOfMemoryError']
 
     // Add logging configuration to the classpath when running via script
