@@ -3030,7 +3030,7 @@ class DeclarationFactoryTest
                 predicted:
                   sources: another_file.csv
                 duration_format: hours
-                decimal_format: '#0.000'
+                decimal_format: "#0.000"
                 output_formats:
                   - csv2
                   - csv

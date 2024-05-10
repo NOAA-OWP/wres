@@ -252,6 +252,9 @@ public class EmbeddedBroker implements Closeable
         }
     }
 
+    /**
+     * @return whether the broker is active
+     */
     public boolean isActive()
     {
         return this.broker.isActive();

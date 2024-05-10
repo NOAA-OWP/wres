@@ -157,16 +157,17 @@ public class DeclarationFactory
     private static final String SCHEMA = "schema.yml";
 
     /** Mapper for deserialization. */
-    private static final ObjectMapper DESERIALIZER = YAMLMapper.builder()
-                                                               .enable( MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS )
-                                                               .enable( DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY )
-                                                               .enable( DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY )
-                                                               .enable( JsonParser.Feature.STRICT_DUPLICATE_DETECTION )
-                                                               .build()
-                                                               .registerModule( new ProtobufModule() )
-                                                               .registerModule( new JavaTimeModule() )
-                                                               .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES,
-                                                                           true );
+    private static final YAMLMapper DESERIALIZER =
+            ( YAMLMapper ) YAMLMapper.builder()
+                                     .enable( MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS )
+                                     .enable( DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY )
+                                     .enable( DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY )
+                                     .enable( JsonParser.Feature.STRICT_DUPLICATE_DETECTION )
+                                     .build()
+                                     .registerModule( new ProtobufModule() )
+                                     .registerModule( new JavaTimeModule() )
+                                     .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES,
+                                                 true );
 
     /** Mapper for serialization. */
     private static final ObjectMapper SERIALIZER =
@@ -447,7 +448,7 @@ public class DeclarationFactory
 
             JsonSchemaFactory factory =
                     JsonSchemaFactory.builder( JsonSchemaFactory.getInstance( SpecVersion.VersionFlag.V201909 ) )
-                                     .objectMapper( DESERIALIZER )
+                                     .yamlMapper( DESERIALIZER )
                                      .build();
 
             return factory.getSchema( schemaNode );

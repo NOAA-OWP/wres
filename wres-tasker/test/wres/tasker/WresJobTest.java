@@ -63,7 +63,6 @@ public class WresJobTest
     private static final String SERVER_CERT_FILE_NAME = "wres-broker-localhost_server_x509_cert.pem";
     private static final String SERVER_KEY_FILE_NAME = "wres-broker-localhost_server_private_rsa_key.pem";
     private static final String TRUST_STORE_FILE_NAME = "trustedCertificates-localhost.jks";
-
     private static final String[] APPROVED_CIPHERS = {
             "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
             "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
@@ -304,13 +303,12 @@ public class WresJobTest
                                                        false,
                                                        Collections.emptyList() ) )
         {
+            String entity = response.getEntity()
+                                    .toString();
+
             assertAll( () -> assertEquals( 400, response.getStatus() ),
-                       () -> assertTrue( response.getEntity()
-                                                 .toString()
-                                                 .contains( "declaration contained the following errors" ) ),
-                       () -> assertTrue( response.getEntity()
-                                                 .toString()
-                                                 .contains( "baz_property: is not defined in the schema" ) ) );
+                       () -> assertTrue( entity.contains( "declaration contained the following errors" ) ),
+                       () -> assertTrue( entity.contains( "'baz_property' is not defined in the schema" ) ) );
         }
     }
 

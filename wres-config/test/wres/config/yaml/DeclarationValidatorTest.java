@@ -2503,7 +2503,7 @@ class DeclarationValidatorTest
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( evaluation );
 
         assertTrue( DeclarationValidatorTest.contains( events,
-                                                       "the items in the array must be unique",
+                                                       "must have only unique items in the array",
                                                        StatusLevel.ERROR ) );
     }
 
@@ -2551,15 +2551,15 @@ class DeclarationValidatorTest
 
         assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
                                                                         "time_scale: has a missing property "
-                                                                        + "\"unit\"",
+                                                                        + "'unit'",
                                                                         StatusLevel.ERROR ) ),
                    () -> assertTrue( DeclarationValidatorTest.contains( events,
                                                                         "time_scale: has a missing property "
-                                                                        + "\"minimum_month\"",
+                                                                        + "'minimum_month'",
                                                                         StatusLevel.ERROR ) ),
                    () -> assertTrue( DeclarationValidatorTest.contains( events,
                                                                         "time_scale: has a missing property "
-                                                                        + "\"maximum_day\"",
+                                                                        + "'maximum_day'",
                                                                         StatusLevel.ERROR ) ) );
     }
 

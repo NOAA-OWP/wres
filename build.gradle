@@ -12,14 +12,11 @@ import java.time.ZoneId
 //import com.pswidersk.gradle.python.VenvTask
 
 /* Used by gradle plugins outside the official gradle plugins repository */
-buildscript
-{
-    repositories
-    {
+buildscript {
+    repositories {
         mavenCentral()
     }
-    dependencies
-    {
+    dependencies {
         // For markdown -> html
         classpath 'com.atlassian.commonmark:commonmark:0.17.0'
         // To create a unified javadoc across submodules and top-level module:
@@ -28,10 +25,9 @@ buildscript
 }
 
 /* Gradle plugins available in the official gradle plugins repository */
-plugins
-{
+plugins {
     // Static analysis tool sonarqube client
-    id 'org.sonarqube' version '4.4.1.3373'
+    id 'org.sonarqube' version '5.0.0.4638'
 
     //id 'com.github.jacobono.jaxb' version '1.3.5'
     // Above is unmaintained, less gradle-y, below fork has several improvements
@@ -40,7 +36,7 @@ plugins
     id 'com.github.seanrl.jaxb' version '2.5.4'
 
     // For ability to use git ids for versioning jar files:
-    id 'org.ajoberstar.grgit' version '5.2.1'
+    id 'org.ajoberstar.grgit' version '5.2.2'
 
     // To compile user documentation (not working: blows up on compileMarkdown)
     //id 'org.uulib.gradle.markdown' version '0.0.1'
@@ -58,10 +54,10 @@ plugins
     id 'com.adarshr.test-logger' version '4.0.0'
 
     // To discover library versions with known vulnerabilities
-    id 'org.owasp.dependencycheck' version '8.4.2'
-    
+    id 'org.owasp.dependencycheck' version '9.1.0'
+
     // Task to assist in downloading artifacts
-    id 'de.undercouch.download' version '5.5.0'
+    id 'de.undercouch.download' version '5.6.0'
 
     // To discover library versions with updates available
     id 'com.github.ben-manes.versions' version '0.51.0'
@@ -75,7 +71,7 @@ plugins
     id 'org.kordamp.gradle.markdown' version '2.2.0'
 
     // To generate API documentation from JAX-RS annotations and javadocs
-    id "io.swagger.core.v3.swagger-gradle-plugin" version "2.2.20"
+    id "io.swagger.core.v3.swagger-gradle-plugin" version "2.2.21"
 
     // To generate JPMS images more easily with 3rd-party "automatic" modules
     id 'org.beryx.jlink' version '2.26.0'
@@ -84,32 +80,27 @@ plugins
     id 'jacoco-report-aggregation'
 }
 
-repositories
-{
+repositories {
     mavenCentral()
-    maven 
-    {
-        url "https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases/"// 
+    maven {
+        url "https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases/" //
     }
 }
 
 // The target Java version for use in a gradle toolchain
 def final TARGET_JDK = 17
 
-java
-{
+java {
     withJavadocJar()
     withSourcesJar()
-    
-     // Declare the Java version, self-contained to the build
-    toolchain 
-    {
-        languageVersion = JavaLanguageVersion.of( TARGET_JDK )
+
+    // Declare the Java version, self-contained to the build
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(TARGET_JDK)
     }
 }
 
-subprojects
-{
+subprojects {
     apply plugin: 'java-library'
     apply plugin: 'jacoco'
     apply plugin: 'org.owasp.dependencycheck'
@@ -117,17 +108,17 @@ subprojects
     apply plugin: 'com.adarshr.test-logger'
 
     // Each module does not need a version update unless code in it has changed.
-    def gitCommit = grgit.log(paths: [project.name, 'build.gradle', 'gradle'], maxCommits:1).find()
+    def gitCommit = grgit.log(paths: [project.name, 'build.gradle', 'gradle'], maxCommits: 1).find()
 
     // Default version string for new module with no history
-    String currentDate = OffsetDateTime.now( ZoneOffset.UTC ).format('yyyyMMdd' )
+    String currentDate = OffsetDateTime.now(ZoneOffset.UTC).format('yyyyMMdd')
     version = currentDate + '-0000000'
 
     // Null check in case there is a new module with no history
-    if( gitCommit != null )
+    if (gitCommit != null)
     {
         def gitCommitId = gitCommit.id
-        def gitCommitDate = gitCommit.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+        def gitCommitDate = gitCommit.dateTime.withZoneSameInstant(ZoneId.of("UTC"))
 
         version = gitCommitDate.format('yyyyMMdd') + '-' + gitCommitId[0..6]
     }
@@ -144,12 +135,9 @@ subprojects
         version = version + '-dev'
     }
 
-    sourceSets
-    {
-        main
-        {
-            java
-            {
+    sourceSets {
+        main {
+            java {
                 // Standard sources in src. The dist being here is for eclipse
                 // purposes. Eclipse needs the conf files to be labeled as
                 // source or library or class in order to land on its runtime
@@ -166,66 +154,54 @@ subprojects
             // "resources" here end up included inside the jar.
             // For non-jarred resources such as config files, see distributions
             // section inside wres-core, as well as startScripts section.
-            resources
-            {
+            resources {
                 srcDirs = ['nonsrc']
             }
         }
 
-        test
-        {
-            java
-            {
+        test {
+            java {
                 srcDirs = ['test']
             }
-            resources
-            {
+            resources {
                 srcDirs = ['testNonsrc']
             }
         }
     }
 
-    repositories
-    {
+    repositories {
         mavenCentral()
-        maven 
-        {
-            url "https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases/"// 
-            
+        maven {
+            url "https://artifacts.unidata.ucar.edu/content/repositories/unidata-releases/" //
+
         }
     }
 
-    test
-    {
+    test {
         maxHeapSize = "512m"
         testLogging.showStandardStreams = true
-        systemProperties += [ 'user.timezone': 'UTC' ]
+        systemProperties += ['user.timezone': 'UTC']
     }
 
-    jar
-    {
+    jar {
         // version number should be included
-        manifest
-        {
+        manifest {
             attributes("Implementation-Title": "Water Resources Evaluation Service",
-                        "Implementation-Version": archiveVersion )
+                    "Implementation-Version": archiveVersion)
         }
     }
 
-    java
-    {
+    java {
         withJavadocJar()
         withSourcesJar()
 
         // Declare the Java version, self-contained to the build
-        toolchain 
-        {
-            languageVersion = JavaLanguageVersion.of( TARGET_JDK )
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(TARGET_JDK)
         }
     }
 
-    tasks.withType( AbstractArchiveTask )
-    {
+    tasks.withType(AbstractArchiveTask) {
         archiveVersion = project.version
 
         // Make bit-for-bit reproducible jars, zips, and tars.
@@ -234,35 +210,30 @@ subprojects
     }
 
     // Truly prevent these annoying jars from showing up in dist zip
-    configurations.implementation
-    {
+    configurations.implementation {
         exclude group: 'com.google.code.findbugs', module: 'jsr305'
         exclude group: 'org.checkerframework', module: 'checker-qual'
         exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
     }
 
     // Truly prevent these annoying jars from showing up in dist zip
-    configurations.runtimeOnly
-    {
+    configurations.runtimeOnly {
         exclude group: 'com.google.code.findbugs', module: 'jsr305'
         exclude group: 'org.checkerframework', module: 'checker-qual'
         exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
     }
 }
 
-project(':wres-system')
-{
+project(':wres-system') {
     apply plugin: 'com.github.seanrl.jaxb'
 
-    dependencies
-    {
-        implementation 'org.slf4j:slf4j-api:2.0.12'
+    dependencies {
+        implementation 'org.slf4j:slf4j-api:2.0.13'
 
         implementation 'org.apache.commons:commons-lang3:3.14.0'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        implementation( 'org.postgresql:postgresql:42.7.1' )
-        {
+        implementation('org.postgresql:postgresql:42.7.3') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -273,10 +244,10 @@ project(':wres-system')
         api 'org.jvnet.jaxb2_commons:jaxb2-basics-runtime:0.13.1'
 
         // Builders
-        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.30'
-        annotationProcessor 'org.projectlombok:lombok:1.18.30'
+        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.32'
+        annotationProcessor 'org.projectlombok:lombok:1.18.32'
 
-        // Database drivers need to be on the runtime classpath in order to 
+        // Database drivers need to be on the runtime classpath in order to
         // acquire connections initially. See #103431
         implementation 'com.h2database:h2:2.2.224'
 
@@ -302,33 +273,28 @@ project(':wres-system')
         testImplementation 'org.mock-server:mockserver-netty:5.15.0'
     }
 
-    test
-    {
+    test {
         // Set the socket timeout for tests involving mockserver to 120s
-        systemProperties += [ "mockserver.maxSocketTimeout": 120000 ]
+        systemProperties += ["mockserver.maxSocketTimeout": 120000]
     }
 }
 
-project(':wres-datamodel')
-{
-    dependencies
-    {
+project(':wres-datamodel') {
+    dependencies {
         implementation project(':wres-config')
         api project(':wres-statistics')
 
         api 'org.apache.commons:commons-lang3:3.14.0'
 
-        implementation 'org.slf4j:slf4j-api:2.0.12'
+        implementation 'org.slf4j:slf4j-api:2.0.13'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.14' )
-        {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.6') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-        implementation( 'com.github.ben-manes.caffeine:caffeine:3.1.8' )
-        {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.1.8') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -347,7 +313,7 @@ project(':wres-datamodel')
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.10.0'
+        testImplementation 'org.mockito:mockito-core:5.11.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
@@ -363,10 +329,8 @@ project(':wres-datamodel')
     }
 }
 
-project(':wres-io')
-{
-    dependencies
-    {
+project(':wres-io') {
+    dependencies {
         implementation project(':wres-system')
         implementation project(':wres-datamodel')
         implementation project(':wres-statistics')
@@ -376,8 +340,7 @@ project(':wres-io')
         // Java Flight Recorder statistics for JDBC
         implementation 'com.github.marschall:jfr-jdbc:0.4.0'
 
-        implementation( 'edu.ucar:cdm-core:5.4.2' )
-        {
+        implementation('edu.ucar:cdm-core:5.4.2') {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
             // CVE-2021-33813
@@ -388,11 +351,10 @@ project(':wres-io')
             exclude group: 'com.google.guava', module: 'guava'
         }
         // Include later dependency versions for the excluded dependencies above
-        implementation 'com.google.guava:guava:32.1.3-jre'
+        implementation 'com.google.guava:guava:33.2.0-jre'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        implementation( 'org.postgresql:postgresql:42.7.1' )
-        {
+        implementation('org.postgresql:postgresql:42.7.3') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -410,8 +372,7 @@ project(':wres-io')
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 
         // To cache
-        implementation( 'com.github.ben-manes.caffeine:caffeine:3.1.8' )
-        {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.1.8') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -420,7 +381,7 @@ project(':wres-io')
         implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.19.0'
         implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.19.0', ext: 'pom'
 
-        implementation 'org.liquibase:liquibase-core:4.24.0'
+        implementation 'org.liquibase:liquibase-core:4.27.0'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:5.0.0'
@@ -434,7 +395,7 @@ project(':wres-io')
         runtimeOnly 'org.slf4j:jcl-over-slf4j:2.1.0-alpha1'
 
         //JB @ 02/16/17
-        testImplementation 'com.google.guava:guava-testlib:32.1.3-jre'
+        testImplementation 'com.google.guava:guava-testlib:33.2.0-jre'
 
         // Mocking help
         testImplementation 'org.mockito:mockito-inline:5.2.0'
@@ -452,25 +413,21 @@ project(':wres-io')
         testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.3.0'
     }
 
-    test
-    {
+    test {
         useJUnitPlatform()
 
         // Set the socket timeout for tests involving mockserver to 120s
-        systemProperties += [ "mockserver.maxSocketTimeout": 120000,
+        systemProperties += ["mockserver.maxSocketTimeout"          : 120000,
                              "ucar.unidata.io.http.maxReadCacheSize": 200000,
-                             "ucar.unidata.io.http.httpBufferSize": 200000 ]
+                             "ucar.unidata.io.http.httpBufferSize"  : 200000]
     }
 
 
     // Give wres-io access to the liquibase changesets on the expected classpath
     // at test time.
-    sourceSets
-    {
-        test
-        {
-            resources
-            {
+    sourceSets {
+        test {
+            resources {
                 // Flatten the contents of /dist/lib/conf so that the classpath
                 // path to the liquibase changesets is exactly
                 // 'database/[changeset].xml'.
@@ -480,8 +437,7 @@ project(':wres-io')
     }
 }
 
-project(':wres-writing')
-{
+project(':wres-writing') {
     // Check if the dependency modules version is later. If so, update this
     // module to that later version.
     // See #105526: there is an ordering issue whereby the correct
@@ -490,68 +446,63 @@ project(':wres-writing')
     // set before the application plugin is applied
     def gitCommitOfDependencies = grgit.log(paths: ['wres-datamodel',
                                                     'wres-eventsbroker',
-                                                    'wres-events'], maxCommits:1).find()
+                                                    'wres-events'], maxCommits: 1).find()
 
     // Null check in case there is a new module with no history
-    if( gitCommitOfDependencies != null )
+    if (gitCommitOfDependencies != null)
     {
         def gitCommitIdOfDependencies = gitCommitOfDependencies.id
-        def gitCommitDateOfDependencies = gitCommitOfDependencies.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+        def gitCommitDateOfDependencies = gitCommitOfDependencies.dateTime.withZoneSameInstant(ZoneId.of("UTC"))
 
-        def gitCommitOfThisModule = grgit.log( paths: [project.name, 'build.gradle', 'gradle'], maxCommits:1 ).find()
-        def gitCommitDateOfThisModule = gitCommitOfThisModule.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+        def gitCommitOfThisModule = grgit.log(paths: [project.name, 'build.gradle', 'gradle'], maxCommits: 1).find()
+        def gitCommitDateOfThisModule = gitCommitOfThisModule.dateTime.withZoneSameInstant(ZoneId.of("UTC"))
 
-        def versionOfDependencies = gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies[0..6]
+        def versionOfDependencies =
+                gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies[0..6]
 
-        if ( gitCommitDateOfDependencies.isAfter( gitCommitDateOfThisModule ) )
+        if (gitCommitDateOfDependencies.isAfter(gitCommitDateOfThisModule))
         {
             version = versionOfDependencies
 
-            println("Set wres-writing version: " + project.version )
+            println("Set wres-writing version: " + project.version)
 
-            if ( !grgit.status().isClean() )
+            if (!grgit.status().isClean())
             {
                 version = version + '-dev'
             }
         }
     }
 
-
     apply plugin: 'application'
 
     // Workaround windows paths that are too long by overriding the explicit setting of individual dependencies
     startScripts {
-        classpath = files( '$APP_HOME/lib/*' )
+        classpath = files('$APP_HOME/lib/*')
 
         // Note: see lengthy note in main application below
-        classpath += files( 'conf' )
+        classpath += files('conf')
     }
 
     mainClassName = 'wres.writing.client.WritingClient'
-    applicationDefaultJvmArgs = ['-Xms640m','-Xmx640m',
+    applicationDefaultJvmArgs = ['-Xms640m', '-Xmx640m',
                                  '-XX:+HeapDumpOnOutOfMemoryError',
                                  '-XX:+CrashOnOutOfMemoryError',
                                  '-Djava.util.logging.config.file=logging.properties',
                                  '-Dorg.jboss.logging.provider=slf4j']
 
-    distributions
-            {
-                main
-                        {
-                            println( project.version )
-                            contents
-                                    {
-                                        from
-                                                {
-                                                    // Note: see lengthy note in main application below
-                                                    ['dist']
-                                                }
-                                    }
-                        }
+    distributions {
+        main {
+            println(project.version)
+            contents {
+                from {
+                    // Note: see lengthy note in main application below
+                    ['dist']
+                }
             }
+        }
+    }
 
-    dependencies
-    {
+    dependencies {
         implementation project(':wres-reading')
         implementation project(':wres-system')
         implementation project(':wres-datamodel')
@@ -562,8 +513,7 @@ project(':wres-writing')
 
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
-        implementation( 'edu.ucar:cdm-core:5.4.2' )
-        {
+        implementation('edu.ucar:cdm-core:5.4.2') {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
             // CVE-2021-33813
@@ -574,18 +524,18 @@ project(':wres-writing')
             exclude group: 'com.google.guava', module: 'guava'
         }
         // Include later dependency versions for the excluded dependencies above
-        implementation 'com.google.guava:guava:32.1.3-jre'
+        implementation 'com.google.guava:guava:33.2.0-jre'
 
         // Better-than-Java's HTTP client
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 
         // Update vulnerable kotlin-stdlib that okhttp/okio uses
-        implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.0'
-        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.0'
-        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.23'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.23'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.23'
 
         // To accurately detect mime types of files.
-        implementation 'org.apache.tika:tika-core:2.9.1'
+        implementation 'org.apache.tika:tika-core:2.9.2'
 
         // For geometries
         implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.19.0'
@@ -609,10 +559,8 @@ project(':wres-writing')
     }
 }
 
-project(':wres-reading')
-{
-    dependencies
-    {
+project(':wres-reading') {
+    dependencies {
         implementation project(':wres-system')
         implementation project(':wres-datamodel')
         implementation project(':wres-statistics')
@@ -622,10 +570,9 @@ project(':wres-reading')
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
         // For Java 8 java.time support
-        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.1'
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.1'
 
-        implementation( 'edu.ucar:cdm-core:5.4.2' )
-        {
+        implementation('edu.ucar:cdm-core:5.4.2') {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
             // CVE-2021-33813
@@ -636,15 +583,15 @@ project(':wres-reading')
             exclude group: 'com.google.guava', module: 'guava'
         }
         // Include later dependency versions for the excluded dependencies above
-        implementation 'com.google.guava:guava:32.1.3-jre'
+        implementation 'com.google.guava:guava:33.2.0-jre'
 
-        implementation 'org.apache.commons:commons-compress:1.26.0'
+        implementation 'org.apache.commons:commons-compress:1.26.1'
 
         // Better-than-Java's HTTP client
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 
         // To accurately detect mime types of files.
-        implementation 'org.apache.tika:tika-core:2.9.1'
+        implementation 'org.apache.tika:tika-core:2.9.2'
 
 
         // For geometries
@@ -656,7 +603,7 @@ project(':wres-reading')
 
         implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
 
-        implementation 'org.liquibase:liquibase-core:4.24.0'
+        implementation 'org.liquibase:liquibase-core:4.27.0'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:5.0.0'
@@ -664,11 +611,11 @@ project(':wres-reading')
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
         // Builders
-        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.30'
-        annotationProcessor 'org.projectlombok:lombok:1.18.30'
+        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.32'
+        annotationProcessor 'org.projectlombok:lombok:1.18.32'
 
         //JB @ 02/16/17
-        testImplementation 'com.google.guava:guava-testlib:32.1.3-jre'
+        testImplementation 'com.google.guava:guava-testlib:33.2.0-jre'
 
         // Mocking help
         testImplementation 'org.mockito:mockito-inline:5.2.0'
@@ -689,38 +636,34 @@ project(':wres-reading')
         testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.3.0'
     }
 
-    test
-    {
+    test {
         useJUnitPlatform()
 
         // Set the socket timeout for tests involving mockserver to 120s
-        systemProperties += [ "mockserver.maxSocketTimeout": 120000,
+        systemProperties += ["mockserver.maxSocketTimeout"          : 120000,
                              "ucar.unidata.io.http.maxReadCacheSize": 200000,
-                             "ucar.unidata.io.http.httpBufferSize": 200000 ]
+                             "ucar.unidata.io.http.httpBufferSize"  : 200000]
     }
 }
 
-project(':wres-metrics')
-{    
-    dependencies
-    {
+project(':wres-metrics') {
+    dependencies {
         implementation project(':wres-datamodel')
         implementation project(':wres-config')
 
         implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
-        implementation 'org.slf4j:slf4j-api:2.0.12'
+        implementation 'org.slf4j:slf4j-api:2.0.13'
 
         implementation group: 'org.eclipse.collections', name: 'eclipse-collections', version: '11.1.0'
 
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.14' )
-        {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.6') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
-        testImplementation 'org.mockito:mockito-core:5.10.0'
+        testImplementation 'org.mockito:mockito-core:5.11.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
@@ -731,14 +674,12 @@ project(':wres-metrics')
         testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.10.2'
     }
 
-    test
-    {
+    test {
         useJUnitPlatform()
     }
 }
 
-project(':wres-statistics')
-{
+project(':wres-statistics') {
     apply plugin: 'com.google.protobuf'
 
     // Python bindings and wheel from python script
@@ -748,7 +689,7 @@ project(':wres-statistics')
 
     // Html from markdown
     apply plugin: 'org.kordamp.gradle.markdown'
-    
+
     def generatedDir = "${project.projectDir}/src"
 
     // Workaround to set duplicate strategy for all copy tasks.
@@ -757,48 +698,43 @@ project(':wres-statistics')
         duplicatesStrategy 'exclude'
     }
 
-    protobuf
-    {
+    protobuf {
         // Automatically download and use the correct protobuf compiler
-        protoc
-        {
+        protoc {
             artifact = 'com.google.protobuf:protoc:3.21.12'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
-        
+
         // Generate python bindings: more long-winded as java is a default option
         generateProtoTasks {
-            all().each { task ->
+            all().each {task ->
                 task.builtins {
                     // Python sources
-                    python { 
+                    python {
                         outputSubDir = 'python'
                     }
                 }
             }
         }
     }
-    
-    sourceSets
-    {
-        main
-        {
+
+    sourceSets {
+        main {
             // Tell protobuf plugin where to find .proto schema files:
-            proto
-            {
+            proto {
                 srcDirs = ['nonsrc']
             }
         }
     }
-    
+
     // Set the python version to use
     // TODO: cannot install miniconda in current build environment
     // Enable this when we have more control over the build environment
     //pythonPlugin {
     //    pythonVersion = "3.8.2"
     //}
-    
+
     // Generate a python wheel artifact for the wres protobuf bindings for use in python applications
     // Also generate an html document from markdown
     // TODO: cannot install miniconda in current build environment
@@ -807,8 +743,8 @@ project(':wres-statistics')
     //    workingDir = file( "src/main/python" )
     //    args = ["wresproto.py"]
     //}
-    
-    task copyProtoSchemaToDist(type:Copy, dependsOn: markdownToHtml ) {
+
+    task copyProtoSchemaToDist(type: Copy, dependsOn: markdownToHtml) {
         description = 'Copies the Protobuf schema from nonsrc to dist/src.'
         destinationDir = file("${project.projectDir}/dist/wresproto/src/wresproto")
         delete fileTree(dir: destinationDir)
@@ -817,21 +753,20 @@ project(':wres-statistics')
     }
 
     // Generate html from markdown
-    markdownToHtml
-    {
-       sourceDir = new File( "${project.projectDir}/dist/wresproto/doc" )
-       outputDir = new File( "${project.projectDir}/dist/wresproto/doc" )
-       // Enable all options
-       markdownToHtml.all = true
+    markdownToHtml {
+        sourceDir = new File("${project.projectDir}/dist/wresproto/doc")
+        outputDir = new File("${project.projectDir}/dist/wresproto/doc")
+        // Enable all options
+        markdownToHtml.all = true
     }
-    
+
     // Clean the generated java bindings before regenerating them: #86722
     task cleanProtoGeneratedDir() {
         def javaBindingsDir = file("${project.projectDir}/src/main/java/wres")
         delete fileTree(dir: javaBindingsDir).include('**/generated/*.java')
     }
-    
-    // Tie the preparation of the Protobuf distribution into the java compile task for convenience. 
+
+    // Tie the preparation of the Protobuf distribution into the java compile task for convenience.
     compileJava.dependsOn copyProtoSchemaToDist
 
     // Tie the clean of the protobuf java bindings directory to the compile task
@@ -842,14 +777,12 @@ project(':wres-statistics')
     // Enable this when we have more control over the build environment
     //compileJava.dependsOn buildProtobufBindingsForPython
 
-    dependencies
-    {
+    dependencies {
         api 'com.google.protobuf:protobuf-java:3.21.12'
 
-        implementation 'org.slf4j:slf4j-api:2.0.12'
+        implementation 'org.slf4j:slf4j-api:2.0.13'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.14' )
-        {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.6') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -865,53 +798,53 @@ project(':wres-statistics')
     }
 
     // Make this a Java Platform Module System (Java 9 jigsaw) module
-    java.modularity.inferModulePath.set( true  )
+    java.modularity.inferModulePath.set(true)
 }
 
 // Return /etc/system-release file as a string if readable, else empty string.
 static String readElInfo()
 {
-    def elInfoPath = Paths.get( '/etc/system-release' )
-    def elInfoReadable = Files.isReadable( elInfoPath )
+    def elInfoPath = Paths.get('/etc/system-release')
+    def elInfoReadable = Files.isReadable(elInfoPath)
 
-    if ( elInfoReadable )
+    if (elInfoReadable)
     {
-        return Files.readString( elInfoPath )
+        return Files.readString(elInfoPath)
     }
 
     return ''
 }
 
-project(':wres-vis')
-{
+project(':wres-vis') {
     // Check if the dependency modules version is later. If so, update this
     // module to that later version.
-    // See #105526: there is an ordering issue whereby the correct 
-    // project.version does not propagate to the application plugin tasks 
-    // (distZip, distTar etc.) unless the project.version is determined and 
+    // See #105526: there is an ordering issue whereby the correct
+    // project.version does not propagate to the application plugin tasks
+    // (distZip, distTar etc.) unless the project.version is determined and
     // set before the application plugin is applied
     def gitCommitOfDependencies = grgit.log(paths: ['wres-datamodel',
                                                     'wres-eventsbroker',
-                                                    'wres-events'], maxCommits:1).find()
+                                                    'wres-events'], maxCommits: 1).find()
 
     // Null check in case there is a new module with no history
-    if( gitCommitOfDependencies != null )
+    if (gitCommitOfDependencies != null)
     {
         def gitCommitIdOfDependencies = gitCommitOfDependencies.id
-        def gitCommitDateOfDependencies = gitCommitOfDependencies.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+        def gitCommitDateOfDependencies = gitCommitOfDependencies.dateTime.withZoneSameInstant(ZoneId.of("UTC"))
 
-        def gitCommitOfThisModule = grgit.log( paths: [project.name, 'build.gradle', 'gradle'], maxCommits:1 ).find()
-        def gitCommitDateOfThisModule = gitCommitOfThisModule.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+        def gitCommitOfThisModule = grgit.log(paths: [project.name, 'build.gradle', 'gradle'], maxCommits: 1).find()
+        def gitCommitDateOfThisModule = gitCommitOfThisModule.dateTime.withZoneSameInstant(ZoneId.of("UTC"))
 
-        def versionOfDependencies = gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies[0..6]
+        def versionOfDependencies =
+                gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies[0..6]
 
-        if ( gitCommitDateOfDependencies.isAfter( gitCommitDateOfThisModule ) )
+        if (gitCommitDateOfDependencies.isAfter(gitCommitDateOfThisModule))
         {
             version = versionOfDependencies
 
-            println("Set wres-vis version: " + project.version )
+            println("Set wres-vis version: " + project.version)
 
-            if ( !grgit.status().isClean() )
+            if (!grgit.status().isClean())
             {
                 version = version + '-dev'
             }
@@ -922,28 +855,24 @@ project(':wres-vis')
 
     // Workaround windows paths that are too long by overriding the explicit setting of individual dependencies
     startScripts {
-        classpath = files( '$APP_HOME/lib/*' )
-        
+        classpath = files('$APP_HOME/lib/*')
+
         // Note: see lengthy note in main application below
-        classpath += files( 'conf' )
+        classpath += files('conf')
     }
 
     mainClassName = 'wres.vis.client.GraphicsClient'
-    applicationDefaultJvmArgs = ['-Xms640m','-Xmx640m',
+    applicationDefaultJvmArgs = ['-Xms640m', '-Xmx640m',
                                  '-XX:+HeapDumpOnOutOfMemoryError',
                                  '-XX:+CrashOnOutOfMemoryError',
                                  '-Djava.util.logging.config.file=logging.properties',
                                  '-Dorg.jboss.logging.provider=slf4j']
 
-    distributions
-    {
-        main
-        {
-            println( project.version )
-            contents
-            {
-                from
-                {
+    distributions {
+        main {
+            println(project.version)
+            contents {
+                from {
                     // Note: see lengthy note in main application below
                     ['dist']
                 }
@@ -951,8 +880,7 @@ project(':wres-vis')
         }
     }
 
-    dependencies
-    {
+    dependencies {
         implementation project(':wres-config')
         implementation project(':wres-datamodel')
         implementation project(':wres-eventsbroker')
@@ -961,15 +889,14 @@ project(':wres-vis')
         implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.14.0'
         implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.1.1'
 
-        implementation 'org.slf4j:slf4j-api:2.0.12'
+        implementation 'org.slf4j:slf4j-api:2.0.13'
 
         implementation group: 'org.jfree', name: 'jfreechart', version: '1.5.4'
 
         // SVG graphics from JFreeChart instances
         implementation group: 'org.jfree', name: 'org.jfree.svg', version: '4.1'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.14' )
-        {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.6') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -986,7 +913,7 @@ project(':wres-vis')
         testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.10.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.10.0'
+        testImplementation 'org.mockito:mockito-core:5.11.0'
 
         testRuntimeOnly files('dist/lib/conf')
 
@@ -1001,17 +928,14 @@ project(':wres-vis')
     }
 }
 
-project(':wres-config')
-{
+project(':wres-config') {
     apply plugin: 'com.github.seanrl.jaxb'
 
-    dependencies
-    {
+    dependencies {
         implementation project(':wres-statistics')
-        implementation 'org.slf4j:slf4j-api:2.0.12'
+        implementation 'org.slf4j:slf4j-api:2.0.13'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.14' )
-        {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.6') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -1029,14 +953,13 @@ project(':wres-config')
         runtimeOnly 'org.eclipse.persistence:org.eclipse.persistence.moxy:2.7.12'
 
         // For YAML (de)serialization.
-        implementation 'com.fasterxml.jackson:jackson-bom:2.16.1'
-        implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
-        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.16.1'
-        implementation 'com.fasterxml.jackson.core:jackson-core:2.16.1'
-        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.1'
-        implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.16.1'
-        implementation( 'com.hubspot.jackson:jackson-datatype-protobuf:0.9.14' )
-        {
+        implementation 'com.fasterxml.jackson:jackson-bom:2.17.1'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.1'
+        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.17.1'
+        implementation 'com.fasterxml.jackson.core:jackson-core:2.17.1'
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.1'
+        implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.17.1'
+        implementation('com.hubspot.jackson:jackson-datatype-protobuf:0.9.15') {
             // Exclude old modules to eliminate several CVEs
             // Remove older protobuf version and include later version below
             exclude group: 'com.google.protobuf', module: 'protobuf-java'
@@ -1046,7 +969,7 @@ project(':wres-config')
         }
         // Include later dependency versions for the excluded dependencies above
         implementation 'com.google.protobuf:protobuf-java:3.21.12'
-        implementation 'com.google.guava:guava:32.1.3-jre'
+        implementation 'com.google.guava:guava:33.2.0-jre'
 
         // To validate WKT strings as geometries
         implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.19.0'
@@ -1061,11 +984,11 @@ project(':wres-config')
         implementation group: 'com.opencsv', name: 'opencsv', version: '5.9'
 
         // YAML/JSON schema validation
-        implementation 'com.networknt:json-schema-validator:1.1.0'
+        implementation 'com.networknt:json-schema-validator:1.4.0'
 
         // To auto-generate builders for Java records through annotation processing
-        annotationProcessor 'io.soabase.record-builder:record-builder-processor:37'
-        compileOnly 'io.soabase.record-builder:record-builder-core:37'
+        annotationProcessor 'io.soabase.record-builder:record-builder-processor:41'
+        compileOnly 'io.soabase.record-builder:record-builder-core:41'
 
         // May help in future with #37380, may need to modify sources
         // available at https://git.apache.org/cxf-xjc-utils.git in dv dir:
@@ -1078,7 +1001,7 @@ project(':wres-config')
         jaxb 'commons-beanutils:commons-beanutils:1.9.4'
 
         // commons-io is transitive dependency of jaxb2-basics-annotate, has CVE
-        jaxb 'commons-io:commons-io:2.15.1'
+        jaxb 'commons-io:commons-io:2.16.1'
 
         // jaxb-xjc transitively includes bind-api and jaxb-core
         jaxb 'org.glassfish.jaxb:jaxb-xjc:2.3.8'
@@ -1088,13 +1011,13 @@ project(':wres-config')
         implementation 'jakarta.activation:jakarta.activation-api:1.2.2'
 
         // To accurately detect mime types of files.
-        implementation 'org.apache.tika:tika-core:2.9.1'
+        implementation 'org.apache.tika:tika-core:2.9.2'
 
-        // To annotate deprecated classes generated by JAXB 
+        // To annotate deprecated classes generated by JAXB
         implementation group: 'org.jvnet.jaxb2_commons', name: 'jaxb2-basics-annotate', version: '1.1.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.10.0'
+        testImplementation 'org.mockito:mockito-core:5.11.0'
 
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
         testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.2'
@@ -1105,13 +1028,11 @@ project(':wres-config')
         testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.3.0'
     }
 
-    jaxb
-    {
+    jaxb {
         xsdDir = "${project.projectDir}/nonsrc"
         bindingsDir = xsdDir
 
-        xjc
-        {
+        xjc {
             taskClassname = 'org.jvnet.jaxb2_commons.xjc.XJC2Task'
             generatePackage = 'wres.config.xml.generated'
             destinationDir = "${project.buildDir}/generated/"
@@ -1119,13 +1040,13 @@ project(':wres-config')
             // here. For location information to be in instances at runtime, the
             // eclipselink moxy library is required at runtime (see runtime dep)
 
-            // JBr: added -Xequals and -XhashCode implementations. Also added 
-            // -Xinject-code to allow for wres.config.xml.generated.ProjectConfig 
+            // JBr: added -Xequals and -XhashCode implementations. Also added
+            // -Xinject-code to allow for wres.config.xml.generated.ProjectConfig
             // to implement java.lang.Comparable. See discussion in #44996
 
-            args = [ '-Xinject-code', '-Xinheritance', '-Xannotate',
-                     '-immutable', '-Xlocator', '-Xequals', '-XhashCode',
-                     '-XtoString' ]
+            args = ['-Xinject-code', '-Xinheritance', '-Xannotate',
+                    '-immutable', '-Xlocator', '-Xequals', '-XhashCode',
+                    '-XtoString']
             // May help in future with #37380:
             //args = ['-Xinheritance', '-Xannotate', '-immutable', '-Xlocator', '-Xdv']
             producesDir = "${xsdDir}"
@@ -1147,7 +1068,7 @@ project(':wres-config')
     // Also, when the plugin fixes
     // https://github.com/rackerlabs/gradle-jaxb-plugin/issues/6 we should get
     // the latest version (this seems to happen on each build)
-    task copyGenerated(type:Copy, dependsOn: xjc, group: 'Parse') {
+    task copyGenerated(type: Copy, dependsOn: xjc, group: 'Parse') {
         description = 'Ensures generated code is created and available in src.'
         destinationDir = file("${project.projectDir}/src/wres/config/xml/generated")
         delete fileTree(dir: destinationDir).include('**/generated/*.java')
@@ -1167,25 +1088,22 @@ project(':wres-config')
         options.generatedSourceOutputDirectory = generatedSourceDir
     }
 
-    // Incremental builds disabled for the XJC task as of 20220804. See #107133. 
+    // Incremental builds disabled for the XJC task as of 20220804. See #107133.
     tasks.named("xsd-dependency-tree").configure {
-        outputs.upToDateWhen { false }
+        outputs.upToDateWhen {false}
     }
 
-    javadoc
-    {
+    javadoc {
         // XJC generates Java8-unfriendly javadoc. Do not bother generating.
         excludes = ['**/generated/*.java']
     }
 
-    test
-    {
+    test {
         useJUnitPlatform()
     }
 }
 
-project(':wres-messages')
-{
+project(':wres-messages') {
     apply plugin: 'com.google.protobuf'
 
     def generatedDir = "${project.projectDir}/src"
@@ -1196,86 +1114,77 @@ project(':wres-messages')
         duplicatesStrategy 'exclude'
     }
 
-    protobuf
-    {
+    protobuf {
         // Automatically download and use the correct protobuf compiler
-        protoc
-        {
+        protoc {
             artifact = 'com.google.protobuf:protoc:3.21.12'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
     }
 
-    sourceSets
-    {
-        main
-        {
+    sourceSets {
+        main {
             // Tell protobuf plugin where to find .proto schema files:
-            proto
-            {
+            proto {
                 srcDirs = ['nonsrc']
             }
         }
     }
 
-    dependencies
-    {
+    dependencies {
         api 'com.google.protobuf:protobuf-java:3.21.12'
 
-        implementation 'org.slf4j:slf4j-api:2.0.12'
+        implementation 'org.slf4j:slf4j-api:2.0.13'
 
         testImplementation 'junit:junit:4.13.2'
     }
 
     // Make this a Java Platform Module System (Java 9 jigsaw) module
-    java.modularity.inferModulePath.set( true  )
+    java.modularity.inferModulePath.set(true)
 }
 
-
-project(':wres-worker')
-{
+project(':wres-worker') {
 
     // Check if the dependency modules version is later. If so, update this
     // module to that later version.
-    def gitCommitOfDependencies = grgit.log(paths: ['wres-messages', 'wres-http'], maxCommits:1).find()
+    def gitCommitOfDependencies = grgit.log(paths: ['wres-messages', 'wres-http'], maxCommits: 1).find()
 
     // Null check in case there is a new module with no history
-    if( gitCommitOfDependencies != null )
+    if (gitCommitOfDependencies != null)
     {
         def gitCommitIdOfDependencies = gitCommitOfDependencies.id
-        def gitCommitDateOfDependencies = gitCommitOfDependencies.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+        def gitCommitDateOfDependencies = gitCommitOfDependencies.dateTime.withZoneSameInstant(ZoneId.of("UTC"))
 
-        def gitCommitOfThisModule = grgit.log( paths: [project.name, 'build.gradle'], maxCommits:1 ).find()
-        def gitCommitDateOfThisModule = gitCommitOfThisModule.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+        def gitCommitOfThisModule = grgit.log(paths: [project.name, 'build.gradle'], maxCommits: 1).find()
+        def gitCommitDateOfThisModule = gitCommitOfThisModule.dateTime.withZoneSameInstant(ZoneId.of("UTC"))
 
-        def versionOfDependencies = gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies[0..6]
+        def versionOfDependencies =
+                gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies[0..6]
 
-        if ( gitCommitDateOfDependencies.isAfter( gitCommitDateOfThisModule ) )
+        if (gitCommitDateOfDependencies.isAfter(gitCommitDateOfThisModule))
         {
             version = versionOfDependencies
 
-            println("Set wres-worker version: " + project.version )
+            println("Set wres-worker version: " + project.version)
 
-            if ( !grgit.status().isClean() )
+            if (!grgit.status().isClean())
             {
                 version = version + '-dev'
             }
         }
     }
 
-    dependencies
-    {
+    dependencies {
         implementation project(':wres-http')
-        implementation project( ':wres-messages' )
+        implementation project(':wres-messages')
         implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 
-        implementation 'org.slf4j:slf4j-api:2.0.12'
-        implementation 'com.rabbitmq:amqp-client:5.20.0'
+        implementation 'org.slf4j:slf4j-api:2.0.13'
+        implementation 'com.rabbitmq:amqp-client:5.21.0'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.14' )
-        {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.6') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -1293,14 +1202,13 @@ project(':wres-worker')
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
     }
 
-    test
-    {
+    test {
         useJUnitPlatform()
 
         // Set the socket timeout for tests involving mockserver to 120s
-        systemProperties += [ "mockserver.maxSocketTimeout": 120000,
-                              "ucar.unidata.io.http.maxReadCacheSize": 200000,
-                              "ucar.unidata.io.http.httpBufferSize": 200000 ]
+        systemProperties += ["mockserver.maxSocketTimeout"          : 120000,
+                             "ucar.unidata.io.http.maxReadCacheSize": 200000,
+                             "ucar.unidata.io.http.httpBufferSize"  : 200000]
     }
 
     apply plugin: 'application'
@@ -1310,25 +1218,20 @@ project(':wres-worker')
     apply plugin: 'org.beryx.jlink'
 
     mainClassName = 'wres.worker.Worker'
-    applicationDefaultJvmArgs = ['-Xms64m','-Xmx64m',
+    applicationDefaultJvmArgs = ['-Xms64m', '-Xmx64m',
                                  '-XX:+HeapDumpOnOutOfMemoryError']
 
     // Add logging configuration to the classpath when running via script
-    startScripts
-    {
+    startScripts {
         // Note: see lengthy note in main application below
         classpath += files('conf')
     }
 
     // Make available logging configuration to the classpath
-    distributions
-    {
-        main
-        {
-            contents
-            {
-                from
-                {
+    distributions {
+        main {
+            contents {
+                from {
                     // Note: see lengthy note in main application below
                     ['dist']
                 }
@@ -1337,12 +1240,11 @@ project(':wres-worker')
     }
 
     // Make this a Java Platform Module System (Java 9 jigsaw) module
-    java.modularity.inferModulePath.set( true  )
+    java.modularity.inferModulePath.set(true)
 
     // Jlink is separate from making the jar a module and is at the application
     // level, but made possible by the use of JPMS modules.
-    jlink
-    {
+    jlink {
         def myCustomMergedModuleName = 'wres.worker.mergedDepsModule'
 
         // The merged module is a technique from the org.beryx.jlink plugin that
@@ -1350,23 +1252,20 @@ project(':wres-worker')
         // module.
         mergedModuleName = myCustomMergedModuleName
 
-        mergedModule
-        {
+        mergedModule {
             requires 'java.base'
             requires 'org.slf4j'
         }
 
-        customImage
-        {
-            jdkModules = [ 'java.base', 'java.xml', 'java.desktop' ]
-            appModules = [ 'wres.worker', myCustomMergedModuleName,
-                           'ch.qos.logback.classic' ]
+        customImage {
+            jdkModules = ['java.base', 'java.xml', 'java.desktop']
+            appModules = ['wres.worker', myCustomMergedModuleName,
+                          'ch.qos.logback.classic']
             options = ['--strip-debug', '--compress', '2', '--no-header-files',
                        '--no-man-pages']
         }
 
-        launcher
-        {
+        launcher {
             jvmArgs = ['-Dlogback.configurationFile=./logback.xml']
         }
     }
@@ -1375,72 +1274,68 @@ project(':wres-worker')
     // Copy the logback.xml, other resources into bin. Perhaps we are supposed
     // to include these in the module, but this follows the pattern established
     // above and to-date where we keep these resources outside of jars.
-    tasks.jlink.doLast
-    {
-        copy
-        {
+    tasks.jlink.doLast {
+        copy {
             from 'dist/lib/conf'
             into "$imageDir.asFile/bin"
         }
     }
 }
 
-project(':wres-tasker')
-{
+project(':wres-tasker') {
 
     // Check if the dependency modules version is later. If so, update this
-    // module to that later version. See #105526 for why this was moved up. 
+    // module to that later version. See #105526 for why this was moved up.
     //Order matters.
     def gitCommitOfDependencies = grgit.log(paths: ['wres-messages',
-                                                    'wres-config'], maxCommits:1).find()
+                                                    'wres-config'], maxCommits: 1).find()
 
     // Null check in case there is a new module with no history
-    if( gitCommitOfDependencies != null )
+    if (gitCommitOfDependencies != null)
     {
         def gitCommitIdOfDependencies = gitCommitOfDependencies.id
-        def gitCommitDateOfDependencies = gitCommitOfDependencies.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+        def gitCommitDateOfDependencies = gitCommitOfDependencies.dateTime.withZoneSameInstant(ZoneId.of("UTC"))
 
-        def gitCommitOfThisModule = grgit.log( paths: [project.name,'build.gradle','gradle'], maxCommits:1 ).find()
-        def gitCommitDateOfThisModule = gitCommitOfThisModule.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+        def gitCommitOfThisModule = grgit.log(paths: [project.name, 'build.gradle', 'gradle'], maxCommits: 1).find()
+        def gitCommitDateOfThisModule = gitCommitOfThisModule.dateTime.withZoneSameInstant(ZoneId.of("UTC"))
 
-        def versionOfDependencies = gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies[0..6]
+        def versionOfDependencies =
+                gitCommitDateOfDependencies.format('yyyyMMdd') + '-' + gitCommitIdOfDependencies[0..6]
 
-        if ( gitCommitDateOfDependencies.isAfter( gitCommitDateOfThisModule ) )
+        if (gitCommitDateOfDependencies.isAfter(gitCommitDateOfThisModule))
         {
             version = versionOfDependencies
 
-            println("Set wres-tasker version: " + project.version )
+            println("Set wres-tasker version: " + project.version)
 
-            if ( !grgit.status().isClean() )
+            if (!grgit.status().isClean())
             {
                 version = version + '-dev'
             }
         }
     }
 
-    configurations
-    {
+    configurations {
         // This separate configuration keeps swagger jars out of the zip.
         docGen
     }
 
-    def swaggerDocsBaseDir = new File( buildDir, "swagger" )
+    def swaggerDocsBaseDir = new File(buildDir, "swagger")
     def swaggerDocsSubdirPathString = 'lib/static/swagger/doc'
 
-    dependencies
-    {
+    dependencies {
         // To allow for programmatic post of input data:
-        implementation project( ':wres-config' )
-        implementation project( ':wres-messages' )
-        implementation project( ':wres-statistics' )
-        implementation project( ':wres-http' )
-        implementation 'org.slf4j:slf4j-api:2.0.12'
-        implementation 'com.rabbitmq:amqp-client:5.20.0'
+        implementation project(':wres-config')
+        implementation project(':wres-messages')
+        implementation project(':wres-statistics')
+        implementation project(':wres-http')
+        implementation 'org.slf4j:slf4j-api:2.0.13'
+        implementation 'com.rabbitmq:amqp-client:5.21.0'
         implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
         implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
 
         // Easy byte[] to hex conversion
-        implementation 'commons-codec:commons-codec:1.16.1'
+        implementation 'commons-codec:commons-codec:1.17.0'
 
         // Server library to run a web server:
         implementation 'org.eclipse.jetty:jetty-server:11.0.20'
@@ -1456,44 +1351,42 @@ project(':wres-tasker')
 
         // Needed at compile-time to reference ServletContainer.class and
         // DefaultServlet.class
-        implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.5'
+        implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.6'
 
         // To handle multipart post
-        implementation 'org.glassfish.jersey.media:jersey-media-multipart:3.1.5'
+        implementation 'org.glassfish.jersey.media:jersey-media-multipart:3.1.6'
 
         // To temporarily cache/store-in-RAM job metadata when redis unavailable
-        implementation( 'com.github.ben-manes.caffeine:caffeine:3.1.8' )
-        {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.1.8') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
 
         // To accurately detect mime types of files.
-        implementation 'org.apache.tika:tika-core:2.9.1'
+        implementation 'org.apache.tika:tika-core:2.9.2'
 
         // To persist job metadata while keeping it relatively fast
-        implementation( 'org.redisson:redisson:3.18.0' )
-        {
+        implementation('org.redisson:redisson:3.18.0') {
             // Because of CVE-2022-24823. TODO: remove when Redisson catches up
             exclude group: 'io.netty'
         }
 
         // Because of CVE-2022-24823. TODO: remove when Redisson catches up
-        implementation group: 'io.netty', name: 'netty-all', version: '4.1.106.Final'
+        implementation group: 'io.netty', name: 'netty-all', version: '4.1.109.Final'
 
         // Better-than-Java's HTTP client. Used to talk to manager.
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 
         // Update vulnerable kotlin-stdlib that okhttp/okio uses
-        implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.0'
-        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.0'
-        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.23'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.23'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.23'
 
         // JSON deserialization uses jackson directly. Specify recent version.
-        implementation 'com.fasterxml.jackson:jackson-bom:2.16.1'
-        implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
-        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.16.1'
-        implementation 'com.fasterxml.jackson.core:jackson-core:2.16.1'
+        implementation 'com.fasterxml.jackson:jackson-bom:2.17.1'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.1'
+        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.17.1'
+        implementation 'com.fasterxml.jackson.core:jackson-core:2.17.1'
 
         // For ToStringBuilder
         implementation 'org.apache.commons:commons-lang3:3.14.0'
@@ -1501,17 +1394,16 @@ project(':wres-tasker')
         // To send/receive messages
         implementation 'com.google.protobuf:protobuf-java:3.21.12'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.14' )
-        {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.6') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
-        runtimeOnly 'org.glassfish.jersey.core:jersey-server:3.1.5'
+        runtimeOnly 'org.glassfish.jersey.core:jersey-server:3.1.6'
 
         // Needed to prevent "java.lang.IllegalStateException: InjectionManagerFactory not found."
         // Thanks, https://luohuahuang.org/2017/11/13/jersey-illegalstateexception-injectionmanagerfactory/
-        runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.5'
+        runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.6'
 
         testImplementation 'junit:junit:4.13.2'
         testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.10.2'
@@ -1530,35 +1422,30 @@ project(':wres-tasker')
         testImplementation group: 'com.google.jimfs', name: 'jimfs', version: '1.3.0'
 
         // To generate swagger's openapi.json at build time.
-        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.2.20'
+        docGen 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.2.21'
     }
 
     apply plugin: 'application'
     apply plugin: 'io.swagger.core.v3.swagger-gradle-plugin'
 
     mainClassName = 'wres.tasker.Tasker'
-    applicationDefaultJvmArgs = ['-Xms340m','-Xmx340m',
+    applicationDefaultJvmArgs = ['-Xms340m', '-Xmx340m',
                                  '-XX:+HeapDumpOnOutOfMemoryError',
                                  '-Djdk.tls.ephemeralDHKeySize=3072',
                                  '-Djdk.tls.rejectClientInitiatedRenegotiation=true']
 
     // Add static html files to the classpath when running via script
-    startScripts
-    {
+    startScripts {
         // Note: see lengthy note in main application below
         classpath += files('static')
         classpath += files('conf')
     }
-    
+
     // Make available openapi docs and logging configuration to the classpath
-    distributions
-    {
-        main
-        {
-            contents
-            {
-                from
-                {   
+    distributions {
+        main {
+            contents {
+                from {
                     // Source from the static content in dist, plus the swaggerDocs creation task
                     ['dist', swaggerDocs]
                 }
@@ -1569,22 +1456,21 @@ project(':wres-tasker')
     }
 
     // Task named "resolve" is from from swagger plugin, generates openapi json
-    resolve
-    {   
+    resolve {
         def skipDocs = 'true'
-        def sourceFile = file( 'dist/lib/static/swagger/wres_api_info.yaml' )
-        outputDir = new File( swaggerDocsBaseDir, swaggerDocsSubdirPathString )
-        if( !skipDocs )
+        def sourceFile = file('dist/lib/static/swagger/wres_api_info.yaml')
+        outputDir = new File(swaggerDocsBaseDir, swaggerDocsSubdirPathString)
+        if (!skipDocs)
         {
-            println( "Merging the API documentation with the contents of: " + sourceFile )
-            println( "Writing the API documentation to: " + outputDir )
+            println("Merging the API documentation with the contents of: " + sourceFile)
+            println("Writing the API documentation to: " + outputDir)
         }
         outputFileName = 'wres_openapi'
         outputFormat = 'yaml'
         prettyPrint = 'true'
         openApiFile = sourceFile
         classpath = sourceSets.main.runtimeClasspath
-        resourcePackages = [ 'wres.tasker' ]
+        resourcePackages = ['wres.tasker']
         buildClasspath = classpath
         buildClasspath += configurations.docGen
 
@@ -1595,21 +1481,18 @@ project(':wres-tasker')
     }
 
     // Swagger docs copy task, which depends on the swagger docs creation task, aka "resolve"
-    task ( swaggerDocs, dependsOn: resolve, type: Copy )
-    {
-        from ( fileTree( swaggerDocsBaseDir ) )
-        into new File( buildDir, "swaggerDist" )
+    task(swaggerDocs, dependsOn: resolve, type: Copy) {
+        from(fileTree(swaggerDocsBaseDir))
+        into new File(buildDir, "swaggerDist")
     }
     test {
         useJUnitPlatform()
     }
 }
 
-project(':wres-eventsbroker')
-{
-    dependencies
-    {
-        implementation 'org.slf4j:slf4j-api:2.0.12'
+project(':wres-eventsbroker') {
+    dependencies {
+        implementation 'org.slf4j:slf4j-api:2.0.13'
 
         implementation 'org.apache.commons:commons-lang3:3.14.0'
 
@@ -1617,8 +1500,7 @@ project(':wres-eventsbroker')
         implementation group: 'jakarta.jms', name: 'jakarta.jms-api', version: '3.1.0'
 
         // Apache ActiveMQ Artemis server
-        implementation( 'org.apache.activemq:artemis-server:2.32.0' )
-        {
+        implementation('org.apache.activemq:artemis-server:2.33.0') {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
 
@@ -1633,11 +1515,10 @@ project(':wres-eventsbroker')
         }
 
         // Include later dependency versions for the excluded dependencies above
-        implementation 'com.google.guava:guava:32.1.3-jre'
+        implementation 'com.google.guava:guava:33.2.0-jre'
 
         // AMQP 1.0 protocol support for the ActiveMQ Artemis server
-        implementation( 'org.apache.activemq:artemis-amqp-protocol:2.32.0' )
-        {
+        implementation('org.apache.activemq:artemis-amqp-protocol:2.33.0') {
             // Because we use slf4j, not jcl:
             exclude group: 'commons-logging', module: 'commons-logging'
 
@@ -1649,14 +1530,12 @@ project(':wres-eventsbroker')
         }
 
         // Because of CVE-2022-24823. TODO: remove when Artemis catches up
-        implementation group: 'io.netty', name: 'netty-all', version: '4.1.106.Final'
+        implementation group: 'io.netty', name: 'netty-all', version: '4.1.109.Final'
 
         // JCIP annotations
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
-
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.14' )
-        {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.6') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -1665,8 +1544,7 @@ project(':wres-eventsbroker')
         runtimeOnly 'org.slf4j:jcl-over-slf4j:2.1.0-alpha1'
 
         // Qpid AMQP 1.0 Jakarta Messaging API client to test interaction with the embedded broker
-        testImplementation( 'org.apache.qpid:qpid-jms-client:2.5.0' )
-        {
+        testImplementation('org.apache.qpid:qpid-jms-client:2.5.0') {
             // Because of CVE-2022-24823. TODO: remove when Qpid catches up
             exclude group: 'io.netty'
         }
@@ -1683,19 +1561,16 @@ project(':wres-eventsbroker')
 
 }
 
-project(':wres-events')
-{
-    dependencies
-    {
-        implementation project( ':wres-statistics' )
-        implementation 'org.slf4j:slf4j-api:2.0.12'
+project(':wres-events') {
+    dependencies {
+        implementation project(':wres-statistics')
+        implementation 'org.slf4j:slf4j-api:2.0.13'
 
         // JCIP annotations
         implementation group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Cache
-        implementation( 'com.github.ben-manes.caffeine:caffeine:3.1.8' )
-        {
+        implementation('com.github.ben-manes.caffeine:caffeine:3.1.8') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -1704,20 +1579,18 @@ project(':wres-events')
         implementation group: 'jakarta.jms', name: 'jakarta.jms-api', version: '3.1.0'
 
         // Qpid AMQP 1.0 Jakarta Messaging API client
-        implementation( 'org.apache.qpid:qpid-jms-client:2.5.0' )
-        {
+        implementation('org.apache.qpid:qpid-jms-client:2.5.0') {
             // Because of CVE-2022-24823. TODO: remove when Qpid catches up
             exclude group: 'io.netty'
         }
 
         // Because of CVE-2022-24823. TODO: remove when Qpid catches up
-        implementation group: 'io.netty', name: 'netty-all', version: '4.1.106.Final'
+        implementation group: 'io.netty', name: 'netty-all', version: '4.1.109.Final'
 
         // For various utilities
         implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.14.0'
 
-        runtimeOnly( 'ch.qos.logback:logback-classic:1.4.14' )
-        {
+        runtimeOnly('ch.qos.logback:logback-classic:1.5.6') {
             // Not used at runtime, bloat
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
@@ -1727,12 +1600,12 @@ project(':wres-events')
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.10.0'
+        testImplementation 'org.mockito:mockito-core:5.11.0'
         // Mocking final classes
         testImplementation 'org.mockito:mockito-inline:5.2.0'
 
         // To create an embedded broker for unit testing
-        testImplementation project( ':wres-eventsbroker' )
+        testImplementation project(':wres-eventsbroker')
     }
 
     // Facilitate unit tests with JUnit
@@ -1741,11 +1614,9 @@ project(':wres-events')
     }
 }
 
-project(':wres-http')
-{
-    dependencies
-    {
-        implementation 'org.slf4j:slf4j-api:2.0.12'
+project(':wres-http') {
+    dependencies {
+        implementation 'org.slf4j:slf4j-api:2.0.13'
 
         // Better-than-Java's HTTP client
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
@@ -1753,9 +1624,9 @@ project(':wres-http')
         implementation 'org.apache.commons:commons-lang3:3.14.0'
 
         // Update vulnerable kotlin-stdlib that okhttp/okio uses
-        implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.0'
-        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.0'
-        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.23'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.23'
+        implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.23'
 
         // Mocking help
         testImplementation 'org.mockito:mockito-inline:5.2.0'
@@ -1772,8 +1643,7 @@ project(':wres-http')
 }
 
 // TODO: move this project into its own build.gradle.
-project( ':wres-external-services-tests' )
-{
+project(':wres-external-services-tests') {
     // A separate zip allowing independent runs against external deps.
     // This project is similar to systests in that it is not intended
     // to run at the usual build or test time on the build server.
@@ -1784,74 +1654,64 @@ project( ':wres-external-services-tests' )
     // a gradle script inside it that can be used for testing later.
     apply plugin: 'distribution'
 
-    dependencies
-    {
-        runtimeOnly project( ':wres-reading' )
+    dependencies {
+        runtimeOnly project(':wres-reading')
     }
 
     // Explicitly link the artifact creation for this project to the
-    // artifact creation for the projects on which it depends. This is 
-    // an anti-pattern as described here: 
+    // artifact creation for the projects on which it depends. This is
+    // an anti-pattern as described here:
     // https://docs.gradle.org/current/samples/sample_cross_project_output_sharing.html
-    // However, the suggested approach did not work in this case and 
+    // However, the suggested approach did not work in this case and
     // the dependencies must be clarified for gradle 8.0 and above:
     // https://docs.gradle.org/7.6/userguide/validation_problems.html#implicit_dependency
-    // In any case, would be better to move this project into a separate 
+    // In any case, would be better to move this project into a separate
     // build.gradle, as noted above.
-    distZip.dependsOn project( ':wres-config' ).tasks.jar
-    distZip.dependsOn project( ':wres-datamodel' ).tasks.jar
-    distZip.dependsOn project( ':wres-statistics' ).tasks.jar
-    distZip.dependsOn project( ':wres-system' ).tasks.jar
-    distTar.dependsOn project( ':wres-http' ).tasks.jar
-    distTar.dependsOn project( ':wres-config' ).tasks.jar
-    distTar.dependsOn project( ':wres-datamodel' ).tasks.jar
-    distTar.dependsOn project( ':wres-statistics' ).tasks.jar
-    distTar.dependsOn project( ':wres-system' ).tasks.jar
-    distTar.dependsOn project( ':wres-http' ).tasks.jar
+    distZip.dependsOn project(':wres-config').tasks.jar
+    distZip.dependsOn project(':wres-datamodel').tasks.jar
+    distZip.dependsOn project(':wres-statistics').tasks.jar
+    distZip.dependsOn project(':wres-system').tasks.jar
+    distTar.dependsOn project(':wres-http').tasks.jar
+    distTar.dependsOn project(':wres-config').tasks.jar
+    distTar.dependsOn project(':wres-datamodel').tasks.jar
+    distTar.dependsOn project(':wres-statistics').tasks.jar
+    distTar.dependsOn project(':wres-system').tasks.jar
+    distTar.dependsOn project(':wres-http').tasks.jar
 
-    distributions
-    {
-        main
-        {
-            contents
-            {
+    distributions {
+        main {
+            contents {
                 // Test software and build script
-                from( 'dist' )
-                {
-                    include( 'src/test/**/*.java' )
-                    include( 'build.gradle' )
-                    include( 'gradle.properties' )
-                    include( 'settings.gradle' )
+                from('dist') {
+                    include('src/test/**/*.java')
+                    include('build.gradle')
+                    include('gradle.properties')
+                    include('settings.gradle')
                 }
 
                 // Gradle software itself
-                from('..')
-                {
+                from('..') {
                     include 'gradlew'
                     include 'gradlew.bat'
                     include 'gradle/wrapper/*'
                 }
 
                 // Add the wres-reading jar.
-                from( project( ':wres-reading' ).jar )
-                {
-                    into( 'lib' )
+                from(project(':wres-reading').jar) {
+                    into('lib')
                 }
 
                 // Add all the stuff on which wres-reading jar depends.
-                from( project( ':wres-reading').configurations.runtimeClasspath.files )
-                {
-                    into( 'lib' )
+                from(project(':wres-reading').configurations.runtimeClasspath.files) {
+                    into('lib')
                 }
 
                 // Add the DoD intermediate certificate to trust
-                from( '../dist/lib/conf/dod_sw_ca-54_expires_2022-11.pem' )
-                {
-                    into( 'lib/conf' )
+                from('../dist/lib/conf/dod_sw_ca-54_expires_2022-11.pem') {
+                    into('lib/conf')
                 }
-                from( '../dist/lib/conf/DODSWCA_60.pem' )
-                {
-                    into( 'lib/conf' )
+                from('../dist/lib/conf/DODSWCA_60.pem') {
+                    into('lib/conf')
                 }
 
             }
@@ -1862,13 +1722,13 @@ project( ':wres-external-services-tests' )
 /**
  * Task to compile markdown to html.
  *
- * TODO: replace with plugin 'org.kordamp.gradle.markdown'
- */
-task(buildHtmlFromMarkdown, group: 'Documentation')
-{
+ * TODO: replace with plugin 'org.kordamp.gradle.markdown'*/
+task(buildHtmlFromMarkdown, group: 'Documentation') {
     description = 'Compiles markdown documentation into html'
-    def srcDir = "${project.projectDir}/documentation/src" // seems odd that we have to do this
-    def destDir = "${project.buildDir}/doc" // define these and use them later.
+    def srcDir = "${project.projectDir}/documentation/src"
+    // seems odd that we have to do this
+    def destDir = "${project.buildDir}/doc"
+    // define these and use them later.
 
     inputs.dir(srcDir)
     outputs.dir(destDir)
@@ -1885,36 +1745,36 @@ task(buildHtmlFromMarkdown, group: 'Documentation')
         def parser = Parser.builder().build()
         def renderer = HtmlRenderer.builder().build()
         inputs.files.each {
-            def basePath = Paths.get( it.path )
-                                .getFileName()
-                                .toString()
+            def basePath = Paths.get(it.path)
+                    .getFileName()
+                    .toString()
 
-            if ( it.path.endsWith( ".md" ) )
+            if (it.path.endsWith(".md"))
             {
                 // yuck, but I haven't found the better way yet
-                def srcIdx =  it.path.indexOf( srcDir )
-                def baseFileName = basePath.substring( 0, basePath.length() - 3 )
+                def srcIdx = it.path.indexOf(srcDir)
+                def baseFileName = basePath.substring(0, basePath.length() - 3)
 
                 // The meat - using commonmark to transform md to html
-                def document = parser.parseReader( new FileReader( it ) )
-                def innerOutput = renderer.render( document )
+                def document = parser.parseReader(new FileReader(it))
+                def innerOutput = renderer.render(document)
                 def header = "<!DOCTYPE html>\r\n"
                 header += "<html><head>\r\n"
                 header += "    <link rel='stylesheet' type='text/css' href='style.css' />\r\n"
                 header += "</head>\r\n<body>\r\n"
                 def footer = "</body>\r\n</html>\r\n"
                 def output = header + innerOutput + footer
-                def outputPath = Paths.get( destDir, baseFileName + '.html' )
-                Files.write( outputPath,
-                             output.getBytes(),
-                             StandardOpenOption.CREATE )
+                def outputPath = Paths.get(destDir, baseFileName + '.html')
+                Files.write(outputPath,
+                        output.getBytes(),
+                        StandardOpenOption.CREATE)
             }
             else
             {
-                def outputPath = Paths.get( destDir, basePath )
-                Files.copy( it.toPath(),
-                            outputPath,
-                            StandardCopyOption.REPLACE_EXISTING )
+                def outputPath = Paths.get(destDir, basePath)
+                Files.copy(it.toPath(),
+                        outputPath,
+                        StandardCopyOption.REPLACE_EXISTING)
             }
         }
     }
@@ -1922,10 +1782,8 @@ task(buildHtmlFromMarkdown, group: 'Documentation')
 
 /**
  * Kind of like xjc, there is an intermediate location in the build directory
- * so that gradle clean will remove these files.
- */
-task(copyDocs, type: Copy, group: 'Documentation', dependsOn: buildHtmlFromMarkdown)
-{
+ * so that gradle clean will remove these files.*/
+task(copyDocs, type: Copy, group: 'Documentation', dependsOn: buildHtmlFromMarkdown) {
     description = 'Copies documentation source to distribution directory.'
 
     destinationDir = file("${project.projectDir}/dist/doc")
@@ -1939,7 +1797,7 @@ task(copyDocs, type: Copy, group: 'Documentation', dependsOn: buildHtmlFromMarkd
     into destinationDir
 }
 
-apply plugin: 'jacoco'        // code coverage tool
+apply plugin: 'jacoco' // code coverage tool
 apply plugin: 'org.sonarqube' // static analysis tool
 apply plugin: 'application'
 apply plugin: 'java-library'
@@ -1961,22 +1819,21 @@ applicationDefaultJvmArgs = ['-Xms2560m', '-Xmx2560m',
                              '-Dorg.jboss.logging.provider=slf4j']
 
 // See #95586. Use the ZGC garbage collector for a recent JDK, else CMS, else default.
-if( TARGET_JDK >= 17 )
+if (TARGET_JDK >= 17)
 {
     applicationDefaultJvmArgs += '-XX:+UseZGC'
 }
-else if( TARGET_JDK < 14 )
+else if (TARGET_JDK < 14)
 {
     applicationDefaultJvmArgs += '-XX:+UseConcMarkSweepGC'
 }
 // Otherwise resort to default
 
-
 // Get the commit and date from the TOP for this project, it is outermost.
 // The top level commit will also reflect changes to this build.gradle script.
 def gitCommit = grgit.head()
 def gitCommitId = gitCommit.id
-def gitCommitDate = gitCommit.dateTime.withZoneSameInstant( ZoneId.of( "UTC" ) )
+def gitCommitDate = gitCommit.dateTime.withZoneSameInstant(ZoneId.of("UTC"))
 def gitIsClean = grgit.status().isClean()
 
 version = gitCommitDate.format('yyyyMMdd') + '-' + gitCommitId[0..6]
@@ -1985,8 +1842,7 @@ if (!gitIsClean)
     version = version + '-dev'
 }
 
-dependencies
-{
+dependencies {
     implementation project(':wres-system')
     implementation project(':wres-datamodel')
     implementation project(':wres-io')
@@ -2000,7 +1856,7 @@ dependencies
     implementation project(':wres-eventsbroker')
     implementation project(':wres-messages')
 
-    implementation 'org.slf4j:slf4j-api:2.0.12'
+    implementation 'org.slf4j:slf4j-api:2.0.13'
 
     implementation 'jakarta.ws.rs:jakarta.ws.rs-api:3.1.0'
     implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
@@ -2013,29 +1869,26 @@ dependencies
 
     // Needed at compile-time to reference ServletContainer.class and
     // DefaultServlet.class
-    implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.5'
+    implementation 'org.glassfish.jersey.containers:jersey-container-servlet-core:3.1.6'
 
     // Jetty server
     implementation 'org.eclipse.jetty:jetty-server:11.0.20'
 
-    implementation( 'com.github.ben-manes.caffeine:caffeine:3.1.8' )
-    {
+    implementation('com.github.ben-manes.caffeine:caffeine:3.1.8') {
         // Not used at runtime, bloat
         exclude group: 'org.checkerframework', module: 'checker-qual'
     }
 
     // To persist job metadata while keeping it relatively fast
-    implementation( 'org.redisson:redisson:3.18.0' )
-            {
-                // Because of CVE-2022-24823. TODO: remove when Redisson catches up
-                exclude group: 'io.netty'
-            }
+    implementation('org.redisson:redisson:3.18.0') {
+        // Because of CVE-2022-24823. TODO: remove when Redisson catches up
+        exclude group: 'io.netty'
+    }
 
     // Because of CVE-2022-24823. TODO: remove when Redisson catches up
-    implementation group: 'io.netty', name: 'netty-all', version: '4.1.106.Final'
+    implementation group: 'io.netty', name: 'netty-all', version: '4.1.109.Final'
 
-    implementation( 'edu.ucar:cdm-core:5.4.2' )
-    {
+    implementation('edu.ucar:cdm-core:5.4.2') {
         // Because we use slf4j, not jcl:
         exclude group: 'commons-logging', module: 'commons-logging'
         // CVE-2021-33813
@@ -2046,15 +1899,15 @@ dependencies
         exclude group: 'com.google.guava', module: 'guava'
     }
     // Include later dependency versions for the excluded dependencies above
-    implementation 'com.google.guava:guava:32.1.3-jre'
+    implementation 'com.google.guava:guava:33.2.0-jre'
 
     // JCIP annotations
     compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
-    runtimeOnly 'org.glassfish.jersey.containers:jersey-container-servlet:3.1.5'
-    runtimeOnly 'org.glassfish.jersey.core:jersey-server:3.1.5'
-    runtimeOnly 'org.glassfish.jersey.containers:jersey-container-jetty-http:3.1.3'
-    runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.5'
+    runtimeOnly 'org.glassfish.jersey.containers:jersey-container-servlet:3.1.6'
+    runtimeOnly 'org.glassfish.jersey.core:jersey-server:3.1.6'
+    runtimeOnly 'org.glassfish.jersey.containers:jersey-container-jetty-http:3.1.6'
+    runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.6'
 
     // Support HTTP/2
     implementation 'org.eclipse.jetty.http2:http2-server:11.0.20'
@@ -2062,8 +1915,7 @@ dependencies
     // Support ALPN
     implementation 'org.eclipse.jetty:jetty-alpn-java-server:11.0.20'
 
-    runtimeOnly( 'ch.qos.logback:logback-classic:1.4.14' )
-    {
+    runtimeOnly('ch.qos.logback:logback-classic:1.5.6') {
         // Not used at runtime, bloat
         exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
     }
@@ -2071,8 +1923,8 @@ dependencies
     implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 
     // To auto-generate builders for Java records through annotation processing
-    annotationProcessor 'io.soabase.record-builder:record-builder-processor:37'
-    compileOnly 'io.soabase.record-builder:record-builder-core:37'
+    annotationProcessor 'io.soabase.record-builder:record-builder-processor:41'
+    compileOnly 'io.soabase.record-builder:record-builder-core:41'
 
     // JUnit 5 API and runtime
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
@@ -2082,41 +1934,33 @@ dependencies
     testCompileOnly 'junit:junit:4.13.2'
     testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.10.2'
 
-    testImplementation 'org.mockito:mockito-core:5.10.0'
+    testImplementation 'org.mockito:mockito-core:5.11.0'
 
     testImplementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 }
 
-test
-{
+test {
     useJUnitPlatform()
 }
 
-sourceSets
-{
-    main
-    {
-        java
-        {
+sourceSets {
+    main {
+        java {
             srcDirs = ['src', 'dist/lib/conf']
         }
 
-        resources
-        {
+        resources {
             srcDirs = ['nonsrc']
         }
     }
 
-    test
-    {
-        java
-        {
+    test {
+        java {
             srcDirs = ['test']
             exclude 'wres/systests/**'
         }
 
-        resources
-        {
+        resources {
             srcDirs = ['testNonsrc']
         }
     }
@@ -2124,8 +1968,7 @@ sourceSets
 
 // Allows this:
 // gradlew run -PappArgs="['saveForecast','/path/to/file']"
-run
-{
+run {
     if (project.hasProperty("appArgs"))
     {
         args Eval.me(appArgs)
@@ -2136,14 +1979,10 @@ run
 
 // Default location in gradle is 'src/dist' but we want conf files that are
 // outside the jar to be from the 'dist' directory.
-distributions
-{
-    main
-    {
-        contents
-        {
-            from
-            {
+distributions {
+    main {
+        contents {
+            from {
                 // Note: to have files land in the distributed zip files,
                 // must put inside lib directory inside below directory.
                 // Must also add the new directory to classpath under
@@ -2153,8 +1992,7 @@ distributions
             }
 
             // vis will be split into its own application eventually.
-            from( 'wres-vis/dist' )
-            {
+            from('wres-vis/dist') {
                 exclude 'lib/conf/eventbroker.properties'
                 exclude 'lib/conf/logback.xml'
                 exclude 'lib/conf/logging.properties'
@@ -2165,68 +2003,55 @@ distributions
             // from projects in the runtime or implementation configuration of
             // this project. Something less brittle that handles transitive deps
             // and so forth. Admitting defeat for now.
-            from( project(':').sourcesJar )
-            {
+            from(project(':').sourcesJar) {
                 into 'src'
             }
 
-            from( project(':wres-system').sourcesJar )
-            {
+            from(project(':wres-system').sourcesJar) {
                 into 'src'
             }
 
-            from( project(':wres-datamodel').sourcesJar )
-            {
+            from(project(':wres-datamodel').sourcesJar) {
                 into 'src'
             }
 
-            from( project(':wres-io').sourcesJar )
-            {
+            from(project(':wres-io').sourcesJar) {
                 into 'src'
             }
 
-            from( project(':wres-writing').sourcesJar )
-            {
+            from(project(':wres-writing').sourcesJar) {
                 into 'src'
             }
 
-            from( project(':wres-reading').sourcesJar )
-            {
+            from(project(':wres-reading').sourcesJar) {
                 into 'src'
             }
 
-            from( project(':wres-http').sourcesJar )
-            {
+            from(project(':wres-http').sourcesJar) {
                 into 'src'
             }
 
-            from( project(':wres-metrics').sourcesJar )
-            {
+            from(project(':wres-metrics').sourcesJar) {
                 into 'src'
             }
 
-            from( project(':wres-config').sourcesJar )
-            {
+            from(project(':wres-config').sourcesJar) {
                 into 'src'
             }
 
-            from( project(':wres-vis').sourcesJar )
-            {
+            from(project(':wres-vis').sourcesJar) {
                 into 'src'
             }
 
-            from( project(':wres-events').sourcesJar )
-            {
+            from(project(':wres-events').sourcesJar) {
                 into 'src'
             }
 
-            from( project(':wres-eventsbroker').sourcesJar )
-            {
+            from(project(':wres-eventsbroker').sourcesJar) {
                 into 'src'
             }
 
-            from( project(':wres-statistics').sourcesJar )
-            {
+            from(project(':wres-statistics').sourcesJar) {
                 into 'src'
             }
         }
@@ -2237,9 +2062,8 @@ distributions
 processResources.dependsOn(copyDocs)
 
 // Add configuration files to the classpath when running via script
-startScripts
-{
-    classpath = files( '$APP_HOME/lib/*' )
+startScripts {
+    classpath = files('$APP_HOME/lib/*')
 
     // Note gradle in this context assumes lib directory precedes these
     // files. To add more outsidejar directories, they need to be
@@ -2248,18 +2072,15 @@ startScripts
     classpath += files('conf')
 }
 
-jar
-{
+jar {
     // version number should be included
-    manifest
-    {
+    manifest {
         attributes("Implementation-Title": "Water Resources Evaluation Service",
-                    "Implementation-Version": archiveVersion )
+                "Implementation-Version": archiveVersion)
     }
 }
 
-tasks.withType( AbstractArchiveTask )
-{
+tasks.withType(AbstractArchiveTask) {
     archiveVersion = project.version
 
     // Make bit-for-bit reproducible jars, zips, and tars.
@@ -2268,8 +2089,7 @@ tasks.withType( AbstractArchiveTask )
 }
 
 // Truly prevent these annoying jars from showing up in dist zip
-configurations.implementation
-{
+configurations.implementation {
     exclude group: 'com.google.code.findbugs', module: 'jsr305'
     exclude group: 'org.checkerframework', module: 'checker-qual'
     exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
@@ -2278,8 +2098,7 @@ configurations.implementation
 }
 
 // Truly prevent these annoying jars from showing up in dist zip
-configurations.runtimeOnly
-{
+configurations.runtimeOnly {
     exclude group: 'com.google.code.findbugs', module: 'jsr305'
     exclude group: 'org.checkerframework', module: 'checker-qual'
     exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
