@@ -459,21 +459,21 @@ public class WebClient
     {
         final String VERSION_UNKNOWN = "unspecified";
         Package toGetVersion = this.getClass().getPackage();
-        String wresIoVersion;
+        String wresHTTPSVersion;
 
         if ( toGetVersion != null
              && toGetVersion.getImplementationVersion() != null )
         {
             // When running from a released zip, the version should show up.
-            wresIoVersion = toGetVersion.getImplementationVersion();
+            wresHTTPSVersion = toGetVersion.getImplementationVersion();
         }
         else
         {
             // When running from source, this will be the expected outcome.
-            wresIoVersion = VERSION_UNKNOWN;
+            wresHTTPSVersion = VERSION_UNKNOWN;
         }
 
-        this.userAgent = "wres-io/" + wresIoVersion;
+        this.userAgent = "wres-https/" + wresHTTPSVersion;
     }
 
     private String getUserAgent()
