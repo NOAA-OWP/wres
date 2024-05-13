@@ -1219,7 +1219,7 @@ project(':wres-worker') {
 
     mainClassName = 'wres.worker.Worker'
 
-    applicationDefaultJvmArgs = ['-Xms128m','-Xmx128m',
+    applicationDefaultJvmArgs = ['-Xms64m','-Xmx64m',
                                  '-XX:+HeapDumpOnOutOfMemoryError']
 
     // Add logging configuration to the classpath when running via script
