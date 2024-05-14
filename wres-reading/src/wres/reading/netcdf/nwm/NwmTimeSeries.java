@@ -798,7 +798,8 @@ class NwmTimeSeries implements Closeable
         else
         {
             this.close();
-            throw new ReadException( "Failed to open netCDF resource.", e );
+            throw new ReadException( "Could not open a NetCDF resource to read time-series data from the National "
+                                     + "Water Model. The following resource was attempted: " + uri, e );
         }
     }
 
