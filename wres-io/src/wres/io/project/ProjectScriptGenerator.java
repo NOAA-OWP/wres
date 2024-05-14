@@ -232,7 +232,6 @@ final class ProjectScriptGenerator
         script.addTab().addLine( "AND PS.member = ?" );
         script.addArgument( orientation.name()
                                        .toLowerCase() );
-        script.setMaxRows( 2 ); // Adds jdbc limit plus sql LIMIT if supported
 
         return script;
     }
