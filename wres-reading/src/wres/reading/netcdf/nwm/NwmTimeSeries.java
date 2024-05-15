@@ -1426,7 +1426,6 @@ class NwmTimeSeries implements Closeable
 
     private static final class NWMDoubleReader implements Callable<NWMDoubleReadOutcome>
     {
-
         private static final int NOT_FOUND = Integer.MIN_VALUE;
         private final NwmProfile profile;
         private final NetcdfFile netcdfFile;

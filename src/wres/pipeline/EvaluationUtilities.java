@@ -130,6 +130,12 @@ class EvaluationUtilities
     private static final String PERFORMING_RETRIEVAL_WITH_A_RETRIEVER_FACTORY_BACKED_BY_A_PERSISTENT_STORE =
             "Performing retrieval with a retriever factory backed by a persistent store.";
 
+    /** Maximum number of time windows to log. */
+    private static final int MAXIMUM_TIME_WINDOWS_TO_LOG = 1000;
+
+    /** Maximum number of geographic features to log. */
+    private static final int MAXIMUM_FEATURES_TO_LOG = 10000;
+
     /**
      * Generates statistics by creating a sequence of pool-shaped tasks, which are then chained together and executed.
      * On completion of each pool-shaped tasks, the statistics associated with that pool are published. Finally, creates
@@ -564,12 +570,35 @@ class EvaluationUtilities
                 timeWindows.add( nextTimeWindow );
             }
 
+            int timeWindowCount = timeWindows.size();
+            int featureCount = features.size();
+
+            // Avoid massive log statements: #129995
+            String extraTime = "";
+            String extraSpace = "";
+            if ( timeWindowCount > MAXIMUM_TIME_WINDOWS_TO_LOG )
+            {
+                extraTime = "first " + MAXIMUM_TIME_WINDOWS_TO_LOG + " ";
+                timeWindows = timeWindows.stream()
+                                         .limit( MAXIMUM_TIME_WINDOWS_TO_LOG )
+                                         .collect( Collectors.toCollection( TreeSet::new ) );
+            }
+            if ( featureCount > MAXIMUM_FEATURES_TO_LOG )
+            {
+                extraSpace = "first " + MAXIMUM_FEATURES_TO_LOG + " ";
+                features = features.stream()
+                                   .limit( MAXIMUM_FEATURES_TO_LOG )
+                                   .collect( Collectors.toCollection( TreeSet::new ) );
+            }
+
             LOGGER.info( "Created {} pool requests, which include {} feature groups and {} time windows. "
-                         + "The feature groups are: {}. The time windows are: {}.",
+                         + "The {}feature groups are: {}. The {}time windows are: {}.",
                          poolRequests.size(),
-                         features.size(),
-                         timeWindows.size(),
+                         featureCount,
+                         timeWindowCount,
+                         extraSpace,
                          PoolReporter.getPoolItemDescription( features, FeatureGroup::getName ),
+                         extraTime,
                          PoolReporter.getPoolItemDescription( timeWindows, TimeWindowOuter::toString ) );
         }
 
