@@ -351,9 +351,9 @@ public class DeclarationValidator
         // Check that any summary statistics are valid
         List<EvaluationStatusEvent> summaryStatistics = DeclarationValidator.summaryStatisticsAreValid( declaration );
         events.addAll( summaryStatistics );
-        // Check that the threshold sources are valid
-        List<EvaluationStatusEvent> thresholdService = DeclarationValidator.thresholdSourcesAreValid( declaration );
-        events.addAll( thresholdService );
+        // Check that any thresholds are valid
+        List<EvaluationStatusEvent> thresholds = DeclarationValidator.thresholdsAreValid( declaration );
+        events.addAll( thresholds );
         // Check that the sampling uncertainty declaration is valid
         List<EvaluationStatusEvent> samplingUncertainty =
                 DeclarationValidator.samplingUncertaintyIsValid( declaration );
@@ -788,7 +788,7 @@ public class DeclarationValidator
 
     private static boolean hasThresholdsOfThisType( ThresholdType thresholdType, EvaluationDeclaration declaration )
     {
-        Set<Threshold> thresholds = DeclarationUtilities.getThresholds( declaration );
+        Set<Threshold> thresholds = DeclarationUtilities.getInbandThresholds( declaration );
 
         return declaration.thresholdSources()
                           .stream()
@@ -2181,6 +2181,68 @@ public class DeclarationValidator
     }
 
     /**
+     * Checks that the declaration of thresholds is valid.
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> thresholdsAreValid( EvaluationDeclaration declaration )
+    {
+        // Check that the threshold sources are valid
+        List<EvaluationStatusEvent> events =
+                new ArrayList<>( DeclarationValidator.thresholdSourcesAreValid( declaration ) );
+
+        List<EvaluationStatusEvent> valueThresholds = DeclarationValidator.valueThresholdsIncludeUnits( declaration );
+        events.addAll( valueThresholds );
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that real-valued thresholds include units.
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> valueThresholdsIncludeUnits( EvaluationDeclaration declaration )
+    {
+        // Check that the threshold sources are valid
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        Set<Threshold> thresholds = DeclarationUtilities.getInbandThresholds( declaration );
+        if ( thresholds.stream()
+                       .filter( t -> t.type() == ThresholdType.VALUE )
+                       .anyMatch( t -> t.threshold()
+                                        .getThresholdValueUnits()
+                                        .isEmpty() ) )
+        {
+            String extra;
+
+            if ( Objects.nonNull( declaration.unit() ) )
+            {
+                extra = "The threshold values are assumed to adopt the evaluation unit of '"
+                        + declaration.unit()
+                        + "'.";
+            }
+            else
+            {
+                extra = "The unit will be inferred from the time-series data because no evaluation unit was declared. "
+                        + "You may clarify the threshold unit by declaring the 'unit' for each threshold or the "
+                        + "'unit' associated with the evaluation.";
+            }
+
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( "Discovered one or more real-valued thresholds without a "
+                                                             + "declared threshold unit. "
+                                                             + extra )
+                                           .build();
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
      * Checks that the sampling uncertainty declaration is valid.
      * @param declaration the declaration
      * @return the validation events encountered
@@ -2236,7 +2298,10 @@ public class DeclarationValidator
             boolean hasBaseline = DeclarationUtilities.hasBaseline( declaration );
             return declaration.thresholdSources()
                               .stream()
-                              .flatMap( n -> DeclarationValidator.thresholdSourceIsValid( n, features, hasBaseline )
+                              .flatMap( n -> DeclarationValidator.thresholdSourceIsValid( n,
+                                                                                          declaration.unit(),
+                                                                                          features,
+                                                                                          hasBaseline )
                                                                  .stream() )
                               .toList();
         }
@@ -2425,11 +2490,13 @@ public class DeclarationValidator
     /**
      * Checks that the threshold service declaration is valid.
      * @param source the threshold source
+     * @param evaluationUnit the measurement unit of the evaluation, possibly null
      * @param tuples the features
      * @param hasBaseline whether the evaluation has a baseline dataset
      * @return the validation events encountered
      */
     private static List<EvaluationStatusEvent> thresholdSourceIsValid( ThresholdSource source,
+                                                                       String evaluationUnit,
                                                                        Set<GeometryTuple> tuples,
                                                                        boolean hasBaseline )
     {
@@ -2491,6 +2558,39 @@ public class DeclarationValidator
                                                              + missing.stream()
                                                                       .limit( 10 )
                                                                       .collect( Collectors.toSet() ) )
+                                           .build();
+            events.add( event );
+        }
+
+        if ( Objects.isNull( source.unit() )
+             && source.type() == ThresholdType.VALUE )
+        {
+
+            String extra;
+
+            if ( Objects.nonNull( evaluationUnit ) )
+            {
+                extra = "the threshold values are assumed to adopt the evaluation unit of '"
+                        + evaluationUnit
+                        + "'.";
+            }
+            else
+            {
+                extra = "the unit will be inferred from the time-series data because no evaluation unit was declared. "
+                        + "You may clarify the threshold unit by declaring the 'unit' of the threshold source or the "
+                        + "'unit' associated with the evaluation.";
+            }
+
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( "Discovered a source of real-valued thresholds without a "
+                                                             + "declared threshold unit. If the threshold unit is "
+                                                             + "contained inside the source, this unit will be used. "
+                                                             + "If the source does not contain a threshold unit, "
+                                                             + extra
+                                                             + " The URI of the threshold source is: "
+                                                             + source.uri() )
                                            .build();
             events.add( event );
         }
@@ -3358,7 +3458,7 @@ public class DeclarationValidator
     private static List<EvaluationStatusEvent> validateFeaturefulThresholds( EvaluationDeclaration declaration )
     {
         Set<GeometryTuple> features = DeclarationUtilities.getFeatures( declaration );
-        Set<Threshold> thresholds = DeclarationUtilities.getThresholds( declaration );
+        Set<Threshold> thresholds = DeclarationUtilities.getInbandThresholds( declaration );
 
         // Are there featureful thresholds?
         Set<Threshold> featureful = thresholds.stream()

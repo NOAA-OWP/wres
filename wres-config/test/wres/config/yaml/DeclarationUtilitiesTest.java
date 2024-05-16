@@ -2346,7 +2346,7 @@ class DeclarationUtilitiesTest
                                             .metrics( Set.of( metric ) )
                                             .build();
 
-        Set<wres.config.yaml.components.Threshold> actual = DeclarationUtilities.getThresholds( evaluation );
+        Set<wres.config.yaml.components.Threshold> actual = DeclarationUtilities.getInbandThresholds( evaluation );
         Set<wres.config.yaml.components.Threshold> expected = Set.of( wrappedOne, wrappedTwo, wrappedThree );
 
         assertEquals( expected, actual );

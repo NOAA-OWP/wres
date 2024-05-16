@@ -57,6 +57,8 @@ import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.SourceInterface;
 import wres.config.yaml.components.ThresholdBuilder;
+import wres.config.yaml.components.ThresholdOperator;
+import wres.config.yaml.components.ThresholdOrientation;
 import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.ThresholdSourceBuilder;
 import wres.config.yaml.components.ThresholdType;
@@ -1555,6 +1557,62 @@ class DeclarationValidatorTest
         assertTrue( DeclarationValidatorTest.contains( events,
                                                        "the featureful thresholds cannot be "
                                                        + "validated until then",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
+    void testRealValuedThresholdSourceWithoutUnitProducesWarning()
+    {
+        ThresholdSource source = new ThresholdSource( URI.create( "foo" ),
+                                                      ThresholdOperator.GREATER,
+                                                      ThresholdOrientation.LEFT,
+                                                      ThresholdType.VALUE,
+                                                      DatasetOrientation.LEFT,
+                                                      "bar",
+                                                      null,
+                                                      null,
+                                                      null,
+                                                      null );
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .thresholdSources( Set.of( source ) )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "Discovered a source of real-valued thresholds without "
+                                                       + "a declared threshold unit",
+                                                       StatusLevel.WARN ) );
+    }
+
+    @Test
+    void testRealValuedThresholdWithoutUnitProducesWarning()
+    {
+        Threshold threshold = Threshold.newBuilder().setLeftThresholdValue( 23 )
+                                       .setOperator( Threshold.ThresholdOperator.GREATER )
+                                       .build();
+
+        wres.config.yaml.components.Threshold wrapped =
+                new wres.config.yaml.components.Threshold( threshold,
+                                                           ThresholdType.VALUE,
+                                                           null,
+                                                           null );
+
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .thresholds( Set.of( wrapped ) )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "Discovered one or more real-valued thresholds without "
+                                                       + "a declared threshold unit",
                                                        StatusLevel.WARN ) );
     }
 

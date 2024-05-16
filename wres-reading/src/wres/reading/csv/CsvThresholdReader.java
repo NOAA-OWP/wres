@@ -572,10 +572,8 @@ public class CsvThresholdReader implements ThresholdReader
                                            Pair<UnitMapper, String> unit )
     {
         Threshold.Builder canonical = Threshold.newBuilder()
-                                               .setOperator(
-                                                       condition )
-                                               .setDataType(
-                                                       dataType );
+                                               .setOperator( condition )
+                                               .setDataType( dataType );
 
         // Probability threshold?
         if ( isProbability )

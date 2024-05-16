@@ -550,7 +550,7 @@ public class DeclarationInterpolator
         }
 
         EvaluationDeclaration snapshot = builder.build();
-        Set<Threshold> thresholds = DeclarationUtilities.getThresholds( snapshot );
+        Set<Threshold> thresholds = DeclarationUtilities.getInbandThresholds( snapshot );
 
         // Are there featureful thresholds?
         Set<Threshold> featureful = thresholds.stream()

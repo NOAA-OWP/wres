@@ -385,13 +385,13 @@ public class DeclarationUtilities
     }
 
     /**
-     * Returns the thresholds from all contexts in the declaration.
+     * Returns the thresholds from all declared contexts, except from external sources.
      * @param declaration the declaration
      * @return the features from all contexts
      * @throws NullPointerException if the input is null
      */
 
-    public static Set<Threshold> getThresholds( EvaluationDeclaration declaration )
+    public static Set<Threshold> getInbandThresholds( EvaluationDeclaration declaration )
     {
         Objects.requireNonNull( declaration );
 
@@ -1055,7 +1055,7 @@ public class DeclarationUtilities
             LOGGER.debug( "No features were discovered to filter against thresholds." );
         }
 
-        Set<Threshold> thresholds = DeclarationUtilities.getThresholds( declaration );
+        Set<Threshold> thresholds = DeclarationUtilities.getInbandThresholds( declaration );
 
         // Get the names of features with thresholds
         Set<String> leftFeatureNamesWithThresholds = thresholds.stream()

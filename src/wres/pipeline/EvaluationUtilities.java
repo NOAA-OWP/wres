@@ -1538,7 +1538,7 @@ class EvaluationUtilities
 
         // Get the time window and threshold filters
         Set<TimeWindow> timeWindows = DeclarationUtilities.getTimeWindows( declaration );
-        Set<wres.config.yaml.components.Threshold> thresholds = DeclarationUtilities.getThresholds( declaration );
+        Set<wres.config.yaml.components.Threshold> thresholds = DeclarationUtilities.getInbandThresholds( declaration );
         List<TimeWindowAndThresholdFilterAdapter> timeWindowAndThresholdFilters =
                 EvaluationUtilities.getTimeWindowAndThresholdFilters( timeWindows,
                                                                       thresholds,
