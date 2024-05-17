@@ -3,7 +3,6 @@ package wres.reading.wrds.thresholds;
 import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.reading.wrds.geography.Location;
-import wres.datamodel.units.UnitMapper;
 import wres.statistics.generated.Threshold;
 
 import java.util.Collection;
@@ -43,9 +42,6 @@ class ThresholdExtractor
     /** The side of the data to apply the threshold to. */
     @Builder.Default
     private final ThresholdOrientation orientation = ThresholdOrientation.LEFT;
-
-    /** The unit mapper. */
-    private final UnitMapper unitMapper;
 
     /** Warnings received while reading or filtering thresholds. */
     private final Set<String> warnings = new HashSet<>();
@@ -112,8 +108,7 @@ class ThresholdExtractor
             {
                 Map<Location, Set<Threshold>> singleResult = definition.getThresholds( this.type,
                                                                                        this.operator,
-                                                                                       this.orientation,
-                                                                                       this.unitMapper );
+                                                                                       this.orientation );
                 Location singleLocation = singleResult.keySet()
                                                       .iterator()
                                                       .next();

@@ -30,7 +30,6 @@ import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.ThresholdSourceBuilder;
 import wres.config.yaml.components.ThresholdType;
-import wres.datamodel.units.UnitMapper;
 import wres.reading.wrds.geography.Location;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.Threshold;
@@ -906,12 +905,6 @@ class WrdsThresholdReaderTest
                                                                     WRNO1,
                                                                     BLEO1 );
 
-    /** A unit mapper for stage. */
-    private UnitMapper stageMapper;
-
-    /** A unit mapper for flow. */
-    private UnitMapper flowMapper;
-
     /** A reader to test. */
     private WrdsThresholdReader reader;
 
@@ -919,8 +912,6 @@ class WrdsThresholdReaderTest
     void runBeforeEachTest()
     {
         this.reader = WrdsThresholdReader.of();
-        this.stageMapper = UnitMapper.of( "FT" );
-        this.flowMapper = UnitMapper.of( "CFS" );
         this.mockServer = ClientAndServer.startClientAndServer( 0 );
     }
 
@@ -955,7 +946,6 @@ class WrdsThresholdReaderTest
 
         Set<wres.config.yaml.components.Threshold> actual =
                 this.reader.read( service,
-                                  this.stageMapper,
                                   Set.of( "PTSA1", "MNTG1", "BLOF1", "CEDG1", "SMAF1" ),
                                   FeatureAuthority.NWS_LID );
 
@@ -1217,7 +1207,6 @@ class WrdsThresholdReaderTest
 
         Set<wres.config.yaml.components.Threshold> actual =
                 chunkedReader.read( service,
-                                    this.stageMapper,
                                     Set.of( "BLOF1", "CEDG1" ),
                                     FeatureAuthority.NWS_LID );
 
@@ -1333,7 +1322,6 @@ class WrdsThresholdReaderTest
 
             Set<wres.config.yaml.components.Threshold> readThresholds =
                     this.reader.read( service,
-                                      this.stageMapper,
                                       DESIRED_FEATURES.stream()
                                                       .map( Location::nwsLid )
                                                       .collect( Collectors.toSet() ),
@@ -1471,7 +1459,6 @@ class WrdsThresholdReaderTest
 
             Set<wres.config.yaml.components.Threshold> readThresholds =
                     this.reader.read( service,
-                                      this.flowMapper,
                                       DESIRED_FEATURES.stream()
                                                       .map( Location::nwsLid )
                                                       .collect( Collectors.toSet() ),
@@ -1609,7 +1596,6 @@ class WrdsThresholdReaderTest
             NoThresholdsFoundException actual =
                     assertThrows( NoThresholdsFoundException.class, // NOSONAR
                                   () -> this.reader.read( service,
-                                                          this.flowMapper,
                                                           DESIRED_FEATURES.stream()
                                                                           .map( Location::nwsLid )
                                                                           .collect(
@@ -1652,7 +1638,6 @@ class WrdsThresholdReaderTest
             NoThresholdsFoundException actual =
                     assertThrows( NoThresholdsFoundException.class, // NOSONAR
                                   () -> this.reader.read( service,
-                                                          this.flowMapper,
                                                           DESIRED_FEATURES.stream()
                                                                           .map( Location::nwsLid )
                                                                           .collect(

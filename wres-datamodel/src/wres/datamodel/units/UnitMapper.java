@@ -87,14 +87,24 @@ public class UnitMapper
     /**
      * Returns a unit mapper that maps from the provided existing unit to the desired unit supplied on construction of
      * this instance.
-     * @param unitName The name of an existing measurement unit.
-     * @return A unit mapper for the prescribed existing units to this unit.
-     * @throws NoSuchUnitConversionException When unable to create a converter.
-     * @throws Units.UnrecognizedUnitException When unable to support given unitName.
+     * @param unitName The name of an existing measurement unit
+     * @return A unit mapper for the prescribed existing units to this unit
+     * @throws NoSuchUnitConversionException When unable to create a converter
+     * @throws Units.UnrecognizedUnitException When unable to support given unitName
+     * @throws NullPointerException when the unit name is null
+     * @throws IllegalArgumentException when the unit name is blank
      */
 
     public DoubleUnaryOperator getUnitMapper( String unitName )
     {
+        Objects.requireNonNull( unitName );
+
+        if ( unitName.isBlank() )
+        {
+            throw new IllegalArgumentException( "Cannot convert a blank unit name. Please provide a named measurement "
+                                                + "unit to convert." );
+        }
+
         // Identity
         if ( unitName.equals( this.getDesiredMeasurementUnitName() ) )
         {
@@ -109,7 +119,8 @@ public class UnitMapper
 
         Pair<String, String> key = Pair.of( currentUnits, desiredUnits );
 
-        if ( LOGGER.isTraceEnabled() && this.internalMappers.containsKey( key ) )
+        if ( LOGGER.isTraceEnabled()
+             && this.internalMappers.containsKey( key ) )
         {
             LOGGER.trace( "Discovered an internal unit mapper to convert between {} and {}. Using this preferentially.",
                           currentUnits,
@@ -276,15 +287,15 @@ public class UnitMapper
             if ( existing != null )
             {
                 throw new DeclarationException( "Multiple declarations for a "
-                                                  + "single unit alias are not "
-                                                  + "supported. Found repeated "
-                                                  + "'"
-                                                  + alias.alias()
-                                                  + "' alias. Remove all but "
-                                                  + "one declaration for alias "
-                                                  + "'"
-                                                  + alias.alias()
-                                                  + "'." );
+                                                + "single unit alias are not "
+                                                + "supported. Found repeated "
+                                                + "'"
+                                                + alias.alias()
+                                                + "' alias. Remove all but "
+                                                + "one declaration for alias "
+                                                + "'"
+                                                + alias.alias()
+                                                + "'." );
             }
         }
 

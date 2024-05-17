@@ -41,13 +41,11 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.Feature;
-import wres.datamodel.units.UnitMapper;
 import wres.io.NoProjectDataException;
 import wres.io.ingesting.IngestResult;
 import wres.config.yaml.VariableNames;
 import wres.reading.DataSource.DataDisposition;
 import wres.io.retrieving.DataAccessException;
-import wres.reading.ReaderUtilities;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -135,14 +133,6 @@ public class InMemoryProject implements Project
 
         this.hash = this.getHash( timeSeriesStore );
         this.measurementUnit = this.getAnalyzedMeasurementUnit( declaration, timeSeriesStore );
-
-        // Get a unit mapper for the declared or analyzed measurement units
-        UnitMapper unitMapper = UnitMapper.of( this.measurementUnit,
-                                               declaration.unitAliases() );
-
-        // Read external thresholds into the declaration and remove any features for which thresholds are not available
-        // #129805
-        declaration = ReaderUtilities.readAndFillThresholds( declaration, unitMapper );
 
         FeatureSets featureSets = this.getFeaturesAndFeatureGroups( declaration,
                                                                     this.leftUsesGriddedData
@@ -717,6 +707,7 @@ public class InMemoryProject implements Project
 
             // Get the declared singletons
             Set<GeometryTuple> declaredSingletons = this.getDeclaredFeatures( declaration );
+
             // Correlate with those from the times-series data
             Set<FeatureTuple> singletons = this.getCorrelatedFeatures( declaredSingletons,
                                                                        leftFeaturesWithData,

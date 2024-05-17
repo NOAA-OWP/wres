@@ -1722,7 +1722,7 @@ class ProjectUtilities
      */
 
     private static void validateThresholdsForFeatureGroups( Set<FeatureGroup> featureGroups,
-                                                    Set<FeatureTuple> featuresWithExplicitThresholds )
+                                                            Set<FeatureTuple> featuresWithExplicitThresholds )
     {
         Objects.requireNonNull( featureGroups );
         Objects.requireNonNull( featuresWithExplicitThresholds );

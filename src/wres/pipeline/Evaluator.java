@@ -561,13 +561,18 @@ public class Evaluator
             // reading/ingest (e.g., to form requests to data services), so perform this upfront: #116208
             EvaluationDeclaration declarationWithFeatures = ReaderUtilities.readAndFillFeatures( declaration );
 
+            // Read external thresholds into the declaration and remove any features for which thresholds are not
+            // available. See: #129805
+            EvaluationDeclaration declarationWithFeaturesAndThresholds =
+                    ReaderUtilities.readAndFillThresholds( declarationWithFeatures );
+
             // Update the small bag-o-state
             evaluationDetails = EvaluationDetailsBuilder.builder( evaluationDetails )
-                                                        .declaration( declarationWithFeatures )
+                                                        .declaration( declarationWithFeaturesAndThresholds )
                                                         .build();
             // Gridded features cache, if required. See #51232.
             GriddedFeatures.Builder griddedFeaturesBuilder =
-                    EvaluationUtilities.getGriddedFeaturesCache( declarationWithFeatures );
+                    EvaluationUtilities.getGriddedFeaturesCache( declarationWithFeaturesAndThresholds );
 
             LOGGER.debug( "Beginning ingest of time-series data..." );
 
@@ -593,7 +598,7 @@ public class Evaluator
 
                 List<IngestResult> ingestResults = SourceLoader.load( databaseIngester,
                                                                       evaluationDetails.systemSettings(),
-                                                                      declarationWithFeatures,
+                                                                      declarationWithFeaturesAndThresholds,
                                                                       griddedFeaturesBuilder,
                                                                       executors.readingExecutor() );
 
@@ -607,7 +612,7 @@ public class Evaluator
                 // Get the project, which provides an interface to the declaration, augmented/updated to reflect the
                 // information ingested from the time-series data sources
                 project = Projects.getProject( databaseServices.database(),
-                                               declarationWithFeatures,
+                                               declarationWithFeaturesAndThresholds,
                                                caches,
                                                griddedFeatures,
                                                ingestResults );
@@ -627,7 +632,7 @@ public class Evaluator
                 // Load the sources using the ingester and create the ingest results to share
                 List<IngestResult> ingestResults = SourceLoader.load( timeSeriesIngester,
                                                                       evaluationDetails.systemSettings(),
-                                                                      declarationWithFeatures,
+                                                                      declarationWithFeaturesAndThresholds,
                                                                       griddedFeaturesBuilder,
                                                                       executors.readingExecutor() );
 
@@ -641,13 +646,13 @@ public class Evaluator
 
                 // Get the project, which provides an interface to the declaration, augmented/updated to reflect the
                 // information ingested from the time-series data sources
-                project = Projects.getProject( declarationWithFeatures,
+                project = Projects.getProject( declarationWithFeaturesAndThresholds,
                                                timeSeriesStore,
                                                ingestResults );
             }
 
             // Re-assign the declaration augmented by the ingested data
-            declarationWithFeatures = project.getDeclaration();
+            declarationWithFeaturesAndThresholds = project.getDeclaration();
 
             LOGGER.debug( "Finished ingest of time-series data." );
 
@@ -661,9 +666,9 @@ public class Evaluator
 
             // Get the atomic metrics and thresholds for processing, each group representing a distinct processing task.
             // Ensure that named features correspond to the features associated with the data rather than declaration,
-            // i.e., use the adjusted declaration
+            // i.e., use the adjusted declaration.
             Set<MetricsAndThresholds> metricsAndThresholds =
-                    ThresholdSlicer.getMetricsAndThresholdsForProcessing( declarationWithFeatures );
+                    ThresholdSlicer.getMetricsAndThresholdsForProcessing( declarationWithFeaturesAndThresholds );
 
             // Create any netcdf blobs for writing. See #80267-137.
             Set<FeatureTuple> features = new HashSet<>( project.getFeatures() );
@@ -681,7 +686,7 @@ public class Evaluator
                                                    metricsAndThresholds );
 
             // Create the evaluation description for messaging
-            Evaluation evaluationDescription = MessageFactory.parse( declarationWithFeatures );
+            Evaluation evaluationDescription = MessageFactory.parse( declarationWithFeaturesAndThresholds );
 
             // Build the evaluation description for messaging. In the future, there may be a desire to build the
             // evaluation description prior to ingest, in order to message the status of ingest to client applications.
@@ -711,7 +716,7 @@ public class Evaluator
             // features and remove all singletons as there are no summary statistics for singletons
             Set<FeatureGroup> summaryStatisticsOnly =
                     EvaluationUtilities.getFeatureGroupsForSummaryStatisticsOnly( adjustedFeatureGroups, declaration );
-            PoolReporter poolReporter = new PoolReporter( declarationWithFeatures,
+            PoolReporter poolReporter = new PoolReporter( declarationWithFeaturesAndThresholds,
                                                           summaryStatisticsOnly,
                                                           poolCount,
                                                           true,
@@ -723,7 +728,7 @@ public class Evaluator
 
             // Create the summary statistics calculators to increment with raw statistics
             Map<String, List<SummaryStatisticsCalculator>> summaryStatsCalculators =
-                    EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeatures,
+                    EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds,
                                                                          poolCount );
             Map<String, List<SummaryStatisticsCalculator>> summaryStataCalculatorsForBaseline = Map.of();
             boolean separateMetricsForBaseline = DeclarationUtilities.hasBaseline( declaration )
@@ -732,7 +737,7 @@ public class Evaluator
             if ( separateMetricsForBaseline )
             {
                 summaryStataCalculatorsForBaseline =
-                        EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeatures,
+                        EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds,
                                                                              poolCount );
             }
 
@@ -741,7 +746,7 @@ public class Evaluator
                     EvaluationDetailsBuilder.builder( evaluationDetails )
                                             .project( project )
                                             .evaluation( evaluationMessager )
-                                            .declaration( declarationWithFeatures )
+                                            .declaration( declarationWithFeaturesAndThresholds )
                                             .metricsAndThresholds( metricsAndThresholds )
                                             .summaryStatistics( summaryStatsCalculators )
                                             .summaryStatisticsForBaseline( summaryStataCalculatorsForBaseline )

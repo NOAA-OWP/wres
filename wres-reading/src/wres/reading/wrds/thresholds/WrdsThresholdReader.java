@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import okhttp3.OkHttpClient;
-import org.apache.commons.compress.utils.IOUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
@@ -39,7 +39,6 @@ import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.config.yaml.components.ThresholdSource;
 import wres.datamodel.thresholds.ThresholdOuter;
-import wres.datamodel.units.UnitMapper;
 import wres.http.WebClientUtils;
 import wres.reading.ThresholdReader;
 import wres.reading.ThresholdReadingException;
@@ -127,19 +126,16 @@ public class WrdsThresholdReader implements ThresholdReader
     /**
      * Reads thresholds.
      * @param thresholdSource the threshold service declaration
-     * @param unitMapper a unit mapper to translate and set threshold units
      * @param featureNames the named features for which thresholds are required
      * @param featureAuthority the feature authority associated with the feature names
      * @return the thresholds mapped against features
      */
     @Override
     public Set<wres.config.yaml.components.Threshold> read( ThresholdSource thresholdSource,
-                                                            UnitMapper unitMapper,
                                                             Set<String> featureNames,
                                                             FeatureAuthority featureAuthority )
     {
         Objects.requireNonNull( thresholdSource );
-        Objects.requireNonNull( unitMapper );
         Objects.requireNonNull( featureNames );
 
         URI serviceUri = thresholdSource.uri();
@@ -241,7 +237,6 @@ public class WrdsThresholdReader implements ThresholdReader
         // Read the thresholds and accumulate any warnings
         Map<Location, Set<Threshold>> thresholdMapping = this.read( thresholdSource,
                                                                     addresses,
-                                                                    unitMapper,
                                                                     warnings );
 
         if ( thresholdMapping.isEmpty() )
@@ -267,13 +262,11 @@ public class WrdsThresholdReader implements ThresholdReader
     /**
      * Reads thresholds from a collection of addresses.
      * @param addresses the addresses
-     * @param unitMapper the unit mapper
      * @param warnings the accumulated warnings
      * @return the thresholds
      */
     private Map<Location, Set<Threshold>> read( ThresholdSource thresholdSource,
                                                 List<URI> addresses,
-                                                UnitMapper unitMapper,
                                                 Set<String> warnings )
     {
         Map<Location, Set<Threshold>> thresholdMapping;
@@ -293,7 +286,6 @@ public class WrdsThresholdReader implements ThresholdReader
                                     .filter( Objects::nonNull )
                                     .map( thresholdResponse -> this.extract( thresholdResponse,
                                                                              thresholdSource,
-                                                                             unitMapper,
                                                                              warnings ) )
                                     .flatMap( map -> map.entrySet()
                                                         .stream() )
@@ -316,7 +308,6 @@ public class WrdsThresholdReader implements ThresholdReader
     /**
      * @param responseBytes array of bytes to parse
      * @param thresholdSource the threshold service
-     * @param desiredUnitMapper the desired units
      * @param warnings the accumulated warnings encountered
      * @return the thresholds
      * @throws ThresholdReadingException if the thresholds could not be read
@@ -324,7 +315,6 @@ public class WrdsThresholdReader implements ThresholdReader
      */
     private Map<Location, Set<Threshold>> extract( byte[] responseBytes,
                                                    ThresholdSource thresholdSource,
-                                                   UnitMapper desiredUnitMapper,
                                                    Set<String> warnings )
     {
         ThresholdOrientation side = thresholdSource.applyTo();
@@ -360,7 +350,6 @@ public class WrdsThresholdReader implements ThresholdReader
                                                              .orientation( side )
                                                              .provider( thresholdSource.provider() )
                                                              .ratingProvider( thresholdSource.ratingProvider() )
-                                                             .unitMapper( desiredUnitMapper )
                                                              .build();
 
             // Flow is the default if the parameter is not specified. Note that this

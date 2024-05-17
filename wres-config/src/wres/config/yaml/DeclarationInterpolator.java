@@ -222,6 +222,9 @@ public class DeclarationInterpolator
                                                                     measurementUnit );
         events.addAll( unitEvents );
 
+        // Interpolate the measurement units for value thresholds
+        DeclarationInterpolator.interpolateMeasurementUnitForValueThresholds( adjustedBuilder );
+
         // Interpolate the timescale
         List<EvaluationStatusEvent> scaleEvents =
                 DeclarationInterpolator.interpolateTimeScale( adjustedBuilder,
@@ -978,6 +981,7 @@ public class DeclarationInterpolator
                     Set<Threshold> adjusted = next.parameters()
                                                   .thresholds();
                     adjusted = DeclarationInterpolator.addUnitToValueThresholds( adjusted, unit );
+
                     MetricParameters adjustedParameters = MetricParametersBuilder.builder( next.parameters() )
                                                                                  .thresholds( adjusted )
                                                                                  .build();

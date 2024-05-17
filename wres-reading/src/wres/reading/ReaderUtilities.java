@@ -56,7 +56,6 @@ import wres.datamodel.time.DoubleEvent;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
-import wres.datamodel.units.UnitMapper;
 import wres.http.WebClient;
 import wres.reading.DataSource.DataDisposition;
 import wres.reading.wrds.geography.FeatureFiller;
@@ -108,16 +107,13 @@ public class ReaderUtilities
      * contains a collection of U.S. National Weather Service APIs.
      *
      * @param declaration the evaluation declaration
-     * @param unitMapper the unit mapper
      * @return the declaration with any implicit thresholds rendered explicit
      * @throws NullPointerException if either input is null
      */
 
-    public static EvaluationDeclaration readAndFillThresholds( EvaluationDeclaration declaration,
-                                                               UnitMapper unitMapper )
+    public static EvaluationDeclaration readAndFillThresholds( EvaluationDeclaration declaration )
     {
         Objects.requireNonNull( declaration );
-        Objects.requireNonNull( unitMapper );
 
         EvaluationDeclaration adjusted = declaration;
 
@@ -127,7 +123,7 @@ public class ReaderUtilities
             // Adjust the declaration iteratively, once for each threshold source
             for ( ThresholdSource nextSource : declaration.thresholdSources() )
             {
-                adjusted = ReaderUtilities.fillThresholds( nextSource, adjusted, unitMapper );
+                adjusted = ReaderUtilities.fillThresholds( nextSource, adjusted );
             }
 
             // Remove any features for which there are no thresholds in the sources
@@ -887,15 +883,12 @@ public class ReaderUtilities
      * Attempts to acquire thresholds from an external source and populate them in the supplied declaration, as needed.
      * @param thresholdSource the threshold source
      * @param evaluation the declaration to adjust
-     * @param unitMapper a unit mapper to map the threshold values to correct units
      * @return the adjusted declaration, including any thresholds acquired from the external source
      */
     private static EvaluationDeclaration fillThresholds( ThresholdSource thresholdSource,
-                                                         EvaluationDeclaration evaluation,
-                                                         UnitMapper unitMapper )
+                                                         EvaluationDeclaration evaluation )
     {
         Objects.requireNonNull( evaluation );
-        Objects.requireNonNull( unitMapper );
         Objects.requireNonNull( thresholdSource );
 
         if ( Objects.isNull( thresholdSource.uri() ) )
@@ -966,7 +959,6 @@ public class ReaderUtilities
 
         // Continue to read the thresholds
         Set<wres.config.yaml.components.Threshold> thresholds = reader.read( thresholdSource,
-                                                                             unitMapper,
                                                                              featureNames,
                                                                              featureAuthority );
 

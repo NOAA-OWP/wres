@@ -13,13 +13,10 @@ import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
-import wres.datamodel.pools.MeasurementUnit;
 import wres.reading.wrds.geography.Location;
-import wres.datamodel.units.UnitMapper;
 import wres.statistics.generated.Threshold;
 
 /**
@@ -46,12 +43,8 @@ class ThresholdExtractorTest
 
     private static final Location STEAK = createFeature( null, null, "STEAK" );
     private static final Location BAKED_POTATO = createFeature( null, null, "BakedPotato" );
-
-    private UnitMapper unitMapper;
     private ThresholdResponse normalResponse = null;
     private ThresholdResponse funResponse = null;
-
-    private static final MeasurementUnit units = MeasurementUnit.of( "CMS" );
 
     /**
      * Test instance.
@@ -118,36 +111,17 @@ class ThresholdExtractorTest
                                            .response( thresholdResponse )
                                            .build();
 
-        //For the tests that used to be external to this test.
-        this.unitMapper = Mockito.mock( UnitMapper.class );
         this.normalResponse = this.createNormalThresholdResponse();
         this.funResponse = this.createFunThresholdResponse();
-        Mockito.when( this.unitMapper.getUnitMapper( "FT" ) ).thenReturn( in -> in );
-        Mockito.when( this.unitMapper.getUnitMapper( "CFS" ) ).thenReturn( in -> in );
-        Mockito.when( this.unitMapper.getUnitMapper( "MM" ) ).thenReturn( in -> in );
-        Mockito.when( this.unitMapper.getDesiredMeasurementUnitName() ).thenReturn( units.toString() );
     }
 
     @Test
     void testExtractThresholdsForOneFeatureGeneratesExpectedThresholdCounts()
     {
-        // Mock the unit mapper
-        UnitMapper mapper = Mockito.mock( UnitMapper.class );
-        Mockito.when( mapper.getUnitMapper( "CFS" ) )
-               .thenReturn( next -> next );
-
-        Mockito.when( mapper.getUnitMapper( "FT" ) )
-               .thenReturn( next -> next );
-
-        // Assert against flow first
-        Mockito.when( mapper.getDesiredMeasurementUnitName() )
-               .thenReturn( "CFS" );
-
         Map<Location, Set<Threshold>> extractedFlowThresholds = this.extractor.toBuilder()
                                                                               .type( ThresholdType.FLOW )
                                                                               .provider( "NWS-NRLDB" )
                                                                               .ratingProvider( "NRLDB" )
-                                                                              .unitMapper( mapper )
                                                                               .build()
                                                                               .extract();
 
@@ -156,15 +130,10 @@ class ThresholdExtractorTest
         assertEquals( 1, extractedFlowThresholds.size() );
         assertEquals( 7, extractedFlowThresholds.get( extractedFlowThresholds.keySet().iterator().next() ).size() );
 
-        // Assert against stage next
-        Mockito.when( mapper.getDesiredMeasurementUnitName() )
-               .thenReturn( "FT" );
-
         Map<Location, Set<Threshold>> extractedStageThresholds = this.extractor.toBuilder()
                                                                                .type( ThresholdType.STAGE )
                                                                                .provider( "NWS-NRLDB" )
                                                                                .ratingProvider( "NRLDB" )
-                                                                               .unitMapper( mapper )
                                                                                .build()
                                                                                .extract();
 
@@ -184,7 +153,6 @@ class ThresholdExtractorTest
                                                          .response( normalResponse )
                                                          .type( ThresholdType.STAGE )
                                                          .provider( "NWS-NRLDB" )
-                                                         .unitMapper( unitMapper )
                                                          .operator( ThresholdOperator.GREATER )
                                                          .orientation( ThresholdOrientation.LEFT )
                                                          .build();
@@ -224,7 +192,6 @@ class ThresholdExtractorTest
                                       .type( ThresholdType.FLOW )
                                       .provider( "FlavorTown" )
                                       .ratingProvider( "DonkeySauce" )
-                                      .unitMapper( unitMapper )
                                       .operator( ThresholdOperator.GREATER )
                                       .orientation( ThresholdOrientation.LEFT_AND_ANY_RIGHT )
                                       .build();
@@ -296,7 +263,6 @@ class ThresholdExtractorTest
                                       .response( normalResponse )
                                       .type( ThresholdType.STAGE )
                                       .provider( "NWS-CMS" )
-                                      .unitMapper( unitMapper )
                                       .operator( ThresholdOperator.LESS )
                                       .orientation( ThresholdOrientation.LEFT )
                                       .build();
@@ -350,7 +316,6 @@ class ThresholdExtractorTest
                                       .response( funResponse )
                                       .type( ThresholdType.STAGE )
                                       .provider( "NWS-NRLDB" )
-                                      .unitMapper( unitMapper )
                                       .operator( ThresholdOperator.GREATER )
                                       .orientation( ThresholdOrientation.LEFT )
                                       .build();

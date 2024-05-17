@@ -5,9 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
-import wres.datamodel.pools.MeasurementUnit;
 import wres.reading.wrds.geography.Location;
-import wres.datamodel.units.UnitMapper;
 import wres.statistics.generated.Threshold;
 
 import java.io.Serial;
@@ -18,7 +16,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.DoubleUnaryOperator;
 
 /**
  * Represents the combined elements that defined an atomic set of thresholds.
@@ -192,13 +189,11 @@ class ThresholdDefinition implements Serializable
      * @param thresholdOperator the threshold operator
      * @param dataType the data type otherwise the original flow thresholds are used. This flag is ignored for all
      *                 other thresholds.
-     * @param desiredUnitMapper the unit mapper
      * @return a map of thresholds by location. This is a singleton map: only one location will be returned at most.
      */
     Map<Location, Set<Threshold>> getThresholds( ThresholdType thresholdType,
                                                  ThresholdOperator thresholdOperator,
-                                                 ThresholdOrientation dataType,
-                                                 UnitMapper desiredUnitMapper )
+                                                 ThresholdOrientation dataType )
     {
         Location location = this.getLocation();
 
@@ -207,10 +202,9 @@ class ThresholdDefinition implements Serializable
         Map<String, Double> calculatedThresholds = null;
         Map<String, Double> originalThresholds = null;
 
-        // These are the measurement unit operators based on a desired unit,
-        // passed in, and the String units associated with the threshold.
-        DoubleUnaryOperator originalUnitConversionOperator = null;
-        DoubleUnaryOperator calculatedUnitConversionOperator = null;
+        // The measurement units
+        String originalUnits = null;
+        String calculatedUnits = null;
 
         // Point the two maps and identify the unit operator appropriately.
         // Unified schema values takes precedence over all others.
@@ -218,11 +212,8 @@ class ThresholdDefinition implements Serializable
                                               .getThresholdValues()
                                               .isEmpty() )
         {
-            originalThresholds = getValues().getThresholdValues();
-            originalUnitConversionOperator =
-                    desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata()
-                                                                             .getUnits() )
-                                                                    .getUnit() );
+            originalThresholds = this.getValues()
+                                     .getThresholdValues();
         }
 
         // When values is not used, then we are looking at NWS thresholds,
@@ -233,10 +224,8 @@ class ThresholdDefinition implements Serializable
             if ( this.getStageValues() != null )
             {
                 originalThresholds = getStageValues().getThresholdValues();
-                originalUnitConversionOperator =
-                        desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata()
-                                                                                 .getStageUnits() )
-                                                                        .getUnit() );
+                originalUnits = this.getMetadata()
+                                    .getStageUnits();
             }
         }
         else
@@ -244,20 +233,16 @@ class ThresholdDefinition implements Serializable
             if ( this.getFlowValues() != null )
             {
                 originalThresholds = getFlowValues().getThresholdValues();
-                originalUnitConversionOperator =
-                        desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata()
-                                                                                 .getFlowUnits() )
-                                                                        .getUnit() );
+                originalUnits = this.getMetadata()
+                                    .getFlowUnits();
             }
 
             if ( this.getCalcFlowValues() != null )
             {
                 calculatedThresholds = this.getCalcFlowValues()
                                            .getThresholdValues();
-                calculatedUnitConversionOperator =
-                        desiredUnitMapper.getUnitMapper( MeasurementUnit.of( this.getMetadata()
-                                                                                 .getCalcFlowUnits() )
-                                                                        .getUnit() );
+                calculatedUnits = this.getMetadata()
+                                      .getCalcFlowUnits();
             }
         }
 
@@ -266,18 +251,16 @@ class ThresholdDefinition implements Serializable
 
         // First, the original thresholds go into the map.
         this.addOriginalThresholds( originalThresholds,
-                                    originalUnitConversionOperator,
+                                    originalUnits,
                                     thresholdOperator,
                                     dataType,
-                                    desiredUnitMapper,
                                     thresholdMap );
 
         // Then we overwrite the original with calculated.
         this.addCalculatedThresholds( calculatedThresholds,
-                                      calculatedUnitConversionOperator,
+                                      calculatedUnits,
                                       thresholdOperator,
                                       dataType,
-                                      desiredUnitMapper,
                                       thresholdMap );
 
         return Map.of( location, new HashSet<>( thresholdMap.values() ) );
@@ -286,17 +269,15 @@ class ThresholdDefinition implements Serializable
     /**
      * Adds the original thresholds to the prescribed map.
      * @param originalThresholds the original thresholds
-     * @param originalUnitConversionOperator the original threshold unit conversion operator
+     * @param originalUnits the original threshold unit
      * @param thresholdOperator the threshold operator
      * @param dataType the data type
-     * @param desiredUnitMapper the desired unit mapper
      * @param thresholdMap the threshold map to mutate
      */
     private void addOriginalThresholds( Map<String, Double> originalThresholds,
-                                        DoubleUnaryOperator originalUnitConversionOperator,
+                                        String originalUnits,
                                         ThresholdOperator thresholdOperator,
                                         ThresholdOrientation dataType,
-                                        UnitMapper desiredUnitMapper,
                                         Map<String, Threshold> thresholdMap )
     {
         // First, the original thresholds go into the map.
@@ -306,12 +287,12 @@ class ThresholdDefinition implements Serializable
             {
                 if ( threshold.getValue() != null )
                 {
-                    double value = originalUnitConversionOperator.applyAsDouble( threshold.getValue() );
+                    double value = threshold.getValue();
                     Threshold next = this.getValueThreshold( value,
                                                              thresholdOperator,
                                                              dataType,
                                                              threshold.getKey(),
-                                                             desiredUnitMapper.getDesiredMeasurementUnitName() );
+                                                             originalUnits );
                     thresholdMap.put( threshold.getKey(), next );
                 }
             }
@@ -321,17 +302,15 @@ class ThresholdDefinition implements Serializable
     /**
      * Adds the calculated thresholds to the prescribed map.
      * @param calculatedThresholds the calculated thresholds
-     * @param calculatedUnitConversionOperator the calculated threshold unit conversion operator
+     * @param calculatedUnits the calculated threshold units
      * @param thresholdOperator the threshold operator
      * @param dataType the data type
-     * @param desiredUnitMapper the desired unit mapper
      * @param thresholdMap the threshold map to mutate
      */
     private void addCalculatedThresholds( Map<String, Double> calculatedThresholds,
-                                          DoubleUnaryOperator calculatedUnitConversionOperator,
+                                          String calculatedUnits,
                                           ThresholdOperator thresholdOperator,
                                           ThresholdOrientation dataType,
-                                          UnitMapper desiredUnitMapper,
                                           Map<String, Threshold> thresholdMap )
     {
         if ( calculatedThresholds != null )
@@ -347,12 +326,12 @@ class ThresholdDefinition implements Serializable
                                        .getSource()
                                    + " "
                                    + threshold.getKey();
-                    double value = calculatedUnitConversionOperator.applyAsDouble( threshold.getValue() );
+                    double value = threshold.getValue();
                     Threshold next = this.getValueThreshold( value,
                                                              thresholdOperator,
                                                              dataType,
                                                              label,
-                                                             desiredUnitMapper.getDesiredMeasurementUnitName() );
+                                                             calculatedUnits );
                     thresholdMap.put( label, next );
                 }
             }
@@ -375,6 +354,12 @@ class ThresholdDefinition implements Serializable
                                          String name,
                                          String unit )
     {
+        // An empty unit if unavailable
+        if( Objects.isNull( unit ) )
+        {
+            unit = "";
+        }
+
         return Threshold.newBuilder()
                         .setLeftThresholdValue( threshold )
                         .setOperator( Threshold.ThresholdOperator.valueOf( thresholdOperator.name() ) )

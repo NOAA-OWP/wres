@@ -38,7 +38,6 @@ import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.ThresholdSourceBuilder;
 import wres.config.yaml.components.ThresholdType;
-import wres.datamodel.units.UnitMapper;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -646,7 +645,7 @@ class ReaderUtilitiesTest
         String[] actual = ReaderUtilities.splitByDelimiter( csvToSplit, ',' );
         assertArrayEquals( new String[] { "foo, bar", "baz", "qux", "" }, actual );
     }
-    
+
     @Test
     void testSplitByDelimiterIssue100674()
     {
@@ -718,9 +717,7 @@ class ReaderUtilitiesTest
                                                                             .metrics( metrics )
                                                                             .build();
 
-            UnitMapper unitMapper = UnitMapper.of( FT );
-
-            EvaluationDeclaration actual = ReaderUtilities.readAndFillThresholds( declaration, unitMapper );
+            EvaluationDeclaration actual = ReaderUtilities.readAndFillThresholds( declaration );
 
             // Build the expected declaration
             Set<wres.config.yaml.components.Threshold> expectedThresholds = new HashSet<>();
@@ -730,13 +727,13 @@ class ReaderUtilitiesTest
 
             Threshold firstOne = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
-                                          .setLeftThresholdValue(0.0 )
+                                          .setLeftThresholdValue( 0.0 )
                                           .setThresholdValueUnits( FT )
                                           .setName( "low" )
                                           .build();
             Threshold firstTwo = Threshold.newBuilder()
                                           .setOperator( Threshold.ThresholdOperator.GREATER )
-                                          .setLeftThresholdValue(8.0 )
+                                          .setLeftThresholdValue( 8.0 )
                                           .setThresholdValueUnits( FT )
                                           .setName( "action" )
                                           .build();
@@ -1209,9 +1206,7 @@ class ReaderUtilitiesTest
                                                                             .metrics( metrics )
                                                                             .build();
 
-            UnitMapper unitMapper = UnitMapper.of( FT );
-
-            EvaluationDeclaration actual = ReaderUtilities.readAndFillThresholds( declaration, unitMapper );
+            EvaluationDeclaration actual = ReaderUtilities.readAndFillThresholds( declaration );
 
             Set<GeometryTuple> actualSingletons = actual.features()
                                                         .geometries();
@@ -1296,9 +1291,7 @@ class ReaderUtilitiesTest
                                                                         .metrics( metrics )
                                                                         .build();
 
-        UnitMapper unitMapper = UnitMapper.of( FT );
-
-        EvaluationDeclaration actual = ReaderUtilities.readAndFillThresholds( declaration, unitMapper );
+        EvaluationDeclaration actual = ReaderUtilities.readAndFillThresholds( declaration );
 
         Set<GeometryTuple> actualSingletons = actual.features()
                                                     .geometries();

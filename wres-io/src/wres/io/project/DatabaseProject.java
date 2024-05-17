@@ -42,7 +42,6 @@ import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.Feature;
-import wres.datamodel.units.UnitMapper;
 import wres.io.NoProjectDataException;
 import wres.datamodel.DataProvider;
 import wres.io.database.DatabaseOperations;
@@ -50,7 +49,6 @@ import wres.io.database.caching.DatabaseCaches;
 import wres.io.database.caching.Features;
 import wres.io.ingesting.IngestException;
 import wres.io.ingesting.IngestResult;
-import wres.reading.ReaderUtilities;
 import wres.reading.netcdf.grid.GriddedFeatures;
 import wres.io.database.DataScripter;
 import wres.io.database.Database;
@@ -152,14 +150,6 @@ public class DatabaseProject implements Project
 
         // Set the measurement unit
         this.measurementUnit = this.getAnalyzedMeasurementUnit( declaration, this.projectId );
-
-        // Get a unit mapper for the declared or analyzed measurement units
-        UnitMapper unitMapper = UnitMapper.of( this.measurementUnit,
-                                               declaration.unitAliases() );
-
-        // Read external thresholds into the declaration and remove any features for which thresholds are not available
-        // #129805
-        declaration = ReaderUtilities.readAndFillThresholds( declaration, unitMapper );
 
         ProjectUtilities.FeatureSets featureSets = this.getFeaturesAndFeatureGroups( this.projectId,
                                                                                      declaration,

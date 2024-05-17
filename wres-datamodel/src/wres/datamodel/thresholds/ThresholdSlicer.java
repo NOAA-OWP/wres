@@ -14,6 +14,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.function.BiFunction;
+import java.util.function.DoubleUnaryOperator;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -27,6 +28,7 @@ import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricParameters;
+import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdType;
 import wres.datamodel.types.Climatology;
@@ -38,6 +40,7 @@ import wres.datamodel.pools.MeasurementUnit;
 import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureTuple;
 import wres.config.yaml.components.ThresholdOrientation;
+import wres.datamodel.units.UnitMapper;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Pool;
@@ -588,6 +591,16 @@ public class ThresholdSlicer
         // Obtain the minimum sample size
         int minimumSampleSize = evaluation.minimumSampleSize();
 
+        // Convert the threshold value units to the desired evaluation unit,
+        // as required
+        UnitMapper unitMapper = null;
+
+        if ( Objects.nonNull( evaluation.unit() ) )
+        {
+            unitMapper = UnitMapper.of( evaluation.unit(),
+                                        evaluation.unitAliases() );
+        }
+
         // Iterate the groups
         Set<MetricsAndThresholds> metricsAndThresholds = new HashSet<>();
         for ( Set<Metric> nextGroup : atomicGroups )
@@ -609,7 +622,12 @@ public class ThresholdSlicer
 
                 if ( Objects.nonNull( nextParameters ) )
                 {
-                    ThresholdSlicer.addThresholds( nextParameters.thresholds(),
+                    Set<wres.config.yaml.components.Threshold> valueThresholds = nextParameters.thresholds();
+
+                    // Convert units, as needed
+                    valueThresholds = ThresholdSlicer.convertUnits( valueThresholds, unitMapper );
+
+                    ThresholdSlicer.addThresholds( valueThresholds,
                                                    ThresholdType.VALUE,
                                                    thresholds,
                                                    features );
@@ -844,6 +862,58 @@ public class ThresholdSlicer
                 builder.setValues( OneOrTwoDoubles.of( Double.NaN ) );
             }
         }
+    }
+
+    /**
+     * Converts the units of the supplied real-valued thresholds.
+     * @param thresholds the real-valued thresholds
+     * @param unitMapper the unit mapper
+     * @return the thresholds with adjusted units
+     */
+    private static Set<wres.config.yaml.components.Threshold> convertUnits( Set<wres.config.yaml.components.Threshold> thresholds,
+                                                                            UnitMapper unitMapper )
+    {
+        if ( Objects.isNull( unitMapper ) )
+        {
+            LOGGER.warn( "Could not perform any unit conversion of the real-valued threshold units as the desired "
+                         + "measurement unit is undefined. Assuming that the desired units match the existing units." );
+
+            return thresholds;
+        }
+
+        Set<wres.config.yaml.components.Threshold> adjusted = new HashSet<>();
+        for ( wres.config.yaml.components.Threshold threshold : thresholds )
+        {
+            Threshold inner = threshold.threshold();
+
+            // Do not convert the "all data" threshold
+            ThresholdOuter allDataCheck = ThresholdOuter.of( inner );
+
+            ThresholdBuilder builder = ThresholdBuilder.builder( threshold );
+            if ( !allDataCheck.isAllDataThreshold()
+                 && !Objects.equals( inner.getThresholdValueUnits(),
+                                     unitMapper.getDesiredMeasurementUnitName() ) )
+            {
+                DoubleUnaryOperator mapper = unitMapper.getUnitMapper( inner.getThresholdValueUnits() );
+                double leftValue = mapper.applyAsDouble( inner.getLeftThresholdValue() );
+
+                Threshold.Builder innerAdjusted = inner.toBuilder()
+                                                       .setLeftThresholdValue( leftValue )
+                                                       .setThresholdValueUnits( unitMapper.getDesiredMeasurementUnitName() );
+
+                if ( inner.hasRightThresholdValue() )
+                {
+                    double rightValue = mapper.applyAsDouble( inner.getRightThresholdValue() );
+                    innerAdjusted.setRightThresholdValue( rightValue );
+                }
+
+                builder.threshold( innerAdjusted.build() );
+            }
+
+            adjusted.add( builder.build() );
+        }
+
+        return Collections.unmodifiableSet( adjusted );
     }
 
     /**
