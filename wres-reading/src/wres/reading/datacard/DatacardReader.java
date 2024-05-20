@@ -204,8 +204,8 @@ public class DatacardReader implements TimeSeriesReader
                                                      AtomicInteger lineNumber )
             throws IOException
     {
-        String variableName = null;
-        String unit = null;
+        String variableName;
+        String unit;
         String featureName = null;
         String featureDescription = null;
         int firstMonth;
@@ -484,27 +484,27 @@ public class DatacardReader implements TimeSeriesReader
     {
         Source source = dataSource.getSource();
 
-        // Zone offset is required configuration since datacard does not specify
-        // its time zone.  Process it.
+        // Zone offset is required configuration since datacard does not specify its time zone. The offset may be
+        // declared for this source or for the overall dataset
         ZoneOffset offset = source.timeZoneOffset();
 
         // Overall offset for all sources?
-        if( Objects.isNull( offset ) )
+        if ( Objects.isNull( offset ) )
         {
             offset = dataSource.getContext()
                                .timeZoneOffset();
         }
 
-        LOGGER.debug( "The configured time zone offset is {}.", offset );
+        LOGGER.debug( "The declared time zone offset for {} is {}.", source, offset );
 
         if ( Objects.isNull( offset ) )
         {
-            String message = "While reading a Datacard source from '"
+            String message = "While reading a Datacard data source from '"
                              + dataSource.getUri()
-                             + "', failed to discover a 'time_zone_offset' in the project declaration. Datacard "
-                             + "requires a 'time_zone_offset' such as 'time_zone_offset=-0500' or "
-                             + "'time_zone_offset=EST' or 'time_zone_offset=Z'. Please add a correct "
-                             + "'time_zone_offset' for this Datacard source and try again.";
+                             + "', failed to identify a 'time_zone_offset' in the project declaration, which is needed "
+                             + "to correctly identify the time zone of the time-series data. Please add a "
+                             + "'time_zone_offset' to the project declaration for this individual data source or "
+                             + "for the overall dataset and try again.";
             throw new DeclarationException( message );
         }
 
@@ -686,12 +686,12 @@ public class DatacardReader implements TimeSeriesReader
     }
 
     /**
-         * An immutable value class to hold variable and feature names.
-         * @author James Brown
-         */
+     * An immutable value class to hold variable and feature names.
+     * @author James Brown
+     */
 
-        private record Names( String variableName, String unit, String featureName, String featureDescription )
-        {
-        }
+    private record Names( String variableName, String unit, String featureName, String featureDescription )
+    {
+    }
 
 }

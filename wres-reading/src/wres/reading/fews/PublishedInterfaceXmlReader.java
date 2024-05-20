@@ -359,14 +359,15 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
      * @param reader the reader positioned on the timeZone tag
      * @return the time zone offset
      * @throws XMLStreamException when underlying reader can't read next element
-     * @throws NumberFormatException when value is not able to be parsed
+     * @throws NumberFormatException when the value cannot be parsed
      * @throws DateTimeException when the value is outside the range +/- 18 hrs
      */
     private ZoneOffset parseOffsetHours( XMLStreamReader reader )
             throws XMLStreamException
     {
         if ( reader.isStartElement()
-             && reader.getLocalName().equalsIgnoreCase( "timeZone" ) )
+             && reader.getLocalName()
+                      .equalsIgnoreCase( "timeZone" ) )
         {
             reader.next();
         }
@@ -376,7 +377,6 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         int offsetSeconds = ( int ) ( offsetHours * 3600.0 );
         return ZoneOffset.ofTotalSeconds( offsetSeconds );
     }
-
 
     /**
      * Interprets information within PIXML "series" tags and returns a series if complete.
@@ -400,37 +400,8 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         AtomicDouble missingValue = new AtomicDouble( PIXML_DEFAULT_MISSING_VALUE );
         TimeSeriesTuple returnMe = null;
 
-        // If we get to this point without a zone offset, something is wrong.
-        // See #38801 discussion.
-        if ( Objects.isNull( zoneOffset ) )
-        {
-            String message = "At the point of reading PI-XML series, could not find the zone offset. Have read up to "
-                             + "line "
-                             + reader.getLocation().getLineNumber()
-                             + AND_COLUMN
-                             + reader.getLocation().getColumnNumber()
-                             + ". In PI-XML data, a field named <timeZone> containing the number of hours to offset "
-                             + "from UTC is required. Please report this issue to whomever provided this data file.";
-
-            throw new ReadException( message );
-        }
-        else
-        {
-            ZoneOffset configuredOffset = dataSource.getSource()
-                                                    .timeZoneOffset();
-            if ( Objects.nonNull( configuredOffset ) && !configuredOffset.equals( zoneOffset ) )
-            {
-                LOGGER.warn( "The zone offset specified {}{}{}{}{}{}{}{}",
-                             "for this source (",
-                             configuredOffset,
-                             ") did not match what was in the source data (",
-                             zoneOffset,
-                             "). It is best to NOT specify the zone for PI-XML",
-                             " sources in the project declaration because WRES ",
-                             "ignores it and uses the zone offset found in-",
-                             "band in the data" );
-            }
-        }
+        // Identify the timezone offset. See #38801, superseded by #126661
+        zoneOffset = this.getTimeZoneOffset( zoneOffset, dataSource );
 
         String localName;
 
@@ -468,6 +439,67 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                                      zoneOffset,
                                      missingValue );
                 }
+            }
+        }
+
+        return returnMe;
+    }
+
+    /**
+     * Returns the timezone offset from the ingested information and data source.
+     * @param ingestedOffset the ingested timezone offset
+     * @param dataSource the data source
+     * @return the timezone offset
+     */
+    private ZoneOffset getTimeZoneOffset( ZoneOffset ingestedOffset, DataSource dataSource )
+    {
+        ZoneOffset returnMe = ingestedOffset;
+
+        // See #38801, superseded by #126661
+        if ( Objects.isNull( ingestedOffset ) )
+        {
+            // The offset may be declared for this source or for the overall dataset
+            ZoneOffset offset = dataSource.getSource()
+                                          .timeZoneOffset();
+
+            // Overall offset for all sources?
+            if ( Objects.isNull( offset ) )
+            {
+                offset = dataSource.getContext()
+                                   .timeZoneOffset();
+            }
+
+            LOGGER.debug( "The declared time zone offset for {} is {}.", dataSource.getSource(), offset );
+
+            if ( Objects.isNull( offset ) )
+            {
+                String message = "While reading a PI-XML data source from '"
+                                 + dataSource.getUri()
+                                 + "', failed to identify a 'timeZone' in the time-series data and failed to discover "
+                                 + "a 'time_zone_offset' in the project declaration. One of these is necessary to "
+                                 + "correctly identify the time zone of the time-series data. Please add a "
+                                 + "'time_zone_offset' to the project declaration for this individual data source or "
+                                 + "for the overall dataset and try again.";
+                throw new ReadException( message );
+            }
+
+            returnMe = offset;
+        }
+        else
+        {
+            ZoneOffset configuredOffset = dataSource.getSource()
+                                                    .timeZoneOffset();
+            if ( Objects.nonNull( configuredOffset )
+                 && !configuredOffset.equals( ingestedOffset ) )
+            {
+                LOGGER.warn( "The declared 'time_zone_offset' for the data source at '{}' was {}, which does not match "
+                             + "the 'timeZone' of {} for a time-series within the source. It is best not to declare "
+                             + "the 'time_zone_offset' for a PI-XML source in the project declaration when the "
+                             + "'timeZone' is available within the data source itself because the declaration will be "
+                             + "ignored.",
+                             dataSource.getUri(),
+                             configuredOffset,
+                             ingestedOffset );
             }
         }
 
@@ -994,7 +1026,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         String locationWkt = null;
 
         // When x and y are present, prefer those to lon, lat.
-        // Going to Double back to String seems frivolous but it validates data.
+        // Going to Double back to String seems frivolous, but it validates data.
         if ( Objects.nonNull( header.x ) && Objects.nonNull( header.y ) )
         {
             StringJoiner wktGeometry = new StringJoiner( " " );

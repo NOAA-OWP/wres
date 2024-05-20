@@ -26,22 +26,60 @@ public class ZoneOffsetDeserializer extends JsonDeserializer<ZoneOffset>
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( ZoneOffsetDeserializer.class );
 
+    /** UTC. */
+    private static final ZoneOffset UTC = ZoneOffset.of( "+0000" );
+
+    /** UTC - 4H. */
+    private static final ZoneOffset M4H = ZoneOffset.of( "-0400" );
+
+    /** UTC - 5H. */
+    private static final ZoneOffset M5H = ZoneOffset.of( "-0500" );
+
+    /** UTC - 6H. */
+    private static final ZoneOffset M6H = ZoneOffset.of( "-0600" );
+
+    /** UTC - 7H. */
+    private static final ZoneOffset M7H = ZoneOffset.of( "-0700" );
+
+    /** UTC - *H. */
+    private static final ZoneOffset M8H = ZoneOffset.of( "-0800" );
+
+    /** UTC - 9H. */
+    private static final ZoneOffset M9H = ZoneOffset.of( "-0900" );
+
+    /** UTC - 10H. */
+    private static final ZoneOffset M10H = ZoneOffset.of( "-1000" );
+
     /** Time zone shorthands, which are currently CONUS-centric. */
     private static final Map<String, ZoneOffset> SHORTHANDS =
-            Map.ofEntries( Map.entry( "UTC", ZoneOffset.of( "+0000" ) ),
-                           Map.entry( "GMT", ZoneOffset.of( "+0000" ) ),
-                           Map.entry( "EDT", ZoneOffset.of( "-0400" ) ),
-                           Map.entry( "EST", ZoneOffset.of( "-0500" ) ),
-                           Map.entry( "CDT", ZoneOffset.of( "-0500" ) ),
-                           Map.entry( "CST", ZoneOffset.of( "-0600" ) ),
-                           Map.entry( "MDT", ZoneOffset.of( "-0600" ) ),
-                           Map.entry( "MST", ZoneOffset.of( "-0700" ) ),
-                           Map.entry( "PDT", ZoneOffset.of( "-0700" ) ),
-                           Map.entry( "PST", ZoneOffset.of( "-0800" ) ),
-                           Map.entry( "AKDT", ZoneOffset.of( "-0800" ) ),
-                           Map.entry( "AKST", ZoneOffset.of( "-0900" ) ),
-                           Map.entry( "HADT", ZoneOffset.of( "-0900" ) ),
-                           Map.entry( "HAST", ZoneOffset.of( "-1000" ) ) );
+            Map.ofEntries( Map.entry( "UTC", UTC ),
+                           Map.entry( "GMT", UTC ),
+                           Map.entry( "EDT", M4H ),
+                           Map.entry( "EST", M5H ),
+                           Map.entry( "CDT", M5H ),
+                           Map.entry( "CST", M6H ),
+                           Map.entry( "MDT", M6H ),
+                           Map.entry( "MST", M7H ),
+                           Map.entry( "PDT", M7H ),
+                           Map.entry( "PST", M8H ),
+                           Map.entry( "AKDT", M8H ),
+                           Map.entry( "AKST", M9H ),
+                           Map.entry( "HADT", M9H ),
+                           Map.entry( "HAST", M10H ),
+                           Map.entry( "utc", UTC ),
+                           Map.entry( "gmt", UTC ),
+                           Map.entry( "edt", M4H ),
+                           Map.entry( "est", M5H ),
+                           Map.entry( "cdt", M5H ),
+                           Map.entry( "cst", M6H ),
+                           Map.entry( "mdt", M6H ),
+                           Map.entry( "mst", M7H ),
+                           Map.entry( "pdt", M7H ),
+                           Map.entry( "pst", M8H ),
+                           Map.entry( "akdt", M8H ),
+                           Map.entry( "akst", M9H ),
+                           Map.entry( "hadt", M9H ),
+                           Map.entry( "hast", M10H ) );
 
     @Override
     public ZoneOffset deserialize( JsonParser jp, DeserializationContext context )
