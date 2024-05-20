@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.datamodel.time.TimeSeries;
@@ -22,6 +25,9 @@ import wres.reading.TimeSeriesTuple;
 
 public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
 {
+    /** Logger. */
+    private static final Logger LOGGER = LoggerFactory.getLogger( InMemoryTimeSeriesIngester.class );
+
     /** The time-series store builder to populate with time-series. */
     private final TimeSeriesStore.Builder timeSeriesStoreBuilder;
 
@@ -50,6 +56,11 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
             DataType dataType = null;
             for ( TimeSeriesTuple nextTuple : listedTuples )
             {
+                // If needed, adjust the tuple to handle the special case where a time-series was read as single-valued,
+                // but declared to be treated as an ensemble. It is convenient to perform that adaptation on "ingest"
+                // because a retriever will be constructed for the expected type, i.e., ensemble time-series
+                nextTuple = this.checkAndAdaptTupleForDataType( nextTuple );
+
                 DataSource innerSource = nextTuple.getDataSource();
                 DatasetOrientation innerOrientation =
                         DatasetOrientation.valueOf( innerSource.getDatasetOrientation()
@@ -93,6 +104,38 @@ public class InMemoryTimeSeriesIngester implements TimeSeriesIngester
 
             // Arbitrary surrogate key, since this is an in-memory ingest
             return List.of( new IngestResultInMemory( outerSource, dataType ) );
+        }
+    }
+
+    /**
+     * Handles the special case where a single-valued time-series should be treated as an ensemble time-series.
+     *
+     * @param tuple the tuple to check and adapt
+     * @return the adapted tuple
+     */
+
+    private TimeSeriesTuple checkAndAdaptTupleForDataType( TimeSeriesTuple tuple )
+    {
+        // Special case where time-series were read as single-valued, but declared as ensemble, and should
+        // be treated as declared, i.e., a one-member ensemble. See #130267.
+        if ( tuple.getDataSource()
+                  .getContext()
+                  .type() == DataType.ENSEMBLE_FORECASTS
+             && tuple.hasSingleValuedTimeSeries() )
+        {
+            LOGGER.debug( "Discovered a time-series tuple with single-valued time-series declared to be treated as "
+                          + "ensemble time-series. The single-valued time-series will be converted to one-member "
+                          + "ensembles." );
+
+            TimeSeries<Double> singleValued = tuple.getSingleValuedTimeSeries();
+
+            TimeSeries<Ensemble> ensemble = TimeSeriesSlicer.transform( singleValued, Ensemble::of, m -> m );
+
+            return TimeSeriesTuple.ofEnsemble( ensemble, tuple.getDataSource() );
+        }
+        else
+        {
+            return tuple;
         }
     }
 

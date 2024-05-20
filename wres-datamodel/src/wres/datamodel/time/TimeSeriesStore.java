@@ -229,7 +229,8 @@ public class TimeSeriesStore
                                                  this.covariateEnsembleSeries,
                                                  orientation )
                               .stream()
-                              .filter( next -> features.contains( next.getMetadata().getFeature() ) )
+                              .filter( next -> features.contains( next.getMetadata()
+                                                                      .getFeature() ) )
                               .map( next -> TimeSeriesSlicer.filter( next,
                                                                      timeWindow ) );
     }
