@@ -22,6 +22,7 @@ import org.mockito.Mockito;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 
+import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.Variable;
 import wres.datamodel.types.Ensemble;
@@ -242,7 +243,6 @@ class PublishedInterfaceXmlReaderTest
                         <stationName>DOLORES, CO</stationName>\r
                         <lat>37.4739</lat>\r
                         <lon>108.5045</lon>\r
-                        <units>CFS</units>\r
                     </header>\r
                     <event date="1985-06-01" time="12:00:00" value="1" flag="0"/>\r
                     <event date="1985-06-01" time="13:00:00" value="2" flag="0"/>\r
@@ -566,7 +566,7 @@ class PublishedInterfaceXmlReaderTest
     }
 
     @Test
-    void testReadObservationsWithoutTimeZoneResultsInOneTimeSeries() throws IOException
+    void testReadObservationsWithoutTimeZoneOrUnitsResultsInOneTimeSeries() throws IOException
     {
         try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
@@ -590,6 +590,12 @@ class PublishedInterfaceXmlReaderTest
                    .thenReturn( true );
             Mockito.when( dataSource.getDisposition() )
                    .thenReturn( DataDisposition.XML_PI_TIMESERIES );
+
+            Dataset dataset = Mockito.mock( Dataset.class );
+            Mockito.when( dataset.unit() )
+                   .thenReturn( "CFS" );
+            Mockito.when( dataSource.getContext() )
+                   .thenReturn( dataset );
 
             Source source = Mockito.mock( Source.class );
             Mockito.when( source.timeZoneOffset() )

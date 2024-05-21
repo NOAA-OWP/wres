@@ -313,7 +313,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                 }
                 catch ( XMLStreamException e )
                 {
-                    String message = "While reading the time zone at line "
+                    String message = "While reading the timeZone at line "
                                      + reader.getLocation().getLineNumber()
                                      + AND_COLUMN
                                      + reader.getLocation().getColumnNumber()
@@ -469,7 +469,7 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
                                    .timeZoneOffset();
             }
 
-            LOGGER.debug( "The declared time zone offset for {} is {}.", dataSource.getSource(), offset );
+            LOGGER.debug( "The declared 'time_zone_offset' for {} is {}.", dataSource.getSource(), offset );
 
             if ( Objects.isNull( offset ) )
             {
@@ -504,6 +504,66 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         }
 
         return returnMe;
+    }
+
+    /**
+     * Updates the measurement unit in the time-series header.
+     * @param header the existing header with ingested information
+     * @param dataSource the data source
+     */
+    private void setMeasurementUnit( TimeSeriesHeader header, DataSource dataSource )
+    {
+        String finalUnit = header.unitName;
+
+        // See #126661
+        if ( Objects.isNull( header.unitName ) )
+        {
+            // The unit may be declared for this source or for the overall dataset
+            String unit = dataSource.getSource()
+                                    .unit();
+
+            // Overall unit for all sources?
+            if ( Objects.isNull( unit ) )
+            {
+                unit = dataSource.getContext()
+                                 .unit();
+            }
+
+            LOGGER.debug( "The declared 'unit' for {} is {}.", dataSource.getSource(), unit );
+
+            if ( Objects.isNull( unit ) )
+            {
+                String message = "While reading a PI-XML data source from '"
+                                 + dataSource.getUri()
+                                 + "', failed to identify the 'units' in the time-series data and failed to discover "
+                                 + "a 'unit' in the project declaration. One of these is necessary to "
+                                 + "correctly identify the measurement unit of the time-series data. Please add a "
+                                 + "'unit' to the project declaration for this individual data source or "
+                                 + "for the overall dataset and try again.";
+                throw new ReadException( message );
+            }
+
+            finalUnit = unit;
+        }
+        else
+        {
+            String declaredUnit = dataSource.getSource()
+                                            .unit();
+            if ( Objects.nonNull( declaredUnit )
+                 && !declaredUnit.equals( header.unitName ) )
+            {
+                LOGGER.warn( "The declared 'unit' for the data source at '{}' was {}, which does not match "
+                             + "the 'units' of {} for a time-series within the source. It is best not to declare "
+                             + "the 'unit' for a PI-XML source in the project declaration when the "
+                             + "'units' is available within the data source itself because the declaration will be "
+                             + "ignored.",
+                             dataSource.getUri(),
+                             declaredUnit,
+                             header.unitName );
+            }
+        }
+
+        header.unitName = finalUnit;
     }
 
     /**
@@ -787,7 +847,9 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         TimeSeriesHeader header = new TimeSeriesHeader();
 
         //  If the current tag is the header tag itself, move on to the next tag
-        if ( reader.isStartElement() && reader.getLocalName().equalsIgnoreCase( HEADER ) )
+        if ( reader.isStartElement()
+             && reader.getLocalName()
+                      .equalsIgnoreCase( HEADER ) )
         {
             reader.next();
         }
@@ -795,7 +857,9 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
         //  Scrape all pertinent information from the header
         while ( reader.hasNext() )
         {
-            if ( reader.isEndElement() && reader.getLocalName().equalsIgnoreCase( HEADER ) )
+            if ( reader.isEndElement()
+                 && reader.getLocalName()
+                          .equalsIgnoreCase( HEADER ) )
             {
                 //  Leave the loop when we arrive at the end tag
                 break;
@@ -807,6 +871,9 @@ public final class PublishedInterfaceXmlReader implements TimeSeriesReader
 
             reader.next();
         }
+
+        // Update the unit if declared rather than supplied inband
+        this.setMeasurementUnit( header, dataSource );
 
         // Validate and set the unique trace name
         this.setEnsembleTraceName( header, reader, dataSource );

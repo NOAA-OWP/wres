@@ -517,6 +517,9 @@ public class DeclarationValidator
         // Check that any time-zone offsets are consistent
         List<EvaluationStatusEvent> timeZoneOffsets = DeclarationValidator.timeZoneOffsetsAreValid( declaration );
         events.addAll( timeZoneOffsets );
+        // Check that any measurement units are consistent
+        List<EvaluationStatusEvent> units = DeclarationValidator.unitsAreValid( declaration );
+        events.addAll( units );
 
         return Collections.unmodifiableList( events );
     }
@@ -1600,6 +1603,43 @@ public class DeclarationValidator
     }
 
     /**
+     * Checks that the measurement units are mutually consistent.
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+
+    private static List<EvaluationStatusEvent> unitsAreValid( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> leftEvents =
+                DeclarationValidator.unitsAreValid( declaration.left(),
+                                                    DatasetOrientation.LEFT );
+        List<EvaluationStatusEvent> events = new ArrayList<>( leftEvents );
+        List<EvaluationStatusEvent> rightEvents
+                = DeclarationValidator.unitsAreValid( declaration.right(),
+                                                      DatasetOrientation.RIGHT );
+        events.addAll( rightEvents );
+
+        if ( DeclarationUtilities.hasBaseline( declaration ) )
+        {
+            List<EvaluationStatusEvent> baselineEvents
+                    = DeclarationValidator.unitsAreValid( declaration.baseline()
+                                                                     .dataset(),
+                                                          DatasetOrientation.BASELINE );
+            events.addAll( baselineEvents );
+        }
+
+        for ( CovariateDataset covariate : declaration.covariates() )
+        {
+            List<EvaluationStatusEvent> covariateEvents
+                    = DeclarationValidator.unitsAreValid( covariate.dataset(),
+                                                          DatasetOrientation.COVARIATE );
+            events.addAll( covariateEvents );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
      * Checks that the time zone offsets are mutually consistent.
      * @param dataset the dataset
      * @param orientation the dataset orientation to help with logging
@@ -1620,7 +1660,7 @@ public class DeclarationValidator
         ZoneOffset universalOffset = dataset.timeZoneOffset();
         if ( Objects.isNull( universalOffset ) )
         {
-            LOGGER.debug( "The {} dataset did not contain a universal time zone offset for all data sources.",
+            LOGGER.debug( "The {} dataset did not contain a universal time zone offset.",
                           orientation );
 
             return Collections.emptyList();
@@ -1666,6 +1706,83 @@ public class DeclarationValidator
                                                          + offsets
                                                          + ". Please address this conflict by removing the "
                                                          + "'time_zone-offset' for "
+                                                         + article
+                                                         + " '"
+                                                         + orientation
+                                                         + "' dataset or its individual "
+                                                         + "sources or ensuring they match." )
+                                       .build();
+
+        return List.of( event );
+    }
+
+    /**
+     * Checks that the measurement units are mutually consistent.
+     * @param dataset the dataset
+     * @param orientation the dataset orientation to help with logging
+     * @return the validation events encountered
+     */
+
+    private static List<EvaluationStatusEvent> unitsAreValid( Dataset dataset,
+                                                              DatasetOrientation orientation )
+    {
+        if ( Objects.isNull( dataset ) )
+        {
+            LOGGER.debug( "When validating the unit of the {} dataset, discovered that the dataset was "
+                          + "missing.",
+                          orientation );
+            return List.of();
+        }
+
+        String universalUnit = dataset.unit();
+        if ( Objects.isNull( universalUnit ) )
+        {
+            LOGGER.debug( "The {} dataset did not contain a universal measurement unit.",
+                          orientation );
+
+            return Collections.emptyList();
+        }
+
+        // There is a universal measurement unit, so all the sources must have a null unit or the same unit as the
+        // universal one
+        Set<String> units = dataset.sources()
+                                   .stream()
+                                   .map( Source::unit )
+                                   .filter( Objects::nonNull )
+                                   .collect( Collectors.toSet() );
+
+        if ( units.isEmpty() || Set.of( universalUnit )
+                                   .equals( units ) )
+        {
+            LOGGER.debug( "The {} dataset contained a universal measurement unit of {}, which is consistent with the "
+                          + "units for the individual sources it composes.",
+                          orientation,
+                          universalUnit );
+
+            return Collections.emptyList();
+        }
+
+        String article = "the";
+        if ( orientation == DatasetOrientation.COVARIATE )
+        {
+            article = "a";
+        }
+
+        EvaluationStatusEvent event
+                = EvaluationStatusEvent.newBuilder()
+                                       .setStatusLevel( StatusLevel.ERROR )
+                                       .setEventMessage( "Discovered a 'unit' of "
+                                                         + universalUnit
+                                                         + " for "
+                                                         + article
+                                                         + " '"
+                                                         + orientation
+                                                         + "' dataset, which is inconsistent with some of the "
+                                                         + "'unit' declared for the individual sources it "
+                                                         + "contains: "
+                                                         + units
+                                                         + ". Please address this conflict by removing the "
+                                                         + "'unit' for "
                                                          + article
                                                          + " '"
                                                          + orientation
@@ -4267,7 +4384,8 @@ public class DeclarationValidator
         }
 
         // No sources? Not allowed.
-        if ( Objects.isNull( sources ) || sources.isEmpty() )
+        if ( Objects.isNull( sources )
+             || sources.isEmpty() )
         {
             EvaluationStatusEvent event =
                     EvaluationStatusEvent.newBuilder()
@@ -4285,64 +4403,104 @@ public class DeclarationValidator
         }
         else
         {
-            int index = 1;
-            List<Integer> invalid = new ArrayList<>();
-            for ( Source source : sources )
+            List<EvaluationStatusEvent> sourceEvents = DeclarationValidator.sourcesAreValid( sources,
+                                                                                             type,
+                                                                                             orientation,
+                                                                                             article );
+            events.addAll( sourceEvents );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that all declared sources are valid.
+     * @param sources the source to validate
+     * @param type the data type
+     * @param orientation the orientation of the sources
+     * @param article the article qualifier for the dataset orientation
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> sourcesAreValid( List<Source> sources,
+                                                                DataType type,
+                                                                String orientation,
+                                                                String article )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        int index = 1;
+        List<Integer> invalid = new ArrayList<>();
+        for ( Source source : sources )
+        {
+            // Identify any source whose URI failed to deserialize
+            // Cannot provide full context here, but this is a compromise between validating at schema validation
+            // time or post deserialization, given that a URI is deserialized to a type that performs instant
+            // validation and exits exceptionally for invalid URIs. The compromise is to return a null URI in that
+            // case and report the error here. See #126974
+            if ( Objects.isNull( source.uri() ) )
             {
-                // Identify any source whose URI failed to deserialize
-                // Cannot provide full context here, but this is a compromise between validating at schema validation
-                // time or post deserialization, given that a URI is deserialized to a type that performs instant
-                // validation and exits exceptionally for invalid URIs. The compromise is to return a null URI in that
-                // case and report the error here. See #126974
-                if ( Objects.isNull( source.uri() ) )
-                {
-                    invalid.add( index );
-                }
-
-                // Warn about time zone offset
-                if ( Objects.nonNull( source.timeZoneOffset() ) )
-                {
-                    EvaluationStatusEvent event =
-                            EvaluationStatusEvent.newBuilder()
-                                                 .setStatusLevel( StatusLevel.WARN )
-                                                 .setEventMessage( "Discovered one or more '"
-                                                                   + orientation
-                                                                   + "' data sources for which a time zone was declared. "
-                                                                   + "This information is generally not required and will "
-                                                                   + "be ignored if the data source itself contains a time "
-                                                                   + "zone." )
-                                                 .build();
-                    events.add( event );
-                }
-
-                index++;
+                invalid.add( index );
             }
 
-            if ( !invalid.isEmpty() )
+            // Warn about time zone offset
+            if ( Objects.nonNull( source.timeZoneOffset() ) )
             {
                 EvaluationStatusEvent event =
                         EvaluationStatusEvent.newBuilder()
-                                             .setStatusLevel( StatusLevel.ERROR )
-                                             .setEventMessage( "The URIs ('uri') at the following positions in "
-                                                               + article
-                                                               + " '"
+                                             .setStatusLevel( StatusLevel.WARN )
+                                             .setEventMessage( "Discovered one or more '"
                                                                + orientation
-                                                               + "' data source were invalid: "
-                                                               + invalid
-                                                               + ". Each URI is validated against RFC 2396: "
-                                                               + "Uniform Resource Identifiers (URI): Generic "
-                                                               + "Syntax, amended by RFC 2732: Format for Literal "
-                                                               + "IPv6 Addresses in URLs. Please check the URI "
-                                                               + AND_TRY_AGAIN )
+                                                               + "' data sources for which a 'time_zone_offset' "
+                                                               + "was declared. This information is generally not "
+                                                               + "required and will be ignored if the data source "
+                                                               + "itself contains a time zone offset." )
                                              .build();
                 events.add( event );
             }
 
-            // Check that each source interface is consistent with the data type
-            List<EvaluationStatusEvent> interfaceEvents
-                    = DeclarationValidator.interfacesAreConsistentWithTheDataType( sources, type, orientation );
-            events.addAll( interfaceEvents );
+            // Warn about unit
+            if ( Objects.nonNull( source.unit() ) )
+            {
+                EvaluationStatusEvent event =
+                        EvaluationStatusEvent.newBuilder()
+                                             .setStatusLevel( StatusLevel.WARN )
+                                             .setEventMessage( "Discovered one or more '"
+                                                               + orientation
+                                                               + "' data sources for which a 'unit' was declared. "
+                                                               + "This information is generally not required and "
+                                                               + "will be ignored if the data source itself "
+                                                               + "contains a measurement unit." )
+                                             .build();
+                events.add( event );
+            }
+
+            index++;
         }
+
+        if ( !invalid.isEmpty() )
+        {
+            EvaluationStatusEvent event =
+                    EvaluationStatusEvent.newBuilder()
+                                         .setStatusLevel( StatusLevel.ERROR )
+                                         .setEventMessage( "The URIs ('uri') at the following positions in "
+                                                           + article
+                                                           + " '"
+                                                           + orientation
+                                                           + "' data source were invalid: "
+                                                           + invalid
+                                                           + ". Each URI is validated against RFC 2396: "
+                                                           + "Uniform Resource Identifiers (URI): Generic "
+                                                           + "Syntax, amended by RFC 2732: Format for Literal "
+                                                           + "IPv6 Addresses in URLs. Please check the URI "
+                                                           + AND_TRY_AGAIN )
+                                         .build();
+            events.add( event );
+        }
+
+        // Check that each source interface is consistent with the data type
+        List<EvaluationStatusEvent> interfaceEvents
+                = DeclarationValidator.interfacesAreConsistentWithTheDataType( sources, type, orientation );
+        events.addAll( interfaceEvents );
 
         return Collections.unmodifiableList( events );
     }

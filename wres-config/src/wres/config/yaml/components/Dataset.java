@@ -29,6 +29,7 @@ import wres.config.yaml.serializers.ZoneOffsetSerializer;
  * @param timeShift the time shift
  * @param timeZoneOffset the time zone offset
  * @param timeScale the timescale
+ * @param unit the measurement unit
  */
 @RecordBuilder
 @JsonDeserialize( using = DatasetDeserializer.class )
@@ -46,7 +47,8 @@ public record Dataset( @JsonProperty( "label" ) String label,
                        @JsonProperty( "time_zone_offset" ) ZoneOffset timeZoneOffset,
                        @JsonSerialize( using = TimeScaleSerializer.class )
                        @JsonDeserialize( using = TimeScaleDeserializer.class )
-                       @JsonProperty( "time_scale" ) TimeScale timeScale )
+                       @JsonProperty( "time_scale" ) TimeScale timeScale,
+                       @JsonProperty( "unit") String unit )
 {
     /**
      * Set the defaults.
@@ -59,6 +61,7 @@ public record Dataset( @JsonProperty( "label" ) String label,
      * @param timeShift the time shift
      * @param timeZoneOffset the time zone offset
      * @param timeScale the timescale
+     * @param unit the measurement unit
      */
     public Dataset
     {

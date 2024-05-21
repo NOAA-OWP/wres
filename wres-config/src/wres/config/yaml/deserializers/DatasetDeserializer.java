@@ -75,22 +75,22 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
             List<Source> sources;
 
             // Explicit array?
-            if( sourcesNode instanceof ObjectNode sourceNode )
+            if ( sourcesNode instanceof ObjectNode sourceNode )
             {
                 Source nextSource = reader.readValue( sourceNode, Source.class );
                 sources = List.of( nextSource );
             }
-            else if( sourcesNode instanceof ArrayNode arrayNode )
+            else if ( sourcesNode instanceof ArrayNode arrayNode )
             {
                 sources = this.getSourcesFromArray( reader, arrayNode );
             }
             // Singleton
-            else if( sourcesNode instanceof TextNode textNode )
+            else if ( sourcesNode instanceof TextNode textNode )
             {
                 sources = this.getSingletonSource( textNode );
             }
             // Data direct
-            else if( sourcesNode instanceof NullNode || Objects.isNull( sourcesNode ) )
+            else if ( sourcesNode instanceof NullNode || Objects.isNull( sourcesNode ) )
             {
                 LOGGER.debug( "Discovered a null sources node, which is allowed with data direct." );
                 sources = Collections.emptyList();
@@ -108,6 +108,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
             Duration timeShift = this.getTimeShift( node.get( "time_shift" ), reader, context );
             ZoneOffset zoneOffset = this.getTimeZoneOffset( node.get( "time_zone_offset" ), reader, context );
             TimeScale timeScale = this.getTimeScale( node.get( "time_scale" ), reader, context );
+            String unit = this.getStringValue( reader, node.get( "unit" ) );
             return DatasetBuilder.builder()
                                  .sources( sources )
                                  .variable( variable )
@@ -118,10 +119,11 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
                                  .timeShift( timeShift )
                                  .timeZoneOffset( zoneOffset )
                                  .timeScale( timeScale )
+                                 .unit( unit )
                                  .build();
         }
         // Singleton
-        else if( node instanceof TextNode textNode )
+        else if ( node instanceof TextNode textNode )
         {
             List<Source> sources = this.getSingletonSource( textNode );
             return DatasetBuilder.builder()
@@ -203,8 +205,8 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
         String nextUriString = node.asText();
         URI uri = UriDeserializer.deserializeUri( nextUriString );
         Source source = SourceBuilder.builder()
-                                  .uri( uri )
-                                  .build();
+                                     .uri( uri )
+                                     .build();
         return List.of( source );
     }
 

@@ -471,15 +471,15 @@ public class CsvReader implements TimeSeriesReader
     /**
      * Validates the next row.
      * @param dataSource the data source
-     * @param CsvDataProvider the provider
+     * @param csvDataProvider the provider
      * @param unconfiguredVariableNames any variable names that were not declared
      */
     private void validateNextRow( DataSource dataSource,
-                                  CsvDataProvider CsvDataProvider,
+                                  CsvDataProvider csvDataProvider,
                                   Set<String> unconfiguredVariableNames )
     {
         String prefix = "Validation error(s) on line " +
-                        ( CsvDataProvider.getRowIndex() + 1 )
+                        ( csvDataProvider.getRowIndex() + 1 )
                         +
                         " in '"
                         +
@@ -490,53 +490,53 @@ public class CsvReader implements TimeSeriesReader
         StringJoiner errorJoiner = new StringJoiner( " ", prefix, "" );
 
         // Validate the date-times
-        boolean valid = this.validateReferenceTime( CsvDataProvider, errorJoiner )
-                        && this.validateValidTime( CsvDataProvider, errorJoiner );
+        boolean valid = this.validateReferenceTime( csvDataProvider, errorJoiner )
+                        && this.validateValidTime( csvDataProvider, errorJoiner );
 
-        if ( !CsvDataProvider.hasColumn( VARIABLE_NAME ) )
+        if ( !csvDataProvider.hasColumn( VARIABLE_NAME ) )
         {
             valid = false;
             errorJoiner.add( "The provided CSV is missing a 'variable_name' column." );
         }
-        else if ( this.hasNoValue( CsvDataProvider.getString( VARIABLE_NAME ) ) )
+        else if ( this.hasNoValue( csvDataProvider.getString( VARIABLE_NAME ) ) )
         {
             errorJoiner.add( "The provided CSV is missing valid 'variable_name' data." );
             valid = false;
         }
         // Only validate if the variable name is declared: #95012
         else if ( Objects.isNull( dataSource.getVariable() )
-                  || !CsvDataProvider.getString( VARIABLE_NAME )
+                  || !csvDataProvider.getString( VARIABLE_NAME )
                                      .equalsIgnoreCase( dataSource.getVariable()
                                                                   .name() ) )
         {
-            String foundVariable = CsvDataProvider.getString( VARIABLE_NAME );
+            String foundVariable = csvDataProvider.getString( VARIABLE_NAME );
             unconfiguredVariableNames.add( foundVariable );
         }
 
-        if ( !CsvDataProvider.hasColumn( LOCATION ) )
+        if ( !csvDataProvider.hasColumn( LOCATION ) )
         {
             valid = false;
             errorJoiner.add( "The provided CSV is missing a 'location' column." );
         }
-        else if ( this.hasNoValue( CsvDataProvider.getString( LOCATION ) ) )
+        else if ( this.hasNoValue( csvDataProvider.getString( LOCATION ) ) )
         {
             errorJoiner.add( "The provided CSV is missing valid 'location' data." );
             valid = false;
         }
 
-        if ( !CsvDataProvider.hasColumn( MEASUREMENT_UNIT ) )
+        if ( !csvDataProvider.hasColumn( MEASUREMENT_UNIT ) )
         {
             valid = false;
             errorJoiner.add( "The provided CSV is missing a 'measurement_unit' column." );
         }
-        else if ( Objects.isNull( CsvDataProvider.getString( MEASUREMENT_UNIT ) ) ||
-                  CsvDataProvider.getString( MEASUREMENT_UNIT ).isBlank() )
+        else if ( Objects.isNull( csvDataProvider.getString( MEASUREMENT_UNIT ) ) ||
+                  csvDataProvider.getString( MEASUREMENT_UNIT ).isBlank() )
         {
             errorJoiner.add( "The provided CSV is missing valid 'measurement_unit' data." );
             valid = false;
         }
 
-        if ( !CsvDataProvider.hasColumn( VALUE ) )
+        if ( !csvDataProvider.hasColumn( VALUE ) )
         {
             valid = false;
             errorJoiner.add( "The provided CSV is missing a 'value' column." );
@@ -545,7 +545,7 @@ public class CsvReader implements TimeSeriesReader
         {
             try
             {
-                CsvDataProvider.getDouble( VALUE );
+                csvDataProvider.getDouble( VALUE );
             }
             catch ( ClassCastException e )
             {
@@ -560,18 +560,18 @@ public class CsvReader implements TimeSeriesReader
     }
 
     /**
-     * @param CsvDataProvider data provider
+     * @param csvDataProvider data provider
      * @param errorJoiner the error joiner
      * @return whether the reference time is valid
      */
 
-    private boolean validateReferenceTime( CsvDataProvider CsvDataProvider, StringJoiner errorJoiner )
+    private boolean validateReferenceTime( CsvDataProvider csvDataProvider, StringJoiner errorJoiner )
     {
         boolean valid = true;
 
-        if ( CsvDataProvider.hasColumn( REFERENCE_DATETIME_COLUMN ) )
+        if ( csvDataProvider.hasColumn( REFERENCE_DATETIME_COLUMN ) )
         {
-            if ( this.hasNoValue( CsvDataProvider.getString( REFERENCE_DATETIME_COLUMN ) ) )
+            if ( this.hasNoValue( csvDataProvider.getString( REFERENCE_DATETIME_COLUMN ) ) )
             {
                 errorJoiner.add( "The provided csv is missing valid '"
                                  + REFERENCE_DATETIME_COLUMN
@@ -582,7 +582,7 @@ public class CsvReader implements TimeSeriesReader
             {
                 try
                 {
-                    CsvDataProvider.getInstant( REFERENCE_DATETIME_COLUMN );
+                    csvDataProvider.getInstant( REFERENCE_DATETIME_COLUMN );
                 }
                 catch ( DateTimeParseException | ClassCastException e )
                 {
@@ -597,21 +597,21 @@ public class CsvReader implements TimeSeriesReader
     }
 
     /**
-     * @param CsvDataProvider data provider
+     * @param csvDataProvider data provider
      * @param errorJoiner the error joiner
      * @return whether the valid time is valid
      */
 
-    private boolean validateValidTime( CsvDataProvider CsvDataProvider, StringJoiner errorJoiner )
+    private boolean validateValidTime( CsvDataProvider csvDataProvider, StringJoiner errorJoiner )
     {
         boolean valid = true;
 
-        if ( !CsvDataProvider.hasColumn( VALUE_DATE ) )
+        if ( !csvDataProvider.hasColumn( VALUE_DATE ) )
         {
             valid = false;
             errorJoiner.add( "The provided csv is missing a 'value_date' column." );
         }
-        else if ( this.hasNoValue( CsvDataProvider.getString( VALUE_DATE ) ) )
+        else if ( this.hasNoValue( csvDataProvider.getString( VALUE_DATE ) ) )
         {
             errorJoiner.add( "The provided csv is missing valid 'value_date' data." );
             valid = false;
@@ -620,7 +620,7 @@ public class CsvReader implements TimeSeriesReader
         {
             try
             {
-                CsvDataProvider.getInstant( VALUE_DATE );
+                csvDataProvider.getInstant( VALUE_DATE );
             }
             catch ( DateTimeParseException | ClassCastException e )
             {

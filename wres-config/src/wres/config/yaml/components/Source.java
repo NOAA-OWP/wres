@@ -26,6 +26,7 @@ import wres.config.yaml.serializers.ZoneOffsetSerializer;
  * @param pattern the pattern to consider
  * @param timeZoneOffset the time zone
  * @param missingValue the missing value identifiers
+ * @param unit the measurement unit
  */
 @RecordBuilder
 @JsonSerialize( using = SourceSerializer.class )
@@ -37,7 +38,8 @@ public record Source( @JsonDeserialize( using = UriDeserializer.class )
                       @JsonSerialize( using = ZoneOffsetSerializer.class )
                       @JsonDeserialize( using = ZoneOffsetDeserializer.class )
                       @JsonProperty( "time_zone_offset" ) ZoneOffset timeZoneOffset,
-                      @JsonProperty( "missing_value" ) List<Double> missingValue )
+                      @JsonProperty( "missing_value" ) List<Double> missingValue,
+                      @JsonProperty( "unit" ) String unit )
 {
     /**
      * Creates an instance.
@@ -47,6 +49,7 @@ public record Source( @JsonDeserialize( using = UriDeserializer.class )
      * @param pattern the pattern to consider
      * @param timeZoneOffset the time zone
      * @param missingValue the missing value identifiers
+     * @param unit the measurement unit
      */
     public Source
     {
@@ -65,7 +68,7 @@ public record Source( @JsonDeserialize( using = UriDeserializer.class )
             pattern = null;
         }
 
-        if( Objects.isNull( missingValue ) )
+        if ( Objects.isNull( missingValue ) )
         {
             missingValue = Collections.emptyList();
         }

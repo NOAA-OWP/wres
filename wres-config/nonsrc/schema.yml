@@ -240,13 +240,6 @@ definitions:
       - observed
       - predicted
 
-  # The observed or predicted datasets
-  ObservedOrPredicted:
-    title: Observed or predicted dataset.
-    "$ref": "#/definitions/BasicDataset"
-    # Close this schema to unevaluated properties
-    unevaluatedProperties: false
-
   # An "open" schema that represents the common aspects of all datasets
   # See: https://github.com/orgs/json-schema-org/discussions/375
   BasicDataset:
@@ -303,6 +296,17 @@ definitions:
             minLength: 1
             maxLength: 6
           - type: integer
+      unit:
+        type: string
+        minLength: 1
+        maxLength: 2083
+
+  # The observed or predicted datasets
+  ObservedOrPredicted:
+    title: Observed or predicted dataset.
+    "$ref": "#/definitions/BasicDataset"
+    # Close this schema to unevaluated properties
+    unevaluatedProperties: false
 
   # The baseline-ish datasets  
   Baseline:
@@ -426,9 +430,8 @@ definitions:
       time_zone_offset:
         description: "Specifies the time zone offset for the data. This is 
         required for the datacard format, which does not include time zone 
-        information in the file. For example, datacard data from ABRFC may 
-        including a time_zone_offset of 'CST'. It should be unnecessary for 
-        most/all other formats."
+        information in the file. It should be unnecessary for most/all other 
+        formats. An example of a valid offset is 'CST'."
         anyOf:
           # Allowing both an integer and a string is a workaround because the
           # networknt validator sometimes sees these strings as integers, but
@@ -452,6 +455,10 @@ definitions:
               type: number
             uniqueItems: true
           - type: number
+      unit:
+        type: string
+        minLength: 1
+        maxLength: 2083
     required:
       - uri
 
@@ -914,7 +921,6 @@ definitions:
         type: number
       above_maximum:
         type: number
-    required:
 
   EnsembleFilter:
     title: A filter for ensemble forecast values.
@@ -1112,7 +1118,6 @@ definitions:
         uniqueItems: true
       # Single number
       - type: number
-    required:
 
   ElaboratedProbabilityThresholds:
     title: Probability thresholds with parameters.

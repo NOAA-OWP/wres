@@ -417,11 +417,71 @@ class DeclarationValidatorTest
 
         assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events, "Discovered one or more "
                                                                                 + "'observed' data sources for which a "
-                                                                                + "time zone was declared",
+                                                                                + "'time_zone_offset' was declared",
                                                                         StatusLevel.WARN ) ),
                    () -> assertTrue( DeclarationValidatorTest.contains( events, "Discovered one or more "
                                                                                 + "'predicted' data sources for which "
-                                                                                + "a time zone was declared",
+                                                                                + "a 'time_zone_offset' was declared",
+                                                                        StatusLevel.WARN ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "for the 'observed' dataset, "
+                                                                                + "which is inconsistent with some of "
+                                                                                + "the",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "for a 'covariate' dataset, "
+                                                                                + "which is inconsistent with some of "
+                                                                                + "the",
+                                                                        StatusLevel.ERROR ) )
+        );
+    }
+
+    @Test
+    void testConflictingUnitsForSourceResultsInWarningsAndError()
+    {
+        Source source = SourceBuilder.builder()
+                                     // Warning
+                                     .unit( "foo" )
+                                     .build();
+        Source anotherSource = SourceBuilder.builder()
+                                            // Warning
+                                            .unit( "foo" )
+                                            .build();
+        Dataset left = DatasetBuilder.builder()
+                                     .sources( List.of( source ) )
+                                     .type( DataType.OBSERVATIONS )
+                                     // Error
+                                     .unit( "bar" )
+                                     .build();
+        Dataset right = DatasetBuilder.builder()
+                                      .sources( List.of( anotherSource ) )
+                                      .type( DataType.ENSEMBLE_FORECASTS )
+                                      .build();
+
+        Dataset covariate = DatasetBuilder.builder()
+                                          .sources( List.of( source ) )
+                                          .type( DataType.OBSERVATIONS )
+                                          // Error
+                                          .unit( "baz" )
+                                          .build();
+
+        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null, null, null );
+
+        List<CovariateDataset> covariates = List.of( covariateDataset );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( left )
+                                                                        .right( right )
+                                                                        .covariates( covariates )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events, "Discovered one or more "
+                                                                                + "'observed' data sources for which a "
+                                                                                + "'unit' was declared",
+                                                                        StatusLevel.WARN ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events, "Discovered one or more "
+                                                                                + "'predicted' data sources for which "
+                                                                                + "a 'unit' was declared",
                                                                         StatusLevel.WARN ) ),
                    () -> assertTrue( DeclarationValidatorTest.contains( events, "for the 'observed' dataset, "
                                                                                 + "which is inconsistent with some of "
