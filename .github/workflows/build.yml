@@ -54,9 +54,9 @@ jobs:
     - name: Creating md5
       run: |
           md5sum build/distributions/wres-*.zip >> checksum.txt
-          wres-*/build/distributions/wres-*-*.zip >> checksum.txt
-          systests/build/distributions/systests-*.zip >> checksum.txt
-          scripts/build/distributions/wres-admin-scripts-*.zip >> checksum.txt
+          md5sum wres-*/build/distributions/wres-*-*.zip >> checksum.txt
+          md5sum systests/build/distributions/systests-*.zip >> checksum.txt
+          md5sum scripts/build/distributions/wres-admin-scripts-*.zip >> checksum.txt
 
     # Archive the artifacts created from this build
     - name: Archive artifacts
