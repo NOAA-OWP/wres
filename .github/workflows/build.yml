@@ -51,12 +51,20 @@ jobs:
         cd scripts
         ../gradlew distZip
 
+    - name: Creating md5
+      run: |
+          md5sum build/distributions/wres-*.zip >> checksum.txt
+          wres-*/build/distributions/wres-*-*.zip >> checksum.txt
+          systests/build/distributions/systests-*.zip >> checksum.txt
+          scripts/build/distributions/wres-admin-scripts-*.zip >> checksum.txt
+
     # Archive the artifacts created from this build
     - name: Archive artifacts
       uses: actions/upload-artifact@v4
       with:
         name: build-artifacts
         path: |
+          checksum.txt
           build/distributions/wres-*.zip
           wres-*/build/distributions/wres-*-*.zip
           systests/build/distributions/systests-*.zip
