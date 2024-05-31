@@ -77,6 +77,7 @@ import wres.config.yaml.components.TimePools;
 import wres.config.yaml.components.UnitAlias;
 import wres.config.yaml.components.Values;
 import wres.config.yaml.components.Variable;
+import wres.config.yaml.components.VariableBuilder;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -253,7 +254,7 @@ class DeclarationFactoryTest
                                             .left( this.observedDataset )
                                             .right( DatasetBuilder.builder()
                                                                   .label( "foo" )
-                                                                  .variable( new Variable( "bar", null ) )
+                                                                  .variable( new Variable( "bar", null, Set.of() ) )
                                                                   .build() )
                                             .build();
 
@@ -372,7 +373,7 @@ class DeclarationFactoryTest
         Dataset observedDataset = DatasetBuilder.builder()
                                                 .sources( observedSources )
                                                 .type( DataType.OBSERVATIONS )
-                                                .variable( new Variable( "foo", null ) )
+                                                .variable( new Variable( "foo", null, Set.of() ) )
                                                 .timeZoneOffset( ZoneOffset.ofHours( -6 ) )
                                                 .timeScale( outerTimeScale )
                                                 .build();
@@ -1234,6 +1235,36 @@ class DeclarationFactoryTest
                                                                      .left( this.observedDataset )
                                                                      .right( this.predictedDataset )
                                                                      .values( values )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithVariableNameAliases() throws IOException
+    {
+        String yaml = """
+                observed:
+                  sources: some_file.csv
+                  variable:
+                    name: foo
+                    aliases: [bar,baz]
+                predicted:
+                  - another_file.csv
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        Dataset observed = DatasetBuilder.builder( this.observedDataset )
+                                         .variable( VariableBuilder.builder()
+                                                                   .name( "foo" )
+                                                                   .aliases( Set.of( "bar", "baz" ) )
+                                                                   .build() )
+                                         .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( observed )
+                                                                     .right( this.predictedDataset )
                                                                      .build();
 
         assertEquals( expected, actual );
@@ -2164,7 +2195,7 @@ class DeclarationFactoryTest
 
         Dataset covariateOneDataset = DatasetBuilder.builder()
                                                     .sources( covariateOneSources )
-                                                    .variable( new Variable( "precipitation", null ) )
+                                                    .variable( new Variable( "precipitation", null, Set.of() ) )
                                                     .build();
 
         CovariateDataset covariateOne = new CovariateDataset( covariateOneDataset, 0.25, null, null, null );
@@ -2178,7 +2209,7 @@ class DeclarationFactoryTest
 
         Dataset covariateTwoDataset = DatasetBuilder.builder()
                                                     .sources( covariateTwoSources )
-                                                    .variable( new Variable( "temperature", null ) )
+                                                    .variable( new Variable( "temperature", null, Set.of() ) )
                                                     .build();
 
         CovariateDataset covariateTwo =
@@ -2413,7 +2444,7 @@ class DeclarationFactoryTest
         Dataset observedDataset = DatasetBuilder.builder()
                                                 .sources( observedSources )
                                                 .type( DataType.OBSERVATIONS )
-                                                .variable( new Variable( "foo", "fooest" ) )
+                                                .variable( new Variable( "foo", "fooest", Set.of() ) )
                                                 .timeScale( outerTimeScale )
                                                 .build();
 

@@ -14,6 +14,7 @@ import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -270,7 +271,7 @@ class PublishedInterfaceXmlReaderTest
             Mockito.when( dataSource.getUri() )
                    .thenReturn( xmlPath.toUri() );
             Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null ) );
+                   .thenReturn( new Variable( QINE, null, Set.of() ) );
             Mockito.when( dataSource.hasSourcePath() )
                    .thenReturn( true );
             Mockito.when( dataSource.getDisposition() )
@@ -344,7 +345,7 @@ class PublishedInterfaceXmlReaderTest
             Mockito.when( dataSource.getUri() )
                    .thenReturn( xmlPath.toUri() );
             Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null ) );
+                   .thenReturn( new Variable( QINE, null, Set.of() ) );
             Mockito.when( dataSource.hasSourcePath() )
                    .thenReturn( true );
             Mockito.when( dataSource.getDisposition() )
@@ -419,7 +420,7 @@ class PublishedInterfaceXmlReaderTest
             Mockito.when( dataSource.getUri() )
                    .thenReturn( xmlPath.toUri() );
             Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null ) );
+                   .thenReturn( new Variable( QINE, null, Set.of() ) );
             Mockito.when( dataSource.hasSourcePath() )
                    .thenReturn( true );
             Mockito.when( dataSource.getDisposition() )
@@ -511,7 +512,7 @@ class PublishedInterfaceXmlReaderTest
             Mockito.when( dataSource.getUri() )
                    .thenReturn( xmlPath.toUri() );
             Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null ) );
+                   .thenReturn( new Variable( QINE, null, Set.of() ) );
             Mockito.when( dataSource.hasSourcePath() )
                    .thenReturn( true );
             Mockito.when( dataSource.getDisposition() )
@@ -585,7 +586,7 @@ class PublishedInterfaceXmlReaderTest
             Mockito.when( dataSource.getUri() )
                    .thenReturn( xmlPath.toUri() );
             Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null ) );
+                   .thenReturn( new Variable( QINE, null, Set.of() ) );
             Mockito.when( dataSource.hasSourcePath() )
                    .thenReturn( true );
             Mockito.when( dataSource.getDisposition() )

@@ -401,30 +401,30 @@ class MessageFactoryTest
     void testParseEvaluationDeclarationToEvaluationMessage()
     {
         Dataset observedDataset = DatasetBuilder.builder()
-                                                .variable( new Variable( "foo", "fooest" ) )
+                                                .variable( new Variable( "foo", "fooest", Set.of() ) )
                                                 .label( "fooData" )
                                                 .build();
 
         EnsembleFilter filter = new EnsembleFilter( Set.of( "1923", "1924" ), false );
 
         Dataset predictedDataset = DatasetBuilder.builder()
-                                                 .variable( new Variable( "bar", "barest" ) )
+                                                 .variable( new Variable( "bar", "barest", Set.of() ) )
                                                  .label( "barData" )
                                                  .ensembleFilter( filter )
                                                  .build();
 
         Dataset baselineDataset = DatasetBuilder.builder()
-                                                .variable( new Variable( "baz", "bazest" ) )
+                                                .variable( new Variable( "baz", "bazest", Set.of() ) )
                                                 .label( "bazData" )
                                                 .build();
 
         Dataset covariateOne = DatasetBuilder.builder()
-                                             .variable( new Variable( "qux", "quxest" ) )
+                                             .variable( new Variable( "qux", "quxest", Set.of() ) )
                                              .label( "quxData" )
                                              .build();
 
         Dataset covariateTwo = DatasetBuilder.builder()
-                                             .variable( new Variable( "quux", "quuxest" ) )
+                                             .variable( new Variable( "quux", "quuxest", Set.of() ) )
                                              .label( "quuxData" )
                                              .build();
 

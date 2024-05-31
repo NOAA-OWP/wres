@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -77,7 +78,7 @@ class CsvReaderTest
             Mockito.when( dataSource.getUri() )
                    .thenReturn( csvPath.toUri() );
             Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null ) );
+                   .thenReturn( new Variable( QINE, null, Set.of() ) );
             Mockito.when( dataSource.getDisposition() )
                    .thenReturn( DataDisposition.CSV_WRES );
 
@@ -145,7 +146,7 @@ class CsvReaderTest
             Mockito.when( dataSource.getUri() )
                    .thenReturn( csvPath.toUri() );
             Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null ) );
+                   .thenReturn( new Variable( QINE, null, Set.of() ) );
             Mockito.when( dataSource.getDisposition() )
                    .thenReturn( DataDisposition.CSV_WRES );
 
@@ -230,7 +231,7 @@ class CsvReaderTest
             Mockito.when( dataSource.getUri() )
                    .thenReturn( csvPath.toUri() );
             Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null ) );
+                   .thenReturn( new Variable( QINE, null, Set.of() ) );
             Mockito.when( dataSource.getDisposition() )
                    .thenReturn( DataDisposition.CSV_WRES );
 
@@ -311,7 +312,7 @@ class CsvReaderTest
             Mockito.when( dataSource.getUri() )
                    .thenReturn( csvPath.toUri() );
             Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null ) );
+                   .thenReturn( new Variable( QINE, null, Set.of() ) );
             Mockito.when( dataSource.getDisposition() )
                    .thenReturn( DataDisposition.CSV_WRES );
 
@@ -393,7 +394,7 @@ class CsvReaderTest
             Mockito.when( dataSource.getUri() )
                    .thenReturn( csvPath.toUri() );
             Mockito.when( dataSource.getVariable() )
-                   .thenReturn( new Variable( QINE, null ) );
+                   .thenReturn( new Variable( QINE, null, Set.of() ) );
             Mockito.when( dataSource.getDisposition() )
                    .thenReturn( DataDisposition.CSV_WRES );
 

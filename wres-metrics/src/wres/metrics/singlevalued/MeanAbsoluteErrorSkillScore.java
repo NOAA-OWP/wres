@@ -102,7 +102,8 @@ public class MeanAbsoluteErrorSkillScore extends DoubleErrorScore<Pool<Pair<Doub
         double result = Double.NaN;
 
         // Some data, proceed
-        if ( !pool.get().isEmpty() )
+        if ( !pool.get()
+                  .isEmpty() )
         {
             double mae = output.getComponent( MetricConstants.MAIN )
                                .getStatistic()
@@ -134,7 +135,8 @@ public class MeanAbsoluteErrorSkillScore extends DoubleErrorScore<Pool<Pair<Doub
                                                 .size();
             }
 
-            result = FunctionFactory.skill().applyAsDouble( numerator, denominator );
+            result = FunctionFactory.skill()
+                                    .applyAsDouble( numerator, denominator );
         }
 
         DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()

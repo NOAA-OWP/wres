@@ -181,8 +181,8 @@ class DeclarationValidatorTest
     @Test
     void testNonUniqueVariableNamesForCovariatesResultsInError()
     {
-        Variable one = new Variable( "foo", null );
-        Variable two = new Variable( "foo", null );
+        Variable one = new Variable( "foo", null, Set.of() );
+        Variable two = new Variable( "foo", null, Set.of() );
 
         Dataset dataOne = DatasetBuilder.builder( this.defaultDataset )
                                         .variable( one )
@@ -208,7 +208,7 @@ class DeclarationValidatorTest
     @Test
     void testEvaluationWithoutTimeScaleAndCovariateWithRescaleFunctionProducesError()
     {
-        Variable one = new Variable( "foo", null );
+        Variable one = new Variable( "foo", null, Set.of() );
 
         Dataset dataOne = DatasetBuilder.builder( this.defaultDataset )
                                         .variable( one )
@@ -2435,7 +2435,7 @@ class DeclarationValidatorTest
     {
         Dataset dataset = DatasetBuilder.builder()
                                         .type( DataType.OBSERVATIONS )
-                                        .variable( new Variable( "foo", null ) )
+                                        .variable( new Variable( "foo", null, Set.of() ) )
                                         .build();
         CovariateDataset covariate = new CovariateDataset( dataset, 5.0, 1.0, null, null );
 

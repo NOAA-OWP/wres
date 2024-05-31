@@ -494,7 +494,7 @@ public class SingleValuedRetrieverFactoryTest
 
         Dataset covariate = DatasetBuilder.builder()
                                           .type( DataType.OBSERVATIONS )
-                                          .variable( new Variable( VARIABLE_NAME, null ) )
+                                          .variable( new Variable( VARIABLE_NAME, null, Set.of() ) )
                                           .build();
         CovariateDataset covariateDataset = new CovariateDataset( covariate,
                                                                   null,

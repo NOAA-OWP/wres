@@ -1919,7 +1919,7 @@ class DeclarationUtilitiesTest
                 BaselineDatasetBuilder.builder()
                                       .dataset( DatasetBuilder.builder()
                                                               .sources( baselineSources )
-                                                              .variable( new Variable( "QINE", null ) )
+                                                              .variable( new Variable( "QINE", null, Set.of() ) )
                                                               .type( DataType.OBSERVATIONS )
                                                               .timeZoneOffset( ZoneOffset.ofHours( -6 ) )
                                                               .timeScale( timeScale )
@@ -1987,7 +1987,7 @@ class DeclarationUtilitiesTest
                                                         baselineSourceExpectedSeven );
         Dataset baselineDatasetExpected = DatasetBuilder.builder()
                                                         .sources( baselineSourcesExpected )
-                                                        .variable( new Variable( "QINE", null ) )
+                                                        .variable( new Variable( "QINE", null, Set.of() ) )
                                                         .type( DataType.OBSERVATIONS )
                                                         .timeZoneOffset( ZoneOffset.ofHours( -6 ) )
                                                         .timeScale( timeScale )

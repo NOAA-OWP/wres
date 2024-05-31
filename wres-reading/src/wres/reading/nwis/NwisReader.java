@@ -303,7 +303,9 @@ public class NwisReader implements TimeSeriesReader
                 cachedSeries.addAll( result );
 
                 // Still some chunks to request or results to return?
-                proceed.set( !mutableChunks.isEmpty() || !results.isEmpty() || cachedSeries.size() > 1 );
+                proceed.set( !mutableChunks.isEmpty()
+                             || !results.isEmpty()
+                             || cachedSeries.size() > 1 );
 
                 LOGGER.debug( "Continuing to iterate chunks of data ({}) because some chunks were yet to be submitted "
                               + "({}) or some results were yet to be retrieved ({}) or some results are cached and "
@@ -414,7 +416,8 @@ public class NwisReader implements TimeSeriesReader
         Objects.requireNonNull( range.getLeft() );
         Objects.requireNonNull( range.getRight() );
         Objects.requireNonNull( dataSource.getVariable() );
-        Objects.requireNonNull( dataSource.getVariable().name() );
+        Objects.requireNonNull( dataSource.getVariable()
+                                          .name() );
 
         StringJoiner siteJoiner = new StringJoiner( "," );
 

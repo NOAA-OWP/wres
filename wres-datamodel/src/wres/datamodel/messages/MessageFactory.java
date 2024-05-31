@@ -1250,7 +1250,8 @@ public class MessageFactory
 
         // Variable names for left/right
         Variable leftVariable = left.variable();
-        if ( Objects.nonNull( leftVariable ) && Objects.nonNull( leftVariable.getPreferredName() ) )
+        if ( Objects.nonNull( leftVariable )
+             && Objects.nonNull( leftVariable.getPreferredName() ) )
         {
             String leftVariableName = leftVariable.getPreferredName();
             builder.setLeftVariableName( leftVariableName );
@@ -1258,7 +1259,8 @@ public class MessageFactory
         }
 
         Variable rightVariable = right.variable();
-        if ( Objects.nonNull( rightVariable ) && Objects.nonNull( rightVariable.getPreferredName() ) )
+        if ( Objects.nonNull( rightVariable )
+             && Objects.nonNull( rightVariable.getPreferredName() ) )
         {
             String rightVariableName = rightVariable.getPreferredName();
             builder.setRightVariableName( rightVariableName );
@@ -1292,7 +1294,8 @@ public class MessageFactory
 
             // Variable name
             Variable baselineVariable = baselineDataset.variable();
-            if ( Objects.nonNull( baselineVariable ) && Objects.nonNull( baselineVariable.getPreferredName() ) )
+            if ( Objects.nonNull( baselineVariable )
+                 && Objects.nonNull( baselineVariable.getPreferredName() ) )
             {
                 String baselineVariableName = baselineVariable.getPreferredName();
                 builder.setBaselineVariableName( baselineVariableName );

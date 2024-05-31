@@ -231,7 +231,7 @@ public class DatasetDeserializer extends JsonDeserializer<Dataset>
         if ( !variableNode.has( "name" ) )
         {
             String variableName = variableNode.asText();
-            return new Variable( variableName, null );
+            return new Variable( variableName, null, Set.of() );
         }
 
         // Ordinary variable declaration
