@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.yaml.DeclarationException;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.Variable;
 import wres.http.WebClientUtils;
 import wres.reading.DataSource;
 import wres.reading.ReadException;
@@ -435,15 +436,35 @@ public class NwisReader implements TimeSeriesReader
         Map<String, String> urlParameters = new HashMap<>( dataSource.getSource()
                                                                      .parameters() );
 
+        String parameterCodes = this.getParameterCodes( dataSource.getVariable() );
         urlParameters.put( "format", "json" );
-        urlParameters.put( "parameterCd",
-                           dataSource.getVariable()
-                                     .name() );
+        urlParameters.put( "parameterCd", parameterCodes );
         urlParameters.put( "startDT", startDateTime.toString() );
         urlParameters.put( "endDT", range.getRight().toString() );
         urlParameters.put( "sites", siteJoiner.toString() );
 
         return Collections.unmodifiableMap( urlParameters );
+    }
+
+    /**
+     * @param variable the variable
+     * @return the parameter codes
+     */
+    private String getParameterCodes( Variable variable )
+    {
+        StringJoiner start = new StringJoiner( "," ).add( variable.name() );
+
+        if ( !variable.aliases()
+                      .isEmpty() )
+        {
+            variable.aliases()
+                    .forEach( start::add );
+            LOGGER.debug( "Added the following aliased variable names for variable {}: {}",
+                          variable.name(),
+                          variable.aliases() );
+        }
+
+        return start.toString();
     }
 
     /**

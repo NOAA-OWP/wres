@@ -19,6 +19,20 @@ public record Variable( @JsonProperty( "name" ) String name,
                         @JsonProperty( "aliases" ) Set<String> aliases )
 {
     /**
+     * Set the defaults.
+     * @param name the name
+     * @param label the label
+     * @param aliases the variable name aliases
+     */
+    public Variable
+    {
+        if ( Objects.isNull( aliases ) )
+        {
+            aliases = Set.of();
+        }
+    }
+
+    /**
      * Returns the preferred name of the variable, specifically the {@link #label()} if available, otherwise the
      * {@link #name()}.
      *

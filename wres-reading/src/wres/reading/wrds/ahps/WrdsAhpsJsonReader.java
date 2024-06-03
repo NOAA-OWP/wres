@@ -344,7 +344,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
             datetimes.put( ReferenceTimeType.ISSUED_TIME, issuedDateTime );
         }
 
-        // Get the time-scale information, if available
+        // Get the timescale information, if available
         TimeScaleOuter timeScale = TimeScaleFromParameterCodes.getTimeScale( forecast.getParameterCodes(), uri );
         String measurementUnit = members[0].getUnits();
         if ( Objects.isNull( measurementUnit ) && Objects.nonNull( forecast.getUnits() ) )
@@ -373,8 +373,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
                                                              feature,
                                                              measurementUnit );
 
-        // Before ingest, validate the time-series as being a timeseries in the
-        // sense that a time-series is a sequence of values in time.
+        // Validate the time-series data sequence
         this.validateTimeseries( dataPointsList, uri );
 
         TimeSeries.Builder<Double> timeSeriesBuilder =
@@ -414,7 +413,7 @@ public class WrdsAhpsJsonReader implements TimeSeriesReader
     }
 
     /**
-     * Validate a timeseries. A timeseries according to this method is a sequence of values in time. Therefore, a list 
+     * Validate a time-series. A time-series according to this method is a sequence of values in time. Therefore, a list
      * of data with duplicate values for any given datetime is invalid.
      *
      * @param dataPointsList the WRDS-formatted timeseries data points

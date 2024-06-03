@@ -526,7 +526,8 @@ public class WrdsAhpsReader implements TimeSeriesReader
 
         // Add nws_lid to the end of the path.
         // TODO Remove the outer if-check once the old, 1.1 API is gone.
-        if ( !basePath.contains( "v1.1" ) && !basePath.endsWith( "nws_lid/" ) )
+        if ( !basePath.contains( "v1.1" )
+             && !basePath.endsWith( "nws_lid/" ) )
         {
             basePath = basePath + "nws_lid/";
         }
