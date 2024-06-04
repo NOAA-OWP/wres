@@ -1,0 +1,121 @@
+# This workflow runs systests in various configurations for the WRES service
+
+name: Systests 
+
+on:
+  # Manual trigger from the UI
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'Build description'
+
+  # Runs systests after a successful build
+  workflow_run:
+    workflows: [Build]
+    types: 
+      - completed
+      
+run-name: Systests for commit ${{ github.event.workflow_run.head_commit.id }} triggered by build ${{ github.event.workflow_run.id }}
+
+jobs:
+  systests:
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    # Configure Gradle for optimal use in GiHub Actions, including caching of downloaded dependencies.
+    # See: https://github.com/gradle/actions/blob/main/setup-gradle/README.md
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@417ae3ccd767c252f5661f1ace9f835f9654f2b5 # v3.1.0
+
+
+    # Download artifacts from previous step
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4
+      with: 
+        #name: build-artifacts-${{ github.event.workflow_run.id }}
+        run-id: ${{ github.event.workflow_run.id }}
+        github-token: ${{ github.token }}
+
+    # Set env variables for zip versions
+    - name: Set git envs
+      run: |
+        # Get the wres versions from their respective zips and storing these to env
+        echo "wres_version=$(ls build-artifacts/build/distributions | tail -1 | cut -d '-' -f 2-3 | cut -d'.' -f 1)" >> "$GITHUB_ENV"
+        echo "wres_vis=$(ls build-artifacts/wres-vis/build/distributions | tail -1 | cut -d '-' -f 3-4 | cut -d'.' -f 1)" >> "$GITHUB_ENV"
+        echo "wres_writing=$(ls build-artifacts/wres-writing/build/distributions | tail -1 | cut -d '-' -f 3-4 | cut -d'.' -f 1)" >> "$GITHUB_ENV"
+        unzip build-artifacts/systests/build/distributions/systests-*[a-f0-9].zip
+        echo "systests_dir=$( ls -1d systests-*[a-f0-9] )" >> "$GITHUB_ENV"
+
+       
+    # Run systests
+    - name: Systests With Externalized Writers
+      run: | 
+        echo "Starting a test using a separate graphics and numeric processes..."
+
+        # Configure the parameters sent to the test JVM in the settings file (avoids some quoting/escaping issues). 
+        # TODO: replace with -P gradle property overrides in the test command once the quoting/escaping issues can be worked out
+        sed -i "s/testJvmSystemProperties =.*/testJvmSystemProperties = -Dwres.useSSL=false -Dwres.useDatabase=true -Dwres.databaseJdbcUrl=jdbc:h2:mem:test;MODE=REGULAR;TRACE_LEVEL_FILE=4;DB_CLOSE_DELAY=-1;INIT=create schema if not exists wres\\; -Djava.awt.headless=true -Dwres.dataDirectory=. -Djava.io.tmpdir=.. -Ducar.unidata.io.http.maxReadCacheSize=200000 -Ducar.unidata.io.http.httpBufferSize=200000 -Dwres.attemptToMigrate=true -Duser.timezone=UTC -Dwres.externalGraphics=true -Dwres.externalNumerics=true -Dwres.startBroker=false -Dwres.eventsBrokerAddress=localhost -Dwres.eventsBrokerPort=5673/g" $systests_dir/gradle.properties
+        sed -i "s/testJvmSystemPropertiesGraphics =.*/testJvmSystemPropertiesGraphics = -Djava.io.tmpdir=. -Dwres.startBroker=true -Dwres.eventsBrokerAddress=localhost -Dwres.eventsBrokerPort=5673/g" $systests_dir/gradle.properties
+        sed -i "s/testJvmSystemPropertiesWriting =.*/testJvmSystemPropertiesWriting = -Djava.io.tmpdir=. -Dwres.startBroker=false -Dwres.eventsBrokerAddress=localhost -Dwres.eventsBrokerPort=5673/g" $systests_dir/gradle.properties
+
+        # Run the tests using a separate graphics and writing process 
+        $systests_dir/gradlew -p $systests_dir cleanTest test -PwresZipDirectory=../build-artifacts/build/distributions/ -PwresGraphicsZipDirectory=../build-artifacts/wres-vis/build/distributions/ -PwresWritingZipDirectory=../build-artifacts/wres-writing/build/distributions/ -PversionToTest=$wres_version -PgraphicsVersionToTest=$wres_vis -PwritingVersionToTest=$wres_writing --tests=Scenario052 --tests=Scenario053 --tests=Scenario1000 --tests=Scenario1001 --tests=Scenario500 --tests=Scenario501 --tests=Scenario502 --tests=Scenario504 --tests=Scenario505 --tests=Scenario506 --tests=Scenario507 --tests=Scenario508 --tests=Scenario509 --tests=Scenario510 --tests=Scenario511 --tests=Scenario512 --tests=Scenario513 --tests=Scenario720 --tests=Scenario721
+
+        # Save the test results
+        mkdir -p test_results_1
+        mv systests-*/build/reports/tests/test/* test_results_1
+        mv systests-*/build/*.log test_results_1
+
+    # Run systests
+    - name: Systests With Self-contained Process
+      run: | 
+        echo "Starting a second test using a self-contained process..."
+        
+        # Configure the parameters sent to the test JVM in the settings file (avoids some quoting/escaping issues). 
+        # TODO: replace with -P gradle property overrides in the test command once the quoting/escaping issues can be worked out
+        sed -i "s/testJvmSystemProperties =.*/testJvmSystemProperties = -Dwres.useSSL=false -Dwres.databaseJdbcUrl=jdbc:h2:mem:test;MODE=REGULAR;TRACE_LEVEL_FILE=4;DB_CLOSE_DELAY=-1;INIT=create schema if not exists wres\\; -Djava.awt.headless=true -Dwres.dataDirectory=. -Djava.io.tmpdir=.. -Ducar.unidata.io.http.maxReadCacheSize=200000 -Ducar.unidata.io.http.httpBufferSize=200000 -Dwres.attemptToMigrate=true -Duser.timezone=UTC -Dwres.externalGraphics=false -Dwres.externalNumerics=false/g" $systests_dir/gradle.properties
+        
+        # Run the tests again using a self-contained graphics/eventsbroker process
+        $systests_dir/gradlew -p $systests_dir cleanTest test -PwresZipDirectory=../build-artifacts/build/distributions/ -PwresGraphicsZipDirectory=../build-artifacts/wres-vis/build/distributions/ -PwresWritingZipDirectory=../build-artifacts/wres-writing/build/distributions/ -PversionToTest=$wres_version -PgraphicsVersionToTest=$wres_vis -PwritingVersionToTest=$wres_writing --tests=Scenario052 --tests=Scenario053 --tests=Scenario1000 --tests=Scenario1001 --tests=Scenario500 --tests=Scenario501 --tests=Scenario502 --tests=Scenario504 --tests=Scenario505 --tests=Scenario506 --tests=Scenario507 --tests=Scenario508 --tests=Scenario509 --tests=Scenario510 --tests=Scenario511 --tests=Scenario512 --tests=Scenario513 --tests=Scenario720 --tests=Scenario721
+        
+        # Save the test results
+        mkdir -p test_results_2
+        mv systests-*/build/reports/tests/test/* test_results_2
+
+    # Run systests
+    - name: Systests Legacy Evaluation Testing
+      run: | 
+        echo "Starting a third test using the legacy evaluation language..."
+
+        # Configure the parameters sent to the test JVM in the settings file (avoids some quoting/escaping issues). 
+        # TODO: replace with -P gradle property overrides in the test command once the quoting/escaping issues can be worked out
+        sed -i "s/testJvmSystemProperties =.*/testJvmSystemProperties = -Dwres.useSSL=false -Dwres.databaseJdbcUrl=jdbc:h2:mem:test;MODE=REGULAR;TRACE_LEVEL_FILE=4;DB_CLOSE_DELAY=-1;INIT=create schema if not exists wres\\; -Djava.awt.headless=true -Dwres.dataDirectory=. -Djava.io.tmpdir=.. -Ducar.unidata.io.http.maxReadCacheSize=200000 -Ducar.unidata.io.http.httpBufferSize=200000 -Dwres.attemptToMigrate=true -Duser.timezone=UTC -Dwres.externalGraphics=false -Dwres.externalNumerics=false -Dwres.xml=true/g" $systests_dir/gradle.properties
+        
+        # Run the tests again using a self-contained graphics/eventsbroker process
+        $systests_dir/gradlew -p $systests_dir cleanTest test -PwresZipDirectory=../build-artifacts/build/distributions/ -PwresGraphicsZipDirectory=../build-artifacts/wres-vis/build/distributions/ -PwresWritingZipDirectory=../build-artifacts/wres-writing/build/distributions/ -PversionToTest=$wres_version -PgraphicsVersionToTest=$wres_vis -PwritingVersionToTest=$wres_writing --tests=Scenario052 --tests=Scenario053 --tests=Scenario1000 --tests=Scenario1001 --tests=Scenario500 --tests=Scenario501 --tests=Scenario502 --tests=Scenario504 --tests=Scenario505 --tests=Scenario506 --tests=Scenario507 --tests=Scenario508 --tests=Scenario509 --tests=Scenario510 --tests=Scenario511 --tests=Scenario512 --tests=Scenario720 --tests=Scenario721
+        
+        # Save the test results
+        mkdir -p test_results_3
+        mv systests-*/build/reports/tests/test/* test_results_3
+
+
+    # Archive the artifacts created from this build
+    - name: Archive system tests
+      uses: actions/upload-artifact@v4
+      with:
+        name: systest-result-artifacts
+        path: |
+          test_results_1
+          test_results_2
+          test_results_3
+        

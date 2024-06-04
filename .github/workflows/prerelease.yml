@@ -1,0 +1,70 @@
+# Sets up the pre-release of a deploy for staging testing with the staging tag
+name: Pre-release
+
+on:
+  push:
+    tags:
+      - "staging"
+
+run-name: Pre-release for commit ${{ github.sha }}
+
+jobs:
+  Create_Pre-release:
+  
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    # Configure Gradle for optimal use in GiHub Actions, including caching of downloaded dependencies.
+    # See: https://github.com/gradle/actions/blob/main/setup-gradle/README.md
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@417ae3ccd767c252f5661f1ace9f835f9654f2b5 # v3.1.0
+
+    # Run and build using gradle
+    # Disable aggregateJavaDocs
+    - name: Run build
+      run: ./gradlew distZip testCodeCoverageReport javadoc
+
+    # Confirm the test code inside wres-external-services-tests zip compiles
+    - name: Compile external-services-tests
+      run: |
+        cd wres-external-services-tests
+        ../gradlew installDist
+        cd build/install/wres-external-services-tests
+        ./gradlew testClasses
+
+    # Create the system tests zip
+    - name: Create systests zip
+      run: |
+        cd systests
+        ../gradlew distZip installDist
+
+    # Create the admin scripts zip
+    - name: Create admin scripts
+      run: |
+        cd scripts
+        ../gradlew distZip 
+
+    # Deletes drafts incase the staging tag was deleted to change it to a different commit
+    - name: Delete drafts
+      uses: hugo19941994/delete-draft-releases@v1.0.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    # Stores relevant artifacts for the pre-release
+    - name: Create pre-release
+      uses: softprops/action-gh-release@v2
+      with:
+        prerelease: true
+        files: |
+          Release.txt
+          build/distributions/wres-*.zip
+          wres-*/build/distributions/wres-*-*.zip
+          systests/build/distributions/systests-*.zip
+          scripts/build/distributions/wres-admin-scripts-*.zip
+
