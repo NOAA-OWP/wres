@@ -2,6 +2,7 @@ package wres.io.retrieving.memory;
 
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -9,6 +10,7 @@ import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.Variable;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
@@ -58,23 +60,24 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
     {
         Objects.requireNonNull( features );
 
-        Stream<TimeSeries<Double>> originalSeries =
+        Function<String, Stream<TimeSeries<Double>>> variableSupplier = name ->
                 this.timeSeriesStore.getSingleValuedSeries( DatasetOrientation.LEFT,
-                                                            features );
+                                                            features,
+                                                            name );
 
-        // Wrap in a caching retriever
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.LEFT );
-
-        Stream<TimeSeries<Double>> adaptedTimeSeries = this.getAdaptedTimeSeries( data,
-                                                                                  originalSeries,
-                                                                                  null );
+        Variable variable = data.variable();
+        Stream<TimeSeries<Double>> timeSeries = this.getTimeSeries( variableSupplier,
+                                                                    data,
+                                                                    null,
+                                                                    variable );
 
         Supplier<Stream<TimeSeries<Double>>> supplier =
-                () -> adaptedTimeSeries.map( timeSeries ->
-                                                     RetrieverUtilities.augmentTimeScale( timeSeries,
-                                                                                          DatasetOrientation.LEFT,
-                                                                                          data ) );
+                () -> timeSeries.map( s -> RetrieverUtilities.augmentTimeScale( s,
+                                                                                DatasetOrientation.LEFT,
+                                                                                data ) );
+        // Wrap in a caching retriever
         return CachingRetriever.of( supplier );
     }
 
@@ -91,25 +94,29 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
 
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.LEFT );
+        Variable variable = data.variable();
         adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
                                                                              data.type(),
                                                                              this.project.getEarliestAnalysisDuration(),
                                                                              this.project.getLatestAnalysisDuration() );
 
-        Stream<TimeSeries<Double>> originalSeries =
-                this.timeSeriesStore.getSingleValuedSeries( adjustedWindow,
-                                                            DatasetOrientation.LEFT,
-                                                            features );
+        Function<String, Stream<TimeSeries<Double>>> variableSupplier = name ->
+                this.timeSeriesStore.getSingleValuedSeries( DatasetOrientation.LEFT,
+                                                            features,
+                                                            name );
 
-        Stream<TimeSeries<Double>> adaptedTimeSeries = this.getAdaptedTimeSeries( data,
-                                                                                  originalSeries,
-                                                                                  adjustedWindow );
+        Stream<TimeSeries<Double>> timeSeries = this.getTimeSeries( variableSupplier,
+                                                                    data,
+                                                                    adjustedWindow,
+                                                                    variable );
+
+        Supplier<Stream<TimeSeries<Double>>> supplier =
+                () -> timeSeries.map( s -> RetrieverUtilities.augmentTimeScale( s,
+                                                                                DatasetOrientation.LEFT,
+                                                                                data ) );
 
         // Wrap in a caching retriever to allow re-use of left-ish data
-        return CachingRetriever.of( () -> adaptedTimeSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale(
-                timeSeries,
-                DatasetOrientation.LEFT,
-                data ) ) );
+        return CachingRetriever.of( supplier );
     }
 
     @Override
@@ -124,23 +131,27 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
 
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.RIGHT );
-        adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
-                                                                             data.type(),
-                                                                             this.project.getEarliestAnalysisDuration(),
-                                                                             this.project.getLatestAnalysisDuration() );
+        Variable variable = data.variable();
+        TimeWindowOuter finalWindow =
+                RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
+                                                                    data.type(),
+                                                                    this.project.getEarliestAnalysisDuration(),
+                                                                    this.project.getLatestAnalysisDuration() );
 
-        Stream<TimeSeries<Ensemble>> originalSeries =
-                this.timeSeriesStore.getEnsembleSeries( adjustedWindow,
+        Function<String, Stream<TimeSeries<Ensemble>>> variableSupplier = name ->
+                this.timeSeriesStore.getEnsembleSeries( finalWindow,
                                                         DatasetOrientation.RIGHT,
-                                                        features );
+                                                        features,
+                                                        name );
 
-        Stream<TimeSeries<Ensemble>> adaptedTimeSeries = this.getAdaptedTimeSeries( data,
-                                                                                    originalSeries,
-                                                                                    adjustedWindow );
+        Stream<TimeSeries<Ensemble>> timeSeries = this.getTimeSeries( variableSupplier,
+                                                                      data,
+                                                                      finalWindow,
+                                                                      variable );
 
-        return () -> adaptedTimeSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
-                                                                                               DatasetOrientation.RIGHT,
-                                                                                               data ) );
+        return () -> timeSeries.map( s -> RetrieverUtilities.augmentTimeScale( s,
+                                                                               DatasetOrientation.RIGHT,
+                                                                               data ) );
     }
 
     @Override
@@ -163,23 +174,28 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
 
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.BASELINE );
-        adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
-                                                                             data.type(),
-                                                                             this.project.getEarliestAnalysisDuration(),
-                                                                             this.project.getLatestAnalysisDuration() );
+        Variable variable = data.variable();
 
-        Stream<TimeSeries<Ensemble>> originalSeries =
-                this.timeSeriesStore.getEnsembleSeries( adjustedWindow,
+        TimeWindowOuter finalWindow =
+                RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
+                                                                    data.type(),
+                                                                    this.project.getEarliestAnalysisDuration(),
+                                                                    this.project.getLatestAnalysisDuration() );
+
+        Function<String, Stream<TimeSeries<Ensemble>>> variableSupplier = name ->
+                this.timeSeriesStore.getEnsembleSeries( finalWindow,
                                                         DatasetOrientation.BASELINE,
-                                                        features );
+                                                        features,
+                                                        name );
 
-        Stream<TimeSeries<Ensemble>> adaptedTimeSeries = this.getAdaptedTimeSeries( data,
-                                                                                    originalSeries,
-                                                                                    adjustedWindow );
+        Stream<TimeSeries<Ensemble>> timeSeries = this.getTimeSeries( variableSupplier,
+                                                                      data,
+                                                                      finalWindow,
+                                                                      variable );
 
-        return () -> adaptedTimeSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
-                                                                                               DatasetOrientation.BASELINE,
-                                                                                               data ) );
+        return () -> timeSeries.map( s -> RetrieverUtilities.augmentTimeScale( s,
+                                                                               DatasetOrientation.BASELINE,
+                                                                               data ) );
     }
 
     @Override
@@ -202,23 +218,25 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
         Objects.requireNonNull( features );
         Objects.requireNonNull( variableName );
 
-        Stream<TimeSeries<Double>> originalSeries =
-                this.timeSeriesStore.getSingleValuedSeries( DatasetOrientation.COVARIATE,
-                                                            features );
-
-        // Wrap in a caching retriever
         Dataset data = this.project.getCovariateDataset( variableName );
+        Variable variable = data.variable();
 
-        Stream<TimeSeries<Double>> adaptedTimeSeries = this.getAdaptedTimeSeries( data,
-                                                                                  originalSeries,
-                                                                                  null );
+        Function<String, Stream<TimeSeries<Double>>> variableSupplier = name ->
+                this.timeSeriesStore.getSingleValuedSeries( DatasetOrientation.COVARIATE,
+                                                            features,
+                                                            name );
+
+        Stream<TimeSeries<Double>> timeSeries = this.getTimeSeries( variableSupplier,
+                                                                    data,
+                                                                    null,
+                                                                    variable );
+
         Supplier<Stream<TimeSeries<Double>>> supplier =
-                () -> adaptedTimeSeries.map( timeSeries ->
-                                                     RetrieverUtilities.augmentTimeScale( timeSeries,
-                                                                                          DatasetOrientation.COVARIATE,
-                                                                                          data ) )
-                                       .filter( t -> Objects.equals( variableName,
-                                                                     t.getMetadata().getVariableName() ) );
+                () -> timeSeries.map( s -> RetrieverUtilities.augmentTimeScale( s,
+                                                                                DatasetOrientation.COVARIATE,
+                                                                                data ) );
+
+        // Wrap in a caching retriever to allow re-use of left-ish data
         return CachingRetriever.of( supplier );
     }
 
@@ -238,53 +256,64 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
         Objects.requireNonNull( features );
         Objects.requireNonNull( variableName );
 
-        Stream<TimeSeries<Double>> originalSeries =
-                this.timeSeriesStore.getSingleValuedSeries( DatasetOrientation.COVARIATE,
-                                                            features );
-
         TimeWindowOuter adjustedWindow =
                 RetrieverUtilities.getTimeWindowWithUnconditionalLeadTimes( timeWindow,
                                                                             this.project.getDesiredTimeScale() );
 
-        // Wrap in a caching retriever
         Dataset data = this.project.getCovariateDataset( variableName );
+        Variable variable = data.variable();
 
-        Stream<TimeSeries<Double>> adaptedTimeSeries = this.getAdaptedTimeSeries( data,
-                                                                                  originalSeries,
-                                                                                  adjustedWindow );
+        Function<String, Stream<TimeSeries<Double>>> variableSupplier = name ->
+                this.timeSeriesStore.getSingleValuedSeries( DatasetOrientation.COVARIATE,
+                                                            features,
+                                                            name );
+
+        Stream<TimeSeries<Double>> timeSeries = this.getTimeSeries( variableSupplier,
+                                                                    data,
+                                                                    adjustedWindow,
+                                                                    variable );
 
         Supplier<Stream<TimeSeries<Double>>> supplier =
-                () -> adaptedTimeSeries.map( timeSeries ->
-                                                     RetrieverUtilities.augmentTimeScale( timeSeries,
-                                                                                          DatasetOrientation.COVARIATE,
-                                                                                          data ) )
-                                       .filter( t -> Objects.equals( variableName,
-                                                                     t.getMetadata().getVariableName() ) );
+                () -> timeSeries.map( s -> RetrieverUtilities.augmentTimeScale( s,
+                                                                                DatasetOrientation.COVARIATE,
+                                                                                data ) );
+
+        // Wrap in a caching retriever
         return CachingRetriever.of( supplier );
     }
 
     /**
-     * @param <T> the time-series event value type
+     * @param <T> the time-series data type
+     * @param variableSupplier supplies a time-series by variable name
      * @param dataset the dataset
-     * @param timeSeries the input time-series
      * @param timeWindow the time window, optional
-     * @return the adapted time-series
+     * @param variable the variable
+     * @return the time-series
      */
 
-    private <T> Stream<TimeSeries<T>> getAdaptedTimeSeries( Dataset dataset,
-                                                            Stream<TimeSeries<T>> timeSeries,
-                                                            TimeWindowOuter timeWindow )
+    private <T> Stream<TimeSeries<T>> getTimeSeries( Function<String, Stream<TimeSeries<T>>> variableSupplier,
+                                                     Dataset dataset,
+                                                     TimeWindowOuter timeWindow,
+                                                     Variable variable )
     {
-        Stream<TimeSeries<T>> allSeries = timeSeries;
+        Stream<TimeSeries<T>> allSeries = variableSupplier.apply( variable.name() );
 
         // Analysis shape of evaluation?
         if ( dataset.type() == DataType.ANALYSES )
         {
-            allSeries = RetrieverUtilities.createAnalysisTimeSeries( timeSeries,
+            allSeries = RetrieverUtilities.createAnalysisTimeSeries( allSeries,
                                                                      this.project.getEarliestAnalysisDuration(),
                                                                      this.project.getLatestAnalysisDuration(),
                                                                      DuplicatePolicy.KEEP_LATEST_REFERENCE_TIME,
                                                                      timeWindow );
+        }
+
+        // Add any time-series with aliased variable names
+        for ( String alias : variable.aliases() )
+        {
+            Stream<TimeSeries<T>> innerSeries = variableSupplier.apply( alias );
+            Stream<TimeSeries<T>> allSeriesFinal = allSeries;
+            allSeries = Stream.concat( allSeriesFinal, innerSeries );
         }
 
         return allSeries;

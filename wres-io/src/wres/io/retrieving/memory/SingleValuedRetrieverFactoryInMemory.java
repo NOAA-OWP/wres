@@ -2,6 +2,7 @@ package wres.io.retrieving.memory;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -14,6 +15,7 @@ import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.Variable;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
@@ -71,12 +73,13 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
         // Wrap in a caching retriever
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.LEFT );
+        Variable variable = data.variable();
 
         Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( DatasetOrientation.LEFT,
                                                                    data,
                                                                    features,
                                                                    null,
-                                                                   null );
+                                                                   variable );
         Supplier<Stream<TimeSeries<Double>>> supplier =
                 () -> allSeries.map( timeSeries ->
                                              RetrieverUtilities.augmentTimeScale( timeSeries,
@@ -95,6 +98,8 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
 
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.LEFT );
+        Variable variable = data.variable();
+
         adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
                                                                              data.type(),
                                                                              this.project.getEarliestAnalysisDuration(),
@@ -104,7 +109,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
                                                                    data,
                                                                    features,
                                                                    adjustedWindow,
-                                                                   null );
+                                                                   variable );
 
         // Wrap in a caching retriever to allow re-use of left-ish data
         return CachingRetriever.of( () -> allSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
@@ -121,6 +126,8 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
 
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.RIGHT );
+        Variable variable = data.variable();
+
         adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
                                                                              data.type(),
                                                                              this.project.getEarliestAnalysisDuration(),
@@ -130,7 +137,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
                                                                    data,
                                                                    features,
                                                                    adjustedWindow,
-                                                                   null );
+                                                                   variable );
 
         Supplier<Stream<TimeSeries<Double>>> supplier =
                 () -> allSeries.map( timeSeries ->
@@ -157,6 +164,8 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
 
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.BASELINE );
+        Variable variable = data.variable();
+
         adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
                                                                              data.type(),
                                                                              this.project.getEarliestAnalysisDuration(),
@@ -166,7 +175,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
                                                                    data,
                                                                    features,
                                                                    adjustedWindow,
-                                                                   null );
+                                                                   variable );
         Supplier<Stream<TimeSeries<Double>>> supplier =
                 () -> allSeries.map( timeSeries ->
                                              RetrieverUtilities.augmentTimeScale( timeSeries,
@@ -181,12 +190,13 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
     {
         // Wrap in a caching retriever
         Dataset data = this.project.getCovariateDataset( variableName );
+        Variable variable = data.variable();
 
         Stream<TimeSeries<Double>> allSeries = this.getTimeSeries( DatasetOrientation.COVARIATE,
                                                                    data,
                                                                    features,
                                                                    null,
-                                                                   variableName );
+                                                                   variable );
 
         Supplier<Stream<TimeSeries<Double>>> supplier =
                 () -> allSeries.map( timeSeries ->
@@ -206,6 +216,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
                                                                             this.project.getDesiredTimeScale() );
 
         Dataset data = this.project.getCovariateDataset( variableName );
+        Variable variable = data.variable();
 
         adjustedWindow = RetrieverUtilities.adjustForAnalysisTypeIfRequired( adjustedWindow,
                                                                              data.type(),
@@ -216,7 +227,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
                                                                    data,
                                                                    features,
                                                                    adjustedWindow,
-                                                                   variableName );
+                                                                   variable );
 
         // Wrap in a caching retriever to allow re-use of left-ish data
         return CachingRetriever.of( () -> allSeries.map( timeSeries -> RetrieverUtilities.augmentTimeScale( timeSeries,
@@ -230,7 +241,7 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
      * @param dataset the dataset
      * @param features the features
      * @param timeWindow the time window, optional
-     * @param variableName the variable name, optional
+     * @param variable the variable
      * @return the time-series
      */
 
@@ -238,22 +249,34 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
                                                       Dataset dataset,
                                                       Set<Feature> features,
                                                       TimeWindowOuter timeWindow,
-                                                      String variableName )
+                                                      Variable variable )
     {
-        Stream<TimeSeries<Double>> allSeries;
+        Stream<TimeSeries<Double>> allSeries = Stream.of();
 
-        if ( Objects.isNull( timeWindow ) )
+        Set<String> names = new HashSet<>( variable.aliases() );
+
+        // Add the main variable name
+        names.add( variable.name() );
+
+        // Add any time-series with aliased variable names
+        for ( String alias : names )
         {
-            allSeries = this.timeSeriesStore.getSingleValuedSeries( orientation,
-                                                                    features,
-                                                                    variableName );
-        }
-        else
-        {
-            allSeries = this.timeSeriesStore.getSingleValuedSeries( timeWindow,
-                                                                    orientation,
-                                                                    features,
-                                                                    variableName );
+            Stream<TimeSeries<Double>> innerSeries;
+            if ( Objects.isNull( timeWindow ) )
+            {
+                innerSeries = this.timeSeriesStore.getSingleValuedSeries( orientation,
+                                                                          features,
+                                                                          alias );
+            }
+            else
+            {
+                innerSeries = this.timeSeriesStore.getSingleValuedSeries( timeWindow,
+                                                                          orientation,
+                                                                          features,
+                                                                          alias );
+            }
+            Stream<TimeSeries<Double>> allSeriesFinal = allSeries;
+            allSeries = Stream.concat( allSeriesFinal, innerSeries );
         }
 
         // Analysis shape of evaluation?
@@ -273,7 +296,8 @@ public class SingleValuedRetrieverFactoryInMemory implements RetrieverFactory<Do
         if ( this.project.usesGriddedData( orientation ) )
         {
             Map<Feature, List<TimeSeries<Double>>> outerGrouped =
-                    allSeries.collect( Collectors.groupingBy( next -> next.getMetadata().getFeature() ) );
+                    allSeries.collect( Collectors.groupingBy( next -> next.getMetadata()
+                                                                          .getFeature() ) );
 
             // Iterate the series grouped by feature
             List<TimeSeries<Double>> outerGroup = new ArrayList<>();

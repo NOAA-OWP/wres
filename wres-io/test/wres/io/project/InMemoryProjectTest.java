@@ -47,6 +47,7 @@ import wres.config.yaml.components.TimePools;
 import wres.config.yaml.components.TimePoolsBuilder;
 import wres.config.yaml.components.TimeScaleBuilder;
 import wres.config.yaml.components.TimeScaleLenience;
+import wres.config.yaml.components.Variable;
 import wres.config.yaml.components.VariableBuilder;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -210,7 +211,7 @@ class InMemoryProjectTest
                                      .build();
         wres.statistics.generated.Threshold probThreshold =
                 wres.statistics.generated.Threshold.newBuilder()
-                                                   .setLeftThresholdValue(0.4 )
+                                                   .setLeftThresholdValue( 0.4 )
                                                    .build();
         Set<Threshold> thresholds =
                 Set.of( ThresholdBuilder.builder()
@@ -291,14 +292,15 @@ class InMemoryProjectTest
     }
 
     @Test
-    void testGetVariableName()
+    void testGetVariable()
     {
-        assertAll( () -> assertEquals( "bat",
-                                       this.testProject.getLeftVariableName() ),
-                   () -> assertEquals( "bat",
-                                       this.testProject.getRightVariableName() ),
-                   () -> assertEquals( "bat",
-                                       this.testProject.getBaselineVariableName() ) );
+        Variable variable = new Variable( "bat", null, null );
+        assertAll( () -> assertEquals( variable,
+                                       this.testProject.getLeftVariable() ),
+                   () -> assertEquals( variable,
+                                       this.testProject.getRightVariable() ),
+                   () -> assertEquals( variable,
+                                       this.testProject.getBaselineVariable() ) );
     }
 
     @Test

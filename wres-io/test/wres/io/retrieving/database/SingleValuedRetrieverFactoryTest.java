@@ -435,12 +435,12 @@ public class SingleValuedRetrieverFactoryTest
                .thenReturn( PROJECT_ID );
         Mockito.when( project.getFeatures() )
                .thenReturn( allFeatures );
-        Mockito.when( project.getLeftVariableName() )
-               .thenReturn( VARIABLE_NAME );
-        Mockito.when( project.getRightVariableName() )
-               .thenReturn( VARIABLE_NAME );
-        Mockito.when( project.getBaselineVariableName() )
-               .thenReturn( VARIABLE_NAME );
+        Mockito.when( project.getLeftVariable() )
+               .thenReturn( new Variable( VARIABLE_NAME, null, null ) );
+        Mockito.when( project.getRightVariable() )
+               .thenReturn( new Variable( VARIABLE_NAME, null, null ) );
+        Mockito.when( project.getBaselineVariable() )
+               .thenReturn( new Variable( VARIABLE_NAME, null, null ) );
         Mockito.when( project.hasBaseline() )
                .thenReturn( true );
         Mockito.when( project.hasProbabilityThresholds() )

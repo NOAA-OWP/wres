@@ -26,6 +26,7 @@ import wres.config.yaml.DeclarationException;
 import wres.config.yaml.components.CovariateDataset;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.Variable;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.baselines.BaselineGenerator;
 import wres.datamodel.pools.Pool;
@@ -1288,12 +1289,13 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
             Set<Feature> features = this.getCovariateFeatures( covariate.datasetDescription(),
                                                                nextPool.getMetadata() );
 
-            String variable = covariate.datasetDescription()
-                                       .dataset()
-                                       .variable()
-                                       .name();
+            Variable variable = covariate.datasetDescription()
+                                         .dataset()
+                                         .variable();
+
+            String variableName = variable.name();
             Supplier<Stream<TimeSeries<L>>> supplier = this.getRetrieverFactory()
-                                                           .getCovariateRetriever( features, variable, timeWindow );
+                                                           .getCovariateRetriever( features, variableName, timeWindow );
             innerCovariates.put( covariate, supplier );
         }
 
