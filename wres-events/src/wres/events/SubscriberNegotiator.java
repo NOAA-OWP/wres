@@ -532,7 +532,7 @@ class SubscriberNegotiator
      * @param formatsRequired the formats to be delivered by subscribers yet to be negotiated
      * @param subscriberApprover determines whether subscription offers from format writers are approved for negotiation
      * @throws NullPointerException if any input is null
-     * @throws IllegalArgumentException if the set of formats is empty or the maximum number of retries is < 0
+     * @throws IllegalArgumentException if the maximum number of retries is less than zero
      */
 
     SubscriberNegotiator( EvaluationMessager evaluation,
@@ -542,14 +542,6 @@ class SubscriberNegotiator
         Objects.requireNonNull( evaluation );
         Objects.requireNonNull( formatsRequired );
         Objects.requireNonNull( subscriberApprover );
-
-        if ( formatsRequired.isEmpty() )
-        {
-            throw new IllegalArgumentException( "Cannot build a subscriber negotiator for evaluation "
-                                                + evaluation.getEvaluationId()
-                                                + " because there are no formats to be delivered by format "
-                                                + "subscribers." );
-        }
 
         this.subscriptionOffers = new ConcurrentHashMap<>();
         this.formatsRequired = formatsRequired;

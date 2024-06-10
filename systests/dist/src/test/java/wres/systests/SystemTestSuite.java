@@ -75,6 +75,7 @@ import wres.system.SystemSettings;
         Scenario511.class,
         Scenario512.class,
         Scenario513.class,
+        Scenario514.class,
         Scenario600.class,
         Scenario601.class,
         Scenario650.class,

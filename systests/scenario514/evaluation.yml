@@ -1,0 +1,35 @@
+observed:
+  sources:
+    - https://nwis.waterservices.usgs.gov/nwis/iv
+  variable:
+    name: '00060'
+    label: streamflow
+  label: USGS
+predicted:
+  sources:
+    - smalldata/KCDM7_20180904_multivariate.json
+  variable: 
+    name: QR
+    label: streamflow
+    aliases: [QS]
+  label: AHPS
+features:
+  - observed: '06893000'
+    predicted: KCDM7
+unit: kcfs
+valid_dates:
+  minimum: 2018-08-16T12:00:00Z
+  maximum: 2018-09-28T13:00:00Z
+lead_times:
+  minimum: 0
+  maximum: 120
+  unit: hours
+lead_time_pools:
+  period: 6
+  unit: hours
+metrics:
+  - mean error
+  - sample size
+decimal_format: '#0.000000'
+output_formats:
+  - pairs
