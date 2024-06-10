@@ -812,7 +812,7 @@ public class SourceLoader
         }
 
         // File-like source
-        return Paths.get( uri );
+        return Path.of( uri );
     }
 
     /**

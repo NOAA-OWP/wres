@@ -165,7 +165,7 @@ public class EnsembleForecastRetrieverTest
                                                        .setDatabase( this.wresDatabase )
                                                        .setFeaturesCache( this.caches.getFeaturesCache() )
                                                        .setProjectId( PROJECT_ID )
-                                                       .setVariableName( VARIABLE_NAME )
+                                                       .setVariable( VARIABLE )
                                                        .setFeatures( Set.of( FEATURE ) )
                                                        .setDatasetOrientation( orientation )
                                                        .build();
@@ -220,7 +220,7 @@ public class EnsembleForecastRetrieverTest
                                                        .setFeaturesCache( this.caches.getFeaturesCache() )
                                                        .setDatabase( this.wresDatabase )
                                                        .setProjectId( PROJECT_ID )
-                                                       .setVariableName( VARIABLE_NAME )
+                                                       .setVariable( VARIABLE )
                                                        .setFeatures( Set.of( FEATURE ) )
                                                        .setDatasetOrientation( orientation )
                                                        .build();
@@ -241,7 +241,7 @@ public class EnsembleForecastRetrieverTest
                                                        .setFeaturesCache( this.caches.getFeaturesCache() )
                                                        .setDatabase( this.wresDatabase )
                                                        .setProjectId( PROJECT_ID )
-                                                       .setVariableName( VARIABLE_NAME )
+                                                       .setVariable( VARIABLE )
                                                        .setFeatures( Set.of( FEATURE ) )
                                                        .setDatasetOrientation( orientation )
                                                        .build();
@@ -262,7 +262,7 @@ public class EnsembleForecastRetrieverTest
                                                        .setFeaturesCache( this.caches.getFeaturesCache() )
                                                        .setDatabase( this.wresDatabase )
                                                        .setProjectId( PROJECT_ID )
-                                                       .setVariableName( VARIABLE_NAME )
+                                                       .setVariable( VARIABLE )
                                                        .setFeatures( Set.of( FEATURE ) )
                                                        .setDatasetOrientation( orientation )
                                                        .build();

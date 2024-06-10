@@ -27,6 +27,7 @@ import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.TimeIntervalBuilder;
 import wres.config.yaml.components.TimePools;
 import wres.config.yaml.components.TimePoolsBuilder;
+import wres.config.yaml.components.Variable;
 import wres.config.yaml.components.VariableBuilder;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.messages.MessageFactory;
@@ -118,11 +119,11 @@ class PoolsGeneratorTest
                .thenReturn( declaration );
         Mockito.when( project.getId() )
                .thenReturn( 12345L );
-        Mockito.when( project.getLeftVariableName() )
-               .thenReturn( "DISCHARGE" );
-        Mockito.when( project.getRightVariableName() )
-               .thenReturn( STREAMFLOW );
-        Mockito.when( project.getBaselineVariableName() )
+        Mockito.when( project.getLeftVariable() )
+               .thenReturn( new Variable( "DISCHARGE", null, null ) );
+        Mockito.when( project.getRightVariable() )
+               .thenReturn( new Variable( STREAMFLOW, null, null ) );
+        Mockito.when( project.getBaselineVariable() )
                .thenReturn( null );
         Mockito.when( project.hasBaseline() )
                .thenReturn( false );
@@ -216,11 +217,11 @@ class PoolsGeneratorTest
                .thenReturn( declaration );
         Mockito.when( project.getId() )
                .thenReturn( 12345L );
-        Mockito.when( project.getLeftVariableName() )
-               .thenReturn( "DISCHARGE" );
-        Mockito.when( project.getRightVariableName() )
-               .thenReturn( STREAMFLOW );
-        Mockito.when( project.getBaselineVariableName() )
+        Mockito.when( project.getLeftVariable() )
+               .thenReturn( new Variable( "DISCHARGE", null, null ) );
+        Mockito.when( project.getRightVariable() )
+               .thenReturn( new Variable( STREAMFLOW, null, null ) );
+        Mockito.when( project.getBaselineVariable() )
                .thenReturn( null );
         Mockito.when( project.hasBaseline() )
                .thenReturn( false );

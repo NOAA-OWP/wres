@@ -56,31 +56,6 @@ public class TimeSeriesStore
      * Returns all single-valued series by feature.
      * @param orientation the orientation
      * @param features the features
-     * @return the filtered series
-     * @throws NullPointerException if any input is null
-     * @throws IllegalArgumentException if the orientation is unrecognized
-     */
-
-    public Stream<TimeSeries<Double>> getSingleValuedSeries( DatasetOrientation orientation,
-                                                             Set<Feature> features )
-    {
-        Objects.requireNonNull( orientation );
-        Objects.requireNonNull( features );
-
-        return TimeSeriesStore.getSingleValuedStore( this.leftSingleValuedSeries,
-                                                     this.rightSingleValuedSeries,
-                                                     this.baselineSingleValuedSeries,
-                                                     this.covariateSingleValuedSeries,
-                                                     orientation )
-                              .stream()
-                              .filter( next -> features.contains( next.getMetadata()
-                                                                      .getFeature() ) );
-    }
-
-    /**
-     * Returns all single-valued series by feature.
-     * @param orientation the orientation
-     * @param features the features
      * @param variableName an optional variable name
      * @return the filtered series
      * @throws NullPointerException if any input is null
@@ -146,35 +121,6 @@ public class TimeSeriesStore
      * @param timeWindow the time window
      * @param orientation the orientation
      * @param features the features
-     * @return the filtered series
-     * @throws NullPointerException if any input is null
-     * @throws IllegalArgumentException if the orientation is unrecognized
-     */
-
-    public Stream<TimeSeries<Double>> getSingleValuedSeries( TimeWindowOuter timeWindow,
-                                                             DatasetOrientation orientation,
-                                                             Set<Feature> features )
-    {
-        Objects.requireNonNull( timeWindow );
-        Objects.requireNonNull( orientation );
-        Objects.requireNonNull( features );
-
-        return TimeSeriesStore.getSingleValuedStore( this.leftSingleValuedSeries,
-                                                     this.rightSingleValuedSeries,
-                                                     this.baselineSingleValuedSeries,
-                                                     this.covariateSingleValuedSeries,
-                                                     orientation )
-                              .stream()
-                              .filter( next -> features.contains( next.getMetadata()
-                                                                      .getFeature() ) )
-                              .map( next -> TimeSeriesSlicer.filter( next, timeWindow ) );
-    }
-
-    /**
-     * Filters the single-valued series by time window and feature.
-     * @param timeWindow the time window
-     * @param orientation the orientation
-     * @param features the features
      * @param variableName the optional variable name
      * @return the filtered series
      * @throws NullPointerException if any input is null
@@ -210,6 +156,7 @@ public class TimeSeriesStore
      * @param timeWindow the time window
      * @param orientation the context
      * @param features the features
+     * @param variableName the optional variable name
      * @return the filtered series
      * @throws NullPointerException if any input is null
      * @throws IllegalArgumentException if the orientation is unrecognized
@@ -217,7 +164,8 @@ public class TimeSeriesStore
 
     public Stream<TimeSeries<Ensemble>> getEnsembleSeries( TimeWindowOuter timeWindow,
                                                            DatasetOrientation orientation,
-                                                           Set<Feature> features )
+                                                           Set<Feature> features,
+                                                           String variableName )
     {
         Objects.requireNonNull( timeWindow );
         Objects.requireNonNull( orientation );
@@ -230,7 +178,11 @@ public class TimeSeriesStore
                                                  orientation )
                               .stream()
                               .filter( next -> features.contains( next.getMetadata()
-                                                                      .getFeature() ) )
+                                                                      .getFeature() )
+                                               && Objects.isNull( variableName )
+                                               || Objects.equals( next.getMetadata()
+                                                                      .getVariableName(),
+                                                                  variableName ) )
                               .map( next -> TimeSeriesSlicer.filter( next,
                                                                      timeWindow ) );
     }

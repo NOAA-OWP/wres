@@ -34,6 +34,7 @@ import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.Source;
+import wres.config.yaml.components.Variable;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.io.database.ConnectionSupplier;
@@ -180,7 +181,7 @@ class SingleValuedGriddedRetrieverTest
                         .setDatabase( this.wresDatabase )
                         .setMeasurementUnitsCache( this.measurementUnitsCache )
                         .setFeaturesCache( this.mockCaches.getFeaturesCache() )
-                        .setVariableName( SingleValuedGriddedRetrieverTest.VARIABLE_NAME )
+                        .setVariable( new Variable( VARIABLE_NAME, null, null ) )
                         .build();
 
         List<String> actualPaths = retriever.getPaths();

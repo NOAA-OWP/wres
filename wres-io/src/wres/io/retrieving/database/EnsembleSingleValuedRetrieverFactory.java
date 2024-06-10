@@ -120,7 +120,7 @@ public class EnsembleSingleValuedRetrieverFactory implements RetrieverFactory<Do
                                                       .setMeasurementUnitsCache( this.getMeasurementUnitsCache() )
                                                       .setProjectId( this.project.getId() )
                                                       .setFeatures( features )
-                                                      .setVariableName( this.project.getRightVariableName() )
+                                                      .setVariable( this.project.getRightVariable() )
                                                       .setDatasetOrientation( DatasetOrientation.RIGHT )
                                                       .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale(
                                                               rightDataset ) )
@@ -156,7 +156,7 @@ public class EnsembleSingleValuedRetrieverFactory implements RetrieverFactory<Do
                            .setMeasurementUnitsCache( this.getMeasurementUnitsCache() )
                            .setProjectId( this.project.getId() )
                            .setFeatures( features )
-                           .setVariableName( this.project.getBaselineVariableName() )
+                           .setVariable( this.project.getBaselineVariable() )
                            .setDatasetOrientation( DatasetOrientation.BASELINE )
                            .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( this.baselineDataset ) )
                            .setDesiredTimeScale( this.desiredTimeScale )

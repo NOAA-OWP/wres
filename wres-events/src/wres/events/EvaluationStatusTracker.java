@@ -432,7 +432,7 @@ class EvaluationStatusTracker implements Closeable
      * @param subscriberApprover determines whether subscription offers from format writers are viable
      * @param flowController producer flow controller
      * @throws NullPointerException if any input is null
-     * @throws IllegalArgumentException if the set of formats is empty or the maximum number of retries is < 0
+     * @throws IllegalArgumentException if the maximum number of retries is less than zero
      * @throws EvaluationEventException if the status tracker could not be created for any other reason
      */
 
@@ -454,14 +454,6 @@ class EvaluationStatusTracker implements Closeable
             throw new IllegalArgumentException( "While building an evaluation status tracker, discovered a maximum "
                                                 + "retry count that is less than zero, which is not allowed: "
                                                 + maximumRetries );
-        }
-
-        if ( formatsRequired.isEmpty() )
-        {
-            throw new IllegalArgumentException( "Cannot build a status tracker for evaluation "
-                                                + evaluation.getEvaluationId()
-                                                + " because there are no formats to be delivered by format "
-                                                + "subscribers." );
         }
 
         this.evaluation = evaluation;

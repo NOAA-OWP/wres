@@ -37,6 +37,7 @@ import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.TimeScale;
+import wres.config.yaml.components.Variable;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -95,15 +96,6 @@ public class DatabaseProject implements Project
     /** The singleton feature groups for which statistics should not be published, if any. */
     private final Set<FeatureGroup> doNotPublish;
 
-    /** The left-ish variable to evaluate. */
-    private final String leftVariable;
-
-    /** The right-ish variable to evaluate. */
-    private final String rightVariable;
-
-    /** The baseline-ish variable to evaluate. */
-    private final String baselineVariable;
-
     /** The desired timescale. */
     private final TimeScaleOuter desiredTimeScale;
 
@@ -161,14 +153,11 @@ public class DatabaseProject implements Project
         this.featureGroups = featureSets.featureGroups();
         this.doNotPublish = featureSets.doNotPublish();
 
-        // Determine and set the variables to evaluate
-        VariableNames variableNames = this.getVariablesToEvaluate( declaration, this.projectId );
-        this.leftVariable = variableNames.leftVariableName();
-        this.rightVariable = variableNames.rightVariableName();
-        this.baselineVariable = variableNames.baselineVariableName();
-
         // Set the desired timescale
         this.desiredTimeScale = this.getDesiredTimeScale( declaration, this.projectId );
+
+        // Determine the variables to evaluate
+        VariableNames variableNames = this.getVariablesToEvaluate( declaration, this.projectId );
 
         // Interpolate the declaration and set it
         this.declaration = ProjectUtilities.interpolate( declaration,
@@ -383,36 +372,32 @@ public class DatabaseProject implements Project
     }
 
     @Override
-    public String getLeftVariableName()
+    public Variable getLeftVariable()
     {
-        if ( Objects.isNull( this.leftVariable ) )
-        {
-            return this.getDeclaredLeftVariableName();
-        }
-
-        return this.leftVariable;
+        return this.getLeft()
+                   .variable();
     }
 
     @Override
-    public String getRightVariableName()
+    public Variable getRightVariable()
     {
-        if ( Objects.isNull( this.rightVariable ) )
-        {
-            return this.getDeclaredRightVariableName();
-        }
-
-        return this.rightVariable;
+        return this.getRight()
+                   .variable();
     }
 
     @Override
-    public String getBaselineVariableName()
+    public Variable getBaselineVariable()
     {
-        if ( Objects.isNull( this.baselineVariable ) )
+        Variable variable = null;
+
+        if ( this.hasBaseline() )
         {
-            return this.getDeclaredBaselineVariableName();
+            variable = this.getBaseline()
+                           .dataset()
+                           .variable();
         }
 
-        return this.baselineVariable;
+        return variable;
     }
 
     @Override
@@ -1193,7 +1178,7 @@ public class DatabaseProject implements Project
     }
 
     /**
-     * Sets the variables to evaluate. Begins by looking at the declaration. If it cannot find a declared variable for 
+     * Gets the variables to evaluate. Begins by looking at the declaration. If it cannot find a declared variable for
      * any particular left/right/baseline context, it looks at the data instead. If there is more than one possible 
      * name and that name does not exactly match the name identified for the other side of the pairing, then an
      * exception is thrown because declaration is required to disambiguate. Otherwise, it chooses the single variable
@@ -1520,41 +1505,6 @@ public class DatabaseProject implements Project
     private Database getDatabase()
     {
         return this.database;
-    }
-
-    /**
-     * @see #getLeftVariableName()
-     * @return The declared left variable name or null if undeclared
-     */
-    private String getDeclaredLeftVariableName()
-    {
-        return DeclarationUtilities.getVariableName( this.getLeft() );
-    }
-
-    /**
-     * @see #getRightVariableName()
-     * @return The declared right variable name or null if undeclared
-     */
-    private String getDeclaredRightVariableName()
-    {
-        return DeclarationUtilities.getVariableName( this.getRight() );
-    }
-
-    /**
-     * @see #getBaselineVariableName()
-     * @return The declared baseline variable name or null if undeclared
-     */
-    private String getDeclaredBaselineVariableName()
-    {
-        String variableName = null;
-
-        if ( this.hasBaseline() )
-        {
-            variableName = DeclarationUtilities.getVariableName( this.getBaseline()
-                                                                     .dataset() );
-        }
-
-        return variableName;
     }
 
     /**

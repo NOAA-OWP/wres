@@ -8,6 +8,7 @@ import java.util.SortedSet;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.Variable;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.space.FeatureGroup;
@@ -99,28 +100,22 @@ public interface Project
     Set<FeatureGroup> getFeatureGroupsForWhichStatisticsShouldNotBePublished();
 
     /**
-     * @return the name of the left variable
-     * @throws NullPointerException if the orientation is null
-     * @throws IllegalArgumentException if the orientation is unrecognized
+     * @return the left variable
      */
 
-    String getLeftVariableName();
+    Variable getLeftVariable();
 
     /**
-     * @return the name of the right variable
-     * @throws NullPointerException if the orientation is null
-     * @throws IllegalArgumentException if the orientation is unrecognized
+     * @return the right variable
      */
 
-    String getRightVariableName();
+    Variable getRightVariable();
 
     /**
-     * @return the name of the baseline variable
-     * @throws NullPointerException if the orientation is null
-     * @throws IllegalArgumentException if the orientation is unrecognized
+     * @return the baseline variable
      */
 
-    String getBaselineVariableName();
+    Variable getBaselineVariable();
 
     /**
      * Returns the covarariate dataset for the named variable.

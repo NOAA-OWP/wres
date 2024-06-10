@@ -199,9 +199,6 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
 
         boolean isConfiguredAsForecast = DeclarationUtilities.isForecast( dataset );
 
-        String variableName = dataset.variable()
-                                     .name();
-
         TimeScaleOuter declaredExistingTimeScale = this.getDeclaredExistingTimeScale( dataset );
 
         try
@@ -240,7 +237,7 @@ public class SingleValuedRetrieverFactory implements RetrieverFactory<Double, Do
                .setMeasurementUnitsCache( this.getMeasurementUnitsCache() )
                .setProjectId( this.getProject()
                                   .getId() )
-               .setVariableName( variableName )
+               .setVariable( dataset.variable() )
                .setDatasetOrientation( orientation )
                .setDeclaredExistingTimeScale( declaredExistingTimeScale )
                .setDesiredTimeScale( this.desiredTimeScale );

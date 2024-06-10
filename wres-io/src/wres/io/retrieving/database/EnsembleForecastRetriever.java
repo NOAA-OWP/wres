@@ -23,7 +23,7 @@ import wres.io.retrieving.DataAccessException;
 
 /**
  * Retrieves {@link TimeSeries} of ensemble forecasts from the WRES database.
- * 
+ *
  * @author James Brown
  */
 
@@ -36,13 +36,6 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     private static final String NO_IDENTIFIER_ERROR = "Retrieval of ensemble time-series by identifier is not "
                                                       + "currently possible because there is no identifier for "
                                                       + "ensemble time-series in the WRES database.";
-
-    /**
-     * Start of script for {@link #getAllIdentifiers()}.
-     */
-
-    private static final String GET_ALL_TIME_SERIES_SCRIPT =
-            EnsembleForecastRetriever.getStartOfScriptForGetAllTimeSeries();
 
     /**
      * The ensemble cache.
@@ -64,7 +57,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 
         /**
          * Sets the ensemble orm/cache.
-         * 
+         *
          * @param ensemblesCache the ensembles cache
          * @return the builder
          */
@@ -86,9 +79,9 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 
     /**
      * <p>Reads a time-series by <code>wres.TimeSeries.timeseries_id</code>.
-     * 
+     *
      * <p>TODO: implement this method when there is a composition identifier for an ensemble. See #68334.
-     * 
+     *
      * @param identifier the <code>wres.TimeSeries.timeseries_id</code>
      * @return a possible time-series for the given identifier
      * @throws UnsupportedOperationException in all cases - see #68334.
@@ -102,9 +95,9 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 
     /**
      * <p>Returns all of the <code>wres.TimeSeries.timeseries_id</code> associated with this instance.
-     * 
+     *
      * <p>TODO: implement this method when there is a composition identifier for an ensemble. See #68334.
-     * 
+     *
      * @return a stream of<code>wres.TimeSeries.timeseries_id</code>
      * @throws UnsupportedOperationException in all cases - see #68334.
      */
@@ -118,14 +111,14 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
     /**
      * <p>Overrides the default implementation to get all specified time-series in one pull, rather than one pull for
      * each series.
-     * 
+     *
      * <p>TODO: implement this method when there is a composition identifier for an ensemble. See #68334.
-     * 
+     *
      * @param identifiers the stream of identifiers
      * @return a stream over the identified objects
      * @throws UnsupportedOperationException in all cases - see #68334.
      * @throws NullPointerException if the input is null
-    
+
      */
     @Override
     public Stream<TimeSeries<Ensemble>> get( LongStream identifiers )
@@ -135,7 +128,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 
     /**
      * Overrides the default implementation to get all time-series in one pull, rather than one pull for each series.
-     * 
+     *
      * @return the possible object
      * @throws DataAccessException if the data could not be accessed for whatever reason
      */
@@ -146,7 +139,8 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         this.validateForMultiSeriesRetrieval();
 
         Database database = super.getDatabase();
-        DataScripter dataScripter = new DataScripter( database, GET_ALL_TIME_SERIES_SCRIPT );
+        String start = this.getStartOfScriptForGetAllTimeSeries();
+        DataScripter dataScripter = new DataScripter( database, start );
 
         // Add basic constraints at zero tabs
         this.addProjectFeatureVariableAndMemberConstraints( dataScripter, 0 );
@@ -194,11 +188,11 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 
     /**
      * <p>Returns a function that obtains the measured value.
-     * 
+     *
      * <p>TODO: include the labels too, once they are needed. See #56214-37 for the amended script. When processing these,
      * obtain the labels from a local cache, because they will be repeated across many ensembles, typically, and 
      * String[] are comparatively expensive.
-     * 
+     *
      * @return a function to obtain the measured value
      */
 
@@ -255,13 +249,17 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 
     /**
      * Returns the start of a script to acquire a time-series from the WRES database for all time-series.
-     * 
+     *
      * @return the start of a script for the time-series
      */
 
-    private static String getStartOfScriptForGetAllTimeSeries()
+    private String getStartOfScriptForGetAllTimeSeries()
     {
         ScriptBuilder scripter = new ScriptBuilder();
+
+        boolean aliases = !this.getVariable()
+                               .aliases()
+                               .isEmpty();
 
         scripter.addLine( "SELECT " );
         scripter.addTab().addLine( "metadata.series_id AS series_id," );
@@ -274,6 +272,12 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         scripter.addTab().addLine( "metadata.scale_period," );
         scripter.addTab().addLine( "metadata.scale_function," );
         scripter.addTab().addLine( "metadata.feature_id," );
+
+        if ( aliases )
+        {
+            scripter.addTab().addLine( "metadata.variable_name," );
+        }
+
         // See #56214-272. Add the count to allow re-duplication of duplicate series
         scripter.addTab().addLine( "metadata.occurrences" );
         scripter.addLine( "FROM" );
@@ -286,6 +290,11 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         scripter.addTab( 2 ).addLine( "S.measurementunit_id," );
         scripter.addTab( 2 ).addLine( "TimeScale.duration_ms AS scale_period," );
         scripter.addTab( 2 ).addLine( "TimeScale.function_name AS scale_function," );
+
+        if ( aliases )
+        {
+            scripter.addTab( 2 ).addLine( "S.variable_name," );
+        }
 
         scripter.addTab( 2 ).addLine( "COUNT(*) AS occurrences " );
         scripter.addTab().addLine( "FROM wres.Source S" );
@@ -312,7 +321,7 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
 
         Objects.requireNonNull( this.ensemblesCache,
                                 "The ensemble cache is required when building an ensemble "
-                                                     + "retriever." );
+                                + "retriever." );
     }
 
 

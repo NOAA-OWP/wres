@@ -171,6 +171,10 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
     {
         ScriptBuilder scripter = new ScriptBuilder();
 
+        boolean aliases = !this.getVariable()
+                               .aliases()
+                               .isEmpty();
+
         scripter.addLine( "SELECT " );
         scripter.addTab().addLine( "metadata.series_id AS series_id," );
         scripter.addTab().addLine( "metadata.reference_time + INTERVAL '1' MINUTE * TSV.lead AS valid_time," );
@@ -179,6 +183,12 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
         scripter.addTab().addLine( "metadata.scale_period," );
         scripter.addTab().addLine( "metadata.scale_function," );
         scripter.addTab().addLine( "metadata.feature_id," );
+
+        if( aliases )
+        {
+            scripter.addTab().addLine( "metadata.variable_name," );
+        }
+
         // See #56214-272. Add the count to allow re-duplication of duplicate series
         scripter.addTab().addLine( "metadata.occurrences" );
         scripter.addLine( "FROM" );
@@ -190,6 +200,11 @@ class ObservationRetriever extends TimeSeriesRetriever<Double>
         scripter.addTab( 2 ).addLine( "S.measurementunit_id," );
         scripter.addTab( 2 ).addLine( "TimeScale.duration_ms AS scale_period," );
         scripter.addTab( 2 ).addLine( "TimeScale.function_name AS scale_function," );
+
+        if( aliases )
+        {
+            scripter.addTab( 2 ).addLine( "S.variable_name," );
+        }
 
         scripter.addTab( 2 ).addLine( "COUNT(*) AS occurrences " );
         scripter.addTab().addLine( "FROM wres.Source S" );

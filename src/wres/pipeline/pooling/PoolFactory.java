@@ -2415,8 +2415,8 @@ public class PoolFactory
             return false;
         }
 
-        if ( !Objects.equals( localProject.getLeftVariableName(),
-                              localProject.getBaselineVariableName() ) )
+        if ( !Objects.equals( localProject.getLeftVariable(),
+                              localProject.getBaselineVariable() ) )
         {
             return false;
         }

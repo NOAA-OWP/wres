@@ -1283,7 +1283,6 @@ public class EvaluationMessager implements Closeable
      * @param builder the builder
      * @throws EvaluationEventException if the evaluation could not be constructed for any reason
      * @throws NullPointerException if the broker is null
-     * @throws IllegalArgumentException if there are zero subscribers for any queue 
      * @throws IllegalStateException if the evaluation message fails to declare the expected number of pools or contains
      *            no formats
      */
@@ -1322,16 +1321,6 @@ public class EvaluationMessager implements Closeable
         Objects.requireNonNull( this.clientId,
                                 "Cannot create an evaluation without the identifier of the messaging "
                                 + "client that requested it." );
-
-        // Must have one or more formats
-        if ( formatsRequired.isEmpty() )
-        {
-            throw new IllegalArgumentException( "Encountered an error while building evaluation "
-                                                + this.evaluationId
-                                                + ": there are no formats to be delivered by format "
-                                                + "subscribers. An evaluation must write statistics to at least one "
-                                                + "format." );
-        }
 
         this.publicationComplete = new AtomicBoolean();
         this.isStopped = new AtomicBoolean();

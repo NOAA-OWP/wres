@@ -132,16 +132,29 @@ class EnsembleRetrieverFactoryInMemoryTest
 
         Project project = Mockito.mock( Project.class );
 
-
         Dataset left = DatasetBuilder.builder()
                                      .type( DataType.OBSERVATIONS )
+                                     .variable( VariableBuilder.builder()
+                                                               .name( "left" )
+                                                               .build() )
                                      .build();
 
         Dataset right = DatasetBuilder.builder()
                                       .type( DataType.SINGLE_VALUED_FORECASTS )
+                                      .variable( VariableBuilder.builder()
+                                                                .name( "right" )
+                                                                .build() )
                                       .build();
+
+        Dataset baselineDataset = DatasetBuilder.builder()
+                                                .type( DataType.SINGLE_VALUED_FORECASTS )
+                                                .variable( VariableBuilder.builder()
+                                                                          .name( "baseline" )
+                                                                          .build() )
+                                                .build();
+
         BaselineDataset baseline = BaselineDatasetBuilder.builder()
-                                                         .dataset( right )
+                                                         .dataset( baselineDataset )
                                                          .build();
 
         Dataset covariate = DatasetBuilder.builder()
@@ -150,7 +163,8 @@ class EnsembleRetrieverFactoryInMemoryTest
                                                                     .name( VARIABLE_NAME )
                                                                     .build() )
                                           .build();
-        CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null, DatasetOrientation.LEFT, null );
+        CovariateDataset covariateDataset =
+                new CovariateDataset( covariate, null, null, DatasetOrientation.LEFT, null );
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
                                             .left( left )

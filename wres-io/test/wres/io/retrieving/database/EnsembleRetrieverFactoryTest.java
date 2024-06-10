@@ -40,6 +40,7 @@ import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.Variable;
 import wres.config.yaml.components.VariableBuilder;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.types.Ensemble;
@@ -416,12 +417,12 @@ public class EnsembleRetrieverFactoryTest
                .thenReturn( PROJECT_ID );
         Mockito.when( project.getFeatures() )
                .thenReturn( allFeatures );
-        Mockito.when( project.getLeftVariableName() )
-               .thenReturn( VARIABLE_NAME );
-        Mockito.when( project.getRightVariableName() )
-               .thenReturn( VARIABLE_NAME );
-        Mockito.when( project.getBaselineVariableName() )
-               .thenReturn( VARIABLE_NAME );
+        Mockito.when( project.getLeftVariable() )
+               .thenReturn( new Variable( VARIABLE_NAME, null, null ) );
+        Mockito.when( project.getRightVariable() )
+               .thenReturn( new Variable( VARIABLE_NAME, null, null ) );
+        Mockito.when( project.getBaselineVariable() )
+               .thenReturn( new Variable( VARIABLE_NAME, null, null ) );
         Mockito.when( project.hasBaseline() )
                .thenReturn( true );
         Mockito.when( project.hasProbabilityThresholds() )

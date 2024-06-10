@@ -32,6 +32,7 @@ import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.TimeScale;
+import wres.config.yaml.components.Variable;
 import wres.datamodel.space.FeatureTuple;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
@@ -99,15 +100,6 @@ public class InMemoryProject implements Project
     /** Whether the covariates use gridded data (all covariates must be the same). */
     private final boolean covariatesUseGriddedData;
 
-    /** The left-ish variable to evaluate. */
-    private final String leftVariable;
-
-    /** The right-ish variable to evaluate. */
-    private final String rightVariable;
-
-    /** The baseline-ish variable to evaluate. */
-    private final String baselineVariable;
-
     /** The desired timescale. */
     private final TimeScaleOuter desiredTimeScale;
 
@@ -143,12 +135,10 @@ public class InMemoryProject implements Project
         this.featureGroups = featureSets.featureGroups();
         this.doNotPublish = featureSets.doNotPublish();
 
-        VariableNames variableNames = this.getVariablesToEvaluate( declaration, timeSeriesStore );
-        this.leftVariable = variableNames.leftVariableName();
-        this.rightVariable = variableNames.rightVariableName();
-        this.baselineVariable = variableNames.baselineVariableName();
-
         this.desiredTimeScale = this.getDesiredTimeScale( declaration, timeSeriesStore );
+
+        // Get the variable name to evaluate
+        VariableNames variableNames = this.getVariablesToEvaluate( declaration, timeSeriesStore );
 
         // Interpolate and set the declaration
         this.declaration = ProjectUtilities.interpolate( declaration,
@@ -256,36 +246,32 @@ public class InMemoryProject implements Project
     }
 
     @Override
-    public String getLeftVariableName()
+    public Variable getLeftVariable()
     {
-        if ( Objects.isNull( this.leftVariable ) )
-        {
-            return this.getDeclaredLeftVariableName();
-        }
-
-        return this.leftVariable;
+        return this.getLeft()
+                   .variable();
     }
 
     @Override
-    public String getRightVariableName()
+    public Variable getRightVariable()
     {
-        if ( Objects.isNull( this.rightVariable ) )
-        {
-            return this.getDeclaredRightVariableName();
-        }
-
-        return this.rightVariable;
+        return this.getRight()
+                   .variable();
     }
 
     @Override
-    public String getBaselineVariableName()
+    public Variable getBaselineVariable()
     {
-        if ( Objects.isNull( this.baselineVariable ) )
+        Variable variable = null;
+
+        if ( this.hasBaseline() )
         {
-            return this.getDeclaredBaselineVariableName();
+            variable = this.getBaseline()
+                           .dataset()
+                           .variable();
         }
 
-        return this.baselineVariable;
+        return variable;
     }
 
     @Override
@@ -940,41 +926,6 @@ public class InMemoryProject implements Project
     {
         return this.getDeclaration()
                    .label();
-    }
-
-    /**
-     * @see #getLeftVariableName()
-     * @return The declared left variable name or null if undeclared
-     */
-    private String getDeclaredLeftVariableName()
-    {
-        return DeclarationUtilities.getVariableName( this.getLeft() );
-    }
-
-    /**
-     * @see #getRightVariableName()
-     * @return The declared right variable name or null if undeclared
-     */
-    private String getDeclaredRightVariableName()
-    {
-        return DeclarationUtilities.getVariableName( this.getRight() );
-    }
-
-    /**
-     * @see #getBaselineVariableName()
-     * @return The declared baseline variable name or null if undeclared
-     */
-    private String getDeclaredBaselineVariableName()
-    {
-        String variableName = null;
-
-        if ( this.hasBaseline() )
-        {
-            variableName = DeclarationUtilities.getVariableName( this.getBaseline()
-                                                                     .dataset() );
-        }
-
-        return variableName;
     }
 
     /**
