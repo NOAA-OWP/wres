@@ -8,6 +8,7 @@ import java.time.MonthDay;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashSet;
@@ -16,6 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -28,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.Variable;
 import wres.datamodel.scale.TimeScaleOuter;
 
 import wres.datamodel.space.Feature;
@@ -57,6 +60,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     // Re-used strings
     private static final String REFERENCE_TIME = "reference_time";
     private static final String REFERENCE_TIME_TYPE = "reference_time_type";
+    private static final String VARIABLE_NAME = "variable_name";
     private static final String OCCURRENCES = "occurrences";
     private static final String AND = " = ? AND ";
     private static final String WHILE_BUILDING_THE_RETRIEVER = "While building the retriever for project_id '{}' "
@@ -94,7 +98,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     private final Set<Feature> features;
 
     /** The variable name. */
-    private final String variableName;
+    private final Variable variable;
 
     /** The data type. */
     private final DatasetOrientation orientation;
@@ -157,7 +161,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
          * Variable name.
          */
 
-        private String variableName;
+        private Variable variable;
 
         /**
          * Features.
@@ -245,15 +249,15 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         }
 
         /**
-         * Sets the variable name.
+         * Sets the variable.
          *
-         * @param variableName the variable name
+         * @param variable the variable name
          * @return the builder
          */
 
-        Builder<S> setVariableName( String variableName )
+        Builder<S> setVariable( Variable variable )
         {
-            this.variableName = variableName;
+            this.variable = variable;
             return this;
         }
 
@@ -396,9 +400,9 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
      * @return the variable name.
      */
 
-    String getVariableName()
+    Variable getVariable()
     {
-        return this.variableName;
+        return this.variable;
     }
 
     /**
@@ -424,7 +428,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         RetrievalEvent retrievalEvent = RetrievalEvent.of( this.getDatasetOrientation(),
                                                            this.getTimeWindow(),
                                                            this.getFeatures(),
-                                                           this.getVariableName() );
+                                                           this.getVariable()
+                                                               .name() );
 
         Instant startTime = Instant.now();
 
@@ -618,7 +623,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
     /**
      * Where available adds the clauses to the input script associated with {@link #getProjectId()}, the 
-     * {@link #getVariableName()}, {@link #getFeatureIds()} and {@link #getDatasetOrientation()}.
+     * {@link #getVariable()}, {@link #getFeatureIds()} and {@link #getDatasetOrientation()}.
      *
      * @param script the script to augment
      * @param tabsIn the number of tabs in for the outermost clause
@@ -630,14 +635,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // Project identifier
         this.addWhereOrAndClause( script, tabsIn, "PS.project_id = ?", this.getProjectId() );
 
-        // Variable name
-        if ( Objects.nonNull( this.getVariableName() ) )
-        {
-            this.addWhereOrAndClause( script,
-                                      tabsIn,
-                                      "S.variable_name = ?",
-                                      this.getVariableName() );
-        }
+        // Variable
+        this.addVariableClause( this.getVariable(), script, tabsIn );
 
         // Feature identifier, can be null with no baseline.
         if ( !this.getFeatures()
@@ -806,7 +805,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         // Add the parameter
         if ( Objects.nonNull( parameter ) )
         {
-            script.addArgument( parameter );
+            if ( parameter instanceof Collection<?> unpacked )
+            {
+                unpacked.forEach( script::addArgument );
+            }
+            else
+            {
+                script.addArgument( parameter );
+            }
         }
     }
 
@@ -955,6 +961,39 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         }
 
         return returnMe;
+    }
+
+    /**
+     * Adds the variable clause to the script.
+     * @param variable the variable
+     * @param script the script
+     * @param tabsIn the number of tabs in for the outermost clause
+     */
+    private void addVariableClause( Variable variable, DataScripter script, int tabsIn )
+    {
+        if ( Objects.nonNull( variable ) )
+        {
+            if ( variable.aliases()
+                         .isEmpty() )
+            {
+                this.addWhereOrAndClause( script,
+                                          tabsIn,
+                                          "S.variable_name = ?",
+                                          variable.name() );
+            }
+            else
+            {
+                Set<String> names = new TreeSet<>( variable.aliases() );
+                names.add( variable.name() );
+                StringJoiner joiner = new StringJoiner( ",", "(", ")" );
+                names.forEach( n -> joiner.add( "?" ) );
+                names.add( variable.name() );
+                this.addWhereOrAndClause( script,
+                                          tabsIn,
+                                          "S.variable_name IN " + joiner,
+                                          names );
+            }
+        }
     }
 
     /**
@@ -1156,6 +1195,15 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         long periodInMs = provider.getLong( "scale_period" );
         Duration period = null;
 
+        // Add the variable name, defaulting to the declared name. If this is an evaluation with aliased variable names,
+        // the VARIABLE_NAME column will be present to clarify and this should be used instead
+        String variableName = this.getVariable()
+                                  .name();
+        if ( provider.hasColumn( VARIABLE_NAME ) )
+        {
+            provider.getString( VARIABLE_NAME );
+        }
+
         // In getLong() above, the underlying getLong is primitive, not
         // boxed, so a null value in the db will be 0 rather than null.
         // Because the function name must be present (non-null) for a
@@ -1194,7 +1242,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         TimeSeriesMetadata metadata =
                 TimeSeriesMetadata.of( referenceTimes,
                                        latestScale,
-                                       this.getVariableName(),
+                                       variableName,
                                        featureKey,
                                        measurementUnitName );
         lastBuilder.setMetadata( metadata );
@@ -1638,7 +1686,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         this.database = builder.database;
         this.featuresCache = builder.featuresCache;
         this.projectId = builder.projectId;
-        this.variableName = builder.variableName;
+        this.variable = builder.variable;
         this.features = Set.copyOf( builder.features );
         this.orientation = builder.orientation;
         this.timeWindow = builder.timeWindow;
@@ -1654,7 +1702,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         String validationStart = "Cannot build a time-series retriever without a ";
         Objects.requireNonNull( this.database, "database instance." );
         Objects.requireNonNull( this.getTimeColumnName(), validationStart + "time column name." );
-        Objects.requireNonNull( this.variableName, validationStart + "variable name." );
+        Objects.requireNonNull( this.variable, validationStart + "variable name." );
         Objects.requireNonNull( this.getMeasurementUnitsCache(), validationStart + "measurement units cache." );
         Objects.requireNonNull( this.getFeaturesCache(), validationStart + "features cache." );
 

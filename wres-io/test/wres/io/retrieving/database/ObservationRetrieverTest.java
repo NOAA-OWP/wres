@@ -159,7 +159,7 @@ public class ObservationRetrieverTest
                                                   .setFeaturesCache( this.caches.getFeaturesCache() )
                                                   .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                   .setProjectId( PROJECT_ID )
-                                                  .setVariableName( VARIABLE_NAME )
+                                                  .setVariable( VARIABLE )
                                                   .setFeatures( Set.of( FEATURE ) )
                                                   .setDatasetOrientation( ORIENTATION )
                                                   .build();
@@ -214,7 +214,7 @@ public class ObservationRetrieverTest
                                                   .setFeaturesCache( this.caches.getFeaturesCache() )
                                                   .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                   .setProjectId( PROJECT_ID )
-                                                  .setVariableName( VARIABLE_NAME )
+                                                  .setVariable( VARIABLE )
                                                   .setFeatures( Set.of( FEATURE ) )
                                                   .setTimeWindow( poolBoundaries )
                                                   .setDatasetOrientation( ORIENTATION )
@@ -265,7 +265,7 @@ public class ObservationRetrieverTest
                                                   .setFeaturesCache( this.caches.getFeaturesCache() )
                                                   .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                   .setProjectId( PROJECT_ID )
-                                                  .setVariableName( VARIABLE_NAME )
+                                                  .setVariable( VARIABLE )
                                                   .setFeatures( Set.of( FEATURE ) )
                                                   .setDatasetOrientation( ORIENTATION )
                                                   .build();
@@ -285,7 +285,7 @@ public class ObservationRetrieverTest
                                                   .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                   .setFeaturesCache( this.caches.getFeaturesCache() )
                                                   .setProjectId( PROJECT_ID )
-                                                  .setVariableName( VARIABLE_NAME )
+                                                  .setVariable( VARIABLE )
                                                   .setFeatures( Set.of( FEATURE ) )
                                                   .setDatasetOrientation( ORIENTATION )
                                                   .build();
@@ -305,7 +305,7 @@ public class ObservationRetrieverTest
                                                   .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                   .setFeaturesCache( this.caches.getFeaturesCache() )
                                                   .setProjectId( PROJECT_ID )
-                                                  .setVariableName( VARIABLE_NAME )
+                                                  .setVariable( VARIABLE )
                                                   .setFeatures( Set.of( FEATURE ) )
                                                   .setDatasetOrientation( ORIENTATION )
                                                   .build();

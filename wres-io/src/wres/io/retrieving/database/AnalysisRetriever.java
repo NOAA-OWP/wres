@@ -68,7 +68,7 @@ class AnalysisRetriever extends TimeSeriesRetriever<Double>
                                                            .setDatasetOrientation( super.getDatasetOrientation() )
                                                            .setTimeWindow( analysisRanges )
                                                            .setFeatures( super.getFeatures() )
-                                                           .setVariableName( super.getVariableName() )
+                                                           .setVariable( super.getVariable() )
                                                            //.setSeasonEnd(  )
                                                            //.setSeasonStart(  )
                                                            .build();

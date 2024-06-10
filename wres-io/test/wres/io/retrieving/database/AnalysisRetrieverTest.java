@@ -161,7 +161,7 @@ public class AnalysisRetrieverTest
                                                .setProjectId( PROJECT_ID )
                                                .setFeaturesCache( this.caches.getFeaturesCache() )
                                                .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
-                                               .setVariableName( VARIABLE_NAME )
+                                               .setVariable( VARIABLE )
                                                .setFeatures( Set.of( FEATURE ) )
                                                .setDatasetOrientation( ORIENTATION )
                                                .build();
@@ -248,7 +248,7 @@ public class AnalysisRetrieverTest
                                                .setFeaturesCache( this.caches.getFeaturesCache() )
                                                .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                .setProjectId( PROJECT_ID )
-                                               .setVariableName( VARIABLE_NAME )
+                                               .setVariable( VARIABLE )
                                                .setFeatures( Set.of( FEATURE ) )
                                                .setDatasetOrientation( ORIENTATION )
                                                .build();
@@ -327,7 +327,7 @@ public class AnalysisRetrieverTest
                                                .setFeaturesCache( this.caches.getFeaturesCache() )
                                                .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                .setProjectId( PROJECT_ID )
-                                               .setVariableName( VARIABLE_NAME )
+                                               .setVariable( VARIABLE )
                                                .setFeatures( Set.of( FEATURE ) )
                                                .setDatasetOrientation( ORIENTATION )
                                                .build();

@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import wres.config.yaml.components.DatasetOrientation;
+import wres.config.yaml.components.Variable;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.Event;
@@ -32,7 +33,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Tests the {@link TimeSeriesRetriever}.
- * 
+ *
  * @author James Brown
  */
 
@@ -45,7 +46,8 @@ class TimeSeriesRetrieverTest
     private static final String FEATURE_ID = "feature_id";
     private static final String OCCURRENCES = "occurrences";
     private static final String A_UNIT = "a unit";
-    private static final String A_VARIABLE = "a variable";
+    private static final String VARIABLE_NAME = "a variable";
+    private static final Variable VARIABLE = new Variable( VARIABLE_NAME, null, null );
     private static final String A_FEATURE = "a feature";
     private static final String T1985_12_02T00_00_00Z = "1985-12-02T00:00:00Z";
     private static final String T1985_12_01T00_00_00Z = "1985-12-01T00:00:00Z";
@@ -128,8 +130,8 @@ class TimeSeriesRetrieverTest
         Mockito.when( retriever.getFeaturesCache() )
                .thenReturn( features );
 
-        Mockito.when( retriever.getVariableName() )
-               .thenReturn( A_VARIABLE );
+        Mockito.when( retriever.getVariable() )
+               .thenReturn( VARIABLE );
 
         Mockito.when( scripter.buffer( Mockito.any() ) )
                .thenReturn( provider );
@@ -159,9 +161,11 @@ class TimeSeriesRetrieverTest
                                                 .addEvent( Event.of( Instant.parse( "1985-12-01T04:00:00Z" ), 4.0 ) )
                                                 .addEvent( Event.of( Instant.parse( "1985-12-01T05:00:00Z" ), 5.0 ) )
                                                 .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
-                                                                                             Instant.parse( T1985_12_01T00_00_00Z ) ),
-                                                                                     TimeScaleOuter.of( Duration.ofMillis( 1000 ) ),
-                                                                                     A_VARIABLE,
+                                                                                             Instant.parse(
+                                                                                                     T1985_12_01T00_00_00Z ) ),
+                                                                                     TimeScaleOuter.of( Duration.ofMillis(
+                                                                                             1000 ) ),
+                                                                                     VARIABLE_NAME,
                                                                                      featureKey,
                                                                                      A_UNIT ) )
                                                 .build();
@@ -272,8 +276,8 @@ class TimeSeriesRetrieverTest
         Mockito.when( retriever.getFeaturesCache() )
                .thenReturn( features );
 
-        Mockito.when( retriever.getVariableName() )
-               .thenReturn( A_VARIABLE );
+        Mockito.when( retriever.getVariable() )
+               .thenReturn( VARIABLE );
 
         Mockito.when( scripter.buffer( Mockito.any() ) )
                .thenReturn( provider );
@@ -309,9 +313,11 @@ class TimeSeriesRetrieverTest
                                                 .addEvent( Event.of( Instant.parse( "1985-12-01T04:00:00Z" ), 4.0 ) )
                                                 .addEvent( Event.of( Instant.parse( "1985-12-01T05:00:00Z" ), 5.0 ) )
                                                 .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
-                                                                                             Instant.parse( T1985_12_01T00_00_00Z ) ),
-                                                                                     TimeScaleOuter.of( Duration.ofMillis( 1000 ) ),
-                                                                                     A_VARIABLE,
+                                                                                             Instant.parse(
+                                                                                                     T1985_12_01T00_00_00Z ) ),
+                                                                                     TimeScaleOuter.of( Duration.ofMillis(
+                                                                                             1000 ) ),
+                                                                                     VARIABLE_NAME,
                                                                                      featureKey,
                                                                                      A_UNIT ) )
                                                 .build();
@@ -323,9 +329,11 @@ class TimeSeriesRetrieverTest
                                                 .addEvent( Event.of( Instant.parse( "1985-12-02T04:00:00Z" ), 9.0 ) )
                                                 .addEvent( Event.of( Instant.parse( "1985-12-02T05:00:00Z" ), 10.0 ) )
                                                 .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
-                                                                                             Instant.parse( T1985_12_02T00_00_00Z ) ),
-                                                                                     TimeScaleOuter.of( Duration.ofMillis( 1000 ) ),
-                                                                                     A_VARIABLE,
+                                                                                             Instant.parse(
+                                                                                                     T1985_12_02T00_00_00Z ) ),
+                                                                                     TimeScaleOuter.of( Duration.ofMillis(
+                                                                                             1000 ) ),
+                                                                                     VARIABLE_NAME,
                                                                                      featureKey,
                                                                                      A_UNIT ) )
                                                 .build();
@@ -415,8 +423,8 @@ class TimeSeriesRetrieverTest
         Mockito.when( retriever.getFeaturesCache() )
                .thenReturn( features );
 
-        Mockito.when( retriever.getVariableName() )
-               .thenReturn( A_VARIABLE );
+        Mockito.when( retriever.getVariable() )
+               .thenReturn( VARIABLE );
 
         Mockito.when( scripter.buffer( Mockito.any() ) )
                .thenReturn( provider );
@@ -441,9 +449,11 @@ class TimeSeriesRetrieverTest
         TimeSeries<Double> expectedSeriesOne =
                 new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1985-12-01T01:00:00Z" ), 1.0 ) )
                                                 .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
-                                                                                             Instant.parse( T1985_12_01T00_00_00Z ) ),
-                                                                                     TimeScaleOuter.of( Duration.ofMillis( 1000 ) ),
-                                                                                     A_VARIABLE,
+                                                                                             Instant.parse(
+                                                                                                     T1985_12_01T00_00_00Z ) ),
+                                                                                     TimeScaleOuter.of( Duration.ofMillis(
+                                                                                             1000 ) ),
+                                                                                     VARIABLE_NAME,
                                                                                      featureKey,
                                                                                      A_UNIT ) )
                                                 .build();
@@ -451,9 +461,11 @@ class TimeSeriesRetrieverTest
         TimeSeries<Double> expectedSeriesTwo =
                 new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1985-12-02T01:00:00Z" ), 2.0 ) )
                                                 .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
-                                                                                             Instant.parse( T1985_12_02T00_00_00Z ) ),
-                                                                                     TimeScaleOuter.of( Duration.ofMillis( 1000 ) ),
-                                                                                     A_VARIABLE,
+                                                                                             Instant.parse(
+                                                                                                     T1985_12_02T00_00_00Z ) ),
+                                                                                     TimeScaleOuter.of( Duration.ofMillis(
+                                                                                             1000 ) ),
+                                                                                     VARIABLE_NAME,
                                                                                      featureKey,
                                                                                      A_UNIT ) )
                                                 .build();
@@ -461,9 +473,11 @@ class TimeSeriesRetrieverTest
         TimeSeries<Double> expectedSeriesThree =
                 new TimeSeries.Builder<Double>().addEvent( Event.of( Instant.parse( "1985-12-03T01:00:00Z" ), 3.0 ) )
                                                 .setMetadata( TimeSeriesMetadata.of( Map.of( ReferenceTimeType.UNKNOWN,
-                                                                                             Instant.parse( "1985-12-03T00:00:00Z" ) ),
-                                                                                     TimeScaleOuter.of( Duration.ofMillis( 1000 ) ),
-                                                                                     A_VARIABLE,
+                                                                                             Instant.parse(
+                                                                                                     "1985-12-03T00:00:00Z" ) ),
+                                                                                     TimeScaleOuter.of( Duration.ofMillis(
+                                                                                             1000 ) ),
+                                                                                     VARIABLE_NAME,
                                                                                      featureKey,
                                                                                      A_UNIT ) )
                                                 .build();

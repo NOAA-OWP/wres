@@ -48,13 +48,6 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
     private static final String GET_ALL_IDENTIFIERS_SCRIPT =
             SingleValuedForecastRetriever.getScriptForGetAllIdentifiers();
 
-    /**
-     * Start of script
-     */
-
-    private static final String GET_ALL_TIME_SERIES_SCRIPT =
-            SingleValuedForecastRetriever.getStartOfScriptForGetAllTimeSeries();
-
     /** Re-used string. */
     private static final String S_MEASUREMENTUNIT_ID = "S.measurementunit_id,";
     /** Re-used string. */
@@ -92,7 +85,8 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         this.validateForMultiSeriesRetrieval();
 
         Database database = super.getDatabase();
-        DataScripter dataScripter = new DataScripter( database, GET_ALL_TIME_SERIES_SCRIPT );
+        String start = this.getStartOfScriptForGetAllTimeSeries();
+        DataScripter dataScripter = new DataScripter( database, start );
 
         // Add basic constraints at zero tabs
         this.addProjectFeatureVariableAndMemberConstraints( dataScripter, 1 );
@@ -195,7 +189,8 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         this.validateForMultiSeriesRetrieval();
 
         Database database = super.getDatabase();
-        DataScripter dataScripter = new DataScripter( database, GET_ALL_TIME_SERIES_SCRIPT );
+        String start = this.getStartOfScriptForGetAllTimeSeries();
+        DataScripter dataScripter = new DataScripter( database, start );
 
         // Add basic constraints at zero tabs
         this.addProjectFeatureVariableAndMemberConstraints( dataScripter, 0 );
@@ -267,9 +262,13 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
      * @return the start of a script for the time-series
      */
 
-    private static String getStartOfScriptForGetAllTimeSeries()
+    private String getStartOfScriptForGetAllTimeSeries()
     {
         ScriptBuilder scripter = new ScriptBuilder();
+
+        boolean aliases = !this.getVariable()
+                               .aliases()
+                               .isEmpty();
 
         scripter.addLine( SELECT );
         scripter.addTab().addLine( "metadata.series_id AS series_id," );
@@ -281,6 +280,12 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         scripter.addTab().addLine( "metadata.scale_period," );
         scripter.addTab().addLine( "metadata.scale_function," );
         scripter.addTab().addLine( "metadata.feature_id," );
+
+        if ( aliases )
+        {
+            scripter.addTab().addLine( "metadata.variable_name," );
+        }
+
         // See #56214-272. Add the count to allow re-duplication of duplicate series
         scripter.addTab().addLine( "metadata.occurrences" );
         scripter.addLine( "FROM" );
@@ -293,6 +298,11 @@ class SingleValuedForecastRetriever extends TimeSeriesRetriever<Double>
         scripter.addTab( 2 ).addLine( S_MEASUREMENTUNIT_ID );
         scripter.addTab( 2 ).addLine( "TimeScale.duration_ms AS scale_period," );
         scripter.addTab( 2 ).addLine( "TimeScale.function_name AS scale_function," );
+
+        if ( aliases )
+        {
+            scripter.addTab( 2 ).addLine( "S.variable_name," );
+        }
 
         scripter.addTab( 2 ).addLine( "COUNT(*) AS occurrences " );
         scripter.addTab().addLine( FROM_WRES_SOURCE_S );

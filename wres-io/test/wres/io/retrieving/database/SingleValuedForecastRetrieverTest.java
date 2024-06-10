@@ -149,7 +149,7 @@ public class SingleValuedForecastRetrieverTest
                                                            .setFeaturesCache( this.caches.getFeaturesCache() )
                                                            .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                            .setProjectId( PROJECT_ID )
-                                                           .setVariableName( VARIABLE_NAME )
+                                                           .setVariable( VARIABLE )
                                                            .setFeatures( Set.of( FEATURE ) )
                                                            .setDatasetOrientation( DatasetOrientation.RIGHT )
                                                            .build();
@@ -231,7 +231,7 @@ public class SingleValuedForecastRetrieverTest
                                                            .setFeaturesCache( this.caches.getFeaturesCache() )
                                                            .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                            .setProjectId( PROJECT_ID )
-                                                           .setVariableName( VARIABLE_NAME )
+                                                           .setVariable( VARIABLE )
                                                            .setFeatures( Set.of( FEATURE ) )
                                                            .setTimeWindow( timeWindow )
                                                            .setDatasetOrientation( DatasetOrientation.RIGHT )
@@ -292,7 +292,7 @@ public class SingleValuedForecastRetrieverTest
                                                            .setFeaturesCache( this.caches.getFeaturesCache() )
                                                            .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                            .setProjectId( PROJECT_ID )
-                                                           .setVariableName( VARIABLE_NAME )
+                                                           .setVariable( VARIABLE )
                                                            .setFeatures( Set.of( FEATURE ) )
                                                            .setDatasetOrientation( DatasetOrientation.RIGHT )
                                                            .build();
@@ -315,7 +315,7 @@ public class SingleValuedForecastRetrieverTest
                                                            .setFeaturesCache( this.caches.getFeaturesCache() )
                                                            .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
                                                            .setProjectId( PROJECT_ID )
-                                                           .setVariableName( VARIABLE_NAME )
+                                                           .setVariable( VARIABLE )
                                                            .setFeatures( Set.of( FEATURE ) )
                                                            .setDatasetOrientation( DatasetOrientation.RIGHT )
                                                            .build();

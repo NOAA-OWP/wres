@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.components.Variable;
 import wres.datamodel.space.Feature;
 import wres.datamodel.time.TimeSeries;
 import wres.reading.netcdf.grid.GridRequest;
@@ -154,17 +155,28 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
             {
                 LOGGER.debug( "Skipping request for gridded time-series as no paths were discovered for the "
                               + "variable {}, time window {} and features {}.",
-                              this.getVariableName(),
+                              this.getVariable(),
                               this.getTimeWindow(),
                               this.getFeatures() );
 
                 return Stream.of();
             }
 
-            GridRequest request = this.getRequest( paths );
+            // Create a grid request for each required variable name
+            Variable variable = this.getVariable();
+            GridRequest request = this.getRequest( paths, variable.name() );
+
+            Stream<TimeSeries<Double>> series = this.getResponse( request );
+
+            for ( String alias : variable.aliases() )
+            {
+                GridRequest nextRequest = this.getRequest( paths, alias );
+                Stream<TimeSeries<Double>> nextResponse = this.getResponse( nextRequest );
+                series = Stream.concat( series, nextResponse );
+            }
 
             // Obtain the response
-            return this.getResponse( request );
+            return series;
         }
         catch ( IOException | SQLException e )
         {
@@ -203,14 +215,16 @@ class SingleValuedGriddedRetriever extends TimeSeriesRetriever<Double>
      * Returns the request.
      *
      * @param paths the paths
+     * @param variableName the variable name
      * @return the request
      */
 
-    private GridRequest getRequest( List<String> paths )
+    private GridRequest getRequest( List<String> paths,
+                                    String variableName )
     {
         return new GridRequest( paths,
                                 this.getFeatures(),
-                                this.getVariableName(),
+                                variableName,
                                 this.getTimeWindow(),
                                 this.isForecast(),
                                 this.getDeclaredExistingTimeScale() );
