@@ -28,7 +28,7 @@ class JobReceiver extends DefaultConsumer
 
     /**
      * Constructs a new instance and records its association to the passed-in channel.
-     * Some Junk
+     * Some Junk mores
      * @param channel the channel to which this consumer is attached
      * @param processToLaunch a Q to send data back to the main thread with
      * @param port The port that the local server lives on, passing this through to the WresProcess
