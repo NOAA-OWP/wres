@@ -476,13 +476,17 @@ definitions:
         minLength: 1
         maxLength: 2083
       aliases:
-        type: array
-        items:
-          type: string
-          minLength: 1
-          maxLength: 2083
-        minItems: 1
-        uniqueItems: true
+        anyOf:
+          - type: array
+            items:
+              type: string
+              minLength: 1
+              maxLength: 2083
+              minItems: 1
+              uniqueItems: true
+          - type: string
+            minLength: 1
+            maxLength: 2083
     required:
       - name
 

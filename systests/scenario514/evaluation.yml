@@ -11,7 +11,7 @@ predicted:
   variable: 
     name: QR
     label: streamflow
-    aliases: [QS]
+    aliases: QS
   label: AHPS
 features:
   - observed: '06893000'
