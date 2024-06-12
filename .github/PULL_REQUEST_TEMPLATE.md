@@ -1,13 +1,16 @@
+## Description
 [Short description explaining the high-level reason for the pull request]
 
-### Additions
-
-### Changes
-
-### Removals
+### Changes Made
+-
 
 ### Testing
+-
 
+### Related Tickets
+- Fixes [Ticket number]
+
+## Checklists
 ### Deployment Plan (For developer use)
 
 _How does the changes affect the product?_
