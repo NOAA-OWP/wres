@@ -34,4 +34,4 @@ _You may update this checklist before and/or after creating the PR. If you're un
 
 ### Merge Checklist (For Reviewers)
 
-- [ ] If applicable, doccumentation is updated
+- [ ] If applicable, documentation is updated
