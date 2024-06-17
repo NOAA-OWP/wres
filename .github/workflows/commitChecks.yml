@@ -71,6 +71,7 @@ jobs:
           scripts/build/distributions/wres-admin-scripts-*.zip
 
   systests:
+    needs: Build 
     runs-on: ubuntu-latest
     permissions:
       contents: read
