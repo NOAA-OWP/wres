@@ -1,4 +1,4 @@
-# This workflow builds the WRES distros
+# This workflow builds the WRES distros a
 name: Build
 
 on:
