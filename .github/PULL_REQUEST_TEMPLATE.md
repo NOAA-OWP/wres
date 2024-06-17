@@ -23,7 +23,7 @@ _How does the changes affect the product?_
 
 _You may update this checklist before and/or after creating the PR. If you're unsure about any of them, please ask, we're here to help! These items are what we are going to look for before merging your code._
 
-- [ ] Informative and human-readable title, using the format: `[_pt] PR: <description>`
+- [ ] Informative and human-readable title
 - [ ] Links are provided if this PR resolves an issue, or depends on another other PR
 - [ ] The feature branch you're submitting as a PR is up to date
 - [ ] Any _change_ in functionality is tested
@@ -32,6 +32,6 @@ _You may update this checklist before and/or after creating the PR. If you're un
 - [ ] [Reviewers requested](https://help.github.com/articles/requesting-a-pull-request-review/)
 - [ ] Add yourself as an [assignee](https://docs.github.com/en/issues/tracking-your-work-with-issues/assigning-issues-and-pull-requests-to-other-github-users) in the PR
 
-### Merge Checklist (For Technical Lead use only)
+### Merge Checklist (For Reviewers)
 
-- [ ] If applicable, update [README](/README.md) with major alterations
+- [ ] If applicable, doccumentation is updated
