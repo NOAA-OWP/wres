@@ -24,7 +24,8 @@ import wres.datamodel.time.TimeSeries;
 
 /**
  * Abstraction of a climatological dataset for one or more geographic features. The climatological data is sorted on 
- * construction in order of increasing size.
+ * construction in order of increasing size. Missing data is tolerated, including zero time-series events for one or
+ * more features.
  *
  * @author James Brown
  */
@@ -123,7 +124,7 @@ public class Climatology
             return false;
         }
 
-        if( ! in.getMeasurementUnit()
+        if ( !in.getMeasurementUnit()
                 .equals( this.getMeasurementUnit() ) )
         {
             return false;
@@ -330,15 +331,18 @@ public class Climatology
                                           .map( Map.Entry::getKey )
                                           .collect( Collectors.toSet() );
 
-        if ( !invalid.isEmpty() )
+        if ( !invalid.isEmpty()
+             && LOGGER.isWarnEnabled() )
         {
-            throw new IllegalArgumentException( "The climatological data was missing for the following features, which "
-                                                + "is not allowed: "
-                                                + invalid
-                                                + "." );
+            LOGGER.warn( "When attempting to create a climatological dataset for {} feature(s), discovered that "
+                         + "time-series data was missing for {} of these feature(s), as follows: {}",
+                         climatology.keySet()
+                                    .size(),
+                         invalid.size(),
+                         invalid );
         }
 
-        if( Objects.isNull( measurementUnit ) )
+        if ( Objects.isNull( measurementUnit ) )
         {
             throw new IllegalArgumentException( "Cannot build a climatology without a measurement unit. " );
         }

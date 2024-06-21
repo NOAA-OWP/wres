@@ -30,7 +30,6 @@ import wres.config.yaml.components.Variable;
 import wres.datamodel.types.Climatology;
 import wres.datamodel.baselines.BaselineGenerator;
 import wres.datamodel.pools.Pool;
-import wres.datamodel.pools.PoolException;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolRequest;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -1175,13 +1174,12 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
     }
 
     /**
-     * Verifies that one or more event values was produced when upscaling the climatology, given one or more event 
-     * values prior to upscaling, and throws an exception if upscaling failed to produce any values.
+     * Verifies that one or more event values was produced when upscaling the climatology, given one or more event
+     * values prior to upscaling, and warns if upscaling failed to produce any values.
      *
      * @param upscaled the upscaled time-series to check for events
      * @param unscaled the unscaled time-series to check for events
-     * @param desiredTimeScale the desired time scale
-     * @throws PoolException if no upscaled values were produced 
+     * @param desiredTimeScale the desired timescale
      */
 
     private void validateUpscaledClimatology( List<TimeSeries<L>> unscaled,
@@ -1196,16 +1194,24 @@ public class PoolsGenerator<L, R, B> implements Supplier<List<Supplier<Pool<Time
                                     .mapToInt( next -> next.getEvents().size() )
                                     .sum();
 
-        if ( unscaledCount > 0 && upscaledCount == 0 )
+        if ( unscaledCount > 0
+             && upscaledCount == 0
+             && LOGGER.isWarnEnabled() )
         {
-            throw new PoolException( "Failed to produce any upscaled event values for the climatological time-series, "
-                                     + "despite encountering "
-                                     + unscaledCount
-                                     + " event values to upscale. Please check that the climatological time-series can "
-                                     + "be upscaled to the desired time scale of "
-                                     + desiredTimeScale
-                                     + ". In general, upscaling can only be performed if there are sufficient event "
-                                     + "values within each upscaled period (two or more) and they are equally spaced." );
+            Set<Feature> features = unscaled.stream()
+                                            .map( t -> t.getMetadata()
+                                                        .getFeature() )
+                                            .collect( Collectors.toSet() );
+
+            LOGGER.warn( "Failed to produce any upscaled event values for the climatological time-series associated "
+                         + "with {} feature(s), despite encountering {} event values to upscale. Please check that the "
+                         + "climatological time-series can be upscaled to the desired time scale of {}. In general, "
+                         + "upscaling can only be performed if there are sufficient event values within each upscaled "
+                         + "period (two or more) and they are equally spaced. The feature(s) were: {}.",
+                         features.size(),
+                         unscaledCount,
+                         desiredTimeScale,
+                         features );
         }
 
         LOGGER.debug( "Encountered {} events in the climatological time-series prior to upscaling and {} afterwards.",

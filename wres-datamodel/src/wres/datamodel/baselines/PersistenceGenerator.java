@@ -233,7 +233,8 @@ public class PersistenceGenerator<T> implements BaselineGenerator<T>
                                               .iterator()
                                               .next();
 
-        if ( referenceTimes.size() > 1 && LOGGER.isTraceEnabled() )
+        if ( referenceTimes.size() > 1
+             && LOGGER.isTraceEnabled() )
         {
             LOGGER.trace( "While generating a persistence time-series using input series {}, discovered that the "
                           + "input series has multiple reference times. Using the first time of {}.",

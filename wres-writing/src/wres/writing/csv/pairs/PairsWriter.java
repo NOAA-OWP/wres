@@ -261,7 +261,8 @@ public abstract class PairsWriter<L, R>
                               this.getPath() );
 
                 // Lock for writing
-                this.getWriteLock().lock();
+                this.getWriteLock()
+                    .lock();
 
                 LOGGER.trace( "Acquired pair writing lock on {}", this.getPath() );
 
