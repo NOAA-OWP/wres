@@ -24,3 +24,20 @@ Running the following commands will execute a test project from the executable y
 
     bin/wres execute ../../../systests/testScenario/evaluation.yml
 
+## Running Against Last Release
+
+* Navigate to the releases page:
+https://github.com/NOAA-OWP/wres/releases
+
+* Download the latest core zip from the assets of the most recent deploy
+  * Should look like wres-DATE-VERSION.zip
+* Unzip the directory and navigate into the folder like above
+
+
+    cd build/install/wres/
+
+* Execute your project
+
+
+    bin/wres execute yourProject.yml
+
