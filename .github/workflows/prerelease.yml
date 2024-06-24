@@ -50,6 +50,14 @@ jobs:
         cd scripts
         ../gradlew distZip 
 
+    # Create the md5
+    - name: Creating md5
+      run: |
+        md5sum build/distributions/wres-*.zip >> checksum.txt
+        md5sum wres-*/build/distributions/wres-*-*.zip >> checksum.txt
+        md5sum systests/build/distributions/systests-*.zip >> checksum.txt
+        md5sum scripts/build/distributions/wres-admin-scripts-*.zip >> checksum.txt
+
     # Deletes drafts incase the staging tag was deleted to change it to a different commit
     - name: Delete drafts
       uses: hugo19941994/delete-draft-releases@v1.0.0
@@ -62,6 +70,7 @@ jobs:
       with:
         prerelease: true
         files: |
+          checksum.txt
           Release.txt
           build/distributions/wres-*.zip
           wres-*/build/distributions/wres-*-*.zip
