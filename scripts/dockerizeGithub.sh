@@ -39,7 +39,7 @@
 #=============================================================
 
 # Attempt to auto-detect the versions needed.
-all_versions=$( scripts/versions.sh )
+all_versions=$( scripts/versionsGithub.sh )
 
 overall_version=$( echo "$all_versions" | grep "^Main version" | cut -d' ' -f3 )
 tasker_version=$( echo "$all_versions" | grep "^wres-tasker version" | cut -d' ' -f3 )
@@ -129,7 +129,7 @@ tasker_file=wres-tasker-${wres_tasker_version}.zip
 vis_file=wres-vis-${wres_vis_version}.zip
 writing_file=wres-writing-${wres_writing_version}.zip
 
-github_workspace=https://github.com/NOAA-OWP/wres/releases/download/staging/
+github_workspace=https://github.com/NOAA-OWP/wres/releases/download/staging
 
 core_url=$github_workspace/$wres_core_file
 worker_url=$github_workspace/$worker_shim_file
