@@ -181,27 +181,27 @@ then
 
     if [[ ! -f ./build/distributions/$wres_core_file ]]
     then
-        echo "     wget -P ./build/distributions/$wres_core_file $core_url"
+        echo "     wget -P ./build/distributions/ $core_url"
     fi
 
     if [[ ! -f ./wres-worker/build/distributions/$worker_shim_file ]]
     then
-        echo "      wget -P ./wres-worker/build/distributions/$worker_shim_file $worker_url"
+        echo "      wget -P ./wres-worker/build/distributions/ $worker_url"
     fi
 
     if [[ ! -f ./wres-tasker/build/distributions/$tasker_file ]]
     then
-        echo "      wget -P ./wres-tasker/build/distributions/$tasker_file $tasker_url"
+        echo "      wget -P ./wres-tasker/build/distributions/ $tasker_url"
     fi
 
     if [[ ! -f ./wres-vis/build/distributions/$vis_file ]]
     then
-        echo "      wget -P ./wres-vis/build/distributions/$vis_file $vis_url"
+        echo "      wget -P ./wres-vis/build/distributions/ $vis_url"
     fi
 
     if [[ ! -f ./wres-writing/build/distributions/$writing_file ]]
     then
-        echo "      wget -P ./wres-writing/build/distributions/$writing_file $writing_url"
+        echo "      wget -P ./wres-writing/build/distributions/ $writing_url"
     fi
     echo ""
     echo "You can also use the '-u user:token' option instead of '--config ~/jenkins_token', e.g. '-u <user.name>:<Jenkins API token>'."
