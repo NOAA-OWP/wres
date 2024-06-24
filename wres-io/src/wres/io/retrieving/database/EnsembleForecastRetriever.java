@@ -163,15 +163,24 @@ class EnsembleForecastRetriever extends TimeSeriesRetriever<Ensemble>
         this.addSeasonClause( dataScripter, 1 );
 
         // Add GROUP BY clause
-        dataScripter.addLine( "GROUP BY metadata.series_id,"
-                              + "metadata.reference_time, "
-                              + "metadata.reference_time_type, "
-                              + "metadata.feature_id, "
-                              + "TSV.lead, "
-                              + "metadata.scale_period, "
-                              + "metadata.scale_function, "
-                              + "metadata.measurementunit_id,"
-                              + "metadata.occurrences" );
+        String groupBy = "GROUP BY metadata.series_id,"
+                         + "metadata.reference_time, "
+                         + "metadata.reference_time_type, "
+                         + "metadata.feature_id, "
+                         + "TSV.lead, "
+                         + "metadata.scale_period, "
+                         + "metadata.scale_function, "
+                         + "metadata.measurementunit_id,"
+                         + "metadata.occurrences";
+
+        if(!this.getVariable()
+                               .aliases()
+                               .isEmpty() )
+        {
+            groupBy += ",metadata.variable_name";
+        }
+
+        dataScripter.addLine( groupBy );
 
         // Log the script
         super.logScript( dataScripter );
