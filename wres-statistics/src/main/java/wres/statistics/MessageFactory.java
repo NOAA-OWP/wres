@@ -1,22 +1,26 @@
 package wres.statistics;
 
 import java.time.Instant;
+import java.time.MonthDay;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import java.util.StringJoiner;
 
 import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.statistics.generated.Covariate;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.SummaryStatistic;
+import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.TimeWindow;
 
 /**
@@ -498,10 +502,36 @@ public class MessageFactory
     }
 
     /**
+     * Generates a string representation of the covariate.
+     * @param covariate the covariate
+     * @return a string representation
+     */
+    public static String toString( Covariate covariate )
+    {
+        Objects.requireNonNull( covariate );
+
+        if ( covariate.hasMinimumInclusiveValue()
+             && covariate.hasMaximumInclusiveValue() )
+        {
+            return covariate.getMinimumInclusiveValue() + " <= "
+                   + covariate.getVariableName()
+                   + " <= "
+                   + covariate.getMaximumInclusiveValue();
+        }
+        else if ( covariate.hasMinimumInclusiveValue() )
+        {
+            return covariate.getVariableName() + " >= " + covariate.getMinimumInclusiveValue();
+        }
+
+        return covariate.getVariableName() + " <= " + covariate.getMaximumInclusiveValue();
+    }
+
+    /**
      * Do not construct.
      */
 
     private MessageFactory()
     {
     }
+
 }

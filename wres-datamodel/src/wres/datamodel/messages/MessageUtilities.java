@@ -5,7 +5,6 @@ import java.util.Objects;
 
 import com.google.protobuf.ProtocolStringList;
 
-import wres.statistics.generated.Covariate;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.Geometry;
@@ -1098,31 +1097,6 @@ public class MessageUtilities
 
         // Recursive, noting that a cause is never null
         return MessageUtilities.compare( first.getCause(), second.getCause() );
-    }
-
-    /**
-     * Generates a string representation of the covariate.
-     * @param covariate the covariate
-     * @return a string representation
-     */
-    public static String toString( Covariate covariate )
-    {
-        Objects.requireNonNull( covariate );
-
-        if ( covariate.hasMinimumInclusiveValue()
-             && covariate.hasMaximumInclusiveValue() )
-        {
-            return covariate.getMinimumInclusiveValue() + " <= "
-                   + covariate.getVariableName()
-                   + " <= "
-                   + covariate.getMaximumInclusiveValue();
-        }
-        else if ( covariate.hasMinimumInclusiveValue() )
-        {
-            return covariate.getVariableName() + " >= " + covariate.getMinimumInclusiveValue();
-        }
-
-        return covariate.getVariableName() + " <= " + covariate.getMaximumInclusiveValue();
     }
 
     /**

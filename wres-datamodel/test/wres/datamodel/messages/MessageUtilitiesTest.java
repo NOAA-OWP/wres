@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import com.google.protobuf.Duration;
 import com.google.protobuf.Timestamp;
 
-import wres.statistics.generated.Covariate;
 import wres.statistics.generated.Evaluation;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -44,7 +43,6 @@ import wres.statistics.generated.Pairs.TimeSeriesOfPairs;
 
 class MessageUtilitiesTest
 {
-
     @Test
     void testCompareEvaluation()
     {
@@ -606,39 +604,5 @@ class MessageUtilitiesTest
                               .build();
 
         assertTrue( MessageUtilities.compare( first, third ) < 0 );
-    }
-
-    @Test
-    void testToStringForCovariateWithMinimumAndMaximum()
-    {
-        Covariate covariate = Covariate.newBuilder()
-                                       .setMaximumInclusiveValue( 4.3 )
-                                       .setMinimumInclusiveValue( 2.1 )
-                                       .setVariableName( "foo" )
-                                       .build();
-
-        assertEquals( "2.1 <= foo <= 4.3", MessageUtilities.toString( covariate ) );
-    }
-
-    @Test
-    void testToStringForCovariateWithMinimumOnly()
-    {
-        Covariate covariate = Covariate.newBuilder()
-                                       .setMinimumInclusiveValue( 2.1 )
-                                       .setVariableName( "foo" )
-                                       .build();
-
-        assertEquals( "foo >= 2.1", MessageUtilities.toString( covariate ) );
-    }
-
-    @Test
-    void testToStringForCovariateWithMaximumOnly()
-    {
-        Covariate covariate = Covariate.newBuilder()
-                                       .setMaximumInclusiveValue( 4.3 )
-                                       .setVariableName( "foo" )
-                                       .build();
-
-        assertEquals( "foo <= 4.3", MessageUtilities.toString( covariate ) );
     }
 }

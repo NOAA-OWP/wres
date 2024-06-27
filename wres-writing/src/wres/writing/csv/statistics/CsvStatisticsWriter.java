@@ -37,7 +37,6 @@ import net.jcip.annotations.ThreadSafe;
 
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DatasetOrientation;
-import wres.datamodel.messages.MessageUtilities;
 import wres.datamodel.types.OneOrTwoDoubles;
 import wres.config.MetricConstants;
 import wres.config.MetricConstants.MetricDimension;
@@ -45,6 +44,7 @@ import wres.config.MetricConstants.SampleDataGroup;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.thresholds.ThresholdOuter;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotStatistic;
@@ -2134,7 +2134,7 @@ public class CsvStatisticsWriter implements Function<Statistics, Set<Path>>, Clo
         {
             String joined = evaluation.getCovariatesList()
                                       .stream()
-                                      .map( MessageUtilities::toString )
+                                      .map( MessageFactory::toString )
                                       .collect( Collectors.joining( LIST_DELIMITER ) );
 
             this.append( joiner, joined, true );

@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.StringJoiner;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -161,6 +162,9 @@ public class CsvReader implements TimeSeriesReader
         AtomicBoolean returnedFinal = new AtomicBoolean();
 
         Set<String> unconfiguredVariableNames = new HashSet<>( 1 );
+        Set<String> locations = new HashSet<>();
+        Set<String> interleavedLocations = new TreeSet<>();
+        final AtomicReference<String> lastLocation = new AtomicReference<>();
 
         // Create a supplier that returns a time-series once complete
         return () -> {
@@ -181,6 +185,9 @@ public class CsvReader implements TimeSeriesReader
                 // Complete? If so, return it
                 if ( Objects.nonNull( tuple ) )
                 {
+                    // Validate the ordering of the CSV
+                    this.validateOrder( tuple, locations, lastLocation, interleavedLocations );
+
                     return tuple;
                 }
             }
@@ -200,11 +207,30 @@ public class CsvReader implements TimeSeriesReader
                                  unconfiguredVariableNames );
                 }
 
-                return this.createTimeSeries( dataSource,
-                                              lastTraceMetadata.get(),
-                                              traceValues,
-                                              lastTraceName.get(),
-                                              provider.getRowIndex() + 1 );
+                TimeSeriesTuple lastTuple = this.createTimeSeries( dataSource,
+                                                                   lastTraceMetadata.get(),
+                                                                   traceValues,
+                                                                   lastTraceName.get(),
+                                                                   provider.getRowIndex() + 1 );
+
+                // Validate order
+                this.validateOrder( lastTuple, locations, lastLocation, interleavedLocations );
+
+                return lastTuple;
+            }
+
+            if ( LOGGER.isWarnEnabled()
+                 && !interleavedLocations.isEmpty() )
+            {
+                LOGGER.warn( "While reading a CSV data source, encountered unordered data whereby the time-series "
+                             + "events for one or more locations were interleaved by time-series events for other "
+                             + "locations. This is not recommended because the interleaved events will not be added "
+                             + "to a common time-series. Several time-series operations, such as rescaling, rely on "
+                             + "the accurate composition of time-series. It is recommended that the CSV is refactored "
+                             + "to preserve the intended time-series data structure. The data source was: {}. The "
+                             + "locations with interleaved events were: {}.",
+                             dataSource,
+                             interleavedLocations );
             }
 
             // Null sentinel to close stream
@@ -289,6 +315,48 @@ public class CsvReader implements TimeSeriesReader
                                      + dataSource.getUri(),
                                      e );
         }
+    }
+
+    /**
+     * Updates the set of interleaved locations when time-series events appear to be unordered, as time-series
+     * operations rely on correctly composed time-series, specifically that all events associated with one feature are
+     * declared before another feature begins.
+     *
+     * @param timeSeries the time-series
+     * @param locations the locations read so far
+     * @param lastLocation the last location
+     * @param interleavedLocations the locations with interleaved data
+     */
+    private void validateOrder( TimeSeriesTuple timeSeries,
+                                Set<String> locations,
+                                AtomicReference<String> lastLocation,
+                                Set<String> interleavedLocations )
+    {
+        String location;
+
+        if ( timeSeries.hasSingleValuedTimeSeries() )
+        {
+            location = timeSeries.getSingleValuedTimeSeries()
+                                 .getMetadata()
+                                 .getFeature()
+                                 .getName();
+        }
+        else
+        {
+            location = timeSeries.getEnsembleTimeSeries()
+                                 .getMetadata()
+                                 .getFeature()
+                                 .getName();
+        }
+
+        if ( !Objects.equals( lastLocation.get(), location )
+             && locations.contains( location ) )
+        {
+            interleavedLocations.add( location );
+        }
+
+        lastLocation.set( location );
+        locations.add( location );
     }
 
     /**

@@ -1545,24 +1545,63 @@ public class DeclarationValidator
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
-        if ( Objects.nonNull( dataset )
-             && Objects.nonNull( dataset.timeScale() ) )
+        if ( Objects.nonNull( dataset ) )
         {
-            TimeScale timeScale = dataset.timeScale();
-            List<EvaluationStatusEvent> next = DeclarationValidator.timeScaleIsValid( timeScale,
-                                                                                      orientation,
-                                                                                      false );
-            events.addAll( next );
+            if ( Objects.nonNull( dataset.timeScale() ) )
+            {
+                TimeScale timeScale = dataset.timeScale();
+                List<EvaluationStatusEvent> next = DeclarationValidator.timeScaleIsValid( timeScale,
+                                                                                          orientation,
+                                                                                          false );
+                events.addAll( next );
 
-            // Source timescale must be consistent with desired/evaluation timescale
-            List<EvaluationStatusEvent> scaleEvents =
-                    DeclarationValidator.datasetTimeScaleConsistentWithDesiredTimeScale( timeScale,
-                                                                                         desiredTimeScale,
-                                                                                         orientation );
-            events.addAll( scaleEvents );
+                // Source timescale must be consistent with desired/evaluation timescale
+                List<EvaluationStatusEvent> scaleEvents =
+                        DeclarationValidator.datasetTimeScaleConsistentWithDesiredTimeScale( timeScale,
+                                                                                             desiredTimeScale,
+                                                                                             orientation );
+                events.addAll( scaleEvents );
+            }
+            // Evaluation timescale exists, dataset timescale does not
+            else if ( Objects.nonNull( desiredTimeScale )
+                      // Dataset time scale cannot be gleaned from context
+                      && DeclarationValidator.hasDataSourceWithUnknownTimeScale( dataset ) )
+            {
+                String orientationString = DeclarationValidator.getTimeScaleOrientationString( orientation, false );
+
+                EvaluationStatusEvent event
+                        = EvaluationStatusEvent.newBuilder()
+                                               .setStatusLevel( StatusLevel.WARN )
+                                               .setEventMessage( "The evaluation declares a 'time_scale', but the "
+                                                                 + "'time_scale' associated with "
+                                                                 + orientationString
+                                                                 + " dataset is undefined. Unless the data source for "
+                                                                 + orientationString
+                                                                 + " dataset clarifies its own time scale, it is "
+                                                                 + "assumed that the dataset has the same time scale "
+                                                                 + "as the evaluation 'time_scale' and no rescaling "
+                                                                 + "will be performed. If this is incorrect or you are "
+                                                                 + "unsure, it is best to declare the 'time_scale' of "
+                                                                 + orientationString
+                                                                 + " dataset." )
+                                               .build();
+                events.add( event );
+            }
         }
 
         return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * @param dataset the dataset
+     * @return whether any dataset has a data source whose timescale cannot be guaranteed present
+     */
+    private static boolean hasDataSourceWithUnknownTimeScale( Dataset dataset )
+    {
+        // The USGS NWIS IV service is guaranteed to supply instantaneous data
+        return !dataset.sources()
+                       .stream()
+                       .allMatch( s -> s.sourceInterface() == SourceInterface.USGS_NWIS );
     }
 
     /**
@@ -3991,7 +4030,8 @@ public class DeclarationValidator
     {
         List<EvaluationStatusEvent> events = new ArrayList<>();
 
-        if ( Objects.isNull( sourceScale ) || Objects.isNull( desiredScale ) )
+        if ( Objects.isNull( sourceScale )
+             || Objects.isNull( desiredScale ) )
         {
             LOGGER.debug( "Not checking the consistency of the dataset time scale and the evaluation time scale for "
                           + "the {} dataset because one or both of the time scales were missing.", orientation );

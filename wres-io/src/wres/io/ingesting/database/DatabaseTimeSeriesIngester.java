@@ -217,6 +217,9 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         try ( timeSeriesTuple )
         {
             Iterator<TimeSeriesTuple> tupleIterator = timeSeriesTuple.iterator();
+
+            int timeSeriesCount = 0;
+
             while ( tupleIterator.hasNext() )
             {
                 TimeSeriesTuple nextTuple = tupleIterator.next();
@@ -238,6 +241,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                     // Add the future ingest results to the ingest queue
                     ingestQueue.add( innerResults );
                     startGettingResults.countDown();
+                    timeSeriesCount++;
                 }
 
                 // Ensemble time-series?
@@ -255,6 +259,7 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                     // Add the future ingest results to the ingest queue
                     ingestQueue.add( innerResults );
                     startGettingResults.countDown();
+                    timeSeriesCount++;
                 }
 
                 // Start to get ingest results?
@@ -275,6 +280,9 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
                 finalResults.addAll( nextResults );
             }
 
+            // Log the count of series attempted
+            this.logTimeSeriesCount( timeSeriesCount, outerSource );
+
             return Collections.unmodifiableList( finalResults );
         }
         catch ( ExecutionException e )
@@ -285,6 +293,21 @@ public class DatabaseTimeSeriesIngester implements TimeSeriesIngester
         {
             Thread.currentThread().interrupt();
             throw new IngestException( "Interrupted while getting ingest results.", e );
+        }
+    }
+
+    /**
+     * Logs the number of time-series from a data source for which ingest was attempted.
+     * @param timeSeriesCount the time-series count
+     * @param outerSource the data source
+     */
+    private void logTimeSeriesCount( int timeSeriesCount, DataSource outerSource )
+    {
+        if ( LOGGER.isDebugEnabled() )
+        {
+            LOGGER.debug( "Attempted to ingest {} timeseries from {} into the database.",
+                          timeSeriesCount,
+                          outerSource );
         }
     }
 

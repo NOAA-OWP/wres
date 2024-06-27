@@ -153,8 +153,12 @@ public final class TimeScaleOuter implements Comparable<TimeScaleOuter>
 
         if ( this.hasPeriod() )
         {
-            period = Duration.ofSeconds( this.getTimeScale().getPeriod().getSeconds(),
-                                         this.getTimeScale().getPeriod().getNanos() );
+            period = Duration.ofSeconds( this.getTimeScale()
+                                             .getPeriod()
+                                             .getSeconds(),
+                                         this.getTimeScale()
+                                             .getPeriod()
+                                             .getNanos() );
         }
 
         return period;

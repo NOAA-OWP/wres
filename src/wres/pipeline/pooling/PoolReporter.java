@@ -137,7 +137,7 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
             case STATISTICS_PUBLISHED ->
             {
                 this.successfulPools.add( result.getPoolRequest() );
-                this.reportStatisticsPublished( featureGroup, timeWindow );
+                this.reportStatisticsPublished( featureGroup, timeWindow, result.getEvaluationStatusEvents() );
             }
         }
 
@@ -306,52 +306,9 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
                 StringBuilder message = new StringBuilder();
                 message.append( "[{}/{}] Completed a pool in feature group '{}', but no statistics were produced. This "
                                 + "probably occurred because the pool did not contain any pairs. The time window was: "
-                                + "{}. Encountered {} evaluation status warnings when creating the pool." );
+                                + "{}. Encountered {} evaluation status warning(s) when creating the pool." );
 
-                // Map the number of warnings by evaluation stage
-                Map<EvaluationStage, Long> counts = warnings.stream()
-                                                            .collect( Collectors.groupingBy( EvaluationStatusMessage::getEvaluationStage,
-                                                                                             Collectors.counting() ) );
-
-                message.append( " Of these warnings, " );
-
-                int count = 0;
-                int totalCount = counts.size();
-                for ( Map.Entry<EvaluationStage, Long> next : counts.entrySet() )
-                {
-                    message.append( next.getValue() )
-                           .append( " originated from '" )
-                           .append( next.getKey() )
-                           .append( "'" );
-                    count++;
-
-                    if ( count == totalCount )
-                    {
-                        message.append( "." );
-                    }
-                    else if ( totalCount > 1 && count == totalCount - 1 )
-                    {
-                        message.append( ", and " );
-                    }
-                    else if ( totalCount > 1 )
-                    {
-                        message.append( ", " );
-                    }
-                }
-
-                message.append( " An example warning follows for each evaluation stage that produced one or more "
-                                + "warnings. To review the individual warnings, turn on debug logging. Example "
-                                + "warnings: " );
-
-                // One example warning per evaluation stage
-                Map<EvaluationStage, EvaluationStatusMessage> oneWarningPerStage = warnings.stream()
-                                                                                           .collect( Collectors.toMap(
-                                                                                                   EvaluationStatusMessage::getEvaluationStage,
-                                                                                                   Function.identity(),
-                                                                                                   ( s,
-                                                                                                     a ) -> s ) );
-                message.append( oneWarningPerStage )
-                       .append( "." );
+                this.appendWarnings( message, warnings );
 
                 LOGGER.warn( message.toString(),
                              this.processed.incrementAndGet(),
@@ -370,6 +327,60 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
                              TIME_WINDOW_STRINGIFIER.apply( timeWindow ) );
             }
         }
+    }
+
+    /**
+     * Appends warnings to a pool status message.
+     * @param message the message
+     * @param warnings the warnings
+     */
+
+    private void appendWarnings( StringBuilder message, List<EvaluationStatusMessage> warnings )
+    {
+        // Map the number of warnings by evaluation stage
+        Map<EvaluationStage, Long> counts = warnings.stream()
+                                                    .collect( Collectors.groupingBy( EvaluationStatusMessage::getEvaluationStage,
+                                                                                     Collectors.counting() ) );
+
+        message.append( " Of these warnings, " );
+
+        int count = 0;
+        int totalCount = counts.size();
+        for ( Map.Entry<EvaluationStage, Long> next : counts.entrySet() )
+        {
+            message.append( next.getValue() )
+                   .append( " originated from '" )
+                   .append( next.getKey() )
+                   .append( "'" );
+            count++;
+
+            if ( count == totalCount )
+            {
+                message.append( "." );
+            }
+            else if ( totalCount > 1 && count == totalCount - 1 )
+            {
+                message.append( ", and " );
+            }
+            else if ( totalCount > 1 )
+            {
+                message.append( ", " );
+            }
+        }
+
+        message.append( " An example warning follows for each evaluation stage that produced one or more "
+                        + "warnings. To review the individual warnings, turn on debug logging. Example "
+                        + "warnings: " );
+
+        // One example warning per evaluation stage
+        Map<EvaluationStage, EvaluationStatusMessage> oneWarningPerStage = warnings.stream()
+                                                                                   .collect( Collectors.toMap(
+                                                                                           EvaluationStatusMessage::getEvaluationStage,
+                                                                                           Function.identity(),
+                                                                                           ( s,
+                                                                                             a ) -> s ) );
+        message.append( oneWarningPerStage )
+               .append( "." );
     }
 
     /**
@@ -394,24 +405,54 @@ public class PoolReporter implements Consumer<PoolProcessingResult>
      * Report statistics available and published.
      * @param featureGroup the feature group
      * @param timeWindow the time window
+     * @param statusEvents the evaluation status events
      */
 
-    private void reportStatisticsPublished( FeatureGroup featureGroup, TimeWindowOuter timeWindow )
+    private void reportStatisticsPublished( FeatureGroup featureGroup,
+                                            TimeWindowOuter timeWindow,
+                                            List<EvaluationStatusMessage> statusEvents )
     {
-        if ( LOGGER.isInfoEnabled() )
-        {
-            String extra = "";
-            if ( featureGroup.getFeatures().size() > 1 )
-            {
-                extra = ", which contained " + featureGroup.getFeatures().size() + " features";
-            }
+        // Any status events marked WARN that might help a user?
+        List<EvaluationStatusMessage> warnings =
+                statusEvents.stream()
+                            .filter( next -> next.getStatusLevel() == StatusLevel.WARN )
+                            .toList();
 
-            LOGGER.info( "[{}/{}] Completed statistics for a pool in feature group '{}'{}. The time window was: "
-                         + "{}.",
+        String basicMessage = "[{}/{}] Completed statistics for a pool in feature group '{}'";
+
+        if ( featureGroup.getFeatures()
+                         .size() > 1 )
+        {
+            basicMessage += ", which contained " + featureGroup.getFeatures()
+                                                               .size()
+                            + " features";
+        }
+
+        basicMessage += ". The time window was: {}";
+
+        // Any status events that might help a user?
+        if ( LOGGER.isWarnEnabled()
+             && !warnings.isEmpty() )
+        {
+            StringBuilder message = new StringBuilder();
+            message.append( basicMessage )
+                   .append( ". However, encountered {} evaluation status warning(s) when creating the pool." );
+
+            this.appendWarnings( message, warnings );
+
+            LOGGER.warn( message.toString(),
                          this.processed.incrementAndGet(),
                          this.totalPools,
                          featureGroup.getName(),
-                         extra,
+                         TIME_WINDOW_STRINGIFIER.apply( timeWindow ),
+                         warnings.size() );
+        }
+        else if ( LOGGER.isInfoEnabled() )
+        {
+            LOGGER.info( basicMessage,
+                         this.processed.incrementAndGet(),
+                         this.totalPools,
+                         featureGroup.getName(),
                          TIME_WINDOW_STRINGIFIER.apply( timeWindow ) );
         }
     }

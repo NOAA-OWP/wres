@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import wres.statistics.generated.Covariate;
 import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Consumer.Format;
 import wres.statistics.generated.Outputs.Csv2Format;
@@ -18,13 +19,12 @@ import wres.statistics.generated.Outputs.SvgFormat;
 
 /**
  * Tests the {@link MessageFactory}.
- * 
+ *
  * @author James Brown
  */
 
 class MessageFactoryTest
 {
-
     @Test
     void testDeclaredFormats()
     {
@@ -46,5 +46,39 @@ class MessageFactoryTest
         Set<Format> actual = MessageFactory.getDeclaredFormats( outputs );
 
         assertEquals( expected, actual );
+    }
+
+    @Test
+    void testToStringForCovariateWithMinimumAndMaximum()
+    {
+        Covariate covariate = Covariate.newBuilder()
+                                       .setMaximumInclusiveValue( 4.3 )
+                                       .setMinimumInclusiveValue( 2.1 )
+                                       .setVariableName( "foo" )
+                                       .build();
+
+        assertEquals( "2.1 <= foo <= 4.3", MessageFactory.toString( covariate ) );
+    }
+
+    @Test
+    void testToStringForCovariateWithMinimumOnly()
+    {
+        Covariate covariate = Covariate.newBuilder()
+                                       .setMinimumInclusiveValue( 2.1 )
+                                       .setVariableName( "foo" )
+                                       .build();
+
+        assertEquals( "foo >= 2.1", MessageFactory.toString( covariate ) );
+    }
+
+    @Test
+    void testToStringForCovariateWithMaximumOnly()
+    {
+        Covariate covariate = Covariate.newBuilder()
+                                       .setMaximumInclusiveValue( 4.3 )
+                                       .setVariableName( "foo" )
+                                       .build();
+
+        assertEquals( "foo <= 4.3", MessageFactory.toString( covariate ) );
     }
 }

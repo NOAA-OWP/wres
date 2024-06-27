@@ -63,7 +63,6 @@ import org.jfree.data.xy.XYDataset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.messages.MessageUtilities;
 import wres.datamodel.pools.PoolMetadata;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -81,6 +80,7 @@ import wres.datamodel.statistics.DurationScoreStatisticOuter;
 import wres.datamodel.statistics.DiagramStatisticOuter;
 import wres.datamodel.statistics.DurationDiagramStatisticOuter;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.BoxplotMetric;
 import wres.statistics.generated.BoxplotMetric.LinkedValueType;
 import wres.statistics.generated.BoxplotMetric.QuantileValueType;
@@ -2013,7 +2013,7 @@ public class ChartFactory
             // Iterate the covariates and continue to add while less than the character limit
             for ( Covariate covariate : covariates )
             {
-                String next = MessageUtilities.toString( covariate );
+                String next = MessageFactory.toString( covariate );
                 if ( ( ( builder + "; " + next ).length() + 3 ) < COVARIATE_CHARACTER_LIMIT )
                 {
                     builder.add( next );

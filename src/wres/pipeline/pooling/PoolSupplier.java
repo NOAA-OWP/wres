@@ -53,6 +53,7 @@ import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.units.NoSuchUnitConversionException;
 import wres.pipeline.pooling.PoolRescalingEvent.RescalingType;
 import wres.io.retrieving.DataAccessException;
+import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.GeometryGroup;
 
 /**
@@ -1360,6 +1361,19 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
 
         List<EvaluationStatusMessage> statusEvents = new ArrayList<>();
 
+        // If rescaling is not even attempted because the existing timescale is absent, warn about this.
+        // Note that all other warnings are emitted on the attempted rescaling itself.
+        this.warnIfDesiredTimeScaleAndNoExistingTimeScale( leftSeries.getTimeScale(),
+                                                           timeParameters.desiredTimeScale(),
+                                                           orientation,
+                                                           leftSeries.getMetadata(),
+                                                           statusEvents );
+        this.warnIfDesiredTimeScaleAndNoExistingTimeScale( rightOrBaselineSeries.getTimeScale(),
+                                                           timeParameters.desiredTimeScale(),
+                                                           orientation,
+                                                           rightOrBaselineSeries.getMetadata(),
+                                                           statusEvents );
+
         // Intersecting end times for upscaling
         SortedSet<Instant> endsAt = this.getEndTimesForUpscalingIfNeeded( upscaleLeft,
                                                                           upscaleRight,
@@ -1527,6 +1541,40 @@ public class PoolSupplier<L, R, B> implements Supplier<Pool<TimeSeries<Pair<L, R
         return new TimeSeriesPlusValidation<>( pairsToSave,
                                                generatedBaseline,
                                                statusEvents );
+    }
+
+    /**
+     * Adds a warning to the supplied list of status events when temporal rescaling is assumed unnecessary.
+     * @param existingTimeScale the existing timescale
+     * @param desiredTimeScale the desired timescale
+     * @param orientation the dataset orientation
+     * @param metadata the time-series metadata
+     * @param events the status events to increment
+     */
+    private void warnIfDesiredTimeScaleAndNoExistingTimeScale( TimeScaleOuter existingTimeScale,
+                                                               TimeScaleOuter desiredTimeScale,
+                                                               DatasetOrientation orientation,
+                                                               TimeSeriesMetadata metadata,
+                                                               List<EvaluationStatusMessage> events )
+    {
+        if ( Objects.isNull( existingTimeScale )
+             && Objects.nonNull( desiredTimeScale ) )
+        {
+            String messageBody = "While inspecting a time-series dataset with a '"
+                                 + orientation
+                                 + "' orientation, failed to discover the time scale of the time-series data. However, "
+                                 + "the evaluation requires a time scale of "
+                                 + desiredTimeScale
+                                 + ". Assuming that the time scale of the data matches the evaluation time scale and "
+                                 + "that no rescaling is required. If that is incorrect, please clarify the time scale "
+                                 + "of the time-series data. The time-series metadata is: "
+                                 + metadata;
+
+            EvaluationStatusMessage message =
+                    EvaluationStatusMessage.warn( EvaluationStatus.EvaluationStatusEvent.EvaluationStage.RESCALING,
+                                                  messageBody );
+            events.add( message );
+        }
     }
 
     /**

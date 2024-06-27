@@ -1845,6 +1845,40 @@ class DeclarationValidatorTest
                                                      .setEndMonth( 5 )
                                                      .setFunction( TimeScale.TimeScaleFunction.MEAN )
                                                      .build() );
+
+        wres.config.yaml.components.TimeScale datasetTimeScale =
+                TimeScaleBuilder.TimeScale( TimeScale.newBuilder()
+                                                     .setPeriod( Duration.newBuilder()
+                                                                         .setSeconds( 1 ) )
+                                                     .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                                     .build() );
+
+        Dataset dataset = DatasetBuilder.builder( this.defaultDataset )
+                                        .timeScale( datasetTimeScale )
+                                        .build();
+
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( dataset )
+                                            .right( dataset )
+                                            .timeScale( timeScale )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertEquals( Collections.emptyList(), events );
+    }
+
+    @Test
+    void testEvaluationTimeScaleWithoutDatasetTimeScaleProducesWarning()
+    {
+        wres.config.yaml.components.TimeScale timeScale =
+                TimeScaleBuilder.TimeScale( TimeScale.newBuilder()
+                                                     .setPeriod( Duration.newBuilder()
+                                                                         .setSeconds( 600 ) )
+                                                     .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                                     .build() );
+
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
                                             .left( this.defaultDataset )
@@ -1854,7 +1888,14 @@ class DeclarationValidatorTest
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
-        assertEquals( Collections.emptyList(), events );
+        // Two warnings, both of the same type
+        assertAll( () -> assertEquals( 2, events.stream()
+                                                .filter( e -> e.getStatusLevel() == StatusLevel.WARN )
+                                                .count() ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "it is assumed that the dataset has the same time scale "
+                                                                        + "as the evaluation 'time_scale'",
+                                                                        StatusLevel.WARN ) ) );
     }
 
     @Test

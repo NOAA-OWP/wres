@@ -14,10 +14,10 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 import wres.datamodel.DataUtilities;
-import wres.datamodel.messages.MessageUtilities;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.thresholds.OneOrTwoThresholds;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.Covariate;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.SummaryStatistic;
@@ -274,7 +274,7 @@ class MetricVariable
         else
         {
             this.covariateString = builder.covariates.stream()
-                                                     .map( MessageUtilities::toString )
+                                                     .map( MessageFactory::toString )
                                                      .collect( Collectors.joining( LIST_DELIMITER ) );
         }
 
