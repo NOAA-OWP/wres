@@ -4,7 +4,7 @@ RUN dnf install -y \
     java-17-openjdk-headless-1:17.0.11.0.9-2.el8.x86_64 \
     unzip-6.0-46.el8 \
     procps-ng-3.3.15-14.el8 \
-    iproute-6.2.0-5.el8_9 \
+    iproute-6.2.0-6.el8_10.x86_64 \
     hostname-3.20-6.el8 \
     && dnf clean all
 
