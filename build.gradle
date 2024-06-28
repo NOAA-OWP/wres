@@ -54,7 +54,7 @@ plugins {
     id 'com.adarshr.test-logger' version '4.0.0'
 
     // To discover library versions with known vulnerabilities
-    id 'org.owasp.dependencycheck' version '9.1.0'
+    id 'org.owasp.dependencycheck' version '9.2.0'
 
     // Task to assist in downloading artifacts
     id 'de.undercouch.download' version '5.6.0'
@@ -244,8 +244,8 @@ project(':wres-system') {
         api 'org.jvnet.jaxb2_commons:jaxb2-basics-runtime:0.13.1'
 
         // Builders
-        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.32'
-        annotationProcessor 'org.projectlombok:lombok:1.18.32'
+        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.34'
+        annotationProcessor 'org.projectlombok:lombok:1.18.34'
 
         // Database drivers need to be on the runtime classpath in order to
         // acquire connections initially. See #103431
@@ -313,7 +313,7 @@ project(':wres-datamodel') {
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.11.0'
+        testImplementation 'org.mockito:mockito-core:5.12.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
@@ -351,7 +351,7 @@ project(':wres-io') {
             exclude group: 'com.google.guava', module: 'guava'
         }
         // Include later dependency versions for the excluded dependencies above
-        implementation 'com.google.guava:guava:33.2.0-jre'
+        implementation 'com.google.guava:guava:33.2.1-jre'
 
         // to use native postgres copy, need this on compile, otherwise runtime
         implementation('org.postgresql:postgresql:42.7.3') {
@@ -381,7 +381,7 @@ project(':wres-io') {
         implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.19.0'
         implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.19.0', ext: 'pom'
 
-        implementation 'org.liquibase:liquibase-core:4.27.0'
+        implementation 'org.liquibase:liquibase-core:4.28.0'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:5.0.0'
@@ -395,7 +395,7 @@ project(':wres-io') {
         runtimeOnly 'org.slf4j:jcl-over-slf4j:2.1.0-alpha1'
 
         //JB @ 02/16/17
-        testImplementation 'com.google.guava:guava-testlib:33.2.0-jre'
+        testImplementation 'com.google.guava:guava-testlib:33.2.1-jre'
 
         // Mocking help
         testImplementation 'org.mockito:mockito-inline:5.2.0'
@@ -524,7 +524,7 @@ project(':wres-writing') {
             exclude group: 'com.google.guava', module: 'guava'
         }
         // Include later dependency versions for the excluded dependencies above
-        implementation 'com.google.guava:guava:33.2.0-jre'
+        implementation 'com.google.guava:guava:33.2.1-jre'
 
         // Better-than-Java's HTTP client
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
@@ -583,9 +583,9 @@ project(':wres-reading') {
             exclude group: 'com.google.guava', module: 'guava'
         }
         // Include later dependency versions for the excluded dependencies above
-        implementation 'com.google.guava:guava:33.2.0-jre'
+        implementation 'com.google.guava:guava:33.2.1-jre'
 
-        implementation 'org.apache.commons:commons-compress:1.26.1'
+        implementation 'org.apache.commons:commons-compress:1.26.2'
 
         // Better-than-Java's HTTP client
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
@@ -603,7 +603,7 @@ project(':wres-reading') {
 
         implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
 
-        implementation 'org.liquibase:liquibase-core:4.27.0'
+        implementation 'org.liquibase:liquibase-core:4.28.0'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:5.0.0'
@@ -611,11 +611,11 @@ project(':wres-reading') {
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
         // Builders
-        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.32'
-        annotationProcessor 'org.projectlombok:lombok:1.18.32'
+        compileOnly group: 'org.projectlombok', name: 'lombok', version: '1.18.34'
+        annotationProcessor 'org.projectlombok:lombok:1.18.34'
 
         //JB @ 02/16/17
-        testImplementation 'com.google.guava:guava-testlib:33.2.0-jre'
+        testImplementation 'com.google.guava:guava-testlib:33.2.1-jre'
 
         // Mocking help
         testImplementation 'org.mockito:mockito-inline:5.2.0'
@@ -663,7 +663,7 @@ project(':wres-metrics') {
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
-        testImplementation 'org.mockito:mockito-core:5.11.0'
+        testImplementation 'org.mockito:mockito-core:5.12.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
@@ -913,7 +913,7 @@ project(':wres-vis') {
         testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.10.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.11.0'
+        testImplementation 'org.mockito:mockito-core:5.12.0'
 
         testRuntimeOnly files('dist/lib/conf')
 
@@ -969,7 +969,7 @@ project(':wres-config') {
         }
         // Include later dependency versions for the excluded dependencies above
         implementation 'com.google.protobuf:protobuf-java:3.21.12'
-        implementation 'com.google.guava:guava:33.2.0-jre'
+        implementation 'com.google.guava:guava:33.2.1-jre'
 
         // To validate WKT strings as geometries
         implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.19.0'
@@ -984,7 +984,7 @@ project(':wres-config') {
         implementation group: 'com.opencsv', name: 'opencsv', version: '5.9'
 
         // YAML/JSON schema validation
-        implementation 'com.networknt:json-schema-validator:1.4.0'
+        implementation 'com.networknt:json-schema-validator:1.4.3'
 
         // To auto-generate builders for Java records through annotation processing
         annotationProcessor 'io.soabase.record-builder:record-builder-processor:41'
@@ -1017,7 +1017,7 @@ project(':wres-config') {
         implementation group: 'org.jvnet.jaxb2_commons', name: 'jaxb2-basics-annotate', version: '1.1.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.11.0'
+        testImplementation 'org.mockito:mockito-core:5.12.0'
 
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
         testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.2'
@@ -1342,13 +1342,13 @@ project(':wres-tasker') {
         implementation 'org.eclipse.jetty:jetty-server:11.0.20'
 
         // Support HTTP/2
-        implementation 'org.eclipse.jetty.http2:http2-server:11.0.20'
+        implementation 'org.eclipse.jetty.http2:http2-server:11.0.21'
 
         // Support ALPN
-        implementation 'org.eclipse.jetty:jetty-alpn-java-server:11.0.20'
+        implementation 'org.eclipse.jetty:jetty-alpn-java-server:11.0.21'
 
         // Servlet container library to run a web application with:
-        implementation 'org.eclipse.jetty:jetty-webapp:11.0.20'
+        implementation 'org.eclipse.jetty:jetty-webapp:11.0.21'
 
         // Needed at compile-time to reference ServletContainer.class and
         // DefaultServlet.class
@@ -1373,7 +1373,7 @@ project(':wres-tasker') {
         }
 
         // Because of CVE-2022-24823. TODO: remove when Redisson catches up
-        implementation group: 'io.netty', name: 'netty-all', version: '4.1.109.Final'
+        implementation group: 'io.netty', name: 'netty-all', version: '4.1.111.Final'
 
         // Better-than-Java's HTTP client. Used to talk to manager.
         implementation 'com.squareup.okhttp3:okhttp:4.12.0'
@@ -1521,10 +1521,10 @@ project(':wres-eventsbroker') {
         }
 
         // Include later dependency versions for the excluded dependencies above
-        implementation 'com.google.guava:guava:33.2.0-jre'
+        implementation 'com.google.guava:guava:33.2.1-jre'
 
         // Include later dependency version
-        implementation group: 'org.apache.commons', name: 'commons-configuration2', version: '2.10.1'
+        implementation group: 'org.apache.commons', name: 'commons-configuration2', version: '2.11.0'
 
         // Include later dependency version
         implementation group: 'org.bouncycastle', name: 'bcprov-jdk18on', version: '1.78.1'
@@ -1591,7 +1591,7 @@ project(':wres-events') {
         }
 
         // Because of CVE-2022-24823. TODO: remove when Qpid catches up
-        implementation group: 'io.netty', name: 'netty-all', version: '4.1.109.Final'
+        implementation group: 'io.netty', name: 'netty-all', version: '4.1.111.Final'
 
         // For various utilities
         implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.14.0'
@@ -1606,7 +1606,7 @@ project(':wres-events') {
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.11.0'
+        testImplementation 'org.mockito:mockito-core:5.12.0'
         // Mocking final classes
         testImplementation 'org.mockito:mockito-inline:5.2.0'
 
@@ -1871,7 +1871,7 @@ dependencies {
     implementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
 
     // Servlet container library to run a web application with:
-    implementation 'org.eclipse.jetty:jetty-webapp:11.0.20'
+    implementation 'org.eclipse.jetty:jetty-webapp:11.0.21'
 
     // Needed at compile-time to reference ServletContainer.class and
     // DefaultServlet.class
@@ -1892,7 +1892,7 @@ dependencies {
     }
 
     // Because of CVE-2022-24823. TODO: remove when Redisson catches up
-    implementation group: 'io.netty', name: 'netty-all', version: '4.1.109.Final'
+    implementation group: 'io.netty', name: 'netty-all', version: '4.1.111.Final'
 
     implementation('edu.ucar:cdm-core:5.4.2') {
         // Because we use slf4j, not jcl:
@@ -1905,7 +1905,7 @@ dependencies {
         exclude group: 'com.google.guava', module: 'guava'
     }
     // Include later dependency versions for the excluded dependencies above
-    implementation 'com.google.guava:guava:33.2.0-jre'
+    implementation 'com.google.guava:guava:33.2.1-jre'
 
     // JCIP annotations
     compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
@@ -1942,7 +1942,7 @@ dependencies {
     testCompileOnly 'junit:junit:4.13.2'
     testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.10.2'
 
-    testImplementation 'org.mockito:mockito-core:5.11.0'
+    testImplementation 'org.mockito:mockito-core:5.12.0'
 
     testImplementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 }
