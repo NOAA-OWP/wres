@@ -205,11 +205,30 @@ public class DeclarationValidator
         // schema validation errors: see #57969
         if ( schemaEvents.isEmpty() )
         {
-            EvaluationDeclaration deserialized = DeclarationFactory.deserialize( declaration );
+            try
+            {
+                EvaluationDeclaration deserialized = DeclarationFactory.deserialize( declaration );
 
-            // Validate against business logic
-            List<EvaluationStatusEvent> businessEvents = DeclarationValidator.validate( deserialized, omitSources );
-            events.addAll( businessEvents );
+                // Validate against business logic
+                List<EvaluationStatusEvent> businessEvents = DeclarationValidator.validate( deserialized, omitSources );
+                events.addAll( businessEvents );
+            }
+            // Catch exceptions here that can occur during deserialization
+            catch ( IOException | DeclarationException e )
+            {
+                EvaluationStatusEvent error =
+                        EvaluationStatusEvent.newBuilder()
+                                             .setStatusLevel( StatusLevel.ERROR )
+                                             .setEventMessage( "Failed to deserialize and fully validate the "
+                                                               + "declaration because it contains errors: "
+                                                               + "please fix the declaration and try "
+                                                               + "again. The cause of the error was: \n"
+                                                               + e.getCause()
+                                                                  .getMessage() )
+                                             .build();
+
+                return List.of( error );
+            }
         }
 
         return Collections.unmodifiableList( events );
