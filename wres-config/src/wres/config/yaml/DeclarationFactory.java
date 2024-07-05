@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.io.IOContext;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
@@ -464,8 +465,15 @@ public class DeclarationFactory
 
     static EvaluationDeclaration deserialize( JsonNode declaration ) throws IOException
     {
-        return DESERIALIZER.reader()
-                           .readValue( declaration, EvaluationDeclaration.class );
+        try
+        {
+            return DESERIALIZER.reader()
+                               .readValue( declaration, EvaluationDeclaration.class );
+        }
+        catch ( JsonMappingException e )
+        {
+            throw new IOException( "Failed to deserialize an evaluation declaration.", e );
+        }
     }
 
     /**

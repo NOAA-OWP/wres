@@ -15,6 +15,8 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import wres.config.yaml.DeclarationException;
+
 /**
  * Custom deserializer for a {@link ZoneId} that admits several informal shorthands, as well as all named time zones
  * accepted by {@link ZoneId#of(String)}.
@@ -115,7 +117,17 @@ public class ZoneOffsetDeserializer extends JsonDeserializer<ZoneOffset>
         // Otherwise, pass through directly
         else
         {
-            return ZoneOffset.of( zoneOffset );
+            try
+            {
+                return ZoneOffset.of( zoneOffset );
+            }
+            catch ( DateTimeException e )
+            {
+                throw new DeclarationException( "Failed to deserialize a 'time_zone_offset'. Please use a valid offset "
+                                                + "name, such as 'EST' or a valid ISO 8601 UTC offset, such as "
+                                                + "'-05:00'.",
+                                                e );
+            }
         }
     }
 }
