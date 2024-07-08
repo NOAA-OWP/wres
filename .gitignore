@@ -20,6 +20,9 @@ out
 # SonarQube-generated directories
 .scannerwork
 
+#jfr profileconfig
+.profileconfig.json
+
 # "Embedded" postgres database directory
 .postgres_testinstance
 
