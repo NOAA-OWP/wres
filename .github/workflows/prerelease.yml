@@ -51,12 +51,20 @@ jobs:
         ../gradlew distZip 
 
     # Create the md5
-    - name: Creating md5
+    - name: Creating md5checksum
       run: |
-        md5sum build/distributions/wres-*.zip >> checksum.txt
-        md5sum wres-*/build/distributions/wres-*-*.zip >> checksum.txt
-        md5sum systests/build/distributions/systests-*.zip >> checksum.txt
-        md5sum scripts/build/distributions/wres-admin-scripts-*.zip >> checksum.txt
+        md5sum build/distributions/wres-*.zip >> md5checksum.txt
+        md5sum wres-*/build/distributions/wres-*-*.zip >> md5checksum.txt
+        md5sum systests/build/distributions/systests-*.zip >> md5checksum.txt
+        md5sum scripts/build/distributions/wres-admin-scripts-*.zip >> md5checksum.txt
+
+    # Create the sha256
+    - name: Creating sha256checksum
+      run: |
+        sha256sum build/distributions/wres-*.zip >> sha256checksum.txt
+        sha256sum wres-*/build/distributions/wres-*-*.zip >> sha256checksum.txt
+        sha256sum systests/build/distributions/systests-*.zip >> sha256checksum.txt
+        sha256sum scripts/build/distributions/wres-admin-scripts-*.zip >> sha256checksum.txt
 
     # Deletes drafts incase the staging tag was deleted to change it to a different commit
     - name: Delete drafts
@@ -70,7 +78,8 @@ jobs:
       with:
         prerelease: true
         files: |
-          checksum.txt
+          md5checksum.txt
+          sha256checksum.txt
           Release.txt
           build/distributions/wres-*.zip
           wres-*/build/distributions/wres-*-*.zip
