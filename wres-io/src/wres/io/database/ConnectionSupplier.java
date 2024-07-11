@@ -6,6 +6,7 @@ import javax.sql.DataSource;
 import com.github.marschall.jfr.jdbc.JfrDataSource;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import com.zaxxer.hikari.pool.HikariPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +81,15 @@ public class ConnectionSupplier
         int maxPoolSize = databaseConfiguration.getMaxPoolSize();
         LOGGER.info( "Creating a database connection pool with {} connections...", maxPoolSize );
         long connectionTimeoutMs = databaseConfiguration.getConnectionTimeoutMs();
-        DataSource inner = createDataSource( maxPoolSize, connectionTimeoutMs );
+        DataSource inner;
+        try
+        {
+            inner = createDataSource( maxPoolSize, connectionTimeoutMs );
+        }
+        catch ( HikariPool.PoolInitializationException e )
+        {
+            throw new IllegalStateException( "Unable to create pool", e );
+        }
         return new JfrDataSource( inner ); // Monitor JDBC traffic with JFR: #61680
     }
 

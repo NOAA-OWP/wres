@@ -856,7 +856,16 @@ public final class Functions
              && ( Objects.isNull( Functions.database )
                   || Functions.database.isShutdown() ) )
         {
-            Functions.database = new Database( new ConnectionSupplier( sharedResources.systemSettings ) );
+            // Try to create a database connection and catch exceptions to log the reason why our connection failed
+            try
+            {
+                Functions.database = new Database( new ConnectionSupplier( sharedResources.systemSettings ) );
+            }
+            catch ( IllegalStateException ise )
+            {
+                LOGGER.error( "Unable to create database with: ", ise );
+            }
+
             // Migrate the database, as needed
             if ( Functions.database.getAttemptToMigrate() )
             {
@@ -866,7 +875,7 @@ public final class Functions
                 }
                 catch ( SQLException e )
                 {
-                    throw new IllegalStateException( "Failed to migrate the WRES database.", e );
+                    throw new InternalWresException( "Failed to migrate the WRES database.", e );
                 }
             }
         }
@@ -932,6 +941,10 @@ public final class Functions
         if ( sharedResources.systemSettings()
                             .isUseDatabase() )
         {
+            if ( Objects.isNull( Functions.database ) )
+            {
+                throw new InternalWresException( "Unable to log failure in database because connection does not exist" );
+            }
             Instant endedExecution = Instant.now();
 
             // Log both the operation and the args
