@@ -32,6 +32,7 @@ import com.google.protobuf.util.JsonFormat;
 import com.networknt.schema.JsonSchema;
 import com.networknt.schema.JsonSchemaFactory;
 import com.networknt.schema.SpecVersion;
+import com.networknt.schema.serialization.JsonNodeReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -447,9 +448,12 @@ public class DeclarationFactory
             // Map the schema to a json node
             JsonNode schemaNode = DESERIALIZER.readTree( schemaString );
 
+            JsonNodeReader nodeReader = JsonNodeReader.builder()
+                                                      .yamlMapper( DESERIALIZER )
+                                                      .build();
             JsonSchemaFactory factory =
                     JsonSchemaFactory.builder( JsonSchemaFactory.getInstance( SpecVersion.VersionFlag.V201909 ) )
-                                     .yamlMapper( DESERIALIZER )
+                                     .jsonNodeReader( nodeReader )
                                      .build();
 
             return factory.getSchema( schemaNode );

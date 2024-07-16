@@ -12,7 +12,6 @@ import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -253,7 +252,7 @@ public final class EnsemblePairsWriterTest
             Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
-            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
+            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath ) )
             {
 
                 Builder<TimeSeries<Pair<Double, Ensemble>>> tsBuilder = new Builder<>();
@@ -319,7 +318,7 @@ public final class EnsemblePairsWriterTest
             Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
-            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS, formatter ) )
+            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, formatter ) )
             {
                 // Prime the writer with the expected ensemble structure
                 writer.prime( new TreeSet<>( Set.of( "1" ) ) );
@@ -383,17 +382,19 @@ public final class EnsemblePairsWriterTest
 
                 // Assert the expected results
                 assertEquals( 2, results.size() );
-                assertEquals( "FEATURE DESCRIPTION,"
+                assertEquals( "FEATURE NAME,"
                               + "FEATURE GROUP NAME,"
-                              + "VALID TIME OF PAIR,"
-                              + "LEAD DURATION OF PAIR IN SECONDS "
-                              + "[MEAN OVER PAST 3600 SECONDS],"
-                              + "LEFT IN SCOOBIES,"
-                              + "RIGHT MEMBER 1 IN SCOOBIES",
+                              + "VARIABLE NAME,"
+                              + "REFERENCE TIME,"
+                              + "VALID TIME,"
+                              + "LEAD DURATION "
+                              + "[MEAN OVER PAST PT1H],"
+                              + "OBSERVED IN SCOOBIES,"
+                              + "PREDICTED MEMBER 1 IN SCOOBIES",
                               results.get( 0 ) );
 
-                assertEquals( "PINEAPPLE,,+1000000000-12-31T23:59:59.999999999Z,"
-                              + "0,NaN,NaN",
+                assertEquals( "PINEAPPLE,,ARMS,,+1000000000-12-31T23:59:59.999999999Z,"
+                              + "PT0S,NaN,NaN",
                               results.get( 1 ) );
             }
         }
@@ -416,7 +417,7 @@ public final class EnsemblePairsWriterTest
             Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
-            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
+            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath ) )
             {
                 // Prime the writer with the expected ensemble structure
                 writer.prime( new TreeSet<>( Set.of( "1", "2", "3" ) ) );
@@ -429,19 +430,23 @@ public final class EnsemblePairsWriterTest
 
                 // Assert the expected results
                 assertEquals( 4, results.size() );
-                assertEquals( "FEATURE DESCRIPTION,"
+                assertEquals( "FEATURE NAME,"
                               + "FEATURE GROUP NAME,"
-                              + "VALID TIME OF PAIR,"
-                              + "LEAD DURATION OF PAIR IN SECONDS,"
-                              + "LEFT IN SCOOBIES,"
-                              + "RIGHT MEMBER 1 IN SCOOBIES,"
-                              + "RIGHT MEMBER 2 IN SCOOBIES,"
-                              + "RIGHT MEMBER 3 IN SCOOBIES",
+                              + "VARIABLE NAME,"
+                              + "REFERENCE TIME,"
+                              + "VALID TIME,"
+                              + "LEAD DURATION,"
+                              + "OBSERVED IN SCOOBIES,"
+                              + "PREDICTED MEMBER 1 IN SCOOBIES,"
+                              + "PREDICTED MEMBER 2 IN SCOOBIES,"
+                              + "PREDICTED MEMBER 3 IN SCOOBIES",
                               results.get( 0 ) );
-                assertEquals( "PLUM,,1985-01-01T01:00:00Z,3600,1.001,2.0,3.0,4.0", results.get( 1 ) );
-                assertEquals( "PLUM,,1985-01-01T02:00:00Z,7200,5.0,6.0,7.0,8.0", results.get( 2 ) );
-                assertEquals( "PLUM,,1985-01-01T03:00:00Z,10800,9.0,10.0,11.0,12.0", results.get( 3 ) );
-
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,1985-01-01T01:00:00Z,PT1H,1.001,2.0,3.0,4.0",
+                              results.get( 1 ) );
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,1985-01-01T02:00:00Z,PT2H,5.0,6.0,7.0,8.0",
+                              results.get( 2 ) );
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,1985-01-01T03:00:00Z,PT3H,9.0,10.0,11.0,12.0",
+                              results.get( 3 ) );
             }
         }
     }
@@ -463,7 +468,7 @@ public final class EnsemblePairsWriterTest
             Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_ZIP_NAME );
 
             // Create the writer
-            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS, null, true ) )
+            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, null, true ) )
             {
                 // Prime the writer with the expected ensemble structure
                 writer.prime( new TreeSet<>( Set.of( "1", "2", "3" ) ) );
@@ -503,7 +508,7 @@ public final class EnsemblePairsWriterTest
             Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
-            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
+            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath ) )
             {
                 // Prime the writer with the expected ensemble structure
                 writer.prime( new TreeSet<>( Set.of( "1", "2", "3" ) ) );
@@ -517,21 +522,29 @@ public final class EnsemblePairsWriterTest
 
                 // Assert the expected results
                 assertEquals( 7, results.size() );
-                assertEquals( "FEATURE DESCRIPTION,"
+                assertEquals( "FEATURE NAME,"
                               + "FEATURE GROUP NAME,"
-                              + "VALID TIME OF PAIR,"
-                              + "LEAD DURATION OF PAIR IN SECONDS,"
-                              + "LEFT IN SCOOBIES,"
-                              + "RIGHT MEMBER 1 IN SCOOBIES,"
-                              + "RIGHT MEMBER 2 IN SCOOBIES,"
-                              + "RIGHT MEMBER 3 IN SCOOBIES",
+                              + "VARIABLE NAME,"
+                              + "REFERENCE TIME,"
+                              + "VALID TIME,"
+                              + "LEAD DURATION,"
+                              + "OBSERVED IN SCOOBIES,"
+                              + "PREDICTED MEMBER 1 IN SCOOBIES,"
+                              + "PREDICTED MEMBER 2 IN SCOOBIES,"
+                              + "PREDICTED MEMBER 3 IN SCOOBIES",
                               results.get( 0 ) );
-                assertEquals( "PLUM,,1985-01-01T01:00:00Z,3600,1.001,2.0,3.0,4.0", results.get( 1 ) );
-                assertEquals( "PLUM,,1985-01-01T02:00:00Z,7200,5.0,6.0,7.0,8.0", results.get( 2 ) );
-                assertEquals( "PLUM,,1985-01-01T03:00:00Z,10800,9.0,10.0,11.0,12.0", results.get( 3 ) );
-                assertEquals( "ORANGE,,1985-01-01T04:00:00Z,14400,13.0,14.0,15.0,16.0", results.get( 4 ) );
-                assertEquals( "ORANGE,,1985-01-01T05:00:00Z,18000,17.0,18.0,19.0,20.0", results.get( 5 ) );
-                assertEquals( "ORANGE,,1985-01-01T06:00:00Z,21600,21.0,22.0,23.0,24.0", results.get( 6 ) );
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,1985-01-01T01:00:00Z,PT1H,1.001,2.0,3.0,4.0",
+                              results.get( 1 ) );
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,1985-01-01T02:00:00Z,PT2H,5.0,6.0,7.0,8.0",
+                              results.get( 2 ) );
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,1985-01-01T03:00:00Z,PT3H,9.0,10.0,11.0,12.0",
+                              results.get( 3 ) );
+                assertEquals( "ORANGE,,ARMS,1985-01-01T00:00:00Z,1985-01-01T04:00:00Z,PT4H,13.0,14.0,15.0,16.0",
+                              results.get( 4 ) );
+                assertEquals( "ORANGE,,ARMS,1985-01-01T00:00:00Z,1985-01-01T05:00:00Z,PT5H,17.0,18.0,19.0,20.0",
+                              results.get( 5 ) );
+                assertEquals( "ORANGE,,ARMS,1985-01-01T00:00:00Z,1985-01-01T06:00:00Z,PT6H,21.0,22.0,23.0,24.0",
+                              results.get( 6 ) );
             }
         }
     }
@@ -558,7 +571,7 @@ public final class EnsemblePairsWriterTest
             Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
-            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS, formatter ) )
+            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, formatter ) )
             {
                 // Prime the writer with the expected ensemble structure
                 writer.prime( new TreeSet<>( Set.of( "1", "2", "3" ) ) );
@@ -577,24 +590,35 @@ public final class EnsemblePairsWriterTest
 
                 // Assert the expected results
                 assertEquals( 10, results.size() );
-                assertEquals( "BANANA,,1985-01-01T07:00:00Z,25200,25.0,26.0,27.0,28.0", results.get( 0 ) );
-                assertEquals( "BANANA,,1985-01-01T08:00:00Z,28800,29.0,30.0,31.0,32.0", results.get( 1 ) );
-                assertEquals( "BANANA,,1985-01-01T09:00:00Z,32400,33.0,34.0,35.0,36.0", results.get( 2 ) );
-                assertEquals( "FEATURE DESCRIPTION,"
+                assertEquals( "BANANA,,ARMS,1985-01-01T00:00:00Z,1985-01-01T07:00:00Z,PT7H,25.0,26.0,27.0,28.0",
+                              results.get( 0 ) );
+                assertEquals( "BANANA,,ARMS,1985-01-01T00:00:00Z,1985-01-01T08:00:00Z,PT8H,29.0,30.0,31.0,32.0",
+                              results.get( 1 ) );
+                assertEquals( "BANANA,,ARMS,1985-01-01T00:00:00Z,1985-01-01T09:00:00Z,PT9H,33.0,34.0,35.0,36.0",
+                              results.get( 2 ) );
+                assertEquals( "FEATURE NAME,"
                               + "FEATURE GROUP NAME,"
-                              + "VALID TIME OF PAIR,"
-                              + "LEAD DURATION OF PAIR IN SECONDS,"
-                              + "LEFT IN SCOOBIES,"
-                              + "RIGHT MEMBER 1 IN SCOOBIES,"
-                              + "RIGHT MEMBER 2 IN SCOOBIES,"
-                              + "RIGHT MEMBER 3 IN SCOOBIES",
+                              + "VARIABLE NAME,"
+                              + "REFERENCE TIME,"
+                              + "VALID TIME,"
+                              + "LEAD DURATION,"
+                              + "OBSERVED IN SCOOBIES,"
+                              + "PREDICTED MEMBER 1 IN SCOOBIES,"
+                              + "PREDICTED MEMBER 2 IN SCOOBIES,"
+                              + "PREDICTED MEMBER 3 IN SCOOBIES",
                               results.get( 3 ) );
-                assertEquals( "ORANGE,,1985-01-01T04:00:00Z,14400,13.0,14.0,15.0,16.0", results.get( 4 ) );
-                assertEquals( "ORANGE,,1985-01-01T05:00:00Z,18000,17.0,18.0,19.0,20.0", results.get( 5 ) );
-                assertEquals( "ORANGE,,1985-01-01T06:00:00Z,21600,21.0,22.0,23.0,24.0", results.get( 6 ) );
-                assertEquals( "PLUM,,1985-01-01T01:00:00Z,3600,1.0,2.0,3.0,4.0", results.get( 7 ) );
-                assertEquals( "PLUM,,1985-01-01T02:00:00Z,7200,5.0,6.0,7.0,8.0", results.get( 8 ) );
-                assertEquals( "PLUM,,1985-01-01T03:00:00Z,10800,9.0,10.0,11.0,12.0", results.get( 9 ) );
+                assertEquals( "ORANGE,,ARMS,1985-01-01T00:00:00Z,1985-01-01T04:00:00Z,PT4H,13.0,14.0,15.0,16.0",
+                              results.get( 4 ) );
+                assertEquals( "ORANGE,,ARMS,1985-01-01T00:00:00Z,1985-01-01T05:00:00Z,PT5H,17.0,18.0,19.0,20.0",
+                              results.get( 5 ) );
+                assertEquals( "ORANGE,,ARMS,1985-01-01T00:00:00Z,1985-01-01T06:00:00Z,PT6H,21.0,22.0,23.0,24.0",
+                              results.get( 6 ) );
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,1985-01-01T01:00:00Z,PT1H,1.0,2.0,3.0,4.0",
+                              results.get( 7 ) );
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,1985-01-01T02:00:00Z,PT2H,5.0,6.0,7.0,8.0",
+                              results.get( 8 ) );
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,1985-01-01T03:00:00Z,PT3H,9.0,10.0,11.0,12.0",
+                              results.get( 9 ) );
             }
         }
     }
@@ -621,7 +645,7 @@ public final class EnsemblePairsWriterTest
             Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
-            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS, formatter ) )
+            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, formatter ) )
             {
                 // Prime the writer with the expected ensemble structure
                 writer.prime( new TreeSet<>( Set.of( "1", "2", "3" ) ) );
@@ -665,7 +689,7 @@ public final class EnsemblePairsWriterTest
             Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
-            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
+            try ( EnsemblePairsWriter writer = EnsemblePairsWriter.of( csvPath ) )
             {
                 // Prime the writer with the expected ensemble structure
                 writer.prime( new TreeSet<>( Set.of() ) );

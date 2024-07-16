@@ -2,7 +2,6 @@ package wres.writing.csv.pairs;
 
 import java.nio.file.Path;
 import java.text.DecimalFormat;
-import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.SortedSet;
@@ -28,39 +27,34 @@ public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
      * Build an instance of a writer.
      *
      * @param pathToPairs the path to write, required
-     * @param timeResolution the time resolution at which to write datetime and duration information, required
      * @return the writer
      * @throws NullPointerException if either input is null
      */
 
-    public static SingleValuedPairsWriter of( Path pathToPairs,
-                                              ChronoUnit timeResolution )
+    public static SingleValuedPairsWriter of( Path pathToPairs )
     {
-        return new SingleValuedPairsWriter( pathToPairs, timeResolution, null, false );
+        return new SingleValuedPairsWriter( pathToPairs, null, false );
     }
 
     /**
      * Build an instance of a writer.
      *
      * @param pathToPairs the path to write, required
-     * @param timeResolution the time resolution at which to write datetime and duration information, required
      * @param decimalFormatter the optional formatter for writing decimal values, optional
      * @return the writer
      * @throws NullPointerException if any of the required inputs is null
      */
 
     public static SingleValuedPairsWriter of( Path pathToPairs,
-                                              ChronoUnit timeResolution,
                                               DecimalFormat decimalFormatter )
     {
-        return new SingleValuedPairsWriter( pathToPairs, timeResolution, decimalFormatter, false );
+        return new SingleValuedPairsWriter( pathToPairs, decimalFormatter, false );
     }
 
     /**
      * Build an instance of a writer.
      *
      * @param pathToPairs the path to write, required
-     * @param timeResolution the time resolution at which to write datetime and duration information, required
      * @param decimalFormatter the optional formatter for writing decimal values, optional
      * @param gzip boolean to determine if output should be gzip
      * @return the writer
@@ -68,11 +62,10 @@ public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
      */
 
     public static SingleValuedPairsWriter of( Path pathToPairs,
-                                              ChronoUnit timeResolution,
                                               DecimalFormat decimalFormatter,
                                               boolean gzip )
     {
-        return new SingleValuedPairsWriter( pathToPairs, timeResolution, decimalFormatter, gzip );
+        return new SingleValuedPairsWriter( pathToPairs, decimalFormatter, gzip );
     }
 
     @Override
@@ -87,9 +80,23 @@ public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
     {
         StringJoiner joiner = super.getHeaderFromPairs( pairs );
 
-        joiner.add( "LEFT IN " + pairs.getMetadata().getMeasurementUnit().getUnit() );
+        joiner.add( "OBSERVED IN " + pairs.getMetadata()
+                                          .getMeasurementUnit()
+                                          .getUnit() );
 
-        joiner.add( "RIGHT IN " + pairs.getMetadata().getMeasurementUnit().getUnit() );
+        // Feature names
+        String right = "PREDICTED";
+
+        if( pairs.getMetadata()
+                 .getPool()
+                 .getIsBaselinePool() )
+        {
+            right = "BASELINE";
+        }
+
+        joiner.add( right + " IN " + pairs.getMetadata()
+                                          .getMeasurementUnit()
+                                          .getUnit() );
 
         return joiner;
     }
@@ -98,19 +105,16 @@ public class SingleValuedPairsWriter extends PairsWriter<Double, Double>
      * Hidden constructor.
      *
      * @param pathToPairs the path to write
-     * @param timeResolution the time resolution at which to write datetime and duration information
      * @param decimalFormatter the optional formatter for writing decimal values
      * @param gzip boolean to determine if output should be gzip
      * @throws NullPointerException if any of the expected inputs is null
      */
 
     private SingleValuedPairsWriter( Path pathToPairs,
-                                     ChronoUnit timeResolution,
                                      DecimalFormat decimalFormatter,
                                      boolean gzip )
     {
         super( pathToPairs,
-               timeResolution,
                SingleValuedPairsWriter.getPairFormatter( decimalFormatter ),
                gzip );
     }

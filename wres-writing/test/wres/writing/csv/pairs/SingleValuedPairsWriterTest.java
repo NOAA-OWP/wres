@@ -12,7 +12,6 @@ import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -55,7 +54,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Tests the {@link SingleValuedPairsWriter}.
- * 
+ *
  * @author James Brown
  */
 public final class SingleValuedPairsWriterTest
@@ -112,9 +111,10 @@ public final class SingleValuedPairsWriterTest
                                           .setMeasurementUnit( "SCOOBIES" )
                                           .build();
 
-        GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "PLUM" ),
-                                                                                  wres.statistics.MessageFactory.getGeometry( "PLUM" ),
-                                                                                  null );
+        GeometryTuple geoTuple =
+                wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "PLUM" ),
+                                                                 wres.statistics.MessageFactory.getGeometry( "PLUM" ),
+                                                                 null );
         GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
         FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
@@ -155,9 +155,10 @@ public final class SingleValuedPairsWriterTest
                                              .setMeasurementUnit( "SCOOBIES" )
                                              .build();
 
-        GeometryTuple geoTupleTwo = wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "ORANGE" ),
-                                                                                     wres.statistics.MessageFactory.getGeometry( "ORANGE" ),
-                                                                                     null );
+        GeometryTuple geoTupleTwo =
+                wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "ORANGE" ),
+                                                                 wres.statistics.MessageFactory.getGeometry( "ORANGE" ),
+                                                                 null );
         GeometryGroup geoGroupTwo = wres.statistics.MessageFactory.getGeometryGroup( null, geoTupleTwo );
         FeatureGroup featureGroupTwo = FeatureGroup.of( geoGroupTwo );
 
@@ -198,9 +199,10 @@ public final class SingleValuedPairsWriterTest
                                                .setMeasurementUnit( "SCOOBIES" )
                                                .build();
 
-        GeometryTuple geoTupleThree = wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "BANANA" ),
-                                                                                       wres.statistics.MessageFactory.getGeometry( "BANANA" ),
-                                                                                       null );
+        GeometryTuple geoTupleThree =
+                wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "BANANA" ),
+                                                                 wres.statistics.MessageFactory.getGeometry( "BANANA" ),
+                                                                 null );
         GeometryGroup geoGroupThree = wres.statistics.MessageFactory.getGeometryGroup( null, geoTupleThree );
         FeatureGroup featureGroupThree = FeatureGroup.of( geoGroupThree );
 
@@ -243,15 +245,18 @@ public final class SingleValuedPairsWriterTest
             Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
-            try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
+            try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( csvPath ) )
             {
 
                 Builder<TimeSeries<Pair<Double, Double>>> tsBuilder = new Builder<>();
 
                 // Set the measurement units and time scale
-                GeometryTuple geoTuple = wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry( "PINEAPPLE" ),
-                                                                                          wres.statistics.MessageFactory.getGeometry( "PINEAPPLE" ),
-                                                                                          null );
+                GeometryTuple geoTuple =
+                        wres.statistics.MessageFactory.getGeometryTuple( wres.statistics.MessageFactory.getGeometry(
+                                                                                 "PINEAPPLE" ),
+                                                                         wres.statistics.MessageFactory.getGeometry(
+                                                                                 "PINEAPPLE" ),
+                                                                         null );
                 GeometryGroup geoGroup = wres.statistics.MessageFactory.getGeometryGroup( null, geoTuple );
                 FeatureGroup featureGroup = FeatureGroup.of( geoGroup );
 
@@ -301,7 +306,7 @@ public final class SingleValuedPairsWriterTest
             Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
-            try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
+            try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( csvPath ) )
             {
 
                 // Write the pairs
@@ -312,15 +317,17 @@ public final class SingleValuedPairsWriterTest
 
                 // Assert the expected results
                 assertEquals( 4, results.size() );
-                assertEquals( "FEATURE DESCRIPTION,"
+                assertEquals( "FEATURE NAME,"
                               + "FEATURE GROUP NAME,"
-                              + "VALID TIME OF PAIR,"
-                              + "LEAD DURATION OF PAIR IN SECONDS,"
-                              + "LEFT IN SCOOBIES,RIGHT IN SCOOBIES",
+                              + "VARIABLE NAME,"
+                              + "REFERENCE TIME,"
+                              + "VALID TIME,"
+                              + "LEAD DURATION,"
+                              + "OBSERVED IN SCOOBIES,PREDICTED IN SCOOBIES",
                               results.get( 0 ) );
-                assertEquals( "PLUM,,1985-01-01T01:00:00Z,3600,1.001,2.0", results.get( 1 ) );
-                assertEquals( "PLUM,,1985-01-01T02:00:00Z,7200,3.0,4.0", results.get( 2 ) );
-                assertEquals( "PLUM,,1985-01-01T03:00:00Z,10800,5.0,6.0", results.get( 3 ) );
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,1985-01-01T01:00:00Z,PT1H,1.001,2.0", results.get( 1 ) );
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,1985-01-01T02:00:00Z,PT2H,3.0,4.0", results.get( 2 ) );
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,1985-01-01T03:00:00Z,PT3H,5.0,6.0", results.get( 3 ) );
             }
         }
     }
@@ -341,7 +348,7 @@ public final class SingleValuedPairsWriterTest
             Path csvPath = fileSystem.getPath( "test", PairsWriter.DEFAULT_PAIRS_ZIP_NAME );
 
             // Create the writer
-            try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( csvPath, ChronoUnit.SECONDS, null, true ) )
+            try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( csvPath, null, true ) )
             {
                 // Write the pairs with gzip set to true
                 writer.accept( SingleValuedPairsWriterTest.pairs );
@@ -350,7 +357,7 @@ public final class SingleValuedPairsWriterTest
                 TikaConfig tikaConfig = new TikaConfig();
                 Detector detector = tikaConfig.getDetector();
 
-                try( InputStream inStream = Files.newInputStream( csvPath ) )
+                try ( InputStream inStream = Files.newInputStream( csvPath ) )
                 {
                     InputStream bufferedStream = new BufferedInputStream( inStream );
                     MediaType detectedMediaType = detector.detect( bufferedStream, metadata );
@@ -378,15 +385,16 @@ public final class SingleValuedPairsWriterTest
             Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
-            try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
+            try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( csvPath ) )
             {
 
                 // Create the pairs with a time window
                 Builder<TimeSeries<Pair<Double, Double>>> tsBuilder = new Builder<>();
                 tsBuilder.addPool( SingleValuedPairsWriterTest.pairs );
-                TimeWindow inner = wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
-                                                                                 Instant.parse( "1990-01-01T00:00:00Z" ),
-                                                                                 Duration.ZERO );
+                TimeWindow inner =
+                        wres.statistics.MessageFactory.getTimeWindow( Instant.parse( "1985-01-01T00:00:00Z" ),
+                                                                      Instant.parse( "1990-01-01T00:00:00Z" ),
+                                                                      Duration.ZERO );
                 TimeWindowOuter outer = TimeWindowOuter.of( inner );
                 tsBuilder.setMetadata( PoolMetadata.of( SingleValuedPairsWriterTest.pairs.getMetadata(),
                                                         outer ) );
@@ -400,40 +408,42 @@ public final class SingleValuedPairsWriterTest
 
                 // Assert the expected results
                 assertEquals( 4, results.size() );
-                assertEquals( "FEATURE DESCRIPTION,"
+                assertEquals( "FEATURE NAME,"
                               + "FEATURE GROUP NAME,"
+                              + "VARIABLE NAME,"
                               + "EARLIEST ISSUE TIME,"
                               + "LATEST ISSUE TIME,"
                               + "EARLIEST VALID TIME,"
                               + "LATEST VALID TIME,"
-                              + "EARLIEST LEAD TIME IN SECONDS,"
-                              + "LATEST LEAD TIME IN SECONDS,"
-                              + "VALID TIME OF PAIR,"
-                              + "LEAD DURATION OF PAIR IN SECONDS,"
-                              + "LEFT IN SCOOBIES,"
-                              + "RIGHT IN SCOOBIES",
+                              + "EARLIEST LEAD TIME,"
+                              + "LATEST LEAD TIME,"
+                              + "REFERENCE TIME,"
+                              + "VALID TIME,"
+                              + "LEAD DURATION,"
+                              + "OBSERVED IN SCOOBIES,"
+                              + "PREDICTED IN SCOOBIES",
                               results.get( 0 ) );
 
-                assertEquals( "PLUM,,1985-01-01T00:00:00Z,"
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,"
                               + "1990-01-01T00:00:00Z,"
                               + Instant.MIN
                               + ","
                               + Instant.MAX
-                              + ",0,0,1985-01-01T01:00:00Z,3600,1.001,2.0",
+                              + ",PT0S,PT0S,1985-01-01T00:00:00Z,1985-01-01T01:00:00Z,PT1H,1.001,2.0",
                               results.get( 1 ) );
-                assertEquals( "PLUM,,1985-01-01T00:00:00Z,"
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,"
                               + "1990-01-01T00:00:00Z,"
                               + Instant.MIN
                               + ","
                               + Instant.MAX
-                              + ",0,0,1985-01-01T02:00:00Z,7200,3.0,4.0",
+                              + ",PT0S,PT0S,1985-01-01T00:00:00Z,1985-01-01T02:00:00Z,PT2H,3.0,4.0",
                               results.get( 2 ) );
-                assertEquals( "PLUM,,1985-01-01T00:00:00Z,"
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,"
                               + "1990-01-01T00:00:00Z,"
                               + Instant.MIN
                               + ","
                               + Instant.MAX
-                              + ",0,0,1985-01-01T03:00:00Z,10800,5.0,6.0",
+                              + ",PT0S,PT0S,1985-01-01T00:00:00Z,1985-01-01T03:00:00Z,PT3H,5.0,6.0",
                               results.get( 3 ) );
             }
         }
@@ -456,7 +466,7 @@ public final class SingleValuedPairsWriterTest
             Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
-            try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
+            try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( csvPath ) )
             {
 
                 // Write the pairs
@@ -468,19 +478,23 @@ public final class SingleValuedPairsWriterTest
 
                 // Assert the expected results
                 assertEquals( 7, results.size() );
-                assertEquals( "FEATURE DESCRIPTION,"
+                assertEquals( "FEATURE NAME,"
                               + "FEATURE GROUP NAME,"
-                              + "VALID TIME OF PAIR,"
-                              + "LEAD DURATION OF PAIR IN SECONDS,"
-                              + "LEFT IN SCOOBIES,"
-                              + "RIGHT IN SCOOBIES",
+                              + "VARIABLE NAME,"
+                              + "REFERENCE TIME,"
+                              + "VALID TIME,"
+                              + "LEAD DURATION,"
+                              + "OBSERVED IN SCOOBIES,"
+                              + "PREDICTED IN SCOOBIES",
                               results.get( 0 ) );
-                assertEquals( "PLUM,,1985-01-01T01:00:00Z,3600,1.001,2.0", results.get( 1 ) );
-                assertEquals( "PLUM,,1985-01-01T02:00:00Z,7200,3.0,4.0", results.get( 2 ) );
-                assertEquals( "PLUM,,1985-01-01T03:00:00Z,10800,5.0,6.0", results.get( 3 ) );
-                assertEquals( "ORANGE,,1985-01-01T04:00:00Z,14400,7.0,8.0", results.get( 4 ) );
-                assertEquals( "ORANGE,,1985-01-01T05:00:00Z,18000,9.0,10.0", results.get( 5 ) );
-                assertEquals( "ORANGE,,1985-01-01T06:00:00Z,21600,11.0,12.0", results.get( 6 ) );
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,1985-01-01T01:00:00Z,PT1H,1.001,2.0", results.get( 1 ) );
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,1985-01-01T02:00:00Z,PT2H,3.0,4.0", results.get( 2 ) );
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,1985-01-01T03:00:00Z,PT3H,5.0,6.0", results.get( 3 ) );
+                assertEquals( "ORANGE,,ARMS,1985-01-01T00:00:00Z,1985-01-01T04:00:00Z,PT4H,7.0,8.0", results.get( 4 ) );
+                assertEquals( "ORANGE,,ARMS,1985-01-01T00:00:00Z,1985-01-01T05:00:00Z,PT5H,9.0,10.0",
+                              results.get( 5 ) );
+                assertEquals( "ORANGE,,ARMS,1985-01-01T00:00:00Z,1985-01-01T06:00:00Z,PT6H,11.0,12.0",
+                              results.get( 6 ) );
             }
         }
     }
@@ -508,7 +522,7 @@ public final class SingleValuedPairsWriterTest
 
             // Create the writer
             try ( SingleValuedPairsWriter writer =
-                    SingleValuedPairsWriter.of( csvPath, ChronoUnit.SECONDS, formatter ) )
+                          SingleValuedPairsWriter.of( csvPath, formatter ) )
             {
 
                 // Write the pairs async on the common FJP
@@ -525,22 +539,29 @@ public final class SingleValuedPairsWriterTest
 
                 // Assert the expected results
                 assertEquals( 10, results.size() );
-                assertEquals( "BANANA,,1985-01-01T07:00:00Z,25200,13.0,14.0", results.get( 0 ) );
-                assertEquals( "BANANA,,1985-01-01T08:00:00Z,28800,15.0,16.0", results.get( 1 ) );
-                assertEquals( "BANANA,,1985-01-01T09:00:00Z,32400,17.0,18.0", results.get( 2 ) );
-                assertEquals( "FEATURE DESCRIPTION,"
+                assertEquals( "BANANA,,ARMS,1985-01-01T00:00:00Z,1985-01-01T07:00:00Z,PT7H,13.0,14.0",
+                              results.get( 0 ) );
+                assertEquals( "BANANA,,ARMS,1985-01-01T00:00:00Z,1985-01-01T08:00:00Z,PT8H,15.0,16.0",
+                              results.get( 1 ) );
+                assertEquals( "BANANA,,ARMS,1985-01-01T00:00:00Z,1985-01-01T09:00:00Z,PT9H,17.0,18.0",
+                              results.get( 2 ) );
+                assertEquals( "FEATURE NAME,"
                               + "FEATURE GROUP NAME,"
-                              + "VALID TIME OF PAIR,"
-                              + "LEAD DURATION OF PAIR IN SECONDS,"
-                              + "LEFT IN SCOOBIES,"
-                              + "RIGHT IN SCOOBIES",
+                              + "VARIABLE NAME,"
+                              + "REFERENCE TIME,"
+                              + "VALID TIME,"
+                              + "LEAD DURATION,"
+                              + "OBSERVED IN SCOOBIES,"
+                              + "PREDICTED IN SCOOBIES",
                               results.get( 3 ) );
-                assertEquals( "ORANGE,,1985-01-01T04:00:00Z,14400,7.0,8.0", results.get( 4 ) );
-                assertEquals( "ORANGE,,1985-01-01T05:00:00Z,18000,9.0,10.0", results.get( 5 ) );
-                assertEquals( "ORANGE,,1985-01-01T06:00:00Z,21600,11.0,12.0", results.get( 6 ) );
-                assertEquals( "PLUM,,1985-01-01T01:00:00Z,3600,1.0,2.0", results.get( 7 ) );
-                assertEquals( "PLUM,,1985-01-01T02:00:00Z,7200,3.0,4.0", results.get( 8 ) );
-                assertEquals( "PLUM,,1985-01-01T03:00:00Z,10800,5.0,6.0", results.get( 9 ) );
+                assertEquals( "ORANGE,,ARMS,1985-01-01T00:00:00Z,1985-01-01T04:00:00Z,PT4H,7.0,8.0", results.get( 4 ) );
+                assertEquals( "ORANGE,,ARMS,1985-01-01T00:00:00Z,1985-01-01T05:00:00Z,PT5H,9.0,10.0",
+                              results.get( 5 ) );
+                assertEquals( "ORANGE,,ARMS,1985-01-01T00:00:00Z,1985-01-01T06:00:00Z,PT6H,11.0,12.0",
+                              results.get( 6 ) );
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,1985-01-01T01:00:00Z,PT1H,1.0,2.0", results.get( 7 ) );
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,1985-01-01T02:00:00Z,PT2H,3.0,4.0", results.get( 8 ) );
+                assertEquals( "PLUM,,ARMS,1985-01-01T00:00:00Z,1985-01-01T03:00:00Z,PT3H,5.0,6.0", results.get( 9 ) );
             }
         }
     }
@@ -562,7 +583,7 @@ public final class SingleValuedPairsWriterTest
             Path csvPath = fileSystem.getPath( "test", DEFAULT_PAIRS_NAME );
 
             // Create the writer
-            try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( csvPath, ChronoUnit.SECONDS ) )
+            try ( SingleValuedPairsWriter writer = SingleValuedPairsWriter.of( csvPath ) )
             {
 
                 // Write the pairs
