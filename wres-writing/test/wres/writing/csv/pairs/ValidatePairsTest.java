@@ -17,21 +17,21 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 /**
- * Reads actual pairs and compares them to expected pairs.
- * 
- * Do NOT run in production.
+ * <p>Reads actual pairs and compares them to expected pairs.
+ *
+ * <p>Do NOT run in production.
  */
 
 @Ignore
-public final class CheckActualPairsAgainstExpectedPairs
+public final class ValidatePairsTest
 {
 
     /**
-     * Do NOT run in production.
-     * 
-     * Compares actual pairs against expected pairs in an unconditional way.
+     * <p>Do NOT run in production.
      *
-     * This can be used to test actual against expected outputs under all circumstances.
+     * <p>Compares actual pairs against expected pairs in an unconditional way.
+     *
+     * <p>This can be used to test actual against expected outputs under all circumstances.
      *
      * @throws IOException if the writing or removal of the paired file fails
      */
@@ -60,7 +60,7 @@ public final class CheckActualPairsAgainstExpectedPairs
         List<String> expectedRows = Files.readAllLines( expectedPairs );
 
         // Some data read for both
-        assertTrue( actualRows.size() > 0 && expectedRows.size() > 0 );
+        assertTrue( !actualRows.isEmpty() && !expectedRows.isEmpty() );
 
         // Same number of rows
         assertEquals( actualRows.size(), expectedRows.size() );
@@ -79,9 +79,9 @@ public final class CheckActualPairsAgainstExpectedPairs
     }
 
     /**
-     * Do NOT run in production.
-     * 
-     * Compares actual pairs against expected pairs in a conditional way. Specifically,
+     * <p>Do NOT run in production.
+     *
+     * <p>Compares actual pairs against expected pairs in a conditional way. Specifically,
      * this is intended to confirm the pairs locally produced by the fix to #55231
      * against the existing benchmarks prior to #55231. 
      *
@@ -112,7 +112,7 @@ public final class CheckActualPairsAgainstExpectedPairs
         List<String> expectedRows = Files.readAllLines( expectedPairs );
 
         // Some data read for both
-        assertTrue( actualRows.size() > 0 && expectedRows.size() > 0 );
+        assertTrue( !actualRows.isEmpty() && !expectedRows.isEmpty() );
 
         // Same number of rows
         assertEquals( actualRows.size(), expectedRows.size() );

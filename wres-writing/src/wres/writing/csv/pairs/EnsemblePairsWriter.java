@@ -2,7 +2,6 @@ package wres.writing.csv.pairs;
 
 import java.nio.file.Path;
 import java.text.DecimalFormat;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
@@ -44,36 +43,33 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
      * Build an instance of a writer.
      *
      * @param pathToPairs the path to write, required
-     * @param timeResolution the time resolution at which to write datetime and duration information, required
      * @return the writer
      * @throws NullPointerException if either input is null
      */
 
-    public static EnsemblePairsWriter of( Path pathToPairs, ChronoUnit timeResolution )
+    public static EnsemblePairsWriter of( Path pathToPairs )
     {
-        return new EnsemblePairsWriter( pathToPairs, timeResolution, null, false );
+        return new EnsemblePairsWriter( pathToPairs, null, false );
     }
 
     /**
      * Build an instance of a writer.
      *
      * @param pathToPairs the path to write, required
-     * @param timeResolution the time resolution at which to write datetime and duration information, required
      * @param decimalFormatter the optional formatter for writing decimal values, optional
      * @return the writer
      * @throws NullPointerException if any of the required inputs is null
      */
 
-    public static EnsemblePairsWriter of( Path pathToPairs, ChronoUnit timeResolution, DecimalFormat decimalFormatter )
+    public static EnsemblePairsWriter of( Path pathToPairs, DecimalFormat decimalFormatter )
     {
-        return new EnsemblePairsWriter( pathToPairs, timeResolution, decimalFormatter, false );
+        return new EnsemblePairsWriter( pathToPairs, decimalFormatter, false );
     }
 
     /**
      * Build an instance of a writer.
      *
      * @param pathToPairs the path to write, required
-     * @param timeResolution the time resolution at which to write datetime and duration information, required
      * @param decimalFormatter the optional formatter for writing decimal values, optional
      * @param gzip boolean to determine if output should be gzip
      * @return the writer
@@ -81,11 +77,10 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
      */
 
     public static EnsemblePairsWriter of( Path pathToPairs,
-                                          ChronoUnit timeResolution,
                                           DecimalFormat decimalFormatter,
                                           boolean gzip )
     {
-        return new EnsemblePairsWriter( pathToPairs, timeResolution, decimalFormatter, gzip );
+        return new EnsemblePairsWriter( pathToPairs, decimalFormatter, gzip );
     }
 
     /**
@@ -106,7 +101,7 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
     @Override
     StringJoiner getHeaderFromPairs( Pool<TimeSeries<Pair<Double, Ensemble>>> pairs )
     {
-        if( ! this.primed.get() )
+        if ( !this.primed.get() )
         {
             throw new WriteException( "The ensemble pair writer has not been primed for writing." );
         }
@@ -117,19 +112,29 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
                            .getMeasurementUnit()
                            .getUnit();
 
-        joiner.add( "LEFT IN " + unit );
+        joiner.add( "OBSERVED IN " + unit );
+
+        // Feature names
+        String right = "PREDICTED";
+
+        if ( pairs.getMetadata()
+                  .getPool()
+                  .getIsBaselinePool() )
+        {
+            right = "BASELINE";
+        }
 
         int pairCount = PoolSlicer.getEventCount( pairs );
         if ( pairCount > 0 )
         {
             for ( String nextName : this.getRightValueNames() )
             {
-                joiner.add( "RIGHT MEMBER " + nextName + " IN " + unit );
+                joiner.add( right + " MEMBER " + nextName + " IN " + unit );
             }
         }
         else
         {
-            joiner.add( "RIGHT IN " + unit );
+            joiner.add( right + " IN " + unit );
         }
 
         return joiner;
@@ -145,19 +150,16 @@ public class EnsemblePairsWriter extends PairsWriter<Double, Ensemble>
      * Hidden constructor.
      *
      * @param pathToPairs the path to write
-     * @param timeResolution the time resolution at which to write datetime and duration information
      * @param decimalFormatter the optional formatter for writing decimal values
      * @param gzip boolean to determine if output should be gzip
      * @throws NullPointerException if any of the expected inputs is null
      */
 
     private EnsemblePairsWriter( Path pathToPairs,
-                                 ChronoUnit timeResolution,
                                  DecimalFormat decimalFormatter,
                                  boolean gzip )
     {
         super( pathToPairs,
-               timeResolution,
                EnsemblePairsWriter.getPairFormatter( decimalFormatter ),
                gzip );
     }

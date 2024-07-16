@@ -371,9 +371,6 @@ class EvaluationUtilities
     static SharedWriters getSharedWriters( EvaluationDeclaration declaration,
                                            Path outputDirectory )
     {
-        // Obtain the duration units for outputs: #55441
-        ChronoUnit durationUnits = declaration.durationFormat();
-
         SharedSampleDataWriters sharedSampleWriters = null;
         SharedSampleDataWriters sharedBaselineSampleWriters = null;
 
@@ -386,14 +383,12 @@ class EvaluationUtilities
             sharedSampleWriters =
                     SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(),
                                                            PairsWriter.DEFAULT_PAIRS_ZIP_NAME ),
-                                                durationUnits,
                                                 decimalFormatter );
             // Baseline writer?
             if ( DeclarationUtilities.hasBaseline( declaration ) )
             {
                 sharedBaselineSampleWriters = SharedSampleDataWriters.of( Paths.get( outputDirectory.toString(),
                                                                                      PairsWriter.DEFAULT_BASELINE_PAIRS_ZIP_NAME ),
-                                                                          durationUnits,
                                                                           decimalFormatter );
             }
         }
