@@ -128,56 +128,97 @@ class BootstrapPool<T>
         {
             if ( next.size() > 1 )
             {
-                // Offsets between consecutive series
-                for ( int i = 1; i < next.size(); i++ )
-                {
-                    Instant first;
-                    List<Event<T>> firstSeries = next.get( i - 1 );
+                Set<Duration> nextOffsets = this.getOffsetsBetweenConsecutiveSeries( next );
+                offsets.addAll( nextOffsets );
+            }
+        }
 
-                    if ( this.hasForecasts() )
-                    {
-                        first = firstSeries.get( 0 )
-                                           .getTime();
-                    }
-                    else
-                    {
-                        first = firstSeries.get( firstSeries.size() - 1 )
-                                           .getTime();
-                    }
+        return Collections.unmodifiableSet( offsets );
+    }
 
-                    Instant last = next.get( i )
-                                       .get( 0 )
-                                       .getTime();
-                    Duration offset = Duration.between( first, last )
-                                              .abs();
-                    offsets.add( offset );
-                }
+    /**
+     * Adds the time offset between adjacent time-series in the inputs.
+     * @param series the series
+     */
+    private Set<Duration> getOffsetsBetweenConsecutiveSeries( List<List<Event<T>>> series )
+    {
+        Set<Duration> offsets = new HashSet<>();
 
-                // Offset between the first and last series, which is required because the resampling is circular
-                Instant first = next.get( 0 )
-                                    .get( 0 )
-                                    .getTime();
-                List<Event<T>> lastSeries = next.get( next.size() - 1 );
-                Instant last;
+        // Offsets between consecutive series
+        for ( int i = 1; i < series.size(); i++ )
+        {
+            Instant first;
+            List<Event<T>> firstSeries = series.get( i - 1 );
 
+            if ( !firstSeries.isEmpty() )
+            {
                 if ( this.hasForecasts() )
                 {
-                    last = lastSeries.get( 0 )
-                                     .getTime();
+                    first = firstSeries.get( 0 )
+                                       .getTime();
                 }
                 else
                 {
-                    last = lastSeries.get( lastSeries.size() - 1 )
-                                     .getTime();
+                    first = firstSeries.get( firstSeries.size() - 1 )
+                                       .getTime();
                 }
 
+                Instant last = series.get( i )
+                                     .get( 0 )
+                                     .getTime();
                 Duration offset = Duration.between( first, last )
                                           .abs();
                 offsets.add( offset );
             }
         }
 
+        // Offset between the first and last series, which is required because the resampling is circular
+        Duration offset = this.getOffsetBetweenFirstAndLastSeries( series );
+        if ( Objects.nonNull( offset ) )
+        {
+            offsets.add( offset );
+        }
+
         return Collections.unmodifiableSet( offsets );
+    }
+
+    /**
+     * Gets the time offset between the first and last series.
+     * @param series the series
+     */
+    private Duration getOffsetBetweenFirstAndLastSeries( List<List<Event<T>>> series )
+    {
+        // Offset between the first and last series, which is required because the resampling is circular
+        List<Event<T>> firstSeries = series.get( 0 );
+        List<Event<T>> lastSeries = series.get( series.size() - 1 );
+
+        Duration offset = null;
+
+        if ( !firstSeries.isEmpty()
+             && !lastSeries.isEmpty() )
+        {
+            Instant first = firstSeries
+                    .get( 0 )
+                    .getTime();
+
+            Instant last;
+
+            if ( this.hasForecasts() )
+            {
+                last = lastSeries.get( 0 )
+                                 .getTime();
+            }
+            else
+            {
+                last = lastSeries.get( lastSeries.size() - 1 )
+                                 .getTime();
+            }
+
+            offset = Duration.between( first, last )
+                             .abs();
+        }
+
+        return offset;
     }
 
     /**
@@ -218,8 +259,12 @@ class BootstrapPool<T>
         List<List<TimeSeries<T>>> groupedBySize = new ArrayList<>();
         for ( Map.Entry<Integer, List<TimeSeries<T>>> nextEntry : bySize.entrySet() )
         {
+            int count = nextEntry.getKey();
             List<TimeSeries<T>> nextList = nextEntry.getValue();
-            nextList.sort( sorter );
+            if ( count > 0 )
+            {
+                nextList.sort( sorter );
+            }
             groupedBySize.add( nextList );
         }
 
@@ -237,7 +282,10 @@ class BootstrapPool<T>
                 List<TimeSeries<T>> nextInner = nextInnerEntry.getValue();
 
                 // Sort by the first valid time in each series
-                nextInner.sort( sorter );
+                if ( nextCount > 0 )
+                {
+                    nextInner.sort( sorter );
+                }
 
                 List<List<Event<T>>> unwrapped = nextInner.stream()
                                                           .map( n -> List.copyOf( n.getEvents() ) )
