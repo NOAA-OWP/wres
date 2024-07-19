@@ -4028,7 +4028,7 @@ public class DeclarationValidator
                                                                  + "datasets all contain instantaneous values, this "
                                                                  + "declaration is redundant and should be removed. "
                                                                  + "Otherwise, the declaration is invalid because "
-                                                                 + "the smallest possible time scale is "
+                                                                 + "the smallest possible 'time_scale' is "
                                                                  + "instantaneous and downscaling is not supported." )
                                                .build();
                 events.add( event );
