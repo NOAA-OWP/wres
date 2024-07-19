@@ -4,7 +4,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
-import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
@@ -39,17 +38,15 @@ public class SharedSampleDataWriters implements Supplier<Set<Path>>, Closeable
      * Return an instance.
      *
      * @param outputPath the required output path
-     * @param timeResolution the required time resolution for writing pairs
      * @param decimalFormatter the optional decimal formatter
      * @return the container of shared writers
      * @throws NullPointerException if the outputPath or timeResolution is null
      */
 
     public static SharedSampleDataWriters of( Path outputPath,
-                                              ChronoUnit timeResolution,
                                               DecimalFormat decimalFormatter )
     {
-        return new SharedSampleDataWriters( outputPath, timeResolution, decimalFormatter );
+        return new SharedSampleDataWriters( outputPath, decimalFormatter );
     }
 
     @Override
@@ -118,20 +115,17 @@ public class SharedSampleDataWriters implements Supplier<Set<Path>>, Closeable
      * Hidden constructor.
      *
      * @param outputPath the required output path
-     * @param timeResolution the required time resolution for writing pairs
      * @param decimalFormatter the optional decimal formatter
      * @throws NullPointerException if the outputPath or timeResolution is null
      */
     private SharedSampleDataWriters( Path outputPath,
-                                     ChronoUnit timeResolution,
                                      DecimalFormat decimalFormatter )
     {
         this.singleValuedWriter = SingleValuedPairsWriter.of( outputPath,
-                                                              timeResolution,
                                                               decimalFormatter,
                                                               true );
 
-        this.ensembleWriter = EnsemblePairsWriter.of( outputPath, timeResolution, decimalFormatter, true );
+        this.ensembleWriter = EnsemblePairsWriter.of( outputPath, decimalFormatter, true );
     }
 
 }

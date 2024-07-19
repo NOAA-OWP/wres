@@ -10,7 +10,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -29,7 +28,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import wres.datamodel.DataUtilities;
 import wres.datamodel.pools.Pool;
 import wres.datamodel.pools.PoolSlicer;
 import wres.datamodel.scale.TimeScaleOuter;
@@ -85,6 +83,7 @@ public abstract class PairsWriter<L, R>
 
     /** Logger. */
     static final Logger LOGGER = LoggerFactory.getLogger( PairsWriter.class );
+    private static final String FEATURE = "FEATURE";
 
     /** Lock for writing pairs to the {@link #pathToPairs} for which this writer is built. */
     private final ReentrantLock writeLock;
@@ -94,9 +93,6 @@ public abstract class PairsWriter<L, R>
 
     /** Boolean determining if output is gzip */
     private final boolean gzip;
-
-    /** The time resolution. */
-    private final ChronoUnit timeResolution;
 
     /** Formatter that maps from a paired value to a {@link String} using the prescribed column names supplied in an
      * array. */
@@ -136,44 +132,43 @@ public abstract class PairsWriter<L, R>
 
         StringJoiner joiner = new StringJoiner( "," );
 
-        joiner.add( "FEATURE"
+        joiner.add( FEATURE
                     + CommaSeparatedUtilities.HEADER_DELIMITER
-                    + "DESCRIPTION" )
-              .add( "FEATURE"
+                    + "NAME" )
+              .add( FEATURE
                     + CommaSeparatedUtilities.HEADER_DELIMITER
                     + "GROUP"
                     + CommaSeparatedUtilities.HEADER_DELIMITER
                     + "NAME" );
 
+        // Variable name
+        joiner.add( "VARIABLE"
+                    + CommaSeparatedUtilities.HEADER_DELIMITER
+                    + "NAME" );
+
         // Time window?
-        if ( pairs.getMetadata().hasTimeWindow() )
+        if ( pairs.getMetadata()
+                  .hasTimeWindow() )
         {
-            joiner.merge( CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( pairs.getMetadata(),
-                                                                                         this.getTimeResolution() ) );
+            StringJoiner timeWindow =
+                    CommaSeparatedUtilities.getTimeWindowHeaderFromSampleMetadata( pairs.getMetadata() );
+            joiner.merge( timeWindow );
         }
 
-        // Valid time of pair
+        // Reference time
+        joiner.add( "REFERENCE"
+                    + CommaSeparatedUtilities.HEADER_DELIMITER
+                    + "TIME" );
+
+        // Valid time
         joiner.add( "VALID"
                     + CommaSeparatedUtilities.HEADER_DELIMITER
-                    + "TIME"
-                    + CommaSeparatedUtilities.HEADER_DELIMITER
-                    + "OF"
-                    + CommaSeparatedUtilities.HEADER_DELIMITER
-                    + "PAIR" );
+                    + "TIME" );
 
         // Lead duration
-        String leadDurationString = "LEAD" + CommaSeparatedUtilities.HEADER_DELIMITER
-                                    + "DURATION"
+        String leadDurationString = "LEAD"
                                     + CommaSeparatedUtilities.HEADER_DELIMITER
-                                    + "OF"
-                                    + CommaSeparatedUtilities.HEADER_DELIMITER
-                                    + "PAIR"
-                                    + CommaSeparatedUtilities.HEADER_DELIMITER
-                                    + "IN"
-                                    + CommaSeparatedUtilities.HEADER_DELIMITER
-                                    + this.getTimeResolution()
-                                          .toString()
-                                          .toUpperCase();
+                                    + "DURATION";
 
         // Timescale for lead duration?
         if ( pairs.getMetadata()
@@ -182,9 +177,9 @@ public abstract class PairsWriter<L, R>
             TimeScaleOuter timeScaleOuter = pairs.getMetadata()
                                                  .getTimeScale();
             leadDurationString =
-                    leadDurationString + CommaSeparatedUtilities.HEADER_DELIMITER
-                    + CommaSeparatedUtilities.getTimeScaleForHeader( timeScaleOuter,
-                                                                     this.getTimeResolution() );
+                    leadDurationString
+                    + CommaSeparatedUtilities.HEADER_DELIMITER
+                    + CommaSeparatedUtilities.getTimeScaleForHeader( timeScaleOuter );
         }
 
         joiner.add( leadDurationString );
@@ -253,7 +248,8 @@ public abstract class PairsWriter<L, R>
                 String featureGroupName = this.getFeatureNameFrom( geoGroup.getRegionName() );
 
                 // Time window to write, which is fixed across all pairs
-                TimeWindowOuter timeWindow = pairs.getMetadata().getTimeWindow();
+                TimeWindowOuter timeWindow = pairs.getMetadata()
+                                                  .getTimeWindow();
 
                 LOGGER.debug( "Writing pairs for feature group {} at time window {} to {}",
                               pairs.getMetadata().getFeatureGroup(),
@@ -278,10 +274,12 @@ public abstract class PairsWriter<L, R>
                                                                                 .getFeature()
                                                                                 .getName() );
 
+                        String variableName = nextSeries.getMetadata()
+                                                        .getVariableName();
+
                         // Iterate the events
                         for ( Event<Pair<L, R>> nextPair : nextSeries.getEvents() )
                         {
-
                             // Move to next line
                             sharedWriter.write( System.lineSeparator() );
 
@@ -294,33 +292,38 @@ public abstract class PairsWriter<L, R>
                             // Feature group description
                             joiner.add( featureGroupName );
 
+                            // Variable name
+                            joiner.add( variableName );
+
                             // Time window if available
                             if ( Objects.nonNull( timeWindow ) )
                             {
-                                joiner.add( timeWindow.getEarliestReferenceTime().toString() );
-                                joiner.add( timeWindow.getLatestReferenceTime().toString() );
-                                joiner.add( timeWindow.getEarliestValidTime().toString() );
-                                joiner.add( timeWindow.getLatestValidTime().toString() );
-                                joiner.add( DataUtilities.durationToNumericUnits( timeWindow.getEarliestLeadDuration(),
-                                                                                  this.getTimeResolution() )
-                                                         .toString() );
-                                joiner.add( DataUtilities.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
-                                                                                  this.getTimeResolution() )
-                                                         .toString() );
+                                joiner.add( timeWindow.getEarliestReferenceTime()
+                                                      .toString() );
+                                joiner.add( timeWindow.getLatestReferenceTime()
+                                                      .toString() );
+                                joiner.add( timeWindow.getEarliestValidTime()
+                                                      .toString() );
+                                joiner.add( timeWindow.getLatestValidTime()
+                                                      .toString() );
+                                joiner.add( timeWindow.getEarliestLeadDuration()
+                                                      .toString() );
+                                joiner.add( timeWindow.getLatestLeadDuration()
+                                                      .toString() );
                             }
-
-                            // ISO8601 datetime string
-                            joiner.add( nextPair.getTime()
-                                                .toString() );
 
                             // Choose one. TODO: include reference times, rather than lead durations, and
                             // then print all reference times
                             Instant referenceTime = this.getFirstReferenceTime( nextSeries );
-                            // Lead duration in standard units
+                            this.addReferenceTime( joiner, referenceTime );
+
+                            // ISO8601 valid datetime string
+                            joiner.add( nextPair.getTime()
+                                                .toString() );
+
+                            // ISO8601 lead duration
                             Duration leadDuration = this.getLeadDuration( referenceTime, nextPair.getTime() );
-                            joiner.add( DataUtilities.durationToNumericUnits( leadDuration,
-                                                                              this.getTimeResolution() )
-                                                     .toString() );
+                            joiner.add( leadDuration.toString() );
 
                             // Write the values
                             joiner.add( this.getPairFormatter()
@@ -363,17 +366,6 @@ public abstract class PairsWriter<L, R>
         {
             throw new WriteException( "Unable to write pairs.", e );
         }
-    }
-
-    /**
-     * Returns the time resolution at which pairs should be written.
-     *
-     * @return the time resolution
-     */
-
-    ChronoUnit getTimeResolution()
-    {
-        return this.timeResolution;
     }
 
     /**
@@ -423,10 +415,29 @@ public abstract class PairsWriter<L, R>
         Instant referenceTime = null;
         if ( !referenceTimes.isEmpty() )
         {
-            referenceTime = referenceTimes.values().iterator().next();
+            referenceTime = referenceTimes.values()
+                                          .iterator()
+                                          .next();
         }
 
         return referenceTime;
+    }
+
+    /**
+     * Adds the reference time, if available.
+     * @param joiner the joiner
+     * @param referenceTime the reference time, possibly null
+     */
+    private void addReferenceTime( StringJoiner joiner, Instant referenceTime )
+    {
+        if ( Objects.nonNull( referenceTime ) )
+        {
+            joiner.add( referenceTime.toString() );
+        }
+        else
+        {
+            joiner.add( "" );
+        }
     }
 
     /**
@@ -503,10 +514,12 @@ public abstract class PairsWriter<L, R>
         if ( this.isHeaderRequired().get() )
         {
             // Acquire the header
-            final String header = this.getHeaderFromPairs( pairs ).toString();
+            final String header = this.getHeaderFromPairs( pairs )
+                                      .toString();
 
             // Lock for writing
-            this.getWriteLock().lock();
+            this.getWriteLock()
+                .lock();
 
             LOGGER.trace( "Acquired pair writing lock on {}", this.getPath() );
 
@@ -516,7 +529,8 @@ public abstract class PairsWriter<L, R>
             try
             {
                 // Check again in case header written between first check and lock acquired
-                if ( this.isHeaderRequired().get() )
+                if ( this.isHeaderRequired()
+                         .get() )
                 {
                     sharedWriter.write( header );
 
@@ -584,25 +598,20 @@ public abstract class PairsWriter<L, R>
      * Hidden constructor.
      *
      * @param pathToPairs the required path to write
-     * @param timeResolution the required time resolution at which to write datetime and duration information
      * @param formatter the required formatter for writing pairs
      * @param gzip boolean to determine if output should be gzip
      * @throws NullPointerException if any of the expected inputs is null
      */
 
     PairsWriter( Path pathToPairs,
-                 ChronoUnit timeResolution,
                  BiFunction<SortedSet<String>, Pair<L, R>, String> formatter,
                  boolean gzip )
     {
         Objects.requireNonNull( pathToPairs, "Specify a non-null path to write." );
 
-        Objects.requireNonNull( timeResolution, "Specify a non-null time resolution for writing pairs." );
-
         Objects.requireNonNull( formatter, "Specify a non-null time resolution for writing pairs." );
 
         this.pathToPairs = pathToPairs;
-        this.timeResolution = timeResolution;
         this.pairFormatter = formatter;
         this.gzip = gzip;
 

@@ -290,14 +290,13 @@ class ProjectUtilities
                                                                 Set<String> baseline,
                                                                 Set<String> covariates )
     {
-        String declaredLeftVariableName = DeclarationUtilities.getVariableName( declaration.left() );
-        String declaredRightVariableName = DeclarationUtilities.getVariableName( declaration.right() );
-        String declaredBaselineVariableName = null;
-
+        Set<String> declaredLeft = ProjectUtilities.getVariableNames( declaration.left() );
+        Set<String> declaredRight = ProjectUtilities.getVariableNames( declaration.right() );
+        Set<String> declaredBaseline = Collections.emptySet();
         if ( DeclarationUtilities.hasBaseline( declaration ) )
         {
-            declaredBaselineVariableName = DeclarationUtilities.getVariableName( declaration.baseline()
-                                                                                            .dataset() );
+            declaredBaseline = ProjectUtilities.getVariableNames( declaration.baseline()
+                                                                             .dataset() );
         }
 
         // Where a name has been declared and the ingested names are available, the declared name must be among them
@@ -307,30 +306,33 @@ class ProjectUtilities
         StringBuilder covariateError = new StringBuilder();
 
         String start = "    - ";
-        if ( Objects.nonNull( declaredLeftVariableName )
+        if ( !declaredLeft.isEmpty()
              && !left.isEmpty()
-             && !left.contains( declaredLeftVariableName ) )
+             && left.stream()
+                    .noneMatch( declaredLeft::contains ) )
         {
             leftError += System.lineSeparator() + start;
-            leftError += ProjectUtilities.getVariableErrorMessage( declaredLeftVariableName,
+            leftError += ProjectUtilities.getVariableErrorMessage( declaredLeft,
                                                                    left,
                                                                    DatasetOrientation.LEFT );
         }
-        if ( Objects.nonNull( declaredRightVariableName )
+        if ( !declaredRight.isEmpty()
              && !right.isEmpty()
-             && !right.contains( declaredRightVariableName ) )
+             && right.stream()
+                     .noneMatch( declaredRight::contains ) )
         {
             rightError += System.lineSeparator() + start;
-            rightError += ProjectUtilities.getVariableErrorMessage( declaredRightVariableName,
+            rightError += ProjectUtilities.getVariableErrorMessage( declaredRight,
                                                                     right,
                                                                     DatasetOrientation.RIGHT );
         }
-        if ( Objects.nonNull( declaredBaselineVariableName )
+        if ( !declaredBaseline.isEmpty()
              && !baseline.isEmpty()
-             && !baseline.contains( declaredBaselineVariableName ) )
+             && baseline.stream()
+                        .noneMatch( declaredBaseline::contains ) )
         {
             baselineError += System.lineSeparator() + start;
-            baselineError += ProjectUtilities.getVariableErrorMessage( declaredRightVariableName,
+            baselineError += ProjectUtilities.getVariableErrorMessage( declaredBaseline,
                                                                        baseline,
                                                                        DatasetOrientation.BASELINE );
         }
@@ -338,20 +340,14 @@ class ProjectUtilities
         // Iterate through the covariates
         for ( CovariateDataset covariate : declaration.covariates() )
         {
-            if ( Objects.nonNull( covariate.dataset()
-                                           .variable() )
-                 && Objects.nonNull( covariate.dataset()
-                                              .variable()
-                                              .name() )
-                 && !covariates.contains( covariate.dataset()
-                                                   .variable()
-                                                   .name() ) )
+            Set<String> declaredNames = ProjectUtilities.getVariableNames( covariate.dataset() );
+            if ( !declaredNames.isEmpty()
+                 && covariates.stream()
+                              .noneMatch( declaredNames::contains ) )
             {
                 covariateError.append( System.lineSeparator() )
                               .append( start );
-                covariateError.append( ProjectUtilities.getVariableErrorMessage( covariate.dataset()
-                                                                                          .variable()
-                                                                                          .name(),
+                covariateError.append( ProjectUtilities.getVariableErrorMessage( declaredNames,
                                                                                  covariates,
                                                                                  DatasetOrientation.COVARIATE ) );
             }
@@ -373,13 +369,43 @@ class ProjectUtilities
     }
 
     /**
-     * Generates an error message when a declared variable is not among the ingested options.
-     * @param variableName the variable name
+     * Looks for a variable name.
+     * @param dataset the dataset
+     * @return the declared variable name or null if no variable was declared
+     * @throws NullPointerException if the dataset is null
+     */
+
+    private static Set<String> getVariableNames( Dataset dataset )
+    {
+        Objects.requireNonNull( dataset );
+
+        Set<String> names = new TreeSet<>();
+
+        if ( Objects.nonNull( dataset.variable() ) )
+        {
+            if ( Objects.nonNull( dataset.variable()
+                                         .name() ) )
+            {
+                String variableName = dataset.variable()
+                                             .name();
+                names.add( variableName );
+            }
+
+            names.addAll( dataset.variable()
+                                 .aliases() );
+        }
+
+        return Collections.unmodifiableSet( names );
+    }
+
+    /**
+     * Generates an error message when a declared variable or one of its aliases are not among the ingested options.
+     * @param variableNames the declared variable names
      * @param nameOptions the name options
      * @param orientation the dataset orientation
      * @return the error message
      */
-    private static String getVariableErrorMessage( String variableName,
+    private static String getVariableErrorMessage( Set<String> variableNames,
                                                    Set<String> nameOptions,
                                                    DatasetOrientation orientation )
     {
@@ -389,16 +415,17 @@ class ProjectUtilities
             article = "a";
         }
 
-        return "The declared 'name' of the 'variable' for "
+        return "The declared 'name' and 'aliases' of the 'variable' for "
                + article
                + " '"
                + orientation
-               + "' dataset was '"
-               + variableName
-               + "', but this could not be found among the variable names of the ingested data sources, which "
-               + "were: "
+               + "' dataset included: "
+               + variableNames
+               + ". However, none of these names were found among the variable names of the ingested data sources, "
+               + "whose names included: "
                + nameOptions
-               + ".";
+               + ". Please declare the 'name' or 'aliases' of a 'variable' that selects data for at least one of the "
+               + "geographic features contained in this evaluation and try again.";
     }
 
     /**

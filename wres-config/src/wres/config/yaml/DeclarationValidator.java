@@ -4023,11 +4023,13 @@ public class DeclarationValidator
             {
                 EvaluationStatusEvent event
                         = EvaluationStatusEvent.newBuilder()
-                                               .setStatusLevel( StatusLevel.ERROR )
-                                               .setEventMessage( "The evaluation 'time_scale' is prescriptive and "
-                                                                 + "cannot be instantaneous. Please remove the "
-                                                                 + "evaluation 'time_scale' or increase it and try "
-                                                                 + AGAIN )
+                                               .setStatusLevel( StatusLevel.WARN )
+                                               .setEventMessage( "The evaluation 'time_scale' is instantaneous. If the "
+                                                                 + "datasets all contain instantaneous values, this "
+                                                                 + "declaration is redundant and should be removed. "
+                                                                 + "Otherwise, the declaration is invalid because "
+                                                                 + "the smallest possible 'time_scale' is "
+                                                                 + "instantaneous and downscaling is not supported." )
                                                .build();
                 events.add( event );
             }

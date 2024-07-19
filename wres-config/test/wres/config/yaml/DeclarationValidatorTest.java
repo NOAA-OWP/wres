@@ -701,7 +701,7 @@ class DeclarationValidatorTest
     }
 
     @Test
-    void testEvaluationTimeScaleIsConsistentWithDatasetTimeScalesResultsInErrors()
+    void testEvaluationTimeScaleIsConsistentWithDatasetTimeScalesResultsInWarningsAndErrors()
     {
         TimeScale timeScaleInnerSource = TimeScale.newBuilder()
                                                   .setPeriod( Duration.newBuilder()
@@ -754,8 +754,9 @@ class DeclarationValidatorTest
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
-        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events, "cannot be instantaneous",
-                                                                        StatusLevel.ERROR ) ),
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events, "The evaluation 'time_scale' "
+                                                                                + "is instantaneous",
+                                                                        StatusLevel.WARN ) ),
                    () -> assertTrue( DeclarationValidatorTest.contains( events, "is smaller than the "
                                                                                 + "evaluation 'time_scale'",
                                                                         StatusLevel.ERROR ) ),
