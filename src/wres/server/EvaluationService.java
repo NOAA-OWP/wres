@@ -392,9 +392,6 @@ public class EvaluationService implements ServletContextListener
         // Sets up stream redirect to avoid missing log statements
         streamRedirectSetup();
 
-        // Start a timer to prevent abandoned jobs from blocking the queue
-        evaluationTimeoutThread();
-
         updateSystemSettingsIfNeeded( host, name, port );
 
         evaluationResponse = startEvaluation( projectDeclaration, projectId );
@@ -790,6 +787,15 @@ public class EvaluationService implements ServletContextListener
             persistInformation( id, evaluationMetadata );
         }
         EVALUATION_STAGE.set( evaluationStatus );
+
+        // Creates a timeout thread to verify that a project does not stay in one of our "transition" states (OPEN/COMPLETED)
+        if ( evaluationStatus.equals( COMPLETED ) || evaluationStatus.equals( OPENED ) )
+        {
+            // OPENED jobs cover the step of server setup before automatically going to ONGOING
+            // COMPLETED jobs cover evaluations that have finished, but results have not been retrieved
+            // After results have been retrieved the user closes the job or it is done automatically and results are lost
+            evaluationTimeoutThread();
+        }
     }
 
     /**
@@ -937,22 +943,19 @@ public class EvaluationService implements ServletContextListener
     private static void evaluationTimeoutThread()
     {
         Runnable timeoutRunnable = () -> {
-            while ( !EVALUATION_STAGE.get().equals( CLOSED ) )
+            try
             {
-                try
+                Thread.sleep( ONE_MINUTE_IN_MILLISECONDS );
+                if ( EVALUATION_STAGE.get().equals( OPENED ) || EVALUATION_STAGE.get().equals( COMPLETED ) )
                 {
-                    Thread.sleep( ONE_MINUTE_IN_MILLISECONDS );
-                    if ( EVALUATION_STAGE.get().equals( OPENED ) || EVALUATION_STAGE.get().equals( COMPLETED ) )
-                    {
-                        LOGGER.info( "Timeout thread closing project" );
-                        close();
-                    }
+                    LOGGER.warn( "There was not an expected status transition; timeout thread closing project in status {}", EVALUATION_STAGE.get() );
+                    close();
                 }
-                catch ( InterruptedException interruptedException )
-                {
-                    LOGGER.info( "Evaluation was closed so thread was interrupted.", interruptedException );
-                    Thread.currentThread().interrupt();
-                }
+            }
+            catch ( InterruptedException interruptedException )
+            {
+                LOGGER.info( "Evaluation was closed so thread was interrupted.", interruptedException );
+                Thread.currentThread().interrupt();
             }
         };
 
