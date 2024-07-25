@@ -270,7 +270,11 @@ class DeclarationInterpolatorTest
                                                                .map( Metric::name )
                                                                .collect( Collectors.toSet() );
 
-        assertEquals( MetricConstants.SampleDataGroup.SINGLE_VALUED.getMetrics(), actualMetrics );
+        Set<MetricConstants> expected = MetricConstants.SampleDataGroup.SINGLE_VALUED.getMetrics()
+                                                                                     .stream()
+                                                                                     .filter( m -> !m.isExplicitBaselineRequired() )
+                                                                                     .collect( Collectors.toSet() );
+        assertEquals( expected, actualMetrics );
     }
 
     @Test
@@ -294,7 +298,11 @@ class DeclarationInterpolatorTest
 
         Set<MetricConstants> expectedMetrics = new HashSet<>( MetricConstants.SampleDataGroup.ENSEMBLE.getMetrics() );
         expectedMetrics.addAll( MetricConstants.SampleDataGroup.SINGLE_VALUED.getMetrics() );
-        expectedMetrics.remove( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE );
+
+        expectedMetrics = expectedMetrics
+                .stream()
+                .filter( m -> !m.isExplicitBaselineRequired() )
+                .collect( Collectors.toSet() );
 
         assertEquals( expectedMetrics, actualMetrics );
     }
@@ -1618,6 +1626,11 @@ class DeclarationInterpolatorTest
         Set<MetricConstants> expectedMetrics = new HashSet<>( singleValued );
         expectedMetrics.addAll( dichotomous );
 
+        expectedMetrics = expectedMetrics
+                .stream()
+                .filter( m -> !m.isExplicitBaselineRequired() )
+                .collect( Collectors.toSet() );
+
         assertEquals( expectedMetrics, actualMetrics );
     }
 
@@ -1647,6 +1660,11 @@ class DeclarationInterpolatorTest
         expectedMetrics.addAll( MetricConstants.SampleDataGroup.DISCRETE_PROBABILITY.getMetrics() );
         expectedMetrics.addAll( MetricConstants.SampleDataGroup.DICHOTOMOUS.getMetrics() );
         expectedMetrics.remove( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE );
+
+        expectedMetrics = expectedMetrics
+                .stream()
+                .filter( m -> !m.isExplicitBaselineRequired() )
+                .collect( Collectors.toSet() );
 
         assertEquals( expectedMetrics, actualMetrics );
     }

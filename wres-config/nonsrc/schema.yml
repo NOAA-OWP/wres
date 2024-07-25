@@ -1577,10 +1577,12 @@ definitions:
     type: string
     enum:
       - bias fraction
+      - bias fraction difference
       - box plot of errors
       - box plot of percentage errors
       - coefficient of determination
       - pearson correlation coefficient
+      - pearson correlation coefficient difference
       - index of agreement
       - kling gupta efficiency
       - mean absolute error

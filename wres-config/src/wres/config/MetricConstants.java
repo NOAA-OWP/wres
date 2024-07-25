@@ -27,6 +27,11 @@ public enum MetricConstants
     BIAS_FRACTION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
                    new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0 ) ),
 
+    /** Difference in fractional bias. */
+    BIAS_FRACTION_DIFFERENCE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
+                              true,
+                              new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ) ),
+
     /** Brier Score. */
     BRIER_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE,
                  new Limits( 0, 1, 0 ) ),
@@ -73,6 +78,11 @@ public enum MetricConstants
     /** Pearson's product-moment correlation coefficient.*/
     PEARSON_CORRELATION_COEFFICIENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
                                      new Limits( -1, 1, 1 ) ),
+
+    /** Difference in Pearson's product-moment correlation coefficient.*/
+    PEARSON_CORRELATION_COEFFICIENT_DIFFERENCE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
+                                                true,
+                                                new Limits( -2, 2, Double.NaN ) ),
 
     /** Threat Score. */
     THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE,
@@ -846,6 +856,34 @@ public enum MetricConstants
     public boolean isSkillMetric()
     {
         return this.isSkillMetric;
+    }
+
+    /**
+     * Returns <code>true</code> if the metric involves a difference between statistics for a main and baseline dataset,
+     * otherwise <code>false</code>. When this method returns <code>true</code>, then {@link #isSkillMetric()} also
+     * returns <code>true</code>.
+     *
+     * @return true if the metric is a difference metric, otherwise false
+     */
+
+    public boolean isDifferenceMetric()
+    {
+        return this.isSkillMetric()
+               && this.name()
+                      .endsWith( "DIFFERENCE" );
+    }
+
+    /**
+     * Returns <code>true</code> if the metric requires an explicit baseline to be present, <code>false</code>
+     * otherwise.
+     *
+     * @return true if the metric requires an explicit baseline
+     */
+
+    public boolean isExplicitBaselineRequired()
+    {
+        return this == CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE
+               || this.isDifferenceMetric();
     }
 
     /**

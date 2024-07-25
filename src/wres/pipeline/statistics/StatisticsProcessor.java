@@ -121,7 +121,8 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
                                   StatisticsStore.Builder futures )
     {
         // Don't waste cpu cycles computing statistics for empty pairs
-        if ( pairs.get().isEmpty() )
+        if ( pairs.get()
+                  .isEmpty() )
         {
             LOGGER.debug( "Skipping the calculation of statistics for an empty pool of pairs with metadata {}.",
                           pairs.getMetadata() );
@@ -147,9 +148,8 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
      * @return the future result
      */
 
-    <U, T extends Statistic<?>> Future<List<T>>
-    processMetricsRequiredForThisPool( Pool<U> pairs,
-                                       MetricCollection<Pool<U>, T, T> collection )
+    <U, T extends Statistic<?>> Future<List<T>> processMetricsRequiredForThisPool( Pool<U> pairs,
+                                                                                   MetricCollection<Pool<U>, T, T> collection )
     {
         int minimumSampleSizeInner = this.getMinimumSampleSize();
 
@@ -158,65 +158,17 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
 
         LOGGER.debug( "Considering whether to compute these metrics: {}.", all );
 
-        // Are there skill metrics and does the baseline also meet the minimum sample size constraint?
-        if ( collection.getMetrics()
-                       .stream()
-                       .anyMatch( MetricConstants::isSkillMetric )
-             && pairs.hasBaseline() )
-        {
-            int actualBaselineSampleSize = pairs.getBaselineData().get().size();
+        Set<MetricConstants> filterFirst =
+                this.getSkillMetricsWhereBaselineHasInsufficientSampleSize( all, pairs, minimumSampleSizeInner );
+        all.removeAll( filterFirst );
 
-            if ( actualBaselineSampleSize < minimumSampleSizeInner )
-            {
-                Set<MetricConstants> filteredInner = all.stream()
-                                                        .filter( MetricConstants::isSkillMetric )
-                                                        .collect( Collectors.toUnmodifiableSet() );
+        Set<MetricConstants> filterSecond =
+                this.getMetricsThatDoNotAcceptThresholdWhenThresholdPresent( all, pairs );
+        all.removeAll( filterSecond );
 
-                // Remove the filtered metrics
-                all.removeAll( filteredInner );
-                LOGGER.debug( "While processing pairs for pool {}, discovered {} baseline pairs, which is fewer than "
-                              + "the minimum sample size of {} pairs. The following metrics will not be computed for "
-                              + "this pool: {}.",
-                              pairs.getBaselineData()
-                                   .getMetadata(),
-                              actualBaselineSampleSize,
-                              minimumSampleSizeInner,
-                              filteredInner );
-            }
-        }
-
-        // Are there any metrics that do not accept thresholds and is this a threshold other than "all data"?
-        if ( collection.getMetrics()
-                       .stream()
-                       .anyMatch( next -> !next.isAThresholdMetric() )
-             && !ThresholdOuter.ALL_DATA.equals( pairs.getMetadata()
-                                                      .getThresholds()
-                                                      .first() ) )
-        {
-            Set<MetricConstants> filteredInner = all.stream()
-                                                    .filter( next -> !next.isAThresholdMetric() )
-                                                    .collect( Collectors.toUnmodifiableSet() );
-
-            // Remove the filtered metrics
-            all.removeAll( filteredInner );
-
-            if ( LOGGER.isDebugEnabled() && !filteredInner.isEmpty() )
-            {
-                Pool<U> baseline = pairs.getBaselineData();
-                PoolMetadata baselineMetadata = null;
-                if ( Objects.nonNull( baseline ) )
-                {
-                    baselineMetadata = baseline.getMetadata();
-                }
-
-                LOGGER.debug( "While processing pairs for pool {}, discovered {} metrics that cannot be computed for a "
-                              + "threshold of {}. The following metrics will not be computed for this pool: {}.",
-                              baselineMetadata,
-                              filteredInner.size(),
-                              pairs.getMetadata().getThresholds(),
-                              filteredInner );
-            }
-        }
+        Set<MetricConstants> filterThird =
+                this.getMetricsThatRequireExplicitBaselineAndNoneAvailable( all, pairs );
+        all.removeAll( filterThird );
 
         LOGGER.debug( "Computing these metrics: {}.", all );
 
@@ -569,5 +521,133 @@ public abstract class StatisticsProcessor<S extends Pool<?>> implements Function
         return ThresholdSlicer.filter( thresholds, next -> next.stream()
                                                                .filter( n -> !n.isAllDataThreshold() )
                                                                .collect( Collectors.toSet() ) );
+    }
+
+    /**
+     * Returns the set of metrics that are skill metrics where the baseline sample size is insufficient.
+     *
+     * @param <U> type of pooled data
+     * @param metrics the metrics to consider
+     * @param pool the pairs
+     * @param minimumSampleSize the minimum sample size
+     * @return the metrics to filter
+     */
+
+    private <U> Set<MetricConstants> getSkillMetricsWhereBaselineHasInsufficientSampleSize( Set<MetricConstants> metrics,
+                                                                                            Pool<U> pool,
+                                                                                            int minimumSampleSize )
+    {
+        Set<MetricConstants> filteredInner = Collections.emptySet();
+
+        // Are there skill metrics and does the baseline also meet the minimum sample size constraint?
+        if ( metrics.stream()
+                    .anyMatch( MetricConstants::isSkillMetric )
+             && pool.hasBaseline() )
+        {
+            int actualBaselineSampleSize = pool.getBaselineData().get().size();
+
+            if ( actualBaselineSampleSize < minimumSampleSize )
+            {
+                filteredInner = metrics.stream()
+                                       .filter( MetricConstants::isSkillMetric )
+                                       .collect( Collectors.toUnmodifiableSet() );
+
+                // Remove the filtered metrics
+                LOGGER.debug( "While processing pairs for pool {}, discovered {} baseline pairs, which is fewer than "
+                              + "the minimum sample size of {} pairs. The following metrics will not be computed for "
+                              + "this pool: {}.",
+                              pool.getBaselineData()
+                                  .getMetadata(),
+                              actualBaselineSampleSize,
+                              minimumSampleSize,
+                              filteredInner );
+            }
+        }
+        return filteredInner;
+    }
+
+    /**
+     * Returns the set of metrics that cannot be computed for a threshold and a threshold is present.
+     *
+     * @param <U> type of pooled data
+     * @param metrics the metrics to consider
+     * @param pool the pairs
+     * @return the metrics to filter
+     */
+
+    private <U> Set<MetricConstants> getMetricsThatDoNotAcceptThresholdWhenThresholdPresent( Set<MetricConstants> metrics,
+                                                                                             Pool<U> pool )
+    {
+        Set<MetricConstants> filteredInner = Collections.emptySet();
+
+        // Are there any metrics that do not accept thresholds and is this a threshold other than "all data"?
+        if ( metrics.stream()
+                    .anyMatch( next -> !next.isAThresholdMetric() )
+             && !ThresholdOuter.ALL_DATA.equals( pool.getMetadata()
+                                                     .getThresholds()
+                                                     .first() ) )
+        {
+            filteredInner = metrics.stream()
+                                   .filter( next -> !next.isAThresholdMetric() )
+                                   .collect( Collectors.toUnmodifiableSet() );
+
+            if ( LOGGER.isDebugEnabled()
+                 && !filteredInner.isEmpty() )
+            {
+                Pool<U> baseline = pool.getBaselineData();
+                PoolMetadata baselineMetadata = null;
+                if ( Objects.nonNull( baseline ) )
+                {
+                    baselineMetadata = baseline.getMetadata();
+                }
+
+                LOGGER.debug( "While processing pairs for pool {}, discovered {} metrics that cannot be computed for a "
+                              + "threshold of {}. The following metrics will not be computed for this pool: {}.",
+                              baselineMetadata,
+                              filteredInner.size(),
+                              pool.getMetadata()
+                                  .getThresholds(),
+                              filteredInner );
+            }
+        }
+
+        return filteredInner;
+    }
+
+    /**
+     * Returns the set of metrics that require an explicit baseline, and no baseline is available.
+     *
+     * @param <U> type of pooled data
+     * @param metrics the metrics to consider
+     * @param pool the pairs
+     * @return the metrics to filter
+     */
+
+    private <U> Set<MetricConstants> getMetricsThatRequireExplicitBaselineAndNoneAvailable( Set<MetricConstants> metrics,
+                                                                                            Pool<U> pool )
+    {
+        Set<MetricConstants> filteredInner = Collections.emptySet();
+
+        // Is this a metric that requires an explicit baseline when none is available?
+        // Cannot include skill metrics, in general, here because some skill metrics have a default baseline
+        if ( !pool.hasBaseline() )
+        {
+            filteredInner = metrics.stream()
+                                   .filter( MetricConstants::isExplicitBaselineRequired )
+                                   .collect( Collectors.toUnmodifiableSet() );
+
+            if ( LOGGER.isDebugEnabled()
+                 && !filteredInner.isEmpty() )
+            {
+                LOGGER.debug( "While processing pairs for pool {}, discovered {} metrics that cannot be computed "
+                              + "because they require a baseline dataset and the pool does not contain a baseline "
+                              + "dataset. The following metrics will not be computed for this pool: {}.",
+                              pool.getMetadata(),
+                              filteredInner.size(),
+                              filteredInner );
+            }
+        }
+
+        return filteredInner;
     }
 }

@@ -337,7 +337,8 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
             // Proceed
             if ( !next.isEmpty() )
             {
-                Iterator<Collectable<S, T, U>> iterator = next.values().iterator();
+                Iterator<Collectable<S, T, U>> iterator = next.values()
+                                                              .iterator();
 
                 Collectable<S, T, U> baseMetric = iterator.next();
                 CompletableFuture<T> baseFuture =

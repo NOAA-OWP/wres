@@ -3084,20 +3084,20 @@ public class DeclarationValidator
         Set<MetricConstants> metrics = declaration.metrics()
                                                   .stream()
                                                   .map( Metric::name )
-                                                  .filter( next -> next
-                                                                   == MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
+                                                  .filter( MetricConstants::isExplicitBaselineRequired )
                                                   .collect( Collectors.toSet() );
 
-        if ( !DeclarationUtilities.hasBaseline( declaration ) && !metrics.isEmpty() )
+        if ( !DeclarationUtilities.hasBaseline( declaration )
+             && !metrics.isEmpty() )
 
         {
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.ERROR )
                                            .setEventMessage( "The declaration includes metrics that require an "
-                                                             + "explicit 'baseline' dataset, but no baseline dataset "
+                                                             + "explicit 'baseline' dataset, but no 'baseline' dataset "
                                                              + "was found. Please remove the following metrics from "
-                                                             + "the declaration or add a baseline dataset and try "
+                                                             + "the declaration or add a 'baseline' dataset and try "
                                                              + "again: "
                                                              + metrics
                                                              + "." )

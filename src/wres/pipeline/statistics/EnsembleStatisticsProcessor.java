@@ -100,15 +100,6 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
             ensembleScore;
 
     /**
-     * A {@link MetricCollection} of {@link Metric} that consume ensemble pairs and produce 
-     * {@link DoubleScoreStatisticOuter}. This collection does not include any scores that require a reference or 
-     * baseline dataset.
-     */
-
-    private final MetricCollection<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
-            ensembleScoreNoBaseline;
-
-    /**
      * A {@link MetricCollection} of {@link Metric} that consume ensemble pairs and produce
      * {@link DiagramStatisticOuter}.
      */
@@ -200,34 +191,11 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
             this.ensembleScore = MetricFactory.ofEnsembleScores( metricExecutor,
                                                                  ensembleMetrics );
 
-            // Create a set of metrics for when no baseline is available, assuming there is at least one metric
-            // But, first, remove the CRPSS, which requires a baseline
-            Set<MetricConstants> filteredMetrics = Arrays.stream( ensembleMetrics )
-                                                         .filter( next -> next
-                                                                          != MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE )
-                                                         .collect( Collectors.toSet() );
-            if ( !filteredMetrics.isEmpty() )
-            {
-                MetricConstants[] filteredArray =
-                        filteredMetrics.toArray( new MetricConstants[0] );
-
-                this.ensembleScoreNoBaseline = MetricFactory.ofEnsembleScores( metricExecutor,
-                                                                               filteredArray );
-
-                LOGGER.debug( "Created the ensemble scores for processing pairs without a baseline. {}",
-                              this.ensembleScoreNoBaseline );
-            }
-            else
-            {
-                this.ensembleScoreNoBaseline = null;
-            }
-
             LOGGER.debug( "Created the ensemble scores for processing. {}", this.ensembleScore );
         }
         else
         {
             this.ensembleScore = null;
-            this.ensembleScoreNoBaseline = null;
         }
 
         // Ensemble input, multi-vector output
@@ -439,15 +407,15 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
     static Predicate<Pair<Double, Ensemble>> getFilterForEnsemblePairs( ThresholdOuter input )
     {
         return switch ( input.getOrientation() )
-                {
-                    case LEFT -> Slicer.leftVector( input );
-                    case RIGHT -> Slicer.allOfRight( input );
-                    case LEFT_AND_RIGHT -> Slicer.leftAndAllOfRight( input );
-                    case ANY_RIGHT -> Slicer.anyOfRight( input );
-                    case LEFT_AND_ANY_RIGHT -> Slicer.leftAndAnyOfRight( input );
-                    case RIGHT_MEAN -> Slicer.right( input, AVERAGE );
-                    case LEFT_AND_RIGHT_MEAN -> Slicer.leftAndRight( input, AVERAGE );
-                };
+        {
+            case LEFT -> Slicer.leftVector( input );
+            case RIGHT -> Slicer.allOfRight( input );
+            case LEFT_AND_RIGHT -> Slicer.leftAndAllOfRight( input );
+            case ANY_RIGHT -> Slicer.anyOfRight( input );
+            case LEFT_AND_ANY_RIGHT -> Slicer.leftAndAnyOfRight( input );
+            case RIGHT_MEAN -> Slicer.right( input, AVERAGE );
+            case LEFT_AND_RIGHT_MEAN -> Slicer.leftAndRight( input, AVERAGE );
+        };
     }
 
     /**
@@ -587,15 +555,7 @@ public class EnsembleStatisticsProcessor extends StatisticsProcessor<Pool<TimeSe
 
         if ( outGroup == StatisticType.DOUBLE_SCORE )
         {
-            // Baseline pool without a baseline of its own?
-            if ( pairs.getMetadata().getPool().getIsBaselinePool() && !pairs.hasBaseline() )
-            {
-                futures.addDoubleScoreStatistics( this.processEnsemblePairs( pairs, this.ensembleScoreNoBaseline ) );
-            }
-            else
-            {
-                futures.addDoubleScoreStatistics( this.processEnsemblePairs( pairs, this.ensembleScore ) );
-            }
+            futures.addDoubleScoreStatistics( this.processEnsemblePairs( pairs, this.ensembleScore ) );
         }
         else if ( outGroup == StatisticType.DIAGRAM )
         {
