@@ -1537,6 +1537,7 @@ definitions:
       - box plot of errors by observed value
       - box plot of errors by forecast value
       - brier score
+      - brier score difference
       - brier skill score
       - contingency table
       - continuous ranked probability score
@@ -1581,22 +1582,34 @@ definitions:
       - box plot of errors
       - box plot of percentage errors
       - coefficient of determination
+      - coefficient of determination difference
       - pearson correlation coefficient
       - pearson correlation coefficient difference
       - index of agreement
+      - index of agreement difference
       - kling gupta efficiency
+      - kling gupta efficiency difference
       - mean absolute error
+      - mean absolute error difference
       - mean error
+      - mean error difference
       - mean square error
+      - mean square error difference
       - mean square error skill score
       - mean square error skill score normalized
       - median error
+      - median error difference
       - quantile quantile diagram
       - root mean square error
+      - root mean square error difference
       - root mean square error normalized
+      - root mean square error normalized difference
       - sample size
+      - sample size difference
       - sum of square error
+      - sum of square error difference
       - volumetric efficiency
+      - volumetric efficiency difference
       - mean absolute error skill score
 
   FormatEnum:

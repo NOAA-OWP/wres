@@ -1513,7 +1513,8 @@ public class ChartFactory
         {
             LOGGER.debug( "Removing legend from chart entitled '{}' because there are too many legend items to "
                           + "display: {}.",
-                          chart.getTitle().getText(),
+                          chart.getTitle()
+                               .getText(),
                           itemCount );
 
             chart.removeLegend();
@@ -1830,13 +1831,17 @@ public class ChartFactory
         Evaluation evaluation = metadata.getEvaluation();
 
         // Not univariate statistics, except the sample size
-        if ( !metric.isInGroup( MetricGroup.UNIVARIATE_STATISTIC ) || metric == MetricConstants.SAMPLE_SIZE )
+        if ( !metric.isInGroup( MetricGroup.UNIVARIATE_STATISTIC )
+             || metric == MetricConstants.SAMPLE_SIZE
+             || metric == MetricConstants.SAMPLE_SIZE_DIFFERENCE )
         {
-            if ( metadata.getPool().getIsBaselinePool() )
+            if ( metadata.getPool()
+                         .getIsBaselinePool() )
             {
                 scenarioName = evaluation.getBaselineDataName();
             }
-            else if ( !evaluation.getRightDataName().isBlank() )
+            else if ( !evaluation.getRightDataName()
+                                 .isBlank() )
             {
                 scenarioName = evaluation.getRightDataName();
             }
@@ -2048,9 +2053,10 @@ public class ChartFactory
 
         // TODO: need a less brittle way to identify skill measures that have used a default baseline vs. an explicit 
         // one because a pool that includes an explicit baseline may or may not have been used for specific measures.
-        if ( metric.isSkillMetric()
-             && !metric.isInGroup( SampleDataGroup.DICHOTOMOUS )
-             && metric != MetricConstants.KLING_GUPTA_EFFICIENCY )
+        if ( metric.isDifferenceMetric()
+             || ( metric.isSkillMetric()
+                  && !metric.isInGroup( SampleDataGroup.DICHOTOMOUS )
+                  && metric != MetricConstants.KLING_GUPTA_EFFICIENCY ) )
         {
             baselineScenario = " ";
             String baselineSuffix = metadata.getEvaluation()

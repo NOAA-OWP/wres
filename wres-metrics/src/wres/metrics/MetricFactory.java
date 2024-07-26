@@ -262,15 +262,18 @@ public final class MetricFactory
     ofSingleValuedScores( ExecutorService executor,
                           MetricConstants... metric )
     {
-        final Builder<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
+        Builder<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
                 Builder.of();
 
         // Add the metrics
         for ( MetricConstants next : metric )
         {
+            Metric<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter> m = MetricFactory.ofSingleValuedScore( next );
             if ( MetricFactory.isCollectable( next ) )
             {
-                builder.addCollectableMetric( MetricFactory.ofSingleValuedScoreCollectable( next ) );
+                Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> c =
+                        ( Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> ) m;
+                builder.addCollectableMetric( c );
             }
             else
             {
@@ -297,7 +300,7 @@ public final class MetricFactory
     ofSingleValuedDiagrams( ExecutorService executor,
                             MetricConstants... metric )
     {
-        final Builder<Pool<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
+        Builder<Pool<Pair<Double, Double>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
                 Builder.of();
         for ( MetricConstants next : metric )
         {
@@ -322,7 +325,7 @@ public final class MetricFactory
     ofSingleValuedBoxplots( ExecutorService executor,
                             MetricConstants... metric )
     {
-        final Builder<Pool<Pair<Double, Double>>, BoxplotStatisticOuter, BoxplotStatisticOuter> builder =
+        Builder<Pool<Pair<Double, Double>>, BoxplotStatisticOuter, BoxplotStatisticOuter> builder =
                 Builder.of();
         for ( MetricConstants next : metric )
         {
@@ -347,7 +350,7 @@ public final class MetricFactory
     ofDiscreteProbabilityScores( ExecutorService executor,
                                  MetricConstants... metric )
     {
-        final Builder<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
+        Builder<Pool<Pair<Probability, Probability>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
                 builder =
                 Builder.of();
         for ( MetricConstants next : metric )
@@ -373,13 +376,13 @@ public final class MetricFactory
     ofDichotomousScores( ExecutorService executor,
                          MetricConstants... metric )
     {
-        final Builder<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
+        Builder<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
                 Builder.of();
         for ( MetricConstants next : metric )
         {
             Metric<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter> m =
                     MetricFactory.ofDichotomousScore( next );
-            if ( m instanceof Collectable<?, ?, ?> )
+            if ( MetricFactory.isCollectable( next ) )
             {
                 Collectable<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> c =
                         ( Collectable<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> ) m;
@@ -405,7 +408,7 @@ public final class MetricFactory
     ofDiscreteProbabilityDiagrams( ExecutorService executor,
                                    MetricConstants... metric )
     {
-        final Builder<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
+        Builder<Pool<Pair<Probability, Probability>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
                 Builder.of();
         for ( MetricConstants next : metric )
         {
@@ -430,7 +433,7 @@ public final class MetricFactory
     ofEnsembleScores( ExecutorService executor,
                       MetricConstants... metric )
     {
-        final Builder<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
+        Builder<Pool<Pair<Double, Ensemble>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> builder =
                 Builder.of();
         for ( MetricConstants next : metric )
         {
@@ -454,7 +457,7 @@ public final class MetricFactory
     ofEnsembleDiagrams( ExecutorService executor,
                         MetricConstants... metric )
     {
-        final Builder<Pool<Pair<Double, Ensemble>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
+        Builder<Pool<Pair<Double, Ensemble>>, DiagramStatisticOuter, DiagramStatisticOuter> builder =
                 Builder.of();
         for ( MetricConstants next : metric )
         {
@@ -479,7 +482,7 @@ public final class MetricFactory
     ofEnsembleBoxplots( ExecutorService executor,
                         MetricConstants... metric )
     {
-        final Builder<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter, BoxplotStatisticOuter> builder =
+        Builder<Pool<Pair<Double, Ensemble>>, BoxplotStatisticOuter, BoxplotStatisticOuter> builder =
                 Builder.of();
         for ( MetricConstants next : metric )
         {
@@ -504,7 +507,7 @@ public final class MetricFactory
     ofSingleValuedTimeSeriesMetrics( ExecutorService executor,
                                      MetricConstants... metric )
     {
-        final Builder<Pool<TimeSeries<Pair<Double, Double>>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter>
+        Builder<Pool<TimeSeries<Pair<Double, Double>>>, DurationDiagramStatisticOuter, DurationDiagramStatisticOuter>
                 builder =
                 Builder.of();
         for ( MetricConstants next : metric )
@@ -531,50 +534,39 @@ public final class MetricFactory
             case BIAS_FRACTION -> BiasFraction.of();
             case BIAS_FRACTION_DIFFERENCE -> DoubleScoreDifference.of( BiasFraction.of() );
             case KLING_GUPTA_EFFICIENCY -> KlingGuptaEfficiency.of();
+            case KLING_GUPTA_EFFICIENCY_DIFFERENCE -> DoubleScoreDifference.of( KlingGuptaEfficiency.of() );
             case MEAN_ABSOLUTE_ERROR -> MeanAbsoluteError.of();
+            case MEAN_ABSOLUTE_ERROR_DIFFERENCE -> DoubleScoreDifference.of( MeanAbsoluteError.of() );
             case MEAN_ABSOLUTE_ERROR_SKILL_SCORE -> MeanAbsoluteErrorSkillScore.of();
             case MEAN_ERROR -> MeanError.of();
+            case MEAN_ERROR_DIFFERENCE -> DoubleScoreDifference.of( MeanError.of() );
             case MEDIAN_ERROR -> MedianError.of();
+            case MEDIAN_ERROR_DIFFERENCE -> DoubleScoreDifference.of( MedianError.of() );
             case SAMPLE_SIZE -> SampleSize.of();
+            case SAMPLE_SIZE_DIFFERENCE -> DoubleScoreDifference.of( SampleSize.of() );
             case INDEX_OF_AGREEMENT -> IndexOfAgreement.of();
+            case INDEX_OF_AGREEMENT_DIFFERENCE -> DoubleScoreDifference.of( IndexOfAgreement.of() );
             case VOLUMETRIC_EFFICIENCY -> VolumetricEfficiency.of();
+            case VOLUMETRIC_EFFICIENCY_DIFFERENCE -> DoubleScoreDifference.of( VolumetricEfficiency.of() );
             case MEAN_SQUARE_ERROR_SKILL_SCORE -> MeanSquareErrorSkillScore.of();
             case MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED -> MeanSquareErrorSkillScoreNormalized.of();
             case COEFFICIENT_OF_DETERMINATION -> CoefficientOfDetermination.of();
+            case COEFFICIENT_OF_DETERMINATION_DIFFERENCE -> DoubleScoreDifference.of( CoefficientOfDetermination.of() );
             case PEARSON_CORRELATION_COEFFICIENT -> CorrelationPearsons.of();
             case PEARSON_CORRELATION_COEFFICIENT_DIFFERENCE -> DoubleScoreDifference.of( CorrelationPearsons.of() );
             case MEAN_SQUARE_ERROR -> MeanSquareError.of();
+            case MEAN_SQUARE_ERROR_DIFFERENCE -> DoubleScoreDifference.of( MeanSquareError.of() );
             case ROOT_MEAN_SQUARE_ERROR -> RootMeanSquareError.of();
+            case ROOT_MEAN_SQUARE_ERROR_DIFFERENCE -> DoubleScoreDifference.of( RootMeanSquareError.of() );
             case ROOT_MEAN_SQUARE_ERROR_NORMALIZED -> RootMeanSquareErrorNormalized.of();
+            case ROOT_MEAN_SQUARE_ERROR_NORMALIZED_DIFFERENCE ->
+                    DoubleScoreDifference.of( RootMeanSquareErrorNormalized.of() );
             case SUM_OF_SQUARE_ERROR -> SumOfSquareError.of();
+            case SUM_OF_SQUARE_ERROR_DIFFERENCE -> DoubleScoreDifference.of( SumOfSquareError.of() );
             case MEAN -> Mean.of();
             case STANDARD_DEVIATION -> StandardDeviation.of();
             case MINIMUM -> Minimum.of();
             case MAXIMUM -> Maximum.of();
-            default -> throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
-        };
-    }
-
-    /**
-     * Returns a {@link Collectable} that consumes single-valued pairs and produces {@link DoubleScoreStatisticOuter}.
-     *
-     * @param metric the metric identifier
-     * @return the metric
-     * @throws IllegalArgumentException if the metric identifier is not recognized
-     */
-
-    public static Collectable<Pool<Pair<Double, Double>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter>
-    ofSingleValuedScoreCollectable( MetricConstants metric )
-    {
-        return switch ( metric )
-        {
-            case SUM_OF_SQUARE_ERROR -> SumOfSquareError.of();
-            case COEFFICIENT_OF_DETERMINATION -> CoefficientOfDetermination.of();
-            case PEARSON_CORRELATION_COEFFICIENT -> CorrelationPearsons.of();
-            case MEAN_SQUARE_ERROR -> MeanSquareError.of();
-            case ROOT_MEAN_SQUARE_ERROR -> RootMeanSquareError.of();
-            case MEAN_SQUARE_ERROR_SKILL_SCORE -> MeanSquareErrorSkillScore.of();
-            case MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED -> MeanSquareErrorSkillScoreNormalized.of();
             default -> throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         };
     }
@@ -633,6 +625,7 @@ public final class MetricFactory
         return switch ( metric )
         {
             case BRIER_SCORE -> BrierScore.of();
+            case BRIER_SCORE_DIFFERENCE -> DoubleScoreDifference.of( BrierScore.of() );
             case BRIER_SKILL_SCORE -> BrierSkillScore.of();
             case RELATIVE_OPERATING_CHARACTERISTIC_SCORE -> RelativeOperatingCharacteristicScore.of();
             default -> throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );

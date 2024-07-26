@@ -73,7 +73,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
     /**
      * Computes all metrics.
      *
-     * @see #apply(Pool, Set) 
+     * @see #apply(Pool, Set)
      * @param pool the pool
      * @return statistics the statistics
      * @throws NullPointerException if the input is null
@@ -93,7 +93,7 @@ public class MetricCollection<S extends Pool<?>, T extends Statistic<?>, U exten
     /**
      * Computes a subset of metrics.
      *
-     * @see #apply(Pool)  
+     * @see #apply(Pool)
      * @param pool the pool
      * @param metrics the subset of metrics to calculate
      * @return the statistics
