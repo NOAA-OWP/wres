@@ -211,7 +211,7 @@ public enum MetricConstants
     ROOT_MEAN_SQUARE_ERROR_DIFFERENCE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
                                        new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ) ),
 
-    /** Root Mean Square Error normalized by the standard deviation of the left values. */
+    /** Root Mean Square Error normalized by the standard deviation of the observed values. */
     ROOT_MEAN_SQUARE_ERROR_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
                                        new Limits( 0, Double.POSITIVE_INFINITY, 0 ) ),
 
