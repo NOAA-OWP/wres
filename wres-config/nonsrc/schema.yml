@@ -1541,6 +1541,7 @@ definitions:
       - brier skill score
       - contingency table
       - continuous ranked probability score
+      - continuous ranked probability score difference
       - continuous ranked probability skill score
       - ensemble quantile quantile diagram
       - maximum

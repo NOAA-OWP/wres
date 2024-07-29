@@ -691,6 +691,8 @@ public final class MetricFactory
         return switch ( metric )
         {
             case CONTINUOUS_RANKED_PROBABILITY_SCORE -> ContinuousRankedProbabilityScore.of();
+            case CONTINUOUS_RANKED_PROBABILITY_SCORE_DIFFERENCE ->
+                    DoubleScoreDifference.of( ContinuousRankedProbabilityScore.of() );
             case CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE -> ContinuousRankedProbabilitySkillScore.of();
             case SAMPLE_SIZE -> SampleSize.of();
             default -> throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );

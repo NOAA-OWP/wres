@@ -67,6 +67,10 @@ public enum MetricConstants
     CONTINUOUS_RANKED_PROBABILITY_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE,
                                          new Limits( 0, 1, 0 ) ),
 
+    /** Difference in the mean Continuous Ranked Probability Score. */
+    CONTINUOUS_RANKED_PROBABILITY_SCORE_DIFFERENCE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE, true,
+                                         new Limits( -1, 1, Double.NaN ) ),
+
     /** Mean Continuous Ranked Probability Skill Score. */
     CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE, true,
                                                new Limits( Double.NEGATIVE_INFINITY, 1, 1 ) ),
