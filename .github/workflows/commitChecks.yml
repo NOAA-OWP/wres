@@ -104,6 +104,24 @@ jobs:
         unzip build-artifacts/systests/build/distributions/systests-*[a-f0-9].zip
         echo "systests_dir=$( ls -1d systests-*[a-f0-9] )" >> "$GITHUB_ENV"
 
+    # Run systests
+    - name: Systests In Memory
+      run: | 
+        echo "Starting an in memory test..."
+
+        # Configure the parameters sent to the test JVM in the settings file (avoids some quoting/escaping issues). 
+        # TODO: replace with -P gradle property overrides in the test command once the quoting/escaping issues can be worked out
+        sed -i "s/testJvmSystemProperties =.*/testJvmSystemProperties = -Dwres.useSSL=false -Dwres.useDatabase=false -Djava.awt.headless=true -Dwres.dataDirectory=. -Djava.io.tmpdir=.. -Ducar.unidata.io.http.maxReadCacheSize=200000 -Ducar.unidata.io.http.httpBufferSize=200000 -Dwres.attemptToMigrate=false -Duser.timezone=UTC -Dwres.externalGraphics=true -Dwres.externalNumerics=true -Dwres.startBroker=false -Dwres.eventsBrokerAddress=localhost -Dwres.eventsBrokerPort=5673/g" $systests_dir/gradle.properties
+        sed -i "s/testJvmSystemPropertiesGraphics =.*/testJvmSystemPropertiesGraphics = -Djava.io.tmpdir=. -Dwres.startBroker=true -Dwres.eventsBrokerAddress=localhost -Dwres.eventsBrokerPort=5673/g" $systests_dir/gradle.properties
+        sed -i "s/testJvmSystemPropertiesWriting =.*/testJvmSystemPropertiesWriting = -Djava.io.tmpdir=. -Dwres.startBroker=false -Dwres.eventsBrokerAddress=localhost -Dwres.eventsBrokerPort=5673/g" $systests_dir/gradle.properties
+
+        # Run the tests using a separate graphics and writing process 
+        $systests_dir/gradlew -p $systests_dir cleanTest test -PwresZipDirectory=../build-artifacts/build/distributions/ -PwresGraphicsZipDirectory=../build-artifacts/wres-vis/build/distributions/ -PwresWritingZipDirectory=../build-artifacts/wres-writing/build/distributions/ -PversionToTest=$wres_version -PgraphicsVersionToTest=$wres_vis -PwritingVersionToTest=$wres_writing --tests=Scenario052 --tests=Scenario053 --tests=Scenario1000 --tests=Scenario1001 --tests=Scenario500 --tests=Scenario501 --tests=Scenario502 --tests=Scenario504 --tests=Scenario505 --tests=Scenario506 --tests=Scenario507 --tests=Scenario508 --tests=Scenario509 --tests=Scenario510 --tests=Scenario511 --tests=Scenario512 --tests=Scenario513 --tests=Scenario514 --tests=Scenario720 --tests=Scenario721
+
+        # Save the test results
+        mkdir -p test_results_0
+        mv systests-*/build/reports/tests/test/* test_results_0
+        mv systests-*/build/*.log test_results_0
        
     # Run systests
     - name: Systests With Externalized Writers
@@ -163,6 +181,7 @@ jobs:
       with:
         name: systest-result-artifacts
         path: |
+          test_results_0
           test_results_1
           test_results_2
           test_results_3        
