@@ -69,7 +69,7 @@ public enum MetricConstants
 
     /** Difference in the mean Continuous Ranked Probability Score. */
     CONTINUOUS_RANKED_PROBABILITY_SCORE_DIFFERENCE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE, true,
-                                         new Limits( -1, 1, Double.NaN ) ),
+                                                    new Limits( -1, 1, Double.NaN ) ),
 
     /** Mean Continuous Ranked Probability Skill Score. */
     CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE, true,
@@ -198,6 +198,12 @@ public enum MetricConstants
     /** Relative Operating Characteristic Score. */
     RELATIVE_OPERATING_CHARACTERISTIC_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, true,
                                              new Limits( 0, 1, 1 ) ),
+
+    /** Difference in the Relative Operating Characteristic Score. */
+    RELATIVE_OPERATING_CHARACTERISTIC_SCORE_DIFFERENCE( SampleDataGroup.DISCRETE_PROBABILITY,
+                                                        StatisticType.DOUBLE_SCORE,
+                                                        true,
+                                                        new Limits( -1, 1, Double.NaN ) ),
 
     /** Reliability Diagram. */
     RELIABILITY_DIAGRAM( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DIAGRAM,

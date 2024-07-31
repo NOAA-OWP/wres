@@ -628,6 +628,9 @@ public final class MetricFactory
             case BRIER_SCORE_DIFFERENCE -> DoubleScoreDifference.of( BrierScore.of() );
             case BRIER_SKILL_SCORE -> BrierSkillScore.of();
             case RELATIVE_OPERATING_CHARACTERISTIC_SCORE -> RelativeOperatingCharacteristicScore.of();
+            case RELATIVE_OPERATING_CHARACTERISTIC_SCORE_DIFFERENCE ->
+                // Calculate a raw score without a baseline using the supplied parameter
+                    DoubleScoreDifference.of( RelativeOperatingCharacteristicScore.of( false ) );
             default -> throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         };
     }

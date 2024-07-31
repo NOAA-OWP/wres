@@ -1550,6 +1550,7 @@ definitions:
       - rank histogram
       - relative operating characteristic diagram
       - relative operating characteristic score
+      - relative operating characteristic score difference
       - reliability diagram
       - sample size
       - standard deviation

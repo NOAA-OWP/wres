@@ -79,6 +79,9 @@ public class RelativeOperatingCharacteristicScore
                                                                     .setName( MetricName.RELATIVE_OPERATING_CHARACTERISTIC_SCORE )
                                                                     .build();
 
+    /** Whether to use a baseline dataset to calculate a skill score formulation. */
+    private final boolean useBaseline;
+
     /**
      * Returns an instance.
      *
@@ -87,7 +90,19 @@ public class RelativeOperatingCharacteristicScore
 
     public static RelativeOperatingCharacteristicScore of()
     {
-        return new RelativeOperatingCharacteristicScore();
+        return new RelativeOperatingCharacteristicScore( true );
+    }
+
+    /**
+     * Returns an instance with control on whether a baseline is used to calculate a skill formulation.
+     *
+     * @param useBaseline is true to calculate a skill formulation when a baseline is present, false for a raw score
+     * @return an instance
+     */
+
+    public static RelativeOperatingCharacteristicScore of( boolean useBaseline )
+    {
+        return new RelativeOperatingCharacteristicScore( useBaseline );
     }
 
     @Override
@@ -97,10 +112,11 @@ public class RelativeOperatingCharacteristicScore
         {
             throw new PoolException( "Specify non-null input to the '" + this + "'." );
         }
-        //Obtain the AUC for the main prediction and, if available, the baseline.
+        // Obtain the AUC for the main prediction and, if available, the baseline.
         double rocScore;
 
-        if ( pool.hasBaseline() )
+        if ( this.useBaseline
+             && pool.hasBaseline() )
         {
             double rocMain = this.getAUCMasonGraham( pool );
             double rocBase = this.getAUCMasonGraham( pool.getBaselineData() );
@@ -111,11 +127,11 @@ public class RelativeOperatingCharacteristicScore
             rocScore = 2.0 * this.getAUCMasonGraham( pool ) - 1.0;
         }
 
-        DoubleScoreStatisticComponent component = DoubleScoreStatisticComponent.newBuilder()
-                                                                               .setMetric(
-                                                                                       RelativeOperatingCharacteristicScore.MAIN )
-                                                                               .setValue( rocScore )
-                                                                               .build();
+        DoubleScoreStatisticComponent component =
+                DoubleScoreStatisticComponent.newBuilder()
+                                             .setMetric( RelativeOperatingCharacteristicScore.MAIN )
+                                             .setValue( rocScore )
+                                             .build();
         DoubleScoreStatistic score =
                 DoubleScoreStatistic.newBuilder()
                                     .setMetric( RelativeOperatingCharacteristicScore.BASIC_METRIC )
@@ -241,11 +257,13 @@ public class RelativeOperatingCharacteristicScore
 
     /**
      * Hidden constructor.
+     * @param useBaseline is true to use a baseline dataset in a skill formulation, false otherwise
      */
 
-    private RelativeOperatingCharacteristicScore()
+    private RelativeOperatingCharacteristicScore( boolean useBaseline )
     {
         super();
+        this.useBaseline = useBaseline;
     }
 
 }
