@@ -25,6 +25,8 @@ import wres.datamodel.statistics.ScoreStatistic;
  * <a href="https://arxiv.org/abs/1512.09244v1">https://arxiv.org/abs/1512.09244v1</a>).
  * </p>
  *
+ * @param <S> the type of pool consumed by the metric
+ * @param <T> the type of statistic produced by the metric
  * @author James Brown
  */
 public interface ProbabilityScore<S extends Pool<?>, T extends ScoreStatistic<?,?>> extends Score<S,T>
