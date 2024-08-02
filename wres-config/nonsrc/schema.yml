@@ -1568,12 +1568,19 @@ definitions:
     enum:
       - contingency table
       - threat score
+      - threat score difference
       - equitable threat score
+      - equitable threat score difference
       - frequency bias
+      - frequency bias difference
       - probability of detection
+      - probability of detection difference
       - probability of false detection
+      - probability of false detection difference
       - false alarm ratio
+      - false alarm ratio difference
       - peirce skill score
+      - peirce skill score difference
 
   SingleValuedMetricEnum:
     title: Single-valued metrics.

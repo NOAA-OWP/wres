@@ -75,16 +75,10 @@ import wres.metrics.timeseries.TimingErrorDurationStatistics;
 
 public final class MetricFactory
 {
-    /**
-     * String used in several error messages to denote an unrecognized metric.
-     */
-
+    /** String used in several error messages to denote an unrecognized metric. */
     private static final String UNRECOGNIZED_METRIC_ERROR = "Unrecognized metric for identifier.";
 
-    /**
-     * Test seed system property name.
-     */
-
+    /** Test seed system property name. */
     private static final String TEST_SEED_PROPERTY = "wres.systemTestSeed";
 
     /**
@@ -388,6 +382,10 @@ public final class MetricFactory
                         ( Collectable<Pool<Pair<Boolean, Boolean>>, DoubleScoreStatisticOuter, DoubleScoreStatisticOuter> ) m;
                 builder.addCollectableMetric( c );
             }
+            else
+            {
+                builder.addMetric( m );
+            }
         }
         builder.setExecutorService( executor );
         return builder.build();
@@ -649,13 +647,21 @@ public final class MetricFactory
         return switch ( metric )
         {
             case THREAT_SCORE -> ThreatScore.of();
+            case THREAT_SCORE_DIFFERENCE -> DoubleScoreDifference.of( ThreatScore.of() );
             case EQUITABLE_THREAT_SCORE -> EquitableThreatScore.of();
+            case EQUITABLE_THREAT_SCORE_DIFFERENCE -> DoubleScoreDifference.of( EquitableThreatScore.of() );
             case PEIRCE_SKILL_SCORE -> PeirceSkillScore.of();
+            case PEIRCE_SKILL_SCORE_DIFFERENCE -> DoubleScoreDifference.of( PeirceSkillScore.of() );
             case PROBABILITY_OF_DETECTION -> ProbabilityOfDetection.of();
+            case PROBABILITY_OF_DETECTION_DIFFERENCE -> DoubleScoreDifference.of( ProbabilityOfDetection.of() );
             case PROBABILITY_OF_FALSE_DETECTION -> ProbabilityOfFalseDetection.of();
+            case PROBABILITY_OF_FALSE_DETECTION_DIFFERENCE ->
+                    DoubleScoreDifference.of( ProbabilityOfFalseDetection.of() );
             case FREQUENCY_BIAS -> FrequencyBias.of();
+            case FREQUENCY_BIAS_DIFFERENCE -> DoubleScoreDifference.of( FrequencyBias.of() );
             case CONTINGENCY_TABLE -> ContingencyTable.of();
             case FALSE_ALARM_RATIO -> FalseAlarmRatio.of();
+            case FALSE_ALARM_RATIO_DIFFERENCE -> DoubleScoreDifference.of( FalseAlarmRatio.of() );
             default -> throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         };
     }
@@ -845,6 +851,12 @@ public final class MetricFactory
     private static boolean isCollectable( MetricConstants metric )
     {
         Objects.requireNonNull( metric, "Specify a non-null metric to test." );
+
+        // DoubleScoreDifference does not implement Collectable
+        if ( metric.isDifferenceMetric() )
+        {
+            return false;
+        }
 
         boolean singleValued = metric == MetricConstants.COEFFICIENT_OF_DETERMINATION
                                || metric == MetricConstants.PEARSON_CORRELATION_COEFFICIENT

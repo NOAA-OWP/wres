@@ -86,6 +86,10 @@ public enum MetricConstants
     FALSE_ALARM_RATIO( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE,
                        new Limits( 0, 1, 0 ) ),
 
+    /** Difference in the False alarm ratio. */
+    FALSE_ALARM_RATIO_DIFFERENCE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, true,
+                                  new Limits( -1, 1, Double.NaN ) ),
+
     /** Pearson's product-moment correlation coefficient. */
     PEARSON_CORRELATION_COEFFICIENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
                                      new Limits( -1, 1, 1 ) ),
@@ -95,16 +99,32 @@ public enum MetricConstants
                                                 new Limits( -2, 2, Double.NaN ) ),
 
     /** Threat Score. */
-    THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE,
-                  new Limits( 0, 1, 1 ) ),
+    THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, new Limits( 0, 1, 1 ) ),
+
+    /** Difference in Threat Score. */
+    THREAT_SCORE_DIFFERENCE( SampleDataGroup.DICHOTOMOUS,
+                             StatisticType.DOUBLE_SCORE,
+                             true,
+                             new Limits( -1, 1, Double.NaN ) ),
 
     /** Equitable Threat Score. */
     EQUITABLE_THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, true,
                             new Limits( -1.0 / 3, Double.POSITIVE_INFINITY, 1 ) ),
 
+    /** Difference in Equitable Threat Score. */
+    EQUITABLE_THREAT_SCORE_DIFFERENCE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, true,
+                                       new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ) ),
+
     /** Frequency Bias. */
-    FREQUENCY_BIAS( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE,
+    FREQUENCY_BIAS( SampleDataGroup.DICHOTOMOUS,
+                    StatisticType.DOUBLE_SCORE,
                     new Limits( 0, Double.POSITIVE_INFINITY, 1 ) ),
+
+    /** Difference in Frequency Bias. */
+    FREQUENCY_BIAS_DIFFERENCE( SampleDataGroup.DICHOTOMOUS,
+                               StatisticType.DOUBLE_SCORE,
+                               true,
+                               new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ) ),
 
     /** Index of Agreement. */
     INDEX_OF_AGREEMENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
@@ -171,13 +191,28 @@ public enum MetricConstants
                         StatisticType.DOUBLE_SCORE, true,
                         new Limits( -1, 1, 1 ) ),
 
+    /** Difference in Peirce Skill Score. */
+    PEIRCE_SKILL_SCORE_DIFFERENCE( new SampleDataGroup[] { SampleDataGroup.DICHOTOMOUS, SampleDataGroup.MULTICATEGORY },
+                                   StatisticType.DOUBLE_SCORE, true,
+                                   new Limits( -2, 2, Double.NaN ) ),
+
     /** Probability Of Detection. */
-    PROBABILITY_OF_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE,
-                              new Limits( 0, 1, 1 ) ),
+    PROBABILITY_OF_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, new Limits( 0, 1, 1 ) ),
+
+    /** Difference in Probability Of Detection. */
+    PROBABILITY_OF_DETECTION_DIFFERENCE( SampleDataGroup.DICHOTOMOUS,
+                                         StatisticType.DOUBLE_SCORE,
+                                         true,
+                                         new Limits( -1, 1, Double.NaN ) ),
 
     /** Probability Of False Detection.*/
-    PROBABILITY_OF_FALSE_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE,
-                                    new Limits( 0, 1, 0 ) ),
+    PROBABILITY_OF_FALSE_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, new Limits( 0, 1, 0 ) ),
+
+    /** Difference in Probability Of False Detection.*/
+    PROBABILITY_OF_FALSE_DETECTION_DIFFERENCE( SampleDataGroup.DICHOTOMOUS,
+                                               StatisticType.DOUBLE_SCORE,
+                                               true,
+                                               new Limits( -1, 1, Double.NaN ) ),
 
     /** Quantile-quantile diagram. */
     QUANTILE_QUANTILE_DIAGRAM( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM,
