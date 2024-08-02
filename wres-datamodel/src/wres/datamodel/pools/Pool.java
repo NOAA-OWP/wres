@@ -22,7 +22,7 @@ import wres.datamodel.types.Climatology;
  *
  * <p>A dataset may contain values that correspond to a missing value identifier.
  *
- * TODO: consider a top-level container for each pooled dataset plus the climatology to simplify this class, which
+ * <p>TODO: consider a top-level container for each pooled dataset plus the climatology to simplify this class, which
  * would then represent a simple pool, rather than a collection of datasets. This would require major refactoring.
  *
  * @param <T> the type of pooled data
