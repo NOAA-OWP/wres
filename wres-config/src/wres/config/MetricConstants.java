@@ -27,9 +27,17 @@ public enum MetricConstants
     BIAS_FRACTION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
                    new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0 ) ),
 
+    /** Difference in fractional bias. */
+    BIAS_FRACTION_DIFFERENCE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
+                              new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ) ),
+
     /** Brier Score. */
     BRIER_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE,
                  new Limits( 0, 1, 0 ) ),
+
+    /** Difference in Brier Score. */
+    BRIER_SCORE_DIFFERENCE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, true,
+                            new Limits( -1, 1, Double.NaN ) ),
 
     /** Brier Skill Score. */
     BRIER_SKILL_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, true,
@@ -44,59 +52,103 @@ public enum MetricConstants
     /** Box plot of errors. */
     BOX_PLOT_OF_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticType.BOXPLOT_PER_POOL ),
 
-    /** Box plot of errors as a percentage of the left value.*/
+    /** Box plot of errors as a percentage of the left value. */
     BOX_PLOT_OF_PERCENTAGE_ERRORS( SampleDataGroup.SINGLE_VALUED, StatisticType.BOXPLOT_PER_POOL ),
 
-    /** Coefficient of determination.*/
+    /** Coefficient of determination. */
     COEFFICIENT_OF_DETERMINATION( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
                                   new Limits( 0, 1, 1 ) ),
+
+    /** Difference in the Coefficient of determination. */
+    COEFFICIENT_OF_DETERMINATION_DIFFERENCE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
+                                             new Limits( -1, 1, Double.NaN ) ),
 
     /** Mean Continuous Ranked Probability Score. */
     CONTINUOUS_RANKED_PROBABILITY_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE,
                                          new Limits( 0, 1, 0 ) ),
 
+    /** Difference in the mean Continuous Ranked Probability Score. */
+    CONTINUOUS_RANKED_PROBABILITY_SCORE_DIFFERENCE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE, true,
+                                                    new Limits( -1, 1, Double.NaN ) ),
+
     /** Mean Continuous Ranked Probability Skill Score. */
     CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE( SampleDataGroup.ENSEMBLE, StatisticType.DOUBLE_SCORE, true,
                                                new Limits( Double.NEGATIVE_INFINITY, 1, 1 ) ),
 
-    /** Contingency Table.*/
+    /** Contingency Table. */
     CONTINGENCY_TABLE( new SampleDataGroup[] { SampleDataGroup.DICHOTOMOUS,
             SampleDataGroup.MULTICATEGORY },
                        StatisticType.DOUBLE_SCORE, false,
                        new Limits( 0, Double.POSITIVE_INFINITY, Double.NaN ),
                        MetricGroup.CONTINGENCY_TABLE ),
 
-    /** False alarm ratio.*/
+    /** False alarm ratio. */
     FALSE_ALARM_RATIO( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE,
                        new Limits( 0, 1, 0 ) ),
 
-    /** Pearson's product-moment correlation coefficient.*/
+    /** Difference in the False alarm ratio. */
+    FALSE_ALARM_RATIO_DIFFERENCE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, true,
+                                  new Limits( -1, 1, Double.NaN ) ),
+
+    /** Pearson's product-moment correlation coefficient. */
     PEARSON_CORRELATION_COEFFICIENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
                                      new Limits( -1, 1, 1 ) ),
 
-    /** Threat Score. */
-    THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE,
-                  new Limits( 0, 1, 1 ) ),
+    /** Difference in Pearson's product-moment correlation coefficient. */
+    PEARSON_CORRELATION_COEFFICIENT_DIFFERENCE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
+                                                new Limits( -2, 2, Double.NaN ) ),
 
-    /** Equitable Threat Score.*/
+    /** Threat Score. */
+    THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, new Limits( 0, 1, 1 ) ),
+
+    /** Difference in Threat Score. */
+    THREAT_SCORE_DIFFERENCE( SampleDataGroup.DICHOTOMOUS,
+                             StatisticType.DOUBLE_SCORE,
+                             true,
+                             new Limits( -1, 1, Double.NaN ) ),
+
+    /** Equitable Threat Score. */
     EQUITABLE_THREAT_SCORE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, true,
                             new Limits( -1.0 / 3, Double.POSITIVE_INFINITY, 1 ) ),
 
-    /** Frequency Bias.*/
-    FREQUENCY_BIAS( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE,
+    /** Difference in Equitable Threat Score. */
+    EQUITABLE_THREAT_SCORE_DIFFERENCE( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, true,
+                                       new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ) ),
+
+    /** Frequency Bias. */
+    FREQUENCY_BIAS( SampleDataGroup.DICHOTOMOUS,
+                    StatisticType.DOUBLE_SCORE,
                     new Limits( 0, Double.POSITIVE_INFINITY, 1 ) ),
+
+    /** Difference in Frequency Bias. */
+    FREQUENCY_BIAS_DIFFERENCE( SampleDataGroup.DICHOTOMOUS,
+                               StatisticType.DOUBLE_SCORE,
+                               true,
+                               new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ) ),
 
     /** Index of Agreement. */
     INDEX_OF_AGREEMENT( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
                         new Limits( 0, 1, 1 ) ),
 
+    /** Difference in the Index of Agreement. */
+    INDEX_OF_AGREEMENT_DIFFERENCE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
+                                   new Limits( -1, 1, Double.NaN ) ),
+
     /** Kling-Gupta Efficiency index. */
     KLING_GUPTA_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
                             new Limits( Double.NEGATIVE_INFINITY, 1, 1 ) ),
 
+    /** Difference in the Kling-Gupta Efficiency index. */
+    KLING_GUPTA_EFFICIENCY_DIFFERENCE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
+                                       new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ) ),
+
     /** Mean Absolute Error.*/
     MEAN_ABSOLUTE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
                          new Limits( 0, Double.POSITIVE_INFINITY, 0 ) ),
+
+    /** Difference in the Mean Absolute Error. */
+    MEAN_ABSOLUTE_ERROR_DIFFERENCE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
+                                    new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ) ),
 
     /** Mean Absolute Error Skill Score.*/
     MEAN_ABSOLUTE_ERROR_SKILL_SCORE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
@@ -106,9 +158,17 @@ public enum MetricConstants
     MEAN_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
                 new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0 ) ),
 
+    /** Difference in the Mean Error.*/
+    MEAN_ERROR_DIFFERENCE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
+                           new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ) ),
+
     /** Mean Square Error.*/
     MEAN_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
                        new Limits( 0, Double.POSITIVE_INFINITY, 0 ) ),
+
+    /** Difference in the Mean Square Error. */
+    MEAN_SQUARE_ERROR_DIFFERENCE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
+                                  new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ) ),
 
     /** Mean Square Error Skill Score.*/
     MEAN_SQUARE_ERROR_SKILL_SCORE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
@@ -118,22 +178,41 @@ public enum MetricConstants
     MEAN_SQUARE_ERROR_SKILL_SCORE_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
                                               new Limits( 0, 1, 1 ) ),
 
-    /** Median Error.*/
+    /** Median Error. */
     MEDIAN_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
                   new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, 0 ) ),
+
+    /** Difference in the Median Error. */
+    MEDIAN_ERROR_DIFFERENCE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
+                             new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ) ),
 
     /** Peirce Skill Score. */
     PEIRCE_SKILL_SCORE( new SampleDataGroup[] { SampleDataGroup.DICHOTOMOUS, SampleDataGroup.MULTICATEGORY },
                         StatisticType.DOUBLE_SCORE, true,
                         new Limits( -1, 1, 1 ) ),
 
+    /** Difference in Peirce Skill Score. */
+    PEIRCE_SKILL_SCORE_DIFFERENCE( new SampleDataGroup[] { SampleDataGroup.DICHOTOMOUS, SampleDataGroup.MULTICATEGORY },
+                                   StatisticType.DOUBLE_SCORE, true,
+                                   new Limits( -2, 2, Double.NaN ) ),
+
     /** Probability Of Detection. */
-    PROBABILITY_OF_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE,
-                              new Limits( 0, 1, 1 ) ),
+    PROBABILITY_OF_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, new Limits( 0, 1, 1 ) ),
+
+    /** Difference in Probability Of Detection. */
+    PROBABILITY_OF_DETECTION_DIFFERENCE( SampleDataGroup.DICHOTOMOUS,
+                                         StatisticType.DOUBLE_SCORE,
+                                         true,
+                                         new Limits( -1, 1, Double.NaN ) ),
 
     /** Probability Of False Detection.*/
-    PROBABILITY_OF_FALSE_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE,
-                                    new Limits( 0, 1, 0 ) ),
+    PROBABILITY_OF_FALSE_DETECTION( SampleDataGroup.DICHOTOMOUS, StatisticType.DOUBLE_SCORE, new Limits( 0, 1, 0 ) ),
+
+    /** Difference in Probability Of False Detection.*/
+    PROBABILITY_OF_FALSE_DETECTION_DIFFERENCE( SampleDataGroup.DICHOTOMOUS,
+                                               StatisticType.DOUBLE_SCORE,
+                                               true,
+                                               new Limits( -1, 1, Double.NaN ) ),
 
     /** Quantile-quantile diagram. */
     QUANTILE_QUANTILE_DIAGRAM( SampleDataGroup.SINGLE_VALUED, StatisticType.DIAGRAM,
@@ -155,6 +234,12 @@ public enum MetricConstants
     RELATIVE_OPERATING_CHARACTERISTIC_SCORE( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DOUBLE_SCORE, true,
                                              new Limits( 0, 1, 1 ) ),
 
+    /** Difference in the Relative Operating Characteristic Score. */
+    RELATIVE_OPERATING_CHARACTERISTIC_SCORE_DIFFERENCE( SampleDataGroup.DISCRETE_PROBABILITY,
+                                                        StatisticType.DOUBLE_SCORE,
+                                                        true,
+                                                        new Limits( -1, 1, Double.NaN ) ),
+
     /** Reliability Diagram. */
     RELIABILITY_DIAGRAM( SampleDataGroup.DISCRETE_PROBABILITY, StatisticType.DIAGRAM,
                          new Limits( 0, 1, Double.NaN ) ),
@@ -163,9 +248,19 @@ public enum MetricConstants
     ROOT_MEAN_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
                             new Limits( 0, Double.POSITIVE_INFINITY, 0 ) ),
 
-    /** Root Mean Square Error normalized by the standard deviation of the left values. */
+    /** Difference in the Root Mean Square Error. */
+    ROOT_MEAN_SQUARE_ERROR_DIFFERENCE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
+                                       new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ) ),
+
+    /** Root Mean Square Error normalized by the standard deviation of the observed values. */
     ROOT_MEAN_SQUARE_ERROR_NORMALIZED( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
                                        new Limits( 0, Double.POSITIVE_INFINITY, 0 ) ),
+
+    /** Difference in the normalized Root Mean Square Error. */
+    ROOT_MEAN_SQUARE_ERROR_NORMALIZED_DIFFERENCE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
+                                                  new Limits( Double.NEGATIVE_INFINITY,
+                                                              Double.POSITIVE_INFINITY,
+                                                              Double.NaN ) ),
 
     /** Sample size. */
     SAMPLE_SIZE( new SampleDataGroup[] { SampleDataGroup.SINGLE_VALUED,
@@ -174,13 +269,28 @@ public enum MetricConstants
                  new Limits( 0, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY ),
                  MetricGroup.UNIVARIATE_STATISTIC ),
 
+    /** Difference in the Sample size. */
+    SAMPLE_SIZE_DIFFERENCE( new SampleDataGroup[] { SampleDataGroup.SINGLE_VALUED,
+            SampleDataGroup.ENSEMBLE },
+                            StatisticType.DOUBLE_SCORE, true,
+                            new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ),
+                            MetricGroup.UNIVARIATE_STATISTIC ),
+
     /** Sum of Square Error. */
     SUM_OF_SQUARE_ERROR( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
                          new Limits( 0, Double.POSITIVE_INFINITY, 0 ) ),
 
+    /** Difference in the Sum of Square Error. */
+    SUM_OF_SQUARE_ERROR_DIFFERENCE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
+                                    new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ) ),
+
     /** Volumetric Efficiency. */
     VOLUMETRIC_EFFICIENCY( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE,
                            new Limits( Double.NEGATIVE_INFINITY, 1, 1 ) ),
+
+    /** Difference in the Volumetric Efficiency. */
+    VOLUMETRIC_EFFICIENCY_DIFFERENCE( SampleDataGroup.SINGLE_VALUED, StatisticType.DOUBLE_SCORE, true,
+                                      new Limits( Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, Double.NaN ) ),
 
     /** Time-to-Peak Error. */
     TIME_TO_PEAK_ERROR( SampleDataGroup.SINGLE_VALUED_TIME_SERIES, StatisticType.DURATION_DIAGRAM ),
@@ -846,6 +956,34 @@ public enum MetricConstants
     public boolean isSkillMetric()
     {
         return this.isSkillMetric;
+    }
+
+    /**
+     * Returns <code>true</code> if the metric involves a difference between statistics for a main and baseline dataset,
+     * otherwise <code>false</code>. When this method returns <code>true</code>, then {@link #isSkillMetric()} also
+     * returns <code>true</code>.
+     *
+     * @return true if the metric is a difference metric, otherwise false
+     */
+
+    public boolean isDifferenceMetric()
+    {
+        return this.isSkillMetric()
+               && this.name()
+                      .endsWith( "DIFFERENCE" );
+    }
+
+    /**
+     * Returns <code>true</code> if the metric requires an explicit baseline to be present, <code>false</code>
+     * otherwise.
+     *
+     * @return true if the metric requires an explicit baseline
+     */
+
+    public boolean isExplicitBaselineRequired()
+    {
+        return this == CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE
+               || this.isDifferenceMetric();
     }
 
     /**

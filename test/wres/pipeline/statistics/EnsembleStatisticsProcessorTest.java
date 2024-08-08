@@ -71,7 +71,6 @@ import wres.statistics.generated.DoubleScoreStatistic.DoubleScoreStatisticCompon
  */
 public final class EnsembleStatisticsProcessorTest
 {
-
     @Test
     public void testGetFilterForEnsemblePairs()
     {
@@ -665,7 +664,8 @@ public final class EnsembleStatisticsProcessorTest
                 EnsembleStatisticsProcessorTest.ofMetricProcessorForEnsemblePairs( declaration );
 
         Set<MetricConstants> actual = processors.stream()
-                                                .flatMap( next -> next.getMetrics().stream() )
+                                                .flatMap( next -> next.getMetrics()
+                                                                      .stream() )
                                                 .collect( Collectors.toSet() );
 
         // Check for the expected metrics
@@ -674,6 +674,11 @@ public final class EnsembleStatisticsProcessorTest
         expected.addAll( SampleDataGroup.DISCRETE_PROBABILITY.getMetrics() );
         expected.addAll( SampleDataGroup.DICHOTOMOUS.getMetrics() );
         expected.addAll( SampleDataGroup.SINGLE_VALUED.getMetrics() );
+
+        // Remove difference metrics, which are not added by default
+        expected = expected.stream()
+                           .filter( m -> !m.isDifferenceMetric() )
+                           .collect( Collectors.toSet() );
 
         assertEquals( expected, actual );
     }

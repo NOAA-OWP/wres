@@ -1294,9 +1294,10 @@ class EvaluationUtilities
 
     private static boolean hasSeparateMetricsForBaseline( Project project )
     {
-        return project.hasBaseline() && project.getDeclaration()
-                                               .baseline()
-                                               .separateMetrics();
+        return project.hasBaseline()
+               && project.getDeclaration()
+                         .baseline()
+                         .separateMetrics();
     }
 
     /**

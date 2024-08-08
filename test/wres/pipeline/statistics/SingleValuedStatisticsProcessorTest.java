@@ -275,13 +275,19 @@ public final class SingleValuedStatisticsProcessorTest
                 SingleValuedStatisticsProcessorTest.ofMetricProcessorForSingleValuedPairs( declaration );
 
         Set<MetricConstants> actual = processors.stream()
-                                                .flatMap( next -> next.getMetrics().stream() )
+                                                .flatMap( next -> next.getMetrics()
+                                                                      .stream() )
                                                 .collect( Collectors.toSet() );
 
         // Check for the expected metrics
         Set<MetricConstants> expected = new HashSet<>();
         expected.addAll( SampleDataGroup.DICHOTOMOUS.getMetrics() );
         expected.addAll( SampleDataGroup.SINGLE_VALUED.getMetrics() );
+
+        // No baseline, so remove any that require it
+        expected = expected.stream()
+                           .filter( m -> !m.isExplicitBaselineRequired() )
+                           .collect( Collectors.toSet() );
 
         assertEquals( expected, actual );
     }
@@ -604,10 +610,12 @@ public final class SingleValuedStatisticsProcessorTest
         PoolMetadata scoreMeta = PoolMetadata.of( evaluation, pool );
 
         com.google.protobuf.Duration expectedMean = wres.statistics.MessageFactory.getDuration( Duration.ofHours( 3 ) );
-        com.google.protobuf.Duration expectedMedian = wres.statistics.MessageFactory.getDuration( Duration.ofHours( 3 ) );
+        com.google.protobuf.Duration expectedMedian =
+                wres.statistics.MessageFactory.getDuration( Duration.ofHours( 3 ) );
         com.google.protobuf.Duration expectedMin = wres.statistics.MessageFactory.getDuration( Duration.ofHours( -6 ) );
         com.google.protobuf.Duration expectedMax = wres.statistics.MessageFactory.getDuration( Duration.ofHours( 12 ) );
-        com.google.protobuf.Duration expectedMeanAbs = wres.statistics.MessageFactory.getDuration( Duration.ofHours( 9 ) );
+        com.google.protobuf.Duration expectedMeanAbs =
+                wres.statistics.MessageFactory.getDuration( Duration.ofHours( 9 ) );
 
         DurationScoreMetricComponent baseMetric =
                 DurationScoreMetricComponent.newBuilder()

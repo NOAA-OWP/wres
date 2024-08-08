@@ -9,7 +9,9 @@ import wres.datamodel.statistics.ScoreStatistic;
  * a relative scores is dimensionless. A relative score is known as a skill score. Some scores may be factored into
  * components. Supported decompositions and elements of decompositions are identified by the constants within this
  * class.
- * 
+ *
+ * @param <S> the type of pool consumed by the metric
+ * @param <T> the type of statistic produced by the metric
  * @author James Brown
  */
 
@@ -19,7 +21,7 @@ public interface Score<S extends Pool<?>, T extends ScoreStatistic<?, ?>> extend
      * Returns <code>true</code> if the score is decomposable in principle, false otherwise. In practice, the output 
      * may not be decomposed. For example {@link #getScoreOutputGroup()} may return {@link MetricGroup#NONE} when 
      * this method returns <code>true</code>.
-     * 
+     *
      * @return true if the score is decomposable, false otherwise
      */
 
@@ -27,7 +29,7 @@ public interface Score<S extends Pool<?>, T extends ScoreStatistic<?, ?>> extend
 
     /**
      * Returns <code>true</code> if the score is a relative measure or skill score, false for an absolute measure.
-     * 
+     *
      * @return true if the score is a skill score
      */
 
@@ -40,7 +42,7 @@ public interface Score<S extends Pool<?>, T extends ScoreStatistic<?, ?>> extend
     /**
      * Returns the group to which the score output belongs or {@link MetricGroup#NONE} if the score output does 
      * not belong to a group.
-     * 
+     *
      * @return the {@link MetricGroup}
      */
 

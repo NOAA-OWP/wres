@@ -22,6 +22,9 @@ import wres.datamodel.types.Climatology;
  *
  * <p>A dataset may contain values that correspond to a missing value identifier.
  *
+ * <p>TODO: consider a top-level container for each pooled dataset plus the climatology to simplify this class, which
+ * would then represent a simple pool, rather than a collection of datasets. This would require major refactoring.
+ *
  * @param <T> the type of pooled data
  * @author James Brown
  */
@@ -191,7 +194,8 @@ public class Pool<T> implements Supplier<List<T>>
         // The mini-pools represent a view of the underlying data and are not part of a test for equality.
         boolean returnMe = input.hasClimatology() == this.hasClimatology()
                            && input.hasBaseline() == this.hasBaseline()
-                           && input.getMetadata().equals( this.getMetadata() );
+                           && input.getMetadata()
+                                   .equals( this.getMetadata() );
 
         if ( !returnMe )
         {
@@ -199,7 +203,8 @@ public class Pool<T> implements Supplier<List<T>>
         }
 
         // Start checking the actual data
-        returnMe = input.get().equals( this.get() );
+        returnMe = input.get()
+                        .equals( this.get() );
 
         if ( !returnMe )
         {

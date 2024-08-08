@@ -1537,9 +1537,11 @@ definitions:
       - box plot of errors by observed value
       - box plot of errors by forecast value
       - brier score
+      - brier score difference
       - brier skill score
       - contingency table
       - continuous ranked probability score
+      - continuous ranked probability score difference
       - continuous ranked probability skill score
       - ensemble quantile quantile diagram
       - maximum
@@ -1548,6 +1550,7 @@ definitions:
       - rank histogram
       - relative operating characteristic diagram
       - relative operating characteristic score
+      - relative operating characteristic score difference
       - reliability diagram
       - sample size
       - standard deviation
@@ -1565,36 +1568,57 @@ definitions:
     enum:
       - contingency table
       - threat score
+      - threat score difference
       - equitable threat score
+      - equitable threat score difference
       - frequency bias
+      - frequency bias difference
       - probability of detection
+      - probability of detection difference
       - probability of false detection
+      - probability of false detection difference
       - false alarm ratio
+      - false alarm ratio difference
       - peirce skill score
+      - peirce skill score difference
 
   SingleValuedMetricEnum:
     title: Single-valued metrics.
     type: string
     enum:
       - bias fraction
+      - bias fraction difference
       - box plot of errors
       - box plot of percentage errors
       - coefficient of determination
+      - coefficient of determination difference
       - pearson correlation coefficient
+      - pearson correlation coefficient difference
       - index of agreement
+      - index of agreement difference
       - kling gupta efficiency
+      - kling gupta efficiency difference
       - mean absolute error
+      - mean absolute error difference
       - mean error
+      - mean error difference
       - mean square error
+      - mean square error difference
       - mean square error skill score
       - mean square error skill score normalized
       - median error
+      - median error difference
       - quantile quantile diagram
       - root mean square error
+      - root mean square error difference
       - root mean square error normalized
+      - root mean square error normalized difference
       - sample size
+      - sample size difference
       - sum of square error
+      - sum of square error difference
       - volumetric efficiency
+      - volumetric efficiency difference
       - mean absolute error skill score
 
   FormatEnum:

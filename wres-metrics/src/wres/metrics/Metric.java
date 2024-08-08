@@ -16,7 +16,9 @@ import wres.datamodel.statistics.Statistic;
  * changing measurement units, filtering, or removing missing values. However, a minority of metrics may consume more
  * complex pools, such as pools of time-series which may, for example, contain missing values. In most cases, the
  * removal of missing values and any other pre-processing should be conducted upfront.
- * 
+ *
+ * @param <S> the type of pool consumed by the metric
+ * @param <T> the type of statistic produced by the metric
  * @author James Brown
  */
 public interface Metric<S extends Pool<?>, T extends Statistic<?>> extends Function<S, T>

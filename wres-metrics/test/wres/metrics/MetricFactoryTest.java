@@ -78,23 +78,6 @@ public final class MetricFactoryTest
     }
 
     /**
-     * Tests {@link MetricFactory#ofSingleValuedScoreCollectable(MetricConstants)}. 
-     */
-    @Test
-    public void testOfSingleValuedScoreCollectable()
-    {
-        assertTrue( MetricFactory.ofSingleValuedScoreCollectable( MetricConstants.ROOT_MEAN_SQUARE_ERROR ) instanceof RootMeanSquareError );
-        assertTrue( MetricFactory.ofSingleValuedScoreCollectable( MetricConstants.PEARSON_CORRELATION_COEFFICIENT ) instanceof CorrelationPearsons );
-        assertTrue( MetricFactory.ofSingleValuedScoreCollectable( MetricConstants.COEFFICIENT_OF_DETERMINATION ) instanceof CoefficientOfDetermination );
-        assertTrue( MetricFactory.ofSingleValuedScoreCollectable( MetricConstants.MEAN_SQUARE_ERROR ) instanceof MeanSquareError );
-
-        // Unrecognized metric
-        IllegalArgumentException expected = assertThrows( IllegalArgumentException.class,
-                                                          () -> MetricFactory.ofSingleValuedScoreCollectable( MetricConstants.MAIN ) );
-        assertEquals( UNRECOGNIZED_METRIC_FOR_IDENTIFIER_MAIN, expected.getMessage() );
-    }
-
-    /**
      * Tests {@link MetricFactory#ofDiscreteProbabilityScore(MetricConstants)} 
      */
     @Test

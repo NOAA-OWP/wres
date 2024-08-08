@@ -1161,7 +1161,8 @@ class DeclarationValidatorTest
     void testScoreThatNeedsBaselineWithNoBaselineResultsInError()
     {
         Metric metric = new Metric( MetricConstants.CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE, null );
-        Set<Metric> metrics = Set.of( metric );
+        Metric anotherMetric = new Metric( MetricConstants.BIAS_FRACTION_DIFFERENCE, null );
+        Set<Metric> metrics = Set.of( metric, anotherMetric );
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
                                                                         .right( this.defaultDataset )
@@ -1170,9 +1171,18 @@ class DeclarationValidatorTest
 
         List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
 
-        assertTrue( DeclarationValidatorTest.contains( events, "The declaration includes metrics that require "
-                                                               + "an explicit 'baseline' dataset",
-                                                       StatusLevel.ERROR ) );
+        assertAll( () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "The declaration includes metrics that "
+                                                                        + "require an explicit 'baseline' dataset",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "CONTINUOUS RANKED PROBABILITY SKILL "
+                                                                        + "SCORE",
+                                                                        StatusLevel.ERROR ) ),
+                   () -> assertTrue( DeclarationValidatorTest.contains( events,
+                                                                        "BIAS FRACTION DIFFERENCE",
+                                                                        StatusLevel.ERROR ) )
+        );
     }
 
     @Test
