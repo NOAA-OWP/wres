@@ -1621,15 +1621,7 @@ public class ChartFactory
         }
 
         String scenarioName = this.getScenarioNameForTitle( metadata, metricName );
-
-        if ( !scenarioName.isBlank() )
-        {
-            name += " for " + scenarioName + " predictions of";
-        }
-        else
-        {
-            name += " for predictions of";
-        }
+        name += " for" + scenarioName + "predictions of";
 
         name += this.getVariableNameForTitle( metadata, metricName, metricComponentName );
         name += this.getBaselineScenarioForTitle( metadata, metricName );
@@ -1826,7 +1818,7 @@ public class ChartFactory
         Objects.requireNonNull( metadata );
         Objects.requireNonNull( metric );
 
-        String scenarioName = "";
+        String scenarioName = " ";
 
         Evaluation evaluation = metadata.getEvaluation();
 
@@ -1835,15 +1827,24 @@ public class ChartFactory
              || metric == MetricConstants.SAMPLE_SIZE
              || metric == MetricConstants.SAMPLE_SIZE_DIFFERENCE )
         {
+            String space = " ";
             if ( metadata.getPool()
                          .getIsBaselinePool() )
             {
-                scenarioName = evaluation.getBaselineDataName();
+                if ( !evaluation.getBaselineDataName()
+                                .isBlank() )
+                {
+                    scenarioName = space
+                                   + evaluation.getBaselineDataName()
+                                   + space;
+                }
             }
             else if ( !evaluation.getRightDataName()
                                  .isBlank() )
             {
-                scenarioName = evaluation.getRightDataName();
+                scenarioName = space
+                               + evaluation.getRightDataName()
+                               + space;
             }
         }
 
@@ -2051,16 +2052,15 @@ public class ChartFactory
 
         String baselineScenario = "";
 
-        // TODO: need a less brittle way to identify skill measures that have used a default baseline vs. an explicit 
-        // one because a pool that includes an explicit baseline may or may not have been used for specific measures.
-        if ( metric.isDifferenceMetric()
-             || ( metric.isSkillMetric()
-                  && !metric.isInGroup( SampleDataGroup.DICHOTOMOUS )
-                  && metric != MetricConstants.KLING_GUPTA_EFFICIENCY ) )
+        if ( this.isSkillMetric( metric ) )
         {
-            baselineScenario = " ";
             String baselineSuffix = metadata.getEvaluation()
                                             .getBaselineDataName();
+
+            if ( baselineSuffix.isBlank() )
+            {
+                baselineSuffix = "BASELINE";
+            }
 
             // Skill scores for baseline use a default reference, which is climatology
             // This is also potentially brittle, so consider a better way, such as adding the default baseline
@@ -2074,10 +2074,27 @@ public class ChartFactory
                                          .replace( "_", " " );
             }
 
-            baselineScenario += "against predictions from " + baselineSuffix;
+            baselineScenario += " against predictions from " + baselineSuffix;
         }
 
         return baselineScenario;
+    }
+
+    /**
+     * <p>Returns whether the metric is a skill metric without a default baseline.
+     *
+     * <p>TODO: need a less brittle way to identify skill measures that have used a default baseline vs. an explicit
+     * one because a pool that includes an explicit baseline may or may not have been used for specific measures.
+     *
+     * @param metric the metric to test
+     * @return whether the metric is a type of skill metric without a default baseline.
+     */
+    private boolean isSkillMetric( MetricConstants metric )
+    {
+        return metric.isDifferenceMetric()
+               || ( metric.isSkillMetric()
+                    && !metric.isInGroup( SampleDataGroup.DICHOTOMOUS )
+                    && metric != MetricConstants.KLING_GUPTA_EFFICIENCY );
     }
 
     /**

@@ -704,6 +704,7 @@ public final class MetricFactory
                     DoubleScoreDifference.of( ContinuousRankedProbabilityScore.of() );
             case CONTINUOUS_RANKED_PROBABILITY_SKILL_SCORE -> ContinuousRankedProbabilitySkillScore.of();
             case SAMPLE_SIZE -> SampleSize.of();
+            case SAMPLE_SIZE_DIFFERENCE -> DoubleScoreDifference.of( SampleSize.of() );
             default -> throw new IllegalArgumentException( UNRECOGNIZED_METRIC_ERROR + " '" + metric + "'." );
         };
     }
