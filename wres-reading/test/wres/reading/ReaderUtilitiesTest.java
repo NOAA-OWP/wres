@@ -6,6 +6,7 @@ import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -30,7 +31,9 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.FeatureGroupsBuilder;
 import wres.config.yaml.components.Features;
+import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricBuilder;
 import wres.config.yaml.components.MetricParametersBuilder;
@@ -706,7 +709,9 @@ class ReaderUtilitiesTest
                                                .build();
 
             Set<GeometryTuple> geometries = Set.of( first, second, third, fourth, fifth );
-            Features features = new Features( geometries );
+            Features features = FeaturesBuilder.builder()
+                                               .geometries( geometries )
+                                               .build();
 
             Set<Metric> metrics = Set.of( new Metric( MetricConstants.MEAN_ABSOLUTE_ERROR, null ) );
 
@@ -1190,12 +1195,16 @@ class ReaderUtilitiesTest
                                                .build();
 
             Set<GeometryTuple> geometries = Set.of( first, second, third, fourth, fifth, sixth );
-            Features features = new Features( geometries );
+            Features features = FeaturesBuilder.builder()
+                                               .geometries( geometries )
+                                               .build();
             GeometryGroup group = GeometryGroup.newBuilder()
                                                .addAllGeometryTuples( geometries )
                                                .setRegionName( "FOO REGION" )
                                                .build();
-            FeatureGroups featureGroups = new FeatureGroups( Set.of( group ) );
+            FeatureGroups featureGroups = FeatureGroupsBuilder.builder()
+                                                              .geometryGroups( Collections.singleton( group ) )
+                                                              .build();
             Set<Metric> metrics = Set.of( new Metric( MetricConstants.MEAN_ABSOLUTE_ERROR, null ) );
 
             EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
@@ -1280,7 +1289,9 @@ class ReaderUtilitiesTest
                                                              .setName( "SMAF1FOO" ) )
                                            .build();
         Set<GeometryTuple> geometries = Set.of( first, second, third, fourth, fifth );
-        Features features = new Features( geometries );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( geometries )
+                                           .build();
 
         Set<Metric> metrics = Set.of( new Metric( MetricConstants.MEAN_ABSOLUTE_ERROR, null ) );
 

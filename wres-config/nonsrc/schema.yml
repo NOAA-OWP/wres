@@ -566,9 +566,9 @@ definitions:
     cross-pairing chosen."
     anyOf:
       - "$ref": "#/definitions/CrossPairEnum"
-      - "$ref": "#/definitions/CrossPairFull"
+      - "$ref": "#/definitions/CrossPairWithParameters"
 
-  CrossPairFull:
+  CrossPairWithParameters:
     type: object
     additionalProperties: false
     properties:
@@ -665,25 +665,25 @@ definitions:
     properties:
       observed:
         anyOf:
-          - "$ref": "#/definitions/FeatureTupleFull"
+          - "$ref": "#/definitions/FeatureWithParameters"
           - type: string
             minLength: 1
             maxLength: 32
       predicted:
         anyOf:
-          - "$ref": "#/definitions/FeatureTupleFull"
+          - "$ref": "#/definitions/FeatureWithParameters"
           - type: string
             minLength: 1
             maxLength: 32
       baseline:
         anyOf:
-          - "$ref": "#/definitions/FeatureTupleFull"
+          - "$ref": "#/definitions/FeatureWithParameters"
           - type: string
             minLength: 1
             maxLength: 32
 
-  FeatureTupleFull:
-    title: A feature tuple with additional properties
+  FeatureWithParameters:
+    title: A feature with additional properties
     type: object
     additionalProperties: false
     properties:
@@ -695,6 +695,8 @@ definitions:
         type: string
         minLength: 1
         maxLength: 2083
+      offset:
+        type: number
     required:
       - name
 

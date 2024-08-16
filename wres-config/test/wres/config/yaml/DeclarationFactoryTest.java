@@ -57,6 +57,7 @@ import wres.config.yaml.components.GeneratedBaselines;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricParameters;
+import wres.config.yaml.components.Offset;
 import wres.config.yaml.components.SamplingUncertainty;
 import wres.config.yaml.components.Season;
 import wres.config.yaml.components.Source;
@@ -695,16 +696,63 @@ class DeclarationFactoryTest
         EvaluationDeclaration actual = DeclarationFactory.from( yaml );
 
         GeometryTuple first = GeometryTuple.newBuilder()
-                                           .setRight( Geometry.newBuilder().setName( DRRC2 ) )
+                                           .setRight( Geometry.newBuilder()
+                                                              .setName( DRRC2 ) )
                                            .build();
 
         GeometryTuple second = GeometryTuple.newBuilder()
-                                            .setRight( Geometry.newBuilder().setName( DOLC2 ) )
+                                            .setRight( Geometry.newBuilder()
+                                                               .setName( DOLC2 ) )
                                             .build();
 
         Set<GeometryTuple> geometries = Set.of( first, second );
         Features features = FeaturesBuilder.builder()
                                            .geometries( geometries )
+                                           .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .features( features )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithParameterizedFeatures() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  - another_file.csv
+                features:
+                  - observed:
+                      name: DRRC2
+                      offset: 0.25
+                      wkt: POINT (-76.825 39.225, -76.825 39.275 )
+                    predicted:
+                      name: DRRC2
+                      offset: 0.35
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        String expectedWkt = "POINT (-76.825 39.225, -76.825 39.275 )";
+        GeometryTuple feature = GeometryTuple.newBuilder()
+                                             .setLeft( Geometry.newBuilder()
+                                                               .setName( DRRC2 )
+                                                               .setWkt( expectedWkt ) )
+                                             .setRight( Geometry.newBuilder()
+                                                                .setName( DRRC2 ) )
+                                             .build();
+
+        Map<GeometryTuple, Offset> offsets = Map.of( feature, new Offset( 0.25, 0.35, 0 ) );
+        Set<GeometryTuple> geometries = Set.of( feature );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( geometries )
+                                           .offsets( offsets )
                                            .build();
 
         EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()

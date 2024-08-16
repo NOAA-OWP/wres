@@ -40,6 +40,7 @@ import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.FeaturesBuilder;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.time.Event;
@@ -521,7 +522,9 @@ public class AnalysisRetrieverTest
                 EvaluationDeclarationBuilder.builder()
                                             .left( left )
                                             .right( right )
-                                            .features( new wres.config.yaml.components.Features( features ) )
+                                            .features( FeaturesBuilder.builder()
+                                                                      .geometries( features )
+                                                                      .build() )
                                             .build();
 
         TimeSeries<Double> timeSeriesOne = TestData.generateTimeSeriesDoubleOne( ANALYSIS_START_TIME );

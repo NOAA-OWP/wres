@@ -22,6 +22,7 @@ import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.Features;
+import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricBuilder;
 import wres.config.yaml.components.MetricParametersBuilder;
@@ -584,7 +585,9 @@ class ThresholdSlicerTest
                                                   .setRight( twoRight )
                                                   .build();
 
-        Features features = new Features( Set.of( singletonOne, singletonTwo ) );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( Set.of( singletonOne, singletonTwo ) )
+                                           .build();
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
                                                                        .left( dataset )
                                                                        .right( dataset )
@@ -687,7 +690,9 @@ class ThresholdSlicerTest
                                                   .setRight( twoRight )
                                                   .build();
 
-        Features features = new Features( Set.of( singletonOne, singletonTwo ) );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( Set.of( singletonOne, singletonTwo ) )
+                                           .build();
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
                                                                        .left( dataset )
                                                                        .right( dataset )

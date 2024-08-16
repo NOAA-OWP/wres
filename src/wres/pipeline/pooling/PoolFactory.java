@@ -44,6 +44,7 @@ import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.GeneratedBaseline;
 import wres.config.yaml.components.GeneratedBaselines;
+import wres.config.yaml.components.Offset;
 import wres.config.yaml.components.Season;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.Values;
@@ -81,7 +82,9 @@ import wres.io.project.Project;
 import wres.io.retrieving.CachingSupplier;
 import wres.io.retrieving.RetrieverFactory;
 import wres.statistics.generated.Evaluation;
+import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.TimeScale;
 
@@ -560,10 +563,18 @@ public class PoolFactory
             }
         }
 
-        // Create any required transformers for value constraints and units
+        // Left value transfer, which is a composition of several transformations
+        Map<GeometryTuple, Offset> offsets = project.getOffsets();
+        Map<Geometry, Offset> leftOffsets = offsets.entrySet()
+                                                   .stream()
+                                                   .collect( Collectors.toMap( f -> f.getKey()
+                                                                                     .getLeft(),
+                                                                               Map.Entry::getValue ) );
+        Function<Geometry, DoubleUnaryOperator> leftOffsetGenerator =
+                this.getOffsetTransformer( leftOffsets, DatasetOrientation.LEFT );
         DoubleUnaryOperator valueTransformer = this.getValueTransformer( declaration.values() );
-        UnaryOperator<TimeSeries<Double>> valueAndUnitTransformer =
-                this.getValueTransformer( valueTransformer );
+        UnaryOperator<TimeSeries<Double>> leftValueTransformer =
+                this.getValueTransformer( leftOffsetGenerator, valueTransformer );
 
         // Apply any valid time season transformer based on the right-ish data type
         UnaryOperator<TimeSeries<Double>> validTimeSeasonTransformer =
@@ -571,8 +582,34 @@ public class PoolFactory
                                                     declaration.right()
                                                                .type() );
 
-        UnaryOperator<TimeSeries<Double>> composedTransformer =
-                t -> valueAndUnitTransformer.apply( validTimeSeasonTransformer.apply( t ) );
+        UnaryOperator<TimeSeries<Double>> composedLeftTransformer =
+                t -> leftValueTransformer.apply( validTimeSeasonTransformer.apply( t ) );
+
+        // Right transformer, which is a composition of several transformations
+        Map<Geometry, Offset> rightOffsets = offsets.entrySet()
+                                                    .stream()
+                                                    .collect( Collectors.toMap( f -> f.getKey()
+                                                                                      .getRight(),
+                                                                                Map.Entry::getValue ) );
+        Function<Geometry, DoubleUnaryOperator> rightOffsetGenerator =
+                this.getOffsetTransformer( rightOffsets, DatasetOrientation.RIGHT );
+        UnaryOperator<TimeSeries<Double>> rightValueTransformer =
+                this.getValueTransformer( rightOffsetGenerator, valueTransformer );
+        UnaryOperator<TimeSeries<Double>> composedRightTransformer =
+                t -> rightValueTransformer.apply( validTimeSeasonTransformer.apply( t ) );
+
+        // Baseline transformer, which is a composition of several transformations
+        Map<Geometry, Offset> baselineOffsets = offsets.entrySet()
+                                                       .stream()
+                                                       .collect( Collectors.toMap( f -> f.getKey()
+                                                                                         .getBaseline(),
+                                                                                   Map.Entry::getValue ) );
+        Function<Geometry, DoubleUnaryOperator> baselineOffsetGenerator =
+                this.getOffsetTransformer( baselineOffsets, DatasetOrientation.BASELINE );
+        UnaryOperator<TimeSeries<Double>> baselineValueTransformer =
+                this.getValueTransformer( baselineOffsetGenerator, valueTransformer );
+        UnaryOperator<TimeSeries<Double>> composedBaselineTransformer =
+                t -> baselineValueTransformer.apply( validTimeSeasonTransformer.apply( t ) );
 
         // Currently only a seasonal filter for reference times, which applies equally to all sides
         Predicate<TimeSeries<Double>> filter = this.getReferenceTimeSeasonFilter( declaration.season() );
@@ -604,9 +641,9 @@ public class PoolFactory
                                                                     .setRetrieverFactory( retrieverFactory )
                                                                     .setPoolRequests( poolRequests )
                                                                     .setBaselineGenerator( baselineGenerator )
-                                                                    .setLeftTransformer( composedTransformer )
-                                                                    .setRightTransformer( composedTransformer )
-                                                                    .setBaselineTransformer( composedTransformer )
+                                                                    .setLeftTransformer( composedLeftTransformer )
+                                                                    .setRightTransformer( composedRightTransformer )
+                                                                    .setBaselineTransformer( composedBaselineTransformer )
                                                                     .setLeftFilter( filter )
                                                                     .setRightFilter( filter )
                                                                     .setBaselineFilter( filter )
@@ -700,10 +737,20 @@ public class PoolFactory
                                                                 leftUpscaler, this.getProject()
                                                                                   .getDesiredTimeScale() );
 
-        // Left transformer
+        // Left transformer, which is a composition of several transformations
+        Map<GeometryTuple, Offset> offsets = project.getOffsets();
+        Map<Geometry, Offset> leftOffsets = offsets.entrySet()
+                                                   .stream()
+                                                   .collect( Collectors.toMap( f -> f.getKey()
+                                                                                     .getLeft(),
+                                                                               Map.Entry::getValue ) );
+        Function<Geometry, DoubleUnaryOperator> leftOffsetGenerator =
+                this.getOffsetTransformer( leftOffsets, DatasetOrientation.LEFT );
+
+
         DoubleUnaryOperator leftValueTransformer = this.getValueTransformer( declaration.values() );
         UnaryOperator<TimeSeries<Double>> leftValueAndUnitTransformer =
-                this.getValueTransformer( leftValueTransformer );
+                this.getValueTransformer( leftOffsetGenerator, leftValueTransformer );
 
         // Apply any valid time season transformer based on the right-ish data type
         UnaryOperator<TimeSeries<Double>> leftValidTimeSeasonTransformer =
@@ -719,13 +766,20 @@ public class PoolFactory
         // the ensemble members themselves are not resampled
         boolean cacheSorted = Objects.nonNull( declaration.sampleUncertainty() );
 
-        // Right transformer
+        // Right transformer, which is a composition of several transformations
+        Map<Geometry, Offset> rightOffsets = offsets.entrySet()
+                                                    .stream()
+                                                    .collect( Collectors.toMap( f -> f.getKey()
+                                                                                      .getRight(),
+                                                                                Map.Entry::getValue ) );
+        Function<Geometry, DoubleUnaryOperator> rightOffsetGenerator =
+                this.getOffsetTransformer( rightOffsets, DatasetOrientation.RIGHT );
         Dataset right = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(), DatasetOrientation.RIGHT );
         UnaryOperator<Event<Ensemble>> rightValueTransformer = this.getValueTransformer( leftValueTransformer,
                                                                                          right,
                                                                                          cacheSorted );
         UnaryOperator<TimeSeries<Ensemble>> rightValueAndUnitTransformer =
-                this.getValueTransformer( rightValueTransformer );
+                this.getValueTransformer( rightOffsetGenerator, rightValueTransformer );
 
         UnaryOperator<TimeSeries<Ensemble>> rightValidTimeSeasonTransformer =
                 this.getValidTimeSeasonTransformer( declaration.season(),
@@ -735,8 +789,16 @@ public class PoolFactory
         UnaryOperator<TimeSeries<Ensemble>> composedRightTransformer =
                 t -> rightValueAndUnitTransformer.apply( rightValidTimeSeasonTransformer.apply( t ) );
 
-        // Baseline transformer
+        // Baseline transformer, which is a composition of several transformations
         Dataset baseline = null;
+        Map<Geometry, Offset> baselineOffsets = offsets.entrySet()
+                                                       .stream()
+                                                       .collect( Collectors.toMap( f -> f.getKey()
+                                                                                         .getBaseline(),
+                                                                                   Map.Entry::getValue ) );
+        Function<Geometry, DoubleUnaryOperator> baselineOffsetGenerator =
+                this.getOffsetTransformer( baselineOffsets, DatasetOrientation.BASELINE );
+
         if ( project.hasBaseline() )
         {
             baseline = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
@@ -748,7 +810,7 @@ public class PoolFactory
                                                                                             cacheSorted );
 
         UnaryOperator<TimeSeries<Ensemble>> baselineValueAndUnitTransformer =
-                this.getValueTransformer( baselineValueTransformer );
+                this.getValueTransformer( baselineOffsetGenerator, baselineValueTransformer );
 
         // Re-use the right season transformer
         UnaryOperator<TimeSeries<Ensemble>> composedBaselineTransformer =
@@ -871,38 +933,62 @@ public class PoolFactory
                                                                 leftUpscaler, this.getProject()
                                                                                   .getDesiredTimeScale() );
 
-        // Left transformer
+        // Left transformer, which is a composition of several transformations
+        Map<GeometryTuple, Offset> offsets = project.getOffsets();
+        Map<Geometry, Offset> leftOffsets = offsets.entrySet()
+                                                   .stream()
+                                                   .collect( Collectors.toMap( f -> f.getKey()
+                                                                                     .getLeft(),
+                                                                               Map.Entry::getValue ) );
+        Function<Geometry, DoubleUnaryOperator> leftOffsetGenerator =
+                this.getOffsetTransformer( leftOffsets, DatasetOrientation.LEFT );
+
         DoubleUnaryOperator leftValueTransformer = this.getValueTransformer( declaration.values() );
         UnaryOperator<TimeSeries<Double>> leftValueAndUnitTransformer =
-                this.getValueTransformer( leftValueTransformer );
+                this.getValueTransformer( leftOffsetGenerator, leftValueTransformer );
 
         // Whether to cache the sorted ensemble members, trading cpu for memory. Do this when performing sampling
         // uncertainty estimation, because repeated sorting for each realization is otherwise extremely expensive and
         // the ensemble members themselves are not resampled
         boolean cacheSorted = Objects.nonNull( declaration.sampleUncertainty() );
 
-        // Right transformer
+        // Right transformer, which is a composition of several transformations
+        Map<Geometry, Offset> rightOffsets = offsets.entrySet()
+                                                    .stream()
+                                                    .collect( Collectors.toMap( f -> f.getKey()
+                                                                                      .getRight(),
+                                                                                Map.Entry::getValue ) );
+        Function<Geometry, DoubleUnaryOperator> rightOffsetGenerator =
+                this.getOffsetTransformer( rightOffsets, DatasetOrientation.RIGHT );
+
         Dataset right = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(), DatasetOrientation.RIGHT );
         UnaryOperator<Event<Ensemble>> rightValueTransformer = this.getValueTransformer( leftValueTransformer,
                                                                                          right,
                                                                                          cacheSorted );
         UnaryOperator<TimeSeries<Ensemble>> rightValueAndUnitTransformer =
-                this.getValueTransformer( rightValueTransformer );
+                this.getValueTransformer( rightOffsetGenerator, rightValueTransformer );
 
-        // Baseline transformer
+        // Baseline transformer, which is a composition of several transformations
         Dataset baseline = null;
         if ( project.hasBaseline() )
         {
             baseline = DeclarationUtilities.getDeclaredDataset( project.getDeclaration(),
                                                                 DatasetOrientation.BASELINE );
         }
+        Map<Geometry, Offset> baselineOffsets = offsets.entrySet()
+                                                       .stream()
+                                                       .collect( Collectors.toMap( f -> f.getKey()
+                                                                                         .getBaseline(),
+                                                                                   Map.Entry::getValue ) );
+        Function<Geometry, DoubleUnaryOperator> baselineOffsetGenerator =
+                this.getOffsetTransformer( baselineOffsets, DatasetOrientation.BASELINE );
 
         UnaryOperator<Event<Ensemble>> baselineValueTransformer = this.getValueTransformer( leftValueTransformer,
                                                                                             baseline,
                                                                                             cacheSorted );
 
         UnaryOperator<TimeSeries<Ensemble>> baselineValueAndUnitTransformer =
-                this.getValueTransformer( baselineValueTransformer );
+                this.getValueTransformer( baselineOffsetGenerator, baselineValueTransformer );
 
         // Currently only a seasonal filter, which applies equally to all sides
         Predicate<TimeSeries<Double>> singleValuedFilter = this.getReferenceTimeSeasonFilter( declaration.season() );
@@ -1188,14 +1274,16 @@ public class PoolFactory
     }
 
     /**
-     * Returns a transformer that applies a unit conversion, followed by the input transformation to a single-valued
-     * time-series.
+     * Returns a transformer that applies a sequence of value transformations, including a unit conversion, offset and
+     * a prescribed single-valued transformation.
      *
+     * @param offsetGenerator the offset generator
      * @param basicTransformer the transformer to apply after a unit conversion
      * @return a transformer that applies a unit conversion followed by the input transformer
      */
 
-    private UnaryOperator<TimeSeries<Double>> getValueTransformer( DoubleUnaryOperator basicTransformer )
+    private UnaryOperator<TimeSeries<Double>> getValueTransformer( Function<Geometry, DoubleUnaryOperator> offsetGenerator,
+                                                                   DoubleUnaryOperator basicTransformer )
     {
         return toTransform -> {
 
@@ -1206,26 +1294,34 @@ public class PoolFactory
                                            .getDesiredMeasurementUnitName();
             Map<String, String> aliases = this.getUnitMapper()
                                               .getUnitAliases();
-            DoubleUnaryOperator innerUnitMapper = this.getUnitMapper( existingUnitString,
-                                                                      desiredUnitString,
-                                                                      aliases,
-                                                                      toTransform.getTimeScale(),
-                                                                      this.getProject()
-                                                                          .getDesiredTimeScale() );
+            DoubleUnaryOperator innerUnitMapper = this.getUnitTransformer( existingUnitString,
+                                                                           desiredUnitString,
+                                                                           aliases,
+                                                                           toTransform.getTimeScale(),
+                                                                           this.getProject()
+                                                                               .getDesiredTimeScale() );
 
             UnaryOperator<TimeSeriesMetadata> metaMapper = metadata -> toTransform.getMetadata()
                                                                                   .toBuilder()
                                                                                   .setUnit( desiredUnitString )
                                                                                   .build();
 
-            DoubleUnaryOperator transformer = basicTransformer.compose( innerUnitMapper );
+            Function<TimeSeries<Double>, DoubleUnaryOperator> offsetTransformerGenerator =
+                    this.getOffsetTransformer( offsetGenerator );
+            DoubleUnaryOperator offsetTransformer = offsetTransformerGenerator.apply( toTransform );
+
+            // Order of composition is critical because composed function applies "before this" function and unit
+            // conversion must happen first, as offsets are declared in desired units, hence the counterintuitive order.
+            DoubleUnaryOperator transformer = basicTransformer.compose( offsetTransformer )
+                                                              .compose( innerUnitMapper );
+
             TimeSeries<Double> transformed = TimeSeriesSlicer.transform( toTransform,
                                                                          transformer::applyAsDouble,
                                                                          metaMapper );
 
             if ( LOGGER.isTraceEnabled() )
             {
-                LOGGER.trace( "Tranformed the values associated with time-series {}, producing a new time-series {}.",
+                LOGGER.trace( "Transformed the values associated with time-series {}, producing a new time-series {}.",
                               toTransform.hashCode(),
                               transformed.hashCode() );
             }
@@ -1235,14 +1331,16 @@ public class PoolFactory
     }
 
     /**
-     * Returns a transformer that applies a unit conversion, followed by the input transformation to an ensemble
-     * time-series.
+     * Returns a transformer that applies a sequence of value transformations, including a unit conversion, offset and
+     * a prescribed ensemble transformation.
      *
+     * @param offsetGenerator the offset generator
      * @param basicTransformer the transformer to apply after a unit conversion
      * @return a transformer that applies a unit conversion followed by the input transformer
      */
 
-    private UnaryOperator<TimeSeries<Ensemble>> getValueTransformer( UnaryOperator<Event<Ensemble>> basicTransformer )
+    private UnaryOperator<TimeSeries<Ensemble>> getValueTransformer( Function<Geometry, DoubleUnaryOperator> offsetGenerator,
+                                                                     UnaryOperator<Event<Ensemble>> basicTransformer )
     {
         return toTransform -> {
             // Apply the unit mapping first, then the basic transformer
@@ -1253,20 +1351,30 @@ public class PoolFactory
             Map<String, String> aliases = this.getUnitMapper()
                                               .getUnitAliases();
 
-            DoubleUnaryOperator innerUnitMapper = this.getUnitMapper( existingUnitString,
-                                                                      desiredUnitString,
-                                                                      aliases,
-                                                                      toTransform.getTimeScale(),
-                                                                      this.getProject()
-                                                                          .getDesiredTimeScale() );
-            UnaryOperator<Event<Ensemble>> ensembleUnitMapper = this.getEnsembleUnitMapper( innerUnitMapper );
-            UnaryOperator<Event<Ensemble>> transformer = event -> basicTransformer.compose( ensembleUnitMapper )
+            DoubleUnaryOperator innerUnitMapper = this.getUnitTransformer( existingUnitString,
+                                                                           desiredUnitString,
+                                                                           aliases,
+                                                                           toTransform.getTimeScale(),
+                                                                           this.getProject()
+                                                                               .getDesiredTimeScale() );
+            UnaryOperator<Event<Ensemble>> ensembleUnitMapper = this.getEnsembleValueTransformer( innerUnitMapper );
+
+            Function<TimeSeries<Ensemble>, DoubleUnaryOperator> offsetTransformerGenerator =
+                    this.getOffsetTransformer( offsetGenerator );
+            DoubleUnaryOperator offsetTransformer = offsetTransformerGenerator.apply( toTransform );
+            UnaryOperator<Event<Ensemble>> ensembleOffsetTransformer =
+                    this.getEnsembleValueTransformer( offsetTransformer );
+
+            // Order of composition is critical because composed function applies "before this" function and unit
+            // conversion must happen first, as offsets are declared in desired units, hence the counterintuitive order.
+            UnaryOperator<Event<Ensemble>> transformer = event -> basicTransformer.compose( ensembleOffsetTransformer )
+                                                                                  .compose( ensembleUnitMapper )
                                                                                   .apply( event );
             TimeSeries<Ensemble> transformed = TimeSeriesSlicer.transformByEvent( toTransform, transformer );
 
             if ( LOGGER.isTraceEnabled() )
             {
-                LOGGER.trace( "Tranformed the values associated with time-series {}, producing a new time-series {}.",
+                LOGGER.trace( "Transformed the values associated with time-series {}, producing a new time-series {}.",
                               toTransform.hashCode(),
                               transformed.hashCode() );
             }
@@ -1282,11 +1390,11 @@ public class PoolFactory
      * @return the unit mapper
      */
 
-    private DoubleUnaryOperator getUnitMapper( String existingUnitString,
-                                               String desiredUnitString,
-                                               Map<String, String> aliases,
-                                               TimeScaleOuter existingTimeScale,
-                                               TimeScaleOuter desiredTimeScale )
+    private DoubleUnaryOperator getUnitTransformer( String existingUnitString,
+                                                    String desiredUnitString,
+                                                    Map<String, String> aliases,
+                                                    TimeScaleOuter existingTimeScale,
+                                                    TimeScaleOuter desiredTimeScale )
     {
         DoubleUnaryOperator converter = this.converterCache.getIfPresent( existingUnitString );
 
@@ -1355,18 +1463,89 @@ public class PoolFactory
     }
 
     /**
-     * @param unitMapper the unit mapper
-     * @return a function that maps the units of an ensemble event
+     * Creates a geometry-specific time-series value transformer using the supplied offsets. Specifically, when the
+     * time-series geometry contains a corresponding offset in the supplied input, the offset value is added to the
+     * time-series event value, otherwise the original value is returned.
+     *
+     * @param offsets the geometry-specific offsets
+     * @param orientation the dataset orientation
+     * @return a function that returns an offset transformer for a specific geometry
      */
 
-    private UnaryOperator<Event<Ensemble>> getEnsembleUnitMapper( DoubleUnaryOperator unitMapper )
+    private Function<Geometry, DoubleUnaryOperator> getOffsetTransformer( Map<Geometry, Offset> offsets,
+                                                                          DatasetOrientation orientation )
+    {
+        Objects.requireNonNull( offsets );
+
+        return geometry ->
+        {
+            // Short circuit
+            if ( offsets.isEmpty()
+                 || !offsets.containsKey( geometry ) )
+            {
+                return a -> a;  // Identity transform
+            }
+
+            Offset add = offsets.get( geometry );
+            switch ( orientation )
+            {
+                case LEFT ->
+                {
+                    return a -> a + add.left();
+                }
+                case RIGHT ->
+                {
+                    return a -> a + add.right();
+                }
+                case BASELINE ->
+                {
+                    return a -> a + add.baseline();
+                }
+                // Identity transform
+                default ->
+                {
+                    return a -> a;
+                }
+            }
+        };
+    }
+
+    /**
+     * Creates a geometry-specific time-series value transformer using the supplied generator.
+     *
+     * @param <T> the time-series event value type
+     * @param offsetGenerator the offset generator
+     * @return a function that returns an offset transformer for a specific time-series
+     */
+
+    private <T> Function<TimeSeries<T>, DoubleUnaryOperator> getOffsetTransformer( Function<Geometry, DoubleUnaryOperator> offsetGenerator )
+    {
+        Objects.requireNonNull( offsetGenerator );
+
+        return series ->
+        {
+            Geometry geometry = series.getMetadata()
+                                      .getFeature()
+                                      .getGeometry();
+
+            return offsetGenerator.apply( geometry );
+        };
+    }
+
+    /**
+     * Creates an ensemble value transformer from a single-valued transformer.
+     * @param valueMapper the single-valued value transformer
+     * @return a function that transforms the values of an ensemble event
+     */
+
+    private UnaryOperator<Event<Ensemble>> getEnsembleValueTransformer( DoubleUnaryOperator valueMapper )
     {
         return ensembleEvent -> {
 
             Ensemble ensemble = ensembleEvent.getValue();
             double[] values = ensemble.getMembers();
             double[] mappedValues = Arrays.stream( values )
-                                          .map( unitMapper )
+                                          .map( valueMapper )
                                           .toArray();
 
             Ensemble convertedEnsemble = Ensemble.of( mappedValues,

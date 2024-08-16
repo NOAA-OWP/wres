@@ -25,8 +25,10 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.FeatureGroupsBuilder;
 import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.Features;
+import wres.config.yaml.components.FeaturesBuilder;
 import wres.datamodel.space.FeatureTuple;
 import wres.reading.PreReadException;
 import wres.reading.ReaderUtilities;
@@ -194,14 +196,19 @@ public class FeatureFiller
         }
 
         // No features?
-        if ( filledSingletonFeatures.isEmpty() && filledGroupedFeatures.isEmpty() )
+        if ( filledSingletonFeatures.isEmpty()
+             && filledGroupedFeatures.isEmpty() )
         {
             throw new PreReadException( "No geographic features found to evaluate." );
         }
 
         // Set the features and feature groups
-        Features features = new Features( filledSingletonFeatures );
-        FeatureGroups featureGroups = new FeatureGroups( filledGroupedFeatures );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( filledSingletonFeatures )
+                                           .build();
+        FeatureGroups featureGroups = FeatureGroupsBuilder.builder()
+                                                          .geometryGroups( filledGroupedFeatures )
+                                                          .build();
         return EvaluationDeclarationBuilder.builder( evaluation )
                                            .features( features )
                                            .featureGroups( featureGroups )

@@ -1,8 +1,9 @@
 package wres.config.yaml.deserializers;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -16,7 +17,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.FeatureGroupsBuilder;
 import wres.config.yaml.components.Features;
+import wres.config.yaml.components.Offset;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
 
@@ -71,6 +74,8 @@ public class FeatureGroupsDeserializer extends JsonDeserializer<FeatureGroups>
     {
         // Preserve insertion order
         Set<GeometryGroup> featureGroups = new LinkedHashSet<>();
+        Map<GeometryTuple, Offset> featureOffsets = new LinkedHashMap<>();
+
         int nodeCount = featureGroupsNode.size();
 
         for ( int i = 0; i < nodeCount; i++ )
@@ -78,7 +83,6 @@ public class FeatureGroupsDeserializer extends JsonDeserializer<FeatureGroups>
             JsonNode nextNode = featureGroupsNode.get( i );
             String groupName = "";
             Set<GeometryTuple> geometries = null;
-
             // Group name
             if ( nextNode.has( "name" ) )
             {
@@ -95,8 +99,9 @@ public class FeatureGroupsDeserializer extends JsonDeserializer<FeatureGroups>
                 parser.setCodec( reader );
                 Features features = FEATURES_DESERIALIZER.deserialize( parser, context );
                 geometries = features.geometries();
+                featureOffsets.putAll( features.offsets() );
                 LOGGER.debug( "Discovered the following collection of geometries associated with a feature group "
-                              + "named '{}': {}.", groupName, new Features( geometries ) );
+                              + "named '{}': {}.", groupName, features );
             }
 
             // Create the group
@@ -110,6 +115,9 @@ public class FeatureGroupsDeserializer extends JsonDeserializer<FeatureGroups>
             }
         }
 
-        return new FeatureGroups( Collections.unmodifiableSet( featureGroups ) );
+        return FeatureGroupsBuilder.builder()
+                                   .geometryGroups( featureGroups )
+                                   .offsets( featureOffsets )
+                                   .build();
     }
 }
