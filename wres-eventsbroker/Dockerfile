@@ -4,7 +4,7 @@
 
 FROM alpine:3.19.1 AS builder
 
-ARG BROKER_VERSION=2.34.0
+ARG BROKER_VERSION=2.36.0
 
 WORKDIR /workspace
 
@@ -28,10 +28,10 @@ RUN apk --no-cache add tar && \
 # Final image
 #############
 
-FROM registry.access.redhat.com/ubi8/ubi:8.9-1160.1715068735
+FROM registry.access.redhat.com/ubi8/ubi:8.10-1054
 
 RUN dnf install -y \
-    java-17-openjdk-headless-1:17.0.11.0.9-2.el8.x86_64 \
+    java-17-openjdk-headless-1:17.0.12.0.7-2.el8.x86_64 \
     procps-ng-3.3.15-14.el8 \
     iproute-6.2.0-6.el8_10.x86_64 \
     libaio-0.3.112-1.el8 \

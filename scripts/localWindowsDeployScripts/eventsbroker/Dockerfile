@@ -4,7 +4,7 @@
 
 FROM alpine AS builder
 
-ARG BROKER_VERSION=2.30.0
+ARG BROKER_VERSION=2.36.0
 
 WORKDIR /workspace
 
@@ -31,7 +31,7 @@ RUN apk add tar && \
 FROM registry.access.redhat.com/ubi8/ubi:8.8-1009
 
 RUN dnf install -y \
-    java-17-openjdk-headless-1:17.0.8.0.7-2.el8 \
+    java-17-openjdk-headless-1:17.0.12.0.7-2.el8.x86_64 \
     procps-ng-3.3.15-14.el8 \
     iproute-6.2.0-5.el8_9 \
     libaio-0.3.112-1.el8 \
