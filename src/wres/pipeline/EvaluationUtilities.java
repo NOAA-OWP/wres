@@ -1732,7 +1732,7 @@ class EvaluationUtilities
             wres.statistics.generated.Pool latestPool =
                     isBaselinePool ? latest.getBaselinePool() : latest.getPool();
 
-            // Clear the threshold values unless they are equal across statistics
+            // Remove the threshold values unless they are equal across statistics
             if ( existingPool.hasEventThreshold()
                  && !Objects.equals( existingPool.getEventThreshold()
                                                  .getLeftThresholdValue(),
