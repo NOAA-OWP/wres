@@ -2123,4 +2123,3 @@ configurations.runtimeOnly {
 }
 
 defaultTasks 'installDist', 'test', 'javadoc'
-

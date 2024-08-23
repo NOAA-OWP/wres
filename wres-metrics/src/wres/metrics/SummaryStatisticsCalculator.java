@@ -251,6 +251,13 @@ public class SummaryStatisticsCalculator implements Supplier<List<Statistics>>, 
                                      .clearOneBoxPerPair()
                                      .clearOneBoxPerPool()
                                      .build();
+
+                // Apply metadata adaptation to the first instance in case any unconditional adaptations are requested,
+                // such as removing event threshold values. For example, event threshold values may be removed
+                // unconditionally, and this should occur even when the summary statistics are produced for a sample
+                // size of one
+                this.metadataAggregator.apply( this.nominal, this.nominal );
+
                 LOGGER.debug( "Set the nominal statistics metadata for summary statistics calculator {} to: {}",
                               this,
                               this.nominal );
