@@ -1,6 +1,7 @@
 package wres.pipeline;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -8,9 +9,12 @@ import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import wres.config.MetricConstants;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
@@ -19,6 +23,9 @@ import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.TimePools;
+import wres.datamodel.space.FeatureTuple;
+import wres.datamodel.thresholds.MetricsAndThresholds;
+import wres.datamodel.thresholds.ThresholdOuter;
 import wres.metrics.SummaryStatisticsCalculator;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -126,7 +133,7 @@ class EvaluationUtilitiesTest
                                                                        .build();
 
         Map<String, List<SummaryStatisticsCalculator>> calculators =
-                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, 0 );
+                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, 0, false );
 
         // Eight filters
         assertEquals( 8, calculators.values()
@@ -170,7 +177,7 @@ class EvaluationUtilitiesTest
                                                                        .build();
 
         Map<String, List<SummaryStatisticsCalculator>> calculators =
-                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, 0 );
+                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, 0, false );
 
         // One filter
         assertEquals( 1, calculators.size() );
@@ -271,12 +278,112 @@ class EvaluationUtilitiesTest
                                                                        .build();
 
         Map<String, List<SummaryStatisticsCalculator>> calculators =
-                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, 0 );
+                EvaluationUtilities.getSummaryStatisticsCalculators( evaluation, 0, false );
 
         // Eight filters
         assertEquals( 4, calculators.values()
                                     .stream()
                                     .mapToInt( List::size )
                                     .sum() );
+    }
+
+    @Test
+    void testHasEventThresholdsThatVaryAcrossFeaturesReturnsTrue()
+    {
+        Map<FeatureTuple, Set<ThresholdOuter>> thresholds = new HashMap<>();
+
+        Threshold one = Threshold.newBuilder()
+                                 .setName( "flood" )
+                                 .setLeftThresholdValue( 23.0 )
+                                 .build();
+
+        Threshold two = Threshold.newBuilder()
+                                 .setName( "flood" )
+                                 .setLeftThresholdValue( 22.0 )
+                                 .build();
+
+        Geometry oneFeature = Geometry.newBuilder()
+                                      .setName( "foo" )
+                                      .build();
+        Geometry twoFeature = Geometry.newBuilder()
+                                      .setName( "bar" )
+                                      .build();
+
+        FeatureTuple oneTuple = FeatureTuple.of( GeometryTuple.newBuilder()
+                                                              .setLeft( oneFeature )
+                                                              .setRight( oneFeature )
+                                                              .build() );
+
+        FeatureTuple twoTuple = FeatureTuple.of( GeometryTuple.newBuilder()
+                                                              .setLeft( twoFeature )
+                                                              .setRight( twoFeature )
+                                                              .build() );
+
+        thresholds.put( oneTuple, Set.of( ThresholdOuter.of( one ) ) );
+        thresholds.put( twoTuple, Set.of( ThresholdOuter.of( two ) ) );
+
+        MetricsAndThresholds metricsAndThresholds = new MetricsAndThresholds( Set.of( MetricConstants.MEAN_ERROR ),
+                                                                              thresholds,
+                                                                              0,
+                                                                              Pool.EnsembleAverageType.MEAN );
+
+        Set<MetricsAndThresholds> thresholdSet = Set.of( metricsAndThresholds );
+        assertTrue( EvaluationUtilities.hasEventThresholdsThatVaryAcrossFeatures( thresholdSet ) );
+    }
+
+    @Test
+    void testHasEventThresholdsThatVaryAcrossFeaturesReturnsFalse()
+    {
+        Map<FeatureTuple, Set<ThresholdOuter>> thresholds = new HashMap<>();
+
+        Threshold one = Threshold.newBuilder()
+                                 .setName( "flood" )
+                                 .setLeftThresholdValue( 23.0 )
+                                 .build();
+
+        Threshold two = Threshold.newBuilder()
+                                 .setName( "flood" )
+                                 .setLeftThresholdValue( 23.0 )
+                                 .build();
+
+        Geometry oneFeature = Geometry.newBuilder()
+                                      .setName( "foo" )
+                                      .build();
+        Geometry twoFeature = Geometry.newBuilder()
+                                      .setName( "bar" )
+                                      .build();
+
+        FeatureTuple oneTuple = FeatureTuple.of( GeometryTuple.newBuilder()
+                                                              .setLeft( oneFeature )
+                                                              .setRight( oneFeature )
+                                                              .build() );
+
+        FeatureTuple twoTuple = FeatureTuple.of( GeometryTuple.newBuilder()
+                                                              .setLeft( twoFeature )
+                                                              .setRight( twoFeature )
+                                                              .build() );
+
+        thresholds.put( oneTuple, Set.of( ThresholdOuter.of( one ) ) );
+        thresholds.put( twoTuple, Set.of( ThresholdOuter.of( two ) ) );
+
+        MetricsAndThresholds metricsAndThresholds = new MetricsAndThresholds( Set.of( MetricConstants.MEAN_ERROR ),
+                                                                              thresholds,
+                                                                              0,
+                                                                              Pool.EnsembleAverageType.MEAN );
+
+        Set<MetricsAndThresholds> thresholdSet = Set.of( metricsAndThresholds );
+
+        Map<FeatureTuple, Set<ThresholdOuter>> thresholdsTwo = new HashMap<>();
+        thresholdsTwo.put( oneTuple, Set.of( ThresholdOuter.of( one ) ) );
+
+        MetricsAndThresholds metricsAndThresholdsTwo = new MetricsAndThresholds( Set.of( MetricConstants.MEAN_ERROR ),
+                                                                                 thresholdsTwo,
+                                                                                 0,
+                                                                                 Pool.EnsembleAverageType.MEAN );
+
+        Set<MetricsAndThresholds> thresholdSetTwo = Set.of( metricsAndThresholdsTwo );
+
+        assertAll( () -> assertFalse( EvaluationUtilities.hasEventThresholdsThatVaryAcrossFeatures( thresholdSet ) ),
+                   () -> assertFalse( EvaluationUtilities.hasEventThresholdsThatVaryAcrossFeatures( thresholdSetTwo ) ) );
     }
 }
