@@ -10,6 +10,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.MonthDay;
 import java.time.ZoneOffset;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -44,6 +45,7 @@ import wres.config.yaml.components.FeatureGroupsBuilder;
 import wres.config.yaml.components.FeatureService;
 import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.Features;
+import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.GeneratedBaseline;
 import wres.config.yaml.components.GeneratedBaselineBuilder;
 import wres.config.yaml.components.GeneratedBaselines;
@@ -1409,11 +1411,15 @@ class DeclarationUtilitiesTest
                                                                 .setName( "qux" ) )
                                              .build();
 
-        Features features = new Features( Set.of( singleton ) );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( Collections.singleton( singleton ) )
+                                           .build();
         GeometryGroup group = GeometryGroup.newBuilder()
                                            .addAllGeometryTuples( Set.of( grouped ) )
                                            .build();
-        FeatureGroups featureGroups = new FeatureGroups( Set.of( group ) );
+        FeatureGroups featureGroups = FeatureGroupsBuilder.builder()
+                                                          .geometryGroups( Set.of( group ) )
+                                                          .build();
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
                                                                        .features( features )
                                                                        .featureGroups( featureGroups )
@@ -2518,7 +2524,9 @@ class DeclarationUtilitiesTest
                                 .build();
 
         Set<GeometryTuple> geometryTuples = Set.of( one, two, three );
-        Features features = new Features( geometryTuples );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( geometryTuples )
+                                           .build();
         GeometryGroup group = GeometryGroup.newBuilder()
                                            .addAllGeometryTuples( geometryTuples )
                                            .setRegionName( "foorbarbaz" )
@@ -2537,7 +2545,9 @@ class DeclarationUtilitiesTest
 
         EvaluationDeclaration actual = DeclarationUtilities.removeFeaturesWithoutThresholds( declaration );
 
-        Features expectedFeatures = new Features( Set.of( one ) );
+        Features expectedFeatures = FeaturesBuilder.builder()
+                                                   .geometries( Collections.singleton( one ) )
+                                                   .build();
         GeometryGroup expectedGroup = GeometryGroup.newBuilder()
                                                    .addGeometryTuples( one )
                                                    .setRegionName( "foorbarbaz" )
@@ -2587,7 +2597,9 @@ class DeclarationUtilitiesTest
                                 .build();
 
         Set<GeometryTuple> geometryTuples = Set.of( one );
-        Features features = new Features( geometryTuples );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( geometryTuples )
+                                           .build();
         GeometryGroup group = GeometryGroup.newBuilder()
                                            .addAllGeometryTuples( geometryTuples )
                                            .setRegionName( "foorbarbaz" )
@@ -2604,7 +2616,9 @@ class DeclarationUtilitiesTest
 
         EvaluationDeclaration actual = DeclarationUtilities.removeFeaturesWithoutThresholds( declaration );
 
-        Features expectedFeatures = new Features( Set.of( one ) );
+        Features expectedFeatures = FeaturesBuilder.builder()
+                                                   .geometries( Collections.singleton( one ) )
+                                                   .build();
         GeometryGroup expectedGroup = GeometryGroup.newBuilder()
                                                    .addGeometryTuples( one )
                                                    .setRegionName( "foorbarbaz" )

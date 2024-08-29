@@ -1,7 +1,9 @@
 package wres.config.yaml.components;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -16,13 +18,15 @@ import wres.config.yaml.serializers.FeaturesSerializer;
 import wres.statistics.generated.GeometryTuple;
 
 /**
- * Geographic features.
+ * Geographic features and associated offset values (e.g., datum offsets). Absence of an offset for a given feature
+ * implies no/zero offset.
  * @param geometries the features
+ * @param offsets the offset values, such as a datum offset, if any
  */
 @RecordBuilder
 @JsonSerialize( using = FeaturesSerializer.class )
 @JsonDeserialize( using = FeaturesDeserializer.class )
-public record Features( Set<GeometryTuple> geometries )
+public record Features( Set<GeometryTuple> geometries, Map<GeometryTuple,Offset> offsets )
 {
     /**
      * Sets the default values.
@@ -38,6 +42,16 @@ public record Features( Set<GeometryTuple> geometries )
         {
             // Immutable copy, preserving insertion order
             geometries = Collections.unmodifiableSet( new LinkedHashSet<>( geometries ) );
+        }
+
+        if ( Objects.isNull( offsets ) )
+        {
+            offsets = Collections.emptyMap();
+        }
+        else
+        {
+            // Immutable copy, preserving insertion order
+            offsets = Collections.unmodifiableMap( new LinkedHashMap<>( offsets ) );
         }
     }
 

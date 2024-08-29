@@ -1,8 +1,9 @@
 package wres.config.yaml.deserializers;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -14,10 +15,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.components.Features;
+import wres.config.yaml.components.FeaturesBuilder;
+import wres.config.yaml.components.Offset;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryTuple;
 
@@ -31,8 +35,13 @@ public class FeaturesDeserializer extends JsonDeserializer<Features>
     /** Logger. */
     private static final Logger LOGGER = LoggerFactory.getLogger( FeaturesDeserializer.class );
 
+    /** Re-used string. */
     private static final String OBSERVED = "observed";
+
+    /** Re-used string. */
     private static final String PREDICTED = "predicted";
+
+    /** Re-used string. */
     private static final String BASELINE = "baseline";
 
     @Override
@@ -78,26 +87,33 @@ public class FeaturesDeserializer extends JsonDeserializer<Features>
     {
         // Preserve insertion order
         Set<GeometryTuple> features = new LinkedHashSet<>();
+        Map<GeometryTuple, Offset> offsets = new LinkedHashMap<>();
+
         int nodeCount = featuresNode.size();
 
         for ( int i = 0; i < nodeCount; i++ )
         {
             JsonNode nextNode = featuresNode.get( i );
 
+            // Explicit feature declaration
             if ( nextNode.has( OBSERVED )
                  || nextNode.has( PREDICTED )
                  || nextNode.has( BASELINE ) )
             {
-                GeometryTuple nextFeature = this.getGeometryTuple( reader, nextNode );
-                features.add( nextFeature );
+                Pair<GeometryTuple, Offset> nextFeature = this.getGeometryTuple( reader, nextNode );
+                features.add( nextFeature.getKey() );
+                if ( Objects.nonNull( nextFeature.getValue() ) )
+                {
+                    offsets.put( nextFeature.getKey(), nextFeature.getValue() );
+                }
             }
             else
             {
                 // Apply to the left side only and fill out later because this depends on other declaration, such as
                 // whether a baseline is declared
-                Geometry leftGeometry = this.getGeometry( reader, nextNode );
+                Pair<Geometry, Double> leftGeometry = this.getGeometry( reader, nextNode );
                 GeometryTuple tuple = GeometryTuple.newBuilder()
-                                                   .setLeft( leftGeometry )
+                                                   .setLeft( leftGeometry.getKey() )
                                                    .build();
 
                 features.add( tuple );
@@ -109,7 +125,10 @@ public class FeaturesDeserializer extends JsonDeserializer<Features>
             }
         }
 
-        return new Features( Collections.unmodifiableSet( features ) );
+        return FeaturesBuilder.builder()
+                              .geometries( features )
+                              .offsets( offsets )
+                              .build();
     }
 
     /**
@@ -120,33 +139,42 @@ public class FeaturesDeserializer extends JsonDeserializer<Features>
      * @throws IOException if the geometries could not be mapped
      */
 
-    private GeometryTuple getGeometryTuple( ObjectReader reader, JsonNode node ) throws IOException
+    private Pair<GeometryTuple, Offset> getGeometryTuple( ObjectReader reader, JsonNode node ) throws IOException
     {
         GeometryTuple.Builder builder = GeometryTuple.newBuilder();
+
+        Double leftOffset = null;
+        Double rightOffset = null;
+        Double baselineOffset = null;
 
         if ( node.has( OBSERVED ) )
         {
             // Full feature description
             JsonNode leftNode = node.get( OBSERVED );
-            Geometry leftGeometry = this.getGeometry( reader, leftNode );
-            builder.setLeft( leftGeometry );
+            Pair<Geometry, Double> leftGeometry = this.getGeometry( reader, leftNode );
+            builder.setLeft( leftGeometry.getKey() );
+            leftOffset = leftGeometry.getValue();
         }
 
         if ( node.has( PREDICTED ) )
         {
             JsonNode rightNode = node.get( PREDICTED );
-            Geometry rightGeometry = this.getGeometry( reader, rightNode );
-            builder.setRight( rightGeometry );
+            Pair<Geometry, Double> rightGeometry = this.getGeometry( reader, rightNode );
+            builder.setRight( rightGeometry.getKey() );
+            rightOffset = rightGeometry.getValue();
         }
 
         if ( node.has( BASELINE ) )
         {
             JsonNode baselineNode = node.get( BASELINE );
-            Geometry baselineGeometry = this.getGeometry( reader, baselineNode );
-            builder.setBaseline( baselineGeometry );
+            Pair<Geometry, Double> baselineGeometry = this.getGeometry( reader, baselineNode );
+            builder.setBaseline( baselineGeometry.getKey() );
+            baselineOffset = baselineGeometry.getValue();
         }
 
-        return builder.build();
+        Offset offset = this.getOffset( leftOffset, rightOffset, baselineOffset );
+
+        return Pair.of( builder.build(), offset );
     }
 
     /**
@@ -157,18 +185,68 @@ public class FeaturesDeserializer extends JsonDeserializer<Features>
      * @throws IOException if the node could not be read
      */
 
-    private Geometry getGeometry( ObjectReader reader, JsonNode geometryNode ) throws IOException
+    private Pair<Geometry, Double> getGeometry( ObjectReader reader, JsonNode geometryNode ) throws IOException
     {
         if ( geometryNode.has( "name" ) )
         {
-            return reader.readValue( geometryNode, Geometry.class );
+            Double offset = null;
+
+            if ( geometryNode.has( "offset" ) )
+            {
+                offset = geometryNode.get( "offset" )
+                                     .asDouble();
+            }
+
+            Geometry geometry = reader.readValue( geometryNode, Geometry.class );
+            return Pair.of( geometry, offset );
         }
         else
         {
             String name = geometryNode.asText();
-            return Geometry.newBuilder()
-                           .setName( name )
-                           .build();
+            Geometry geometry = Geometry.newBuilder()
+                                        .setName( name )
+                                        .build();
+            return Pair.of( geometry, null );
         }
+    }
+
+    /**
+     * Returns an {@link Offset} from the supplied numerical offset values.
+     * @param leftOffset the left offset value
+     * @param rightOffset the right offset value
+     * @param baselineOffset the baseline offset value
+     * @return the offset
+     */
+    private Offset getOffset( Double leftOffset, Double rightOffset, Double baselineOffset )
+    {
+        Offset offset = null;
+
+        if ( Objects.nonNull( leftOffset )
+             || Objects.nonNull( rightOffset )
+             || Objects.nonNull( baselineOffset ) )
+        {
+            double left = 0.0;
+            double right = 0.0;
+            double baseline = 0.0;
+
+            if ( Objects.nonNull( leftOffset ) )
+            {
+                left = leftOffset;
+            }
+
+            if ( Objects.nonNull( rightOffset ) )
+            {
+                right = rightOffset;
+            }
+
+            if ( Objects.nonNull( baselineOffset ) )
+            {
+                baseline = baselineOffset;
+            }
+
+            offset = new Offset( left, right, baseline );
+        }
+
+        return offset;
     }
 }

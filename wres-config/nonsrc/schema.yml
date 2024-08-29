@@ -566,9 +566,9 @@ definitions:
     cross-pairing chosen."
     anyOf:
       - "$ref": "#/definitions/CrossPairEnum"
-      - "$ref": "#/definitions/CrossPairFull"
+      - "$ref": "#/definitions/CrossPairWithParameters"
 
-  CrossPairFull:
+  CrossPairWithParameters:
     type: object
     additionalProperties: false
     properties:
@@ -665,25 +665,25 @@ definitions:
     properties:
       observed:
         anyOf:
-          - "$ref": "#/definitions/FeatureTupleFull"
+          - "$ref": "#/definitions/FeatureWithParameters"
           - type: string
             minLength: 1
             maxLength: 32
       predicted:
         anyOf:
-          - "$ref": "#/definitions/FeatureTupleFull"
+          - "$ref": "#/definitions/FeatureWithParameters"
           - type: string
             minLength: 1
             maxLength: 32
       baseline:
         anyOf:
-          - "$ref": "#/definitions/FeatureTupleFull"
+          - "$ref": "#/definitions/FeatureWithParameters"
           - type: string
             minLength: 1
             maxLength: 32
 
-  FeatureTupleFull:
-    title: A feature tuple with additional properties
+  FeatureWithParameters:
+    title: A feature with additional properties
     type: object
     additionalProperties: false
     properties:
@@ -695,6 +695,8 @@ definitions:
         type: string
         minLength: 1
         maxLength: 2083
+      offset:
+        type: number
     required:
       - name
 
@@ -1487,13 +1489,16 @@ definitions:
     is present, evaluates common events by reference time and valid time. If 
     absent, retains all events of each type. With fuzzy matching, each time-
     series is matched with its nearest, corresponding, time-series according to 
-    the total duration between all reference times of a corresponding type. In 
-    other words, if there is an exact match, that will be used, else the time-
-    series whose reference times are nearest overall. Once a time-series has 
-    been matched, it cannot be re-used. Always uses exact matching for valid 
-    times. The scope of the cross-pairing always includes the predicted and 
-    baseline datasets, where defined, and may be further controlled using the 
-    'scope' parameter."
+    the total duration between all reference times across the candidate time-
+    series. In other words, if there is an exact match, that will be used, else 
+    the time-series whose reference times are nearest overall. With exact 
+    matching, both the type of reference time and the time itself must 
+    correspond. With fuzzy matching, all types of reference time are considered 
+    equal and hence used to calculate the total duration between all reference 
+    times of the candidate series. Once a time-series has been matched, it 
+    cannot be re-used. Always uses exact matching for valid times. The scope of 
+    the cross-pairing always includes the predicted and baseline datasets, where 
+    defined, and may be further controlled using the 'scope' parameter."
     type: string
     enum:
       - exact

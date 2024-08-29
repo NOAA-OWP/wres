@@ -510,7 +510,6 @@ public class DeclarationValidator
         // Data types are valid
         List<EvaluationStatusEvent> typesValid = DeclarationValidator.typesAreValid( declaration );
         events.addAll( typesValid );
-
         // Ensembles cannot be present on both left and right sides
         List<EvaluationStatusEvent> ensembles = DeclarationValidator.ensembleOnOneSideOnly( declaration );
         events.addAll( ensembles );

@@ -359,9 +359,31 @@ public class TimeSeriesCrossPairer<S, T>
         Set<ReferenceTimeType> common = new HashSet<>( firstTimes.keySet() );
         common.retainAll( secondTimes.keySet() );
 
-        // Filter non-matching reference time types
-        if ( method != CrossPairMethod.FUZZY )
+        // For exact matching, the reference time types must match
+        if ( method == CrossPairMethod.EXACT )
         {
+            if ( common.isEmpty() )
+            {
+                throw new PairingException( "Encountered an error while inspecting time-series to cross-pair. "
+                                            + "Attempted to calculate the total duration between the commonly typed "
+                                            + "reference times of two time-series, but no commonly typed reference "
+                                            + "times were discovered, which is not allowed. For lenient cross-pairing "
+                                            + "that considers all types of reference time equivalent, declare the "
+                                            + "'fuzzy' cross-pairing method instead of 'exact'. The first time-series "
+                                            + "was: "
+                                            + first.getMetadata()
+                                            + ". The second time-series was: "
+                                            + second.getMetadata()
+                                            + ". The first time-series had reference time types of: "
+                                            + first.getReferenceTimes()
+                                                   .keySet()
+                                            + ". The second time-series had reference time types of: "
+                                            + second.getReferenceTimes()
+                                                    .keySet()
+                                            + "." );
+            }
+
+            // Filter non-matching reference time types
             firstTimes = firstTimes.entrySet()
                                    .stream()
                                    .filter( e -> common.contains( e.getKey() ) )
@@ -372,36 +394,10 @@ public class TimeSeriesCrossPairer<S, T>
                                      .collect( Collectors.toMap( Map.Entry::getKey, Map.Entry::getValue ) );
         }
 
-        if ( firstTimes.isEmpty() || secondTimes.isEmpty() )
-        {
-            String append = "";
-            if ( method != CrossPairMethod.FUZZY )
-            {
-                append = "For lenient cross-pairing that considers all types of reference time equivalent, declare the "
-                         + "'fuzzy' cross-pairing method. ";
-            }
-
-            throw new PairingException( "Encountered an error while inspecting time-series to cross-pair. Attempted to "
-                                        + "calculate the total duration between the commonly typed "
-                                        + "reference times of two time-series, but no commonly typed reference times "
-                                        + "were discovered, which is not allowed. "
-                                        + append
-                                        + "The first time-series was: "
-                                        + first.getMetadata()
-                                        + ". The second time-series was: "
-                                        + second.getMetadata()
-                                        + ". The first time-series had reference time types of: "
-                                        + first.getReferenceTimes()
-                                               .keySet()
-                                        + ". The second time-series had reference time types of: "
-                                        + second.getReferenceTimes()
-                                                .keySet()
-                                        + "." );
-        }
-
         // The neutral difference
         Duration returnMe = Duration.ZERO;
 
+        // Iterate through the differences and sum them
         for ( Instant firstInstant : firstTimes.values() )
         {
             for ( Instant secondInstant : secondTimes.values() )

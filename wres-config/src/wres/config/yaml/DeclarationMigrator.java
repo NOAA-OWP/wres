@@ -82,10 +82,12 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.FeatureGroupsBuilder;
 import wres.config.yaml.components.FeatureService;
 import wres.config.yaml.components.FeatureServiceBuilder;
 import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.Features;
+import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.Format;
 import wres.config.yaml.components.Formats;
 import wres.config.yaml.components.GeneratedBaseline;
@@ -293,7 +295,9 @@ public class DeclarationMigrator
         if ( !features.isEmpty() )
         {
             Set<GeometryTuple> geometries = DeclarationMigrator.migrateFeatures( features );
-            Features wrappedFeatures = new Features( geometries );
+            Features wrappedFeatures = FeaturesBuilder.builder()
+                                                      .geometries( geometries )
+                                                      .build();
             builder.features( wrappedFeatures );
         }
     }
@@ -312,7 +316,9 @@ public class DeclarationMigrator
                     featureGroups.stream()
                                  .map( DeclarationMigrator::migrateFeatureGroup )
                                  .collect( Collectors.toSet() );
-            FeatureGroups wrappedGroups = new FeatureGroups( geometryGroups );
+            FeatureGroups wrappedGroups = FeatureGroupsBuilder.builder()
+                                                              .geometryGroups( geometryGroups )
+                                                              .build();
             builder.featureGroups( wrappedGroups );
         }
     }

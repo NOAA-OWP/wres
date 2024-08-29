@@ -44,6 +44,7 @@ import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.FeaturesBuilder;
 import wres.datamodel.messages.MessageFactory;
 import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.Feature;
@@ -258,7 +259,9 @@ class DatabaseProjectTest
                 EvaluationDeclarationBuilder.builder()
                                             .left( left )
                                             .right( right )
-                                            .features( new wres.config.yaml.components.Features( features ) )
+                                            .features( FeaturesBuilder.builder()
+                                                                      .geometries( features )
+                                                                      .build() )
                                             .build();
 
         TimeSeries<Ensemble> timeSeriesOne = TestData.generateTimeSeriesEnsembleOne();

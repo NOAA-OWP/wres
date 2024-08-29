@@ -27,7 +27,7 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureServiceGroup;
-import wres.config.yaml.components.Features;
+import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.UnitAlias;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -190,7 +190,7 @@ class FeatureFillerTest
     }
 
     @Test
-    void testFillOutFeaturesUsingResponseFromFileSystem() throws URISyntaxException, IOException
+    void testFillOutFeaturesUsingResponseFromFileSystem() throws IOException
     {
         try ( FileSystem fileSystem = Jimfs.newFileSystem( Configuration.unix() ) )
         {
@@ -256,7 +256,7 @@ class FeatureFillerTest
                                                          .setLeft( Geometry.newBuilder()
                                                                            .setName( "bar" ) )
                                                          .setRight( Geometry.newBuilder()
-                                                                           .setName( "baz" ) )
+                                                                            .setName( "baz" ) )
                                                          .build();
 
             Set<GeometryTuple> expected = Set.of( expectedFeature );
@@ -443,7 +443,9 @@ class FeatureFillerTest
                                            .unit( "CMS" )
                                            .unitAliases( Set.of( new UnitAlias( "CMS", "m^3/s" ) ) )
                                            .featureService( featureService )
-                                           .features( new Features( features ) )
+                                           .features( FeaturesBuilder.builder()
+                                                                     .geometries( features )
+                                                                     .build() )
                                            .left( left )
                                            .right( right )
                                            .baseline( baseline )

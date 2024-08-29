@@ -1,7 +1,9 @@
 package wres.config.yaml.components;
 
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.StringJoiner;
@@ -14,15 +16,18 @@ import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.deserializers.FeatureGroupsDeserializer;
 import wres.config.yaml.serializers.FeatureGroupsSerializer;
 import wres.statistics.generated.GeometryGroup;
+import wres.statistics.generated.GeometryTuple;
 
 /**
- * Geographic feature groups.
+ * Geographic feature groups and associated offset values (e.g., datum offsets). Absence of an offset for a given
+ * feature with a group implies no/zero offset.
  * @param geometryGroups the feature groups
+ * @param offsets the offset values associated with features in the group, such as a datum offset, if any
  */
 @RecordBuilder
 @JsonSerialize( using = FeatureGroupsSerializer.class )
 @JsonDeserialize( using = FeatureGroupsDeserializer.class )
-public record FeatureGroups( Set<GeometryGroup> geometryGroups )
+public record FeatureGroups( Set<GeometryGroup> geometryGroups, Map<GeometryTuple, Offset> offsets )
 {
     /**
      * Sets the default values.
@@ -39,6 +44,16 @@ public record FeatureGroups( Set<GeometryGroup> geometryGroups )
         {
             // Immutable copy, preserving insertion order
             geometryGroups = Collections.unmodifiableSet( new LinkedHashSet<>( geometryGroups ) );
+        }
+
+        if ( Objects.isNull( offsets ) )
+        {
+            offsets = Collections.emptyMap();
+        }
+        else
+        {
+            // Immutable copy, preserving insertion order
+            offsets = Collections.unmodifiableMap( new LinkedHashMap<>( offsets ) );
         }
     }
 

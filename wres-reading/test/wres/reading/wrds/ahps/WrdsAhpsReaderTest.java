@@ -30,6 +30,7 @@ import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.Features;
+import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.Source;
 import wres.config.yaml.components.SourceBuilder;
 import wres.config.yaml.components.SourceInterface;
@@ -968,7 +969,9 @@ class WrdsAhpsReaderTest
         GeometryTuple geometryTuple = GeometryTuple.newBuilder()
                                                    .setRight( geometry )
                                                    .build();
-        Features features = new Features( Set.of( geometryTuple ) );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( Set.of( geometryTuple ) )
+                                           .build();
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
                                             .validDates( interval )
@@ -1069,7 +1072,9 @@ class WrdsAhpsReaderTest
         GeometryTuple geometryTuple = GeometryTuple.newBuilder()
                                                    .setLeft( geometry )
                                                    .build();
-        Features features = new Features( Set.of( geometryTuple ) );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( Set.of( geometryTuple ) )
+                                           .build();
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
                                             .validDates( interval )

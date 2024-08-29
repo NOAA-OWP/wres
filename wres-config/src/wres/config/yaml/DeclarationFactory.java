@@ -165,11 +165,11 @@ public class DeclarationFactory
                                      .enable( DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY )
                                      .enable( DeserializationFeature.FAIL_ON_READING_DUP_TREE_KEY )
                                      .enable( JsonParser.Feature.STRICT_DUPLICATE_DETECTION )
+                                     .disable( DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES )
                                      .build()
                                      .registerModule( new ProtobufModule() )
                                      .registerModule( new JavaTimeModule() )
-                                     .configure( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES,
-                                                 true );
+                                     .enable( DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES );
 
     /** Mapper for serialization. */
     private static final ObjectMapper SERIALIZER =

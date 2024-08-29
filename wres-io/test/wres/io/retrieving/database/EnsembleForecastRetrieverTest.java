@@ -39,6 +39,7 @@ import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.FeaturesBuilder;
 import wres.datamodel.time.TimeSeriesMetadata;
 import wres.datamodel.types.Ensemble;
 import wres.datamodel.types.Ensemble.Labels;
@@ -350,7 +351,9 @@ public class EnsembleForecastRetrieverTest
                 EvaluationDeclarationBuilder.builder()
                                             .left( left )
                                             .right( right )
-                                            .features( new wres.config.yaml.components.Features( features ) )
+                                            .features( FeaturesBuilder.builder()
+                                                                      .geometries( features )
+                                                                      .build() )
                                             .build();
 
         TimeSeries<Ensemble> timeSeriesOne = TestData.generateTimeSeriesEnsembleOne();

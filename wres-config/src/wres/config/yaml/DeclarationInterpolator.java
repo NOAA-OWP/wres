@@ -34,6 +34,7 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.FeatureGroupsBuilder;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.Formats;
@@ -486,7 +487,8 @@ public class DeclarationInterpolator
                                                      .geometries();
                 Set<GeometryTuple> denseFeatures = DeclarationInterpolator.interpolateSparseFeatures( features,
                                                                                                       hasBaseline );
-                Features adjustedFeatures = new Features( denseFeatures );
+                Features adjustedFeatures = new Features( denseFeatures, builder.features()
+                                                                                .offsets() );
                 builder.features( adjustedFeatures );
             }
 
@@ -512,7 +514,9 @@ public class DeclarationInterpolator
                                      .build();
                     adjustedGeoGroups.add( nextAdjustedGroup );
                 }
-                FeatureGroups adjustedFeatureGroups = new FeatureGroups( adjustedGeoGroups );
+                FeatureGroups adjustedFeatureGroups = FeatureGroupsBuilder.builder()
+                                                                          .geometryGroups( adjustedGeoGroups )
+                                                                          .build();
                 builder.featureGroups( adjustedFeatureGroups );
             }
         }
