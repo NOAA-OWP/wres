@@ -726,19 +726,26 @@ public class Evaluator
             // this is feature-group shaped, but additional shapes may be desired in future
             PoolGroupTracker groupTracker = PoolGroupTracker.ofFeatureGroupTracker( evaluationMessager, poolRequests );
 
+            // Are there event thresholds that vary across geographic features? If so, they should not cleared from
+            // any summary statistics that aggregate across geographic features
+            boolean clearThresholdValues =
+                    EvaluationUtilities.hasEventThresholdsThatVaryAcrossFeatures( metricsAndThresholds );
+
             // Create the summary statistics calculators to increment with raw statistics
             Map<String, List<SummaryStatisticsCalculator>> summaryStatsCalculators =
                     EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds,
-                                                                         poolCount );
-            Map<String, List<SummaryStatisticsCalculator>> summaryStataCalculatorsForBaseline = Map.of();
+                                                                         poolCount,
+                                                                         clearThresholdValues );
+            Map<String, List<SummaryStatisticsCalculator>> summaryStatsCalculatorsForBaseline = Map.of();
             boolean separateMetricsForBaseline = DeclarationUtilities.hasBaseline( declaration )
                                                  && declaration.baseline()
                                                                .separateMetrics();
             if ( separateMetricsForBaseline )
             {
-                summaryStataCalculatorsForBaseline =
+                summaryStatsCalculatorsForBaseline =
                         EvaluationUtilities.getSummaryStatisticsCalculators( declarationWithFeaturesAndThresholds,
-                                                                             poolCount );
+                                                                             poolCount,
+                                                                             clearThresholdValues );
             }
 
             // Set the project and evaluation, metrics and thresholds and summary statistics
@@ -749,7 +756,7 @@ public class Evaluator
                                             .declaration( declarationWithFeaturesAndThresholds )
                                             .metricsAndThresholds( metricsAndThresholds )
                                             .summaryStatistics( summaryStatsCalculators )
-                                            .summaryStatisticsForBaseline( summaryStataCalculatorsForBaseline )
+                                            .summaryStatisticsForBaseline( summaryStatsCalculatorsForBaseline )
                                             .summaryStatisticsOnly( doNotPublish )
                                             .build();
 
@@ -761,11 +768,7 @@ public class Evaluator
                                                             executors );
 
             // Create and publish any summary statistics derived from the raw statistics
-            EvaluationUtilities.createAndPublishSummaryStatistics( summaryStatsCalculators,
-                                                                   evaluationMessager );
-
-            EvaluationUtilities.createAndPublishSummaryStatistics( summaryStataCalculatorsForBaseline,
-                                                                   evaluationMessager );
+            EvaluationUtilities.createAndPublishSummaryStatistics( evaluationDetails );
 
             // Report that all publication was completed. At this stage, a message is sent indicating the expected
             // message count for all message types, thereby allowing consumers to know when all messages have arrived.
