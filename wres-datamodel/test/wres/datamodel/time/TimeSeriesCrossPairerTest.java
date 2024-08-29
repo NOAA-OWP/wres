@@ -9,6 +9,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -57,7 +58,7 @@ class TimeSeriesCrossPairerTest
     }
 
     @Test
-    void testCrossPairTwoTimeSeriesWithEqualReferenceTimesThatEachAppearTwice()
+    void testCrossPairTwoTimeSeriesWithEqualReferenceTimesThatEachAppearTwiceAndFuzzyMatching()
     {
         Event<Pair<Integer, Integer>> first = Event.of( FIRST, Pair.of( 1, 1 ) );
         Event<Pair<Integer, Integer>> second = Event.of( SECOND, Pair.of( 2, 2 ) );
@@ -120,7 +121,7 @@ class TimeSeriesCrossPairerTest
     }
 
     @Test
-    void testCrossPairTimeSeriesWithSomeEqualReferenceTimes()
+    void testCrossPairTimeSeriesWithSomeEqualReferenceTimesOfDifferentTypesAndFuzzyMatching()
     {
         Event<Pair<Integer, Integer>> first = Event.of( FIRST, Pair.of( 1, 1 ) );
 
@@ -139,7 +140,7 @@ class TimeSeriesCrossPairerTest
         Event<Pair<Integer, Integer>> second = Event.of( SECOND, Pair.of( 2, 2 ) );
 
         TimeSeriesMetadata secondMetadata =
-                TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
+                TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.ISSUED_TIME,
                                                                  FIRST ),
                                        TimeScaleOuter.of(),
                                        CHICKENS,
@@ -181,7 +182,7 @@ class TimeSeriesCrossPairerTest
     }
 
     @Test
-    void testCrossPairTimeSeriesWithNoEqualReferenceTimesOrValidTimes()
+    void testCrossPairTimeSeriesWithNoEqualReferenceTimesOrValidTimesWhenFuzzyMatching()
     {
         Event<Pair<Integer, Integer>> first = Event.of( FIRST, Pair.of( 1, 1 ) );
 
@@ -222,7 +223,7 @@ class TimeSeriesCrossPairerTest
     }
 
     @Test
-    void testCrossPairTwoTimeSeriesWithEqualReferenceTimesAndNoEqualValidTimes()
+    void testCrossPairTwoTimeSeriesWithEqualReferenceTimesAndNoEqualValidTimesWhenFuzzyMatching()
     {
         Event<Pair<Integer, Integer>> first = Event.of( FIRST, Pair.of( 1, 1 ) );
 
@@ -263,7 +264,7 @@ class TimeSeriesCrossPairerTest
     }
 
     @Test
-    void testCrossPairTimeSeriesWithNoEqualReferenceTimesAndSomeEqualValidTimes()
+    void testCrossPairTimeSeriesWithNoEqualReferenceTimesAndSomeEqualValidTimesWhenFuzzyMatching()
     {
         Event<Pair<Integer, Integer>> first = Event.of( FIRST, Pair.of( 1, 1 ) );
 
@@ -353,7 +354,7 @@ class TimeSeriesCrossPairerTest
     }
 
     @Test
-    void testCrossPairTwoTimeSeriesWithNoReferenceTimes()
+    void testCrossPairTwoTimeSeriesWithNoReferenceTimesAndFuzzyMatching()
     {
         Event<Pair<Integer, Integer>> first = Event.of( FIRST, Pair.of( 1, 1 ) );
 
@@ -391,7 +392,7 @@ class TimeSeriesCrossPairerTest
     }
 
     @Test
-    void testCrossPairTimeSeriesWithSomeNearbyReferenceTimes()
+    void testCrossPairTimeSeriesWithSomeNearbyReferenceTimesAndFuzzyMatching()
     {
         Event<Pair<Integer, Integer>> first = Event.of( FIRST, Pair.of( 1, 1 ) );
 
@@ -489,7 +490,7 @@ class TimeSeriesCrossPairerTest
     }
 
     @Test
-    void testCrossPairTimeSeriesWithNoEqualReferenceTimeTypes()
+    void testCrossPairTimeSeriesWithNoEqualReferenceTimeTypesThrowsPairingException()
     {
         Event<Pair<Integer, Integer>> first = Event.of( FIRST, Pair.of( 1, 1 ) );
 
@@ -533,6 +534,31 @@ class TimeSeriesCrossPairerTest
         // the exception type is thrown, skip attempting to match message text.
         assertTrue( exception.getMessage()
                              .contains( "no commonly typed reference times" ) );
+    }
+
+    @Test
+    void testCrossPairWithEmptyBaselineProducesEmptyCrossPairsWhenFuzzyMatching()
+    {
+        Event<Pair<Integer, Integer>> first = Event.of( FIRST, Pair.of( 1, 1 ) );
+
+        TimeSeriesMetadata firstMetadata =
+                TimeSeriesMetadata.of( Collections.singletonMap( ReferenceTimeType.T0,
+                                                                 ZEROTH ),
+                                       TimeScaleOuter.of(),
+                                       CHICKENS,
+                                       GEORGIA,
+                                       KG_H );
+
+        TimeSeries<Pair<Integer, Integer>> firstSeries =
+                new Builder<Pair<Integer, Integer>>().setMetadata( firstMetadata )
+                                                     .addEvent( first )
+                                                     .build();
+
+        CrossPairs<Pair<Integer, Integer>, Pair<Integer, Integer>> cp = this.instance.apply( List.of( firstSeries ),
+                                                                                             List.of() );
+
+        assertAll( () -> assertTrue( cp.getFirstPairs().isEmpty() ),
+                   () -> assertTrue( cp.getSecondPairs().isEmpty() ) );
     }
 
     @Test
