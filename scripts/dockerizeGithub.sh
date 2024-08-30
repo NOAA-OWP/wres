@@ -275,6 +275,14 @@ popd
 
 echo "Built wres/wres-writing:$writing_version -- $writing_image_id"
 
+# Build and tag the nginx image
+echo "Building nginx image..."
+pushd nginx
+nginx_image_id=$( docker build --build-arg --quiet --tag wres/nginx . )
+popd
+
+echo "Built wres/nginx"
+
 echo "Displaying most recent 20 docker images"
 docker image ls | head -n 21
 
@@ -385,6 +393,10 @@ then
             docker tag wres/wres-writing:$writing_version $DOCKER_REGISTRY/wres/wres-writing:$writing_version
             docker push $DOCKER_REGISTRY/wres/wres-writing:$writing_version
         fi
+
+        echo "Tagging and pushing wres/nginx as wres/nginx..."
+        docker tag wres/nginx $DOCKER_REGISTRY/wres/nginx
+        docker push $DOCKER_REGISTRY/wres/nginx
     fi
     
 else

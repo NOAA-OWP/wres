@@ -15,6 +15,37 @@ volumes:
             o: "ro,relatime,vers=4.1,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,local_lock=none,addr=${NFS_HOME_DIR_IP_ADDRESS}"
             device: "${NFS_HOME_DIR_DEVICE}"
 services:
+    nginx:
+      image: "wres/nginx"
+      container_name: nginx_proxy
+      volumes:
+        - ${NGINX_SERVER_CERT}:/etc/nginx/cert/wres_server_cert.pem
+        - ${NGINX_SERVER_KEY}:/etc/nginx/cert/wres_server_key.pem
+      depends_on:
+        - cadvisor
+      ports:
+        - 9999:9999
+      networks:
+        wres_net:
+    cadvisor:
+      image: gcr.io/cadvisor/cadvisor:latest
+      container_name: cadvisor
+      ports:
+        - 8080:8080
+      volumes:
+        - /:/rootfs:ro
+        - /var/run:/var/run:rw
+        - /sys:/sys:ro
+        - /var/lib/docker/:/var/lib/docker:ro
+        - /cgroup:/cgroup:ro
+        - /dev/disk:/dev/disk/:ro
+      command:
+        - --disable_metrics=network
+        - --docker_only=true
+      depends_on:
+        - worker
+      networks:
+        wres_net:
     worker:
         image: "${DOCKER_REGISTRY}/wres/wres-worker:WORKER_IMAGE"
         restart: always
