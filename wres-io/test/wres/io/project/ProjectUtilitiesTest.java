@@ -1,5 +1,6 @@
 package wres.io.project;
 
+import java.util.Collections;
 import java.util.Set;
 
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,8 @@ import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureGroups;
-import wres.config.yaml.components.Features;
+import wres.config.yaml.components.FeatureGroupsBuilder;
+import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.SpatialMask;
 import wres.config.yaml.components.SpatialMaskBuilder;
 import wres.config.yaml.components.VariableBuilder;
@@ -67,9 +69,14 @@ class ProjectUtilitiesTest
         GeometryGroup geoGroup = GeometryGroup.newBuilder()
                                               .addAllGeometryTuples( geometries )
                                               .build();
-        FeatureGroups featureGroups = new FeatureGroups( Set.of( geoGroup ) );
+        FeatureGroups featureGroups = FeatureGroupsBuilder.builder()
+                                                          .geometryGroups( Collections.singleton( geoGroup ) )
+                                                          .build();
+
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
-                                                                       .features( new Features( geometries ) )
+                                                                       .features( FeaturesBuilder.builder()
+                                                                                                 .geometries( geometries )
+                                                                                                 .build() )
                                                                        .featureGroups( featureGroups )
                                                                        .build();
 

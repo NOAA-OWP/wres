@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -35,7 +36,9 @@ import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.FeatureGroupsBuilder;
 import wres.config.yaml.components.Features;
+import wres.config.yaml.components.Offset;
 import wres.config.yaml.components.SpatialMask;
 import wres.config.yaml.components.TimeScale;
 import wres.config.yaml.components.TimeScaleLenience;
@@ -948,14 +951,25 @@ class ProjectUtilities
                                                        .map( FeatureTuple::getGeometryTuple )
                                                        .collect( Collectors.toUnmodifiableSet() );
 
-        Features dataFeatures = new Features( unwrappedFeatures );
-        FeatureGroups dataFeatureGroups = new FeatureGroups( featureGroups.stream()
-                                                                          .map( FeatureGroup::getGeometryGroup )
-                                                                          // Non-singletons only
-                                                                          .filter( g -> g.getGeometryTuplesList()
-                                                                                         .size()
-                                                                                        > 1 )
-                                                                          .collect( Collectors.toSet() ) );
+        // Match and gather any offsets for the declared features using the ingest-augmented features
+        boolean hasBaseline = DeclarationUtilities.hasBaseline( declaration );
+        Map<GeometryTuple, Offset> declaredOffsets = ProjectUtilities.getOffsets( declaration );
+        Map<GeometryTuple, Offset> offsets =
+                ProjectUtilities.getOffsetsForMatchingFeatures( unwrappedFeatures,
+                                                                declaredOffsets,
+                                                                hasBaseline );
+
+        Features dataFeatures = new Features( unwrappedFeatures, offsets );
+        FeatureGroups dataFeatureGroups
+                = FeatureGroupsBuilder.builder()
+                                      .geometryGroups( featureGroups.stream()
+                                                                    .map( FeatureGroup::getGeometryGroup )
+                                                                    // Non-singletons only
+                                                                    .filter( g -> g.getGeometryTuplesList()
+                                                                                   .size()
+                                                                                  > 1 )
+                                                                    .collect( Collectors.toSet() ) )
+                                      .build();
         declaration = EvaluationDeclarationBuilder.builder( declaration )
                                                   .features( dataFeatures )
                                                   .featureGroups( dataFeatureGroups )
@@ -1095,6 +1109,80 @@ class ProjectUtilities
         }
 
         return matchingFeatures;
+    }
+
+    /**
+     * Inspects the declaration for feature-specific offsets in all contexts and returns them.
+     * @param declaration the declaration, not null
+     * @return the offsets
+     * @throws NullPointerException if the declaration is null
+     */
+    static Map<GeometryTuple, Offset> getOffsets( EvaluationDeclaration declaration )
+    {
+        Objects.requireNonNull( declaration );
+
+        Map<GeometryTuple, Offset> offsets = new HashMap<>();
+
+
+        if ( Objects.nonNull( declaration.features() ) )
+        {
+            offsets.putAll( declaration.features()
+                                       .offsets() );
+        }
+
+        if ( Objects.nonNull( declaration.featureGroups() ) )
+        {
+            offsets.putAll( declaration.featureGroups()
+                                       .offsets() );
+        }
+
+        return Collections.unmodifiableMap( offsets );
+    }
+
+    /**
+     * Finds the offsets for features with matching feature names.
+     *
+     * @param toMatch the feature names for which offsets should be matched
+     * @param toSearch the offsets to search
+     * @param hasBaseline whether the evaluation contains a baseline dataset
+     * @return the offsets for matching features
+     */
+    private static Map<GeometryTuple, Offset> getOffsetsForMatchingFeatures( Set<GeometryTuple> toMatch,
+                                                                             Map<GeometryTuple, Offset> toSearch,
+                                                                             boolean hasBaseline )
+    {
+        Map<GeometryTuple, Offset> offsets = new HashMap<>();
+
+        if ( Objects.nonNull( toSearch ) )
+        {
+            for ( GeometryTuple next : toMatch )
+            {
+                Optional<Map.Entry<GeometryTuple, Offset>> matched =
+                        toSearch.entrySet()
+                                .stream()
+                                .filter( f -> Objects.equals( next.getLeft()
+                                                                  .getName(), f.getKey()
+                                                                               .getLeft()
+                                                                               .getName() )
+                                              && Objects.equals( next.getRight()
+                                                                     .getName(),
+                                                                 f.getKey()
+                                                                  .getRight()
+                                                                  .getName() )
+                                              && ( !hasBaseline
+                                                   || Objects.equals( next.getBaseline()
+                                                                          .getName(),
+                                                                      f.getKey()
+                                                                       .getBaseline()
+                                                                       .getName() ) ) )
+                                .findFirst();
+
+                matched.ifPresent( geometryTupleOffsetEntry
+                                           -> offsets.put( next, geometryTupleOffsetEntry.getValue() ) );
+            }
+        }
+
+        return Collections.unmodifiableMap( offsets );
     }
 
     /**
@@ -1651,6 +1739,7 @@ class ProjectUtilities
      * Searches for a matching feature tuple and throws an exception if more than one is found.
      * @param featureToFind the declared feature to find
      * @param featuresToSearch the fully elaborated feature tuples to search
+     * @param nextGroup the next feature group
      * @return a matching tuple or null if no tuple was found
      * @throws DeclarationException if more than one matching tuple was found
      */

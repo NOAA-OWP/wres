@@ -38,9 +38,11 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.FeatureGroupsBuilder;
 import wres.config.yaml.components.FeatureService;
 import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.Features;
+import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.Formats;
 import wres.config.yaml.components.GeneratedBaseline;
 import wres.config.yaml.components.GeneratedBaselineBuilder;
@@ -1039,7 +1041,9 @@ class DeclarationValidatorTest
                                                                                    .setName( "foo" ) )
                                                              .build() );
 
-        Features features = new Features( geometries );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( geometries )
+                                           .build();
 
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
@@ -1074,7 +1078,9 @@ class DeclarationValidatorTest
                                                                                 .setName( "bar" ) )
                                                              .build() );
 
-        Features features = new Features( geometries );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( geometries )
+                                           .build();
 
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( left )
@@ -1113,7 +1119,9 @@ class DeclarationValidatorTest
                                                                                 .setName( "bar" ) )
                                                              .build() );
 
-        Features features = new Features( geometries );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( geometries )
+                                           .build();
 
         CovariateDataset covariateDataset = new CovariateDataset( covariate, null, null, null, null );
         List<CovariateDataset> covariates = List.of( covariateDataset );
@@ -1282,7 +1290,8 @@ class DeclarationValidatorTest
                                  .setNetcdf2( Outputs.Netcdf2Format.getDefaultInstance() )
                                  .setNetcdf( Outputs.NetcdfFormat.getDefaultInstance() )
                                  .build();
-        FeatureGroups featureGroups = new FeatureGroups( Set.of() );
+        FeatureGroups featureGroups = FeatureGroupsBuilder.builder()
+                                                          .build();
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
                                                                         .right( this.defaultDataset )
@@ -1327,7 +1336,9 @@ class DeclarationValidatorTest
                                                              .setLeft( Geometry.newBuilder()
                                                                                .setName( "foo" ) )
                                                              .build() );
-        Features features = new Features( geometries );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( geometries )
+                                           .build();
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .left( this.defaultDataset )
                                                                         .right( this.defaultDataset )
@@ -1583,7 +1594,9 @@ class DeclarationValidatorTest
                 EvaluationDeclarationBuilder.builder()
                                             .left( this.defaultDataset )
                                             .right( this.defaultDataset )
-                                            .features( new Features( features ) )
+                                            .features( FeaturesBuilder.builder()
+                                                                      .geometries( features )
+                                                                      .build() )
                                             .thresholds( Set.of( wrappedOne,
                                                                  wrappedTwo,
                                                                  wrappedThree,
@@ -2116,7 +2129,9 @@ class DeclarationValidatorTest
                                                                                 .setName( "foo" ) )
                                                              .build() );
 
-        Features features = new Features( geometries );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( geometries )
+                                           .build();
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
                                             .left( this.defaultDataset )

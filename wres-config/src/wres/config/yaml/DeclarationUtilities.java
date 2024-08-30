@@ -49,6 +49,7 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.FeatureGroupsBuilder;
 import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.LeadTimeInterval;
@@ -2243,7 +2244,8 @@ public class DeclarationUtilities
                                                   .collect( Collectors.toSet() );
 
             // Set the new features
-            Features filteredFeatures = new Features( filtered );
+            Features filteredFeatures = new Features( filtered, declaration.features()
+                                                                           .offsets() );
             builder.features( filteredFeatures );
 
             if ( LOGGER.isWarnEnabled()
@@ -2305,7 +2307,9 @@ public class DeclarationUtilities
                                                   .toList() );
             }
 
-            FeatureGroups finalFeatureGroups = new FeatureGroups( adjustedGroups );
+            FeatureGroups finalFeatureGroups = FeatureGroupsBuilder.builder()
+                                                                   .geometryGroups( adjustedGroups )
+                                                                   .build();
             builder.featureGroups( finalFeatureGroups );
         }
 

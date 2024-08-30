@@ -14,11 +14,11 @@ import java.time.ZoneId
 /* Used by gradle plugins outside the official gradle plugins repository */
 buildscript {
 
-    // Work around for missing transitive dependency for plugin org.kordamp.gradle.markdown
+    // Workaround for missing transitive dependency for plugin org.kordamp.gradle.markdown
     // https://github.com/kordamp/markdown-gradle-plugin/issues/36
     configurations.all {
         resolutionStrategy.dependencySubstitution {
-            substitute module("com.overzealous:remark:1.1.0") using module( 'com.wavefront:remark:2023-07.07' ) because "not available on maven central anymore"
+            substitute module( 'com.overzealous:remark:1.1.0' ) using module( 'com.wavefront:remark:2023-07.07' ) because "not available on maven central anymore"
         }
     }
     repositories {

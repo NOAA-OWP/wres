@@ -5,6 +5,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -36,7 +37,9 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.FeatureGroupsBuilder;
 import wres.config.yaml.components.Features;
+import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.Formats;
 import wres.config.yaml.components.LeadTimeIntervalBuilder;
 import wres.config.yaml.components.Metric;
@@ -862,8 +865,12 @@ class DeclarationInterpolatorTest
                                                   .setRegionName( "A group!" ).build();
 
         // Create the declaration
-        Features features = new Features( geometries );
-        FeatureGroups featureGroups = new FeatureGroups( Set.of( featureGroup ) );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( geometries )
+                                           .build();
+        FeatureGroups featureGroups = FeatureGroupsBuilder.builder()
+                                                          .geometryGroups( Collections.singleton( featureGroup ) )
+                                                          .build();
         EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
                                                                         .features( features )
                                                                         .featureGroups( featureGroups )
@@ -1868,7 +1875,9 @@ class DeclarationInterpolatorTest
         geometries.add( first );
         geometries.add( second );
         geometries.add( third );
-        Features features = new Features( geometries );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( geometries )
+                                           .build();
 
         assertEquals( features, actualInterpolated.features() );
     }
@@ -2075,12 +2084,16 @@ class DeclarationInterpolatorTest
                                       FeatureAuthority.CUSTOM )
                               .build();
 
-        EvaluationDeclarationBuilder builder = EvaluationDeclarationBuilder.builder()
-                                                                           .features( new Features( features ) )
-                                                                           .featureGroups( new FeatureGroups(
-                                                                                   featureGroups ) )
-                                                                           .left( left )
-                                                                           .right( right );
+        EvaluationDeclarationBuilder builder =
+                EvaluationDeclarationBuilder.builder()
+                                            .features( FeaturesBuilder.builder()
+                                                                      .geometries( features )
+                                                                      .build() )
+                                            .featureGroups( FeatureGroupsBuilder.builder()
+                                                                                .geometryGroups( featureGroups )
+                                                                                .build() )
+                                            .left( left )
+                                            .right( right );
 
         if ( addBaseline )
         {

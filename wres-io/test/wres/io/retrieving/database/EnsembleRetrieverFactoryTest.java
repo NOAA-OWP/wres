@@ -40,6 +40,7 @@ import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
+import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.Variable;
 import wres.config.yaml.components.VariableBuilder;
 import wres.datamodel.time.TimeSeriesMetadata;
@@ -479,7 +480,9 @@ public class EnsembleRetrieverFactoryTest
                                             .left( left )
                                             .right( right )
                                             .baseline( baseline )
-                                            .features( new wres.config.yaml.components.Features( features ) )
+                                            .features( FeaturesBuilder.builder()
+                                                                      .geometries( features )
+                                                                      .build() )
                                             .build();
 
         TimeSeries<Ensemble> timeSeriesOne = TestData.generateTimeSeriesEnsembleOne();

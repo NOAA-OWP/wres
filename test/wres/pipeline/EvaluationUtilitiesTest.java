@@ -19,6 +19,7 @@ import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureGroups;
+import wres.config.yaml.components.FeatureGroupsBuilder;
 import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdType;
@@ -268,7 +269,9 @@ class EvaluationUtilitiesTest
 
         Set<GeometryGroup> geometryGroups = Set.of( firstGroup, secondGroup );
 
-        FeatureGroups featureGroups = new FeatureGroups( geometryGroups );
+        FeatureGroups featureGroups = FeatureGroupsBuilder.builder()
+                                                          .geometryGroups( geometryGroups )
+                                                          .build();
 
         EvaluationDeclaration evaluation = EvaluationDeclarationBuilder.builder()
                                                                        .leadTimes( leadTimeInterval )

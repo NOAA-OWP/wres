@@ -31,6 +31,7 @@ import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.Offset;
 import wres.config.yaml.components.TimeScale;
 import wres.config.yaml.components.Variable;
 import wres.datamodel.space.FeatureTuple;
@@ -387,6 +388,12 @@ public class InMemoryProject implements Project
                                                         .timeScale(),
                                                     this.getDeclaration()
                                                         .rescaleLenience() );
+    }
+
+    @Override
+    public Map<GeometryTuple, Offset> getOffsets()
+    {
+        return ProjectUtilities.getOffsets( this.getDeclaration() );
     }
 
     @Override

@@ -2,12 +2,14 @@ package wres.io.project;
 
 import java.time.Duration;
 import java.time.MonthDay;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.Offset;
 import wres.config.yaml.components.Variable;
 import wres.datamodel.scale.TimeScaleOuter;
 import wres.datamodel.space.Feature;
@@ -15,6 +17,7 @@ import wres.datamodel.space.FeatureGroup;
 import wres.datamodel.space.FeatureTuple;
 import wres.io.retrieving.DataAccessException;
 import wres.datamodel.time.TimeWindowOuter;
+import wres.statistics.generated.GeometryTuple;
 
 /**
  * <p>Wraps an {@link EvaluationDeclaration} and updates it to reflect the information ingested from time-series data
@@ -135,6 +138,16 @@ public interface Project
      */
 
     SortedSet<String> getEnsembleLabels( DatasetOrientation orientation );
+
+    /**
+     * Returns the feature-specific offsets that should be applied to the time-series event values. For example, an
+     * offset may represent a datum adjustment. The offsets are gathered from all contexts, including singleton features
+     * and feature groups.
+     *
+     * @return the offsets
+     */
+
+    Map<GeometryTuple, Offset> getOffsets();
 
     /**
      * @param orientation the orientation of the data source
