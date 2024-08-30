@@ -3,8 +3,6 @@ package wres.reading.wrds.nwm;
 import java.io.IOException;
 import java.io.Serial;
 import java.time.Instant;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -21,6 +19,9 @@ public class NwmDataPointDeserializer extends StdDeserializer<NwmDataPoint>
 {
     @Serial
     private static final long serialVersionUID = 5616289115474402095L;
+
+    /** Deserializer for a datetime {@link Instant}. **/
+    private static final DateTimeDeserializer INSTANT_DESERIALIZER = new DateTimeDeserializer();
 
     /**
      * Creates an instance.
@@ -43,21 +44,25 @@ public class NwmDataPointDeserializer extends StdDeserializer<NwmDataPoint>
     @Override
     public NwmDataPoint deserialize( JsonParser jp, DeserializationContext ctxt ) throws IOException
     {
-        JsonNode node = jp.getCodec().readTree( jp );
+        JsonNode node = jp.getCodec()
+                          .readTree( jp );
 
-        //Parse the instant.
-        DateTimeFormatter formatter = new DateTimeFormatterBuilder()
-                .appendPattern( "uuuuMMdd'T'HHX" )
-                .toFormatter();
-        Instant instant = formatter.parse( node.get( "time" ).asText(), Instant::from );
+        JsonNode timeNode = node.get( "time" );
+        JsonParser parser = timeNode.traverse();
+        parser.setCodec( jp.getCodec() );
 
-        //Parse the value.  Note that if the value is null, the node will not be
-        //null.  Rather, isNull will return true.  So there is not need to check
-        //explicitly for null.
+        // Parse the instant.
+        Instant instant = INSTANT_DESERIALIZER.deserialize( parser, ctxt );
+
+        // Parse the value.  Note that if the value is null, the node will not be
+        // null.  Rather, isNull will return true.  So there is no need to check
+        // explicitly for null.
         double value = MissingValues.DOUBLE;
-        if ( !node.get( "value" ).isNull() )
+        if ( !node.get( "value" )
+                  .isNull() )
         {
-            value = Double.parseDouble( node.get( "value" ).asText() );
+            value = node.get( "value" )
+                        .asDouble();
         }
 
         return new NwmDataPoint( instant, value );
