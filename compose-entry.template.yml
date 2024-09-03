@@ -16,7 +16,7 @@ volumes:
             device: "${NFS_HOME_DIR_DEVICE}"
 services:
     nginx:
-      image: "wres/nginx"
+      image: "${DOCKER_REGISTRY}/wres/nginx"
       container_name: nginx_proxy
       volumes:
         - ${NGINX_SERVER_CERT}:/etc/nginx/cert/wres_server_cert.pem
