@@ -586,9 +586,11 @@ public class WrdsAhpsReader implements TimeSeriesReader
         }
 
         urlParameters.put( timeTag,
-                           "[" + dateRange.getLeft().toString()
+                           "[" + dateRange.getLeft()
+                                          .toString()
                            + ","
-                           + dateRange.getRight().toString()
+                           + dateRange.getRight()
+                                      .toString()
                            + "]" );
 
         return Collections.unmodifiableMap( urlParameters );

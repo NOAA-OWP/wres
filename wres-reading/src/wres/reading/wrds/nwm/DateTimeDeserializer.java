@@ -2,13 +2,14 @@ package wres.reading.wrds.nwm;
 
 import java.io.IOException;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
+
+import wres.reading.ReaderUtilities;
 
 /**
  * Custom deserializer for a datetime string in the ISO8601 "basic" format with optional minutes and seconds. For
@@ -39,7 +40,7 @@ public class DateTimeDeserializer extends JsonDeserializer<Instant>
 
         // Lenient formatting in the "basic" ISO8601 format, hours and seconds are optional
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern( "yyyyMMdd'T'HH[mm[ss]]'Z'" )
-                                                       .withZone( ZoneId.of( "UTC" ) );
+                                                       .withZone( ReaderUtilities.UTC );
         return formatter.parse( time, Instant::from );
     }
 }

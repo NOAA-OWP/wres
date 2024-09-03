@@ -385,19 +385,19 @@ class WrdsNwmReaderTest
                                                    new Parameter( "reference_time",
                                                                   "(20220102T00Z,20220109T00Z]" ),
                                                    new Parameter( "forecast_type", "deterministic" ),
-                                                   new Parameter( "validTime", "all" ) );
+                                                   new Parameter( "valid_time", "all" ) );
 
         Parameters parametersTwo = new Parameters( new Parameter( "proj", "UNKNOWN_PROJECT_USING_WRES" ),
                                                    new Parameter( "reference_time",
                                                                   "(20220109T00Z,20220116T00Z]" ),
                                                    new Parameter( "forecast_type", "deterministic" ),
-                                                   new Parameter( "validTime", "all" ) );
+                                                   new Parameter( "valid_time", "all" ) );
 
         Parameters parametersThree = new Parameters( new Parameter( "proj", "UNKNOWN_PROJECT_USING_WRES" ),
                                                      new Parameter( "reference_time",
                                                                     "(20220116T00Z,20220123T00Z]" ),
                                                      new Parameter( "forecast_type", "deterministic" ),
-                                                     new Parameter( "validTime", "all" ) );
+                                                     new Parameter( "valid_time", "all" ) );
 
         this.mockServer.when( HttpRequest.request()
                                          .withPath( FORECAST_PATH )
@@ -502,7 +502,6 @@ class WrdsNwmReaderTest
                                 VerificationTimes.exactly( 1 ) );
     }
 
-
     /**
      * Tests for an expected exception and not an unexpected one. See #109238.
      */
@@ -574,4 +573,86 @@ class WrdsNwmReaderTest
         } );
     }
 
+    @Test
+    void testReadRequestsDateRangeWithMinutesAndSeconds()
+    {
+        this.mockServer.when( HttpRequest.request()
+                                         .withPath( ANALYSIS_PATH )
+                                         .withMethod( GET ) )
+                       .respond( HttpResponse.response( ANALYSIS_RESPONSE ) );
+
+        URI fakeUri = URI.create( "http://localhost:"
+                                  + this.mockServer.getLocalPort()
+                                  + "/api/v1/nwm/ops/analysis_assim/"
+                                  + ANALYSIS_PARAMS );
+
+        Source fakeDeclarationSource = SourceBuilder.builder()
+                                                    .uri( fakeUri )
+                                                    .sourceInterface( SourceInterface.WRDS_NWM )
+                                                    .build();
+
+        Dataset dataset = DatasetBuilder.builder()
+                                        .sources( List.of( fakeDeclarationSource ) )
+                                        .variable( VariableBuilder.builder()
+                                                                  .name( "streamflow" )
+                                                                  .build() )
+                                        .build();
+
+        DataSource fakeSource = DataSource.of( DataSource.DataDisposition.JSON_WRDS_NWM,
+                                               fakeDeclarationSource,
+                                               dataset,
+                                               Collections.emptyList(),
+                                               fakeUri,
+                                               DatasetOrientation.LEFT,
+                                               null );
+
+        SystemSettings systemSettings = Mockito.mock( SystemSettings.class );
+        Mockito.when( systemSettings.getMaximumWebClientThreads() )
+               .thenReturn( 6 );
+        Mockito.when( systemSettings.getPoolObjectLifespan() )
+               .thenReturn( 30_000 );
+
+        // Create a declaration with a short period of valid dates to create one chunked request where the first and
+        // last datetimes both contain minutes and seconds
+        Instant minimum = Instant.parse( "2024-09-01T00:13:00Z" );
+        Instant maximum = Instant.parse( "2024-09-03T00:27:59Z" );
+        TimeInterval interval = TimeIntervalBuilder.builder()
+                                                   .minimum( minimum )
+                                                   .maximum( maximum )
+                                                   .build();
+        Set<GeometryTuple> geometries
+                = Set.of( GeometryTuple.newBuilder()
+                                       .setLeft( Geometry.newBuilder()
+                                                         .setName( Integer.toString( NWM_FEATURE_ID ) ) )
+                                       .build() );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( geometries )
+                                           .build();
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .validDates( interval )
+                                                                        .features( features )
+                                                                        .build();
+
+        WrdsNwmReader reader = WrdsNwmReader.of( declaration, systemSettings );
+
+        Parameters parametersOne = new Parameters( new Parameter( "valid_time", "all" ),
+                                                   new Parameter( "proj", "UNKNOWN_PROJECT_USING_WRES" ),
+                                                   new Parameter( "reference_time",
+                                                                  "(20240901T000000Z,20240903T002759Z]" ),
+                                                   new Parameter( "forecast_type", "deterministic" ) );
+
+        try ( Stream<TimeSeriesTuple> tupleStream = reader.read( fakeSource ) )
+        {
+            List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
+                                                         .toList();
+
+            assertEquals( 1, actual.size() );
+
+            // One request made with parameters one
+            this.mockServer.verify( request().withMethod( GET )
+                                             .withPath( ANALYSIS_PATH )
+                                             .withQueryStringParameters( parametersOne ),
+                                    VerificationTimes.exactly( 1 ) );
+        }
+    }
 }

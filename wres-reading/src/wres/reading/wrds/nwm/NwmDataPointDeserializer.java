@@ -13,7 +13,8 @@ import wres.datamodel.MissingValues;
 
 /**
  * Custom deserializer to allow for handling a null value in a NWM data point.
- * @author Hank.Herr
+ * @author Hank Herr
+ * @author James Brown
  */
 public class NwmDataPointDeserializer extends StdDeserializer<NwmDataPoint>
 {

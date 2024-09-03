@@ -8,7 +8,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
@@ -256,10 +255,14 @@ public class WrdsNwmReader implements TimeSeriesReader
         // The chunked features
         List<List<String>> featureBlocks = ListUtils.partition( features, this.getFeatureChunkSize() );
 
+        LOGGER.debug( "Will request data for these feature chunks: {}.", featureBlocks );
+
         // Date ranges
         Set<Pair<Instant, Instant>> dateRanges = WrdsNwmReader.getWeekRanges( declaration, dataSource );
 
-        // Combine the features and date ranges to form the chunk boundaries
+        LOGGER.debug( "Will request data for these datetime chunks: {}.", dateRanges );
+
+        // Combine the features and date ranges to form the overall chunk boundaries
         Set<Pair<List<String>, Pair<Instant, Instant>>> chunks = new HashSet<>();
         for ( List<String> nextFeatures : featureBlocks )
         {
@@ -495,7 +498,7 @@ public class WrdsNwmReader implements TimeSeriesReader
         ZonedDateTime latest = dates.maximum()
                                     .atZone( ReaderUtilities.UTC );
 
-        LOGGER.debug( "Given {} parsed {} for latest.",
+        LOGGER.debug( "Given {} calculated {} for latest.",
                       dates.maximum(),
                       latest );
 
@@ -614,8 +617,12 @@ public class WrdsNwmReader implements TimeSeriesReader
                                      use );
         }
 
-        return ReaderUtilities.getUriWithParameters( uriWithLocation,
-                                                     wrdsParameters );
+        URI uri = ReaderUtilities.getUriWithParameters( uriWithLocation,
+                                                        wrdsParameters );
+
+        LOGGER.debug( "Will request time-series data with this URI: {}.", uri );
+
+        return uri;
     }
 
     /**
@@ -650,29 +657,45 @@ public class WrdsNwmReader implements TimeSeriesReader
         // This will override the parameter added above.
         urlParameters.putAll( additionalParameters );
 
-        String leftWrdsFormattedDate = WrdsNwmReader.iso8601TruncatedToHourFromInstant( range.getLeft() );
-        String rightWrdsFormattedDate = WrdsNwmReader.iso8601TruncatedToHourFromInstant( range.getRight() );
+        Pair<String, String> wrdsFormattedDates = WrdsNwmReader.toBasicISO8601String( range.getLeft(),
+                                                                                      range.getRight() );
         urlParameters.put( "reference_time",
-                           "(" + leftWrdsFormattedDate
+                           "(" + wrdsFormattedDates.getLeft()
                            + ","
-                           + rightWrdsFormattedDate
+                           + wrdsFormattedDates.getRight()
                            + "]" );
-        urlParameters.put( "validTime", "all" );
+        urlParameters.put( "valid_time", "all" );
 
         return Collections.unmodifiableMap( urlParameters );
     }
 
     /**
-     * The WRDS NWM API uses a concise ISO-8601 format rather than RFC3339 instant.
-     * @param instant the instance
+     * The WRDS NWM API uses the basic ISO-8601 format for the date range.
+     * @param left the instant
+     * @param right the right instant
      * @return the ISO-8601 instant string
      */
-    private static String iso8601TruncatedToHourFromInstant( Instant instant )
+    private static Pair<String, String> toBasicISO8601String( Instant left, Instant right )
     {
-        String dateFormat = "uuuuMMdd'T'HHX";
+        String dateFormat = "yyyyMMdd'T'HH'Z'";
+
+        ZonedDateTime zonedLeft = left.atZone( ReaderUtilities.UTC );
+        ZonedDateTime zonedRight = right.atZone( ReaderUtilities.UTC );
+
+        if ( zonedLeft.getMinute() > 0
+             || zonedLeft.getSecond() > 0
+             || zonedRight.getMinute() > 0
+             || zonedRight.getSecond() > 0 )
+        {
+            dateFormat = "yyyyMMdd'T'HHmmss'Z'";
+        }
+
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern( dateFormat )
-                                                       .withZone( ZoneId.of( "UTC" ) );
-        return formatter.format( instant );
+                                                       .withZone( ReaderUtilities.UTC );
+        String leftString = formatter.format( left );
+        String rightString = formatter.format( right );
+
+        return Pair.of( leftString, rightString );
     }
 
     /**
