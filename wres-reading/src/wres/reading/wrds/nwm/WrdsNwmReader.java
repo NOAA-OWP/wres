@@ -664,7 +664,6 @@ public class WrdsNwmReader implements TimeSeriesReader
                            + ","
                            + wrdsFormattedDates.getRight()
                            + "]" );
-        urlParameters.put( "valid_time", "all" );
 
         return Collections.unmodifiableMap( urlParameters );
     }

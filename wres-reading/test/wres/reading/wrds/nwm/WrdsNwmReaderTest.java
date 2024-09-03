@@ -384,20 +384,17 @@ class WrdsNwmReaderTest
         Parameters parametersOne = new Parameters( new Parameter( "proj", "UNKNOWN_PROJECT_USING_WRES" ),
                                                    new Parameter( "reference_time",
                                                                   "(20220102T00Z,20220109T00Z]" ),
-                                                   new Parameter( "forecast_type", "deterministic" ),
-                                                   new Parameter( "valid_time", "all" ) );
+                                                   new Parameter( "forecast_type", "deterministic" ) );
 
         Parameters parametersTwo = new Parameters( new Parameter( "proj", "UNKNOWN_PROJECT_USING_WRES" ),
                                                    new Parameter( "reference_time",
                                                                   "(20220109T00Z,20220116T00Z]" ),
-                                                   new Parameter( "forecast_type", "deterministic" ),
-                                                   new Parameter( "valid_time", "all" ) );
+                                                   new Parameter( "forecast_type", "deterministic" ) );
 
         Parameters parametersThree = new Parameters( new Parameter( "proj", "UNKNOWN_PROJECT_USING_WRES" ),
                                                      new Parameter( "reference_time",
                                                                     "(20220116T00Z,20220123T00Z]" ),
-                                                     new Parameter( "forecast_type", "deterministic" ),
-                                                     new Parameter( "valid_time", "all" ) );
+                                                     new Parameter( "forecast_type", "deterministic" ) );
 
         this.mockServer.when( HttpRequest.request()
                                          .withPath( FORECAST_PATH )
@@ -635,8 +632,7 @@ class WrdsNwmReaderTest
 
         WrdsNwmReader reader = WrdsNwmReader.of( declaration, systemSettings );
 
-        Parameters parametersOne = new Parameters( new Parameter( "valid_time", "all" ),
-                                                   new Parameter( "proj", "UNKNOWN_PROJECT_USING_WRES" ),
+        Parameters parametersOne = new Parameters( new Parameter( "proj", "UNKNOWN_PROJECT_USING_WRES" ),
                                                    new Parameter( "reference_time",
                                                                   "(20240901T000000Z,20240903T002759Z]" ),
                                                    new Parameter( "forecast_type", "deterministic" ) );
