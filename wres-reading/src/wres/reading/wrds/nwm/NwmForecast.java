@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
@@ -28,6 +29,7 @@ public class NwmForecast
     public NwmForecast( @JsonProperty( "reference_time" )
                         @JsonFormat( shape = JsonFormat.Shape.STRING,
                                      pattern = "uuuuMMdd'T'HHX" )
+                        @JsonDeserialize( using = DateTimeDeserializer.class )
                         Instant referenceDatetime,
                         @JsonProperty( "features" )
                         List<NwmFeature> nwmFeatures )
