@@ -2,8 +2,9 @@
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
 
-            <!-- %exception{full}: full stacktrace in log file. -->
-            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ} [%thread] %level %logger - %msg%n%exception{full}</pattern>
+            <!-- %exception{full}: full stacktrace for each exception -->
+            <!-- %logger{0}: show only rightmost part of logger name (class) -->
+            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ} %X{pid} [%thread] %level %logger{0} - %msg%n%exception{full}</pattern>
         </encoder>
     </appender>
 
