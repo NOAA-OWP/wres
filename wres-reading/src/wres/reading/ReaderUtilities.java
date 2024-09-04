@@ -672,6 +672,7 @@ public class ReaderUtilities
     {
         // Look for a system property first: #106160
         String pathToTrustFile = System.getProperty( "wres.wrdsCertificateFileToTrust" );
+        String passwordForInternalTrustStore = System.getProperty( "wres.wrdsInternalTrustStorePassword" );
         if ( Objects.nonNull( pathToTrustFile ) )
         {
             LOGGER.debug( "Discovered the system property wres.wrdsCertificateFileToTrust with value {}.",
@@ -681,7 +682,7 @@ public class ReaderUtilities
             try ( InputStream trustStream = Files.newInputStream( path ) )
             {
                 SSLStuffThatTrustsOneCertificate sslGoo =
-                        new SSLStuffThatTrustsOneCertificate( trustStream );
+                        new SSLStuffThatTrustsOneCertificate( trustStream, passwordForInternalTrustStore );
                 return Pair.of( sslGoo.getSSLContext(), sslGoo.getTrustManager() );
             }
             catch ( IOException e )
@@ -725,7 +726,7 @@ public class ReaderUtilities
                 return Pair.of( SSLContext.getDefault(), theTrustManager );
             }
             SSLStuffThatTrustsOneCertificate sslGoo =
-                    new SSLStuffThatTrustsOneCertificate( inputStream );
+                    new SSLStuffThatTrustsOneCertificate( inputStream, passwordForInternalTrustStore );
             return Pair.of( sslGoo.getSSLContext(), sslGoo.getTrustManager() );
         }
         catch ( IOException ioe )

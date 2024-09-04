@@ -47,7 +47,7 @@ public class PgSSLSocketFactory extends SSLSocketFactory
                     .getClassLoader().getResourceAsStream( fileOnClassPath ) )
             {
                 SSLStuffThatTrustsOneCertificate sslGoo =
-                        new SSLStuffThatTrustsOneCertificate( inputStream );
+                        new SSLStuffThatTrustsOneCertificate( inputStream, null );
                 this.socketFactory = sslGoo.getSSLSocketFactory();
             }
             catch ( IOException ioe )
@@ -65,7 +65,7 @@ public class PgSSLSocketFactory extends SSLSocketFactory
                                           StandardCharsets.US_ASCII ) ) )
             {
                 SSLStuffThatTrustsOneCertificate sslGoo
-                        = new SSLStuffThatTrustsOneCertificate( inputStream );
+                        = new SSLStuffThatTrustsOneCertificate( inputStream, null );
                 this.socketFactory = sslGoo.getSSLSocketFactory();
             }
             catch ( IOException ioe )
@@ -79,7 +79,7 @@ public class PgSSLSocketFactory extends SSLSocketFactory
             try ( InputStream inputStream = new FileInputStream( derEncodedCertificateToTrust ) )
             {
                 SSLStuffThatTrustsOneCertificate sslGoo
-                        = new SSLStuffThatTrustsOneCertificate( inputStream );
+                        = new SSLStuffThatTrustsOneCertificate( inputStream, null );
                 this.socketFactory = sslGoo.getSSLSocketFactory();
             }
             catch ( IOException ioe )
