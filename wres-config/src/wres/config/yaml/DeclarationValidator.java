@@ -122,7 +122,9 @@ public class DeclarationValidator
     private static final String THE_EVALUATION_REQUESTED_THE_SAMPLING_UNCERTAINTY =
             "The evaluation requested the 'sampling_uncertainty' ";
     /** Re-used string. */
-    private static final String AND_TRY_AGAIN = "and try again.";
+    private static final String TRY_AGAIN = "try again.";
+    /** Re-used string. */
+    private static final String AND_TRY_AGAIN = "and " + TRY_AGAIN;
 
     /**
      * Performs validation against the schema, followed by "business-logic" validation if there are no schema
@@ -1246,7 +1248,7 @@ public class DeclarationValidator
                                                              + ( variables.size() - named.size() )
                                                              + ". Please fix the 'minimum' and/or "
                                                              + "'maximum' value associated with these covariates and "
-                                                             + "try again." )
+                                                             + TRY_AGAIN )
                                            .build();
             events.add( event );
         }
@@ -1542,7 +1544,7 @@ public class DeclarationValidator
                                                                           .getFunction()
                                                              + "'. If this is incorrect, please add the correct "
                                                              + "'rescale_function' for the covariate dataset and "
-                                                             + "try again." )
+                                                             + TRY_AGAIN )
                                            .build();
             events.add( event );
         }
@@ -2365,8 +2367,14 @@ public class DeclarationValidator
         List<EvaluationStatusEvent> events =
                 new ArrayList<>( DeclarationValidator.thresholdSourcesAreValid( declaration ) );
 
+        // Check that value thresholds include units
         List<EvaluationStatusEvent> valueThresholds = DeclarationValidator.valueThresholdsIncludeUnits( declaration );
         events.addAll( valueThresholds );
+
+        // Check that the feature orientation is consistent with other declaration
+        List<EvaluationStatusEvent> featureThresholds =
+                DeclarationValidator.thresholdFeatureNameFromIsValid( declaration );
+        events.addAll( featureThresholds );
 
         return Collections.unmodifiableList( events );
     }
@@ -2409,6 +2417,36 @@ public class DeclarationValidator
                                            .setEventMessage( "Discovered one or more real-valued thresholds without a "
                                                              + "declared threshold unit. "
                                                              + extra )
+                                           .build();
+            events.add( event );
+        }
+
+        return Collections.unmodifiableList( events );
+    }
+
+    /**
+     * Checks that the {@code feature_name_from} declaration associated with thresholds is valid, specifically that a
+     * baseline dataset exists when a baseline orientation is declared.
+     * @param declaration the declaration
+     * @return the validation events encountered
+     */
+    private static List<EvaluationStatusEvent> thresholdFeatureNameFromIsValid( EvaluationDeclaration declaration )
+    {
+        List<EvaluationStatusEvent> events = new ArrayList<>();
+
+        Set<Threshold> thresholds = DeclarationUtilities.getInbandThresholds( declaration );
+        if ( thresholds.stream()
+                       .anyMatch( t -> t.featureNameFrom() == DatasetOrientation.BASELINE )
+             && !DeclarationUtilities.hasBaseline( declaration ) )
+        {
+            EvaluationStatusEvent event
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.ERROR )
+                                           .setEventMessage( "Discovered one or more thresholds with a "
+                                                             + "'feature_name_from' of 'baseline', but the evaluation "
+                                                             + "does not declare a 'baseline' dataset. Please fix the "
+                                                             + "'feature_name_from' or declare a 'baseline' dataset and "
+                                                             + TRY_AGAIN )
                                            .build();
             events.add( event );
         }
@@ -2690,13 +2728,13 @@ public class DeclarationValidator
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.ERROR )
-                                           .setEventMessage( "The 'threshold_service' declaration requested that "
+                                           .setEventMessage( "The 'threshold_sources' declaration requested that "
                                                              + "feature names with an orientation of '"
                                                              + DatasetOrientation.BASELINE
                                                              + "' are used to correlate features with thresholds, but "
                                                              + "no 'baseline' dataset was discovered. Please add a "
                                                              + "'baseline' dataset or fix the 'feature_name_from' "
-                                                             + "in the 'threshold_service' declaration." )
+                                                             + "in the 'threshold_sources' declaration." )
                                            .build();
 
             events.add( event );
@@ -2714,7 +2752,7 @@ public class DeclarationValidator
             EvaluationStatusEvent event
                     = EvaluationStatusEvent.newBuilder()
                                            .setStatusLevel( StatusLevel.ERROR )
-                                           .setEventMessage( "Discovered declaration for a 'threshold_service', which "
+                                           .setEventMessage( "Discovered declaration of 'threshold_sources', which "
                                                              + "requests thresholds whose feature names have an "
                                                              + "orientation of '"
                                                              + DatasetOrientation.BASELINE
@@ -2723,7 +2761,7 @@ public class DeclarationValidator
                                                              + " feature(s) were discovered with a missing '"
                                                              + DatasetOrientation.BASELINE
                                                              + "' feature name. Please fix the 'feature_name_from' in "
-                                                             + "the 'threshold_service' declaration or supply fully "
+                                                             + "the 'threshold_sources' declaration or supply fully "
                                                              + "composed feature tuples with an appropriate feature "
                                                              + "for the '"
                                                              + DatasetOrientation.BASELINE
