@@ -99,6 +99,7 @@ services:
         ports:
          - "5671:5671"
          - "15671:15671"
+         - "15691:15691"
         image: "${DOCKER_REGISTRY}/wres/wres-broker:BROKER_IMAGE"
         restart: always
         volumes:
