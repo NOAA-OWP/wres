@@ -49,6 +49,7 @@ public class BrokerHelper
     static final String DEFAULT_SECRETS_DIR = "/wres_secrets";
 
     static final String TRUST_STORE_PROPERTY_NAME = "wres.trustStore";
+    static final String TRUST_STORE_PASSWORD_PROPERTY_NAME = "wres.trustStorePassword";
 
     /**
      * The role.
@@ -74,7 +75,7 @@ public class BrokerHelper
 
     public static String getBrokerHost()
     {
-        String brokerFromDashD= System.getProperty( BROKER_HOST_PROPERTY_NAME );
+        String brokerFromDashD = System.getProperty( BROKER_HOST_PROPERTY_NAME );
 
         if ( brokerFromDashD != null )
         {
@@ -95,7 +96,7 @@ public class BrokerHelper
 
     public static String getBrokerVhost()
     {
-        String brokerVhostFromDashD= System.getProperty( BROKER_VHOST_PROPERTY_NAME );
+        String brokerVhostFromDashD = System.getProperty( BROKER_VHOST_PROPERTY_NAME );
 
         if ( brokerVhostFromDashD != null )
         {
@@ -158,6 +159,14 @@ public class BrokerHelper
         KeyStore customTrustStore = BrokerHelper.getJKSKeyStore();
 
         String trustStore = System.getProperty( TRUST_STORE_PROPERTY_NAME );
+        String trustStorePassword = System.getProperty( TRUST_STORE_PASSWORD_PROPERTY_NAME );
+        if ( ( trustStore == null ) || ( trustStorePassword == null ) )
+        {
+            throw new IllegalStateException( "Both " + TRUST_STORE_PROPERTY_NAME
+                                             + " and "
+                                             + TRUST_STORE_PASSWORD_PROPERTY_NAME
+                                             + " must be specified to initialize the trust manager." );
+        }
 
         Path alternativeTrustStorePath = Paths.get( trustStore );
         File alternativeTrustStoreFile = alternativeTrustStorePath.toFile();
@@ -166,10 +175,10 @@ public class BrokerHelper
              && alternativeTrustStoreFile.canRead() )
         {
             try ( InputStream alternativeTrustStream =
-                          new FileInputStream( alternativeTrustStoreFile ) )
+                    new FileInputStream( alternativeTrustStoreFile ) )
             {
                 customTrustStore.load( alternativeTrustStream,
-                                       "changeit".toCharArray() );
+                                       trustStorePassword.toCharArray() );
 
                 // Only when the alternative exists, is read, is loaded do
                 // we skip later step of using truststore from classpath.
@@ -179,7 +188,8 @@ public class BrokerHelper
             catch ( IOException | NoSuchAlgorithmException | CertificateException e )
             {
                 LOGGER.warn( "Could not use alternative Certificate Authority at '{}'",
-                             trustStore, e );
+                             trustStore,
+                             e );
                 // Continue and use the default trust store.
             }
         }
@@ -247,7 +257,9 @@ public class BrokerHelper
         catch ( NoSuchAlgorithmException nsae )
         {
             throw new IllegalStateException( "WRES expected JRE to support algorithm '"
-                                             + algorithm + "'.", nsae );
+                                             + algorithm
+                                             + "'.",
+                                             nsae );
         }
     }
 
@@ -265,11 +277,12 @@ public class BrokerHelper
     public static SSLContext getSSLContextWithClientCertificate( Role role )
     {
         String ourClientCertificateFilename = BrokerHelper.getSecretsDir() + "/"
-                                              + "wres-" + role.name()
-                                                             .toLowerCase()
+                                              + "wres-"
+                                              + role.name()
+                                                    .toLowerCase()
                                               + "_client_private_key_and_x509_cert.p12";
-        char[] keyPassphrase = ("wres-" + role.name().toLowerCase()
-                                + "-passphrase").toCharArray();
+        char[] keyPassphrase = ( "wres-" + role.name().toLowerCase()
+                                 + "-passphrase" ).toCharArray();
         KeyStore keyStore;
 
         try
@@ -283,7 +296,7 @@ public class BrokerHelper
         }
 
         try ( InputStream clientCertificateInputStream =
-                      new FileInputStream( ourClientCertificateFilename ) )
+                new FileInputStream( ourClientCertificateFilename ) )
         {
             keyStore.load( clientCertificateInputStream, keyPassphrase );
         }
@@ -318,7 +331,8 @@ public class BrokerHelper
         {
             throw new IllegalStateException( "WRES expected to be able to read "
                                              + "and decrypt the file '"
-                                             + ourClientCertificateFilename +
+                                             + ourClientCertificateFilename
+                                             +
                                              "'.",
                                              e );
         }
@@ -333,7 +347,8 @@ public class BrokerHelper
         catch ( NoSuchAlgorithmException nsae )
         {
             throw new IllegalStateException( "WRES expected to be able to use protocol '"
-                                             + protocol + "'",
+                                             + protocol
+                                             + "'",
                                              nsae );
         }
 
@@ -353,3 +368,4 @@ public class BrokerHelper
         return sslContext;
     }
 }
+

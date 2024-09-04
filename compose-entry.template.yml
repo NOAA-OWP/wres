@@ -84,7 +84,7 @@ services:
          - /mnt/wres_share/logs/tasker/:/mnt/wres_share/logs/tasker/
         environment:
          # Make sure to pass through WRES_TASKER_SERVER_P12 to tasker at runtime
-         - JAVA_OPTS=-Dwres.monitorPassword=${WRES_MONITOR_PASSWORD} -Dwres.adminToken=${WRES_ADMIN_TOKEN} -Dwres.broker=broker -Dwres.redisHost=persister -Dwres.trustStore=${WRES_TRUST_STORE} -Dwres.taskerPathToServerP12=${WRES_TASKER_SERVER_P12} -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/input_data -Dwres.dataDirectDiskThreshold=90 -Dwres.numberOfWorkers=5 -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/tasker -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/tasker/java_pid%p.hprof /mnt/wres_share/heap_dumps/tasker/java_pid%p_$$CON_HOSTNAME.hprof; chmod 775 /mnt/wres_share/heap_dumps/tasker/java_pid%p_$$CON_HOSTNAME.hprof'
+         - JAVA_OPTS=-Dwres.monitorPassword=${WRES_MONITOR_PASSWORD} -Dwres.adminToken=${WRES_ADMIN_TOKEN} -Dwres.broker=broker -Dwres.redisHost=persister -Dwres.trustStore=${WRES_TRUST_STORE} -Dwres.trustStorePassword=${WRES_TRUST_STORE_PASSWORD} -Dwres.taskerPathToServerP12=${WRES_TASKER_SERVER_P12} -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/input_data -Dwres.dataDirectDiskThreshold=90 -Dwres.numberOfWorkers=5 -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/tasker -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/tasker/java_pid%p.hprof /mnt/wres_share/heap_dumps/tasker/java_pid%p_$$CON_HOSTNAME.hprof; chmod 775 /mnt/wres_share/heap_dumps/tasker/java_pid%p_$$CON_HOSTNAME.hprof'
          - LANG=C.UTF-8
         # Tasker JVM should have 340m max heap specified at launch
         # The total limit includes stack space which depends on Thread count
@@ -108,6 +108,12 @@ services:
          - /mnt/wres_share/rabbitmq/:/var/lib/rabbitmq/
         environment:
          - RABBITMQ_CONFIG_FILE=rabbitmq.conf
+         - WRES_RABBITMQ_SSL_OPTIONS_CACERTFILE=${WRES_RABBITMQ_SSL_OPTIONS_CACERTFILE}
+         - WRES_RABBITMQ_SSL_OPTIONS_CERTFILE=${WRES_RABBITMQ_SSL_OPTIONS_CERTFILE}
+         - WRES_RABBITMQ_SSL_OPTIONS_KEYFILE=${WRES_RABBITMQ_SSL_OPTIONS_KEYFILE}
+         - WRES_RABBITMQ_MANAGEMENT_SSL_CACERTFILE=${WRES_RABBITMQ_MANAGEMENT_SSL_CACERTFILE}
+         - WRES_RABBITMQ_MANAGEMENT_SSL_CERTFILE=${WRES_RABBITMQ_MANAGEMENT_SSL_CERTFILE}
+         - WRES_RABBITMQ_MANAGEMENT_SSL_KEYFILE=${WRES_RABBITMQ_MANAGEMENT_SSL_KEYFILE}
         # rabbitmq.conf should have 360m specified as high watermark
         mem_limit: 720m
         cap_drop:
@@ -145,7 +151,7 @@ services:
          # Writing all log outputs:
          - /mnt/wres_share/logs/worker/:/mnt/wres_share/logs/worker/
         environment:
-         - JAVA_OPTS=-Dwres.broker=broker -Dcom.redhat.fips=false -Dwres.trustStore=${WRES_TRUST_STORE} -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/worker-shim -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/worker-shim/java_pid%p.hprof /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_$$CON_HOSTNAME.hprof; chmod 775 /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_$$CON_HOSTNAME.hprof'
+         - JAVA_OPTS=-Dwres.broker=broker -Dcom.redhat.fips=false -Dwres.trustStore=${WRES_TRUST_STORE} -Dwres.trustStorePassword=${WRES_TRUST_STORE_PASSWORD} -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/worker-shim -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/worker-shim/java_pid%p.hprof /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_$$CON_HOSTNAME.hprof; chmod 775 /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_$$CON_HOSTNAME.hprof'
          - PGPASSFILE=/wres_secrets/.pgpass
          # Use caller-specified db hostname from env var WRES_DB_FQDN.
          # Do not auto-liquibase-migrate on each evaluation. This requires an
