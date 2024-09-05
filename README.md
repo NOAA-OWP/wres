@@ -35,7 +35,7 @@ value_date,variable_name,location,measurement_unit,value
 1985-06-01T14:00:00Z,streamflow,myLocation,CMS,22.0
 ```
 
-* Create a file `observation.csv` with the following content:
+* Create a file `observations.csv` with the following content:
 
 ```
 value_date,variable_name,location,measurement_unit,value
