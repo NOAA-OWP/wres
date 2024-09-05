@@ -49,7 +49,6 @@ public class BrokerHelper
     static final String DEFAULT_SECRETS_DIR = "/wres_secrets";
 
     static final String TRUST_STORE_PROPERTY_NAME = "wres.trustStore";
-    static final String TRUST_STORE_PASSWORD_PROPERTY_NAME = "wres.trustStorePassword";
 
     /**
      * The role.
@@ -159,14 +158,6 @@ public class BrokerHelper
         KeyStore customTrustStore = BrokerHelper.getJKSKeyStore();
 
         String trustStore = System.getProperty( TRUST_STORE_PROPERTY_NAME );
-        String trustStorePassword = System.getProperty( TRUST_STORE_PASSWORD_PROPERTY_NAME );
-        if ( ( trustStore == null ) || ( trustStorePassword == null ) )
-        {
-            throw new IllegalStateException( "Both " + TRUST_STORE_PROPERTY_NAME
-                                             + " and "
-                                             + TRUST_STORE_PASSWORD_PROPERTY_NAME
-                                             + " must be specified to initialize the trust manager." );
-        }
 
         Path alternativeTrustStorePath = Paths.get( trustStore );
         File alternativeTrustStoreFile = alternativeTrustStorePath.toFile();
@@ -178,7 +169,7 @@ public class BrokerHelper
                     new FileInputStream( alternativeTrustStoreFile ) )
             {
                 customTrustStore.load( alternativeTrustStream,
-                                       trustStorePassword.toCharArray() );
+                                       "changeit".toCharArray() );
 
                 // Only when the alternative exists, is read, is loaded do
                 // we skip later step of using truststore from classpath.
@@ -268,21 +259,30 @@ public class BrokerHelper
      * Get an SSLContext that is set up with a client certificate,
      * used to authenticate to the wres-broker.
      * @param role the role of the module connecting to the broker
+     * @param pathToP12 The path to the p12 file to use. Must be non-null and not empty.
+     * @param passwordForP12 The password to use. If null or empty, no password isused.
      * @return SSLContext ready to go for connecting to the broker
      * @throws IllegalStateException when anything goes wrong setting up
-     * keystores, trust managers, factories, reading files, parsing certificate,
-     * decrypting contents, etc.
+     * keystores, trust managers, factories, reading files, parsing certificate, 
+     * decrypting contents, etc. 
      */
 
-    public static SSLContext getSSLContextWithClientCertificate( Role role )
+    public static SSLContext getSSLContextWithClientCertificate( String pathToP12, String passwordForP12 )
     {
-        String ourClientCertificateFilename = BrokerHelper.getSecretsDir() + "/"
-                                              + "wres-"
-                                              + role.name()
-                                                    .toLowerCase()
-                                              + "_client_private_key_and_x509_cert.p12";
-        char[] keyPassphrase = ( "wres-" + role.name().toLowerCase()
-                                 + "-passphrase" ).toCharArray();
+        if (pathToP12 == null || pathToP12.isEmpty())
+        {
+            throw new IllegalArgumentException("Argument pathToP12 cannot be null or empty, but was.");
+        }
+        char[] keyPassphrase = null;
+        if ( passwordForP12 != null && !passwordForP12.isEmpty() )
+        {
+            keyPassphrase = passwordForP12.toCharArray();
+        }
+        else
+        {
+            LOGGER.warn("For file " + pathToP12 + " password provided is null or empty, so no password is assumed.");
+        }
+
         KeyStore keyStore;
 
         try
@@ -296,14 +296,14 @@ public class BrokerHelper
         }
 
         try ( InputStream clientCertificateInputStream =
-                new FileInputStream( ourClientCertificateFilename ) )
+                new FileInputStream( pathToP12 ) )
         {
             keyStore.load( clientCertificateInputStream, keyPassphrase );
         }
         catch ( IOException | NoSuchAlgorithmException | CertificateException e )
         {
             throw new IllegalStateException( "WRES expected to find a file '"
-                                             + ourClientCertificateFilename
+                                             + pathToP12
                                              + "' with PKCS#12 format, with"
                                              + " both a client certificate AND"
                                              + " the private key inside, used "
@@ -331,7 +331,7 @@ public class BrokerHelper
         {
             throw new IllegalStateException( "WRES expected to be able to read "
                                              + "and decrypt the file '"
-                                             + ourClientCertificateFilename
+                                             + pathToP12
                                              +
                                              "'.",
                                              e );

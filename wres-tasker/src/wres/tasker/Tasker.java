@@ -66,6 +66,10 @@ public class Tasker
     }
 
     public static final String PATH_TO_SERVER_P12_PNAME = "wres.taskerPathToServerP12";
+    public static final String PASSWORD_TO_SERVER_P12 = "wres.taskerPathToServerP12Password";
+    public static final String PATH_TO_CLIENT_P12_PNAME = "wres.taskerPathToClientP12Bundle";
+    public static final String PASSWORD_TO_CLIENT_P12 = "wres.taskerPathToClientP12Password";
+
     private static final String PATH_TO_SERVER_P12;
 
     /** A format like EXTENDED_NCSA_FORMAT but without an extra timestamp */
@@ -81,8 +85,8 @@ public class Tasker
         }
         else
         {
-
-            PATH_TO_SERVER_P12 = "wres-tasker_server_private_key_and_x509_cert.p12";
+            throw new IllegalStateException( "The system property, " + PATH_TO_SERVER_P12_PNAME
+                                             + " is required, but was not specified." );
         }
     }
 
@@ -192,7 +196,8 @@ public class Tasker
         alpn.setDefaultProtocol( httpOneOne.getProtocol() );
 
         // Use TLS
-        SslContextFactory.Server contextFactory = Tasker.getSslContextFactory( PATH_TO_SERVER_P12 );
+        SslContextFactory.Server contextFactory =
+                Tasker.getSslContextFactory( PATH_TO_SERVER_P12, System.getProperty( PASSWORD_TO_SERVER_P12 ) );
         httpConfig.addCustomizer( new SecureRequestCustomizer() );
         SslConnectionFactory tlsConnectionFactory =
                 new SslConnectionFactory( contextFactory, alpn.getProtocol() );
@@ -247,11 +252,11 @@ public class Tasker
         }
     }
 
-    private static SslContextFactory.Server getSslContextFactory( String pathToP12 )
+    private static SslContextFactory.Server getSslContextFactory( String pathToP12, String password )
     {
         SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
         sslContextFactory.setKeyStoreType( "PKCS12" );
-        sslContextFactory.setKeyStorePassword( "wres-web-passphrase" );
+        sslContextFactory.setKeyStorePassword( password );
         sslContextFactory.setKeyStorePath( pathToP12 );
         return sslContextFactory;
     }

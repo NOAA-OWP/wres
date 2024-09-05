@@ -100,8 +100,15 @@ public abstract class BrokerManagerHelper
         LOGGER.info( "Broker manager API URL is {}.", managerURL );
 
         //The SSL context is that used by the tasker to talk to the broker.
+        String p12Path = System.getProperty( Tasker.PATH_TO_CLIENT_P12_PNAME );
+        if ( p12Path == null || p12Path.isEmpty() )
+        {
+            throw new IllegalStateException( "The system property " + Tasker.PATH_TO_CLIENT_P12_PNAME
+                                             + " is not specified. It must be provided and non-empty." );
+        }
         SSLContext sslMgmtContext =
-                BrokerHelper.getSSLContextWithClientCertificate( BrokerHelper.Role.TASKER );
+                BrokerHelper.getSSLContextWithClientCertificate( p12Path,
+                                                                 System.getProperty( Tasker.PASSWORD_TO_CLIENT_P12 ) );
 
         //The hokey casting below to X509TrustManager is because BrokerHelper.getDefaultTrustManager() is actually
         //guaranteed to return an instance of X509TrustManager, if anything is returned, and that is what this method

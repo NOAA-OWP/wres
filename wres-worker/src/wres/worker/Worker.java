@@ -40,6 +40,10 @@ public class Worker
     private static final Logger LOGGER = LoggerFactory.getLogger( Worker.class );
     private static final String RECV_QUEUE_NAME = "wres.job";
 
+    public static final String PATH_TO_CLIENT_P12_PNAME = "wres.workerPathToClientP12Bundle";
+    public static final String PASSWORD_TO_CLIENT_P12 = "wres.workerPathToClientP12Password";
+
+
     /**
      * This code is used to signal something happened to the worker-server mid-evaluation.
      * We return this code instead of an exception so we can dequeue the job that likely caused this
@@ -176,6 +180,14 @@ public class Worker
      */
     private static ConnectionFactory createConnectionFactory()
     {
+        //Check for the client P12 path name. That P12 is handed off to the broker to authenticate the Tasker user.
+        String p12Path = System.getProperty( Worker.PATH_TO_CLIENT_P12_PNAME );
+        if ( p12Path == null || p12Path.isEmpty() )
+        {
+            throw new IllegalStateException( "The system property " + Worker.PATH_TO_CLIENT_P12_PNAME
+                                             + " is not specified. It must be provided and non-empty." );
+        }
+        
         // Determine the actual broker name, whether from -D or default
         String brokerHost = BrokerHelper.getBrokerHost();
         String brokerVhost = BrokerHelper.getBrokerVhost();
@@ -190,7 +202,7 @@ public class Worker
         factory.setAutomaticRecoveryEnabled( true );
 
         SSLContext sslContext =
-                BrokerHelper.getSSLContextWithClientCertificate( BrokerHelper.Role.WORKER );
+                BrokerHelper.getSSLContextWithClientCertificate( p12Path, System.getProperty(Worker.PASSWORD_TO_CLIENT_P12) );
         factory.useSslProtocol( sslContext );
 
         return factory;

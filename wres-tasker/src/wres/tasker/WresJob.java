@@ -993,6 +993,14 @@ public class WresJob
      */
     private static void initializeBrokerConnectionFactory() throws IllegalStateException
     {
+        //Check for the client P12 path name. That P12 is handed off to the broker to authenticate the Tasker user.
+        String p12Path = System.getProperty( Tasker.PATH_TO_CLIENT_P12_PNAME );
+        if ( p12Path == null || p12Path.isEmpty() )
+        {
+            throw new IllegalStateException( "The system property " + Tasker.PATH_TO_CLIENT_P12_PNAME
+                                             + " is not specified. It must be provided and non-empty." );
+        }
+
         // Determine the actual broker name, whether from -D or default.
         // This initializes the broker connection factory.
         String brokerHost = BrokerHelper.getBrokerHost();
@@ -1003,7 +1011,8 @@ public class WresJob
         CONNECTION_FACTORY.setPort( brokerPort );
         CONNECTION_FACTORY.setSaslConfig( DefaultSaslConfig.EXTERNAL );
         SSLContext sslContext =
-                BrokerHelper.getSSLContextWithClientCertificate( BrokerHelper.Role.TASKER );
+                BrokerHelper.getSSLContextWithClientCertificate( p12Path,
+                                                                 System.getProperty( Tasker.PASSWORD_TO_CLIENT_P12 ) );
         CONNECTION_FACTORY.useSslProtocol( sslContext );
     }
 
