@@ -273,7 +273,7 @@ public class BrokerHelper
         {
             throw new IllegalArgumentException("Argument pathToP12 cannot be null or empty, but was.");
         }
-        char[] keyPassphrase = null;
+        char[] keyPassphrase = new char[]{};
         if ( passwordForP12 != null && !passwordForP12.isEmpty() )
         {
             keyPassphrase = passwordForP12.toCharArray();
