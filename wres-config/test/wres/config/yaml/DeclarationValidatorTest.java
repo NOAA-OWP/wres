@@ -1296,6 +1296,7 @@ class DeclarationValidatorTest
                                                                         .left( this.defaultDataset )
                                                                         .right( this.defaultDataset )
                                                                         .formats( new Formats( formats ) )
+
                                                                         .featureGroups( featureGroups )
                                                                         .build();
 
@@ -1314,12 +1315,53 @@ class DeclarationValidatorTest
                                                                         "The 'output_formats' includes "
                                                                         + "'netcdf2', which supports 'feature_groups', "
                                                                         + "but",
-                                                                        StatusLevel.WARN ) ),
-                   () -> assertTrue( DeclarationValidatorTest.contains( events,
-                                                                        "these formats only support the writing "
-                                                                        + "of verification scores",
-                                                                        StatusLevel.ERROR ) )
+                                                                        StatusLevel.WARN ) )
         );
+    }
+
+    @Test
+    void testNetcdfDeclarationWithExplicitMetricsAndNoScoresProducesError()
+    {
+        Outputs formats = Outputs.newBuilder()
+                                 .setNetcdf2( Outputs.Netcdf2Format.getDefaultInstance() )
+                                 .build();
+
+        Metric metric = new Metric( MetricConstants.RANK_HISTOGRAM, null );
+        Set<Metric> metrics = Collections.singleton( metric );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .formats( new Formats( formats ) )
+                                                                        .metrics( metrics )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "the evaluation must include at least one score metric",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testNetcdfDeclarationAndNoMetricsProducesNoErrors()
+    {
+        // Github #305
+        Outputs formats = Outputs.newBuilder()
+                                 .setNetcdf2( Outputs.Netcdf2Format.getDefaultInstance() )
+                                 .build();
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.defaultDataset )
+                                                                        .right( this.defaultDataset )
+                                                                        .formats( new Formats( formats ) )
+                                                                        .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertFalse( DeclarationValidatorTest.contains( events,
+                                                        "the evaluation must include at least one score metric",
+                                                        StatusLevel.ERROR ) );
     }
 
     @Test
@@ -1612,6 +1654,36 @@ class DeclarationValidatorTest
                                                                         "The missing features are: [qux, foo]",
                                                                         StatusLevel.ERROR ) )
         );
+    }
+
+    @Test
+    void testFeaturefulThresholdsWithFeatureNameFromBaselineAndNoBaselineProducesError()
+    {
+        Geometry featureFoo = Geometry.newBuilder()
+                                      .setName( "foo" )
+                                      .build();
+        Threshold one = Threshold.newBuilder()
+                                 .setLeftThresholdValue( 1.0 )
+                                 .build();
+        wres.config.yaml.components.Threshold wrappedOne = ThresholdBuilder.builder()
+                                                                           .threshold( one )
+                                                                           .feature( featureFoo )
+                                                                           .featureNameFrom( DatasetOrientation.BASELINE )
+                                                                           .type( ThresholdType.VALUE )
+                                                                           .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .thresholds( Set.of( wrappedOne ) )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "Please fix the 'feature_name_from' or declare a "
+                                                       + "'baseline' dataset",
+                                                       StatusLevel.ERROR ) );
     }
 
     @Test

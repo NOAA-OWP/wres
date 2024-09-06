@@ -10,7 +10,6 @@ import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -134,7 +133,7 @@ class WrdsNwmJsonReaderTest
               Stream<TimeSeriesTuple> tupleStream = reader.read( this.fakeSource, inputStream ) )
         {
             List<TimeSeries<Double>> actual = tupleStream.map( TimeSeriesTuple::getSingleValuedTimeSeries )
-                                                         .collect( Collectors.toList() );
+                                                         .toList();
 
             TimeSeriesMetadata metadata = TimeSeriesMetadata.of( Map.of( ReferenceTimeType.T0,
                                                                          Instant.parse( "2020-01-12T00:00:00Z" ) ),

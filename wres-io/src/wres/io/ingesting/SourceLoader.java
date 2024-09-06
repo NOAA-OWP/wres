@@ -295,7 +295,7 @@ public class SourceLoader
         // Ingest gridded metadata/features when required. For an in-memory evaluation, it is required by the gridded
         // reader. For a database evaluation, it is required by the DatabaseProject. This is a special snowflake until 
         // #51232 is resolved
-        if ( source.getDisposition() == DataDisposition.NETCDF_GRIDDED )
+        if ( source.isGridded() )
         {
             // It has now been established that a gridded evaluation is required. Gridded evaluations require a spatial
             // mask to determine the features to evaluate. Check that now.
