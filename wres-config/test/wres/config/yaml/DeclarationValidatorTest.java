@@ -1615,6 +1615,36 @@ class DeclarationValidatorTest
     }
 
     @Test
+    void testFeaturefulThresholdsWithFeatureNameFromBaselineAndNoBaselineProducesError()
+    {
+        Geometry featureFoo = Geometry.newBuilder()
+                                      .setName( "foo" )
+                                      .build();
+        Threshold one = Threshold.newBuilder()
+                                 .setLeftThresholdValue( 1.0 )
+                                 .build();
+        wres.config.yaml.components.Threshold wrappedOne = ThresholdBuilder.builder()
+                                                                           .threshold( one )
+                                                                           .feature( featureFoo )
+                                                                           .featureNameFrom( DatasetOrientation.BASELINE )
+                                                                           .type( ThresholdType.VALUE )
+                                                                           .build();
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .thresholds( Set.of( wrappedOne ) )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "Please fix the 'feature_name_from' or declare a "
+                                                       + "'baseline' dataset",
+                                                       StatusLevel.ERROR ) );
+    }
+
+    @Test
     void testFeaturefulThresholdsAndNoFeaturesProducesWarning()
     {
         Geometry featureFoo = Geometry.newBuilder()

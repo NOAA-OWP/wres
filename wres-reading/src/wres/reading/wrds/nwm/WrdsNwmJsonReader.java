@@ -158,7 +158,7 @@ public class WrdsNwmJsonReader implements TimeSeriesReader
         // Create a supplier that returns a time-series once complete
         return () -> {
 
-            // Read all of the time-series eagerly on first use: this will still delay any read until a terminal stream
+            // Read the time-series eagerly on first use: this will still delay any read until a terminal stream
             // operation pulls from the supplier (which is why we use a reference holder and do not request the 
             // time-series outside of this lambda), but it will then acquire all the time-series eagerly, i.e., now
             if ( Objects.isNull( timeSeriesTuples.get() ) )
