@@ -2919,9 +2919,12 @@ public class DeclarationValidator
                 events.add( event );
             }
 
-            // Check for some score metrics when netcdf is declared
+            // Check for some score metrics when netcdf is declared, unless the declaration contains no/default metrics,
+            // meaning that metrics will be interpolated, of which some will always be scores
             if ( ( outputs.hasNetcdf()
                    || outputs.hasNetcdf2() )
+                 && !declaration.metrics()  // Scores will always be interpolated in this case
+                                .isEmpty()
                  && declaration.metrics()
                                .stream()
                                .noneMatch( DeclarationValidator::isScore ) )

@@ -132,13 +132,13 @@ public class WresJob
 
     static
     {
-        //Initialize storage of the admin token for some functions.
-        //This method should not except out. If problems occur storing it,
-        //then the tasker runs without using an admin token.
+        // Initialize storage of the admin token for some functions.
+        // This method should not except out. If problems occur storing it,
+        // then the tasker runs without using an admin token.
         intializeWresAdminToken();
 
-        //If the broker connection factory fails to initialize, log an error and 
-        //pass up the exception so that this static block fails out.
+        // If the broker connection factory fails to initialize, log an error and
+        // pass up the exception so that this static block fails out.
         try
         {
             initializeBrokerConnectionFactory();
@@ -993,7 +993,7 @@ public class WresJob
      */
     private static void initializeBrokerConnectionFactory() throws IllegalStateException
     {
-        //Check for the client P12 path name. That P12 is handed off to the broker to authenticate the Tasker user.
+        // Check for the client P12 path name. That P12 is handed off to the broker to authenticate the Tasker user.
         String p12Path = System.getProperty( Tasker.PATH_TO_CLIENT_P12_PNAME );
         if ( p12Path == null || p12Path.isEmpty() )
         {
