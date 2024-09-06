@@ -84,7 +84,7 @@ services:
          - /mnt/wres_share/logs/tasker/:/mnt/wres_share/logs/tasker/
         environment:
          # Make sure to pass through WRES_TASKER_SERVER_P12 to tasker at runtime
-         - JAVA_OPTS=-Dwres.monitorPassword=${WRES_MONITOR_PASSWORD} -Dwres.adminToken=${WRES_ADMIN_TOKEN} -Dwres.broker=broker -Dwres.redisHost=persister -Dwres.trustStore=${WRES_TRUST_STORE} -Dwres.taskerPathToServerP12=${WRES_TASKER_SERVER_P12} -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/input_data -Dwres.dataDirectDiskThreshold=90 -Dwres.numberOfWorkers=5 -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/tasker -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/tasker/java_pid%p.hprof /mnt/wres_share/heap_dumps/tasker/java_pid%p_$$CON_HOSTNAME.hprof; chmod 775 /mnt/wres_share/heap_dumps/tasker/java_pid%p_$$CON_HOSTNAME.hprof'
+         - JAVA_OPTS=-Dwres.monitorPassword=${WRES_MONITOR_PASSWORD} -Dwres.adminToken=${WRES_ADMIN_TOKEN} -Dwres.broker=broker -Dwres.redisHost=persister -Dwres.trustStore=${WRES_TRUST_STORE} -Dwres.trustStorePassword=${WRES_TRUST_STORE_PASSWORD} -Dwres.taskerPathToServerP12=${WRES_TASKER_SERVER_P12} -Dwres.taskerPathToServerP12Password=${WRES_TASKER_SERVER_P12_PASSWORD} -Dwres.taskerPathToClientP12Bundle=${WRES_TASKER_CLIENT_P12} -Dwres.taskerPathToClientP12Password=${WRES_TASKER_CLIENT_P12_PASSWORD} -Dcom.redhat.fips=false -Djava.io.tmpdir=/mnt/wres_share/input_data -Dwres.dataDirectDiskThreshold=90 -Dwres.numberOfWorkers=5 -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/tasker -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/tasker/java_pid%p.hprof /mnt/wres_share/heap_dumps/tasker/java_pid%p_$$CON_HOSTNAME.hprof; chmod 775 /mnt/wres_share/heap_dumps/tasker/java_pid%p_$$CON_HOSTNAME.hprof'
          - LANG=C.UTF-8
         # Tasker JVM should have 340m max heap specified at launch
         # The total limit includes stack space which depends on Thread count
@@ -99,6 +99,7 @@ services:
         ports:
          - "5671:5671"
          - "15671:15671"
+         - "15691:15691"
         image: "${DOCKER_REGISTRY}/wres/wres-broker:BROKER_IMAGE"
         restart: always
         volumes:
@@ -108,6 +109,15 @@ services:
          - /mnt/wres_share/rabbitmq/:/var/lib/rabbitmq/
         environment:
          - RABBITMQ_CONFIG_FILE=rabbitmq.conf
+         - WRES_RABBITMQ_SSL_OPTIONS_CACERTFILE=${WRES_RABBITMQ_SSL_OPTIONS_CACERTFILE}
+         - WRES_RABBITMQ_SSL_OPTIONS_CERTFILE=${WRES_RABBITMQ_SSL_OPTIONS_CERTFILE}
+         - WRES_RABBITMQ_SSL_OPTIONS_KEYFILE=${WRES_RABBITMQ_SSL_OPTIONS_KEYFILE}
+         - WRES_RABBITMQ_MANAGEMENT_SSL_CACERTFILE=${WRES_RABBITMQ_MANAGEMENT_SSL_CACERTFILE}
+         - WRES_RABBITMQ_MANAGEMENT_SSL_CERTFILE=${WRES_RABBITMQ_MANAGEMENT_SSL_CERTFILE}
+         - WRES_RABBITMQ_MANAGEMENT_SSL_KEYFILE=${WRES_RABBITMQ_MANAGEMENT_SSL_KEYFILE}
+         - WRES_RABBITMQ_PROMETHEUS_SSL_CACERTFILE=${WRES_RABBITMQ_PROMETHEUS_SSL_CACERTFILE}
+         - WRES_RABBITMQ_PROMETHEUS_SSL_CERTFILE=${WRES_RABBITMQ_PROMETHEUS_SSL_CERTFILE}
+         - WRES_RABBITMQ_PROMETHEUS_SSL_KEYFILE=${WRES_RABBITMQ_PROMETHEUS_SSL_KEYFILE}
         # rabbitmq.conf should have 360m specified as high watermark
         mem_limit: 720m
         cap_drop:
@@ -145,7 +155,7 @@ services:
          # Writing all log outputs:
          - /mnt/wres_share/logs/worker/:/mnt/wres_share/logs/worker/
         environment:
-         - JAVA_OPTS=-Dwres.broker=broker -Dcom.redhat.fips=false -Dwres.trustStore=${WRES_TRUST_STORE} -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/worker-shim -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/worker-shim/java_pid%p.hprof /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_$$CON_HOSTNAME.hprof; chmod 775 /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_$$CON_HOSTNAME.hprof'
+         - JAVA_OPTS=-Dwres.broker=broker -Dcom.redhat.fips=false -Dwres.trustStore=${WRES_TRUST_STORE} -Dwres.trustStorePassword=${WRES_TRUST_STORE_PASSWORD} -Dwres.workerPathToClientP12Bundle=${WRES_WORKER_CLIENT_P12} -Dwres.workerPathToClientP12Password=${WRES_WORKER_CLIENT_P12_PASSWORD} -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/worker-shim -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/worker-shim/java_pid%p.hprof /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_$$CON_HOSTNAME.hprof; chmod 775 /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_$$CON_HOSTNAME.hprof'
          - PGPASSFILE=/wres_secrets/.pgpass
          # Use caller-specified db hostname from env var WRES_DB_FQDN.
          # Do not auto-liquibase-migrate on each evaluation. This requires an
@@ -177,6 +187,10 @@ services:
          - /mnt/wres_keys:/wres_secrets:ro
         environment:
          - BROKER_WORK=/container_home
+         - BROKER_KEYSTORE_PATH=${EVENTSBROKER_KEYSTORE_PATH}
+         - BROKER_KEYSTORE_PASSWORD=${EVENTSBROKER_KEYSTORE_PASSWORD}
+         - BROKER_TRUSTSTORE_PATH=${EVENTSBROKER_TRUSTSTORE_PATH}
+         - BROKER_TRUSTSTORE_PASSWORD=${EVENTSBROKER_TRUSTSTORE_PASSWORD}
          - JAVA_ARGS=-XX:+PrintClassHistogram -XX:+UseG1GC -XX:+UseStringDeduplication -Xms2048m -Xmx2048m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/eventsbroker -Dcom.redhat.fips=false
          - LANG=C.UTF-8
         # Broker heap is 2048m in JAVA_ARGS

@@ -82,6 +82,6 @@ public class BrokerHelperTest
     {
         exception.expect( IllegalStateException.class );
         SSLContext sslContext = BrokerHelper.getSSLContextWithClientCertificate(
-                BrokerHelper.Role.TASKER );
+                "wres-tasker_client_private_key_and_x509_cert.p12", "wres-tasker-passphrase" );
     }
 }

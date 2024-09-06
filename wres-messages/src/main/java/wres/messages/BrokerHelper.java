@@ -50,17 +50,6 @@ public class BrokerHelper
 
     static final String TRUST_STORE_PROPERTY_NAME = "wres.trustStore";
 
-    /**
-     * The role.
-     */
-    public enum Role
-    {
-        /** Worker role. */
-        WORKER,
-        /** Tasker role. */
-        TASKER
-    }
-
     private BrokerHelper()
     {
         // Static helper class, no construction
@@ -74,7 +63,7 @@ public class BrokerHelper
 
     public static String getBrokerHost()
     {
-        String brokerFromDashD= System.getProperty( BROKER_HOST_PROPERTY_NAME );
+        String brokerFromDashD = System.getProperty( BROKER_HOST_PROPERTY_NAME );
 
         if ( brokerFromDashD != null )
         {
@@ -95,7 +84,7 @@ public class BrokerHelper
 
     public static String getBrokerVhost()
     {
-        String brokerVhostFromDashD= System.getProperty( BROKER_VHOST_PROPERTY_NAME );
+        String brokerVhostFromDashD = System.getProperty( BROKER_VHOST_PROPERTY_NAME );
 
         if ( brokerVhostFromDashD != null )
         {
@@ -166,7 +155,7 @@ public class BrokerHelper
              && alternativeTrustStoreFile.canRead() )
         {
             try ( InputStream alternativeTrustStream =
-                          new FileInputStream( alternativeTrustStoreFile ) )
+                    new FileInputStream( alternativeTrustStoreFile ) )
             {
                 customTrustStore.load( alternativeTrustStream,
                                        "changeit".toCharArray() );
@@ -179,7 +168,8 @@ public class BrokerHelper
             catch ( IOException | NoSuchAlgorithmException | CertificateException e )
             {
                 LOGGER.warn( "Could not use alternative Certificate Authority at '{}'",
-                             trustStore, e );
+                             trustStore,
+                             e );
                 // Continue and use the default trust store.
             }
         }
@@ -247,7 +237,9 @@ public class BrokerHelper
         catch ( NoSuchAlgorithmException nsae )
         {
             throw new IllegalStateException( "WRES expected JRE to support algorithm '"
-                                             + algorithm + "'.", nsae );
+                                             + algorithm
+                                             + "'.",
+                                             nsae );
         }
     }
 
@@ -255,21 +247,30 @@ public class BrokerHelper
     /**
      * Get an SSLContext that is set up with a client certificate,
      * used to authenticate to the wres-broker.
-     * @param role the role of the module connecting to the broker
+     * @param pathToP12 The path to the p12 file to use. Must be non-null and not empty.
+     * @param passwordForP12 The password to use. If null or empty, no password isused.
      * @return SSLContext ready to go for connecting to the broker
      * @throws IllegalStateException when anything goes wrong setting up
-     * keystores, trust managers, factories, reading files, parsing certificate,
-     * decrypting contents, etc.
+     * keystores, trust managers, factories, reading files, parsing certificate, 
+     * decrypting contents, etc. 
      */
 
-    public static SSLContext getSSLContextWithClientCertificate( Role role )
+    public static SSLContext getSSLContextWithClientCertificate( String pathToP12, String passwordForP12 )
     {
-        String ourClientCertificateFilename = BrokerHelper.getSecretsDir() + "/"
-                                              + "wres-" + role.name()
-                                                             .toLowerCase()
-                                              + "_client_private_key_and_x509_cert.p12";
-        char[] keyPassphrase = ("wres-" + role.name().toLowerCase()
-                                + "-passphrase").toCharArray();
+        if (pathToP12 == null || pathToP12.isEmpty())
+        {
+            throw new IllegalArgumentException("Argument pathToP12 cannot be null or empty, but was.");
+        }
+        char[] keyPassphrase = new char[]{};
+        if ( passwordForP12 != null && !passwordForP12.isEmpty() )
+        {
+            keyPassphrase = passwordForP12.toCharArray();
+        }
+        else
+        {
+            LOGGER.warn("For file " + pathToP12 + " password provided is null or empty, so no password is assumed.");
+        }
+
         KeyStore keyStore;
 
         try
@@ -283,14 +284,14 @@ public class BrokerHelper
         }
 
         try ( InputStream clientCertificateInputStream =
-                      new FileInputStream( ourClientCertificateFilename ) )
+                new FileInputStream( pathToP12 ) )
         {
             keyStore.load( clientCertificateInputStream, keyPassphrase );
         }
         catch ( IOException | NoSuchAlgorithmException | CertificateException e )
         {
             throw new IllegalStateException( "WRES expected to find a file '"
-                                             + ourClientCertificateFilename
+                                             + pathToP12
                                              + "' with PKCS#12 format, with"
                                              + " both a client certificate AND"
                                              + " the private key inside, used "
@@ -318,7 +319,8 @@ public class BrokerHelper
         {
             throw new IllegalStateException( "WRES expected to be able to read "
                                              + "and decrypt the file '"
-                                             + ourClientCertificateFilename +
+                                             + pathToP12
+                                             +
                                              "'.",
                                              e );
         }
@@ -333,7 +335,8 @@ public class BrokerHelper
         catch ( NoSuchAlgorithmException nsae )
         {
             throw new IllegalStateException( "WRES expected to be able to use protocol '"
-                                             + protocol + "'",
+                                             + protocol
+                                             + "'",
                                              nsae );
         }
 
@@ -353,3 +356,4 @@ public class BrokerHelper
         return sslContext;
     }
 }
+

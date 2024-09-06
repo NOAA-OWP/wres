@@ -115,7 +115,7 @@ public class SSLStuffThatTrustsOneCertificateTest
                 new ByteArrayInputStream( certificateBytes );
 
         SSLStuffThatTrustsOneCertificate sslStuff =
-                new SSLStuffThatTrustsOneCertificate( certificateStream );
+                new SSLStuffThatTrustsOneCertificate( certificateStream, null );
 
         SSLConnectionSocketFactory connectionSocketFactory =
                 new SSLConnectionSocketFactory( sslStuff.getSSLContext(),
@@ -147,7 +147,7 @@ public class SSLStuffThatTrustsOneCertificateTest
                 new ByteArrayInputStream( certificateBytes );
 
         SSLStuffThatTrustsOneCertificate sslStuff =
-                new SSLStuffThatTrustsOneCertificate( certificateStream );
+               new SSLStuffThatTrustsOneCertificate( certificateStream, null);
 
         SSLConnectionSocketFactory connectionSocketFactory =
                 new SSLConnectionSocketFactory( sslStuff.getSSLContext(),

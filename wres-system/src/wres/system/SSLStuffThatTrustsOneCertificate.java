@@ -37,11 +37,12 @@ public class SSLStuffThatTrustsOneCertificate
      * Create JSSE goo that trusts a single specified certificate.
      * (Canonical constructor accepting an InputStream)
      * @param derEncodedCertificate the certificate, intermediate cert, or CA
+     * @param password The password to use for the trust store, or null if none. 
      * @throws IllegalStateException when any exceptions occur setting up SSL
      */
-    public SSLStuffThatTrustsOneCertificate( InputStream derEncodedCertificate )
+    public SSLStuffThatTrustsOneCertificate( InputStream derEncodedCertificate, String password )
     {
-        this.trustManager = getTrustManagerWithOneAuthority( derEncodedCertificate );
+        this.trustManager = getTrustManagerWithOneAuthority( derEncodedCertificate, password );
         this.sslContext = getSSLContextWithTrustManager( this.trustManager );
     }
 
@@ -49,14 +50,15 @@ public class SSLStuffThatTrustsOneCertificate
      * Create JSSE goo that trusts a single specified certificate.
      * (Convenience constructor accepting a File)
      * @param derEncodedCertificate the certificate, intermediate cert, or CA
+     * @param password The password to use for the trust store, or null if none. 
      * @throws IllegalArgumentException when failing to read the file
      * @throws IllegalStateException when any exceptions occur setting up SSL
      */
-    SSLStuffThatTrustsOneCertificate( File derEncodedCertificate )
+    SSLStuffThatTrustsOneCertificate( File derEncodedCertificate, String password )
     {
         try ( InputStream inputStream = new FileInputStream( derEncodedCertificate ) )
         {
-            this.trustManager = getTrustManagerWithOneAuthority( inputStream );
+            this.trustManager = getTrustManagerWithOneAuthority( inputStream, password );
         }
         catch ( IOException ioe )
         {
@@ -94,7 +96,7 @@ public class SSLStuffThatTrustsOneCertificate
      * @return the TrustManager
      */
 
-    private X509TrustManager getTrustManagerWithOneAuthority( InputStream derEncodedCertificate )
+    private X509TrustManager getTrustManagerWithOneAuthority( InputStream derEncodedCertificate, String password )
     {
         Objects.requireNonNull( derEncodedCertificate );
         KeyStore customTrustStore;
@@ -110,8 +112,13 @@ public class SSLStuffThatTrustsOneCertificate
 
         try
         {
+            char[] passwordArray = null;
+            if ( password != null )
+            {
+                passwordArray = password.toCharArray();
+            }
             customTrustStore.load( null,
-                                   "changeit".toCharArray() );
+                                   passwordArray );
         }
         catch ( IOException | NoSuchAlgorithmException | CertificateException e )
         {
@@ -139,7 +146,9 @@ public class SSLStuffThatTrustsOneCertificate
         catch ( NoSuchAlgorithmException nsae )
         {
             throw new IllegalStateException( "WRES expected JRE to support algorithm '"
-                                             + algorithm + "'.", nsae );
+                                             + algorithm
+                                             + "'.",
+                                             nsae );
         }
 
         try
@@ -181,7 +190,8 @@ public class SSLStuffThatTrustsOneCertificate
         catch ( NoSuchAlgorithmException nsae )
         {
             throw new IllegalStateException( "WRES expected to be able to use protocol '"
-                                             + protocol + "'",
+                                             + protocol
+                                             + "'",
                                              nsae );
         }
 
@@ -200,3 +210,4 @@ public class SSLStuffThatTrustsOneCertificate
     }
 
 }
+
