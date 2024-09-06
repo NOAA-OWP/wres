@@ -64,24 +64,24 @@ public class WresJobTest
     private static final String SERVER_KEY_FILE_NAME = "wres-broker-localhost_server_private_rsa_key.pem";
     private static final String TRUST_STORE_FILE_NAME = "trustedCertificates-localhost.jks";
     private static final String[] APPROVED_CIPHERS = {
-            "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
-            "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-            "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
-            "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
-            "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256",
-            "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384",
-            "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-            "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-            "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
-            "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
-            "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
-            "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384",
-            "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256",
-            "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
-            "TLS_DHE_RSA_WITH_AES_128_CBC_SHA",
-            "TLS_DHE_RSA_WITH_AES_256_CBC_SHA",
-            "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256",
-            "TLS_DHE_RSA_WITH_AES_256_CBC_SHA256"
+                                                       "TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+                                                       "TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+                                                       "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA",
+                                                       "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA",
+                                                       "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256",
+                                                       "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384",
+                                                       "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+                                                       "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+                                                       "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA",
+                                                       "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA",
+                                                       "TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256",
+                                                       "TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384",
+                                                       "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256",
+                                                       "TLS_DHE_RSA_WITH_AES_256_GCM_SHA384",
+                                                       "TLS_DHE_RSA_WITH_AES_128_CBC_SHA",
+                                                       "TLS_DHE_RSA_WITH_AES_256_CBC_SHA",
+                                                       "TLS_DHE_RSA_WITH_AES_128_CBC_SHA256",
+                                                       "TLS_DHE_RSA_WITH_AES_256_CBC_SHA256"
     };
 
     private static final String FAKE_DECLARATION = """
@@ -108,9 +108,9 @@ public class WresJobTest
 
         // Create a certificate
         X500Name subject = new X500NameBuilder( BCStyle.INSTANCE )
-                .addRDN( BCStyle.CN, "localhost" )
-                .addRDN( BCStyle.O, "WRES" )
-                .build();
+                                                                  .addRDN( BCStyle.CN, "localhost" )
+                                                                  .addRDN( BCStyle.O, "WRES" )
+                                                                  .build();
 
         Instant now = Instant.now();
         Instant aLittleWhileAgo = now.minus( 10_000, ChronoUnit.SECONDS );
@@ -152,7 +152,7 @@ public class WresJobTest
                                          extendedKeyUsage );
 
         ContentSigner contentSigner = new JcaContentSignerBuilder( "SHA256withRSA" )
-                .build( keyPair.getPrivate() );
+                                                                                    .build( keyPair.getPrivate() );
         X509CertificateHolder certificateHolder = certificateBuilder.build( contentSigner );
 
         JcaX509CertificateConverter certificateConverter = new JcaX509CertificateConverter();
@@ -167,7 +167,7 @@ public class WresJobTest
 
         KeyStore.PrivateKeyEntry privateKeyEntry = new KeyStore.PrivateKeyEntry( keyPair.getPrivate(),
                                                                                  new Certificate[] {
-                                                                                         wowACertificate } );
+                                                                                                     wowACertificate } );
         p12KeyStore.setEntry( "privateKeyAlias",
                               privateKeyEntry,
                               new KeyStore.PasswordProtection( passphrase.toCharArray() ) );
@@ -240,6 +240,12 @@ public class WresJobTest
 
         System.setProperty( BrokerManagerHelper.WRES_MONITOR_PASSWORD_SYSTEM_PROPERTY_NAME,
                             "test" );
+
+        //System properties for the client P12 file handed off to the broker. These settings are based
+        //on how the file was written, above. 
+        System.setProperty( Tasker.PATH_TO_CLIENT_P12_PNAME,
+                            WresJobTest.tempDir.toString() + "/" + WresJobTest.P12_FILE_NAME );
+        System.setProperty( Tasker.PASSWORD_TO_CLIENT_P12, passphrase );
     }
 
     @Test
@@ -247,7 +253,12 @@ public class WresJobTest
     {
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
         WresJob wresJob = new WresJob();
-        try ( Response response = wresJob.postWresJob( "fake", "hank", null, "boogaflickle", false, false,
+        try ( Response response = wresJob.postWresJob( "fake",
+                                                       "hank",
+                                                       null,
+                                                       "boogaflickle",
+                                                       false,
+                                                       false,
                                                        Collections.emptyList() ) )
         {
             assertEquals( "Expected a 400 bad request.", 400, response.getStatus() );
@@ -318,7 +329,7 @@ public class WresJobTest
         System.setProperty( "wres.secrets_dir", WresJobTest.tempDir.toString() );
         WresJob wresJob = new WresJob();
         try ( Response response =
-                      wresJob.postWresJob( FAKE_DECLARATION, null, null, null, false, false, Collections.emptyList() ) )
+                wresJob.postWresJob( FAKE_DECLARATION, null, null, null, false, false, Collections.emptyList() ) )
         {
             assertEquals( "Expected a 500 Internal Server Error.", 500, response.getStatus() );
         }
@@ -329,7 +340,7 @@ public class WresJobTest
         {
             String[] additionalArguments = new String[] { "host", "8000", "name" };
             List<String> argsList = Arrays.asList ( additionalArguments );
-
+    
             EmbeddedBroker embeddedBroker = new EmbeddedBroker();
             embeddedBroker.start();
             WresJob wresJob = new WresJob();
@@ -360,3 +371,4 @@ public class WresJobTest
         Files.deleteIfExists( WresJobTest.tempDir );
     }
 }
+
