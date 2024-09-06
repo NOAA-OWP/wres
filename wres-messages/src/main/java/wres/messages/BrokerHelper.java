@@ -50,17 +50,6 @@ public class BrokerHelper
 
     static final String TRUST_STORE_PROPERTY_NAME = "wres.trustStore";
 
-    /**
-     * The role.
-     */
-    public enum Role
-    {
-        /** Worker role. */
-        WORKER,
-        /** Tasker role. */
-        TASKER
-    }
-
     private BrokerHelper()
     {
         // Static helper class, no construction
@@ -258,7 +247,6 @@ public class BrokerHelper
     /**
      * Get an SSLContext that is set up with a client certificate,
      * used to authenticate to the wres-broker.
-     * @param role the role of the module connecting to the broker
      * @param pathToP12 The path to the p12 file to use. Must be non-null and not empty.
      * @param passwordForP12 The password to use. If null or empty, no password isused.
      * @return SSLContext ready to go for connecting to the broker
