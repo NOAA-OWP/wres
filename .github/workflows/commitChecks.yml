@@ -27,7 +27,9 @@ jobs:
     # Run and build using gradle
     # Disable aggregateJavaDocs
     - name: Run build
-      run: ./gradlew distZip testCodeCoverageReport javadoc
+      run: |
+        ./gradlew build
+        ./gradlew distZip testCodeCoverageReport javadoc
 
     # Confirm the test code inside wres-external-services-tests zip compiles
     - name: Compile external-services-tests
