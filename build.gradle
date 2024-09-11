@@ -902,7 +902,7 @@ project(':wres-vis') {
         implementation group: 'org.jfree', name: 'jfreechart', version: '1.5.5'
 
         // SVG graphics from JFreeChart instances
-        implementation group: 'org.jfree', name: 'org.jfree.svg', version: '4.2'
+        implementation group: 'org.jfree', name: 'org.jfree.svg', version: '4.1'
 
         runtimeOnly('ch.qos.logback:logback-classic:1.5.8') {
             // Not used at runtime, bloat
