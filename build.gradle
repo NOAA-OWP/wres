@@ -315,7 +315,7 @@ project(':wres-datamodel') {
         implementation 'systems.uom:systems-quantity:2.1'
 
         // For geometries
-        implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.19.0'
+        implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
 
         // JCIP annotations
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
@@ -386,8 +386,8 @@ project(':wres-io') {
         }
 
         // For geometries
-        implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.19.0'
-        implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.19.0', ext: 'pom'
+        implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
+        implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.20.0', ext: 'pom'
 
         implementation 'org.liquibase:liquibase-core:4.29.2'
 
@@ -603,8 +603,8 @@ project(':wres-reading') {
 
 
         // For geometries
-        implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.19.0'
-        implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.19.0', ext: 'pom'
+        implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
+        implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.20.0', ext: 'pom'
 
         // Fast-Infoset encoded XML
         implementation group: 'com.sun.xml.fastinfoset', name: 'FastInfoset', version: '2.1.1'
@@ -980,8 +980,8 @@ project(':wres-config') {
         implementation 'com.google.guava:guava:33.3.0-jre'
 
         // To validate WKT strings as geometries
-        implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.19.0'
-        implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.19.0', ext: 'pom'
+        implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
+        implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.20.0', ext: 'pom'
 
         // Protobuf utilities
         implementation 'com.google.protobuf:protobuf-java-util:3.21.12'
@@ -1375,7 +1375,7 @@ project(':wres-tasker') {
         implementation 'org.apache.tika:tika-core:2.9.2'
 
         // To persist job metadata while keeping it relatively fast
-        implementation('org.redisson:redisson:3.36.0') {
+        implementation('org.redisson:redisson:3.18.0') {
             // Because of CVE-2022-24823. TODO: remove when Redisson catches up
             exclude group: 'io.netty'
         }
@@ -1894,7 +1894,7 @@ dependencies {
     }
 
     // To persist job metadata while keeping it relatively fast
-    implementation('org.redisson:redisson:3.36.0') {
+    implementation('org.redisson:redisson:3.18.0') {
         // Because of CVE-2022-24823. TODO: remove when Redisson catches up
         exclude group: 'io.netty'
     }
