@@ -62,7 +62,7 @@ plugins {
     id 'com.adarshr.test-logger' version '4.0.0'
 
     // To discover library versions with known vulnerabilities
-    id 'org.owasp.dependencycheck' version '10.0.2'
+    id 'org.owasp.dependencycheck' version '10.0.4'
 
     // Task to assist in downloading artifacts
     id 'de.undercouch.download' version '5.6.0'
@@ -241,7 +241,7 @@ project(':wres-system') {
         implementation 'org.apache.commons:commons-lang3:3.17.0'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        implementation('org.postgresql:postgresql:42.7.3') {
+        implementation('org.postgresql:postgresql:42.7.4') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -321,7 +321,7 @@ project(':wres-datamodel') {
         compileOnly group: 'net.jcip', name: 'jcip-annotations', version: '1.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.12.0'
+        testImplementation 'org.mockito:mockito-core:5.13.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.0'
@@ -362,7 +362,7 @@ project(':wres-io') {
         implementation 'com.google.guava:guava:33.3.0-jre'
 
         // to use native postgres copy, need this on compile, otherwise runtime
-        implementation('org.postgresql:postgresql:42.7.3') {
+        implementation('org.postgresql:postgresql:42.7.4') {
             // Not used at runtime, bloat
             exclude group: 'org.checkerframework', module: 'checker-qual'
         }
@@ -389,7 +389,7 @@ project(':wres-io') {
         implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.19.0'
         implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.19.0', ext: 'pom'
 
-        implementation 'org.liquibase:liquibase-core:4.29.1'
+        implementation 'org.liquibase:liquibase-core:4.29.2'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:5.0.0'
@@ -546,8 +546,8 @@ project(':wres-writing') {
         implementation 'org.apache.tika:tika-core:2.9.2'
 
         // For geometries
-        implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.19.0'
-        implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.19.0', ext: 'pom'
+        implementation group: 'org.locationtech.jts', name: 'jts-core', version: '1.20.0'
+        implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.20.0', ext: 'pom'
 
         compileOnly 'net.jcip:jcip-annotations:1.0'
 
@@ -611,7 +611,7 @@ project(':wres-reading') {
 
         implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
 
-        implementation 'org.liquibase:liquibase-core:4.29.1'
+        implementation 'org.liquibase:liquibase-core:4.29.2'
 
         // Use instead of the bridge between JUL and SLF4J. #60801-283
         runtimeOnly 'com.mattbertolini:liquibase-slf4j:5.0.0'
@@ -671,7 +671,7 @@ project(':wres-metrics') {
             exclude group: 'edu.washington.cs.types.checker', module: 'checker-framework'
         }
 
-        testImplementation 'org.mockito:mockito-core:5.12.0'
+        testImplementation 'org.mockito:mockito-core:5.13.0'
 
         // JUnit 5 API and runtime
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.0'
@@ -899,10 +899,10 @@ project(':wres-vis') {
 
         implementation 'org.slf4j:slf4j-api:2.0.13'
 
-        implementation group: 'org.jfree', name: 'jfreechart', version: '1.5.4'
+        implementation group: 'org.jfree', name: 'jfreechart', version: '1.5.5'
 
         // SVG graphics from JFreeChart instances
-        implementation group: 'org.jfree', name: 'org.jfree.svg', version: '4.1'
+        implementation group: 'org.jfree', name: 'org.jfree.svg', version: '4.2'
 
         runtimeOnly('ch.qos.logback:logback-classic:1.5.8') {
             // Not used at runtime, bloat
@@ -921,7 +921,7 @@ project(':wres-vis') {
         testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.11.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.12.0'
+        testImplementation 'org.mockito:mockito-core:5.13.0'
 
         testRuntimeOnly files('dist/lib/conf')
 
@@ -1025,7 +1025,7 @@ project(':wres-config') {
         implementation group: 'org.jvnet.jaxb2_commons', name: 'jaxb2-basics-annotate', version: '1.1.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.12.0'
+        testImplementation 'org.mockito:mockito-core:5.13.0'
 
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.11.0'
         testImplementation 'org.junit.jupiter:junit-jupiter-params:5.11.0'
@@ -1350,13 +1350,13 @@ project(':wres-tasker') {
         implementation 'org.eclipse.jetty:jetty-server:11.0.20'
 
         // Support HTTP/2
-        implementation 'org.eclipse.jetty.http2:http2-server:11.0.22'
+        implementation 'org.eclipse.jetty.http2:http2-server:11.0.24'
 
         // Support ALPN
         implementation 'org.eclipse.jetty:jetty-alpn-java-server:11.0.21'
 
         // Servlet container library to run a web application with:
-        implementation 'org.eclipse.jetty:jetty-webapp:11.0.22'
+        implementation 'org.eclipse.jetty:jetty-webapp:11.0.24'
 
         // Needed at compile-time to reference ServletContainer.class and
         // DefaultServlet.class
@@ -1375,7 +1375,7 @@ project(':wres-tasker') {
         implementation 'org.apache.tika:tika-core:2.9.2'
 
         // To persist job metadata while keeping it relatively fast
-        implementation('org.redisson:redisson:3.18.0') {
+        implementation('org.redisson:redisson:3.36.0') {
             // Because of CVE-2022-24823. TODO: remove when Redisson catches up
             exclude group: 'io.netty'
         }
@@ -1614,7 +1614,7 @@ project(':wres-events') {
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.11.0'
 
         // Mocking help
-        testImplementation 'org.mockito:mockito-core:5.12.0'
+        testImplementation 'org.mockito:mockito-core:5.13.0'
         // Mocking final classes
         testImplementation 'org.mockito:mockito-inline:5.2.0'
 
@@ -1879,7 +1879,7 @@ dependencies {
     implementation 'jakarta.xml.bind:jakarta.xml.bind-api:3.0.1'
 
     // Servlet container library to run a web application with:
-    implementation 'org.eclipse.jetty:jetty-webapp:11.0.22'
+    implementation 'org.eclipse.jetty:jetty-webapp:11.0.24'
 
     // Needed at compile-time to reference ServletContainer.class and
     // DefaultServlet.class
@@ -1894,7 +1894,7 @@ dependencies {
     }
 
     // To persist job metadata while keeping it relatively fast
-    implementation('org.redisson:redisson:3.18.0') {
+    implementation('org.redisson:redisson:3.36.0') {
         // Because of CVE-2022-24823. TODO: remove when Redisson catches up
         exclude group: 'io.netty'
     }
@@ -1926,7 +1926,7 @@ dependencies {
     runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.6'
 
     // Support HTTP/2
-    implementation 'org.eclipse.jetty.http2:http2-server:11.0.22'
+    implementation 'org.eclipse.jetty.http2:http2-server:11.0.24'
 
     // Support ALPN
     implementation 'org.eclipse.jetty:jetty-alpn-java-server:11.0.20'
@@ -1950,7 +1950,7 @@ dependencies {
     testCompileOnly 'junit:junit:4.13.2'
     testRuntimeOnly 'org.junit.vintage:junit-vintage-engine:5.11.0'
 
-    testImplementation 'org.mockito:mockito-core:5.12.0'
+    testImplementation 'org.mockito:mockito-core:5.13.0'
 
     testImplementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
 }
