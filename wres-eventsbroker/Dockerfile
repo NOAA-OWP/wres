@@ -2,9 +2,9 @@
 # Build image
 #############
 
-FROM alpine:3.19.1 AS builder
+FROM alpine:3.20.3 AS builder
 
-ARG BROKER_VERSION=2.36.0
+ARG BROKER_VERSION=2.37.0
 
 WORKDIR /workspace
 
