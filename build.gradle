@@ -1922,7 +1922,7 @@ dependencies {
     runtimeOnly 'org.glassfish.jersey.core:jersey-server:3.1.8'
     // currently locked at this version, check this ticket for more information
     // https://vlab.***REMOVED***/redmine/issues/124200
-    runtimeOnly 'org.glassfish.jersey.containers:jersey-container-jetty-http:3.1.8'
+    runtimeOnly 'org.glassfish.jersey.containers:jersey-container-jetty-http:3.1.3'
     runtimeOnly 'org.glassfish.jersey.inject:jersey-hk2:3.1.8'
 
     // Support HTTP/2
