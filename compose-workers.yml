@@ -15,8 +15,39 @@ volumes:
             o: "ro,relatime,vers=4.1,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,local_lock=none,addr=${NFS_HOME_DIR_IP_ADDRESS}"
             device: "${NFS_HOME_DIR_DEVICE}"
 services:
+    nginx:
+      image: "${DOCKER_REGISTRY}/wres/nginx"
+      container_name: nginx_proxy
+      volumes:
+        - ${NGINX_SERVER_CERT}:/etc/nginx/cert/wres_server_cert.pem
+        - ${NGINX_SERVER_KEY}:/etc/nginx/cert/wres_server_key.pem
+      depends_on:
+        - cadvisor
+      ports:
+        - 9999:9999
+      networks:
+        wres_net:
+    cadvisor:
+      image: gcr.io/cadvisor/cadvisor:latest
+      container_name: cadvisor
+      ports:
+        - 8080:8080
+      volumes:
+        - /:/rootfs:ro
+        - /var/run:/var/run:rw
+        - /sys:/sys:ro
+        - /var/lib/docker/:/var/lib/docker:ro
+        - /cgroup:/cgroup:ro
+        - /dev/disk:/dev/disk/:ro
+      command:
+        - --disable_metrics=network
+        - --docker_only=true
+      depends_on:
+        - worker
+      networks:
+        wres_net:
     worker:
-        image: "${DOCKER_REGISTRY}/wres/wres-worker:20240821-1d5b305"
+        image: "${DOCKER_REGISTRY}/wres/wres-worker:20240913-80977b3"
         restart: always
         depends_on:
             eventsbroker:
@@ -41,7 +72,7 @@ services:
          # Writing all log outputs:
          - /mnt/wres_share/logs/worker/:/mnt/wres_share/logs/worker/
         environment:
-         - JAVA_OPTS=-Dwres.broker=${WRES_BROKER_HOST} -Dcom.redhat.fips=false -Dwres.trustStore=${WRES_TRUST_STORE} -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/worker-shim -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/worker-shim/java_pid%p.hprof /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_$$CON_HOSTNAME.hprof; chmod 775 /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_$$CON_HOSTNAME.hprof'
+         - JAVA_OPTS=-Dwres.broker=${WRES_BROKER_HOST} -Dcom.redhat.fips=false -Dwres.trustStore=${WRES_TRUST_STORE} -Dwres.trustStorePassword=${WRES_TRUST_STORE_PASSWORD} -Dwres.workerPathToClientP12Bundle=${WRES_WORKER_CLIENT_P12} -Dwres.workerPathToClientP12Password=${WRES_WORKER_CLIENT_P12_PASSWORD} -Djava.io.tmpdir=/mnt/wres_share/evaluations -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/worker-shim -XX:OnOutOfMemoryError='mv /mnt/wres_share/heap_dumps/worker-shim/java_pid%p.hprof /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_$$CON_HOSTNAME.hprof; chmod 775 /mnt/wres_share/heap_dumps/worker-shim/java_pid%p_$$CON_HOSTNAME.hprof'
          - PGPASSFILE=/wres_secrets/.pgpass
          # Use caller-specified db hostname from env var WRES_DB_FQDN.
          # Do not auto-liquibase-migrate on each evaluation. This requires an
@@ -64,7 +95,7 @@ services:
          - 5673
         ports:
          - 15673:15673
-        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20240821-1d5b305"
+        image: "${DOCKER_REGISTRY}/wres/wres-eventsbroker:20240913-80977b3"
         restart: always
         volumes:
          # For heap-dump files
@@ -73,6 +104,10 @@ services:
          - /mnt/wres_keys:/wres_secrets:ro
         environment:
          - BROKER_WORK=/container_home
+         - BROKER_KEYSTORE_PATH=${EVENTSBROKER_KEYSTORE_PATH}
+         - BROKER_KEYSTORE_PASSWORD=${EVENTSBROKER_KEYSTORE_PASSWORD}
+         - BROKER_TRUSTSTORE_PATH=${EVENTSBROKER_TRUSTSTORE_PATH}
+         - BROKER_TRUSTSTORE_PASSWORD=${EVENTSBROKER_TRUSTSTORE_PASSWORD}
          - JAVA_ARGS=-XX:+PrintClassHistogram -XX:+UseG1GC -XX:+UseStringDeduplication -Xms2048m -Xmx2048m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/mnt/wres_share/heap_dumps/eventsbroker -Dcom.redhat.fips=false
          - LANG=C.UTF-8
         # Broker heap is 2048m in JAVA_ARGS
@@ -86,7 +121,7 @@ services:
         depends_on:
             eventsbroker:
                 condition: service_started
-        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20240821-1d5b305"
+        image: "${DOCKER_REGISTRY}/wres/wres-graphics:20240913-80977b3"
         restart: always
         volumes:
          # To write graphics outputs
@@ -108,7 +143,7 @@ services:
         depends_on:
             eventsbroker:
                 condition: service_started
-        image: "${DOCKER_REGISTRY}/wres/wres-writing:20240821-1d5b305"
+        image: "${DOCKER_REGISTRY}/wres/wres-writing:20240913-80977b3"
         restart: always
         volumes:
          # To write numeric outputs
