@@ -678,17 +678,6 @@ public class WrdsNwmReader implements TimeSeriesReader
     {
         String dateFormat = "yyyyMMdd'T'HH'Z'";
 
-        ZonedDateTime zonedLeft = left.atZone( ReaderUtilities.UTC );
-        ZonedDateTime zonedRight = right.atZone( ReaderUtilities.UTC );
-
-        if ( zonedLeft.getMinute() > 0
-             || zonedLeft.getSecond() > 0
-             || zonedRight.getMinute() > 0
-             || zonedRight.getSecond() > 0 )
-        {
-            dateFormat = "yyyyMMdd'T'HHmmss'Z'";
-        }
-
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern( dateFormat )
                                                        .withZone( ReaderUtilities.UTC );
         String leftString = formatter.format( left );

@@ -157,7 +157,7 @@ public class FeatureFiller
                                                        FeatureAuthority rightAuthority,
                                                        FeatureAuthority baselineAuthority )
     {
-        // Is this an actual feature service request or a response from a filesystem? If the latter, then any other
+        // Is this an actual feature service request or a response from a file system? If the latter, then any other
         // service declaration, such as groups, must be ignored and the response read as singleton features
         Set<GeometryTuple> filledSingletonFeatures;
         Set<GeometryGroup> filledGroupedFeatures = Collections.emptySet();
@@ -168,11 +168,32 @@ public class FeatureFiller
                          + "feature service declaration, including 'groups', 'group' and 'pool', will be ignored.",
                          featureService.uri() );
 
-            filledSingletonFeatures = FeatureFiller.readWrdsFeatures( featureService.uri(),
-                                                                      leftAuthority,
-                                                                      rightAuthority,
-                                                                      baselineAuthority,
-                                                                      DeclarationUtilities.hasBaseline( evaluation ) );
+            // Start with any existing, dense features from the declaration. Note that sparse features cannot be
+            // declared without a web/feature service, and there is no feature service in this pathway, as tested above
+            filledSingletonFeatures = new HashSet<>();
+            if ( Objects.nonNull( evaluation.features() ) )
+            {
+                boolean hasBaseline = DeclarationUtilities.hasBaseline( evaluation );
+
+                Set<GeometryTuple> dense = evaluation.features()
+                                                     .geometries()
+                                                     .stream()
+                                                     .filter( f -> f.hasLeft()
+                                                                   && f.hasRight()
+                                                                   && ( !hasBaseline || f.hasBaseline() ) )
+                                                     .collect( Collectors.toSet() );
+
+                filledSingletonFeatures.addAll( dense );
+            }
+
+            // Now read the WRDS features
+            Set<GeometryTuple> wrdsFeatures =
+                    FeatureFiller.readWrdsFeatures( featureService.uri(),
+                                                    leftAuthority,
+                                                    rightAuthority,
+                                                    baselineAuthority,
+                                                    DeclarationUtilities.hasBaseline( evaluation ) );
+            filledSingletonFeatures.addAll( wrdsFeatures );
         }
         else
         {

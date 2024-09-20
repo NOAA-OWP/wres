@@ -2567,6 +2567,75 @@ class DeclarationUtilitiesTest
     }
 
     @Test
+    void testRemoveFeaturesWithoutThresholdsRemovesNoFeaturesWhenEachFeatureHasAThresholdWithADifferentFeatureNameOrientation()
+    {
+        // Tests GitHub issue #319
+        Geometry oneObserved = Geometry.newBuilder()
+                                .setName( "one_observed" )
+                                .build();
+        Geometry onePredicted = Geometry.newBuilder()
+                                 .setName( "one_predicted" )
+                                 .build();
+        Geometry twoObserved = Geometry.newBuilder()
+                                       .setName( "two_observed" )
+                                       .build();
+        Geometry twoPredicted = Geometry.newBuilder()
+                                        .setName( "two_predicted" )
+                                        .build();
+
+        GeometryTuple one = GeometryTuple.newBuilder()
+                                         .setLeft( oneObserved )
+                                         .setRight( onePredicted )
+                                         .build();
+        GeometryTuple two = GeometryTuple.newBuilder()
+                                         .setLeft( twoObserved )
+                                         .setRight( twoPredicted )
+                                         .build();
+
+        Threshold threshold = Threshold.newBuilder()
+                                       .setLeftThresholdValue( 1 )
+                                       .build();
+        wres.config.yaml.components.Threshold wrappedThresholdOne =
+                ThresholdBuilder.builder()
+                                .threshold( threshold )
+                                .feature( oneObserved )
+                                .featureNameFrom( DatasetOrientation.LEFT )
+                                .build();
+        wres.config.yaml.components.Threshold wrappedThresholdTwo =
+                ThresholdBuilder.builder()
+                                .threshold( threshold )
+                                .feature( twoPredicted )
+                                .featureNameFrom( DatasetOrientation.RIGHT )
+                                .build();
+
+        Set<GeometryTuple> geometryTuples = Set.of( one, two );
+        Features features = FeaturesBuilder.builder()
+                                           .geometries( geometryTuples )
+                                           .build();
+
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .features( features )
+                                            .thresholds( Set.of( wrappedThresholdOne,
+                                                                 wrappedThresholdTwo ) )
+                                            .build();
+
+        EvaluationDeclaration actual = DeclarationUtilities.removeFeaturesWithoutThresholds( declaration );
+
+        Features expectedFeatures = FeaturesBuilder.builder()
+                                                   .geometries( geometryTuples )
+                                                   .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .features( expectedFeatures )
+                                                                     .thresholds( Set.of( wrappedThresholdOne,
+                                                                                          wrappedThresholdTwo ) )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
     void testRemoveFeaturesWithoutThresholdsWhenThresholdsContainSingleDataOrientation()
     {
         Geometry left = Geometry.newBuilder()

@@ -1040,7 +1040,10 @@ public class DeclarationUtilities
 
     /**
      * Removes from the declaration any features for which featureful thresholds are undefined. Features are matched on
-     * name only.
+     * name only. Only filters against thresholds available within the declaration (i.e., internal). Thus, any
+     * thresholds from external sources, such as files or threshold services, should be "read into" the declaration
+     * before using this utility.
+     *
      * @param declaration the declaration
      * @return the adjusted declaration
      * @throws NullPointerException if the declaration is null
@@ -1081,27 +1084,20 @@ public class DeclarationUtilities
         // Create a filter. Only filter when the above sets contain some features
         Predicate<GeometryTuple> retain = geoTuple ->
         {
-            if ( geoTuple.hasLeft()
-                 && !leftFeatureNamesWithThresholds.isEmpty()
-                 && !leftFeatureNamesWithThresholds.contains( geoTuple.getLeft()
-                                                                      .getName() ) )
-            {
-                return false;
-            }
+            boolean hasLeft = geoTuple.hasLeft()
+                              && !leftFeatureNamesWithThresholds.isEmpty()
+                              && leftFeatureNamesWithThresholds.contains( geoTuple.getLeft()
+                                                                                  .getName() );
+            boolean hasRight = geoTuple.hasRight()
+                               && !rightFeatureNamesWithThresholds.isEmpty()
+                               && rightFeatureNamesWithThresholds.contains( geoTuple.getRight()
+                                                                                    .getName() );
+            boolean hasBaseline = geoTuple.hasBaseline()
+                                  && !baselineFeatureNamesWithThresholds.isEmpty()
+                                  && baselineFeatureNamesWithThresholds.contains( geoTuple.getBaseline()
+                                                                                          .getName() );
 
-            if ( geoTuple.hasRight()
-                 && !rightFeatureNamesWithThresholds.isEmpty()
-                 && !rightFeatureNamesWithThresholds.contains( geoTuple.getRight()
-                                                                       .getName() ) )
-            {
-                return false;
-            }
-
-            return !DeclarationUtilities.hasBaseline( declaration )
-                   || !geoTuple.hasBaseline()
-                   || baselineFeatureNamesWithThresholds.isEmpty()
-                   || baselineFeatureNamesWithThresholds.contains( geoTuple.getBaseline()
-                                                                           .getName() );
+            return hasLeft || hasRight || hasBaseline;
         };
 
         // Remove the features in all contexts
