@@ -20,6 +20,7 @@ import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.Threshold;
+import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.config.yaml.components.ThresholdType;
 import wres.statistics.generated.Geometry;
@@ -178,7 +179,10 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
         }
 
         wres.statistics.generated.Threshold nextThreshold = builder.build();
-        Threshold wrappedThreshold = new Threshold( nextThreshold, type, null, null );
+        Threshold wrappedThreshold = ThresholdBuilder.builder()
+                                                     .threshold( nextThreshold )
+                                                     .type( type )
+                                                     .build();
 
         return Set.of( wrappedThreshold );
     }
@@ -345,7 +349,12 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             }
 
             Threshold nextThreshold =
-                    new Threshold( builder.build(), type, feature, featureNameFrom );
+                    ThresholdBuilder.builder()
+                                    .threshold( builder.build() )
+                                    .type( type )
+                                    .feature( feature )
+                                    .featureNameFrom( featureNameFrom )
+                                    .build();
             thresholds.add( nextThreshold );
         }
 
@@ -386,7 +395,10 @@ public class ThresholdsDeserializer extends JsonDeserializer<Set<Threshold>>
             }
 
             wres.statistics.generated.Threshold nextThreshold = thresholdBuilder.build();
-            Threshold nextWrappedThreshold = new Threshold( nextThreshold, type, null, null );
+            Threshold nextWrappedThreshold = ThresholdBuilder.builder()
+                                                             .threshold( nextThreshold )
+                                                             .type( type )
+                                                             .build();
             thresholds.add( nextWrappedThreshold );
         }
 

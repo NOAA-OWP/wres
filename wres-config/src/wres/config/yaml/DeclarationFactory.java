@@ -56,6 +56,7 @@ import org.yaml.snakeyaml.scanner.ScannerException;
 import wres.config.yaml.components.DatasetOrientation;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.Threshold;
+import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdOperator;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.config.yaml.components.ThresholdType;
@@ -131,7 +132,9 @@ public class DeclarationFactory
                                                  .setOperator( DEFAULT_THRESHOLD_OPERATOR.canonical() )
                                                  .build();
     /** Default wrapped threshold. */
-    public static final Threshold DEFAULT_THRESHOLD = new Threshold( DEFAULT_CANONICAL_THRESHOLD, null, null, null );
+    public static final Threshold DEFAULT_THRESHOLD =
+            ThresholdBuilder.builder().threshold( DEFAULT_CANONICAL_THRESHOLD )
+                            .build();
 
     /** To stringify protobufs into presentable JSON. */
     public static final Function<MessageOrBuilder, String> PROTBUF_STRINGIFIER = message -> {

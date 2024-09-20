@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.yaml.DeclarationFactory;
 import wres.config.yaml.DeclarationUtilities;
 import wres.config.yaml.components.Threshold;
+import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdOrientation;
 import wres.config.yaml.components.ThresholdType;
 import wres.statistics.generated.Geometry;
@@ -329,7 +330,9 @@ public class ThresholdsSerializer extends JsonSerializer<Set<Threshold>>
                                                             .clearRightThresholdValue()
                                                             .build();
 
-            Threshold blankOuter = new Threshold( blank, null, null, null );
+            Threshold blankOuter = ThresholdBuilder.builder()
+                                                   .threshold( blank )
+                                                   .build();
 
             if ( !blankOuter.equals( DeclarationFactory.DEFAULT_THRESHOLD )
                  || Objects.nonNull( next.feature() ) )

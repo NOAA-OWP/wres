@@ -3746,15 +3746,15 @@ public class DeclarationValidator
         }
 
         // Explicit features and featureful thresholds. Some featureful thresholds must be correlated with features
-        Set<String> thresholdFeatureNames = thresholds.stream()
-                                                      .filter( n -> n.featureNameFrom() == orientation )
-                                                      // Ignore all data, which was added automagically
-                                                      .filter( n -> !DeclarationUtilities.ALL_DATA_THRESHOLD.threshold()
-                                                                                                            .equals(
-                                                                                                                    n.threshold() ) )
-                                                      .map( Threshold::feature )
-                                                      .map( wres.statistics.generated.Geometry::getName )
-                                                      .collect( Collectors.toSet() );
+        Set<String> thresholdFeatureNames =
+                thresholds.stream()
+                          .filter( n -> n.featureNameFrom() == orientation )
+                          // Ignore all data, which was added automagically
+                          .filter( n -> !DeclarationUtilities.ALL_DATA_THRESHOLD.threshold()
+                                                                                .equals( n.threshold() ) )
+                          .map( Threshold::feature )
+                          .map( wres.statistics.generated.Geometry::getName )
+                          .collect( Collectors.toSet() );
 
         if ( thresholdFeatureNames.isEmpty() )
         {

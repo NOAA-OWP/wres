@@ -618,7 +618,8 @@ public class WrdsThresholdReader implements ThresholdReader
             }
         }
 
-        if ( LOGGER.isDebugEnabled() && !featuresNotRequired.isEmpty() )
+        if ( LOGGER.isDebugEnabled()
+             && !featuresNotRequired.isEmpty() )
         {
             LOGGER.debug( "Thresholds were discovered for the following features whose thresholds were not "
                           + "required: {}",
