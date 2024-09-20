@@ -162,13 +162,15 @@ class DeclarationInterpolatorTest
     /** All data threshold. */
     private static final wres.config.yaml.components.Threshold
             ALL_DATA_THRESHOLD =
-            new wres.config.yaml.components.Threshold( Threshold.newBuilder()
-                                                                .setLeftThresholdValue( Double.NEGATIVE_INFINITY )
-                                                                .setOperator( Threshold.ThresholdOperator.GREATER )
-                                                                .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
-                                                                .build(),
-                                                       ThresholdType.VALUE,
-                                                       null, null );
+            wres.config.yaml.components.ThresholdBuilder.builder()
+                                                        .threshold( Threshold.newBuilder()
+                                                                             .setLeftThresholdValue( Double.NEGATIVE_INFINITY )
+                                                                             .setOperator( Threshold.ThresholdOperator.GREATER )
+                                                                             .setDataType( Threshold.ThresholdDataType.LEFT_AND_RIGHT )
+                                                                             .build() )
+                                                        .type( ThresholdType.VALUE )
+                                                        .generated( true )
+                                                        .build();
     /** Default list of observed sources in the old-style declaration. */
     List<DataSourceConfig.Source> observedSources;
     /** Default list of predicted sources in the old-style declaration. */
@@ -1904,22 +1906,22 @@ class DeclarationInterpolatorTest
 
         assertAll( () -> assertTrue( actualInterpolated.thresholds()
                                                        .stream()
-                                                       .filter( next -> next
-                                                                        != DeclarationUtilities.ALL_DATA_THRESHOLD )
+                                                       .filter( next -> next.threshold()
+                                                                        != DeclarationUtilities.ALL_DATA_THRESHOLD.threshold() )
                                                        .allMatch( next -> "foo".equals( next.threshold()
                                                                                             .getThresholdValueUnits() ) ) ),
                    () -> assertTrue( actualInterpolated.thresholdSets()
                                                        .stream()
-                                                       .filter( next -> next
-                                                                        != DeclarationUtilities.ALL_DATA_THRESHOLD )
+                                                       .filter( next -> next.threshold()
+                                                                        != DeclarationUtilities.ALL_DATA_THRESHOLD.threshold() )
                                                        .allMatch( next -> "foo".equals( next.threshold()
                                                                                             .getThresholdValueUnits() ) ) ),
                    () -> assertTrue( actualInterpolated.metrics()
                                                        .stream()
                                                        .map( Metric::parameters )
                                                        .flatMap( next -> next.thresholds().stream() )
-                                                       .filter( next -> next
-                                                                        != DeclarationUtilities.ALL_DATA_THRESHOLD )
+                                                       .filter( next -> next.threshold()
+                                                                        != DeclarationUtilities.ALL_DATA_THRESHOLD.threshold() )
                                                        .allMatch( next -> "foo".equals( next.threshold()
                                                                                             .getThresholdValueUnits() ) ) )
         );

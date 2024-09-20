@@ -618,7 +618,8 @@ public class WrdsThresholdReader implements ThresholdReader
             }
         }
 
-        if ( LOGGER.isDebugEnabled() && !featuresNotRequired.isEmpty() )
+        if ( LOGGER.isDebugEnabled()
+             && !featuresNotRequired.isEmpty() )
         {
             LOGGER.debug( "Thresholds were discovered for the following features whose thresholds were not "
                           + "required: {}",
@@ -711,9 +712,9 @@ public class WrdsThresholdReader implements ThresholdReader
                          "evaluate with the features for which thresholds ",
                          "are available, found ",
                          featureNames.size(),
-                         " features to evaluate and ",
+                         " features to evaluate, ",
                          featureNamesWithThresholds.size(),
-                         " features for which thresholds were found, but ",
+                         " features for which thresholds were found, and ",
                          featureNamesWithoutThresholds.size(),
                          " features for which thresholds could not be ",
                          "reconciled with features to evaluate. Features without ",

@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import wres.config.yaml.components.Threshold;
+import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdType;
 
 /**
@@ -37,7 +38,7 @@ public class ThresholdSetsSerializer extends JsonSerializer<Set<Threshold>>
 
         LOGGER.debug( "Discovered threshold sets with {} members.", grouped.size() );
 
-        if( !grouped.isEmpty() )
+        if ( !grouped.isEmpty() )
         {
             // Start the threshold sets
             writer.writeStartArray();
@@ -102,7 +103,12 @@ public class ThresholdSetsSerializer extends JsonSerializer<Set<Threshold>>
                                                                 .clearLeftThresholdProbability()
                                                                 .build();
 
-            Threshold outer = new Threshold( nextInner, next.type(), next.feature(), next.featureNameFrom() );
+            Threshold outer = ThresholdBuilder.builder()
+                                              .threshold( nextInner )
+                                              .type( next.type() )
+                                              .feature( next.feature() )
+                                              .featureNameFrom( next.featureNameFrom() )
+                                              .build();
 
             if ( grouped.containsKey( outer ) )
             {

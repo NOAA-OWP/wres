@@ -1752,10 +1752,10 @@ class DeclarationValidatorTest
                                        .build();
 
         wres.config.yaml.components.Threshold wrapped =
-                new wres.config.yaml.components.Threshold( threshold,
-                                                           ThresholdType.VALUE,
-                                                           null,
-                                                           null );
+                wres.config.yaml.components.ThresholdBuilder.builder()
+                                                            .threshold( threshold )
+                                                            .type( ThresholdType.VALUE )
+                                                            .build();
 
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()

@@ -2080,10 +2080,12 @@ public class DeclarationMigrator
                                            .build();
                 Set<wres.statistics.generated.Threshold> toMigrate = nextEntry.getValue();
                 Set<Threshold> innerMigrated = toMigrate.stream()
-                                                        .map( next -> new Threshold( next,
-                                                                                     canonicalType,
-                                                                                     feature,
-                                                                                     featureNameFrom ) )
+                                                        .map( next -> ThresholdBuilder.builder()
+                                                                                      .threshold( next )
+                                                                                      .type( canonicalType )
+                                                                                      .feature( feature )
+                                                                                      .featureNameFrom( featureNameFrom )
+                                                                                      .build() )
                                                         .collect( Collectors.toCollection( LinkedHashSet::new ) );
                 migrated.addAll( innerMigrated );
             }
