@@ -45,11 +45,11 @@ public class BrokerConnectionFactory implements Supplier<Connection>
     /** The maximum number of times a message can be resent on failure. */
     private final Integer maximumMessageRetries;
 
-    /** Context that maps JMS objects to names. */
-    private final Context context;
-
     /** A connection factory. */
     private final ConnectionFactory connectionFactory;
+
+    /** The connection properties. */
+    private final Properties properties;
 
     /**
      * <p>Returns an instance of a factory, which is created with supplied properties and a default number of message 
@@ -120,7 +120,18 @@ public class BrokerConnectionFactory implements Supplier<Connection>
     {
         Objects.requireNonNull( name );
 
-        return ( Destination ) this.context.lookup( name );
+        String connectionPropertyName = BrokerUtilities.getConnectionPropertyName( this.properties );
+        BrokerUtilities.testConnectionProperty( connectionPropertyName, this.properties );
+        String connectionUrl = this.properties.getProperty( connectionPropertyName );
+        Context context = BrokerConnectionFactory.getContextFromProperties( connectionUrl, this.properties );
+        try
+        {
+            return ( Destination ) context.lookup( name );
+        }
+        finally
+        {
+            BrokerConnectionFactory.closeContext( context );
+        }
     }
 
     /**
@@ -212,23 +223,52 @@ public class BrokerConnectionFactory implements Supplier<Connection>
             }
             finally
             {
-                // Close any connection that succeeded
-                if ( Objects.nonNull( connection ) )
-                {
-                    LOGGER.info( "Established a connection to an AMQP message broker at binding URL: {}.",
-                                 connectionUrl );
-
-                    try
-                    {
-                        connection.close();
-                    }
-                    catch ( JMSException e )
-                    {
-                        LOGGER.error( "Failed to close an attempted connection during the instantiation of a "
-                                      + "connection factory." );
-                    }
-                }
+                BrokerConnectionFactory.closeConnection( connection, connectionUrl );
+                BrokerConnectionFactory.closeContext( localContext );
             }
+        }
+    }
+
+    /**
+     * Closes a connection.
+     *
+     * @param connection the connection, possibly null
+     * @param connectionUrl the connection URL for logging
+     */
+    private static void closeConnection( Connection connection, String connectionUrl )
+    {
+        // Close any connection that succeeded
+        if ( Objects.nonNull( connection ) )
+        {
+            LOGGER.info( "Established a connection to an AMQP message broker at binding URL: {}.",
+                         connectionUrl );
+
+            try
+            {
+                connection.close();
+            }
+            catch ( JMSException e )
+            {
+                LOGGER.error( "Failed to close an attempted connection during the instantiation of a "
+                              + "connection factory. The correction URL is: {}.", connectionUrl );
+            }
+        }
+    }
+
+    /**
+     * Closes the supplied context.
+     * @param context the context
+     */
+
+    private static void closeContext( Context context )
+    {
+        try
+        {
+            context.close();
+        }
+        catch ( NamingException e )
+        {
+            LOGGER.error( "Failed to close the context for a connection." );
         }
     }
 
@@ -313,41 +353,35 @@ public class BrokerConnectionFactory implements Supplier<Connection>
         }
 
         this.maximumMessageRetries = maximumMessageRetries;
+        this.properties = properties;
 
         // The connection property name
         String connectionPropertyName = BrokerUtilities.getConnectionPropertyName( properties );
 
         // Set any variables that depend on the (possibly adjusted) properties
-        try
+
+        LOGGER.debug( "Creating a connection factory with these properties: {}.", properties );
+
+        // Test
+        String connectionString = properties.getProperty( connectionPropertyName );
+        Context context = BrokerConnectionFactory.getContextFromProperties( connectionString, properties );
+        this.connectionFactory = BrokerConnectionFactory.getConnectionFactory( connectionString,
+                                                                               context,
+                                                                               connectionPropertyName );
+
+        LOGGER.debug( "Testing the connection property {} with corresponding connection string {}.",
+                      connectionPropertyName,
+                      connectionString );
+
+        BrokerConnectionFactory.testConnection( properties,
+                                                BrokerConnectionFactory.MAXIMUM_CONNECTION_RETRIES );
+
+        if ( LOGGER.isInfoEnabled() )
         {
-            LOGGER.debug( "Creating a connection factory with these properties: {}.", properties );
-
-            // Test
-            String connectionString = properties.getProperty( connectionPropertyName );
-            this.context = new InitialContext( properties );
-            this.connectionFactory = BrokerConnectionFactory.getConnectionFactory( connectionString,
-                                                                                   this.context,
-                                                                                   connectionPropertyName );
-
-            LOGGER.debug( "Testing the connection property {} with corresponding connection string {}.",
-                          connectionPropertyName,
-                          connectionString );
-
-            BrokerConnectionFactory.testConnection( properties,
-                                                    BrokerConnectionFactory.MAXIMUM_CONNECTION_RETRIES );
-
-            if ( LOGGER.isInfoEnabled() )
-            {
-                LOGGER.info( "Created a broker connection factory {} with name {} and binding URL {}.",
-                             this,
-                             connectionPropertyName,
-                             properties.getProperty( connectionPropertyName ) );
-            }
-        }
-        catch ( NamingException e )
-        {
-            throw new CouldNotLoadBrokerConfigurationException( "Unable to load the expected broker configuration.",
-                                                                e );
+            LOGGER.info( "Created a broker connection factory {} with name {} and binding URL {}.",
+                         this,
+                         connectionPropertyName,
+                         properties.getProperty( connectionPropertyName ) );
         }
     }
 
