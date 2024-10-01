@@ -1,6 +1,7 @@
 package wres.events.broker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -38,17 +39,17 @@ class BrokerConnectionFactoryTest
     void testMessageRouting() throws IOException, NamingException, JMSException, InterruptedException
     {
         Properties properties = BrokerUtilities.getBrokerConnectionProperties( "eventbroker.properties" );
-        
+
         // Create and start the broker, clean up on completion
-        try (  EmbeddedBroker ignored = EmbeddedBroker.of( properties, true ) )
+        try ( EmbeddedBroker ignored = EmbeddedBroker.of( properties, true ) )
         {
             BrokerConnectionFactory factory = BrokerConnectionFactory.of( properties, 2 );
-            Topic evaluationTopic = (Topic) factory.getDestination( "evaluation" );
-            Topic evaluationStatusTopic = (Topic) factory.getDestination( "status" );
-            Topic statisticsTopic = (Topic) factory.getDestination( "statistics" );
+            Topic evaluationTopic = ( Topic ) factory.getDestination( "evaluation" );
+            Topic evaluationStatusTopic = ( Topic ) factory.getDestination( "status" );
+            Topic statisticsTopic = ( Topic ) factory.getDestination( "statistics" );
 
             String evaluationId = "1234567";
-            
+
             // Application/JMS-level message selection based on correlation id
             String messageSelector = "JMSCorrelationID = '" + evaluationId + "'";
 
@@ -69,8 +70,8 @@ class BrokerConnectionFactoryTest
 
                 // Listen for evaluation messages
                 MessageListener evaluationListener = message -> {
-                    TextMessage textMessage = (TextMessage) message;
-                    
+                    TextMessage textMessage = ( TextMessage ) message;
+
                     try
                     {
                         assertEquals( "I am an evaluation message!", textMessage.getText() );
@@ -79,15 +80,15 @@ class BrokerConnectionFactoryTest
                     {
                         throw new IllegalStateException( e );
                     }
-                    
+
                     LOGGER.info( "Received an evaluation message {}", textMessage );
                     evaluationConsumerCount.countDown();
                 };
 
                 // Listen for evaluation status messages
                 MessageListener evaluationStatusListener = message -> {
-                    TextMessage textMessage = (TextMessage) message;
-                    
+                    TextMessage textMessage = ( TextMessage ) message;
+
                     try
                     {
                         assertEquals( "I am an evaluation status message!", textMessage.getText() );
@@ -96,15 +97,15 @@ class BrokerConnectionFactoryTest
                     {
                         throw new IllegalStateException( e );
                     }
-                    
+
                     LOGGER.info( "Received an evaluation status message {}", textMessage );
                     evaluationStatusConsumerCount.countDown();
                 };
 
                 // Listen for statistics messages
                 MessageListener evaluationStatisticsListener = message -> {
-                    TextMessage textMessage = (TextMessage) message;
-                    
+                    TextMessage textMessage = ( TextMessage ) message;
+
                     try
                     {
                         assertEquals( "I am a statistics message!", textMessage.getText() );
@@ -113,7 +114,7 @@ class BrokerConnectionFactoryTest
                     {
                         throw new IllegalStateException( e );
                     }
-                    
+
                     LOGGER.info( "Received a statistics message {}", textMessage );
                     statisticsConsumerCount.countDown();
                 };
@@ -148,5 +149,22 @@ class BrokerConnectionFactoryTest
         }
     }
 
+    @Test
+    void testConnectionSucceedsWhenPropertiesAreCorrect()
+    {
+        Properties properties = BrokerUtilities.getBrokerConnectionProperties( "eventbroker.properties" );
+        assertThrows( BrokerConnectionException.class, () -> BrokerConnectionFactory.testConnection( properties, 0 ) );
+    }
+
+    @Test
+    void testConnectionFailsWhenPropertiesAreIncorrect()
+    {
+        Properties properties = BrokerUtilities.getBrokerConnectionProperties( "eventbroker.properties" );
+
+        String connectionPropertyName = BrokerUtilities.getConnectionPropertyName( properties );
+        // Replace resolved property with url/port that is guaranteed not to have a broker running
+        properties.put( connectionPropertyName, "amqp://localhost:-1" );
+        assertThrows( BrokerConnectionException.class, () -> BrokerConnectionFactory.testConnection( properties, 0 ) );
+    }
 
 }
