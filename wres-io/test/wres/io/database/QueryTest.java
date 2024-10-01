@@ -23,9 +23,13 @@ import wres.system.DatabaseType;
 import wres.system.SettingsFactory;
 import wres.system.SystemSettings;
 
+/**
+ * Tests database queries.
+ */
+
 public class QueryTest
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger( QueryTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger( QueryTest.class );
 
     private SystemSettings systemSettings;
     // We need a way to control faked out database connections
@@ -65,7 +69,7 @@ public class QueryTest
     public void beforeEachTest() throws SQLException, DatabaseException
     {
         LOGGER.trace( "@Before began" );
-        this.systemSettings = SettingsFactory.defaultTest();
+        this.systemSettings = SettingsFactory.getDefaultSettings();
         this.rawConnection = DriverManager.getConnection( QueryTest.testDatabase.getJdbcString() );
 
         // Set up a bare bones database with only the schema
@@ -75,7 +79,6 @@ public class QueryTest
         this.liquibaseDatabase = QueryTest.testDatabase.createNewLiquibaseDatabase( this.rawConnection );
         LOGGER.trace( "@Before ended" );
     }
-
 
     /**
      * Test to see if a Query can execute a single static query in the database and return the desired results
@@ -138,10 +141,9 @@ public class QueryTest
             // We told it to give us the value 1 as "one", so that should be what we get back
             int value = results.getInt( "one" );
 
-            Assert.assertEquals( value, 1 );
+            Assert.assertEquals( 1, value );
         }
     }
-
 
     /**
      * Tests to see if a simple query can be executed
@@ -175,7 +177,7 @@ public class QueryTest
             testQuery = new Query( this.systemSettings,
                                    "SELECT hash, project_name FROM wres.Project;" );
 
-            try (ResultSet projects = testQuery.call( connection ))
+            try ( ResultSet projects = testQuery.call( connection ) )
             {
                 // If "isBeforeFirst" is true, it means that there is at least one entry returned,
                 // meaning that inserts occurred as requested
@@ -186,10 +188,10 @@ public class QueryTest
 
                 // The values we sent into the insert should show up in the results
                 Assert.assertEquals( "abcd123", projects.getString( "hash" ) );
-                Assert.assertEquals( "zero", projects.getString("project_name") );
+                Assert.assertEquals( "zero", projects.getString( "project_name" ) );
 
                 // If there is anything left, it means that too much data got added
-                Assert.assertFalse(projects.next());
+                Assert.assertFalse( projects.next() );
             }
         }
 
@@ -197,7 +199,6 @@ public class QueryTest
         QueryTest.testDatabase.dropProjectTable( this.rawConnection );
         QueryTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
     }
-
 
     /**
      * Test to see if many values can be inserted into the database with a single batch execution
@@ -220,14 +221,14 @@ public class QueryTest
         String script = "INSERT INTO wres.Project ( hash, project_name ) VALUES ( ?, ? );";
 
         // Since we're going to run this as batch, we need a ton of parameters to pass in
-        List<Object[]> arguments = new ArrayList<>(  );
+        List<Object[]> arguments = new ArrayList<>();
 
-        arguments.add(new Object[]{"0", "zero"});
-        arguments.add(new Object[]{"1", "one"});
-        arguments.add(new Object[]{"2", "two"});
-        arguments.add(new Object[]{"3", "three"});
-        arguments.add(new Object[]{"4", "four"});
-        arguments.add(new Object[]{"5", null});
+        arguments.add( new Object[] { "0", "zero" } );
+        arguments.add( new Object[] { "1", "one" } );
+        arguments.add( new Object[] { "2", "two" } );
+        arguments.add( new Object[] { "3", "three" } );
+        arguments.add( new Object[] { "4", "four" } );
+        arguments.add( new Object[] { "5", null } );
 
         Query testQuery = new Query( this.systemSettings, script )
                 .setBatchParameters( arguments );
@@ -245,7 +246,7 @@ public class QueryTest
             testQuery = new Query( this.systemSettings,
                                    "SELECT hash, project_name FROM wres.Project;" );
 
-            try (ResultSet projects = testQuery.call( connection ))
+            try ( ResultSet projects = testQuery.call( connection ) )
             {
                 // If "isBeforeFirst" is true, it means that there is at least one entry returned,
                 // meaning that inserts occurred as requested
@@ -253,7 +254,7 @@ public class QueryTest
 
                 // Inserts alone doesn't mean it works, so we need to go through each row and check the arguments
                 // This was done in batch, the values should still be in order
-                for (Object[] argument : arguments)
+                for ( Object[] argument : arguments )
                 {
                     projects.next();
                     Assert.assertEquals( argument[0], projects.getString( "hash" ) );
@@ -261,7 +262,7 @@ public class QueryTest
                 }
 
                 // If there is anything left, it means that too much data got added
-                Assert.assertFalse("Too many values were returned.", projects.next());
+                Assert.assertFalse( "Too many values were returned.", projects.next() );
             }
         }
 
@@ -269,7 +270,6 @@ public class QueryTest
         QueryTest.testDatabase.dropProjectTable( this.rawConnection );
         QueryTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
     }
-
 
     /**
      * Test to see if values may be added to the database with a parameterized statement
@@ -307,7 +307,7 @@ public class QueryTest
             testQuery = new Query( this.systemSettings,
                                    "SELECT hash, project_name FROM wres.Project;" );
 
-            try (ResultSet projects = testQuery.call( connection ))
+            try ( ResultSet projects = testQuery.call( connection ) )
             {
                 // If "isBeforeFirst" is true, it means that there is at least one entry returned,
                 // meaning that inserts occurred as requested
@@ -315,7 +315,7 @@ public class QueryTest
 
                 int entryCount = 0;
 
-                while (projects.next())
+                while ( projects.next() )
                 {
                     entryCount++;
                     Assert.assertEquals( "0", projects.getString( "hash" ) );
@@ -330,7 +330,6 @@ public class QueryTest
         QueryTest.testDatabase.dropProjectTable( this.rawConnection );
         QueryTest.testDatabase.dropLiquibaseChangeTables( this.rawConnection );
     }
-
 
     /**
      * The status of a connection's autocommit setting should be appropriate
@@ -357,7 +356,7 @@ public class QueryTest
             Assert.assertFalse( "Autocommit should have been switched "
                                 + "off, but the query may have been run with "
                                 + "autocommit on.",
-                               connection.getAutoCommit() );
+                                connection.getAutoCommit() );
         }
     }
 
