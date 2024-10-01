@@ -86,10 +86,10 @@ public class SettingsFactory
     }
 
     /**
-     * Method for construction of default settings used in testing
+     * Method for construction of default settings used in testing.
      * @return SystemSettings
      */
-    public static SystemSettings defaultTest()
+    public static SystemSettings getDefaultSettings()
     {
         DatabaseSettings.DatabaseSettingsBuilder builder = DatabaseSettings.builder();
         applyDatabaseSystemPropertyOverrides( builder );
@@ -197,6 +197,7 @@ public class SettingsFactory
         SettingsFactory.setMaximumReadThreads( systemBuilder, systemSettings );
         SettingsFactory.setFeatureBatchSize( systemBuilder, systemSettings );
         SettingsFactory.setFeatureBatchThreshold( systemBuilder, systemSettings );
+        SettingsFactory.setMaximumSamplingUncertaintyThreads( systemBuilder, systemSettings );
     }
 
     /**
@@ -392,6 +393,20 @@ public class SettingsFactory
         SettingsFactory.setPropertyWithIntegerGreaterThanThis( "wres.maximumReadThreads",
                                                                systemSettings.getMaximumReadThreads(),
                                                                systemBuilder::maximumReadThreads,
+                                                               0 );
+    }
+
+    /**
+     * Sets the maximum number of sampling uncertainty threads.
+     * @param systemBuilder the system settings builder to update
+     * @param systemSettings the existing system settings for defaults
+     */
+    private static void setMaximumSamplingUncertaintyThreads( SystemSettingsBuilder systemBuilder,
+                                                              SystemSettings systemSettings )
+    {
+        SettingsFactory.setPropertyWithIntegerGreaterThanThis( "wres.maximumSamplingUncertaintyThreads",
+                                                               systemSettings.getMaximumSamplingUncertaintyThreads(),
+                                                               systemBuilder::maximumSamplingUncertaintyThreads,
                                                                0 );
     }
 
