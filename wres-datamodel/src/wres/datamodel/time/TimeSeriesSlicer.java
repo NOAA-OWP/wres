@@ -1370,6 +1370,22 @@ public final class TimeSeriesSlicer
     }
 
     /**
+     * Determines whether the supplied set of reference times contains any reference times that are indicative of
+     * forecasts, currently {@link ReferenceTimeType#T0} and {@link ReferenceTimeType#ISSUED_TIME} only.
+     *
+     * @param referenceTimeTypes the set of reference time types, not null
+     * @return whether the reference times contain any types that are indicative of forecast
+     */
+
+    public static boolean hasForecasts( Set<ReferenceTimeType> referenceTimeTypes )
+    {
+        Objects.requireNonNull( referenceTimeTypes );
+
+        return referenceTimeTypes.stream()
+                                 .anyMatch( t -> t == ReferenceTimeType.T0 || t == ReferenceTimeType.ISSUED_TIME );
+    }
+
+    /**
      * Returns the time-series data type, defaulting to {@link wres.config.yaml.components.DataType#OBSERVATIONS}.
      *
      * @param timeSeries the time-series
@@ -1393,8 +1409,7 @@ public final class TimeSeriesSlicer
             }
 
             Map<ReferenceTime.ReferenceTimeType, Instant> referenceTimes = timeSeries.getReferenceTimes();
-            if ( referenceTimes.containsKey( ReferenceTime.ReferenceTimeType.T0 )
-                 || referenceTimes.containsKey( ReferenceTime.ReferenceTimeType.ISSUED_TIME ) )
+            if ( TimeSeriesSlicer.hasForecasts( referenceTimes.keySet() ) )
             {
                 return DataType.SINGLE_VALUED_FORECASTS;
             }

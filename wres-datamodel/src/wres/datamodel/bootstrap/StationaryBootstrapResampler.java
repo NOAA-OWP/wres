@@ -392,6 +392,21 @@ public class StationaryBootstrapResampler<T>
             Duration gap = Duration.between( first, second )
                                    .abs();
             sampler = this.q.get( gap );
+
+            if ( Objects.isNull( sampler ) )
+            {
+                throw new IllegalStateException( "When attempting to resample time-series, could not find an "
+                                                 + "appropriate resampler for an offset between time-series of "
+                                                 + gap
+                                                 + ". The last series index was "
+                                                 + lastSeriesIndex
+                                                 + " and had a "
+                                                 + "time of "
+                                                 + first
+                                                 + ". The next series index is: "
+                                                 + nextSeriesIndex
+                                                 + " and has a time of " + second + "." );
+            }
         }
 
         // Choose the next event from a randomly selected series?
@@ -1253,6 +1268,8 @@ public class StationaryBootstrapResampler<T>
                                                                                          long meanBlockSizeInTimesteps,
                                                                                          RandomGenerator random )
     {
+        LOGGER.debug( "Creating resamplers for the following time offsets between time-series: {}.", timeOffsets );
+
         Map<Duration, BinomialDistribution> returnMe = new HashMap<>();
 
         if ( !timeOffsets.isEmpty() )
