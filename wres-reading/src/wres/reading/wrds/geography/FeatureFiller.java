@@ -7,10 +7,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -29,6 +31,7 @@ import wres.config.yaml.components.FeatureGroupsBuilder;
 import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.FeaturesBuilder;
+import wres.config.yaml.components.Offset;
 import wres.datamodel.space.FeatureTuple;
 import wres.reading.PreReadException;
 import wres.reading.ReaderUtilities;
@@ -223,17 +226,85 @@ public class FeatureFiller
             throw new PreReadException( "No geographic features found to evaluate." );
         }
 
-        // Set the features and feature groups
+        // Set the features and feature groups, preserving any declared offsets, but using the new tuples
+        Map<GeometryTuple, Offset> singletonOffsets = null;
+        Map<GeometryTuple, Offset> groupOffsets = null;
+        if ( Objects.nonNull( evaluation.features()
+                                        .offsets() ) )
+        {
+
+            singletonOffsets = FeatureFiller.getOffsets( filledSingletonFeatures, evaluation.features()
+                                                                                            .offsets() );
+        }
+
+        if ( Objects.nonNull( evaluation.featureGroups() )
+             && Objects.nonNull( evaluation.featureGroups()
+                                           .offsets() ) )
+        {
+            Set<GeometryTuple> combined =
+                    filledGroupedFeatures.stream()
+                                         .flatMap( f -> f.getGeometryTuplesList()
+                                                         .stream() ).collect( Collectors.toSet() );
+
+            groupOffsets = FeatureFiller.getOffsets( combined, evaluation.featureGroups()
+                                                                         .offsets() );
+
+        }
+
         Features features = FeaturesBuilder.builder()
                                            .geometries( filledSingletonFeatures )
+                                           .offsets( singletonOffsets )
                                            .build();
         FeatureGroups featureGroups = FeatureGroupsBuilder.builder()
                                                           .geometryGroups( filledGroupedFeatures )
+                                                          .offsets( groupOffsets )
                                                           .build();
         return EvaluationDeclarationBuilder.builder( evaluation )
                                            .features( features )
                                            .featureGroups( featureGroups )
                                            .build();
+    }
+
+    /**
+     * Correlates the two inputs using feature names and returns a map that contains the geometries from the first set as
+     * keys and the offsets from the supplied map of offsets as values.
+     *
+     * @param geometries the geometries
+     * @param offsets the offsets
+     * @return the offsets correlated to the geometries
+     */
+    private static Map<GeometryTuple, Offset> getOffsets( Set<GeometryTuple> geometries,
+                                                          Map<GeometryTuple, Offset> offsets )
+    {
+        Map<GeometryTuple, Offset> returnMe = new HashMap<>();
+        for ( GeometryTuple next : geometries )
+        {
+            Predicate<Map.Entry<GeometryTuple, Offset>> filter = e -> Objects.equals( e.getKey()
+                                                                                       .getLeft()
+                                                                                       .getName(),
+                                                                                      next.getLeft()
+                                                                                          .getName() )
+                                                                      || Objects.equals( e.getKey()
+                                                                                          .getRight()
+                                                                                          .getName(),
+                                                                                         next.getRight()
+                                                                                             .getName() )
+                                                                      || ( e.getKey().hasBaseline()
+                                                                           && Objects.equals( e.getKey()
+                                                                                               .getBaseline()
+                                                                                               .getName(),
+                                                                                              next.getBaseline()
+                                                                                                  .getName() ) );
+
+            Optional<Map.Entry<GeometryTuple, Offset>> found = offsets.entrySet()
+                                                                      .stream()
+                                                                      .filter( filter )
+                                                                      .findFirst();
+            found.ifPresent( geometryTupleOffsetEntry -> returnMe.put( next,
+                                                                       geometryTupleOffsetEntry.getValue() ) );
+        }
+
+        return Collections.unmodifiableMap( returnMe );
     }
 
     /**
@@ -1251,7 +1322,8 @@ public class FeatureFiller
         }
 
         // Warn about missing tuples: see Redmine issue #116808
-        if ( LOGGER.isWarnEnabled() && !missingTuples.isEmpty() )
+        if ( LOGGER.isWarnEnabled()
+             && !missingTuples.isEmpty() )
         {
             LOGGER.warn( "While reading features from {}, discovered some feature names that were required but "
                          + "unavailable. The following feature tuples had one or more missing names and the resulting "
@@ -1268,7 +1340,8 @@ public class FeatureFiller
      */
     private static boolean isValidFeatureName( String featureName )
     {
-        return Objects.nonNull( featureName ) && !featureName.isBlank();
+        return Objects.nonNull( featureName )
+               && !featureName.isBlank();
     }
 
     /**

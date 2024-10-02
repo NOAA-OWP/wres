@@ -27,7 +27,9 @@ import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
 import wres.config.yaml.components.FeatureServiceGroup;
+import wres.config.yaml.components.Features;
 import wres.config.yaml.components.FeaturesBuilder;
+import wres.config.yaml.components.Offset;
 import wres.config.yaml.components.UnitAlias;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
@@ -268,6 +270,35 @@ class FeatureFillerTest
     }
 
     @Test
+    void testPreserveOffsetsWithDenselyDeclaredFeatures() throws URISyntaxException
+    {
+        URI uri = new URI( "https://some_fake_uri" );
+        wres.config.yaml.components.FeatureService
+                featureService = new wres.config.yaml.components.FeatureService( uri, Set.of() );
+
+        GeometryTuple geometry = GeometryTuple.newBuilder()
+                                              .setLeft( Geometry.newBuilder()
+                                                                .setName( "foo" ) )
+                                              .setRight( Geometry.newBuilder()
+                                                                 .setName( "bar" ) )
+                                              .build();
+
+        Offset offset = new Offset( 1.2, 0.0, 0.0 );
+        Map<GeometryTuple, Offset> offsets = Map.of( geometry, offset );
+        Features features = new Features( Set.of( geometry ), offsets );
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( BOILERPLATE_DATASOURCE_USGS_SITE_CODE_AUTHORITY )
+                                                                        .right( BOILERPLATE_DATASOURCE_NWS_LID_AUTHORITY )
+                                                                        .features( features )
+                                                                        .featureService( featureService )
+                                                                        .build();
+        EvaluationDeclaration filled = FeatureFiller.fillFeatures( declaration );
+
+        assertEquals( offsets, filled.features()
+                                     .offsets() );
+    }
+
+    @Test
     void testFillOutImplicitFeatureGroupUsingMockedFeatureServiceAndNullBaseline() throws URISyntaxException
     {
         URI uri = new URI( "https://some_fake_uri" );
@@ -312,7 +343,7 @@ class FeatureFillerTest
     }
 
     @Test
-    void testFillOutSparseFeaturesUsingMockedFeatureService() throws URISyntaxException
+    void testFillOutSparseFeaturesUsingMockedFeatureServiceWithOffsetsPreserved() throws URISyntaxException
     {
         URI uri = new URI( "https://some_fake_uri" );
         wres.config.yaml.components.FeatureService
@@ -342,56 +373,67 @@ class FeatureFillerTest
                                                                   BOILERPLATE_DATASOURCE_NWS_LID_AUTHORITY,
                                                                   BOILERPLATE_BASELINE_DATASOURCE_NWM_FEATURE_AUTHORITY );
 
+        // Add offsets
+        Map<GeometryTuple, Offset> offsets = Map.of( left, new Offset( 1.0, 0.0, 0.0 ),
+                                                     right, new Offset( 0.0, 2.0, 0.0 ),
+                                                     baseline, new Offset( 0.0, 0.0, 3.0 ) );
+
+        Features adjusted = new Features( evaluation.features()
+                                                    .geometries(), offsets );
+
+        EvaluationDeclaration finalEvaluation = EvaluationDeclarationBuilder.builder( evaluation )
+                                                                            .features( adjusted )
+                                                                            .build();
+
         try ( MockedStatic<FeatureService> utilities = Mockito.mockStatic( FeatureService.class ) )
         {
             // Mock the look-ups
-            utilities.when( () -> FeatureService.bulkLookup( evaluation,
+            utilities.when( () -> FeatureService.bulkLookup( finalEvaluation,
                                                              featureService,
                                                              FeatureAuthority.USGS_SITE_CODE,
                                                              FeatureAuthority.NWS_LID,
                                                              Set.of( "foo", "foofoo" ) ) )
                      .thenReturn( Map.of( "foo", "qux" ) );
-            utilities.when( () -> FeatureService.bulkLookup( evaluation,
+            utilities.when( () -> FeatureService.bulkLookup( finalEvaluation,
                                                              featureService,
                                                              FeatureAuthority.USGS_SITE_CODE,
                                                              FeatureAuthority.NWM_FEATURE_ID,
                                                              Set.of( "foo", "foofoo" ) ) )
                      .thenReturn( Map.of( "foo", "quux" ) );
-            utilities.when( () -> FeatureService.bulkLookup( evaluation,
+            utilities.when( () -> FeatureService.bulkLookup( finalEvaluation,
                                                              featureService,
                                                              FeatureAuthority.NWS_LID,
                                                              FeatureAuthority.USGS_SITE_CODE,
                                                              Set.of( "bar" ) ) )
                      .thenReturn( Map.of( "bar", "corge" ) );
-            utilities.when( () -> FeatureService.bulkLookup( evaluation,
+            utilities.when( () -> FeatureService.bulkLookup( finalEvaluation,
                                                              featureService,
                                                              FeatureAuthority.NWS_LID,
                                                              FeatureAuthority.NWM_FEATURE_ID,
                                                              Set.of( "bar" ) ) )
                      .thenReturn( Map.of( "bar", "grault" ) );
-            utilities.when( () -> FeatureService.bulkLookup( evaluation,
+            utilities.when( () -> FeatureService.bulkLookup( finalEvaluation,
                                                              featureService,
                                                              FeatureAuthority.NWM_FEATURE_ID,
                                                              FeatureAuthority.USGS_SITE_CODE,
                                                              Set.of( "baz" ) ) )
                      .thenReturn( Map.of( "baz", "garply" ) );
-            utilities.when( () -> FeatureService.bulkLookup( evaluation,
+            utilities.when( () -> FeatureService.bulkLookup( finalEvaluation,
                                                              featureService,
                                                              FeatureAuthority.NWM_FEATURE_ID,
                                                              FeatureAuthority.NWS_LID,
                                                              Set.of( "baz" ) ) )
                      .thenReturn( Map.of( "baz", "waldo" ) );
-            utilities.when( () -> FeatureService.bulkLookup( evaluation,
+            utilities.when( () -> FeatureService.bulkLookup( finalEvaluation,
                                                              featureService,
                                                              FeatureAuthority.USGS_SITE_CODE,
                                                              FeatureAuthority.NWM_FEATURE_ID,
                                                              Set.of( "foofoo" ) ) )
                      .thenReturn( Map.of() );
 
-            EvaluationDeclaration actualEvaluation = FeatureFiller.fillFeatures( evaluation );
+            EvaluationDeclaration actualEvaluation = FeatureFiller.fillFeatures( finalEvaluation );
 
-            Set<GeometryTuple> actual = actualEvaluation.features()
-                                                        .geometries();
+            Features actual = actualEvaluation.features();
 
             GeometryTuple expectedOne = GeometryTuple.newBuilder()
                                                      .setLeft( Geometry.newBuilder()
@@ -417,7 +459,12 @@ class FeatureFillerTest
                                                        .setBaseline( Geometry.newBuilder()
                                                                              .setName( "baz" ) )
                                                        .build();
-            Set<GeometryTuple> expected = Set.of( expectedOne, expectedTwo, expectedThree );
+            Set<GeometryTuple> expectedGeometries = Set.of( expectedOne, expectedTwo, expectedThree );
+            Map<GeometryTuple, Offset> expectedOffsets = Map.of( expectedOne, new Offset( 1.0, 0.0, 0.0 ),
+                                                                 expectedTwo, new Offset( 0.0, 2.0, 0.0 ),
+                                                                 expectedThree, new Offset( 0.0, 0.0, 3.0 ) );
+
+            Features expected = new Features( expectedGeometries, expectedOffsets );
 
             assertEquals( expected, actual );
         }
