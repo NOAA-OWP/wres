@@ -21,7 +21,6 @@ import wres.datamodel.pools.Pool;
 import wres.datamodel.time.Event;
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesSlicer;
-import wres.statistics.generated.ReferenceTime;
 
 /**
  * Stores the underlying time-series data within a {@link Pool} in an efficient format for bootstrap resampling.
@@ -166,6 +165,7 @@ class BootstrapPool<T>
                 Instant last = series.get( i )
                                      .get( 0 )
                                      .getTime();
+
                 Duration offset = Duration.between( first, last )
                                           .abs();
                 offsets.add( offset );
@@ -315,8 +315,8 @@ class BootstrapPool<T>
         this.pool = pool;
         this.hasForecasts = this.pool.get()
                                      .stream()
-                                     .anyMatch( n -> n.getReferenceTimes()
-                                                      .containsKey( ReferenceTime.ReferenceTimeType.T0 ) );
+                                     .anyMatch( t -> TimeSeriesSlicer.hasForecasts( t.getReferenceTimes()
+                                                                                     .keySet() ) );
     }
 
     /**
