@@ -7,9 +7,7 @@
 #   cd <the top level of the WRES clone (i.e., where the scripts directory is located).>
 #   scripts/dockerize.sh <Jenkins build number> <core version (ver.)> <worker shim ver.> <tasker ver.> <broker ver.> <redis ver.> <events broker ver.> <graphics client ver.>
 #
-# Arguments: 
-# 
-# First argument, the Jenkins build number, is required.  
+# Arguments:
 #
 # All other arguments are optional, so that if one is not specified, then it is assumed 
 # to be "auto". A version of "auto" will result in the default version, obtained
@@ -37,16 +35,6 @@
 #
 # Requires a JOB_URL to be set (avoids environment-specific stuff in the repo)
 
-#============================================================
-# Get the build number.  It must be specified.
-#============================================================
-if [ $# -eq 0 ]
-then 
-    echo "At least one argument, the Jenkins build number, must be specified."
-    exit 2
-fi
-jenkins_build=$1
-echo "The Jenkins build, from which build artificacts will be acquired, is $jenkins_build."
 
 #=============================================================
 # Identify default versions!
@@ -75,44 +63,44 @@ wres_writing_version=$writing_version
 # then gradle will not create a new zip file. So the caller must specify each
 # version with positional args, or "auto" to retain auto-detected version.
 
+if [[ "$1" != "" && "$1" != "auto" ]]
+then
+    wres_core_version=$1
+fi
+
 if [[ "$2" != "" && "$2" != "auto" ]]
 then
-    wres_core_version=$2
+    wres_worker_shim_version=$2
 fi
 
 if [[ "$3" != "" && "$3" != "auto" ]]
 then
-    wres_worker_shim_version=$3
+    wres_tasker_version=$3
 fi
 
 if [[ "$4" != "" && "$4" != "auto" ]]
 then
-    wres_tasker_version=$4
+    broker_version=$4
 fi
 
 if [[ "$5" != "" && "$5" != "auto" ]]
 then
-    broker_version=$5
+    redis_version=$5
 fi
 
 if [[ "$6" != "" && "$6" != "auto" ]]
 then
-    redis_version=$6
+    eventsbroker_version=$6
 fi
 
 if [[ "$7" != "" && "$7" != "auto" ]]
 then
-    eventsbroker_version=$7
+    wres_vis_version=$7
 fi
 
 if [[ "$8" != "" && "$8" != "auto" ]]
 then
-    wres_vis_version=$8
-fi
-
-if [[ "$9" != "" && "$9" != "auto" ]]
-then
-    wres_writing_version=$9
+    wres_writing_version=$8
 fi
 
 echo ""
@@ -143,13 +131,6 @@ tasker_file=wres-tasker-${wres_tasker_version}.zip
 vis_file=wres-vis-${wres_vis_version}.zip
 writing_file=wres-writing-${wres_writing_version}.zip
 
-jenkins_workspace=$JOB_URL/$jenkins_build/artifact
-core_url=$jenkins_workspace/build/distributions/$wres_core_file
-worker_url=$jenkins_workspace/wres-worker/build/distributions/$worker_shim_file
-tasker_url=$jenkins_workspace/wres-tasker/build/distributions/$tasker_file
-vis_url=$jenkins_workspace/wres-vis/build/distributions/$vis_file
-writing_url=$jenkins_workspace/wres-writing/build/distributions/$writing_file
-
 # Ensure the distribution zip files are present for successful docker build
 if [[ ! -f ./build/distributions/$wres_core_file || \
          ! -f ./wres-worker/build/distributions/$worker_shim_file || \
@@ -160,69 +141,15 @@ then
     echo ""
     echo "It appears you are not an automated build server (or something went wrong if you are)."
     echo ""
-    echo "Please download these files and place them in the stated directory:"
+    echo "You do not have one of the required files, check the bellow exist"
     echo ""
-
-    if [[ ! -f ./build/distributions/$wres_core_file ]]
-    then
-        echo "    $core_url  -  build/distributions"
-    fi
-
-    if [[ ! -f ./wres-worker/build/distributions/$worker_shim_file ]]
-    then
-        echo "    $worker_url  -  wres-worker/build/distributions"
-    fi
-
-    if [[ ! -f ./wres-tasker/build/distributions/$tasker_file ]]
-    then
-        echo "    $tasker_url  -  wres-tasker/build/distributions"
-    fi
-
-    if [[ ! -f ./wres-vis/build/distributions/$vis_file ]]
-    then
-        echo "    $vis_url  -  wres-vis/build/distributions"
-    fi
-
-    if [[ ! -f ./wres-writing/build/distributions/$writing_file ]]
-    then
-        echo "    $writing_url  -  wres-writing/build/distributions"
-    fi
+    echo "./build/distributions/$wres_core_file"
+    echo "./wres-worker/build/distributions/$worker_shim_file"
+    echo "./wres-tasker/build/distributions/$tasker_file"
+    echo "./wres-writing/build/distributions/$writing_file"
+    echo "./wres-vis/build/distributions/$vis_file"
     echo ""
-    echo "You can use the following curl commands, with user name and token specified in ~/jenkins_token, to obtain the files:"
     echo ""
-
-    if [[ ! -f ./build/distributions/$wres_core_file ]]
-    then
-        echo "     curl --config ~/jenkins_token -o ./build/distributions/$wres_core_file $core_url"
-    fi
-
-    if [[ ! -f ./wres-worker/build/distributions/$worker_shim_file ]]
-    then
-        echo "     curl --config ~/jenkins_token -o ./wres-worker/build/distributions/$worker_shim_file $worker_url"
-    fi
-
-    if [[ ! -f ./wres-tasker/build/distributions/$tasker_file ]]
-    then
-        echo "     curl --config ~/jenkins_token -o ./wres-tasker/build/distributions/$tasker_file $tasker_url"
-    fi
-
-    if [[ ! -f ./wres-vis/build/distributions/$vis_file ]]
-    then
-        echo "     curl --config ~/jenkins_token -o ./wres-vis/build/distributions/$vis_file $vis_url"
-    fi
-
-    if [[ ! -f ./wres-writing/build/distributions/$writing_file ]]
-    then
-        echo "     curl --config ~/jenkins_token -o ./wres-writing/build/distributions/$writing_file $writing_url"
-    fi
-    echo ""
-    echo "You can also use the '-u user:token' option instead of '--config ~/jenkins_token', e.g. '-u <user.name>:<Jenkins API token>'."
-    echo ""
-    echo "The above URLs are only valid if your .zip files are the latest artifact.  To pull down old artifacts, identify the Jenkins build number associated with the VLab GIT revision and modify the \"ws\" in the url to be \"<build number>/artifact\".  For example,"
-    echo ""
-    echo "$JOB_URL/3686/artifact/wres-vis/build/distributions/wres-vis-20210225-713c981.zip"
-    echo ""
-    echo "After they have completely finished downloading and have been completely copied into the local directories, re-run this script."
     exit 3
 fi
 
@@ -397,6 +324,10 @@ then
             docker tag wres/wres-writing:$writing_version $DOCKER_REGISTRY/wres/wres-writing:$writing_version
             docker push $DOCKER_REGISTRY/wres/wres-writing:$writing_version
         fi
+
+        echo "Tagging and pushing wres/nginx as wres/nginx..."
+        docker tag wres/nginx $DOCKER_REGISTRY/wres/nginx
+        docker push $DOCKER_REGISTRY/wres/nginx
     fi
     
 else
