@@ -18,6 +18,7 @@ services:
     nginx:
       image: "${DOCKER_REGISTRY}/wres/nginx"
       container_name: nginx_proxy
+      restart: always
       volumes:
         - ${NGINX_SERVER_CERT}:/etc/nginx/cert/wres_server_cert.pem
         - ${NGINX_SERVER_KEY}:/etc/nginx/cert/wres_server_key.pem
@@ -30,6 +31,7 @@ services:
     cadvisor:
       image: gcr.io/cadvisor/cadvisor:latest
       container_name: cadvisor
+      restart: always
       ports:
         - 8080:8080
       volumes:
