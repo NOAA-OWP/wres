@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import wres.config.yaml.components.BaselineDataset;
@@ -26,6 +27,7 @@ import wres.config.yaml.components.DatasetBuilder;
 import wres.config.yaml.components.EvaluationDeclaration;
 import wres.config.yaml.components.EvaluationDeclarationBuilder;
 import wres.config.yaml.components.FeatureAuthority;
+import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.FeatureServiceGroup;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.FeaturesBuilder;
@@ -468,6 +470,41 @@ class FeatureFillerTest
 
             assertEquals( expected, actual );
         }
+    }
+
+    @Test
+    void testFillFeaturesDoesNotThrowNPEWhenNoFeaturesExistAndFeatureGroupExists() throws URISyntaxException
+    {
+        URI uri = new URI( "https://some_fake_uri" );
+        wres.config.yaml.components.FeatureService
+                featureService = new wres.config.yaml.components.FeatureService( uri, Set.of() );
+
+        EvaluationDeclaration evaluation
+                = FeatureFillerTest.getBoilerplateEvaluationWith( null,
+                                                                  featureService,
+                                                                  BOILERPLATE_DATASOURCE_USGS_SITE_CODE_AUTHORITY,
+                                                                  BOILERPLATE_DATASOURCE_NWS_LID_AUTHORITY,
+                                                                  null );
+
+        // Add a feature group
+        GeometryGroup group =
+                GeometryGroup.newBuilder()
+                             .addAllGeometryTuples( Set.of( GeometryTuple.newBuilder()
+                                                                         .setLeft( Geometry.newBuilder()
+                                                                                           .setName( "bar" ) )
+                                                                         .setRight( Geometry.newBuilder()
+                                                                                            .setName( "baz" ) )
+                                                                         .build() ) )
+                             .setRegionName( "AL" )
+                             .build();
+
+        FeatureGroups groups = new FeatureGroups( Set.of( group ), null );
+        EvaluationDeclaration adjusted = EvaluationDeclarationBuilder.builder( evaluation )
+                                                                     .features( null )
+                                                                     .featureGroups( groups )
+                                                                     .build();
+
+        assertDoesNotThrow( () -> FeatureFiller.fillFeatures( adjusted ) );
     }
 
     /**
