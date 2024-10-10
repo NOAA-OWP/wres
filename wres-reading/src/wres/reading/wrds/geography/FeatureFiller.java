@@ -229,10 +229,11 @@ public class FeatureFiller
         // Set the features and feature groups, preserving any declared offsets, but using the new tuples
         Map<GeometryTuple, Offset> singletonOffsets = null;
         Map<GeometryTuple, Offset> groupOffsets = null;
-        if ( Objects.nonNull( evaluation.features()
-                                        .offsets() ) )
-        {
 
+        if ( Objects.nonNull( evaluation.features() )
+             && Objects.nonNull( evaluation.features()
+                                           .offsets() ) )
+        {
             singletonOffsets = FeatureFiller.getOffsets( filledSingletonFeatures, evaluation.features()
                                                                                             .offsets() );
         }
@@ -346,8 +347,9 @@ public class FeatureFiller
         Set<GeometryTuple> consolidatedFeatures = new HashSet<>( filledFeatures );
 
         // Add any implicitly declared features
-        if ( Objects.nonNull( featureService ) && !featureService.featureGroups()
-                                                                 .isEmpty() )
+        if ( Objects.nonNull( featureService )
+             && !featureService.featureGroups()
+                               .isEmpty() )
         {
             LOGGER.debug( "Discovered implicitly declared singleton features." );
 
