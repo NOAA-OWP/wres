@@ -27,6 +27,7 @@ import org.locationtech.jts.io.WKTReader;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import wres.config.MetricConstants;
 import wres.config.yaml.components.AnalysisTimes;
@@ -2272,6 +2273,36 @@ class DeclarationFactoryTest
                                                                      .build();
 
         assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeThrowsExpectedExceptionWhenDuplicateKeysEncountered()
+    {
+        // GitHub issue #336
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  sources: another_file.csv
+                probability_thresholds: [0.01,0.1,0.5,0.9,0.95,0.99,0.995,0.999]
+                probability_thresholds: [0.01,0.1,0.5,0.9,0.95,0.99,0.995,0.999]
+                """;
+
+        assertThrows( IOException.class, () -> DeclarationFactory.from( yaml ) );
+    }
+
+    @Test
+    void testDeserializeThrowsExpectedExceptionWhenSpacingIncorrect()
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  sources: another_file.csv
+                          probability_thresholds: [0.01,0.1,0.5,0.9,0.95,0.99,0.995,0.999]
+                """;
+
+        assertThrows( IOException.class, () -> DeclarationFactory.from( yaml ) );
     }
 
     @Test

@@ -47,6 +47,7 @@ import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
+import org.yaml.snakeyaml.constructor.DuplicateKeyException;
 import org.yaml.snakeyaml.nodes.Tag;
 import org.yaml.snakeyaml.parser.ParserException;
 import org.yaml.snakeyaml.representer.Representer;
@@ -418,7 +419,7 @@ public class DeclarationFactory
             // Deserialize with Jackson now that any anchors/references are resolved
             return DESERIALIZER.readTree( resolvedYamlString );
         }
-        catch ( ScannerException | ParserException | JsonProcessingException e )
+        catch ( ScannerException | ParserException | JsonProcessingException | DuplicateKeyException e )
         {
             throw new IOException( "Failed to deserialize a YAML string.", e );
         }
