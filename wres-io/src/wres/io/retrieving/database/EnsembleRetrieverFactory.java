@@ -154,7 +154,7 @@ public class EnsembleRetrieverFactory implements RetrieverFactory<Double, Ensemb
                            .setMeasurementUnitsCache( this.getMeasurementUnitsCache() )
                            .setProjectId( this.project.getId() )
                            .setFeatures( features )
-                           .setVariable( this.project.getRightVariable() )
+                           .setVariable( this.project.getBaselineVariable() )
                            .setDatasetOrientation( DatasetOrientation.BASELINE )
                            .setDeclaredExistingTimeScale( this.getDeclaredExistingTimeScale( baselineDataset ) )
                            .setDesiredTimeScale( this.desiredTimeScale )

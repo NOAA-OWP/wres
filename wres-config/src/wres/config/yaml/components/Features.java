@@ -31,6 +31,7 @@ public record Features( Set<GeometryTuple> geometries, Map<GeometryTuple,Offset>
     /**
      * Sets the default values.
      * @param geometries the geometries
+     * @param offsets the offset values, such as a datum offset, if any
      */
     public Features
     {
