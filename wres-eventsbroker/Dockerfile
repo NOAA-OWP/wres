@@ -31,7 +31,7 @@ RUN apk --no-cache add tar && \
 FROM registry.access.redhat.com/ubi8/ubi:8.10-1054
 
 RUN dnf install -y \
-    java-17-openjdk-headless-1:17.0.12.0.7-2.el8.x86_64 \
+    java-17-openjdk-headless-1:17.0.13.0.11-3.el8.x86_64 \
     procps-ng-3.3.15-14.el8 \
     iproute-6.2.0-6.el8_10.x86_64 \
     libaio-0.3.112-1.el8 \
