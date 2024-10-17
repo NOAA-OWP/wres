@@ -348,13 +348,6 @@ echo "About to update the .yml files with the new versions based on a template."
 echo "If you are only updating some of the images/versions, it is recommended"
 echo "you skip this step and do that by manually editing the .ymls."
 echo ""
-echo "Do you wish to continue with this last step?"
-select yn in "Yes" "No"; do
-    case $yn in
-        Yes ) echo "Proceeding..."; break;;
-        No ) exit;;
-    esac
-done
 
 cp compose-entry.template.yml compose-entry.yml 
 sed -i "s/TASKER_IMAGE/${tasker_version}/" compose-entry.yml
