@@ -62,7 +62,7 @@ plugins {
     id 'com.adarshr.test-logger' version '4.0.0'
 
     // To discover library versions with known vulnerabilities
-    id 'org.owasp.dependencycheck' version '10.0.4'
+    id 'org.owasp.dependencycheck' version '10.0.2'
 
     // Task to assist in downloading artifacts
     id 'de.undercouch.download' version '5.6.0'
@@ -709,7 +709,7 @@ project(':wres-statistics') {
     protobuf {
         // Automatically download and use the correct protobuf compiler
         protoc {
-            artifact = 'com.google.protobuf:protoc:3.21.12'
+            artifact = 'com.google.protobuf:protoc:3.25.5'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -786,7 +786,7 @@ project(':wres-statistics') {
     //compileJava.dependsOn buildProtobufBindingsForPython
 
     dependencies {
-        api 'com.google.protobuf:protobuf-java:3.21.12'
+        api 'com.google.protobuf:protobuf-java:3.25.5'
 
         implementation 'org.slf4j:slf4j-api:2.0.13'
 
@@ -976,7 +976,7 @@ project(':wres-config') {
             exclude group: 'com.google.guava', module: 'guava'
         }
         // Include later dependency versions for the excluded dependencies above
-        implementation 'com.google.protobuf:protobuf-java:3.21.12'
+        implementation 'com.google.protobuf:protobuf-java:3.25.5'
         implementation 'com.google.guava:guava:33.3.1-jre'
 
         // To validate WKT strings as geometries
@@ -984,7 +984,7 @@ project(':wres-config') {
         implementation group: 'org.locationtech.jts', name: 'jts-io', version: '1.20.0', ext: 'pom'
 
         // Protobuf utilities
-        implementation 'com.google.protobuf:protobuf-java-util:3.21.12'
+        implementation 'com.google.protobuf:protobuf-java-util:3.25.5'
 
         implementation 'org.apache.commons:commons-lang3:3.17.0'
 
@@ -1125,7 +1125,7 @@ project(':wres-messages') {
     protobuf {
         // Automatically download and use the correct protobuf compiler
         protoc {
-            artifact = 'com.google.protobuf:protoc:3.21.12'
+            artifact = 'com.google.protobuf:protoc:3.25.5'
         }
         // So all IDEs/editors can see generated files, use actual src dir:
         generatedFilesBaseDir = "${generatedDir}"
@@ -1141,7 +1141,7 @@ project(':wres-messages') {
     }
 
     dependencies {
-        api 'com.google.protobuf:protobuf-java:3.21.12'
+        api 'com.google.protobuf:protobuf-java:3.25.5'
 
         implementation 'org.slf4j:slf4j-api:2.0.13'
 
@@ -1401,7 +1401,7 @@ project(':wres-tasker') {
         implementation 'org.apache.commons:commons-lang3:3.17.0'
 
         // To send/receive messages
-        implementation 'com.google.protobuf:protobuf-java:3.21.12'
+        implementation 'com.google.protobuf:protobuf-java:3.25.5'
 
         runtimeOnly('ch.qos.logback:logback-classic:1.5.11') {
             // Not used at runtime, bloat
