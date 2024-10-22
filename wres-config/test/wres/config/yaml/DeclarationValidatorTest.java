@@ -80,6 +80,7 @@ import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeScale;
 import wres.statistics.generated.GeometryTuple;
+import wres.statistics.generated.TimeWindow;
 
 /**
  * Tests the {@link DeclarationValidator}.
@@ -2629,6 +2630,31 @@ class DeclarationValidatorTest
         assertTrue( DeclarationValidatorTest.contains( events,
                                                        "Please correct the 'orientation'",
                                                        StatusLevel.ERROR ) );
+    }
+
+    @Test
+    void testCombinationOfExplicitAndGeneratedPoolsProducesWarning()
+    {
+        TimePools leadTimePools = new TimePools( java.time.Duration.ofHours( 1 ),
+                                                 java.time.Duration.ofHours( 2 ) );
+
+        TimeWindow timeWindow = TimeWindow.newBuilder()
+                                          .build();
+        Set<TimeWindow> timeWindows = Set.of( timeWindow );
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.defaultDataset )
+                                            .right( this.defaultDataset )
+                                            .leadTimePools( leadTimePools )
+                                            .timeWindows( timeWindows )
+                                            .build();
+
+        List<EvaluationStatusEvent> events = DeclarationValidator.validate( declaration );
+
+        assertTrue( DeclarationValidatorTest.contains( events,
+                                                       "the resulting pools from all sources will be added "
+                                                       + "together",
+                                                       StatusLevel.WARN ) );
     }
 
     @Test

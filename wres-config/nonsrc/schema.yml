@@ -98,16 +98,18 @@ definitions:
         "$ref": "#/definitions/SpatialMask"
       reference_dates:
         "$ref": "#/definitions/Dates"
-      reference_date_pools:
+      time_pools:
         "$ref": "#/definitions/TimePools"
+      reference_date_pools:
+        "$ref": "#/definitions/TimePoolSequence"
       valid_dates:
         "$ref": "#/definitions/Dates"
       valid_date_pools:
-        "$ref": "#/definitions/TimePools"
+        "$ref": "#/definitions/TimePoolSequence"
       lead_times:
         "$ref": "#/definitions/LeadTimes"
       lead_time_pools:
-        "$ref": "#/definitions/TimePools"
+        "$ref": "#/definitions/TimePoolSequence"
       analysis_times:
         "$ref": "#/definitions/AnalysisTimes"
       time_scale:
@@ -875,7 +877,33 @@ definitions:
       - unit
 
   TimePools:
-    title: The temporal boundaries of a pool of data to evaluate.
+    title: Explicitly declared time pools.
+    description: "The declaration of an explicit, possibly irregular, sequence 
+    of time pools. Each pool contains an interval of times whose corresponding 
+    pairs will be pooled together when calculating statistics."
+    type: array
+    items:
+      "$ref": "#/definitions/TimePool"
+    minItems: 1
+    uniqueItems: true
+    additionalProperties: false
+
+  TimePool:
+    title: Explicitly declared time pool.
+    description: "The declaration of an explicit time pools. Each pool contains an interval of 
+    times whose corresponding pairs will be pooled together when calculating statistics."
+    type: object
+    additionalProperties: false
+    properties:
+      reference_dates:
+        "$ref": "#/definitions/Dates"
+      valid_dates:
+        "$ref": "#/definitions/Dates"
+      lead_times:
+        "$ref": "#/definitions/LeadTimes"
+
+  TimePoolSequence:
+    title: The temporal boundaries of a pool sequence to evaluate.
     description: "The declaration of a regular sequence of time pools. Each 
     pool contains an interval of times whose corresponding pairs will be pooled 
     together when calculating statistics. The regular sequence contains pools 

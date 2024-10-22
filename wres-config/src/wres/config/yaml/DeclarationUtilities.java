@@ -121,7 +121,9 @@ public class DeclarationUtilities
         TimePools referenceDatesPools = declaration.referenceDatePools();
         TimePools validDatesPools = declaration.validDatePools();
 
-        // Has explicit pooling windows
+        Set<TimeWindow> timeWindows;
+
+        // Add the time windows generated from a declared sequence
         if ( Objects.nonNull( leadDurationPools )
              || Objects.nonNull( referenceDatesPools )
              || Objects.nonNull( validDatesPools ) )
@@ -132,49 +134,49 @@ public class DeclarationUtilities
             {
                 LOGGER.debug( "Building time windows for reference dates and valid dates and lead durations." );
 
-                return DeclarationUtilities.getReferenceDatesValidDatesAndLeadDurationTimeWindows( declaration );
+                timeWindows = DeclarationUtilities.getReferenceDatesValidDatesAndLeadDurationTimeWindows( declaration );
             }
             // Reference dates and valid dates
             else if ( Objects.nonNull( referenceDatesPools ) && Objects.nonNull( validDatesPools ) )
             {
                 LOGGER.debug( "Building time windows for reference dates and valid dates." );
 
-                return DeclarationUtilities.getReferenceDatesAndValidDatesTimeWindows( declaration );
+                timeWindows = DeclarationUtilities.getReferenceDatesAndValidDatesTimeWindows( declaration );
             }
             // Reference dates and lead durations
             else if ( Objects.nonNull( referenceDatesPools ) && Objects.nonNull( leadDurationPools ) )
             {
                 LOGGER.debug( "Building time windows for reference dates and lead durations." );
 
-                return DeclarationUtilities.getReferenceDatesAndLeadDurationTimeWindows( declaration );
+                timeWindows = DeclarationUtilities.getReferenceDatesAndLeadDurationTimeWindows( declaration );
             }
             // Valid dates and lead durations
             else if ( Objects.nonNull( validDatesPools ) && Objects.nonNull( leadDurationPools ) )
             {
                 LOGGER.debug( "Building time windows for valid dates and lead durations." );
 
-                return DeclarationUtilities.getValidDatesAndLeadDurationTimeWindows( declaration );
+                timeWindows = DeclarationUtilities.getValidDatesAndLeadDurationTimeWindows( declaration );
             }
             // Reference dates
             else if ( Objects.nonNull( referenceDatesPools ) )
             {
                 LOGGER.debug( "Building time windows for reference dates." );
 
-                return DeclarationUtilities.getReferenceDatesTimeWindows( declaration );
+                timeWindows = DeclarationUtilities.getReferenceDatesTimeWindows( declaration );
             }
             // Lead durations
             else if ( Objects.nonNull( leadDurationPools ) )
             {
                 LOGGER.debug( "Building time windows for lead durations." );
 
-                return DeclarationUtilities.getLeadDurationTimeWindows( declaration );
+                timeWindows = DeclarationUtilities.getLeadDurationTimeWindows( declaration );
             }
             // Valid dates
             else
             {
                 LOGGER.debug( "Building time windows for valid dates." );
 
-                return DeclarationUtilities.getValidDatesTimeWindows( declaration );
+                timeWindows = DeclarationUtilities.getValidDatesTimeWindows( declaration );
             }
         }
         // One big pool
@@ -182,8 +184,19 @@ public class DeclarationUtilities
         {
             LOGGER.debug( "Building one big time window." );
 
-            return Collections.singleton( DeclarationUtilities.getOneBigTimeWindow( declaration ) );
+            timeWindows = Collections.singleton( DeclarationUtilities.getOneBigTimeWindow( declaration ) );
         }
+
+        // Add the explicitly declared time windows
+        Set<TimeWindow> finalWindows = new HashSet<>( timeWindows );
+
+        LOGGER.debug( "Added {} explicitly declared time pools to the overall group of time pools.",
+                      declaration.timeWindows()
+                                 .size() );
+
+        finalWindows.addAll( declaration.timeWindows() );
+
+        return Collections.unmodifiableSet( finalWindows );
     }
 
     /**
