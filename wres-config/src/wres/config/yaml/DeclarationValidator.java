@@ -2218,9 +2218,9 @@ public class DeclarationValidator
                                            .setStatusLevel( StatusLevel.WARN )
                                            .setEventMessage( "The declaration contained both an explicit list of "
                                                              + "'time_pools' and an implicitly declared sequence of "
-                                                             + "pools ("
+                                                             + "pools: "
                                                              + generated
-                                                             + "). This is allowed and the "
+                                                             + ". This is allowed, and the "
                                                              + "resulting pools from all sources will be added "
                                                              + "together. If this was not intended, please adjust "
                                                              + "your declaration." )

@@ -121,7 +121,7 @@ public class DeclarationUtilities
         TimePools referenceDatesPools = declaration.referenceDatePools();
         TimePools validDatesPools = declaration.validDatePools();
 
-        Set<TimeWindow> timeWindows;
+        Set<TimeWindow> timeWindows = Set.of();  // Default to none
 
         // Add the time windows generated from a declared sequence
         if ( Objects.nonNull( leadDurationPools )
@@ -179,8 +179,9 @@ public class DeclarationUtilities
                 timeWindows = DeclarationUtilities.getValidDatesTimeWindows( declaration );
             }
         }
-        // One big pool
-        else
+        // One big pool if no explicitly declared time windows
+        else if( declaration.timeWindows()
+                            .isEmpty() )
         {
             LOGGER.debug( "Building one big time window." );
 
