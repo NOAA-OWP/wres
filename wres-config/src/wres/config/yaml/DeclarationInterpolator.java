@@ -942,13 +942,15 @@ public class DeclarationInterpolator
         Outputs.GraphicFormat.Builder newOptions = options.toBuilder();
 
         // Reference date pools?
-        if ( Objects.nonNull( builder.referenceDatePools() )
+        if ( ( Objects.nonNull( builder.referenceDatePools() )
+               || DeclarationInterpolator.hasExplicitReferenceDatePools( builder.timeWindows() ) )
              && options.getShape() == Outputs.GraphicFormat.GraphicShape.DEFAULT )
         {
             newOptions.setShape( Outputs.GraphicFormat.GraphicShape.ISSUED_DATE_POOLS );
         }
         // Valid date pools?
-        else if ( Objects.nonNull( builder.validDatePools() )
+        else if ( ( Objects.nonNull( builder.validDatePools() )
+                    || DeclarationInterpolator.hasExplicitValidDatePools( builder.timeWindows() ) )
                   && options.getShape() == Outputs.GraphicFormat.GraphicShape.DEFAULT )
         {
             newOptions.setShape( Outputs.GraphicFormat.GraphicShape.VALID_DATE_POOLS );
@@ -961,6 +963,50 @@ public class DeclarationInterpolator
         }
 
         return newOptions.build();
+    }
+
+    /**
+     * @param timeWindows the time windows
+     * @return whether there is more than one time window with different reference dates
+     */
+    private static boolean hasExplicitReferenceDatePools( Set<TimeWindow> timeWindows )
+    {
+        Set<Pair<Timestamp, Timestamp>> referenceDates = new HashSet<>();
+        for ( TimeWindow next : timeWindows )
+        {
+            Pair<Timestamp, Timestamp> pair = Pair.of( next.getEarliestReferenceTime(), next.getLatestReferenceTime() );
+            referenceDates.add( pair );
+
+            // Short-circuit
+            if ( referenceDates.size() > 1 )
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param timeWindows the time windows
+     * @return whether there is more than one time window with different valid dates
+     */
+    private static boolean hasExplicitValidDatePools( Set<TimeWindow> timeWindows )
+    {
+        Set<Pair<Timestamp, Timestamp>> validDates = new HashSet<>();
+        for ( TimeWindow next : timeWindows )
+        {
+            Pair<Timestamp, Timestamp> pair = Pair.of( next.getEarliestValidTime(), next.getLatestValidTime() );
+            validDates.add( pair );
+
+            // Short-circuit
+            if ( validDates.size() > 1 )
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
