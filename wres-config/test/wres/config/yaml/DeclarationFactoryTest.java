@@ -80,6 +80,7 @@ import wres.config.yaml.components.UnitAlias;
 import wres.config.yaml.components.Values;
 import wres.config.yaml.components.Variable;
 import wres.config.yaml.components.VariableBuilder;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -88,6 +89,7 @@ import wres.statistics.generated.Pool;
 import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeScale;
+import wres.statistics.generated.TimeWindow;
 
 /**
  * Tests the {@link DeclarationFactory}.
@@ -2273,6 +2275,116 @@ class DeclarationFactoryTest
                                                                      .build();
 
         assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithExplicitTimePools() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  sources: another_file.csv
+                time_pools:
+                  - lead_times:
+                      minimum: 1
+                      maximum: 6
+                      unit: hours
+                    reference_dates:
+                      minimum: 2551-03-17T00:00:00Z
+                      maximum: 2551-03-20T00:00:00Z
+                    valid_dates:
+                      minimum: 2551-03-18T00:00:00Z
+                      maximum: 2551-03-21T00:00:00Z
+                  - lead_times:
+                      minimum: 7
+                      maximum: 12
+                      unit: hours
+                    reference_dates:
+                      minimum: 2551-03-21T00:00:00Z
+                      maximum: 2551-03-23T00:00:00Z
+                    valid_dates:
+                      minimum: 2551-03-22T00:00:00Z
+                      maximum: 2551-03-24T00:00:00Z
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        Instant expectedInstantOne = Instant.parse( "2551-03-17T00:00:00Z" );
+        Instant expectedInstantTwo = Instant.parse( "2551-03-18T00:00:00Z" );
+        Instant expectedInstantThree = Instant.parse( "2551-03-20T00:00:00Z" );
+        Instant expectedInstantFour = Instant.parse( "2551-03-21T00:00:00Z" );
+        Instant expectedInstantFive = Instant.parse( "2551-03-22T00:00:00Z" );
+        Instant expectedInstantSix = Instant.parse( "2551-03-23T00:00:00Z" );
+        Instant expectedInstantSeven = Instant.parse( "2551-03-24T00:00:00Z" );
+
+        java.time.Duration expectedDurationOne = java.time.Duration.ofHours( 1 );
+        java.time.Duration expectedDurationTwo = java.time.Duration.ofHours( 6 );
+        java.time.Duration expectedDurationThree = java.time.Duration.ofHours( 7 );
+        java.time.Duration expectedDurationFour = java.time.Duration.ofHours( 12 );
+
+        TimeWindow expectedOne = TimeWindow.newBuilder()
+                                           .setEarliestValidTime( MessageFactory.getTimestamp( expectedInstantTwo ) )
+                                           .setLatestValidTime( MessageFactory.getTimestamp( expectedInstantFour ) )
+                                           .setEarliestReferenceTime( MessageFactory.getTimestamp( expectedInstantOne ) )
+                                           .setLatestReferenceTime( MessageFactory.getTimestamp( expectedInstantThree ) )
+                                           .setEarliestLeadDuration( MessageFactory.getDuration( expectedDurationOne ) )
+                                           .setLatestLeadDuration( MessageFactory.getDuration( expectedDurationTwo ) )
+                                           .build();
+
+        TimeWindow expectedTwo = TimeWindow.newBuilder()
+                                           .setEarliestValidTime( MessageFactory.getTimestamp( expectedInstantFive ) )
+                                           .setLatestValidTime( MessageFactory.getTimestamp( expectedInstantSeven ) )
+                                           .setEarliestReferenceTime( MessageFactory.getTimestamp( expectedInstantFour ) )
+                                           .setLatestReferenceTime( MessageFactory.getTimestamp( expectedInstantSix ) )
+                                           .setEarliestLeadDuration( MessageFactory.getDuration( expectedDurationThree ) )
+                                           .setLatestLeadDuration( MessageFactory.getDuration( expectedDurationFour ) )
+                                           .build();
+
+        Set<TimeWindow> expected = Set.of( expectedOne, expectedTwo );
+
+        assertEquals( expected, actual.timeWindows() );
+    }
+
+    @Test
+    void testDeserializeWithExplicitTimePoolsThatAreSparselyDeclared() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  sources: another_file.csv
+                time_pools:
+                  - reference_dates:
+                      minimum: 2551-03-17T00:00:00Z
+                      maximum: 2551-03-20T00:00:00Z
+                  - lead_times:
+                      minimum: 7
+                      maximum: 12
+                      unit: hours
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        Instant expectedInstantOne = Instant.parse( "2551-03-17T00:00:00Z" );
+        Instant expectedInstantTwo = Instant.parse( "2551-03-20T00:00:00Z" );
+
+        java.time.Duration expectedDurationOne = java.time.Duration.ofHours( 7 );
+        java.time.Duration expectedDurationTwo = java.time.Duration.ofHours( 12 );
+
+        TimeWindow expectedOne = TimeWindow.newBuilder()
+                                           .setEarliestReferenceTime( MessageFactory.getTimestamp( expectedInstantOne ) )
+                                           .setLatestReferenceTime( MessageFactory.getTimestamp( expectedInstantTwo ) )
+                                           .build();
+
+        TimeWindow expectedTwo = TimeWindow.newBuilder()
+                                           .setEarliestLeadDuration( MessageFactory.getDuration( expectedDurationOne ) )
+                                           .setLatestLeadDuration( MessageFactory.getDuration( expectedDurationTwo ) )
+                                           .build();
+
+        Set<TimeWindow> expected = Set.of( expectedOne, expectedTwo );
+
+        assertEquals( expected, actual.timeWindows() );
     }
 
     @Test

@@ -3,6 +3,8 @@ package wres.config.yaml;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,6 +20,8 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import com.google.protobuf.Timestamp;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +54,7 @@ import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.ThresholdSourceBuilder;
 import wres.config.yaml.components.ThresholdType;
 import wres.config.yaml.components.VariableBuilder;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.EvaluationStatus;
 import wres.statistics.generated.EvaluationStatus.EvaluationStatusEvent;
 import wres.statistics.generated.Geometry;
@@ -60,6 +65,7 @@ import wres.statistics.generated.Outputs;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.TimeScale;
+import wres.statistics.generated.TimeWindow;
 
 /**
  * <p>Interpolates missing declaration from the other declaration present. The interpolation of missing declaration may
@@ -170,6 +176,8 @@ public class DeclarationInterpolator
         DeclarationInterpolator.interpolateMetricParameters( adjustedBuilder );
         // Interpolate output formats where none exist
         DeclarationInterpolator.interpolateOutputFormatsWhenNoneDeclared( adjustedBuilder );
+        // Interpolate time windows
+        DeclarationInterpolator.interpolateTimeWindows( adjustedBuilder );
 
         // Handle any events encountered
         DeclarationInterpolator.handleEvents( events, notify, true );
@@ -934,13 +942,15 @@ public class DeclarationInterpolator
         Outputs.GraphicFormat.Builder newOptions = options.toBuilder();
 
         // Reference date pools?
-        if ( Objects.nonNull( builder.referenceDatePools() )
+        if ( ( Objects.nonNull( builder.referenceDatePools() )
+               || DeclarationInterpolator.hasExplicitReferenceDatePools( builder.timeWindows() ) )
              && options.getShape() == Outputs.GraphicFormat.GraphicShape.DEFAULT )
         {
             newOptions.setShape( Outputs.GraphicFormat.GraphicShape.ISSUED_DATE_POOLS );
         }
         // Valid date pools?
-        else if ( Objects.nonNull( builder.validDatePools() )
+        else if ( ( Objects.nonNull( builder.validDatePools() )
+                    || DeclarationInterpolator.hasExplicitValidDatePools( builder.timeWindows() ) )
                   && options.getShape() == Outputs.GraphicFormat.GraphicShape.DEFAULT )
         {
             newOptions.setShape( Outputs.GraphicFormat.GraphicShape.VALID_DATE_POOLS );
@@ -953,6 +963,50 @@ public class DeclarationInterpolator
         }
 
         return newOptions.build();
+    }
+
+    /**
+     * @param timeWindows the time windows
+     * @return whether there is more than one time window with different reference dates
+     */
+    private static boolean hasExplicitReferenceDatePools( Set<TimeWindow> timeWindows )
+    {
+        Set<Pair<Timestamp, Timestamp>> referenceDates = new HashSet<>();
+        for ( TimeWindow next : timeWindows )
+        {
+            Pair<Timestamp, Timestamp> pair = Pair.of( next.getEarliestReferenceTime(), next.getLatestReferenceTime() );
+            referenceDates.add( pair );
+
+            // Short-circuit
+            if ( referenceDates.size() > 1 )
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param timeWindows the time windows
+     * @return whether there is more than one time window with different valid dates
+     */
+    private static boolean hasExplicitValidDatePools( Set<TimeWindow> timeWindows )
+    {
+        Set<Pair<Timestamp, Timestamp>> validDates = new HashSet<>();
+        for ( TimeWindow next : timeWindows )
+        {
+            Pair<Timestamp, Timestamp> pair = Pair.of( next.getEarliestValidTime(), next.getLatestValidTime() );
+            validDates.add( pair );
+
+            // Short-circuit
+            if ( validDates.size() > 1 )
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -1183,6 +1237,169 @@ public class DeclarationInterpolator
                                                     .setCsv2( Formats.CSV2_FORMAT );
             builder.formats( new Formats( formatsBuilder.build() ) );
         }
+    }
+
+    /**
+     * Interpolates the missing components of any explicitly declared time windows.
+     *
+     * @param builder the builder to mutate
+     */
+    private static void interpolateTimeWindows( EvaluationDeclarationBuilder builder )
+    {
+        Set<TimeWindow> timeWindows = builder.timeWindows();
+        Set<TimeWindow> adjustedTimeWindows = new HashSet<>();
+
+        // Set the earliest and latest lead durations
+        Pair<com.google.protobuf.Duration, com.google.protobuf.Duration> leadTimes =
+                DeclarationInterpolator.getLeadDurationInterval( builder );
+        com.google.protobuf.Duration earliestProtoDuration = leadTimes.getLeft();
+        com.google.protobuf.Duration latestProtoDuration = leadTimes.getRight();
+
+        // Set the earliest and latest valid times
+        Pair<Timestamp, Timestamp> validTimes = DeclarationInterpolator.getValidTimeInterval( builder );
+        Timestamp earliestValidProto = validTimes.getLeft();
+        Timestamp latestValidProto = validTimes.getRight();
+
+        // Set the earliest and latest reference times
+        Pair<Timestamp, Timestamp> referenceTimes = DeclarationInterpolator.getReferenceTimeInterval( builder );
+        Timestamp earliestReferenceProto = referenceTimes.getLeft();
+        Timestamp latestReferenceProto = referenceTimes.getRight();
+
+        for ( TimeWindow next : timeWindows )
+        {
+            TimeWindow.Builder nextBuilder = next.toBuilder();
+
+            if ( !next.hasEarliestLeadDuration() )
+            {
+                nextBuilder.setEarliestLeadDuration( earliestProtoDuration );
+            }
+
+            if ( !next.hasLatestLeadDuration() )
+            {
+                nextBuilder.setLatestLeadDuration( latestProtoDuration );
+            }
+
+            if ( !next.hasEarliestValidTime() )
+            {
+                nextBuilder.setEarliestValidTime( earliestValidProto );
+            }
+
+            if ( !next.hasLatestValidTime() )
+            {
+                nextBuilder.setLatestValidTime( latestValidProto );
+            }
+
+            if ( !next.hasEarliestReferenceTime() )
+            {
+                nextBuilder.setEarliestReferenceTime( earliestReferenceProto );
+            }
+
+            if ( !next.hasLatestReferenceTime() )
+            {
+                nextBuilder.setLatestReferenceTime( latestReferenceProto );
+            }
+
+            TimeWindow nextAdjusted = nextBuilder.build();
+            adjustedTimeWindows.add( nextAdjusted );
+        }
+
+        builder.timeWindows( adjustedTimeWindows );
+    }
+
+    /**
+     * @param builder the declaration builder
+     * @return the lead duration interval
+     */
+
+    private static Pair<com.google.protobuf.Duration, com.google.protobuf.Duration>
+    getLeadDurationInterval( EvaluationDeclarationBuilder builder )
+    {
+        Duration earliestDuration = MessageFactory.DURATION_MIN;
+        Duration latestDuration = MessageFactory.DURATION_MAX;
+
+        if ( Objects.nonNull( builder.leadTimes() ) )
+        {
+            if ( Objects.nonNull( builder.leadTimes()
+                                         .minimum() ) )
+            {
+                earliestDuration = builder.leadTimes()
+                                          .minimum();
+            }
+            if ( Objects.nonNull( builder.leadTimes()
+                                         .maximum() ) )
+            {
+                latestDuration = builder.leadTimes()
+                                        .maximum();
+            }
+        }
+
+        com.google.protobuf.Duration earliestProtoDuration = MessageFactory.getDuration( earliestDuration );
+        com.google.protobuf.Duration latestProtoDuration = MessageFactory.getDuration( latestDuration );
+
+        return Pair.of( earliestProtoDuration, latestProtoDuration );
+    }
+
+    /**
+     * @param builder the declaration builder
+     * @return the valid time interval
+     */
+
+    private static Pair<Timestamp, Timestamp> getValidTimeInterval( EvaluationDeclarationBuilder builder )
+    {
+        Instant earliestValid = Instant.MIN;
+        Instant latestValid = Instant.MAX;
+        if ( Objects.nonNull( builder.validDates() ) )
+        {
+            if ( Objects.nonNull( builder.validDates()
+                                         .minimum() ) )
+            {
+                earliestValid = builder.validDates()
+                                       .minimum();
+            }
+            if ( Objects.nonNull( builder.validDates()
+                                         .maximum() ) )
+            {
+                latestValid = builder.validDates()
+                                     .maximum();
+            }
+        }
+
+        Timestamp earliestValidProto = MessageFactory.getTimestamp( earliestValid );
+        Timestamp latestValidProto = MessageFactory.getTimestamp( latestValid );
+
+        return Pair.of( earliestValidProto, latestValidProto );
+    }
+
+
+    /**
+     * @param builder the declaration builder
+     * @return the reference time interval
+     */
+
+    private static Pair<Timestamp, Timestamp> getReferenceTimeInterval( EvaluationDeclarationBuilder builder )
+    {
+        Instant earliestReference = Instant.MIN;
+        Instant latestReference = Instant.MAX;
+        if ( Objects.nonNull( builder.referenceDates() ) )
+        {
+            if ( Objects.nonNull( builder.referenceDates()
+                                         .minimum() ) )
+            {
+                earliestReference = builder.referenceDates()
+                                           .minimum();
+            }
+            if ( Objects.nonNull( builder.referenceDates()
+                                         .maximum() ) )
+            {
+                latestReference = builder.referenceDates()
+                                         .maximum();
+            }
+        }
+
+        Timestamp earliestReferenceProto = MessageFactory.getTimestamp( earliestReference );
+        Timestamp latestReferenceProto = MessageFactory.getTimestamp( latestReference );
+
+        return Pair.of( earliestReferenceProto, latestReferenceProto );
     }
 
     /**

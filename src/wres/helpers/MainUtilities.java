@@ -59,8 +59,8 @@ public final class MainUtilities
      * @param operation the operation
      * @return a result that may contain the operation
      */
-    private static Optional<Entry<WresFunction, Function<Functions.SharedResources, ExecutionResult>>> getOperation(
-            String operation )
+    private static Optional<Entry<WresFunction, Function<Functions.SharedResources, ExecutionResult>>>
+    getOperation( String operation )
     {
         Objects.requireNonNull( operation );
         String finalOperation = operation.toLowerCase();

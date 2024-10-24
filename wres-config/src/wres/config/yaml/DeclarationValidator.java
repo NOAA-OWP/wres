@@ -2194,6 +2194,40 @@ public class DeclarationValidator
                                                           declaration.leadTimes() );
         events.addAll( leadTimePools );
 
+        // Add a warning if a pool sequence is combined with explicitly generated pools
+        Set<String> generated = new TreeSet<>();
+        if ( Objects.nonNull( declaration.validDatePools() ) )
+        {
+            generated.add( "'valid_date_pools'" );
+        }
+        if ( Objects.nonNull( declaration.referenceDatePools() ) )
+        {
+            generated.add( "'reference_date_pools'" );
+        }
+        if ( Objects.nonNull( declaration.leadTimePools() ) )
+        {
+            generated.add( "'lead_time_pools'" );
+        }
+
+        if ( !declaration.timeWindows()
+                         .isEmpty()
+             && !generated.isEmpty() )
+        {
+            EvaluationStatusEvent warning
+                    = EvaluationStatusEvent.newBuilder()
+                                           .setStatusLevel( StatusLevel.WARN )
+                                           .setEventMessage( "The declaration contained both an explicit list of "
+                                                             + "'time_pools' and an implicitly declared sequence of "
+                                                             + "pools: "
+                                                             + generated
+                                                             + ". This is allowed, and the "
+                                                             + "resulting pools from all sources will be added "
+                                                             + "together. If this was not intended, please adjust "
+                                                             + "your declaration." )
+                                           .build();
+            events.add( warning );
+        }
+
         return Collections.unmodifiableList( events );
     }
 
