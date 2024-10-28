@@ -47,6 +47,7 @@ public class BootstrapUtilities
      * @param <R> the type of right-ish time-series data
      * @param pool the pool
      * @return the optimal block size for the stationary bootstrap in timestep units, together with the timestep
+     * @throws InsufficientDataForResamplingException if there is insufficient data to calculate the optimal block size
      */
     public static <R> Pair<Long, Duration> getOptimalBlockSizeForStationaryBootstrap( Pool<TimeSeries<Pair<Double, R>>> pool )
     {
@@ -110,7 +111,7 @@ public class BootstrapUtilities
 
     /**
      * Determines whether sufficient data is available for bootstrap resampling. There must be more than one event
-     * across time time-series present.
+     * across the consolidated time-series present.
      * @param <T> the type of time-series data
      * @param data the time-series data
      * @return whether there is sufficient data for the stationary bootstrap
@@ -120,10 +121,13 @@ public class BootstrapUtilities
     {
         Objects.requireNonNull( data );
 
+        // Consolidate the time-series by event datetime and count the number of events
         long eventCount = data.stream()
-                              .mapToLong( t -> t.getEvents()
-                                                .size() )
-                              .sum();
+                              .flatMap( t -> t.getEvents()
+                                              .stream()
+                                              .map( Event::getTime ) )
+                              .distinct()
+                              .count();
 
         if ( LOGGER.isDebugEnabled() )
         {
@@ -413,6 +417,7 @@ public class BootstrapUtilities
      * @param <T> the type of time-series data
      * @param pool the pool
      * @return the optimal block size for the stationary bootstrap
+     * @throws InsufficientDataForResamplingException if there are fewer than two events across the consolidated series
      */
     private static <T> Pair<Long, Duration> getOptimalBlockSizeForStationaryBootstrap( List<TimeSeries<Pair<Double, T>>> pool )
     {

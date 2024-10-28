@@ -26,7 +26,7 @@ import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
 
 /**
  * Tests the {@link TimeSeries}
- * 
+ *
  * @author James Brown
  */
 
@@ -79,10 +79,10 @@ public class TimeSeriesTest
                                        FEATURE_NAME,
                                        UNIT );
         this.testSeries = builder.setMetadata( metadata )
-                            .addEvent( iterator.next() )
-                            .addEvent( iterator.next() )
-                            .addEvent( iterator.next() )
-                            .build();
+                                 .addEvent( iterator.next() )
+                                 .addEvent( iterator.next() )
+                                 .addEvent( iterator.next() )
+                                 .build();
     }
 
     /**
@@ -146,7 +146,7 @@ public class TimeSeriesTest
     @Test
     public void testEquals()
     {
-        // Reflexive 
+        // Reflexive
         assertEquals( this.testSeries, this.testSeries );
 
         // Symmetric
