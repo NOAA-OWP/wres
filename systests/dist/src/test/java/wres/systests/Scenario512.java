@@ -27,7 +27,7 @@ public class Scenario512
      */
 
     private static final Set<Path> EXPECTED_FILE_NAMES =
-            Set.of( Path.of( "10800_SECONDS.nc" ),
+            Set.of( Path.of( "0-10800_SECONDS.nc" ),
                     Path.of( "evaluation.csv.gz" ),
                     Path.of( "evaluation.csvt" ),
                     Path.of( "pairs.csv.gz" ),

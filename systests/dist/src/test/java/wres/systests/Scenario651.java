@@ -73,15 +73,15 @@ public class Scenario651
                     Path.of( "124.768875W_50.54845N_NWM_Short_Range_PEARSON_CORRELATION_COEFFICIENT.csv" ),
                     Path.of( "124.768875W_50.54845N_NWM_Short_Range_SAMPLE_SIZE.csv" ),
                     Path.of( "pairs.csv.gz" ),
-                    Path.of( "NWM_Short_Range_14400_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_50400_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_21600_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_57600_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_28800_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_64800_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_36000_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_7200_SECONDS.nc" ),
-                    Path.of( "NWM_Short_Range_43200_SECONDS.nc" ) );
+                    Path.of( "NWM_Short_Range_14400-14400_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_50400-50400_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_21600-21600_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_57600-57600_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_28800-28800_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_64800-64800_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_36000-36000_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_7200-7200_SECONDS.nc" ),
+                    Path.of( "NWM_Short_Range_43200-43200_SECONDS.nc" ) );
     
     private ScenarioInformation scenarioInfo;
     
