@@ -735,7 +735,8 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
         // Add latest valid time identifier (good enough for an ordered sequence of pools, not for arbitrary pools)
         // For backwards compatibility of file names, only qualify when valid dates pooling windows are supplied
         if ( Objects.nonNull( declaration.validDatePools() )
-             && !timeWindow.getLatestValidTime().equals( Instant.MAX ) )
+             && !timeWindow.getLatestValidTime()
+                           .equals( Instant.MAX ) )
         {
             String lastTime = timeWindow.getLatestValidTime().toString();
             lastTime = lastTime.replace( "-", "" )
@@ -745,11 +746,21 @@ public class NetcdfOutputWriter implements NetcdfWriter<DoubleScoreStatisticOute
             filename.add( lastTime );
         }
 
-        // Format the duration with the default format
-        Number numericDuration = DataUtilities.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
-                                                                       leadUnits );
-        filename.add( numericDuration.toString() );
-        filename.add( leadUnits.name().toUpperCase() );
+        // Add the earliest lead duration as a qualifier: see GitHub issue #245
+        // Format the latest lead duration with the default format
+        Number numericDurationLower = DataUtilities.durationToNumericUnits( timeWindow.getEarliestLeadDuration(),
+                                                                            leadUnits );
+
+        // Format the latest lead duration with the default format
+        Number numericDurationUpper = DataUtilities.durationToNumericUnits( timeWindow.getLatestLeadDuration(),
+                                                                            leadUnits );
+        String leadDurationQualifier = numericDurationLower
+                                       + "-"
+                                       + numericDurationUpper;
+
+        filename.add( leadDurationQualifier );
+        filename.add( leadUnits.name()
+                               .toUpperCase() );
 
         String extension = "";
         Outputs outputs = declaration.formats()
