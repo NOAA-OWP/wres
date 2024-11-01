@@ -1672,6 +1672,74 @@ class DeclarationInterpolatorTest
         assertEquals( expected, actual );
     }
 
+    @Test
+    void testInterpolateMetricThresholdsWithAllDataOverride()
+    {
+        Metric metric = new Metric( MetricConstants.MEAN_ABSOLUTE_ERROR, MetricParametersBuilder.builder()
+                                                                                                .build() );
+
+        Metric anotherMetric =
+                new Metric( MetricConstants.MEAN_ERROR,
+                            MetricParametersBuilder.builder()
+                                                   .thresholds( Set.of( DeclarationUtilities.ALL_DATA_THRESHOLD ) )
+                                                   .build() );
+
+        Threshold one = Threshold.newBuilder()
+                                 .setLeftThresholdValue( 0.1 )
+                                 .setOperator( Threshold.ThresholdOperator.GREATER )
+                                 .build();
+        wres.config.yaml.components.Threshold oneWrapped =
+                ThresholdBuilder.builder()
+                                .threshold( one )
+                                .type( ThresholdType.PROBABILITY )
+                                .build();
+
+        // Preserve insertion order
+        Set<wres.config.yaml.components.Threshold> thresholds = Set.of( oneWrapped );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .probabilityThresholds( thresholds )
+                                                                        .metrics( Set.of( metric, anotherMetric ) )
+                                                                        .build();
+
+        VariableNames variableNames = new VariableNames( null,
+                                                         null,
+                                                         null,
+                                                         null );
+        DataTypes dataTypes = new DataTypes( null, null, null, null );
+        TimeScale timeScale = TimeScale.newBuilder()
+                                       .setPeriod( com.google.protobuf.Duration.newBuilder().setSeconds( 64 ) )
+                                       .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                       .build();
+
+        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( declaration,
+                                                                                  dataTypes,
+                                                                                  variableNames,
+                                                                                  "foo",
+                                                                                  timeScale,
+                                                                                  false );
+
+        Metric expectedOne =
+                new Metric( MetricConstants.MEAN_ERROR,
+                            MetricParametersBuilder.builder()
+                                                   .thresholds( Set.of( DeclarationUtilities.ALL_DATA_THRESHOLD ) )
+                                                   .build() );
+
+        Metric expectedTwo =
+                new Metric( MetricConstants.MEAN_ABSOLUTE_ERROR,
+                            MetricParametersBuilder.builder()
+                                                   .thresholds( Set.of( DeclarationUtilities.GENERATED_ALL_DATA_THRESHOLD ) )
+                                                   .probabilityThresholds( thresholds )
+                                                   .build() );
+
+        Set<Metric> expected = Set.of( expectedOne, expectedTwo );
+        Set<Metric> actual = interpolated.metrics();
+
+        assertEquals( expected, actual );
+    }
+
     // The testDeserializeAndInterpolate* tests are integration tests of deserialization plus interpolation
 
     @Test
