@@ -24,6 +24,7 @@ import wres.config.yaml.deserializers.SummaryStatisticsDeserializer;
 import wres.config.yaml.deserializers.ThresholdSetsDeserializer;
 import wres.config.yaml.deserializers.ThresholdSourcesDeserializer;
 import wres.config.yaml.deserializers.ThresholdsDeserializer;
+import wres.config.yaml.deserializers.TimeWindowDeserializer;
 import wres.config.yaml.serializers.ChronoUnitSerializer;
 import wres.config.yaml.serializers.CrossPairSerializer;
 import wres.config.yaml.serializers.DecimalFormatSerializer;
@@ -34,6 +35,7 @@ import wres.config.yaml.serializers.ThresholdSetsSerializer;
 import wres.config.yaml.serializers.ThresholdsSerializer;
 import wres.statistics.generated.Pool;
 import wres.statistics.generated.SummaryStatistic;
+import wres.statistics.generated.TimeWindow;
 
 /**
  * Root class for an evaluation declaration.
@@ -81,13 +83,15 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonProperty( "observed" ) Dataset left,
                                      @JsonProperty( "predicted" ) Dataset right,
                                      @JsonProperty( "baseline" ) BaselineDataset baseline,
-                                     @JsonProperty( "covariates") List<CovariateDataset> covariates,
+                                     @JsonProperty( "covariates" ) List<CovariateDataset> covariates,
                                      @JsonProperty( "features" ) Features features,
                                      @JsonProperty( "feature_groups" ) FeatureGroups featureGroups,
                                      @JsonProperty( "feature_service" ) FeatureService featureService,
                                      @JsonProperty( "spatial_mask" ) SpatialMask spatialMask,
                                      @JsonProperty( "unit" ) String unit,
                                      @JsonProperty( "unit_aliases" ) Set<UnitAlias> unitAliases,
+                                     @JsonDeserialize( using = TimeWindowDeserializer.class )
+                                     @JsonProperty( "time_pools" ) Set<TimeWindow> timeWindows,
                                      @JsonProperty( "reference_dates" ) TimeInterval referenceDates,
                                      @JsonProperty( "reference_date_pools" ) TimePools referenceDatePools,
                                      @JsonProperty( "valid_dates" ) TimeInterval validDates,
@@ -195,6 +199,11 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
             unitAliases = this.emptyOrUnmodifiableSet( unitAliases, "unit aliases" );
         }
 
+        if ( Objects.isNull( timeWindows ) )
+        {
+            timeWindows = this.emptyOrUnmodifiableSet( timeWindows, "time pools" );
+        }
+
         if ( Objects.isNull( rescaleLenience ) )
         {
             rescaleLenience = TimeScaleLenience.NONE;
@@ -240,7 +249,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
             minimumSampleSize = 0;
         }
 
-        if( Objects.isNull( covariates ) )
+        if ( Objects.isNull( covariates ) )
         {
             covariates = List.of();
         }

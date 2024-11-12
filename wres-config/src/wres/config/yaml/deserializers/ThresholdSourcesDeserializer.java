@@ -80,10 +80,9 @@ public class ThresholdSourcesDeserializer extends JsonDeserializer<Set<Threshold
      * Creates a threshold source from a plain URI node.
      * @param plainNode the plain node
      * @return the threshold source
-     * @throws IOException if the source could not be read for any reason
      */
 
-    private ThresholdSource getPlainSource( TextNode plainNode ) throws IOException
+    private ThresholdSource getPlainSource( TextNode plainNode )
     {
         String uriString = plainNode.textValue();
         LOGGER.debug( "Encountered a simple threshold source containing a URI: {}", uriString );

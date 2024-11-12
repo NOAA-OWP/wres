@@ -3,6 +3,7 @@ package wres.config.yaml;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,6 +42,7 @@ import wres.config.yaml.components.FeatureGroupsBuilder;
 import wres.config.yaml.components.Features;
 import wres.config.yaml.components.FeaturesBuilder;
 import wres.config.yaml.components.Formats;
+import wres.config.yaml.components.LeadTimeInterval;
 import wres.config.yaml.components.LeadTimeIntervalBuilder;
 import wres.config.yaml.components.Metric;
 import wres.config.yaml.components.MetricBuilder;
@@ -53,7 +55,9 @@ import wres.config.yaml.components.ThresholdBuilder;
 import wres.config.yaml.components.ThresholdSource;
 import wres.config.yaml.components.ThresholdSourceBuilder;
 import wres.config.yaml.components.ThresholdType;
+import wres.config.yaml.components.TimeInterval;
 import wres.config.yaml.components.VariableBuilder;
+import wres.statistics.MessageFactory;
 import wres.statistics.generated.Geometry;
 import wres.statistics.generated.GeometryGroup;
 import wres.statistics.generated.GeometryTuple;
@@ -62,6 +66,7 @@ import wres.statistics.generated.Pool;
 import wres.statistics.generated.SummaryStatistic;
 import wres.statistics.generated.Threshold;
 import wres.statistics.generated.TimeScale;
+import wres.statistics.generated.TimeWindow;
 
 /**
  * Tests the {@link DeclarationFactory}.
@@ -1604,6 +1609,135 @@ class DeclarationInterpolatorTest
                                                                          false ) );
         assertTrue( actualException.getMessage()
                                    .contains( "The declared evaluation timescale" ) );
+    }
+
+    @Test
+    void testInterpolateMissingTimeWindowComponents()
+    {
+        Instant validWindowOne = Instant.parse( "2551-03-17T00:00:00Z" );
+        Instant validWindowTwo = Instant.parse( "2551-03-20T00:00:00Z" );
+
+        Duration durationOne = Duration.ofHours( 7 );
+        Duration durationTwo = Duration.ofHours( 12 );
+
+        TimeWindow one = TimeWindow.newBuilder()
+                                   .setEarliestValidTime( MessageFactory.getTimestamp( validWindowOne ) )
+                                   .setLatestValidTime( MessageFactory.getTimestamp( validWindowTwo ) )
+                                   .build();
+
+        TimeWindow two = TimeWindow.newBuilder()
+                                   .setEarliestLeadDuration( MessageFactory.getDuration( durationOne ) )
+                                   .setLatestLeadDuration( MessageFactory.getDuration( durationTwo ) )
+                                   .build();
+
+        Set<TimeWindow> timeWindows = Set.of( one, two );
+
+        Instant validOne = Instant.parse( "2033-12-01T09:15:23Z" );
+        Instant validTwo = Instant.parse( "2083-12-01T09:15:23Z" );
+
+        EvaluationDeclaration declaration =
+                EvaluationDeclarationBuilder.builder()
+                                            .left( this.observedDataset )
+                                            .right( this.predictedDataset )
+                                            .leadTimes( new LeadTimeInterval( Duration.ofHours( 1 ),
+                                                                              Duration.ofHours( 100 ) ) )
+                                            .validDates( new TimeInterval( validOne, validTwo ) )
+                                            .timeWindows( timeWindows )
+                                            .build();
+
+        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( declaration, false );
+
+        Set<TimeWindow> actual = interpolated.timeWindows();
+
+        TimeWindow expectedOne = TimeWindow.newBuilder()
+                                           .setEarliestValidTime( MessageFactory.getTimestamp( validWindowOne ) )
+                                           .setLatestValidTime( MessageFactory.getTimestamp( validWindowTwo ) )
+                                           .setEarliestReferenceTime( MessageFactory.getTimestamp( Instant.MIN ) )
+                                           .setLatestReferenceTime( MessageFactory.getTimestamp( Instant.MAX ) )
+                                           .setEarliestLeadDuration( MessageFactory.getDuration( Duration.ofHours( 1 ) ) )
+                                           .setLatestLeadDuration( MessageFactory.getDuration( Duration.ofHours( 100 ) ) )
+                                           .build();
+
+        TimeWindow expectedTwo = TimeWindow.newBuilder()
+                                           .setEarliestValidTime( MessageFactory.getTimestamp( validOne ) )
+                                           .setLatestValidTime( MessageFactory.getTimestamp( validTwo ) )
+                                           .setEarliestReferenceTime( MessageFactory.getTimestamp( Instant.MIN ) )
+                                           .setLatestReferenceTime( MessageFactory.getTimestamp( Instant.MAX ) )
+                                           .setEarliestLeadDuration( MessageFactory.getDuration( durationOne ) )
+                                           .setLatestLeadDuration( MessageFactory.getDuration( durationTwo ) )
+                                           .build();
+
+        Set<TimeWindow> expected = Set.of( expectedOne, expectedTwo );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testInterpolateMetricThresholdsWithAllDataOverride()
+    {
+        Metric metric = new Metric( MetricConstants.MEAN_ABSOLUTE_ERROR, MetricParametersBuilder.builder()
+                                                                                                .build() );
+
+        Metric anotherMetric =
+                new Metric( MetricConstants.MEAN_ERROR,
+                            MetricParametersBuilder.builder()
+                                                   .thresholds( Set.of( DeclarationUtilities.ALL_DATA_THRESHOLD ) )
+                                                   .build() );
+
+        Threshold one = Threshold.newBuilder()
+                                 .setLeftThresholdValue( 0.1 )
+                                 .setOperator( Threshold.ThresholdOperator.GREATER )
+                                 .build();
+        wres.config.yaml.components.Threshold oneWrapped =
+                ThresholdBuilder.builder()
+                                .threshold( one )
+                                .type( ThresholdType.PROBABILITY )
+                                .build();
+
+        // Preserve insertion order
+        Set<wres.config.yaml.components.Threshold> thresholds = Set.of( oneWrapped );
+
+        EvaluationDeclaration declaration = EvaluationDeclarationBuilder.builder()
+                                                                        .left( this.observedDataset )
+                                                                        .right( this.predictedDataset )
+                                                                        .probabilityThresholds( thresholds )
+                                                                        .metrics( Set.of( metric, anotherMetric ) )
+                                                                        .build();
+
+        VariableNames variableNames = new VariableNames( null,
+                                                         null,
+                                                         null,
+                                                         null );
+        DataTypes dataTypes = new DataTypes( null, null, null, null );
+        TimeScale timeScale = TimeScale.newBuilder()
+                                       .setPeriod( com.google.protobuf.Duration.newBuilder().setSeconds( 64 ) )
+                                       .setFunction( TimeScale.TimeScaleFunction.MEAN )
+                                       .build();
+
+        EvaluationDeclaration interpolated = DeclarationInterpolator.interpolate( declaration,
+                                                                                  dataTypes,
+                                                                                  variableNames,
+                                                                                  "foo",
+                                                                                  timeScale,
+                                                                                  false );
+
+        Metric expectedOne =
+                new Metric( MetricConstants.MEAN_ERROR,
+                            MetricParametersBuilder.builder()
+                                                   .thresholds( Set.of( DeclarationUtilities.ALL_DATA_THRESHOLD ) )
+                                                   .build() );
+
+        Metric expectedTwo =
+                new Metric( MetricConstants.MEAN_ABSOLUTE_ERROR,
+                            MetricParametersBuilder.builder()
+                                                   .thresholds( Set.of( DeclarationUtilities.GENERATED_ALL_DATA_THRESHOLD ) )
+                                                   .probabilityThresholds( thresholds )
+                                                   .build() );
+
+        Set<Metric> expected = Set.of( expectedOne, expectedTwo );
+        Set<Metric> actual = interpolated.metrics();
+
+        assertEquals( expected, actual );
     }
 
     // The testDeserializeAndInterpolate* tests are integration tests of deserialization plus interpolation

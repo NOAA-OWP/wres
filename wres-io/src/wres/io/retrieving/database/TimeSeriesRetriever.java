@@ -1578,7 +1578,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         Instant upperValidTime = Instant.MAX;
 
         // Upper bound present
-        if ( !timeWindow.getLatestValidTime().equals( Instant.MAX ) )
+        if ( !timeWindow.getLatestValidTime()
+                        .equals( Instant.MAX ) )
         {
             upperValidTime = timeWindow.getLatestValidTime();
         }
@@ -1586,11 +1587,14 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         else
         {
             // Both the latest reference time and the latest lead duration available?
-            if ( !timeWindow.getLatestReferenceTime().equals( Instant.MAX )
-                 && !timeWindow.getLatestLeadDuration().equals( TimeWindowOuter.DURATION_MAX ) )
+            if ( !timeWindow.getLatestReferenceTime()
+                            .equals( Instant.MAX )
+                 && !timeWindow.getLatestLeadDuration()
+                               .equals( TimeWindowOuter.DURATION_MAX ) )
             {
                 // Use the upper reference time plus upper lead duration
-                upperValidTime = timeWindow.getLatestReferenceTime().plus( timeWindow.getLatestLeadDuration() );
+                upperValidTime = timeWindow.getLatestReferenceTime()
+                                           .plus( timeWindow.getLatestLeadDuration() );
             }
         }
 
@@ -1613,7 +1617,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         Objects.requireNonNull( filter );
 
         // Lower and upper bounds are equal
-        if ( filter.getEarliestReferenceTime().equals( filter.getLatestReferenceTime() ) )
+        if ( filter.getEarliestReferenceTime()
+                   .equals( filter.getLatestReferenceTime() ) )
         {
             OffsetDateTime referenceTime = OffsetDateTime.ofInstant( filter.getEarliestReferenceTime(),
                                                                      ZoneId.of( "UTC" ) );
@@ -1623,7 +1628,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         else
         {
             // Lower bound
-            if ( !filter.getEarliestReferenceTime().equals( Instant.MIN ) )
+            if ( !filter.getEarliestReferenceTime()
+                        .equals( Instant.MIN ) )
             {
                 OffsetDateTime lowerReferenceTime = OffsetDateTime.ofInstant( filter.getEarliestReferenceTime(),
                                                                               ZoneId.of( "UTC" ) );
@@ -1635,7 +1641,8 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
             }
 
             // Upper bound
-            if ( !filter.getLatestReferenceTime().equals( Instant.MAX ) )
+            if ( !filter.getLatestReferenceTime()
+                        .equals( Instant.MAX ) )
             {
                 OffsetDateTime upperReferenceTime = OffsetDateTime.ofInstant( filter.getLatestReferenceTime(),
                                                                               ZoneId.of( "UTC" ) );

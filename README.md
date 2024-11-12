@@ -72,5 +72,13 @@ cd build/install/wres/
 
 * Execute your project
 ```
+
 bin/wres myEvaluation.yml
 ```
+
+----
+
+## Open source licensing info
+
+1. [TERMS](TERMS.md)
+2. [LICENSE](LICENSE)
