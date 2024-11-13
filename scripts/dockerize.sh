@@ -169,7 +169,7 @@ echo "Built wres/wres-worker:$overall_version -- $worker_image_id"
 # Build and tag the tasker image which solely contains the tasker.
 echo "Building tasker image..."
 pushd wres-tasker
-tasker_image_id=$( docker build --build-arg version=$wres_tasker_version --quiet --tag wres/wres-tasker:$tasker_version . )
+tasker_image_id=$( docker build --build-arg version=$wres_tasker_version --tag wres/wres-tasker:$tasker_version . )
 popd
 
 echo "Built wres/wres-tasker:$tasker_version -- $tasker_image_id"
@@ -177,7 +177,7 @@ echo "Built wres/wres-tasker:$tasker_version -- $tasker_image_id"
 # Build and tag the broker image
 echo "Building broker image..."
 pushd wres-broker
-broker_image_id=$( docker build --pull --no-cache  --build-arg version=$broker_version --quiet --tag wres/wres-broker:$broker_version . )
+broker_image_id=$( docker build --pull --no-cache  --build-arg version=$broker_version --tag wres/wres-broker:$broker_version . )
 popd
 
 echo "Built wres/wres-broker:$broker_version -- $broker_image_id"
@@ -185,7 +185,7 @@ echo "Built wres/wres-broker:$broker_version -- $broker_image_id"
 # Build and tag the redis image
 echo "Building redis image..."
 pushd wres-redis
-redis_image_id=$( docker build --pull --no-cache --build-arg version=$redis_version --quiet --tag wres/wres-redis:$redis_version . )
+redis_image_id=$( docker build --pull --no-cache --build-arg version=$redis_version --tag wres/wres-redis:$redis_version . )
 popd
 
 echo "Built wres/wres-redis:$redis_version -- $redis_image_id"
@@ -193,7 +193,7 @@ echo "Built wres/wres-redis:$redis_version -- $redis_image_id"
 # Build and tag the eventsbroker image
 echo "Building events broker image..."
 pushd wres-eventsbroker
-eventsbroker_image_id=$( docker build --no-cache --build-arg version=$eventsbroker_version --quiet --tag wres/wres-eventsbroker:$eventsbroker_version . )
+eventsbroker_image_id=$( docker build --no-cache --build-arg version=$eventsbroker_version --tag wres/wres-eventsbroker:$eventsbroker_version . )
 popd
 
 echo "Built wres/wres-eventsbroker:$eventsbroker_version -- $eventsbroker_image_id"
@@ -201,7 +201,7 @@ echo "Built wres/wres-eventsbroker:$eventsbroker_version -- $eventsbroker_image_
 # Build and tag the graphics image
 echo "Building graphics image..."
 pushd wres-vis
-graphics_image_id=$( docker build --build-arg version=$wres_vis_version --quiet --tag wres/wres-graphics:$graphics_version . )
+graphics_image_id=$( docker build --build-arg version=$wres_vis_version --tag wres/wres-graphics:$graphics_version . )
 popd
 
 echo "Built wres/wres-graphics:$graphics_version -- $graphics_image_id"
@@ -209,7 +209,7 @@ echo "Built wres/wres-graphics:$graphics_version -- $graphics_image_id"
 # Build and tag the writing image
 echo "Building writing image..."
 pushd wres-writing
-writing_image_id=$( docker build --build-arg version=$wres_writing_version --quiet --tag wres/wres-writing:$writing_version . )
+writing_image_id=$( docker build --build-arg version=$wres_writing_version --tag wres/wres-writing:$writing_version . )
 popd
 
 echo "Built wres/wres-writing:$writing_version -- $writing_image_id"
