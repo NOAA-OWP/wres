@@ -62,7 +62,7 @@ WORKDIR ${BROKER_WORK}
 
 # Create directories with the correct permissions
 RUN mkdir -p {${BROKER_HOME},${BROKER_CONFIG},${BROKER_INSTANCE}} && \
-    chown ${BROKER_USER}: ${BROKER_INSTANCE}
+    chown ${BROKER_USER} ${BROKER_INSTANCE}
 
 COPY --from=builder /workspace/out ${BROKER_HOME}
 
