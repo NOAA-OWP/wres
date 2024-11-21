@@ -8,8 +8,6 @@ BROKER_CONFIG_PATH=$BROKER_INSTANCE/etc/
 # Properties passed to the broker and then accessible as system properties in the xml configuration files
 ARTEMIS_CLUSTER_PROPS="-Dactivemq.remoting.amqp.port=${BROKER_AMQP_PORT} -Dactivemq.remoting.http.port=${BROKER_HTTP_PORT} -Dbroker.keystore.path=${BROKER_KEYSTORE_PATH} -Dbroker.keystore.password=${BROKER_KEYSTORE_PASSWORD} -Dbroker.truststore.path=${BROKER_TRUSTSTORE_PATH} -Dbroker.truststore.password=${BROKER_TRUSTSTORE_PASSWORD} -Dhawtio.disableProxy=true -Dhawtio.realm=activemq-cert -Dhawtio.role=wres-eventsbroker-admin -Dhawtio.offline=true -Dhawtio.sessionTimeout=86400 -Dhawtio.rolePrincipalClasses=org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal"
 
-echo "HANK HERR ####>> $ARTEMIS_CLUSTER_PROPS"
-
 # Set some JVM arguments if not already set
 if [[ -z $JAVA_ARGS ]]; then
     JAVA_ARGS="-XX:+PrintClassHistogram -XX:+UseG1GC -XX:+UseStringDeduplication -Xms2048m -Xmx2048m"

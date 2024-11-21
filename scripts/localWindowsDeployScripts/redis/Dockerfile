@@ -6,7 +6,7 @@ RUN echo "wres_persister_docker:x:498:1370800073::/home/wres_persister_docker:" 
     && echo "user:!:1:0:99999:7:::" >> /etc/shadow \
     && echo "wres:x:1370800073:" >> /etc/group \
     && mkdir -p /home/wres_persister_docker \
-    && chown wres_persister_docker: /home/wres_persister_docker
+    && chown wres_persister_docker /home/wres_persister_docker
 
 COPY redis.conf /etc/redis/redis.conf
 COPY docker-healthcheck /usr/local/bin/

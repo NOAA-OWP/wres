@@ -8,7 +8,7 @@ RUN echo "wres_docker:x:498:1370800073::/home/wres_docker:" >> /etc/passwd \
     && echo "user:!:1:0:99999:7:::" >> /etc/shadow \
     && echo "wres:x:1370800073:" >> /etc/group \
     && mkdir /home/wres_docker \
-    && chown wres_docker: /home/wres_docker
+    && chown wres_docker /home/wres_docker
 
 # Enable authentication with x509 client certificates (requires some conf too):
 RUN rabbitmq-plugins enable --offline rabbitmq_auth_mechanism_ssl
