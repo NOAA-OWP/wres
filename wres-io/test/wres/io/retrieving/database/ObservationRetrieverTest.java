@@ -11,6 +11,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -163,6 +164,67 @@ public class ObservationRetrieverTest
                                                   .setVariable( VARIABLE )
                                                   .setFeatures( Set.of( FEATURE ) )
                                                   .setDatasetOrientation( ORIENTATION )
+                                                  .build();
+
+        // Get the time-series
+        Stream<TimeSeries<Double>> observedSeries = observedRetriever.get();
+
+        // Stream into a collection
+        List<TimeSeries<Double>> actualCollection = observedSeries.toList();
+
+        // There is only one time-series, so assert that
+        assertEquals( 1, actualCollection.size() );
+        TimeSeries<Double> actualSeries = actualCollection.get( 0 );
+
+        // Create the expected series
+        TimeSeriesMetadata expectedMetadata =
+                TimeSeriesMetadata.of( Collections.emptyMap(),
+                                       TimeScaleOuter.of(),
+                                       VARIABLE_NAME,
+                                       FEATURE,
+                                       UNIT );
+        TimeSeries.Builder<Double> builder = new TimeSeries.Builder<>();
+        TimeSeries<Double> expectedSeries =
+                builder.setMetadata( expectedMetadata )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T01:00:00Z" ), 30.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T02:00:00Z" ), 37.0 ) )
+                       .addEvent( Event.of( Instant.parse( FIRST_TIME ), 44.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T04:00:00Z" ), 51.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T05:00:00Z" ), 58.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T06:00:00Z" ), 65.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T07:00:00Z" ), 72.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T08:00:00Z" ), 79.0 ) )
+                       .addEvent( Event.of( Instant.parse( SECOND_TIME ), 86.0 ) )
+                       .addEvent( Event.of( Instant.parse( "2023-04-01T10:00:00Z" ), 93.0 ) )
+                       .build();
+
+        // Actual series equals expected series
+        assertEquals( expectedSeries, actualSeries );
+    }
+
+    @Test
+    public void testRetrievalOfObservedTimeSeriesReturnsTenEventsWhenValidTimeLowerBoundAdjustedByScalePeriod()
+    {
+        // GitHub issue #357
+
+        // Time window filter
+        TimeWindow timeWindowInner = MessageFactory.getTimeWindow( Instant.parse( "2023-04-01T02:00:00Z" ),
+                                                                   Instant.parse( "2023-04-01T10:00:00Z" ) );
+        TimeWindowOuter timeWindow = TimeWindowOuter.of( timeWindowInner );
+
+        TimeScaleOuter timeScale = TimeScaleOuter.of( Duration.ofHours( 2 ) );
+
+        // Build the retriever
+        Retriever<TimeSeries<Double>> observedRetriever =
+                new ObservationRetriever.Builder().setDatabase( this.wresDatabase )
+                                                  .setFeaturesCache( this.caches.getFeaturesCache() )
+                                                  .setMeasurementUnitsCache( this.caches.getMeasurementUnitsCache() )
+                                                  .setProjectId( PROJECT_ID )
+                                                  .setVariable( VARIABLE )
+                                                  .setFeatures( Set.of( FEATURE ) )
+                                                  .setDatasetOrientation( ORIENTATION )
+                                                  .setTimeWindow( timeWindow )
+                                                  .setDesiredTimeScale( timeScale )
                                                   .build();
 
         // Get the time-series

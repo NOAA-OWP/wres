@@ -559,10 +559,12 @@ class PoolSupplierTest
     void testGetReturnsPoolThatContainsSevenPairsInOneSeries()
     {
         // Pool One actual        
-        Mockito.when( this.observationRetriever.get() ).thenReturn( Stream.of( this.observations ) );
+        Mockito.when( this.observationRetriever.get() )
+               .thenReturn( Stream.of( this.observations ) );
         Supplier<Stream<TimeSeries<Double>>> obsSupplier = CachingRetriever.of( this.observationRetriever );
 
-        Mockito.when( this.forecastRetriever.get() ).thenReturn( Stream.of( this.forecastOne ) );
+        Mockito.when( this.forecastRetriever.get() )
+               .thenReturn( Stream.of( this.forecastOne ) );
 
         Supplier<Stream<TimeSeries<Double>>> forcSupplierOne = this.forecastRetriever;
 
