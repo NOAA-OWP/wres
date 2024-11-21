@@ -552,6 +552,8 @@ public class ChartFactory
         format.setTimeZone( timeZone );
         dateAxis.setDateFormatOverride( format );
 
+        dateAxis.setTimeZone(timeZone);
+
         XYPlot plot = chart.getXYPlot();
 
         chart.setAntiAlias( true );
@@ -998,6 +1000,8 @@ public class ChartFactory
             SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd+HH" );
             format.setTimeZone( timeZone );
             dateAxis.setDateFormatOverride( format );
+
+            dateAxis.setTimeZone(timeZone);
         }
         else
         {
