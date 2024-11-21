@@ -381,7 +381,9 @@ public final class TimeSeriesSlicer
         builder.setMetadata( metadata );
 
         // Some reference times existed and none were within the filter bounds?
-        if ( !input.getReferenceTimes().isEmpty() && notConsideredOrWithinBounds.isEmpty() )
+        if ( !input.getReferenceTimes()
+                   .isEmpty()
+             && notConsideredOrWithinBounds.isEmpty() )
         {
             return builder.build();
         }
