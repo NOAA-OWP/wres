@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.StringJoiner;
+import java.util.TimeZone;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -380,8 +381,8 @@ public class ChartFactory
             // The reliability diagram is a special case, combining two plots
             if ( metricName == MetricConstants.RELIABILITY_DIAGRAM )
             {
-                // Do NOT set the chart theme for the combined plot because it returns the series renderer to default. 
-                // This is probably a bug in JFreeChart, since the behavior is not seen for other chart types. Instead, 
+                // Do NOT set the chart theme for the combined plot because it returns the series renderer to default.
+                // This is probably a bug in JFreeChart, since the behavior is not seen for other chart types. Instead,
                 // set the chart theme components manually for the reliability diagram
                 chart = this.getReliabilityDiagram( title,
                                                     slicedStatistics,
@@ -478,7 +479,7 @@ public class ChartFactory
     /**
      * Creates a chart for one diagram that plots timing error statistics.
      *
-     * @param statistics the metric output to plot 
+     * @param statistics the metric output to plot
      * @param durationUnits the duration units
      * @return a {@link JFreeChart} instance
      * @throws NullPointerException if any input is null
@@ -546,7 +547,10 @@ public class ChartFactory
         // Set the date/time format
         DateAxis dateAxis = ( DateAxis ) chart.getXYPlot()
                                               .getDomainAxis();
-        dateAxis.setDateFormatOverride( new SimpleDateFormat( "yyyy-MM-dd+HH" ) );
+        TimeZone timeZone = TimeZone.getTimeZone( "UTC" );
+        SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd+HH" );
+        format.setTimeZone( timeZone );
+        dateAxis.setDateFormatOverride( format );
 
         XYPlot plot = chart.getXYPlot();
 
@@ -648,7 +652,7 @@ public class ChartFactory
                                                                            false,
                                                                            false );
 
-        // To quote the documentation, this setting "usually" improve the appearance of charts. However, experimentation 
+        // To quote the documentation, this setting "usually" improve the appearance of charts. However, experimentation
         // indicates that it reduces the quality of the box plots
         chart.setAntiAlias( false );
 
@@ -839,7 +843,7 @@ public class ChartFactory
                                                                            false,
                                                                            false );
 
-        // To quote the documentation, this setting "usually" improve the appearance of charts. However, experimentation 
+        // To quote the documentation, this setting "usually" improve the appearance of charts. However, experimentation
         // indicates that it reduces the quality of the box plots
         chart.setAntiAlias( false );
 
@@ -859,7 +863,7 @@ public class ChartFactory
      * Creates a chart for one score component.
      *
      * @param metricName the metric name
-     * @param statistics the metric output to plot 
+     * @param statistics the metric output to plot
      * @param graphicShape the shape of the graphic to plot
      * @param durationUnits the duration units
      * @return a {@link JFreeChart} instance
@@ -990,7 +994,10 @@ public class ChartFactory
             // Set the date/time format
             DateAxis dateAxis = ( DateAxis ) chart.getXYPlot()
                                                   .getDomainAxis();
-            dateAxis.setDateFormatOverride( new SimpleDateFormat( "yyyy-MM-dd+HH" ) );
+            TimeZone timeZone = TimeZone.getTimeZone( "UTC" );
+            SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd+HH" );
+            format.setTimeZone( timeZone );
+            dateAxis.setDateFormatOverride( format );
         }
         else
         {
