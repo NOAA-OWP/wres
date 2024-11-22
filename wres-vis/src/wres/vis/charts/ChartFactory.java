@@ -544,15 +544,14 @@ public class ChartFactory
                                                                                false,
                                                                                false );
 
-        // Set the date/time format
+        // Set the date/time format. See GitHub ticket #360
         DateAxis dateAxis = ( DateAxis ) chart.getXYPlot()
                                               .getDomainAxis();
         TimeZone timeZone = TimeZone.getTimeZone( "UTC" );
         SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd+HH" );
         format.setTimeZone( timeZone );
         dateAxis.setDateFormatOverride( format );
-
-        dateAxis.setTimeZone(timeZone);
+        dateAxis.setTimeZone( timeZone );
 
         XYPlot plot = chart.getXYPlot();
 
@@ -993,15 +992,14 @@ public class ChartFactory
                                                                         true,
                                                                         false,
                                                                         false );
-            // Set the date/time format
+            // Set the date/time format. See GitHub ticket #360
             DateAxis dateAxis = ( DateAxis ) chart.getXYPlot()
                                                   .getDomainAxis();
             TimeZone timeZone = TimeZone.getTimeZone( "UTC" );
             SimpleDateFormat format = new SimpleDateFormat( "yyyy-MM-dd+HH" );
             format.setTimeZone( timeZone );
             dateAxis.setDateFormatOverride( format );
-
-            dateAxis.setTimeZone(timeZone);
+            dateAxis.setTimeZone( timeZone );
         }
         else
         {
