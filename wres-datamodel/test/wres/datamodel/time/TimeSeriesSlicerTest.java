@@ -1472,12 +1472,12 @@ final class TimeSeriesSlicerTest
         TimeScaleOuter timeScaleOuter = TimeScaleOuter.of( timeScale );
         TimeWindowOuter timeWindowOuter = TimeWindowOuter.of( timeWindow );
 
-        TimeWindowOuter actual = TimeSeriesSlicer.adjustByTimeScalePeriod( timeWindowOuter, timeScaleOuter );
+        TimeWindowOuter actual = TimeSeriesSlicer.adjustTimeWindowForTimeScale( timeWindowOuter, timeScaleOuter );
         assertEquals( timeWindowOuter, actual );
     }
 
     @Test
-    void testAdjustByTimeScalePeriod()
+    void testAdjustTimeWindowEarliestLeadDurationForTimeScale()
     {
         TimeWindow timeWindow = MessageFactory.getTimeWindow( Duration.ofHours( 1 ),
                                                               Duration.ofHours( 2 ) );
@@ -1488,9 +1488,31 @@ final class TimeSeriesSlicerTest
         TimeScaleOuter timeScaleOuter = TimeScaleOuter.of( timeScale );
         TimeWindowOuter timeWindowOuter = TimeWindowOuter.of( timeWindow );
 
-        TimeWindowOuter actual = TimeSeriesSlicer.adjustByTimeScalePeriod( timeWindowOuter, timeScaleOuter );
+        TimeWindowOuter actual = TimeSeriesSlicer.adjustTimeWindowForTimeScale( timeWindowOuter, timeScaleOuter );
         TimeWindow expectedInner = MessageFactory.getTimeWindow( Duration.ofMinutes( 30 ),
                                                                  Duration.ofHours( 2 ) );
+        TimeWindowOuter expected = TimeWindowOuter.of( expectedInner );
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testAdjustTimeWindowEarliestValidTimeForTimeScale()
+    {
+        Instant earliest = Instant.parse( "2055-03-23T00:00:00Z" );
+        Instant latest = Instant.parse( "2055-03-24T00:00:00Z" );
+
+        TimeWindow timeWindow = MessageFactory.getTimeWindow( earliest, latest );
+        TimeScale timeScale = TimeScale.newBuilder()
+                                       .setPeriod( com.google.protobuf.Duration.newBuilder()
+                                                                               .setSeconds( 86400 ) )
+                                       .build();
+        TimeScaleOuter timeScaleOuter = TimeScaleOuter.of( timeScale );
+        TimeWindowOuter timeWindowOuter = TimeWindowOuter.of( timeWindow );
+
+        TimeWindowOuter actual = TimeSeriesSlicer.adjustTimeWindowForTimeScale( timeWindowOuter, timeScaleOuter );
+        TimeWindow expectedInner = MessageFactory.getTimeWindow( Instant.parse( "2055-03-22T00:00:00Z" ),
+                                                                 latest );
         TimeWindowOuter expected = TimeWindowOuter.of( expectedInner );
 
         assertEquals( expected, actual );

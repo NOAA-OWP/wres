@@ -1616,58 +1616,81 @@ public final class TimeSeriesSlicer
     }
 
     /**
-     * Adjusts the earliest lead duration of the time window to account for the period associated with the desired time 
-     * scale in order to capture sufficient data for rescaling. If the time scale is instantaneous, no adjustment is
-     * made.
+     * Subtracts any non-instantaneous desired timescale from the earliest lead duration and the earliest valid time to
+     * ensure that sufficient data is retrieved for upscaling.
      *
-     * @param timeWindow the time window to adjust, required
-     * @param desiredTimeScale the desired time scale, lenient if null (returns the input time window)
+     * @param timeWindow the time window to adjust
+     * @param timeScale the timescale to use
      * @return the adjusted time window
      */
 
-    public static TimeWindowOuter adjustByTimeScalePeriod( TimeWindowOuter timeWindow, TimeScaleOuter desiredTimeScale )
+    public static TimeWindowOuter adjustTimeWindowForTimeScale( TimeWindowOuter timeWindow,
+                                                                TimeScaleOuter timeScale )
     {
-        Objects.requireNonNull( timeWindow );
+        TimeWindow.Builder adjusted = timeWindow.getTimeWindow()
+                                                .toBuilder();
 
-        if ( Objects.nonNull( desiredTimeScale ) && desiredTimeScale.isInstantaneous() )
+        // Earliest lead duration
+        if ( !timeWindow.getEarliestLeadDuration()
+                        .equals( TimeWindowOuter.DURATION_MIN ) )
         {
-            LOGGER.debug( "Not adjusting the time window of {} with the time scale because the time scale is "
-                          + "instantaneous.", timeWindow );
-            return timeWindow;
-        }
+            Duration period = Duration.ZERO;
 
-        TimeWindowOuter adjustedWindow = timeWindow;
-        if ( !timeWindow.getEarliestLeadDuration().equals( TimeWindowOuter.DURATION_MIN )
-             && Objects.nonNull( desiredTimeScale ) )
-        {
-            Duration period = TimeScaleOuter.getOrInferPeriodFromTimeScale( desiredTimeScale );
-            Duration lowerD = timeWindow.getEarliestLeadDuration()
-                                        .minus( period );
-            com.google.protobuf.Duration lower =
-                    com.google.protobuf.Duration.newBuilder()
-                                                .setSeconds( lowerD.getSeconds() )
-                                                .setNanos( lowerD.getNano() )
-                                                .build();
-
-            TimeWindow inner = timeWindow.getTimeWindow()
-                                         .toBuilder()
-                                         .setEarliestLeadDuration( lower )
-                                         .build();
-
-            adjustedWindow = TimeWindowOuter.of( inner );
-
-            if ( LOGGER.isDebugEnabled() )
+            // Adjust the lower bound of the lead duration window by the non-instantaneous desired timescale
+            if ( Objects.nonNull( timeScale )
+                 && !timeScale.isInstantaneous() )
             {
-                LOGGER.debug(
-                        "Adjusted the earliest lead duration of {} by {} to {}, in order to select sufficient data "
-                        + "for rescaling.",
-                        timeWindow,
-                        desiredTimeScale.getPeriod(),
-                        adjustedWindow );
+                period = TimeScaleOuter.getOrInferPeriodFromTimeScale( timeScale );
             }
+
+            Duration lowered = timeWindow.getEarliestLeadDuration()
+                                         .minus( period );
+
+            if ( Objects.nonNull( timeScale )
+                 && LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Adjusting the lower lead duration of time window {} from {} to {} "
+                              + "in order to acquire data at the desired timescale of {}.",
+                              timeWindow,
+                              timeWindow.getEarliestLeadDuration(),
+                              lowered,
+                              timeScale );
+            }
+
+            adjusted.setEarliestLeadDuration( MessageFactory.getDuration( lowered ) );
         }
 
-        return adjustedWindow;
+        // Earliest valid time
+        if ( !timeWindow.getEarliestValidTime()
+                        .equals( Instant.MIN ) )
+        {
+            Duration period = Duration.ZERO;
+
+            // Adjust the lower bound of the lead duration window by the non-instantaneous desired timescale
+            if ( Objects.nonNull( timeScale )
+                 && !timeScale.isInstantaneous() )
+            {
+                period = TimeScaleOuter.getOrInferPeriodFromTimeScale( timeScale );
+            }
+
+            Instant lowered = timeWindow.getEarliestValidTime()
+                                        .minus( period );
+
+            if ( Objects.nonNull( timeScale )
+                 && LOGGER.isDebugEnabled() )
+            {
+                LOGGER.debug( "Adjusting the lower valid datetime of time window {} from {} to {} "
+                              + "in order to acquire data at the desired timescale of {}.",
+                              timeWindow,
+                              timeWindow.getEarliestValidTime(),
+                              lowered,
+                              timeScale );
+            }
+
+            adjusted.setEarliestValidTime( MessageFactory.getTimestamp( lowered ) );
+        }
+
+        return TimeWindowOuter.of( adjusted.build() );
     }
 
     /**

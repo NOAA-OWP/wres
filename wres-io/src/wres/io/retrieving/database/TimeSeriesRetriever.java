@@ -38,6 +38,7 @@ import wres.datamodel.time.Event;
 
 import wres.datamodel.time.TimeSeries;
 import wres.datamodel.time.TimeSeriesMetadata;
+import wres.datamodel.time.TimeSeriesSlicer;
 import wres.datamodel.time.TimeWindowOuter;
 import wres.datamodel.DataProvider;
 import wres.io.database.caching.Features;
@@ -46,10 +47,8 @@ import wres.io.database.DataScripter;
 import wres.io.database.Database;
 import wres.io.retrieving.Retriever;
 import wres.io.retrieving.DataAccessException;
-import wres.statistics.MessageFactory;
 import wres.statistics.generated.TimeScale.TimeScaleFunction;
 import wres.statistics.generated.ReferenceTime.ReferenceTimeType;
-import wres.statistics.generated.TimeWindow;
 
 /**
  * <p>Abstract base class for retrieving {@link TimeSeries} from a database.
@@ -525,7 +524,7 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
 
             // Subtract any non-instantaneous desired timescale period from the lower bound of the lead duration and
             // valid time
-            filter = TimeSeriesRetriever.adjustTimeWindowForTimeScale( filter, this.desiredTimeScale );
+            filter = TimeSeriesSlicer.adjustTimeWindowForTimeScale( filter, this.desiredTimeScale );
 
             // Forecasts?
             if ( this.isForecast() )
@@ -1317,84 +1316,6 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
     }
 
     /**
-     * Subtracts any non-instantaneous desired timescale from the lower bound of the lead duration and valid time to
-     * ensure that sufficient data is retrieved for upscaling.
-     *
-     * @param timeWindow the time window to adjust
-     * @param timeScale the timescale to use
-     * @return the adjusted time window
-     */
-
-    private static TimeWindowOuter adjustTimeWindowForTimeScale( TimeWindowOuter timeWindow,
-                                                                 TimeScaleOuter timeScale )
-    {
-        TimeWindow.Builder adjusted = timeWindow.getTimeWindow()
-                                                .toBuilder();
-
-        // Earliest lead duration
-        if ( !timeWindow.getEarliestLeadDuration()
-                        .equals( TimeWindowOuter.DURATION_MIN ) )
-        {
-            Duration period = Duration.ZERO;
-
-            // Adjust the lower bound of the lead duration window by the non-instantaneous desired timescale
-            if ( Objects.nonNull( timeScale )
-                 && !timeScale.isInstantaneous() )
-            {
-                period = TimeScaleOuter.getOrInferPeriodFromTimeScale( timeScale );
-            }
-
-            Duration lowered = timeWindow.getEarliestLeadDuration()
-                                         .minus( period );
-
-            if ( Objects.nonNull( timeScale )
-                 && LOGGER.isDebugEnabled() )
-            {
-                LOGGER.debug( "Adjusting the lower lead duration of time window {} from {} to {} "
-                              + "in order to acquire data at the desired timescale of {}.",
-                              timeWindow,
-                              timeWindow.getEarliestLeadDuration(),
-                              lowered,
-                              timeScale );
-            }
-
-            adjusted.setEarliestLeadDuration( MessageFactory.getDuration( lowered ) );
-        }
-
-        // Earliest valid time
-        if ( !timeWindow.getEarliestValidTime()
-                        .equals( Instant.MIN ) )
-        {
-            Duration period = Duration.ZERO;
-
-            // Adjust the lower bound of the lead duration window by the non-instantaneous desired timescale
-            if ( Objects.nonNull( timeScale )
-                 && !timeScale.isInstantaneous() )
-            {
-                period = TimeScaleOuter.getOrInferPeriodFromTimeScale( timeScale );
-            }
-
-            Instant lowered = timeWindow.getEarliestValidTime()
-                                        .minus( period );
-
-            if ( Objects.nonNull( timeScale )
-                 && LOGGER.isDebugEnabled() )
-            {
-                LOGGER.debug( "Adjusting the lower valid datetime of time window {} from {} to {} "
-                              + "in order to acquire data at the desired timescale of {}.",
-                              timeWindow,
-                              timeWindow.getEarliestValidTime(),
-                              lowered,
-                              timeScale );
-            }
-
-            adjusted.setEarliestValidTime( MessageFactory.getTimestamp( lowered ) );
-        }
-
-        return TimeWindowOuter.of( adjusted.build() );
-    }
-
-    /**
      * Adds the lead duration bounds (if any) to the script. The interval is left-closed.
      *
      * @param script the script to augment
@@ -1603,25 +1524,28 @@ abstract class TimeSeriesRetriever<T> implements Retriever<TimeSeries<T>>
         Instant lowerValidTime = Instant.MIN;
 
         // Lower bound present
-        if ( !timeWindow.getEarliestValidTime().equals( Instant.MIN ) )
+        if ( !timeWindow.getEarliestValidTime()
+                        .equals( Instant.MIN ) )
         {
             lowerValidTime = timeWindow.getEarliestValidTime();
         }
-        // Make a best effort to infer the valid times from any forecast information
+        // Make the best effort to infer the valid times from any forecast information
         else
         {
             // Lower reference time available?
-            if ( !timeWindow.getEarliestReferenceTime().equals( Instant.MIN ) )
+            if ( !timeWindow.getEarliestReferenceTime()
+                            .equals( Instant.MIN ) )
             {
                 // Use the lower reference time
                 lowerValidTime = timeWindow.getEarliestReferenceTime();
 
                 // Adjust for the earliest lead duration
-                if ( !timeWindow.getEarliestLeadDuration().equals( TimeWindowOuter.DURATION_MIN ) )
+                if ( !timeWindow.getEarliestLeadDuration()
+                                .equals( TimeWindowOuter.DURATION_MIN ) )
                 {
                     lowerValidTime = lowerValidTime.plus( timeWindow.getEarliestLeadDuration() );
 
-                    //Adjust for the desired timescale, if available
+                    // Adjust for the desired timescale, if available
                     Duration period = Duration.ZERO;
 
                     if ( Objects.nonNull( this.desiredTimeScale ) )
