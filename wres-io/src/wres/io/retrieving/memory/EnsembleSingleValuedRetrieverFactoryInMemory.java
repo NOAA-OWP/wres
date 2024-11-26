@@ -128,8 +128,8 @@ public class EnsembleSingleValuedRetrieverFactoryInMemory implements RetrieverFa
     public Supplier<Stream<TimeSeries<Ensemble>>> getRightRetriever( Set<Feature> features,
                                                                      TimeWindowOuter timeWindow )
     {
-        TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustByTimeScalePeriod( timeWindow,
-                                                                                   this.project.getDesiredTimeScale() );
+        TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustTimeWindowForTimeScale( timeWindow,
+                                                                                        this.project.getDesiredTimeScale() );
 
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.RIGHT );
@@ -169,8 +169,8 @@ public class EnsembleSingleValuedRetrieverFactoryInMemory implements RetrieverFa
     public Supplier<Stream<TimeSeries<Double>>> getBaselineRetriever( Set<Feature> features,
                                                                       TimeWindowOuter timeWindow )
     {
-        TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustByTimeScalePeriod( timeWindow,
-                                                                                   this.project.getDesiredTimeScale() );
+        TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustTimeWindowForTimeScale( timeWindow,
+                                                                                        this.project.getDesiredTimeScale() );
 
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.BASELINE );

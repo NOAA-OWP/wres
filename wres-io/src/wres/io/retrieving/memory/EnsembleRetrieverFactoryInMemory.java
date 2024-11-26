@@ -126,8 +126,8 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
         Objects.requireNonNull( features );
         Objects.requireNonNull( timeWindow );
 
-        TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustByTimeScalePeriod( timeWindow,
-                                                                                   this.project.getDesiredTimeScale() );
+        TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustTimeWindowForTimeScale( timeWindow,
+                                                                                        this.project.getDesiredTimeScale() );
 
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.RIGHT );
@@ -169,8 +169,8 @@ public class EnsembleRetrieverFactoryInMemory implements RetrieverFactory<Double
         Objects.requireNonNull( features );
         Objects.requireNonNull( timeWindow );
 
-        TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustByTimeScalePeriod( timeWindow,
-                                                                                   this.project.getDesiredTimeScale() );
+        TimeWindowOuter adjustedWindow = TimeSeriesSlicer.adjustTimeWindowForTimeScale( timeWindow,
+                                                                                        this.project.getDesiredTimeScale() );
 
         Dataset data = DeclarationUtilities.getDeclaredDataset( this.project.getDeclaration(),
                                                                 DatasetOrientation.BASELINE );

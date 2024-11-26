@@ -185,8 +185,8 @@ public class RetrieverUtilities
                                      .setLatestLeadDuration( upper )
                                      .build();
 
-        return TimeSeriesSlicer.adjustByTimeScalePeriod( TimeWindowOuter.of( inner ),
-                                                         timeScale );
+        return TimeSeriesSlicer.adjustTimeWindowForTimeScale( TimeWindowOuter.of( inner ),
+                                                              timeScale );
     }
 
     /**
