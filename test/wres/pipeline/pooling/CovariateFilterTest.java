@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import wres.config.yaml.components.CovariateDataset;
+import wres.config.yaml.components.CovariateDatasetBuilder;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
@@ -52,8 +53,10 @@ class CovariateFilterTest
                                                                         .name( "foo" )
                                                                         .build() )
                                               .build();
-        CovariateDataset covariateDataset =
-                new CovariateDataset( covariateData, null, null, DatasetOrientation.LEFT, null );
+        CovariateDataset covariateDataset = CovariateDatasetBuilder.builder()
+                                                                   .dataset( covariateData )
+                                                                   .featureNameOrientation( DatasetOrientation.LEFT )
+                                                                   .build();
 
         // Unconditional filter
         Predicate<Double> filter = d -> true;
@@ -149,8 +152,10 @@ class CovariateFilterTest
                                               // Add 4 hours
                                               .timeShift( Duration.ofHours( 4 ) )
                                               .build();
-        CovariateDataset covariateDataset =
-                new CovariateDataset( covariateData, null, null, DatasetOrientation.LEFT, null );
+        CovariateDataset covariateDataset = CovariateDatasetBuilder.builder()
+                                                                   .dataset( covariateData )
+                                                                   .featureNameOrientation( DatasetOrientation.LEFT )
+                                                                   .build();
 
         Predicate<Double> filter = d -> d > 0.5;
 
@@ -250,9 +255,10 @@ class CovariateFilterTest
                                                                         .build() )
                                               .timeScale( existingTimeScale )
                                               .build();
-        CovariateDataset covariateDataset =
-                new CovariateDataset( covariateData, null, null, DatasetOrientation.LEFT, null );
-
+        CovariateDataset covariateDataset = CovariateDatasetBuilder.builder()
+                                                                   .dataset( covariateData )
+                                                                   .featureNameOrientation( DatasetOrientation.LEFT )
+                                                                   .build();
         Predicate<Double> filter = d -> d > 0.5;
 
         TimeScaleOuter desiredTimeScale = TimeScaleOuter.of( Duration.ofHours( 2 ),

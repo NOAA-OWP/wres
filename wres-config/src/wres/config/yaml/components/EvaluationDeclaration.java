@@ -57,6 +57,7 @@ import wres.statistics.generated.TimeWindow;
  * @param leadTimes lead times
  * @param analysisTimes analysis durations
  * @param leadTimePools lead time pools
+ * @param eventDetection event detection
  * @param timeScale the evaluation timescale
  * @param rescaleLenience whether rescaling should admit periods with missing values
  * @param pairFrequency the frequency of the paired data
@@ -98,6 +99,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
                                      @JsonProperty( "valid_date_pools" ) TimePools validDatePools,
                                      @JsonProperty( "lead_times" ) LeadTimeInterval leadTimes,
                                      @JsonProperty( "lead_time_pools" ) TimePools leadTimePools,
+                                     @JsonProperty( "event_detection" ) EventDetection eventDetection,
                                      @JsonProperty( "analysis_times" ) AnalysisTimes analysisTimes,
                                      @JsonProperty( "time_scale" ) TimeScale timeScale,
                                      @JsonProperty( "rescale_lenience" ) TimeScaleLenience rescaleLenience,
@@ -161,6 +163,7 @@ public record EvaluationDeclaration( @JsonProperty( "label" ) String label,
      * @param leadTimes lead times
      * @param analysisTimes analysis durations
      * @param leadTimePools lead time pools
+     * @param eventDetection event detection
      * @param timeScale the evaluation timescale
      * @param rescaleLenience whether rescaling should admit periods with missing values
      * @param pairFrequency the frequency of the paired data

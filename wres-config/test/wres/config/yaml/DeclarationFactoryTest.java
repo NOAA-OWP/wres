@@ -33,6 +33,8 @@ import wres.config.MetricConstants;
 import wres.config.yaml.components.AnalysisTimes;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.CovariateDataset;
+import wres.config.yaml.components.CovariateDatasetBuilder;
+import wres.config.yaml.components.CovariatePurpose;
 import wres.config.yaml.components.CrossPair;
 import wres.config.yaml.components.CrossPairMethod;
 import wres.config.yaml.components.CrossPairScope;
@@ -43,6 +45,9 @@ import wres.config.yaml.components.DecimalFormatPretty;
 import wres.config.yaml.components.EnsembleFilter;
 import wres.config.yaml.components.EnsembleFilterBuilder;
 import wres.config.yaml.components.EvaluationDeclaration;
+import wres.config.yaml.components.EventDetection;
+import wres.config.yaml.components.EventDetectionBuilder;
+import wres.config.yaml.components.EventDetectionDataset;
 import wres.config.yaml.components.FeatureGroups;
 import wres.config.yaml.components.FeatureGroupsBuilder;
 import wres.config.yaml.components.FeatureService;
@@ -2248,8 +2253,10 @@ class DeclarationFactoryTest
                                                     .sources( covariateOneSources )
                                                     .variable( new Variable( "precipitation", null, Set.of() ) )
                                                     .build();
-
-        CovariateDataset covariateOne = new CovariateDataset( covariateOneDataset, 0.25, null, null, null );
+        CovariateDataset covariateOne = CovariateDatasetBuilder.builder()
+                                                               .dataset( covariateOneDataset )
+                                                               .minimum( 0.25 )
+                                                               .build();
 
         URI covariateTwoUri = URI.create( "temperature.tgz" );
         Source covariateTwoSource = SourceBuilder.builder()
@@ -2263,8 +2270,11 @@ class DeclarationFactoryTest
                                                     .variable( new Variable( "temperature", null, Set.of() ) )
                                                     .build();
 
-        CovariateDataset covariateTwo =
-                new CovariateDataset( covariateTwoDataset, null, 0.0, null, TimeScale.TimeScaleFunction.MEAN );
+        CovariateDataset covariateTwo = CovariateDatasetBuilder.builder()
+                                                               .dataset( covariateTwoDataset )
+                                                               .maximum( 0.0 )
+                                                               .rescaleFunction( TimeScale.TimeScaleFunction.MEAN )
+                                                               .build();
 
         List<CovariateDataset> covariateDatasets = List.of( covariateOne, covariateTwo );
 
@@ -2385,6 +2395,112 @@ class DeclarationFactoryTest
         Set<TimeWindow> expected = Set.of( expectedOne, expectedTwo );
 
         assertEquals( expected, actual.timeWindows() );
+    }
+
+    @Test
+    void testDeserializeWithEventDetection() throws IOException
+    {
+        String yaml = """
+                observed: some_file.csv
+                predicted: another_file.csv
+                event_detection: observed
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
+                                                             .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .eventDetection( eventDetection )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithEventDetectionUsingExplicitDataset() throws IOException
+    {
+        String yaml = """
+                observed: some_file.csv
+                predicted: another_file.csv
+                event_detection:
+                  dataset: observed
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.OBSERVED ) )
+                                                             .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .eventDetection( eventDetection )
+                                                                     .build();
+
+        assertEquals( expected, actual );
+    }
+
+    @Test
+    void testDeserializeWithEventDetectionUsingExplicitDatasetAndCovariates() throws IOException
+    {
+        String yaml = """
+                observed:
+                  - some_file.csv
+                predicted:
+                  sources: another_file.csv
+                covariates:
+                  - sources: covariate.csv
+                    purpose:
+                      - detect
+                      - filter
+                event_detection:
+                  dataset:
+                    - observed
+                    - predicted
+                    - covariates
+                  """;
+
+        EvaluationDeclaration actual = DeclarationFactory.from( yaml );
+
+        URI covariateUri = URI.create( "covariate.csv" );
+        Source covariateSource = SourceBuilder.builder()
+                                              .uri( covariateUri )
+                                              .build();
+
+        List<Source> covariateSources = List.of( covariateSource );
+
+        Dataset covariate = DatasetBuilder.builder()
+                                          .sources( covariateSources )
+                                          .build();
+
+        CovariateDataset covariateDataset = CovariateDatasetBuilder.builder()
+                                                                   .dataset( covariate )
+                                                                   .purposes( Set.of( CovariatePurpose.FILTER,
+                                                                                      CovariatePurpose.DETECT ) )
+                                                                   .build();
+
+        List<CovariateDataset> covariateDatasets = List.of( covariateDataset );
+
+        EventDetection eventDetection = EventDetectionBuilder.builder()
+                                                             .datasets( Set.of( EventDetectionDataset.OBSERVED,
+                                                                                EventDetectionDataset.PREDICTED,
+                                                                                EventDetectionDataset.COVARIATES ) )
+                                                             .build();
+
+        EvaluationDeclaration expected = EvaluationDeclarationBuilder.builder()
+                                                                     .left( this.observedDataset )
+                                                                     .right( this.predictedDataset )
+                                                                     .covariates( covariateDatasets )
+                                                                     .eventDetection( eventDetection )
+                                                                     .build();
+
+        assertEquals( expected, actual );
     }
 
     @Test

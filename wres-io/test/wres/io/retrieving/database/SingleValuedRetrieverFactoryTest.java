@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.CovariateDataset;
+import wres.config.yaml.components.CovariateDatasetBuilder;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
@@ -497,11 +498,11 @@ public class SingleValuedRetrieverFactoryTest
                                           .type( DataType.OBSERVATIONS )
                                           .variable( new Variable( VARIABLE_NAME, null, Set.of() ) )
                                           .build();
-        CovariateDataset covariateDataset = new CovariateDataset( covariate,
-                                                                  null,
-                                                                  null,
-                                                                  DatasetOrientation.LEFT,
-                                                                  null );
+        CovariateDataset covariateDataset = CovariateDatasetBuilder.builder()
+                                                                   .dataset( covariate )
+                                                                   .featureNameOrientation( DatasetOrientation.LEFT )
+                                                                   .build();
+
         BaselineDataset baseline = BaselineDatasetBuilder.builder()
                                                          .dataset( right )
                                                          .build();

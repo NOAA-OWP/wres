@@ -30,6 +30,7 @@ import wres.config.yaml.components.AnalysisTimesBuilder;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.CovariateDataset;
+import wres.config.yaml.components.CovariateDatasetBuilder;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
@@ -1117,7 +1118,10 @@ class DeclarationInterpolatorTest
                                                          .dataset( this.predictedDataset )
                                                          .build();
 
-        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null, null, null );
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( this.observedDataset )
+                                                            .build();
+
         List<CovariateDataset> covariates = List.of( covariate );
         EvaluationDeclaration evaluation =
                 EvaluationDeclarationBuilder.builder()
@@ -1335,7 +1339,9 @@ class DeclarationInterpolatorTest
     void testInterpolateVariableNames()
     {
         BaselineDataset baseline = new BaselineDataset( this.observedDataset, null, null );
-        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null, null, null );
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( this.observedDataset )
+                                                            .build();
         List<CovariateDataset> covariates = List.of( covariate );
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
@@ -1378,7 +1384,9 @@ class DeclarationInterpolatorTest
     void testInterpolateVariableNamesForTooManyDeclaredCovariatesProducesError()
     {
         BaselineDataset baseline = new BaselineDataset( this.observedDataset, null, null );
-        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null, null, null );
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( this.observedDataset )
+                                                            .build();
         List<CovariateDataset> covariates = List.of( covariate, covariate );
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
@@ -1411,7 +1419,9 @@ class DeclarationInterpolatorTest
     void testInterpolateVariableNamesForTooManyIngestedCovariatesProducesError()
     {
         BaselineDataset baseline = new BaselineDataset( this.observedDataset, null, null );
-        CovariateDataset covariate = new CovariateDataset( this.observedDataset, null, null, null, null );
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( this.observedDataset )
+                                                            .build();
         List<CovariateDataset> covariates = List.of( covariate );
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
@@ -1485,8 +1495,10 @@ class DeclarationInterpolatorTest
         Dataset rightData = DatasetBuilder.builder( this.observedDataset )
                                           .sources( List.of( source ) )
                                           .build();
+        CovariateDataset covariate = CovariateDatasetBuilder.builder()
+                                                            .dataset( rightData )
+                                                            .build();
 
-        CovariateDataset covariate = new CovariateDataset( rightData, null, null, null, null );
         List<CovariateDataset> covariates = List.of( covariate );
         EvaluationDeclaration evaluation =
                 EvaluationDeclarationBuilder.builder()

@@ -16,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import wres.config.yaml.components.BaselineDataset;
 import wres.config.yaml.components.BaselineDatasetBuilder;
 import wres.config.yaml.components.CovariateDataset;
+import wres.config.yaml.components.CovariateDatasetBuilder;
 import wres.config.yaml.components.DataType;
 import wres.config.yaml.components.Dataset;
 import wres.config.yaml.components.DatasetBuilder;
@@ -163,8 +164,12 @@ class EnsembleRetrieverFactoryInMemoryTest
                                                                     .name( VARIABLE_NAME )
                                                                     .build() )
                                           .build();
-        CovariateDataset covariateDataset =
-                new CovariateDataset( covariate, null, null, DatasetOrientation.LEFT, null );
+
+        CovariateDataset covariateDataset = CovariateDatasetBuilder.builder()
+                                                                   .dataset( covariate )
+                                                                   .featureNameOrientation( DatasetOrientation.LEFT )
+                                                                   .build();
+
         EvaluationDeclaration declaration =
                 EvaluationDeclarationBuilder.builder()
                                             .left( left )
