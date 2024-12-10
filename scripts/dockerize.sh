@@ -66,7 +66,6 @@ wres_writing_version=$writing_version
 if [[ "$1" != "" && "$1" != "auto" ]]
 then
     wres_core_version=$1
-    overall_version=$wres_core_version
 fi
 
 if [[ "$2" != "" && "$2" != "auto" ]]
@@ -77,7 +76,6 @@ fi
 if [[ "$3" != "" && "$3" != "auto" ]]
 then
     wres_tasker_version=$3
-    tasker_version=$wres_tasker_version
 fi
 
 if [[ "$4" != "" && "$4" != "auto" ]]
@@ -98,13 +96,11 @@ fi
 if [[ "$7" != "" && "$7" != "auto" ]]
 then
     wres_vis_version=$7
-    graphics_version=$wres_vis_version
 fi
 
 if [[ "$8" != "" && "$8" != "auto" ]]
 then
     wres_writing_version=$8
-    writing_version=$wres_writing_version
 fi
 
 echo ""
@@ -252,33 +248,82 @@ then
             exit 2
         fi
 
-        echo "Tagging and pushing wres/wres-worker:$overall_version as $DOCKER_REGISTRY/wres/wres-worker/$overall_version..."
-        docker tag wres/wres-worker:$overall_version $DOCKER_REGISTRY/wres/wres-worker:$overall_version
-        docker push $DOCKER_REGISTRY/wres/wres-worker:$overall_version
-     
-        echo "Tagging and pushing  wres/wres-tasker:$tasker_version as $DOCKER_REGISTRY/wres/wres-tasker/$tasker_version..."
-        docker tag wres/wres-tasker:$tasker_version $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
-        docker push $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
+        primary_image_dev_status=$( echo ${overall_version} | grep "dev" )
 
-        echo "Tagging and pushing wres/wres-broker:$broker_version as $DOCKER_REGISTRY/wres/wres-broker/$broker_version..."
-        docker tag wres/wres-broker:$broker_version $DOCKER_REGISTRY/wres/wres-broker:$broker_version
-        docker push $DOCKER_REGISTRY/wres/wres-broker:$broker_version
+        if [[ "$primary_image_dev_status" != "" ]]
+        then
+            echo "Refusing to tag and push primary docker image version ${overall_version} because its Dockerfile has not been committed to the repository yet."
+        else
+            echo "Tagging and pushing wres/wres-worker:$overall_version as $DOCKER_REGISTRY/wres/wres-worker/$overall_version..."
+            docker tag wres/wres-worker:$overall_version $DOCKER_REGISTRY/wres/wres-worker:$overall_version
+	        docker push $DOCKER_REGISTRY/wres/wres-worker:$overall_version
+        fi
 
-        echo "Tagging and pushing wres/wres-redis:$redis_version as $DOCKER_REGISTRY/wres/wres-redis/$redis_version..."
-        docker tag wres/wres-redis:$redis_version $DOCKER_REGISTRY/wres/wres-redis:$redis_version
-        docker push $DOCKER_REGISTRY/wres/wres-redis:$redis_version
+        tasker_image_dev_status=$( echo ${tasker_version} | grep "dev" )
 
-        echo "Tagging and pushing wres/wres-eventsbroker:$eventsbroker_version as $DOCKER_REGISTRY/wres/wres-eventsbroker/$eventsbroker_version..."
-        docker tag wres/wres-eventsbroker:$eventsbroker_version $DOCKER_REGISTRY/wres/wres-eventsbroker:$eventsbroker_version
-        docker push $DOCKER_REGISTRY/wres/wres-eventsbroker:$eventsbroker_version
+        if [[ "$tasker_image_dev_status" != "" ]]
+        then
+            echo "Refusing to tag and push tasker docker image version ${tasker_version} because its Dockerfile has not been committed to the repository yet."
+        else
+            echo "Tagging and pushing  wres/wres-tasker:$tasker_version as $DOCKER_REGISTRY/wres/wres-tasker/$tasker_version..."
+	        docker tag wres/wres-tasker:$tasker_version $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
+            docker push $DOCKER_REGISTRY/wres/wres-tasker:$tasker_version
+        fi
 
-        echo "Tagging and pushing wres/wres-graphics:$graphics_version as $DOCKER_REGISTRY/wres/wres-graphics/$graphics_version..."
-        docker tag wres/wres-graphics:$graphics_version $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
-        docker push $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
+        broker_image_dev_status=$( echo ${broker_version} | grep "dev" )
 
-        echo "Tagging and pushing wres/wres-writing:$writing_version as $DOCKER_REGISTRY/wres/wres-writing/$writing_version..."
-        docker tag wres/wres-writing:$writing_version $DOCKER_REGISTRY/wres/wres-writing:$writing_version
-        docker push $DOCKER_REGISTRY/wres/wres-writing:$writing_version
+        if [[ "$broker_image_dev_status" != "" ]]
+        then
+            echo "Refusing to tag and push broker docker image version ${broker_version} because its Dockerfile has not been committed to the repository yet."
+        else
+            echo "Tagging and pushing wres/wres-broker:$broker_version as $DOCKER_REGISTRY/wres/wres-broker/$broker_version..."
+            docker tag wres/wres-broker:$broker_version $DOCKER_REGISTRY/wres/wres-broker:$broker_version
+            docker push $DOCKER_REGISTRY/wres/wres-broker:$broker_version
+        fi
+
+        redis_image_dev_status=$( echo ${redis_version} | grep "dev" )
+
+        if [[ "$redis_image_dev_status" != "" ]]
+        then
+            echo "Refusing to tag and push redis docker image version ${redis_version} because its Dockerfile has not been committed to the repository yet."
+        else
+            echo "Tagging and pushing wres/wres-redis:$redis_version as $DOCKER_REGISTRY/wres/wres-redis/$redis_version..."
+            docker tag wres/wres-redis:$redis_version $DOCKER_REGISTRY/wres/wres-redis:$redis_version
+            docker push $DOCKER_REGISTRY/wres/wres-redis:$redis_version
+        fi
+
+        eventsbroker_image_dev_status=$( echo ${eventsbroker_version} | grep "dev" )
+
+        if [[ "$eventsbroker_image_dev_status" != "" ]]
+        then
+            echo "Refusing to tag and push eventsbroker docker image version ${eventsbroker_version} because its Dockerfile has not been committed to the repository yet."
+        else
+            echo "Tagging and pushing wres/wres-eventsbroker:$eventsbroker_version as $DOCKER_REGISTRY/wres/wres-eventsbroker/$eventsbroker_version..."
+            docker tag wres/wres-eventsbroker:$eventsbroker_version $DOCKER_REGISTRY/wres/wres-eventsbroker:$eventsbroker_version
+            docker push $DOCKER_REGISTRY/wres/wres-eventsbroker:$eventsbroker_version
+        fi
+
+        graphics_image_dev_status=$( echo ${graphics_version} | grep "dev" )
+
+        if [[ "$graphics_image_dev_status" != "" ]]
+        then
+            echo "Refusing to tag and push graphics docker image version ${graphics_version} because its Dockerfile has not been committed to the repository yet."
+        else
+            echo "Tagging and pushing wres/wres-graphics:$graphics_version as $DOCKER_REGISTRY/wres/wres-graphics/$graphics_version..."
+            docker tag wres/wres-graphics:$graphics_version $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
+            docker push $DOCKER_REGISTRY/wres/wres-graphics:$graphics_version
+        fi
+
+        writing_image_dev_status=$( echo ${writing_version} | grep "dev" )
+
+        if [[ "$writing_image_dev_status" != "" ]]
+        then
+            echo "Refusing to tag and push writing docker image version ${writing_version} because its Dockerfile has not been committed to the repository yet."
+        else
+            echo "Tagging and pushing wres/wres-writing:$writing_version as $DOCKER_REGISTRY/wres/wres-writing/$writing_version..."
+            docker tag wres/wres-writing:$writing_version $DOCKER_REGISTRY/wres/wres-writing:$writing_version
+            docker push $DOCKER_REGISTRY/wres/wres-writing:$writing_version
+        fi
 
         echo "Tagging and pushing wres/nginx as wres/nginx..."
         docker tag wres/nginx $DOCKER_REGISTRY/wres/nginx
